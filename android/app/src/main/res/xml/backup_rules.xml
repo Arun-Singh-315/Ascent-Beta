@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules for Android Auto Backup (Android 12+ format).
+    
+    Strategy:
+    - Include the Drift database file and its WAL/SHM journals
+      so user data is backed up to Google Drive.
+    - Exclude cache directories and debug files.
+    - Resume file paths are stored in the DB but the actual files
+      live in the app's filesDir — include that as well.
+    
+    Note: After a restore, the app verifies that referenced resume
+    file paths still exist and prompts re-upload if they don't
+    (file paths may differ across devices).
+-->
+<full-backup-content>
+    <!-- Include the Drift database -->
+    <include domain="database" path="ascent_db.db" />
+    <include domain="database" path="ascent_db.db-wal" />
+    <include domain="database" path="ascent_db.db-shm" />
+
+    <!-- Include resume files stored in app's files directory -->
+    <include domain="file" path="resumes" />
+
+    <!-- Include shared preferences (theme, onboarding state) -->
+    <include domain="sharedpref" path="." />
+</full-backup-content>

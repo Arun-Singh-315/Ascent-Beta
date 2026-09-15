@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Data extraction rules for Android 12+ (API 31+).
+    Controls what is backed up to Google Drive (cloud backup)
+    and what is transferred during device-to-device transfer.
+    
+    For Ascent, both cloud backup and device transfer should
+    include all user data (database + resumes + preferences).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="database" path="ascent_db.db" />
+        <include domain="database" path="ascent_db.db-wal" />
+        <include domain="database" path="ascent_db.db-shm" />
+        <include domain="file" path="resumes" />
+        <include domain="sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="database" path="ascent_db.db" />
+        <include domain="database" path="ascent_db.db-wal" />
+        <include domain="database" path="ascent_db.db-shm" />
+        <include domain="file" path="resumes" />
+        <include domain="sharedpref" path="." />
+    </device-transfer>
+</data-extraction-rules>

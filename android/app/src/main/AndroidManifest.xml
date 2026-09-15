@@ -1,0 +1,115 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ── Permissions ──────────────────────────────────────────────────── -->
+
+    <!--
+        POST_NOTIFICATIONS: Required at runtime on Android 13+ (API 33+).
+        We request this contextually — when the user sets their first deadline
+        or interview date — NOT on cold-open. See NotificationService.dart.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+        SCHEDULE_EXACT_ALARM: Required for precise deadline reminders.
+        On Android 12+ (API 31+) this must also be granted by the user via
+        the Special App Access settings screen.
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <!--
+        RECEIVE_BOOT_COMPLETED: Re-schedules notifications after device reboot.
+        Without this, all pending alarms are cleared on boot.
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        NOTE: We do NOT declare READ_EXTERNAL_STORAGE or READ_MEDIA_* permissions.
+        File picking uses the system file picker (ACTION_OPEN_DOCUMENT via file_picker
+        package) which does NOT require any storage permission on modern Android.
+        Declaring unused permissions is a common Play Store review friction point.
+    -->
+
+    <!--
+        Auto-backup: enabled so the Drift database is backed up to the
+        user's Google account. Configured via backup_rules.xml to ensure
+        the database file and its WAL journal are included, and that
+        resume file paths remain valid after a restore.
+        Edge-to-edge: required on Android 15+ (API 35+).
+        Flutter handles the actual inset handling via MediaQuery.
+    -->
+    <application
+        android:label="Ascent"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <!-- Main launcher intent -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep link intent for notification taps (ascent://open/...) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="ascent" />
+            </intent-filter>
+        </activity>
+
+        <!-- Boot receiver to re-schedule notifications after device restart -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Alarm receiver for exact alarms (flutter_local_notifications) -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+
+        <!-- Flutter tool meta-data -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+    </application>
+
+    <!-- Allow querying activities for file/text processing -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+        <!-- For file_picker: allow querying document providers -->
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+        </intent>
+    </queries>
+
+</manifest>
