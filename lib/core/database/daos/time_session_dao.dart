@@ -192,6 +192,20 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Finds a running or paused session from today for a given task ID.
+  Future<TimeSession?> getTodayActiveOrPausedSessionForTask(int taskId) async {
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    return (select(timeSessionTable)
+          ..where((s) =>
+              s.linkedTaskId.equals(taskId) &
+              s.status.isIn(['running', 'paused']) &
+              s.startedAt.isBiggerOrEqualValue(startOfToday))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   /// Finds a paused session from today for a given task ID.
   Future<TimeSession?> getTodayPausedSessionForTask(int taskId) async {
     final now = DateTime.now();
@@ -200,6 +214,20 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
           ..where((s) =>
               s.linkedTaskId.equals(taskId) &
               s.status.equals('paused') &
+              s.startedAt.isBiggerOrEqualValue(startOfToday))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Finds a running or paused session from today with a given label.
+  Future<TimeSession?> getTodayActiveOrPausedSessionByLabel(String label) async {
+    final now = DateTime.now();
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    return (select(timeSessionTable)
+          ..where((s) =>
+              s.label.equals(label) &
+              s.status.isIn(['running', 'paused']) &
               s.startedAt.isBiggerOrEqualValue(startOfToday))
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))

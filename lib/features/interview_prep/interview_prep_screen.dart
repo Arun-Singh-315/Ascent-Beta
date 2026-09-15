@@ -21,7 +21,9 @@ class InterviewPrepScreen extends ConsumerStatefulWidget {
   ConsumerState<InterviewPrepScreen> createState() => _InterviewPrepScreenState();
 }
 
-class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
+class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   final _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedCategory = 'All';
@@ -40,6 +42,10 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
     _filterApplicationId = widget.linkedApplicationId;
     _searchController.addListener(() {
       setState(() {
@@ -50,8 +56,251 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _openAddEditInterviewSheet([UpcomingInterview? existing]) {
+    final companyController = TextEditingController(text: existing?.companyName ?? '');
+    final notesController = TextEditingController(text: existing?.notes ?? '');
+    DateTime selectedDate = existing?.interviewDate ?? DateTime.now().add(const Duration(days: 3));
+    TimeOfDay selectedTime = TimeOfDay.fromDateTime(selectedDate);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: bottomInset + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: context.divider,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          existing == null ? 'Schedule Interview' : 'Edit Interview',
+                          style: AscentTextStyles.displaySmall.copyWith(
+                            color: context.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: companyController,
+                      autofocus: existing == null,
+                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Company / Organization *',
+                        hintText: 'e.g. Google, Stripe, Meta',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: notesController,
+                      maxLines: 2,
+                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Focus Areas / Notes (optional)',
+                        hintText: 'e.g. System design round, review caching & Kafka',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Date & Time',
+                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.calendar_today, size: 16),
+                            label: Text(DateFormat('EEE, MMM d, y').format(selectedDate)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: selectedDate,
+                                firstDate: DateTime.now().subtract(const Duration(days: 1)),
+                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                              );
+                              if (picked != null) {
+                                setSheetState(() {
+                                  selectedDate = DateTime(
+                                    picked.year,
+                                    picked.month,
+                                    picked.day,
+                                    selectedTime.hour,
+                                    selectedTime.minute,
+                                  );
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.access_time, size: 16),
+                            label: Text(selectedTime.format(context)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: selectedTime,
+                              );
+                              if (picked != null) {
+                                setSheetState(() {
+                                  selectedTime = picked;
+                                  selectedDate = DateTime(
+                                    selectedDate.year,
+                                    selectedDate.month,
+                                    selectedDate.day,
+                                    picked.hour,
+                                    picked.minute,
+                                  );
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    AscentButton.primary(
+                      label: existing == null ? 'Save & Set Interview' : 'Update Interview',
+                      expanded: true,
+                      onPressed: () async {
+                          final comp = companyController.text.trim();
+                          if (comp.isEmpty) return;
+
+                          final fullDateTime = DateTime(
+                            selectedDate.year,
+                            selectedDate.month,
+                            selectedDate.day,
+                            selectedTime.hour,
+                            selectedTime.minute,
+                          );
+
+                          final dao = ref.read(upcomingInterviewDaoProvider);
+                          if (existing == null) {
+                            await dao.insertInterview(
+                              UpcomingInterviewTableCompanion.insert(
+                                companyName: comp,
+                                interviewDate: fullDateTime,
+                                notes: drift.Value(notesController.text.trim().isEmpty ? null : notesController.text.trim()),
+                              ),
+                            );
+                          } else {
+                            await dao.updateInterview(
+                              UpcomingInterviewTableCompanion(
+                                id: drift.Value(existing.id),
+                                companyName: drift.Value(comp),
+                                interviewDate: drift.Value(fullDateTime),
+                                notes: drift.Value(notesController.text.trim().isEmpty ? null : notesController.text.trim()),
+                              ),
+                            );
+                          }
+
+                          ref.invalidate(allUpcomingInterviewsProvider);
+                          ref.invalidate(nextUpcomingInterviewProvider);
+
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(existing == null ? 'Interview scheduled!' : 'Interview updated!'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteInterview(UpcomingInterview interview) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Delete Scheduled Interview?'),
+        content: Text('Are you sure you want to remove the upcoming interview with "${interview.companyName}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await ref.read(upcomingInterviewDaoProvider).deleteInterview(interview.id);
+      ref.invalidate(allUpcomingInterviewsProvider);
+      ref.invalidate(nextUpcomingInterviewProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Interview removed'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   void _openAddEditDialog([InterviewPrep? existing]) {
@@ -83,22 +332,236 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
         title: Text(
           'Interview Prep',
           style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: context.accentPrimary,
+          unselectedLabelColor: context.textMuted,
+          indicatorColor: context.accentPrimary,
+          tabs: const [
+            Tab(text: 'Upcoming Rounds'),
+            Tab(text: 'Question Bank'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.add_rounded, color: context.accentPrimary, size: 28),
-            tooltip: 'Add Question',
-            onPressed: () => _openAddEditDialog(),
+            tooltip: _tabController.index == 0 ? 'Schedule Interview' : 'Add Question',
+            onPressed: () {
+              if (_tabController.index == 0) {
+                _openAddEditInterviewSheet();
+              } else {
+                _openAddEditDialog();
+              }
+            },
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: StreamBuilder<List<InterviewPrep>>(
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Tab 0: Scheduled Rounds
+          _buildScheduledInterviewsTab(context),
+
+          // Tab 1: Question Bank
+          _buildQuestionBankTab(context, questionsStream, prepDao),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduledInterviewsTab(BuildContext context) {
+    final interviewsAsync = ref.watch(allUpcomingInterviewsProvider);
+
+    return interviewsAsync.when(
+      data: (interviews) {
+        if (interviews.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: context.accentPrimary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.event_available_rounded, size: 36, color: context.accentPrimary),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No Upcoming Interviews',
+                    style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Schedule your upcoming interview rounds to track deadlines, prep focus areas, and countdown.',
+                    textAlign: TextAlign.center,
+                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                  ),
+                  const SizedBox(height: 20),
+                  AscentButton.primary(
+                    label: 'Schedule an Interview',
+                    icon: Icons.add_rounded,
+                    onPressed: () => _openAddEditInterviewSheet(),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(20),
+          itemCount: interviews.length,
+          itemBuilder: (context, index) {
+            final interview = interviews[index];
+            final now = DateTime.now();
+            final diff = interview.interviewDate.difference(now);
+            final days = diff.inDays;
+            String countdown;
+            if (days < 0) {
+              countdown = 'Past';
+            } else if (days == 0) {
+              countdown = 'Today!';
+            } else if (days == 1) {
+              countdown = 'Tomorrow';
+            } else {
+              countdown = 'In $days days';
+            }
+
+            return AscentCard(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.accentPrimary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.business_rounded, color: context.accentPrimary, size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                interview.companyName,
+                                style: AscentTextStyles.headlineMedium.copyWith(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: (days <= 2 && days >= 0)
+                                    ? context.accentSecondary.withValues(alpha: 0.15)
+                                    : context.accentPrimary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                countdown,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: (days <= 2 && days >= 0) ? context.accentSecondary : context.accentPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined, size: 14, color: context.textMuted),
+                            const SizedBox(width: 5),
+                            Text(
+                              DateFormat('EEEE, MMM d • h:mm a').format(interview.interviewDate),
+                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                            ),
+                          ],
+                        ),
+                        if (interview.notes != null && interview.notes!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            interview.notes!,
+                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert_rounded, size: 20, color: context.textMuted),
+                    padding: EdgeInsets.zero,
+                    onSelected: (val) {
+                      if (val == 'edit') {
+                        _openAddEditInterviewSheet(interview);
+                      } else if (val == 'delete') {
+                        _confirmDeleteInterview(interview);
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, s) => Center(child: Text('Error: $e')),
+    );
+  }
+
+  Widget _buildQuestionBankTab(BuildContext context, Stream<List<InterviewPrep>> questionsStream, InterviewPrepDao prepDao) {
+    return StreamBuilder<List<InterviewPrep>>(
         stream: questionsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
@@ -302,8 +765,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen> {
             ],
           );
         },
-      ),
-    );
+      );
   }
 
   Widget _buildEmptyState(BuildContext context, bool isTotalZero) {

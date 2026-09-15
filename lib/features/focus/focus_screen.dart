@@ -70,7 +70,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     ref.invalidate(todayFocusTaskProvider);
   }
 
-  Future<void> _confirmCompleteSession(BuildContext context, String taskTitle, String totalTime) async {
+  Future<void> _confirmCompleteSession(String taskTitle, String totalTime) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
@@ -105,6 +105,19 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     if (confirm == true && mounted) {
       await ref.read(timeTrackingProvider.notifier).completeSession();
       ref.invalidate(todayFocusTaskProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Session completed for "$taskTitle" ($totalTime)'),
+            backgroundColor: context.accentPrimary,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      }
     }
   }
 
@@ -320,7 +333,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                     onComplete: () {
                       final title = trackingState.activeSession?.label ?? 'Current session';
                       final totalTime = _formatDuration(trackingState.elapsedSeconds);
-                      _confirmCompleteSession(context, title, totalTime);
+                      _confirmCompleteSession(title, totalTime);
                     },
                   ),
 

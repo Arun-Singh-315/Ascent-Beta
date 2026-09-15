@@ -8908,6 +8908,370 @@ class UpcomingInterviewTableCompanion
   }
 }
 
+class $ReminderTableTable extends ReminderTable
+    with TableInfo<$ReminderTableTable, Reminder> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReminderTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 300,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scheduledAtMeta = const VerificationMeta(
+    'scheduledAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scheduledAt = GeneratedColumn<DateTime>(
+    'scheduled_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    scheduledAt,
+    isActive,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'reminders';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Reminder> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('scheduled_at')) {
+      context.handle(
+        _scheduledAtMeta,
+        scheduledAt.isAcceptableOrUnknown(
+          data['scheduled_at']!,
+          _scheduledAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledAtMeta);
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Reminder map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Reminder(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      scheduledAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_at'],
+      )!,
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ReminderTableTable createAlias(String alias) {
+    return $ReminderTableTable(attachedDatabase, alias);
+  }
+}
+
+class Reminder extends DataClass implements Insertable<Reminder> {
+  final int id;
+
+  /// The text content/label of the reminder.
+  final String title;
+
+  /// Scheduled date & time for the reminder notification.
+  final DateTime scheduledAt;
+
+  /// Whether notification is active.
+  final bool isActive;
+  final DateTime createdAt;
+  const Reminder({
+    required this.id,
+    required this.title,
+    required this.scheduledAt,
+    required this.isActive,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['scheduled_at'] = Variable<DateTime>(scheduledAt);
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ReminderTableCompanion toCompanion(bool nullToAbsent) {
+    return ReminderTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      scheduledAt: Value(scheduledAt),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Reminder.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Reminder(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      scheduledAt: serializer.fromJson<DateTime>(json['scheduledAt']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'scheduledAt': serializer.toJson<DateTime>(scheduledAt),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Reminder copyWith({
+    int? id,
+    String? title,
+    DateTime? scheduledAt,
+    bool? isActive,
+    DateTime? createdAt,
+  }) => Reminder(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    scheduledAt: scheduledAt ?? this.scheduledAt,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Reminder copyWithCompanion(ReminderTableCompanion data) {
+    return Reminder(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      scheduledAt: data.scheduledAt.present
+          ? data.scheduledAt.value
+          : this.scheduledAt,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Reminder(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('scheduledAt: $scheduledAt, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, title, scheduledAt, isActive, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Reminder &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.scheduledAt == this.scheduledAt &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt);
+}
+
+class ReminderTableCompanion extends UpdateCompanion<Reminder> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<DateTime> scheduledAt;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  const ReminderTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.scheduledAt = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ReminderTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    required DateTime scheduledAt,
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : title = Value(title),
+       scheduledAt = Value(scheduledAt);
+  static Insertable<Reminder> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<DateTime>? scheduledAt,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (scheduledAt != null) 'scheduled_at': scheduledAt,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ReminderTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<DateTime>? scheduledAt,
+    Value<bool>? isActive,
+    Value<DateTime>? createdAt,
+  }) {
+    return ReminderTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      scheduledAt: scheduledAt ?? this.scheduledAt,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (scheduledAt.present) {
+      map['scheduled_at'] = Variable<DateTime>(scheduledAt.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReminderTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('scheduledAt: $scheduledAt, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -8941,6 +9305,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $UpcomingInterviewTableTable upcomingInterviewTable =
       $UpcomingInterviewTableTable(this);
+  late final $ReminderTableTable reminderTable = $ReminderTableTable(this);
   late final UserProfileDao userProfileDao = UserProfileDao(
     this as AppDatabase,
   );
@@ -8968,6 +9333,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final UpcomingInterviewDao upcomingInterviewDao = UpcomingInterviewDao(
     this as AppDatabase,
   );
+  late final ReminderDao reminderDao = ReminderDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8989,6 +9355,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sessionCategoryTable,
     timeSessionTable,
     upcomingInterviewTable,
+    reminderTable,
   ];
 }
 
@@ -16032,6 +16399,208 @@ typedef $$UpcomingInterviewTableTableProcessedTableManager =
       UpcomingInterview,
       PrefetchHooks Function()
     >;
+typedef $$ReminderTableTableCreateCompanionBuilder =
+    ReminderTableCompanion Function({
+      Value<int> id,
+      required String title,
+      required DateTime scheduledAt,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+    });
+typedef $$ReminderTableTableUpdateCompanionBuilder =
+    ReminderTableCompanion Function({
+      Value<int> id,
+      Value<String> title,
+      Value<DateTime> scheduledAt,
+      Value<bool> isActive,
+      Value<DateTime> createdAt,
+    });
+
+class $$ReminderTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ReminderTableTable> {
+  $$ReminderTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledAt => $composableBuilder(
+    column: $table.scheduledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ReminderTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReminderTableTable> {
+  $$ReminderTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledAt => $composableBuilder(
+    column: $table.scheduledAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ReminderTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReminderTableTable> {
+  $$ReminderTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledAt => $composableBuilder(
+    column: $table.scheduledAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ReminderTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ReminderTableTable,
+          Reminder,
+          $$ReminderTableTableFilterComposer,
+          $$ReminderTableTableOrderingComposer,
+          $$ReminderTableTableAnnotationComposer,
+          $$ReminderTableTableCreateCompanionBuilder,
+          $$ReminderTableTableUpdateCompanionBuilder,
+          (
+            Reminder,
+            BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder>,
+          ),
+          Reminder,
+          PrefetchHooks Function()
+        > {
+  $$ReminderTableTableTableManager(_$AppDatabase db, $ReminderTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReminderTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReminderTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReminderTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<DateTime> scheduledAt = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ReminderTableCompanion(
+                id: id,
+                title: title,
+                scheduledAt: scheduledAt,
+                isActive: isActive,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                required DateTime scheduledAt,
+                Value<bool> isActive = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ReminderTableCompanion.insert(
+                id: id,
+                title: title,
+                scheduledAt: scheduledAt,
+                isActive: isActive,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ReminderTableTable, Reminder>(table),
+                  BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ReminderTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ReminderTableTable,
+      Reminder,
+      $$ReminderTableTableFilterComposer,
+      $$ReminderTableTableOrderingComposer,
+      $$ReminderTableTableAnnotationComposer,
+      $$ReminderTableTableCreateCompanionBuilder,
+      $$ReminderTableTableUpdateCompanionBuilder,
+      (Reminder, BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder>),
+      Reminder,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -16075,6 +16644,8 @@ class $AppDatabaseManager {
         _db,
         _db.upcomingInterviewTable,
       );
+  $$ReminderTableTableTableManager get reminderTable =>
+      $$ReminderTableTableTableManager(_db, _db.reminderTable);
 }
 
 mixin _$UserProfileDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -16378,4 +16949,16 @@ class UpcomingInterviewDaoManager {
         _db.attachedDatabase,
         _db.upcomingInterviewTable,
       );
+}
+
+mixin _$ReminderDaoMixin on DatabaseAccessor<AppDatabase> {
+  $ReminderTableTable get reminderTable => attachedDatabase.reminderTable;
+  ReminderDaoManager get managers => ReminderDaoManager(this);
+}
+
+class ReminderDaoManager {
+  final _$ReminderDaoMixin _db;
+  ReminderDaoManager(this._db);
+  $$ReminderTableTableTableManager get reminderTable =>
+      $$ReminderTableTableTableManager(_db.attachedDatabase, _db.reminderTable);
 }

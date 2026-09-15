@@ -239,6 +239,52 @@ class NotificationService {
     return scheduledDate;
   }
 
+  /// Schedules a one-time reminder at a specific DateTime.
+  Future<void> scheduleReminderNotification({
+    required int id,
+    required String title,
+    required DateTime scheduledAt,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+    if (scheduledTz.isBefore(tz.TZDateTime.now(tz.local))) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      channelStudyId,
+      channelStudyName,
+      channelDescription: 'Ascent reminder notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const linuxDetails = LinuxNotificationDetails();
+
+    const notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+      macOS: darwinDetails,
+      linux: linuxDetails,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: 'Scheduled reminder: $title',
+        scheduledDate: scheduledTz,
+        notificationDetails: notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('Failed to schedule reminder notification: $e');
+    }
+  }
+
   /// Cancels a notification by id.
   Future<void> cancel(int id) async {
     try {

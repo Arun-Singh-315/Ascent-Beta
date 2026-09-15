@@ -9,6 +9,7 @@ import 'tables/enums.dart';
 import 'tables/insight_dismissal_table.dart';
 import 'tables/interview_prep_table.dart';
 import 'tables/notes_table.dart';
+import 'tables/reminder_table.dart';
 import 'tables/resume_table.dart';
 import 'tables/series_table.dart';
 import 'tables/session_category_table.dart';
@@ -33,6 +34,7 @@ part 'daos/interview_prep_dao.dart';
 part 'daos/insight_dismissal_dao.dart';
 part 'daos/time_session_dao.dart';
 part 'daos/upcoming_interview_dao.dart';
+part 'daos/reminder_dao.dart';
 
 @DriftDatabase(
   tables: [
@@ -52,6 +54,7 @@ part 'daos/upcoming_interview_dao.dart';
     SessionCategoryTable,
     TimeSessionTable,
     UpcomingInterviewTable,
+    ReminderTable,
   ],
   daos: [
     UserProfileDao,
@@ -67,6 +70,7 @@ part 'daos/upcoming_interview_dao.dart';
     InsightDismissalDao,
     TimeSessionDao,
     UpcomingInterviewDao,
+    ReminderDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -74,7 +78,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -123,6 +127,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(timeSessionTable, timeSessionTable.durationSeconds);
             await m.addColumn(timeSessionTable, timeSessionTable.activityRefType);
             await m.addColumn(timeSessionTable, timeSessionTable.lastHeartbeatAt);
+          }
+          if (from < 4) {
+            await m.createTable(reminderTable);
           }
         },
       );
