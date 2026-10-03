@@ -175,13 +175,15 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
   }
 
   /// Switches to a specific task or activity without losing existing state (§3.4).
-  /// Pauses current running session and either resumes a previously paused session
+  /// Pauses current running session and either selects a previously paused/active session
   /// for the target task today or starts a new session.
+  /// If [autoStart] is false, the timer remains paused with the task's existing stored time.
   Future<void> switchToTask({
     required String title,
     int? taskId,
     String sourceType = 'task',
     int? categoryId,
+    bool autoStart = true,
   }) async {
     final dao = ref.read(timeSessionDaoProvider);
 
@@ -190,22 +192,38 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       await dao.pauseSession(state.activeSession!.id);
     }
 
-    // 2. Check if the target task already has a paused session today
-    if (taskId != null) {
-      final paused = await dao.getTodayPausedSessionForTask(taskId);
-      if (paused != null) {
-        await dao.resumeSession(paused.id);
-        return;
+    // 2. Check if target task is already the active session
+    if (state.activeSession != null &&
+        ((taskId != null && state.activeSession!.linkedTaskId == taskId) ||
+            (taskId == null && state.activeSession!.label == title))) {
+      if (autoStart && state.isPaused) {
+        await dao.resumeSession(state.activeSession!.id);
       }
-    } else {
-      final paused = await dao.getTodayPausedSessionByLabel(title);
-      if (paused != null) {
-        await dao.resumeSession(paused.id);
-        return;
-      }
+      return;
     }
 
-    // 3. Resolve category ID
+    // 3. Check if the target task already has an existing session today
+    TimeSession? existingSession;
+    if (taskId != null) {
+      existingSession = await dao.getTodayActiveOrPausedSessionForTask(taskId);
+    } else {
+      existingSession = await dao.getTodayActiveOrPausedSessionByLabel(title);
+    }
+
+    if (existingSession != null) {
+      if (autoStart) {
+        if (existingSession.status == 'paused') {
+          await dao.resumeSession(existingSession.id);
+        }
+      } else {
+        if (existingSession.status == 'running') {
+          await dao.pauseSession(existingSession.id);
+        }
+      }
+      return;
+    }
+
+    // 4. Resolve category ID
     int targetCatId = categoryId ?? 1;
     if (categoryId == null) {
       final categories = await dao.getAllCategories();
@@ -228,14 +246,18 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
         ? 'entertainment'
         : 'study';
 
-    // 4. Start fresh write-ahead session for the new task
-    await dao.startSession(
+    // 5. Start fresh write-ahead session for the new task
+    final newId = await dao.startSession(
       label: title,
       categoryId: targetCatId,
       activityType: activityType,
       linkedTaskId: taskId,
       activityRefType: sourceType,
     );
+
+    if (!autoStart) {
+      await dao.pauseSession(newId);
+    }
   }
 
   Future<void> completeSession() async {

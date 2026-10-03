@@ -132,6 +132,13 @@ class MoreScreen extends ConsumerWidget {
             route: '/notes',
             color: context.accentSecondary,
           ),
+          _NavItemTile(
+            icon: Icons.notifications_active_rounded,
+            title: 'Reminders & Alerts',
+            subtitle: 'Upcoming rounds, tasks & study alarms',
+            route: '/reminders',
+            color: context.accentSecondary,
+          ),
           const SizedBox(height: 20),
 
           // ── 4. Documents Group ───────────────────────────────────────────

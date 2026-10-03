@@ -18,6 +18,7 @@ import '../features/notes/notes_screen.dart';
 import '../features/resume_vault/resume_vault_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/focus/focus_screen.dart';
+import '../features/reminders/reminders_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ class AscentRoutes {
   static const resumeVault = '/resume-vault';
   static const settings = '/settings';
   static const focus = '/focus';
+  static const reminders = '/reminders';
 }
 
 // ── Navigator key ─────────────────────────────────────────────────────────────
@@ -197,6 +199,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.focus,
       builder: (context, state) => const FocusScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.reminders,
+      builder: (context, state) => const RemindersScreen(),
     ),
   ],
 );

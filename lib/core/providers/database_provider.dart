@@ -77,6 +77,30 @@ final upcomingInterviewDaoProvider = Provider<UpcomingInterviewDao>(
   (ref) => UpcomingInterviewDao(ref.watch(databaseProvider)),
 );
 
+final reminderDaoProvider = Provider<ReminderDao>(
+  (ref) => ReminderDao(ref.watch(databaseProvider)),
+);
+
+final nextUpcomingReminderProvider = StreamProvider<Reminder?>((ref) {
+  final dao = ref.watch(reminderDaoProvider);
+  return dao.watchNextReminder();
+});
+
+final allRemindersProvider = StreamProvider<List<Reminder>>((ref) {
+  final dao = ref.watch(reminderDaoProvider);
+  return dao.watchAllReminders();
+});
+
+final allUpcomingInterviewsProvider = StreamProvider<List<UpcomingInterview>>((ref) {
+  final dao = ref.watch(upcomingInterviewDaoProvider);
+  return dao.watchUpcomingInterviews();
+});
+
+final mostRecentNoteProvider = StreamProvider<Note?>((ref) {
+  final dao = ref.watch(notesDaoProvider);
+  return dao.watchAllNotes().map((list) => list.firstOrNull);
+});
+
 // ---------------------------------------------------------------------------
 // Repository providers (backed by local DAOs)
 // ---------------------------------------------------------------------------
