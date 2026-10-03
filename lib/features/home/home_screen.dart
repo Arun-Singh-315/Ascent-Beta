@@ -10,11 +10,12 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
-import '../../core/insight_engine/insight_engine.dart';
+import '../../core/learning_hub/learning_hub_models.dart';
+import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
-import '../../shared/widgets/insight_strip.dart';
 import '../../shared/widgets/new_day_dialog.dart';
+import '../study_plan/lecture_focus_player_sheet.dart';
 import '../today/task_board_screen.dart';
 import 'plan_my_day_sheet.dart';
 
@@ -56,125 +57,71 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: context.bgBase,
       body: SafeArea(
-        child: Stack(
-          children: [
-            profileAsync.when(
-              loading: () => const _HomeLoadingView(),
-              error: (err, stack) => Center(
-                child: Text('Failed to load dashboard: $err'),
-              ),
-              data: (profile) {
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(userProfileStreamProvider);
-                    ref.invalidate(todayFocusTaskProvider);
-                    ref.invalidate(currentStreakStreamProvider);
-                    ref.invalidate(homeQuickStatsProvider);
-                    ref.invalidate(nextUpcomingInterviewProvider);
-                    ref.invalidate(nextUpcomingReminderProvider);
-                    ref.invalidate(mostRecentNoteProvider);
-                  },
-                  color: context.accentPrimary,
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(left: 18, right: 18, top: 14, bottom: 90),
-                    children: [
-                      // 1. Header (Greeting + Date + Avatar)
-                      _HomeHeader(profile: profile),
-
-                      // Return-user cold start welcome-back banner (>3 days absent)
-                      if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
-                        const SizedBox(height: 12),
-                        _WelcomeBackBanner(days: daysSinceLastOpen),
-                      ],
-
-                      const SizedBox(height: 14),
-
-                      // 2. Interview Date Banner
-                      const _InterviewBanner(),
-
-                      const SizedBox(height: 14),
-
-                      // 3. Activity Hub (Hero Card)
-                      const _ActivityHubCard(),
-
-                      const SizedBox(height: 14),
-
-                      // 4. Streak & Study & Focus (Quad Group - Break removed)
-                      const _QuadGroupCard(),
-
-                      const SizedBox(height: 14),
-
-                      // 5. Notes Preview Card
-                      const _NotesPreviewCard(),
-
-                      const SizedBox(height: 14),
-
-                      // 6. Reminders Card
-                      const _RemindersPreviewCard(),
-
-                      const SizedBox(height: 14),
-
-                      // 7. Insights Strip (DSA, Apps, Hours)
-                      const _InsightsRow(),
-
-                      const SizedBox(height: 16),
-
-                      // 8. Positivity line
-                      _HomePositivityLine(profile: profile),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                );
+        child: profileAsync.when(
+          loading: () => const _HomeLoadingView(),
+          error: (err, stack) => Center(
+            child: Text('Failed to load dashboard: $err'),
+          ),
+          data: (profile) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(userProfileStreamProvider);
+                ref.invalidate(todayFocusTaskProvider);
+                ref.invalidate(currentStreakStreamProvider);
+                ref.invalidate(homeQuickStatsProvider);
+                ref.invalidate(nextUpcomingInterviewProvider);
+                ref.invalidate(nextUpcomingReminderProvider);
+                ref.invalidate(mostRecentNoteProvider);
               },
-            ),
+              color: context.accentPrimary,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(left: 18, right: 18, top: 14, bottom: 90),
+                children: [
+                  // 1. Header (Greeting + Plan Day Coral Button + Avatar)
+                  _HomeHeader(profile: profile),
 
-            // Floating "Plan my day" Pill
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 16,
-              child: Center(
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => PlanMyDaySheet.show(context),
-                    borderRadius: BorderRadius.circular(30),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: context.accentPrimary,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.accentPrimary.withValues(alpha: 0.38),
-                            blurRadius: 16,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.chat_bubble_outline_rounded, size: 16, color: Colors.white),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Plan my day',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                  // Return-user cold start welcome-back banner (>3 days absent)
+                  if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
+                    const SizedBox(height: 12),
+                    _WelcomeBackBanner(days: daysSinceLastOpen),
+                  ],
+
+                  const SizedBox(height: 14),
+
+                  // 2. Activity Hub (Hero Card with In-Card Focus Timer & Filter Tabs)
+                  const _ActivityHubCard(),
+
+                  const SizedBox(height: 14),
+
+                  // 3. Learning Hub (Spring Boot Mastery, 4 Modules, 37 Lectures, Resume Button)
+                  const _LearningHubCard(),
+
+                  const SizedBox(height: 14),
+
+                  // 4. Quick Metrics 2x2 Grid (Streak, Study Time, DSA, Pipeline)
+                  const _QuickStats2x2Grid(),
+
+                  const SizedBox(height: 14),
+
+                  // 5. Notes Preview Card
+                  const _NotesPreviewCard(),
+
+                  const SizedBox(height: 14),
+
+                  // 6. Reminders Card
+                  const _RemindersPreviewCard(),
+
+                  const SizedBox(height: 16),
+
+                  // 7. Positivity line
+                  _HomePositivityLine(profile: profile),
+
+                  const SizedBox(height: 20),
+                ],
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -182,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Header
+// 1. Header with Plan Day button
 // ---------------------------------------------------------------------------
 
 class _HomeHeader extends StatelessWidget {
@@ -199,8 +146,8 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
-    final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Job Seeker';
+    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Arun singh';
+    final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Backend Engineer';
     final dateStr = DateFormat('EEEE, MMM d').format(DateTime.now());
 
     return Row(
@@ -215,7 +162,7 @@ class _HomeHeader extends StatelessWidget {
                 '${_greeting()}, $name',
                 style: GoogleFonts.plusJakartaSans(
                   color: context.textPrimary,
-                  fontSize: 21,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.3,
                 ),
@@ -227,33 +174,79 @@ class _HomeHeader extends StatelessWidget {
                 '$dateStr · $role',
                 style: AscentTextStyles.bodySmall.copyWith(
                   color: context.textMuted,
-                  fontSize: 13,
+                  fontSize: 12.5,
                 ),
               ),
             ],
           ),
         ),
-        InkWell(
-          onTap: () => context.push('/settings'),
-          borderRadius: BorderRadius.circular(22),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: context.accentPrimary.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
-                style: GoogleFonts.plusJakartaSans(
-                  color: context.accentPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Plan Day coral button
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => PlanMyDaySheet.show(context),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE26D5C), // Coral color from video
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE26D5C).withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.auto_awesome, size: 14, color: Colors.white),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Plan Day',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
+            const SizedBox(width: 10),
+
+            // Profile avatar
+            InkWell(
+              onTap: () => context.push('/settings'),
+              borderRadius: BorderRadius.circular(22),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0ECE4),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                ),
+                child: Center(
+                  child: Text(
+                    name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                    style: GoogleFonts.plusJakartaSans(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -307,137 +300,44 @@ class _WelcomeBackBanner extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Upcoming Interview Banner
+// 2. Activity Hub (Hero Card with In-Card Focus Banner)
 // ---------------------------------------------------------------------------
 
-class _InterviewBanner extends ConsumerWidget {
-  const _InterviewBanner();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final interviewAsync = ref.watch(nextUpcomingInterviewProvider);
-    final upcoming = interviewAsync.value;
-
-    if (upcoming != null) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final target = DateTime(upcoming.interviewDate.year, upcoming.interviewDate.month, upcoming.interviewDate.day);
-      final daysLeft = target.difference(today).inDays;
-
-      String countdownText;
-      if (daysLeft < 0) {
-        countdownText = 'Past';
-      } else if (daysLeft == 0) {
-        countdownText = 'Today';
-      } else if (daysLeft == 1) {
-        countdownText = 'Tomorrow';
-      } else {
-        countdownText = '$daysLeft days';
-      }
-
-      return InkWell(
-        onTap: () => context.push('/interview-prep'),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          decoration: BoxDecoration(
-            color: context.accentPrimary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: context.accentPrimary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary, fontSize: 13),
-                    children: [
-                      const TextSpan(text: 'Meeting with '),
-                      TextSpan(
-                        text: upcoming.companyName,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      TextSpan(text: ' · ${DateFormat('EEE, MMM d').format(target)}'),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: context.bgSurface,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  countdownText,
-                  style: GoogleFonts.jetBrainsMono(
-                    color: context.accentPrimary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return InkWell(
-      onTap: () => context.push('/interview-prep'),
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: context.bgSurface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.divider.withValues(alpha: 0.6)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.event_outlined, color: context.accentPrimary, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'No upcoming interview — tap to schedule round',
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted, fontSize: 13),
-              ),
-            ),
-            Icon(Icons.add_circle_outline_rounded, color: context.accentPrimary, size: 18),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 3. Activity Hub (Hero Card)
-// ---------------------------------------------------------------------------
-
-class _ActivityHubCard extends ConsumerWidget {
+class _ActivityHubCard extends ConsumerStatefulWidget {
   const _ActivityHubCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ActivityHubCard> createState() => _ActivityHubCardState();
+}
+
+class _ActivityHubCardState extends ConsumerState<_ActivityHubCard> {
+  int _selectedTabIndex = 0; // 0: Up Next, 1: Completed, 2: All
+
+  @override
+  Widget build(BuildContext context) {
     final activitiesAsync = ref.watch(todayActivitiesProvider);
+    final trackingState = ref.watch(timeTrackingProvider);
+    final trackingNotifier = ref.read(timeTrackingProvider.notifier);
 
     return activitiesAsync.when(
       loading: () => SkeletonShimmer.card(height: 180),
       error: (err, _) => AscentCard(child: Text('Error loading activities: $err')),
       data: (activities) {
-        final doneCount = activities.where((a) => a.status == TodayActivityStatus.done).length;
+        final doneActivities = activities.where((a) => a.status == TodayActivityStatus.done).toList();
+        final pendingActivities = activities.where((a) => a.status != TodayActivityStatus.done).toList();
+        final doneCount = doneActivities.length;
+
+        List<TodayActivityItem> filteredList;
+        if (_selectedTabIndex == 0) {
+          filteredList = pendingActivities;
+        } else if (_selectedTabIndex == 1) {
+          filteredList = doneActivities;
+        } else {
+          filteredList = activities;
+        }
+
+        final activeSession = trackingState.activeSession;
+        final hasActiveSession = activeSession != null;
 
         return Container(
           decoration: BoxDecoration(
@@ -450,13 +350,13 @@ class _ActivityHubCard extends ConsumerWidget {
                 offset: const Offset(0, 2),
               ),
             ],
-            border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+            border: Border.all(color: context.divider.withValues(alpha: 0.7)),
           ),
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // Header Row
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -466,7 +366,7 @@ class _ActivityHubCard extends ConsumerWidget {
                         'Activity Hub',
                         style: GoogleFonts.plusJakartaSans(
                           color: context.textPrimary,
-                          fontSize: 18,
+                          fontSize: 17,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -474,15 +374,14 @@ class _ActivityHubCard extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: context.accentSecondary.withValues(alpha: 0.15),
+                          color: context.bgBase,
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: context.divider),
                         ),
                         child: Text(
-                          activities.isEmpty
-                              ? '0 today'
-                              : '$doneCount / ${activities.length} done',
+                          '$doneCount/${activities.length} Done',
                           style: GoogleFonts.jetBrainsMono(
-                            color: context.accentSecondary,
+                            color: context.textMuted,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -496,9 +395,9 @@ class _ActivityHubCard extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                       child: Text(
-                        'View all ›',
+                        'View board ›',
                         style: TextStyle(
-                          color: context.accentPrimary,
+                          color: context.accentSecondary,
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                         ),
@@ -509,33 +408,163 @@ class _ActivityHubCard extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
 
-              // Activities List
-              if (activities.isEmpty)
+              // Active Focus Banner (Inside Activity Hub as in Video 00:00 - 00:04)
+              if (hasActiveSession) ...[
+                InkWell(
+                  onTap: () => context.push('/focus'),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: trackingState.isRunning
+                          ? context.accentSecondary.withValues(alpha: 0.08)
+                          : context.bgBase,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: trackingState.isRunning
+                            ? context.accentSecondary.withValues(alpha: 0.3)
+                            : context.divider,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: trackingState.isRunning
+                                          ? context.accentSecondary
+                                          : Colors.orange,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    trackingState.isRunning ? 'FOCUSING NOW' : 'FOCUS PAUSED',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: trackingState.isRunning
+                                          ? context.accentSecondary
+                                          : Colors.orange,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                activeSession.label,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: context.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          trackingState.formattedTime,
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: trackingState.isRunning
+                                ? context.accentSecondary
+                                : context.textMuted,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: Icon(
+                            trackingState.isRunning ? Icons.pause_circle_rounded : Icons.play_circle_rounded,
+                            size: 28,
+                            color: context.accentSecondary,
+                          ),
+                          onPressed: () {
+                            if (trackingState.isRunning) {
+                              trackingNotifier.pauseSession();
+                            } else {
+                              trackingNotifier.resumeSession();
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Filter Tabs (Up Next / Completed / All)
+              Row(
+                children: [
+                  _ActivityTabChip(
+                    label: 'Up Next',
+                    count: pendingActivities.length,
+                    isSelected: _selectedTabIndex == 0,
+                    onTap: () => setState(() => _selectedTabIndex = 0),
+                  ),
+                  const SizedBox(width: 8),
+                  _ActivityTabChip(
+                    label: 'Completed',
+                    count: doneCount,
+                    isSelected: _selectedTabIndex == 1,
+                    onTap: () => setState(() => _selectedTabIndex = 1),
+                  ),
+                  const SizedBox(width: 8),
+                  _ActivityTabChip(
+                    label: 'All',
+                    count: activities.length,
+                    isSelected: _selectedTabIndex == 2,
+                    onTap: () => setState(() => _selectedTabIndex = 2),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Filtered activities list
+              if (filteredList.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   child: Center(
                     child: Column(
                       children: [
-                        Icon(Icons.check_circle_outline_rounded, color: context.accentPrimary, size: 32),
-                        const SizedBox(height: 8),
+                        const Icon(Icons.flash_on_rounded, size: 28, color: Colors.orange),
+                        const SizedBox(height: 6),
                         Text(
-                          'No activities queued yet today',
-                          style: AscentTextStyles.labelLarge.copyWith(color: context.textPrimary),
+                          'No activities queued for today',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: context.textPrimary,
+                          ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
-                          'Tap below to add your first study block or task.',
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          'Tap "Add activity" below to plan your next block.',
+                          style: TextStyle(fontSize: 11.5, color: context.textMuted),
                         ),
                       ],
                     ),
                   ),
                 )
               else
-                ...activities.map((act) => _ActivityRowItem(activity: act)),
+                ...filteredList.map((act) => _ActivityRowItem(activity: act)),
 
-              // Add activity button row
               const Divider(height: 1, color: Color(0xFFF1EFEA)),
+
+              // Add activity button
               InkWell(
                 onTap: () {
                   showModalBottomSheet(
@@ -550,42 +579,103 @@ class _ActivityHubCard extends ConsumerWidget {
                 },
                 borderRadius: BorderRadius.circular(10),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Row(
                     children: [
                       Container(
                         width: 22,
                         height: 22,
                         decoration: BoxDecoration(
-                          color: context.accentPrimary.withValues(alpha: 0.12),
+                          color: context.accentSecondary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.add, size: 14, color: context.accentPrimary),
+                        child: Icon(Icons.add, size: 14, color: context.accentSecondary),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         'Add activity',
                         style: TextStyle(
-                          color: context.accentPrimary,
+                          color: context.accentSecondary,
                           fontWeight: FontWeight.w600,
-                          fontSize: 13.5,
+                          fontSize: 13,
                         ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'Swipe to delete',
+                        style: TextStyle(fontSize: 10.5, color: context.textMuted),
                       ),
                     ],
                   ),
-                ),
-              ),
-
-              Center(
-                child: Text(
-                  'Tap a task to start · swipe left to delete',
-                  style: TextStyle(fontSize: 11, color: context.textMuted),
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _ActivityTabChip extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ActivityTabChip({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? context.accentSecondary.withValues(alpha: 0.15)
+              : context.bgBase,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected
+              ? Border.all(color: context.accentSecondary.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? context.accentSecondary : context.textMuted,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: isSelected ? context.accentSecondary : context.divider,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : context.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -601,129 +691,18 @@ class _ActivityRowItem extends ConsumerWidget {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  Future<bool?> _confirmDelete(BuildContext context) {
-    return showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Task?'),
-        content: Text('Are you sure you want to remove "${activity.title}" from today\'s activities?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
-    final isPaused = activity.status == TodayActivityStatus.paused;
-
-    // Ring styling matching mockup
-    Widget ringWidget;
-    if (isDone) {
-      ringWidget = Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: context.accentPrimary,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
-      );
-    } else if (isRunning) {
-      ringWidget = Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          border: Border.all(color: context.accentSecondary, width: 2),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.pause_rounded, color: context.accentSecondary, size: 20),
-      );
-    } else {
-      ringWidget = Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          border: Border.all(color: context.divider, width: 1.5),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(Icons.play_arrow_rounded, color: isPaused ? context.accentSecondary : context.textMuted, size: 20),
-      );
-    }
-
-    // Category chip styling
-    String chipLabel = activity.categoryTag;
-    Color chipBg = context.bgBase;
-    Color chipFg = context.textMuted;
-    if (activity.categoryTag == 'Study') {
-      chipBg = context.accentPrimary.withValues(alpha: 0.12);
-      chipFg = context.accentPrimary;
-    } else if (activity.categoryTag == 'High Priority') {
-      chipBg = Colors.redAccent.withValues(alpha: 0.12);
-      chipFg = Colors.redAccent;
-    } else {
-      chipBg = context.accentInfo.withValues(alpha: 0.12);
-      chipFg = context.accentInfo;
-    }
-
-    // Time label
-    Widget timeWidget;
-    if (isDone) {
-      timeWidget = Text(
-        'Done',
-        style: TextStyle(
-          color: context.accentPrimary,
-          fontWeight: FontWeight.w700,
-          fontSize: 12.5,
-        ),
-      );
-    } else if (isRunning) {
-      timeWidget = Text(
-        _formatTime(activity.elapsedSecondsToday),
-        style: GoogleFonts.jetBrainsMono(
-          color: context.accentSecondary,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-        ),
-      );
-    } else if (activity.elapsedSecondsToday > 0) {
-      timeWidget = Text(
-        _formatTime(activity.elapsedSecondsToday),
-        style: GoogleFonts.jetBrainsMono(
-          color: context.textMuted,
-          fontWeight: FontWeight.w600,
-          fontSize: 12.5,
-        ),
-      );
-    } else {
-      timeWidget = Text(
-        'Start',
-        style: TextStyle(
-          color: context.accentPrimary,
-          fontWeight: FontWeight.w600,
-          fontSize: 12.5,
-        ),
-      );
-    }
 
     return Dismissible(
       key: ValueKey(activity.id),
       direction: DismissDirection.endToStart,
-      confirmDismiss: (_) async {
-        final confirmed = await _confirmDelete(context);
-        if (confirmed == true && activity.linkedTaskId != null) {
+      onDismissed: (_) async {
+        if (activity.linkedTaskId != null) {
           await ref.read(taskDaoProvider).deleteTask(activity.linkedTaskId!);
-          return true;
         }
-        return false;
       },
       background: Container(
         alignment: Alignment.centerRight,
@@ -735,33 +714,27 @@ class _ActivityRowItem extends ConsumerWidget {
         child: const Icon(Icons.delete_outline, color: Colors.redAccent),
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFF1EFEA), width: 1)),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: InkWell(
           onTap: () async {
-            if (isRunning) {
+            await ref.read(timeTrackingProvider.notifier).switchToTask(
+              title: activity.title,
+              taskId: activity.linkedTaskId,
+              sourceType: activity.sourceType,
+              autoStart: !isRunning,
+            );
+            if (context.mounted) {
               context.push('/focus');
-            } else if (isDone) {
-              context.push('/focus');
-            } else {
-              // Switch active task with autoStart = true so it starts running immediately
-              await ref.read(timeTrackingProvider.notifier).switchToTask(
-                title: activity.title,
-                taskId: activity.linkedTaskId,
-                sourceType: activity.sourceType,
-                autoStart: true,
-              );
-              if (context.mounted) {
-                context.push('/focus');
-              }
             }
           },
           child: Row(
             children: [
-              ringWidget,
-              const SizedBox(width: 12),
+              Icon(
+                isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                color: isDone ? context.accentSecondary : context.divider,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -769,7 +742,7 @@ class _ActivityRowItem extends ConsumerWidget {
                     Text(
                       activity.title,
                       style: TextStyle(
-                        fontSize: 14.5,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: isDone ? context.textMuted : context.textPrimary,
                         decoration: isDone ? TextDecoration.lineThrough : null,
@@ -777,27 +750,31 @@ class _ActivityRowItem extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 2),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
-                        color: chipBg,
-                        borderRadius: BorderRadius.circular(20),
+                        color: context.bgBase,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        chipLabel,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: chipFg,
-                        ),
+                        'Task',
+                        style: TextStyle(fontSize: 10, color: context.textMuted),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              timeWidget,
+              Text(
+                activity.elapsedSecondsToday > 0
+                    ? _formatTime(activity.elapsedSecondsToday)
+                    : 'Start',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isRunning ? context.accentSecondary : context.textMuted,
+                ),
+              ),
             ],
           ),
         ),
@@ -807,22 +784,229 @@ class _ActivityRowItem extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 4. Streak & Study & Focus (Quad Group - Break Removed)
+// 3. Learning Hub Card (Directly from Video 00:00 - 00:04, 00:35 - 00:38)
 // ---------------------------------------------------------------------------
 
-class _QuadGroupCard extends ConsumerWidget {
-  const _QuadGroupCard();
+class _LearningHubCard extends ConsumerWidget {
+  const _LearningHubCard();
 
-  String _formatElapsed(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(learningHubProvider);
+    final course = state.course;
+    final active = state.activeLecture;
+    final activeMod = state.activeModule;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.bgSurface,
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: context.divider.withValues(alpha: 0.7)),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.accentSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    'LEARNING HUB',
+                    style: GoogleFonts.jetBrainsMono(
+                      color: context.accentSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () => context.push('/study-plan'),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    '${course.progressPercent}% Done ›',
+                    style: TextStyle(
+                      color: context.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 4 Metric Chips
+          Row(
+            children: [
+              _MetricPill(icon: Icons.menu_book_rounded, label: '1 Courses'),
+              const SizedBox(width: 6),
+              _MetricPill(icon: Icons.folder_outlined, label: '${course.modules.length} Modules'),
+              const SizedBox(width: 6),
+              _MetricPill(icon: Icons.playlist_play_rounded, label: '${course.completedLectures}/${course.totalLectures} Lectures'),
+              const SizedBox(width: 6),
+              _MetricPill(icon: Icons.access_time_rounded, label: '${course.totalWatchedSeconds ~/ 60}m Watched'),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Featured Course Card
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: context.bgBase,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        course.title,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: context.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      activeMod.title,
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Lecture ${active.id} - ${active.title}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                    height: 1.25,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+
+                // Coral Button: Continue Lecture
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE26D5C), // Coral matching video
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      LectureFocusPlayerSheet.show(context);
+                    },
+                    icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
+                    label: Text(
+                      'Continue Lecture ${active.id}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
+}
+
+class _MetricPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _MetricPill({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: BoxDecoration(
+          color: context.bgBase,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 14, color: context.textMuted),
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w600,
+                color: context.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 4. Quick Stats 2x2 Grid (Streak, Study Time, DSA, Pipeline)
+// ---------------------------------------------------------------------------
+
+class _QuickStats2x2Grid extends ConsumerWidget {
+  const _QuickStats2x2Grid();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final streakAsync = ref.watch(currentStreakStreamProvider);
-    final streak = streakAsync.value ?? 0;
+    final streak = streakAsync.value ?? 1;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -840,262 +1024,157 @@ class _QuadGroupCard extends ConsumerWidget {
     }
     final studyMinutes = studySeconds ~/ 60;
 
-    final timeTracking = ref.watch(timeTrackingProvider);
-    final isRunning = timeTracking.isRunning;
-    final isPaused = timeTracking.isPaused;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: context.bgSurface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: context.divider.withValues(alpha: 0.6)),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              // Tile 1: Streak
-              Expanded(
-                child: InkWell(
-                  onTap: () => context.push('/consistency'),
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: context.accentPrimary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '🔥 Streak',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: context.textMuted,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              '$streak',
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 19,
-                                fontWeight: FontWeight.w600,
-                                color: context.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              streak == 1 ? 'day' : 'days',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-
-              // Tile 2: Study time
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6F1),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Study time',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: context.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        studyMinutes >= 60
-                            ? '${(studyMinutes / 60).toStringAsFixed(1)} hrs'
-                            : '$studyMinutes min',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w600,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // Tile 3: Focus (Dashed peach border, centered)
-          CustomPaint(
-            painter: _DashedBorderPainter(
-              color: context.accentSecondary,
-              strokeWidth: 1.5,
-              dashWidth: 6,
-              dashSpace: 4,
-              borderRadius: 14,
-            ),
-            child: InkWell(
-              onTap: () => context.push('/focus'),
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.bgSurface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text('⏱', style: TextStyle(fontSize: 13)),
-                            const SizedBox(width: 4),
-                            Text(
-                              'Focus',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: context.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          isRunning || isPaused
-                              ? _formatElapsed(timeTracking.elapsedSeconds)
-                              : 'Idle',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            color: isRunning || isPaused ? context.accentSecondary : context.textPrimary,
-                          ),
-                        ),
-                        if (timeTracking.activeSession?.label != null) ...[
-                          const SizedBox(height: 2),
-                          SizedBox(
-                            width: 180,
-                            child: Text(
-                              timeTracking.activeSession!.label,
-                              style: TextStyle(fontSize: 11, color: context.textMuted),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const Spacer(),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (isRunning) {
-                          ref.read(timeTrackingProvider.notifier).pauseSession();
-                        } else if (isPaused) {
-                          ref.read(timeTrackingProvider.notifier).resumeSession();
-                        } else {
-                          ref.read(timeTrackingProvider.notifier).switchToTask(
-                            title: 'Focus Session',
-                            autoStart: true,
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isRunning ? context.textPrimary : context.accentSecondary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                      child: Text(
-                        isRunning ? 'Pause' : (isPaused ? 'Resume' : 'Start'),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5),
-                      ),
-                    ),
-                  ],
-                ),
+    return Column(
+      children: [
+        Row(
+          children: [
+            // Tile 1: Streak
+            Expanded(
+              child: _StatCard(
+                icon: Icons.local_fire_department_rounded,
+                iconColor: Colors.orange,
+                pillText: 'ON TRACK',
+                pillColor: Colors.orange.withValues(alpha: 0.15),
+                pillTextColor: Colors.orange,
+                mainValue: '$streak day streak',
+                subtitle: 'Consistency momentum',
+                onTap: () => context.push('/consistency'),
               ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(width: 12),
+
+            // Tile 2: Study Time
+            Expanded(
+              child: _StatCard(
+                icon: Icons.schedule_rounded,
+                iconColor: context.accentSecondary,
+                pillText: 'TODAY',
+                pillColor: context.bgBase,
+                pillTextColor: context.textMuted,
+                mainValue: '${studyMinutes}m study time',
+                subtitle: 'Target 2.0h / day',
+                onTap: () => context.push('/focus'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            // Tile 3: DSA
+            Expanded(
+              child: _StatCard(
+                icon: Icons.code_rounded,
+                iconColor: Colors.purple,
+                pillText: 'THIS WEEK',
+                pillColor: Colors.purple.withValues(alpha: 0.12),
+                pillTextColor: Colors.purple,
+                mainValue: '0 DSA solved',
+                subtitle: 'Algorithms & patterns',
+                onTap: () => context.push('/dsa'),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Tile 4: Active Applications
+            Expanded(
+              child: _StatCard(
+                icon: Icons.work_outline_rounded,
+                iconColor: Colors.blue,
+                pillText: 'PIPELINE',
+                pillColor: Colors.blue.withValues(alpha: 0.12),
+                pillTextColor: Colors.blue,
+                mainValue: '1 active application',
+                subtitle: 'Tap to manage pipeline',
+                onTap: () => context.push('/pipeline'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
 
-class _DashedBorderPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-  final double dashWidth;
-  final double dashSpace;
-  final double borderRadius;
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String pillText;
+  final Color pillColor;
+  final Color pillTextColor;
+  final String mainValue;
+  final String subtitle;
+  final VoidCallback onTap;
 
-  _DashedBorderPainter({
-    required this.color,
-    required this.strokeWidth,
-    required this.dashWidth,
-    required this.dashSpace,
-    required this.borderRadius,
+  const _StatCard({
+    required this.icon,
+    required this.iconColor,
+    required this.pillText,
+    required this.pillColor,
+    required this.pillTextColor,
+    required this.mainValue,
+    required this.subtitle,
+    required this.onTap,
   });
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      Radius.circular(borderRadius),
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: context.bgSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon, size: 20, color: iconColor),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: pillColor,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    pillText,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: pillTextColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              mainValue,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: context.textPrimary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 11, color: context.textMuted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
-    final path = Path()..addRRect(rrect);
-
-    final metrics = path.computeMetrics();
-    for (final metric in metrics) {
-      double distance = 0.0;
-      while (distance < metric.length) {
-        final length = (distance + dashWidth < metric.length) ? dashWidth : metric.length - distance;
-        final extract = metric.extractPath(distance, distance + length);
-        canvas.drawPath(extract, paint);
-        distance += dashWidth + dashSpace;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
-    return oldDelegate.color != color ||
-        oldDelegate.strokeWidth != strokeWidth ||
-        oldDelegate.dashWidth != dashWidth ||
-        oldDelegate.dashSpace != dashSpace ||
-        oldDelegate.borderRadius != borderRadius;
   }
 }
 
@@ -1109,168 +1188,12 @@ class _NotesPreviewCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final noteAsync = ref.watch(mostRecentNoteProvider);
-    final allNotesAsync = ref.watch(notesDaoProvider).watchAllNotes();
-
-    return StreamBuilder<List<Note>>(
-      stream: allNotesAsync,
-      builder: (context, snap) {
-        final totalCount = snap.data?.length ?? 0;
-        final note = noteAsync.value;
-
-        return Container(
-          decoration: BoxDecoration(
-            color: context.bgSurface,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 14,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(color: context.divider.withValues(alpha: 0.6)),
-          ),
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Notes',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: context.textPrimary,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () => context.push('/notes'),
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: Text(
-                        totalCount > 0 ? '$totalCount ${totalCount == 1 ? 'note' : 'notes'} · View all ›' : 'View all ›',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: context.textMuted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              if (note != null) ...[
-                InkWell(
-                  onTap: () => context.push('/notes'),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(14),
-                    topRight: Radius.circular(14),
-                    bottomRight: Radius.circular(14),
-                    bottomLeft: Radius.circular(3),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: context.bgBase,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(14),
-                        topRight: Radius.circular(14),
-                        bottomRight: Radius.circular(14),
-                        bottomLeft: Radius.circular(3),
-                      ),
-                      border: Border.all(color: const Color(0xFFECE8E0)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (note.title != null && note.title!.isNotEmpty) ? note.title! : 'Untitled Note',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: context.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (note.content.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            note.content,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                        const SizedBox(height: 4),
-                        Text(
-                          DateFormat('MMM d, h:mm a').format(note.updatedAt),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ] else ...[
-                InkWell(
-                  onTap: () => context.push('/notes'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_note_rounded, size: 20, color: context.accentPrimary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Jot down your first reflection or STAR answer ›',
-                          style: TextStyle(fontSize: 12.5, color: context.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 6. Reminders Preview Card
-// ---------------------------------------------------------------------------
-
-class _RemindersPreviewCard extends ConsumerWidget {
-  const _RemindersPreviewCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nextReminderAsync = ref.watch(nextUpcomingReminderProvider);
 
     return Container(
       decoration: BoxDecoration(
         color: context.bgSurface,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -1279,113 +1202,46 @@ class _RemindersPreviewCard extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Reminders',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: context.textPrimary,
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.edit_note_rounded, size: 20),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Notes',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                ],
               ),
               InkWell(
-                onTap: () => context.push('/reminders'),
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  child: Text(
-                    '+ Add',
-                    style: TextStyle(
-                      fontSize: 11.5,
-                      color: context.accentPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                onTap: () => context.push('/notes'),
+                child: Text(
+                  'View all ›',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.textMuted,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          nextReminderAsync.when(
-            data: (reminder) {
-              if (reminder == null) {
-                return InkWell(
-                  onTap: () => context.push('/reminders'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        Icon(Icons.notifications_none_rounded, size: 20, color: context.accentSecondary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'No upcoming reminders · Tap to set alert',
-                          style: TextStyle(fontSize: 12.5, color: context.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
-
-              final timeStr = DateFormat('EEE, MMM d • h:mm a').format(reminder.scheduledAt);
-
-              return InkWell(
-                onTap: () => context.push('/reminders'),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: context.accentInfo.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Center(
-                          child: Text('🔔', style: TextStyle(fontSize: 14)),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              reminder.title,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$timeStr · notifies you',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: context.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: context.accentPrimary,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ),
+          noteAsync.when(
+            loading: () => const SizedBox(height: 20),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (note) {
+              return Text(
+                note?.title ?? 'Jot down your first reflection or STAR answer ›',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: context.textMuted,
                 ),
               );
             },
-            loading: () => const SizedBox(height: 40, child: Center(child: CircularProgressIndicator(strokeWidth: 2))),
-            error: (e, s) => Text('Error: $e'),
           ),
         ],
       ),
@@ -1394,102 +1250,129 @@ class _RemindersPreviewCard extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 7. Insights Strip (3 Stats)
+// 6. Reminders Card
 // ---------------------------------------------------------------------------
 
-class _InsightsRow extends ConsumerWidget {
-  const _InsightsRow();
+class _RemindersPreviewCard extends ConsumerWidget {
+  const _RemindersPreviewCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final statsAsync = ref.watch(homeQuickStatsProvider);
+    final reminderAsync = ref.watch(nextUpcomingReminderProvider);
 
-    return statsAsync.when(
-      loading: () => const StatsStripSkeleton(),
-      error: (_, _) => const SizedBox.shrink(),
-      data: (stats) {
-        return Row(
-          children: [
-            Expanded(
-              child: _InsightTile(
-                value: '${stats.dsaSolvedThisWeek}',
-                label: 'DSA solved',
-                onTap: () => context.push('/dsa'),
+    return Container(
+      decoration: BoxDecoration(
+        color: context.bgSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+      ),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.notifications_outlined, size: 19),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Reminders',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _InsightTile(
-                value: '${stats.activeApplications}',
-                label: 'Applications',
-                onTap: () => context.push('/pipeline'),
+              InkWell(
+                onTap: () => context.push('/reminders'),
+                child: Text(
+                  '+ Add',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: context.accentSecondary,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _InsightTile(
-                value: stats.hoursThisWeek.toStringAsFixed(1),
-                label: 'Hours logged',
-                onTap: () => context.push('/analytics'),
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+          const SizedBox(height: 8),
+          reminderAsync.when(
+            loading: () => const SizedBox(height: 20),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (reminder) {
+              if (reminder == null) {
+                return Text(
+                  'No upcoming reminders scheduled.',
+                  style: TextStyle(fontSize: 12.5, color: context.textMuted),
+                );
+              }
+              final dateStr = DateFormat('EEE, MMM d • h:mm a').format(reminder.remindAt);
+              return Row(
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.accentSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          reminder.title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          '$dateStr • notifies you',
+                          style: TextStyle(fontSize: 11, color: context.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _InsightTile extends StatelessWidget {
-  final String value;
-  final String label;
-  final VoidCallback onTap;
+// ---------------------------------------------------------------------------
+// 7. Positivity Quote Line
+// ---------------------------------------------------------------------------
 
-  const _InsightTile({
-    required this.value,
-    required this.label,
-    required this.onTap,
-  });
+class _HomePositivityLine extends StatelessWidget {
+  final UserProfile? profile;
+  const _HomePositivityLine({this.profile});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-        decoration: BoxDecoration(
-          color: context.bgSurface,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 14,
-              offset: const Offset(0, 2),
-            ),
-          ],
-          border: Border.all(color: context.divider.withValues(alpha: 0.6)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: context.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10.5,
-                color: context.textMuted,
-              ),
-            ),
-          ],
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Text(
+          'Prepare with purpose — clarity comes from daily reps.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12.5,
+            fontStyle: FontStyle.italic,
+            color: const Color(0xFFC07361), // Subdued terracotta
+          ),
         ),
       ),
     );
@@ -1497,34 +1380,7 @@ class _InsightTile extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 8. Positivity Line
-// ---------------------------------------------------------------------------
-
-class _HomePositivityLine extends StatelessWidget {
-  final UserProfile? profile;
-
-  const _HomePositivityLine({this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    int? daysToInterview;
-    if (profile?.interviewDate != null) {
-      daysToInterview = profile!.interviewDate!.difference(DateTime.now()).inDays;
-    }
-
-    final message = InsightEngine.getDailyPositivity(
-      daysToInterview: daysToInterview,
-      targetRole: profile?.targetRole,
-    );
-
-    return InsightStrip(
-      message: message,
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Skeleton Loading View
+// Loading Shimmer
 // ---------------------------------------------------------------------------
 
 class _HomeLoadingView extends StatelessWidget {
@@ -1533,17 +1389,15 @@ class _HomeLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(18),
       children: [
-        SkeletonShimmer.line(width: 180, height: 24),
-        const SizedBox(height: 20),
         SkeletonShimmer.card(height: 60),
-        const SizedBox(height: 16),
-        SkeletonShimmer.card(height: 200),
-        const SizedBox(height: 16),
-        SkeletonShimmer.card(height: 130),
-        const SizedBox(height: 16),
-        const StatsStripSkeleton(),
+        const SizedBox(height: 14),
+        SkeletonShimmer.card(height: 180),
+        const SizedBox(height: 14),
+        SkeletonShimmer.card(height: 150),
+        const SizedBox(height: 14),
+        SkeletonShimmer.card(height: 100),
       ],
     );
   }

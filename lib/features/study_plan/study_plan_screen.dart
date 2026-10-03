@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' as drift;
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
-import '../../core/database/app_database.dart';
-import '../../core/providers/database_provider.dart';
-import '../../shared/widgets/ascent_button.dart';
-import '../../shared/widgets/ascent_card.dart';
-import '../../shared/widgets/skeleton_shimmer.dart';
+import '../../core/learning_hub/learning_hub_models.dart';
+import '../../core/learning_hub/learning_hub_provider.dart';
+import 'lecture_focus_player_sheet.dart';
 
 class StudyPlanScreen extends ConsumerStatefulWidget {
   const StudyPlanScreen({super.key});
@@ -17,465 +14,611 @@ class StudyPlanScreen extends ConsumerStatefulWidget {
   ConsumerState<StudyPlanScreen> createState() => _StudyPlanScreenState();
 }
 
-class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> {
-  void _openAddPhaseSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => const _AddPhaseSheet(),
-    );
+class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final studyPhaseDao = ref.watch(studyPhaseDaoProvider);
-    final taskDao = ref.watch(taskDaoProvider);
+    final state = ref.watch(learningHubProvider);
+    final notifier = ref.read(learningHubProvider.notifier);
+    final course = state.course;
+    final activeLecture = state.activeLecture;
 
     return Scaffold(
       backgroundColor: context.bgBase,
       appBar: AppBar(
-        title: Text(
-          'Study Plan Roadmap',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
         backgroundColor: context.bgBase,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          color: context.textPrimary,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        title: Text(
+          course.title,
+          style: GoogleFonts.plusJakartaSans(
+            color: context.textPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert_rounded),
+            color: context.textPrimary,
+            onPressed: () {},
+          ),
+        ],
       ),
-      floatingActionButton: AscentButton.fab(
-        icon: Icons.add_rounded,
-        onPressed: () => _openAddPhaseSheet(context),
-      ),
-      body: StreamBuilder<List<StudyPhase>>(
-        stream: studyPhaseDao.watchAllPhases(),
-        builder: (context, phaseSnapshot) {
-          if (phaseSnapshot.connectionState == ConnectionState.waiting) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: SkeletonShimmer(height: 240),
-            );
-          }
-
-
-          final phases = phaseSnapshot.data ?? [];
-
-          if (phases.isEmpty) {
-            return Center(
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.alt_route_rounded, size: 54, color: context.textMuted),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No Study Phases Set',
-                      style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                    // Course Hero Card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: context.bgSurface,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Top row: Progress ring + metrics
+                          Row(
+                            children: [
+                              // Circular Progress Ring
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 72,
+                                    height: 72,
+                                    child: CircularProgressIndicator(
+                                      value: course.progressFraction,
+                                      strokeWidth: 6,
+                                      backgroundColor: const Color(0xFFF1EFEA),
+                                      color: context.accentSecondary,
+                                      strokeCap: StrokeCap.round,
+                                    ),
+                                  ),
+                                  Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        '${course.progressPercent}%',
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 14,
+                                          color: context.textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${course.completedLectures}/${course.totalLectures}',
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 9.5,
+                                          color: context.textMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 16),
+
+                              // Metrics chips
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: context.bgBase,
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(color: context.divider),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.calendar_today_rounded, size: 12),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${course.daysLeft}d left',
+                                                style: GoogleFonts.jetBrainsMono(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.redAccent),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '-${course.targetMinutesPerDay} min/day',
+                                                style: GoogleFonts.jetBrainsMono(
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.redAccent,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${(course.totalWatchedSeconds ~/ 60)}m watched',
+                                      style: GoogleFonts.jetBrainsMono(
+                                        fontSize: 12,
+                                        color: context.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          // Description
+                          Text(
+                            course.description,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              color: context.textMuted,
+                              height: 1.35,
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Continue Lecture Button (matching video green button)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.accentSecondary,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 13),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              onPressed: () {
+                                LectureFocusPlayerSheet.show(context);
+                              },
+                              icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
+                              label: Text(
+                                'Continue → Lecture ${activeLecture.id}',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Create your first roadmap phase to organize tasks into structured milestones.',
-                      textAlign: TextAlign.center,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                    ),
-                    const SizedBox(height: 24),
-                    AscentButton.primary(
-                      label: 'Create Phase 1',
-                      onPressed: () => _openAddPhaseSheet(context),
+
+                    const SizedBox(height: 12),
+
+                    // Tab bar
+                    Container(
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: context.bgSurface,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                      ),
+                      child: TabBar(
+                        controller: _tabController,
+                        indicator: BoxDecoration(
+                          color: context.accentSecondary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        labelColor: Colors.white,
+                        unselectedLabelColor: context.textMuted,
+                        labelStyle: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        tabs: const [
+                          Tab(text: 'Modules'),
+                          Tab(text: 'Lectures'),
+                          Tab(text: 'Notes'),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            );
-          }
-
-          return StreamBuilder<List<Task>>(
-            stream: taskDao.watchAllTasks(),
-            builder: (context, taskSnapshot) {
-              final allTasks = taskSnapshot.data ?? [];
-
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                itemCount: phases.length,
-                itemBuilder: (context, index) {
-                  final phase = phases[index];
-                  final phaseTasks = allTasks
-                      .where((t) => t.linkedPhaseId == phase.id)
-                      .toList();
-                  final completedCount = phaseTasks
-                      .where((t) => t.actualCompletedDate != null)
-                      .length;
-                  final progress = phaseTasks.isNotEmpty
-                      ? completedCount / phaseTasks.length
-                      : 0.0;
-
-                  return _PhaseCard(
-                    phase: phase,
-                    tasks: phaseTasks,
-                    progress: progress,
-                    completedCount: completedCount,
-                  );
-                },
-              );
-            },
-          );
+            ),
+          ];
         },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // Tab 1: Modules
+            _ModulesListView(
+              course: course,
+              onSelectLecture: (lecId) {
+                notifier.selectLecture(lecId);
+                LectureFocusPlayerSheet.show(context);
+              },
+            ),
+
+            // Tab 2: Lectures
+            _AllLecturesListView(
+              course: course,
+              activeLectureId: state.activeLectureId,
+              onSelectLecture: (lecId) {
+                notifier.selectLecture(lecId);
+                LectureFocusPlayerSheet.show(context);
+              },
+            ),
+
+            // Tab 3: Notes
+            const _CourseNotesView(),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _PhaseCard extends ConsumerStatefulWidget {
-  final StudyPhase phase;
-  final List<Task> tasks;
-  final double progress;
-  final int completedCount;
+class _ModulesListView extends StatelessWidget {
+  final Course course;
+  final ValueChanged<int> onSelectLecture;
 
-  const _PhaseCard({
-    required this.phase,
-    required this.tasks,
-    required this.progress,
-    required this.completedCount,
+  const _ModulesListView({
+    required this.course,
+    required this.onSelectLecture,
   });
 
   @override
-  ConsumerState<_PhaseCard> createState() => _PhaseCardState();
-}
-
-class _PhaseCardState extends ConsumerState<_PhaseCard> {
-  bool _expanded = false;
-
-  Color _parseColor(String hex) {
-    try {
-      final clean = hex.replaceAll('#', '');
-      return Color(int.parse('FF$clean', radix: 16));
-    } catch (_) {
-      return const Color(0xFF7FA88A);
-    }
-  }
-
-  void _showAddTaskDialog(BuildContext context) {
-    final titleController = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Add Task to ${widget.phase.title}',
-                style: AscentTextStyles.displaySmall.copyWith(color: ctx.textPrimary),
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${course.modules.length} Modules · ${course.totalLectures} Lectures',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: context.textMuted,
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: titleController,
-                autofocus: true,
-                style: AscentTextStyles.bodyMedium.copyWith(color: ctx.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Task Title *',
-                  hintText: 'e.g. Master Binary Trees, Mock interview round',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 20),
-              AscentButton.primary(
-                label: 'Add Task',
-                onPressed: () async {
-                  final title = titleController.text.trim();
-                  if (title.isNotEmpty) {
-                    await ref.read(taskDaoProvider).insertTask(
-                          TaskTableCompanion.insert(
-                            title: title,
-                            linkedPhaseId: drift.Value(widget.phase.id),
-                            plannedDate: drift.Value(DateTime.now()),
-                          ),
-                        );
-                    if (ctx.mounted) Navigator.pop(ctx);
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        );
-      },
+            ),
+            TextButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.add, size: 14),
+              label: const Text('Add Module', style: TextStyle(fontSize: 12)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...course.modules.map((module) => _ModuleCard(
+              module: module,
+              onResume: () {
+                final firstIncomplete = module.lectures.firstWhere(
+                  (l) => !l.isCompleted,
+                  orElse: () => module.lectures.first,
+                );
+                onSelectLecture(firstIncomplete.id);
+              },
+            )),
+        const SizedBox(height: 40),
+      ],
     );
   }
+}
+
+class _ModuleCard extends StatelessWidget {
+  final CourseModule module;
+  final VoidCallback onResume;
+
+  const _ModuleCard({
+    required this.module,
+    required this.onResume,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final phaseColor = _parseColor(widget.phase.colorHex);
-    final percentInt = (widget.progress * 100).toInt();
+    final firstLecId = module.lectures.isNotEmpty ? module.lectures.first.id : 1;
 
-    return AscentCard(
-      margin: const EdgeInsets.only(bottom: 14),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.bgSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(color: phaseColor, shape: BoxShape.circle),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: context.accentSecondary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.folder_outlined, color: context.accentSecondary, size: 18),
               ),
-              const SizedBox(width: 8),
-              Expanded(
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: context.bgBase,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: context.divider),
+                ),
                 child: Text(
-                  widget.phase.title,
-                  style: AscentTextStyles.labelLarge.copyWith(
+                  'Module ${module.id}',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700,
-                    color: context.textPrimary,
+                    color: context.textMuted,
                   ),
                 ),
               ),
+              const Spacer(),
               Text(
-                '$percentInt%',
-                style: AscentTextStyles.statMedium.copyWith(
-                  color: phaseColor,
-                  fontWeight: FontWeight.w800,
+                '${module.completedCount}/${module.lectures.length} done',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: context.textMuted,
                 ),
               ),
             ],
-          ),
-          if (widget.phase.description != null && widget.phase.description!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              widget.phase.description!,
-              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-            ),
-          ],
-          const SizedBox(height: 12),
-
-          // Linear Progress Bar (Computed from real tasks - Spec §5.6)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: LinearProgressIndicator(
-              value: widget.progress,
-              backgroundColor: context.divider,
-              color: phaseColor,
-              minHeight: 6,
-            ),
           ),
           const SizedBox(height: 10),
-
+          Text(
+            module.title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: context.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            module.description,
+            style: TextStyle(
+              fontSize: 12,
+              color: context.textMuted,
+              height: 1.3,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${widget.completedCount} / ${widget.tasks.length} tasks completed',
-                style: AscentTextStyles.statSmall.copyWith(
+                '${module.durationHours} hrs · ${module.lectures.length} lectures',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 11,
                   color: context.textMuted,
-                  fontSize: 12,
                 ),
               ),
-              TextButton(
-                onPressed: () => setState(() => _expanded = !_expanded),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _expanded ? 'Hide Tasks' : 'View Tasks',
-                      style: AscentTextStyles.labelSmall.copyWith(color: phaseColor),
-                    ),
-                    Icon(
-                      _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                      size: 16,
-                      color: phaseColor,
-                    ),
-                  ],
+              const Spacer(),
+              Text(
+                '${module.progressPercent}%',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: context.accentSecondary,
                 ),
               ),
             ],
           ),
-
-          // Expanding Tasks List with Interactive Toggle and Add Task Button
-          if (_expanded) ...[
-            const Divider(height: 16),
-            if (widget.tasks.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  'No tasks attached to this phase yet.',
-                  style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                ),
-              )
-            else
-              ...widget.tasks.map((t) {
-                final isDone = t.actualCompletedDate != null;
-                return InkWell(
-                  onTap: () async {
-                    final taskDao = ref.read(taskDaoProvider);
-                    if (isDone) {
-                      await taskDao.markIncomplete(t.id);
-                    } else {
-                      await taskDao.markComplete(t.id);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                    child: Row(
-                      children: [
-                        Icon(
-                          isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                          size: 20,
-                          color: isDone ? context.accentPrimary : context.textMuted,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            t.title,
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: isDone ? context.textMuted : context.textPrimary,
-                              decoration: isDone ? TextDecoration.lineThrough : null,
-                            ),
-                          ),
-                        ),
-                      ],
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: context.divider),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onPressed: () {},
+                  child: Text(
+                    'View Module',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
                     ),
                   ),
-                );
-              }),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                icon: Icon(Icons.add_rounded, size: 18, color: phaseColor),
-                label: Text(
-                  'Add task to phase',
-                  style: AscentTextStyles.labelSmall.copyWith(color: phaseColor, fontWeight: FontWeight.w600),
                 ),
-                onPressed: () => _showAddTaskDialog(context),
               ),
-            ),
-          ],
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.accentSecondary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  onPressed: onResume,
+                  icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                  label: Text(
+                    'Resume ($firstLecId)',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Add Phase Sheet
-// ---------------------------------------------------------------------------
+class _AllLecturesListView extends StatelessWidget {
+  final Course course;
+  final int activeLectureId;
+  final ValueChanged<int> onSelectLecture;
 
-class _AddPhaseSheet extends ConsumerStatefulWidget {
-  const _AddPhaseSheet();
-
-  @override
-  ConsumerState<_AddPhaseSheet> createState() => _AddPhaseSheetState();
-}
-
-class _AddPhaseSheetState extends ConsumerState<_AddPhaseSheet> {
-  final _titleController = TextEditingController();
-  final _descController = TextEditingController();
-  String _colorHex = '#7FA88A';
-  bool _saving = false;
-
-  static const _palette = ['#7FA88A', '#E8A57C', '#7C9CC4', '#D98C86', '#8FBB9A'];
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    setState(() => _saving = true);
-    final dao = ref.read(studyPhaseDaoProvider);
-
-    await dao.insertPhase(
-      StudyPhaseTableCompanion.insert(
-        title: title,
-        description: drift.Value(_descController.text.trim().isEmpty ? null : _descController.text.trim()),
-        colorHex: drift.Value(_colorHex),
-      ),
-    );
-
-    if (mounted) Navigator.pop(context);
-  }
+  const _AllLecturesListView({
+    required this.course,
+    required this.activeLectureId,
+    required this.onSelectLecture,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final allLectures = course.modules.expand((m) => m.lectures).toList();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: allLectures.length,
+      itemBuilder: (context, index) {
+        final lec = allLectures[index];
+        final isCurrent = lec.id == activeLectureId;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: isCurrent
+                ? context.accentSecondary.withValues(alpha: 0.12)
+                : context.bgSurface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isCurrent
+                  ? context.accentSecondary.withValues(alpha: 0.5)
+                  : context.divider.withValues(alpha: 0.7),
+            ),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            leading: CircleAvatar(
+              radius: 14,
+              backgroundColor: isCurrent
+                  ? context.accentSecondary
+                  : (lec.isCompleted
+                      ? context.accentPrimary.withValues(alpha: 0.2)
+                      : context.bgBase),
+              child: lec.isCompleted
+                  ? Icon(Icons.check, size: 14, color: context.accentPrimary)
+                  : Text(
+                      '${lec.id}',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: isCurrent ? Colors.white : context.textPrimary,
+                      ),
+                    ),
+            ),
+            title: Text(
+              lec.title,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13,
+                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                color: context.textPrimary,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            subtitle: Text(
+              lec.moduleTitle,
+              style: TextStyle(fontSize: 11, color: context.textMuted),
+            ),
+            trailing: Text(
+              lec.formattedDuration,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 12,
+                color: isCurrent ? context.accentSecondary : context.textMuted,
+                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+            onTap: () => onSelectLecture(lec.id),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CourseNotesView extends StatelessWidget {
+  const _CourseNotesView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'New Roadmap Phase',
-            style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _titleController,
-            decoration: InputDecoration(
-              labelText: 'Phase Title *',
-              hintText: 'e.g. Phase 4: Mock Interviews & Behavioral',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
+          Icon(Icons.notes_rounded, size: 48, color: context.textMuted),
           const SizedBox(height: 12),
-          TextField(
-            controller: _descController,
-            maxLines: 2,
-            decoration: InputDecoration(
-              labelText: 'Description / Goals',
-              hintText: 'STAR method practice, system design mock sessions',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          Text(
+            'Course Notes',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: context.textPrimary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
           Text(
-            'Phase Color Accent:',
-            style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: _palette.map((hex) {
-              final color = Color(int.parse('FF${hex.replaceAll('#', '')}', radix: 16));
-              final isSel = _colorHex == hex;
-              return GestureDetector(
-                onTap: () => setState(() => _colorHex = hex),
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                    border: isSel ? Border.all(color: context.textPrimary, width: 3) : null,
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          AscentButton.primary(
-            label: 'Add Phase',
-            loading: _saving,
-            onPressed: _save,
+            'Jot key concepts, code snippets, and review questions here.',
+            style: TextStyle(fontSize: 12.5, color: context.textMuted),
           ),
         ],
       ),

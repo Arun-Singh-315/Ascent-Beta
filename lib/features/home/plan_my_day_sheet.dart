@@ -1,103 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
+import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
-import '../../shared/widgets/chat_bubble_card.dart';
 
-class CapturedPlanItem {
-  final String title;
-  final String category;
-  final int estimatedMinutes;
-
-  const CapturedPlanItem({
-    required this.title,
-    required this.category,
-    required this.estimatedMinutes,
-  });
-}
-
-class _ChatMessage {
+class _CommandMessage {
   final String text;
   final bool isUser;
-  final CapturedPlanItem? capturedItem;
+  final int? reminderId;
+  final String? reminderTitle;
+  final DateTime? scheduledTime;
 
-  const _ChatMessage({
+  const _CommandMessage({
     required this.text,
     required this.isUser,
-    this.capturedItem,
+    this.reminderId,
+    this.reminderTitle,
+    this.scheduledTime,
   });
-}
-
-/// On-device deterministic categorizer and duration extractor (§4.2).
-class PlanMyDayClassifier {
-  static final _dsaKeywords = RegExp(
-    r'\b(leetcode|dsa|tree|graph|dp|dynamic programming|array|string|binary search|linked list|recursion|backtracking|greedy|neetcode|codeforces|algo|algorithm|problem|problems)\b',
-    caseSensitive: false,
-  );
-
-  static final _pipelineKeywords = RegExp(
-    r'\b(apply|application|resume|cv|recruiter|cold email|reach out|interview|follow up|job|referral|hiring|portal|company|screening)\b',
-    caseSensitive: false,
-  );
-
-  static final _breakKeywords = RegExp(
-    r'\b(break|movie|game|gaming|walk|gym|lunch|dinner|snack|relax|music|nap|rest|tea|coffee)\b',
-    caseSensitive: false,
-  );
-
-  static final _studyKeywords = RegExp(
-    r'\b(study|revise|learn|read|system design|hld|lld|oops|dbms|sql|operating system|course|video|lecture|chapter|book|mock|prep)\b',
-    caseSensitive: false,
-  );
-
-  static CapturedPlanItem parse(String input) {
-    final text = input.trim();
-
-    // 1. Detect duration
-    int duration = 30; // default reasonable block
-    final hourMatch = RegExp(r'(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)', caseSensitive: false).firstMatch(text);
-    final minMatch = RegExp(r'(\d+)\s*(?:mins?|minutes?|m\b)', caseSensitive: false).firstMatch(text);
-
-    if (hourMatch != null) {
-      final hrs = double.tryParse(hourMatch.group(1) ?? '1') ?? 1.0;
-      duration = (hrs * 60).round();
-    } else if (minMatch != null) {
-      duration = int.tryParse(minMatch.group(1) ?? '30') ?? 30;
-    }
-
-    // 2. Clean title: strip duration text if clean
-    var cleanedTitle = text
-        .replaceAll(RegExp(r'\b(?:for\s+)?\d+(?:\.\d+)?\s*(?:hours?|hrs?|h\b|mins?|minutes?|m\b)', caseSensitive: false), '')
-        .trim();
-    if (cleanedTitle.isEmpty) {
-      cleanedTitle = text;
-    }
-
-    // Capitalize first letter
-    cleanedTitle = cleanedTitle[0].toUpperCase() + cleanedTitle.substring(1);
-
-    // 3. Detect category
-    String category = 'General';
-    if (_dsaKeywords.hasMatch(text)) {
-      category = 'DSA';
-    } else if (_pipelineKeywords.hasMatch(text)) {
-      category = 'Pipeline';
-    } else if (_studyKeywords.hasMatch(text)) {
-      category = 'Study';
-    } else if (_breakKeywords.hasMatch(text)) {
-      category = 'Break';
-    }
-
-    return CapturedPlanItem(
-      title: cleanedTitle,
-      category: category,
-      estimatedMinutes: duration,
-    );
-  }
 }
 
 class PlanMyDaySheet extends ConsumerStatefulWidget {
@@ -119,18 +44,7 @@ class PlanMyDaySheet extends ConsumerStatefulWidget {
 class _PlanMyDaySheetState extends ConsumerState<PlanMyDaySheet> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<_ChatMessage> _messages = [];
-  final List<CapturedPlanItem> _capturedItems = [];
-  bool _isCommitting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _messages.add(const _ChatMessage(
-      text: "Hey! What's on your plate today?\nType what you want to get done (e.g., 'Revise DP patterns 45 min', 'Apply to Stripe') and I'll queue them up for you.",
-      isUser: false,
-    ));
-  }
+  final List<_CommandMessage> _messages = [];
 
   @override
   void dispose() {
@@ -151,60 +65,158 @@ class _PlanMyDaySheetState extends ConsumerState<PlanMyDaySheet> {
     });
   }
 
-  void _sendMessage() {
-    final text = _textController.text.trim();
+  Future<void> _handleInput(String input) async {
+    final text = input.trim();
     if (text.isEmpty) return;
 
     _textController.clear();
-    final parsed = PlanMyDayClassifier.parse(text);
-
     setState(() {
-      _messages.add(_ChatMessage(text: text, isUser: true));
-      _capturedItems.add(parsed);
-      _messages.add(_ChatMessage(
-        text: "Added to today's activities: \"${parsed.title}\" (${parsed.category}, ~${parsed.estimatedMinutes}m)",
-        isUser: false,
-        capturedItem: parsed,
-      ));
+      _messages.add(_CommandMessage(text: text, isUser: true));
     });
-
     _scrollToBottom();
-  }
 
-  Future<void> _commitAndClose() async {
-    if (_capturedItems.isEmpty) {
-      Navigator.of(context).pop();
+    final lower = text.toLowerCase();
+
+    // 1. Check for Reminder intent (e.g. "remind me to drink water in 2 mins")
+    if (lower.startsWith('remind') || lower.contains('remind me')) {
+      await _processReminderIntent(text);
       return;
     }
 
-    setState(() => _isCommitting = true);
+    // 2. Check for "What do I have planned" query
+    if (lower.contains('what') && (lower.contains('plan') || lower.contains('today'))) {
+      final taskDao = ref.read(taskDaoProvider);
+      final tasks = await taskDao.watchTodayTasks().first;
+      if (tasks.isEmpty) {
+        setState(() {
+          _messages.add(const _CommandMessage(
+            text: "You have no tasks scheduled for today yet. You can ask me to add one!",
+            isUser: false,
+          ));
+        });
+      } else {
+        final listStr = tasks.map((t) => "• ${t.title}").join("\n");
+        setState(() {
+          _messages.add(_CommandMessage(
+            text: "Here is your plan for today:\n$listStr",
+            isUser: false,
+          ));
+        });
+      }
+      _scrollToBottom();
+      return;
+    }
+
+    // 3. Check for "Mark ... as done"
+    if (lower.startsWith('mark') && lower.contains('done')) {
+      final taskDao = ref.read(taskDaoProvider);
+      final tasks = await taskDao.watchTodayTasks().first;
+      if (tasks.isNotEmpty) {
+        final firstPending = tasks.firstWhere(
+          (t) => t.actualCompletedDate == null,
+          orElse: () => tasks.first,
+        );
+        await taskDao.toggleTaskCompletion(firstPending.id, true);
+        setState(() {
+          _messages.add(_CommandMessage(
+            text: "Marked '${firstPending.title}' as done! Great work.",
+            isUser: false,
+          ));
+        });
+      } else {
+        setState(() {
+          _messages.add(const _CommandMessage(
+            text: "No active tasks found to mark as done.",
+            isUser: false,
+          ));
+        });
+      }
+      _scrollToBottom();
+      return;
+    }
+
+    // 4. Default: Add study block / task
+    var taskTitle = text;
+    if (lower.startsWith('add study') || lower.startsWith('add task') || lower.startsWith('add')) {
+      taskTitle = text.replaceFirst(RegExp(r'^add\s+(?:study\s+|task\s+)?', caseSensitive: false), '');
+    }
+
     final taskDao = ref.read(taskDaoProvider);
-    final now = DateTime.now();
-    final startOfToday = DateTime(now.year, now.month, now.day);
+    await taskDao.insertTask(
+      TaskTableCompanion.insert(
+        title: taskTitle.isNotEmpty ? taskTitle : text,
+        plannedDate: drift.Value(DateTime.now()),
+        priority: const drift.Value('medium'),
+      ),
+    );
 
-    for (final item in _capturedItems) {
-      await taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: item.title,
-          plannedDate: drift.Value(startOfToday),
-          estimatedMinutes: drift.Value(item.estimatedMinutes),
-          priority: drift.Value(item.category == 'DSA' || item.category == 'Pipeline' ? 'high' : 'normal'),
-          notes: drift.Value('Category: ${item.category}'),
-        ),
-      );
+    setState(() {
+      _messages.add(_CommandMessage(
+        text: "Added study block '$taskTitle' to your daily queue.",
+        isUser: false,
+      ));
+    });
+    _scrollToBottom();
+  }
+
+  Future<void> _processReminderIntent(String text) async {
+    final lower = text.toLowerCase();
+
+    // Parse duration offset: e.g. "in 2 mins", "in 30 minutes", "in 1 hour"
+    Duration offset = const Duration(minutes: 30);
+    final minMatch = RegExp(r'in\s+(\d+)\s*(?:mins?|minutes?|m\b)', caseSensitive: false).firstMatch(lower);
+    final hourMatch = RegExp(r'in\s+(\d+)\s*(?:hours?|hrs?|h\b)', caseSensitive: false).firstMatch(lower);
+
+    if (minMatch != null) {
+      final mins = int.tryParse(minMatch.group(1) ?? '30') ?? 30;
+      offset = Duration(minutes: mins);
+    } else if (hourMatch != null) {
+      final hrs = int.tryParse(hourMatch.group(1) ?? '1') ?? 1;
+      offset = Duration(hours: hrs);
     }
 
-    ref.invalidate(todayFocusTaskProvider);
-    if (mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Added ${_capturedItems.length} activities to your day!'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+    // Parse reminder title
+    String title = text;
+    final remindToMatch = RegExp(r'remind\s+(?:me\s+)?(?:to\s+)?(.+?)(?:\s+in\s+\d+|\s+at\s+|$)', caseSensitive: false).firstMatch(text);
+    if (remindToMatch != null) {
+      title = remindToMatch.group(1)?.trim() ?? text;
     }
+    if (title.isEmpty) title = 'Drink water';
+
+    // Capitalize
+    title = title[0].toUpperCase() + title.substring(1);
+
+    final scheduledAt = DateTime.now().add(offset);
+    final reminderDao = ref.read(reminderDaoProvider);
+
+    final id = await reminderDao.insertReminder(
+      ReminderTableCompanion.insert(
+        title: title,
+        scheduledAt: scheduledAt,
+        isActive: const drift.Value(true),
+      ),
+    );
+
+    try {
+      await NotificationService.instance.scheduleReminderNotification(
+        id: id,
+        title: title,
+        scheduledAt: scheduledAt,
+      );
+    } catch (_) {}
+
+    final timeStr = DateFormat('HH:mm').format(scheduledAt);
+
+    setState(() {
+      _messages.add(_CommandMessage(
+        text: "Scheduled reminder: '$title' for today at $timeStr.",
+        isUser: false,
+        reminderId: id,
+        reminderTitle: title,
+        scheduledTime: scheduledAt,
+      ));
+    });
+    _scrollToBottom();
   }
 
   @override
@@ -212,105 +224,124 @@ class _PlanMyDaySheetState extends ConsumerState<PlanMyDaySheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
+      height: MediaQuery.of(context).size.height * 0.88,
       decoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Handle bar
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.divider,
-                  borderRadius: BorderRadius.circular(2),
+      child: Column(
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE26D5C).withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_awesome, color: Color(0xFFE26D5C), size: 18),
                 ),
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: context.accentPrimary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.chat_bubble_outline_rounded, color: context.accentPrimary, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Plan My Day',
-                          style: AscentTextStyles.labelLarge.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Command Center',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
                         ),
-                        Text(
-                          'WhatsApp-style fast capture',
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_capturedItems.isNotEmpty)
-                    TextButton.icon(
-                      onPressed: _isCommitting ? null : _commitAndClose,
-                      icon: const Icon(Icons.check_rounded, size: 18),
-                      label: Text('Done (${_capturedItems.length})'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: context.accentPrimary,
-                        textStyle: AscentTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold),
                       ),
-                    )
-                  else
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded),
-                      onPressed: () => Navigator.of(context).pop(),
-                      color: context.textMuted,
-                    ),
-                ],
-              ),
+                      Text(
+                        'Plan My Day · Real Data & Notifications',
+                        style: TextStyle(fontSize: 12, color: context.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.of(context).pop(),
+                  color: context.textMuted,
+                ),
+              ],
             ),
-            const Divider(height: 1),
+          ),
+          const Divider(height: 1, color: Color(0xFFF1EFEA)),
 
-            // Chat conversation
-            Expanded(
-              child: ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: _messages.length,
-                itemBuilder: (context, index) {
-                  final msg = _messages[index];
+          // Scrollable chat & suggestions
+          Expanded(
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              children: [
+                // Top Welcome Example Card (from video 00:05)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.bgBase,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.auto_awesome, size: 16, color: Colors.orange),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Welcome to your Command Center!',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: context.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'You can talk naturally to organize your day. For example:\n'
+                        '• "Add study java for 2 hours tomorrow at 9 AM"\n'
+                        '• "Remind me in 30 minutes to review notes"\n'
+                        '• "What do I have planned today?"\n'
+                        '• "Mark Java as done"',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.textMuted,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Messages stream
+                ..._messages.map((msg) {
                   if (msg.isUser) {
                     return Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 12, left: 48),
-                        child: ChatBubbleCard(
-                          tailPosition: BubbleTailPosition.bottomRight,
-                          accentTint: context.accentPrimary,
-                          borderColor: context.accentPrimary.withValues(alpha: 0.4),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Text(
-                            msg.text,
-                            style: AscentTextStyles.bodyMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        margin: const EdgeInsets.only(bottom: 10, left: 40),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0ECE4),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          msg.text,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w500,
+                            color: context.textPrimary,
                           ),
                         ),
                       ),
@@ -319,121 +350,199 @@ class _PlanMyDaySheetState extends ConsumerState<PlanMyDaySheet> {
                     return Align(
                       alignment: Alignment.centerLeft,
                       child: Container(
-                        margin: const EdgeInsets.only(bottom: 12, right: 48),
-                        child: ChatBubbleCard(
-                          tailPosition: BubbleTailPosition.bottomLeft,
-                          accentTint: context.accentInfo,
-                          borderColor: context.divider,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                msg.capturedItem != null
-                                    ? Icons.add_task_rounded
-                                    : Icons.assistant_rounded,
-                                size: 18,
-                                color: context.accentPrimary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  msg.text,
-                                  style: AscentTextStyles.bodySmall.copyWith(
-                                    color: context.textPrimary,
-                                    height: 1.4,
+                        margin: const EdgeInsets.only(bottom: 10, right: 30),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.auto_awesome, size: 16, color: Colors.orange),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    msg.text,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: context.textPrimary,
+                                      height: 1.35,
+                                    ),
                                   ),
+                                ),
+                              ],
+                            ),
+                            if (msg.reminderId != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: context.bgBase,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: context.divider),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.withValues(alpha: 0.12),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.notifications_active_rounded, size: 16, color: Colors.orange),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        msg.reminderTitle ?? 'Reminder',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: context.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, size: 18),
+                                      color: context.textMuted,
+                                      onPressed: () async {
+                                        await ref.read(reminderDaoProvider).deleteReminder(msg.reminderId!);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Reminder removed')),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     );
                   }
-                },
-              ),
+                }),
+              ],
             ),
+          ),
 
-            // Pinned chips of captured items so far
-            if (_capturedItems.isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: context.bgSurfaceElevated,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _capturedItems.map((item) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: Chip(
-                          label: Text('${item.title} (~${item.estimatedMinutes}m)'),
-                          labelStyle: AscentTextStyles.bodySmall.copyWith(fontSize: 11),
-                          backgroundColor: context.bgBase,
-                          deleteIcon: const Icon(Icons.close, size: 14),
-                          onDeleted: () {
-                            setState(() {
-                              _capturedItems.remove(item);
-                            });
-                          },
-                          visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-            ],
-
-            // Input bar
-            Container(
-              padding: EdgeInsets.fromLTRB(16, 10, 16, 10 + bottomInset),
-              decoration: BoxDecoration(
-                color: context.bgSurface,
-                border: Border(top: BorderSide(color: context.divider)),
-              ),
+          // Suggestion Chips (from video 00:05)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
-                      decoration: InputDecoration(
-                        hintText: "e.g., 'Solve 2 DP questions 45 mins'...",
-                        hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        filled: true,
-                        fillColor: context.bgBase,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: context.divider),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: context.divider),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: context.accentPrimary),
-                        ),
-                      ),
-                    ),
+                  _CommandChip(
+                    label: 'What to Study',
+                    icon: Icons.lightbulb_outline_rounded,
+                    onTap: () => _handleInput('What do I have planned today?'),
                   ),
                   const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: _sendMessage,
-                    style: IconButton.styleFrom(
-                      backgroundColor: context.accentPrimary,
-                      foregroundColor: context.textOnPrimary,
-                      padding: const EdgeInsets.all(12),
-                    ),
-                    icon: const Icon(Icons.send_rounded, size: 18),
+                  _CommandChip(
+                    label: '+ Add Study Block',
+                    icon: Icons.add_circle_outline_rounded,
+                    onTap: () => _handleInput('Add study Spring Boot for 1 hour'),
+                  ),
+                  const SizedBox(width: 8),
+                  _CommandChip(
+                    label: 'Remind in 30m',
+                    icon: Icons.alarm_rounded,
+                    onTap: () => _handleInput('Remind me in 30 minutes to review notes'),
                   ),
                 ],
               ),
+            ),
+          ),
+
+          // Input Bar (from video 00:08)
+          Container(
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 10 + bottomInset),
+            decoration: BoxDecoration(
+              color: context.bgSurface,
+              border: const Border(top: BorderSide(color: Color(0xFFF1EFEA))),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _textController,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: _handleInput,
+                    decoration: InputDecoration(
+                      hintText: "Type an activity, reminder, or question...",
+                      hintStyle: TextStyle(fontSize: 13, color: context.textMuted),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      filled: true,
+                      fillColor: context.bgBase,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: context.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: context.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: context.accentSecondary),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => _handleInput(_textController.text),
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: context.accentSecondary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send_rounded, size: 18, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CommandChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _CommandChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: context.bgBase,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.divider),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: context.textMuted),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.textPrimary),
             ),
           ],
         ),

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/time_tracking_provider.dart';
+import '../../core/learning_hub/learning_hub_provider.dart';
+import '../../features/study_plan/lecture_focus_player_sheet.dart';
 import 'ascent_button.dart';
 import 'chat_bubble_card.dart';
 
@@ -29,7 +33,119 @@ class LiveSessionBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackingState = ref.watch(timeTrackingProvider);
+    final learningState = ref.watch(learningHubProvider);
     final session = trackingState.activeSession;
+
+    // Check if learning hub lecture is active
+    if (session == null && (learningState.isPlaying || learningState.isLiveFocusActive)) {
+      final activeLec = learningState.activeLecture;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: context.bgSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.accentSecondary.withValues(alpha: 0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: () => LectureFocusPlayerSheet.show(context),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: context.accentSecondary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.school_rounded, color: context.accentSecondary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: learningState.isPlaying ? context.accentSecondary : Colors.orange,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Lecture ${activeLec.id}: ${activeLec.title}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AscentTextStyles.labelMedium.copyWith(
+                                color: context.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            learningState.formattedRemaining,
+                            style: AscentTextStyles.monoCode.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: learningState.isPlaying
+                                  ? context.accentSecondary
+                                  : context.textMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            learningState.isPlaying ? '• Live Focus' : '• Paused',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: learningState.isPlaying
+                                  ? context.accentSecondary
+                                  : context.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    learningState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: context.textPrimary,
+                    size: 24,
+                  ),
+                  onPressed: () => ref.read(learningHubProvider.notifier).togglePlayPause(),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.stop_rounded,
+                    color: context.stateDangerBright,
+                    size: 24,
+                  ),
+                  onPressed: () => ref.read(learningHubProvider.notifier).pause(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     if (session == null) {
       return const SizedBox.shrink();
@@ -108,7 +224,7 @@ class LiveSessionBar extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        trackingState.isRunning ? '• Running' : '• Paused',
+                        trackingState.isRunning ? '• Live Focus' : '• Paused',
                         style: AscentTextStyles.captionMedium.copyWith(
                           color: trackingState.isRunning
                               ? context.accentPrimaryBright
@@ -142,7 +258,7 @@ class LiveSessionBar extends ConsumerWidget {
                 color: context.stateDangerBright,
                 size: 24,
               ),
-              onPressed: () => _confirmCompleteSession(context, ref),
+              onPressed: () => _confirmCompleteSession(context, ref, session.label),
             ),
           ],
         ),
@@ -150,45 +266,41 @@ class LiveSessionBar extends ConsumerWidget {
     );
   }
 
-  static void _confirmCompleteSession(BuildContext context, WidgetRef ref) {
+  static void _confirmCompleteSession(BuildContext context, WidgetRef ref, [String? label]) {
+    final taskLabel = label ?? ref.read(timeTrackingProvider).activeSession?.label ?? 'session';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: context.bgSurface,
-        title: Text('Finish Session?', style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Complete Session?',
+          style: GoogleFonts.plusJakartaSans(
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            color: context.textPrimary,
+          ),
+        ),
         content: Text(
-          'Are you ready to stop and save this tracking session? Active study time will be logged to your consistency streak.',
-          style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+          'Finish tracking \'$taskLabel\'?',
+          style: TextStyle(fontSize: 14, color: context.textMuted),
         ),
         actions: [
-          Row(
-            children: [
-              Expanded(
-                child: AscentButton.destructive(
-                  label: 'Cancel',
-                  onPressed: () => Navigator.pop(ctx),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: AscentButton.primary(
-                  label: 'Finish',
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    await ref.read(timeTrackingProvider.notifier).completeSession();
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Session saved and logged!'),
-                          behavior: SnackBarBehavior.floating,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ),
-            ],
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel', style: TextStyle(color: context.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: context.accentSecondary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(timeTrackingProvider.notifier).completeSession();
+            },
+            child: const Text('Complete', style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),

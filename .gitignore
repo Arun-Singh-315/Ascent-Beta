@@ -11,6 +11,11 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+*.mp4
+*.mkv
+*.mov
+*.webm
+*.apk
 
 # IntelliJ related
 *.iml
