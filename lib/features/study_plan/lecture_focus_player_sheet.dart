@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 
 class LectureFocusPlayerSheet extends ConsumerStatefulWidget {

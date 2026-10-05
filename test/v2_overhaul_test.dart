@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/features/home/plan_my_day_sheet.dart';
+import 'package:ascent/features/home/plan_my_day_classifier.dart';
 
 void main() {
   late AppDatabase db;

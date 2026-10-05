@@ -17,6 +17,9 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
             ]))
           .watch();
 
+  /// Stream of tasks for today.
+  Stream<List<Task>> watchTodayTasks() => watchTasksByDate(DateTime.now());
+
   /// Stream of tasks whose [plannedDate] falls on [date] (same calendar day).
   Stream<List<Task>> watchTasksByDate(DateTime date) {
     final dayStart = DateTime(date.year, date.month, date.day);
@@ -180,6 +183,15 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     await (update(taskTable)..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(lastInteractedAt: Value(DateTime.now())),
     );
+  }
+
+  /// Toggles task completion.
+  Future<void> toggleTaskCompletion(int id, bool completed) async {
+    if (completed) {
+      await markComplete(id);
+    } else {
+      await markIncomplete(id);
+    }
   }
 
   /// Deletes the task with [id].  Returns the number of deleted rows (0 or 1).

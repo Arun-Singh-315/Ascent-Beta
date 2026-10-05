@@ -10,7 +10,6 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
-import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
@@ -1232,7 +1231,7 @@ class _NotesPreviewCard extends ConsumerWidget {
           const SizedBox(height: 8),
           noteAsync.when(
             loading: () => const SizedBox(height: 20),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (note) {
               return Text(
                 note?.title ?? 'Jot down your first reflection or STAR answer ›',
@@ -1303,7 +1302,7 @@ class _RemindersPreviewCard extends ConsumerWidget {
           const SizedBox(height: 8),
           reminderAsync.when(
             loading: () => const SizedBox(height: 20),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
             data: (reminder) {
               if (reminder == null) {
                 return Text(
@@ -1311,7 +1310,7 @@ class _RemindersPreviewCard extends ConsumerWidget {
                   style: TextStyle(fontSize: 12.5, color: context.textMuted),
                 );
               }
-              final dateStr = DateFormat('EEE, MMM d • h:mm a').format(reminder.remindAt);
+              final dateStr = DateFormat('EEE, MMM d • h:mm a').format(reminder.scheduledAt);
               return Row(
                 children: [
                   Container(

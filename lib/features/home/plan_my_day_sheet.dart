@@ -406,9 +406,11 @@ class _PlanMyDaySheetState extends ConsumerState<PlanMyDaySheet> {
                                       color: context.textMuted,
                                       onPressed: () async {
                                         await ref.read(reminderDaoProvider).deleteReminder(msg.reminderId!);
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(content: Text('Reminder removed')),
-                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(content: Text('Reminder removed')),
+                                          );
+                                        }
                                       },
                                     ),
                                   ],
