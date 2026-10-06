@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/database_provider.dart';
 
@@ -72,6 +73,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       hasProfile = hasCompletedOnboardingPref;
     }
 
+    final isAuth = ref.read(authProvider).isAuthenticated;
+
     final elapsed = DateTime.now().difference(startTime);
     final remainingWait = const Duration(milliseconds: 1100) - elapsed;
     if (remainingWait > Duration.zero) {
@@ -80,7 +83,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     if (!mounted) return;
 
-    if (hasCompletedOnboardingPref || hasProfile) {
+    if (!isAuth) {
+      context.go('/login');
+    } else if (hasCompletedOnboardingPref || hasProfile) {
       context.go('/home');
     } else {
       context.go('/onboarding');

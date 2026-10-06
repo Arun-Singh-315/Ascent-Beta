@@ -201,9 +201,9 @@ void main() {
   group('Day Mode Composed Color Tokens Tests', () {
     test('AscentColors secondary accent and warning are calm, composed, and non-glaring in day mode', () {
       // Day mode colors should not be harsh screaming high-saturation red/orange
-      expect(ascent_colors.AscentColors.accentSecondary.value, 0xFF8A513E);
-      expect(ascent_colors.AscentColors.stateWarning.value, 0xFFB46824);
-      expect(ascent_colors.AscentColors.stateDanger.value, 0xFFBA433C);
+      expect(ascent_colors.AscentColors.accentSecondary.toARGB32(), 0xFF8A513E);
+      expect(ascent_colors.AscentColors.stateWarning.toARGB32(), 0xFFB46824);
+      expect(ascent_colors.AscentColors.stateDanger.toARGB32(), 0xFFBA433C);
     });
   });
 }

@@ -15,9 +15,11 @@ import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../study_plan/lecture_focus_player_sheet.dart';
+import '../study_plan/study_plan_screen.dart';
 import '../today/add_activity_sheet.dart';
 import 'package:flutter/services.dart';
 import '../../shared/widgets/new_day_dialog.dart';
+import '../../core/services/hydration_reminder_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -32,6 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkNewDay();
+      ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
     });
   }
 
@@ -281,14 +284,14 @@ class _QuickModulesNavHub extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         GridView.count(
           crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1.65,
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 2.1,
           children: [
             // 1. Hydration
             _NavHubCard(
@@ -362,57 +365,57 @@ class _NavHubCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: context.bgSurface.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: context.divider.withValues(alpha: 0.6),
-              width: 1.0,
+              width: 0.8,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Row(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, size: 16, color: color),
-                  ),
-                  Icon(Icons.arrow_forward_rounded, size: 14, color: context.textMuted.withValues(alpha: 0.6)),
-                ],
+              Container(
+                padding: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 14, color: color),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: AscentTextStyles.captionMedium.copyWith(
-                      color: context.textMuted,
-                      fontSize: 10.5,
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.jetBrainsMono(
+                        color: context.textMuted,
+                        fontSize: 9.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
+              Icon(Icons.arrow_forward_rounded, size: 12, color: context.textMuted.withValues(alpha: 0.5)),
             ],
           ),
         ),
@@ -1659,9 +1662,9 @@ class _LearningHubCard extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                   child: Text(
-                    '${course.progressPercent}% Done ›',
+                    'View all courses ›',
                     style: TextStyle(
-                      color: context.textMuted,
+                      color: context.accentSecondary,
                       fontSize: 11.5,
                       fontWeight: FontWeight.w600,
                     ),
@@ -1670,157 +1673,175 @@ class _LearningHubCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // 4 Metric Chips
-          Row(
-            children: [
-              _MetricPill(
-                icon: Icons.menu_book_outlined,
-                label: '${state.courses.length} Course${state.courses.length == 1 ? "" : "s"}',
-              ),
-              const SizedBox(width: 6),
-              _MetricPill(icon: Icons.folder_outlined, label: '${course.modules.length} Modules'),
-              const SizedBox(width: 6),
-              _MetricPill(icon: Icons.playlist_play_rounded, label: '${course.completedLectures}/${course.totalLectures} Done'),
-              const SizedBox(width: 6),
-              _MetricPill(icon: Icons.access_time_outlined, label: '${course.totalWatchedSeconds ~/ 60}m Watched'),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Featured Course Box
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: context.bgBase,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: context.divider, width: 0.8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // Course Title
+          InkWell(
+            onTap: () => context.push('/study-plan'),
+            child: Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        course.title,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: context.accentSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                Expanded(
+                  child: Text(
+                    course.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
                     ),
-                    Text(
-                      activeMod.title,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w500,
-                        color: context.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Lecture ${active.id} - ${active.title}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: context.textPrimary,
-                    height: 1.25,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 10),
-
-                // Compact Continue/Focus Lecture Button
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.accentSecondary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        icon: const Icon(Icons.play_circle_fill_rounded, size: 18),
-                        label: Text(
-                          'Continue Lecture ${active.id}',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          ref.read(learningHubProvider.notifier).play();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      tooltip: 'Open Player',
-                      icon: const Icon(Icons.open_in_full_rounded, size: 18),
-                      color: context.textMuted,
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        LectureFocusPlayerSheet.show(context);
-                      },
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                Text(
+                  '${course.progressPercent}% done',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: context.accentSecondary,
+                  ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
+          const SizedBox(height: 6),
 
-class _MetricPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _MetricPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
-        decoration: BoxDecoration(
-          color: context.bgBase,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: context.divider, width: 0.7),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 13, color: context.textMuted),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-                color: context.textPrimary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
+          // Slim Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: course.progressFraction,
+              minHeight: 4.5,
+              backgroundColor: context.bgBase,
+              valueColor: AlwaysStoppedAnimation<Color>(context.accentSecondary),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 8),
+
+          // Up Next Lecture Row (Compact, 1-line)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: context.bgBase,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: context.divider, width: 0.7),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: context.accentSecondary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    'NEXT #${active.id}',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.accentSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    active.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  active.formattedDuration,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10,
+                    color: context.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Action Buttons: Resume + Syllabus
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: context.accentPrimary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: const Icon(Icons.play_circle_fill_rounded, size: 16),
+                  label: Text(
+                    'Continue Lecture ${active.id}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(learningHubProvider.notifier).play();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: context.divider),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 8),
+                  ),
+                  icon: const Icon(Icons.format_list_bulleted_rounded, size: 14),
+                  label: Text(
+                    'Syllabus',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (ctx) => StudyPlanScreen(courseId: course.id),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                tooltip: 'Open Focus Player',
+                icon: const Icon(Icons.open_in_full_rounded, size: 16),
+                color: context.textMuted,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  LectureFocusPlayerSheet.show(context);
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

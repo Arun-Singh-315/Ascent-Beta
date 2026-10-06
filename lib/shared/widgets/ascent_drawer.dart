@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/providers/database_provider.dart';
 
 /// Intent-grouped Navigation Drawer matching Spec §7:
@@ -148,6 +149,25 @@ class AscentDrawer extends ConsumerWidget {
               label: 'Settings',
               route: '/settings',
               color: context.textMuted,
+            ),
+            ListTile(
+              dense: true,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              leading: Icon(Icons.logout_rounded, color: context.stateDanger, size: 22),
+              title: Text(
+                'Sign Out',
+                style: AscentTextStyles.labelLarge.copyWith(
+                  color: context.stateDanger,
+                  fontSize: 14,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) {
+                  context.go('/login');
+                }
+              },
             ),
             const SizedBox(height: 24),
           ],

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/animated_water_card.dart';
+import 'hydration_popup_dialog.dart';
 
 class HydrationScreen extends ConsumerStatefulWidget {
   const HydrationScreen({super.key});
@@ -142,6 +144,11 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
         ),
         actions: [
           IconButton(
+            tooltip: 'Trigger Hydration Pop-up Alert',
+            icon: const Icon(Icons.water_drop_rounded, color: Color(0xFF38BDF8)),
+            onPressed: () => HydrationPopupDialog.show(context),
+          ),
+          IconButton(
             tooltip: 'Edit Daily Goal',
             icon: Icon(Icons.tune_rounded, color: context.accentPrimary),
             onPressed: () => _showSetGoalDialog(targetMl),
@@ -199,6 +206,62 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     value: '$percent%',
                     icon: Icons.check_circle_rounded,
                     color: percent >= 100 ? const Color(0xFF34D399) : context.accentPrimary,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Interactive Pop-up Reminder Banner
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF38BDF8).withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF38BDF8), size: 18),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Freeze-Screen Alert Active',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Test the full-screen blurred hydration popup anytime.',
+                          style: TextStyle(fontSize: 11, color: context.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFF38BDF8),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    ),
+                    onPressed: () => HydrationPopupDialog.show(context),
+                    child: const Text('Try Pop-up', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                   ),
                 ],
               ),

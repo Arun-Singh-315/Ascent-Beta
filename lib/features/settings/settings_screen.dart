@@ -13,6 +13,7 @@ import '../../core/database/demo_data_seeder.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 
@@ -469,6 +470,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                         if (mounted) {
                           context.go('/onboarding');
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmSignOut() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: context.accentPrimary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.logout_rounded, color: context.accentPrimary, size: 24),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Sign Out of Ascent?',
+                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'You will need to sign in with your credentials (arn / 1234) again. Your local data will remain completely intact.',
+                textAlign: TextAlign.center,
+                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: AscentButton.outlined(
+                      label: 'Cancel',
+                      compact: true,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AscentButton.primary(
+                      label: 'Sign Out',
+                      compact: true,
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        HapticFeedback.mediumImpact();
+                        await ref.read(authProvider.notifier).logout();
+                        if (mounted) {
+                          context.go('/login');
                         }
                       },
                     ),
@@ -1035,6 +1103,85 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                       ),
                       onTap: _confirmResetData,
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Section: Account & Session ────────────────────────────
+              _SectionHeader(title: 'ACCOUNT & SECURITY'),
+              AscentCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final auth = ref.watch(authProvider);
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: context.accentSecondary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.person_rounded, color: context.accentSecondary, size: 20),
+                          ),
+                          title: Text(
+                            'Active Account',
+                            style: AscentTextStyles.labelMedium.copyWith(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            'Signed in as @${auth.username}',
+                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: context.accentPrimary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Verified',
+                              style: TextStyle(
+                                color: context.accentPrimary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(height: 16),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: context.stateDanger.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(Icons.logout_rounded, color: context.stateDanger, size: 20),
+                      ),
+                      title: Text(
+                        'Sign Out',
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: context.stateDanger,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Lock session and return to login screen',
+                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
+                      onTap: _confirmSignOut,
                     ),
                   ],
                 ),
