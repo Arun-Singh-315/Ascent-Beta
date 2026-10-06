@@ -15,10 +15,10 @@ class MainScaffold extends StatelessWidget {
 
   static const _tabs = [
     _TabItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _TabItem(icon: Icons.today_outlined, activeIcon: Icons.today_rounded, label: 'Today'),
-    _TabItem(icon: Icons.view_kanban_outlined, activeIcon: Icons.view_kanban_rounded, label: 'Pipeline'),
-    _TabItem(icon: Icons.bar_chart_outlined, activeIcon: Icons.bar_chart_rounded, label: 'Analytics'),
-    _TabItem(icon: Icons.more_horiz_outlined, activeIcon: Icons.more_horiz_rounded, label: 'More'),
+    _TabItem(icon: Icons.checklist_outlined, activeIcon: Icons.checklist_rounded, label: 'Study'),
+    _TabItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet_rounded, label: 'Money'),
+    _TabItem(icon: Icons.directions_walk_outlined, activeIcon: Icons.directions_walk_rounded, label: 'Walk'),
+    _TabItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view_rounded, label: 'More'),
   ];
 
   @override
@@ -34,7 +34,6 @@ class MainScaffold extends StatelessWidget {
             currentIndex: shell.currentIndex,
             onTap: (index) => shell.goBranch(
               index,
-              // Allow double-tapping a tab to return to its initial route
               initialLocation: index == shell.currentIndex,
             ),
             tabs: _tabs,
@@ -58,53 +57,69 @@ class _AscentBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg = context.bgSurface;
+    final divider = context.divider;
+    final activeColor = context.accentPrimary;
+    final inactiveColor = context.textMuted;
+
     return Container(
       decoration: BoxDecoration(
-
-        color: context.bgBase,
+        color: bg,
         border: Border(
           top: BorderSide(
-            color: context.divider,
-            width: 1,
+            color: divider,
+            width: 0.8,
           ),
         ),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 56,
           child: Row(
             children: List.generate(tabs.length, (index) {
               final tab = tabs[index];
               final isActive = index == currentIndex;
               return Expanded(
-                child: InkWell(
-                  onTap: () => onTap(index),
-                  splashColor: context.accentPrimary.withValues(alpha: 0.1),
-                  highlightColor: Colors.transparent,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: Icon(
-                          isActive ? tab.activeIcon : tab.icon,
-                          key: ValueKey(isActive),
-                          color: isActive ? context.accentPrimary : context.textMuted,
-                          size: 24,
-                        ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onTap(index),
+                    splashColor: activeColor.withValues(alpha: 0.08),
+                    highlightColor: Colors.transparent,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? activeColor.withValues(alpha: 0.12)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              isActive ? tab.activeIcon : tab.icon,
+                              color: isActive ? activeColor : inactiveColor,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            tab.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                              color: isActive ? activeColor : inactiveColor,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        tab.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                          color: isActive ? context.accentPrimary : context.textMuted,
-                          height: 1.2,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               );

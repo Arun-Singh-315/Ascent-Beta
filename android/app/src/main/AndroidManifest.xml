@@ -7,6 +7,15 @@
         We request this contextually — when the user sets their first deadline
         or interview date — NOT on cold-open. See NotificationService.dart.
     -->
+    <!-- Network permission for map tile fetching -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location permissions for GPS walking and distance tracking -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!--

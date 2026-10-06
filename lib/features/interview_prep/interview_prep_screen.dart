@@ -275,14 +275,24 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
         title: const Text('Delete Scheduled Interview?'),
         content: Text('Are you sure you want to remove the upcoming interview with "${interview.companyName}"?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogCtx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-            onPressed: () => Navigator.of(dialogCtx).pop(true),
-            child: const Text('Delete'),
+          Row(
+            children: [
+              Expanded(
+                child: AscentButton.outlined(
+                  label: 'Cancel',
+                  compact: true,
+                  onPressed: () => Navigator.of(dialogCtx).pop(false),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: AscentButton.destructive(
+                  label: 'Delete',
+                  compact: true,
+                  onPressed: () => Navigator.of(dialogCtx).pop(true),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -842,8 +852,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.ghost(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
@@ -851,6 +862,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                   Expanded(
                     child: AscentButton.destructive(
                       label: 'Delete',
+                      compact: true,
                       onPressed: () async {
                         Navigator.pop(ctx);
                         await ref.read(interviewPrepDaoProvider).deleteQuestion(id);
@@ -1544,7 +1556,7 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
             Row(
               children: [
                 Expanded(
-                  child: AscentButton.ghost(
+                  child: AscentButton.outlined(
                     label: 'Cancel',
                     onPressed: () => Navigator.pop(context),
                   ),

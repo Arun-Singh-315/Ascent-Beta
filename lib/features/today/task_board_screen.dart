@@ -14,6 +14,7 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
+import '../home/plan_my_day_sheet.dart';
 
 class TaskBoardScreen extends ConsumerStatefulWidget {
   const TaskBoardScreen({super.key});
@@ -160,6 +161,13 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 90),
             children: [
+              // JARVIS Task Orchestrator & Priority Coach
+              _JarvisTaskCoachCard(
+                overdueCount: overdueTasks.length,
+                todayCount: todayTasks.length,
+                completedCount: completedTasks.length,
+              ),
+
               // Overdue Group
               if (overdueTasks.isNotEmpty) ...[
                 _SectionHeader(
@@ -380,8 +388,9 @@ class _TaskItemTile extends ConsumerWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: AscentButton.destructive(
+                          child: AscentButton.outlined(
                             label: 'Cancel',
+                            compact: true,
                             onPressed: () => Navigator.pop(ctx, false),
                           ),
                         ),
@@ -952,8 +961,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             Row(
               children: [
                 Expanded(
-                  child: AscentButton.destructive(
+                  child: AscentButton.outlined(
                     label: 'Cancel',
+                    compact: true,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
@@ -961,6 +971,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                 Expanded(
                   child: AscentButton.primary(
                     label: widget.existingTask != null ? 'Save Changes' : 'Add Task',
+                    compact: true,
                     onPressed: () async {
                       final title = _titleController.text.trim();
                       if (title.isEmpty) return;
@@ -1017,6 +1028,109 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _JarvisTaskCoachCard extends StatelessWidget {
+  final int overdueCount;
+  final int todayCount;
+  final int completedCount;
+
+  const _JarvisTaskCoachCard({
+    required this.overdueCount,
+    required this.todayCount,
+    required this.completedCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String message;
+    if (overdueCount > 0) {
+      message = 'Attention, sir: You have $overdueCount overdue items. I advise resolving them first to restore schedule momentum.';
+    } else if (todayCount > 0) {
+      message = 'All systems nominal. You have $todayCount priority items today. Ready when you are.';
+    } else {
+      message = 'Your slate is completely clear for today, sir. You can plan new milestones or rest.';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: context.bgSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF0096C7).withValues(alpha: 0.3),
+          width: 1.0,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0096C7).withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0xFF48CAE4), Color(0xFF0077B6)],
+                  ),
+                ),
+                child: const Icon(Icons.blur_on_rounded, color: Colors.white, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'JARVIS TASK ORCHESTRATOR',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: const Color(0xFF00B4D8),
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0,
+                  fontSize: 10,
+                ),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () => PlanMyDaySheet.show(context),
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 12, color: context.accentPrimary),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Plan with AI',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: context.accentPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: AscentTextStyles.bodySmall.copyWith(
+              color: context.textPrimary,
+              height: 1.35,
+            ),
+          ),
+        ],
       ),
     );
   }

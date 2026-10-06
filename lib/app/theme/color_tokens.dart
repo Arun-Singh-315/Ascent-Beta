@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// All color tokens for the Ascent design system.
+/// Muted, matte, calm, and tailored for focus & productivity.
 /// Use the [AscentColorsX] extension on [BuildContext] to get
 /// the correct token for the current brightness.
 class AscentColors {
@@ -8,94 +9,113 @@ class AscentColors {
 
   // ── Light mode ─────────────────────────────────────────────────────────────
 
-  /// Soft warm cream — page background.
-  static const Color bgBase = Color(0xFFFBF9F6);
+  /// Crisp, clean matte off-white — page background.
+  static const Color bgBase = Color(0xFFF8F9FA);
 
-  /// White surface — cards, sheets, inputs.
+  /// Pure white surface — cards, sheets, inputs.
   static const Color bgSurface = Color(0xFFFFFFFF);
 
-  /// Slightly darker surface used to indicate elevation.
-  static const Color bgSurfaceElevated = Color(0xFFF5F3F0);
+  /// Slightly elevated surface for nested cards and chips.
+  static const Color bgSurfaceElevated = Color(0xFFF1F3F6);
 
-  /// Soft sage green — primary accent.
-  static const Color accentPrimary = Color(0xFF7FA88A);
+  /// Deep calm forest sage — primary accent.
+  static const Color accentPrimary = Color(0xFF38664D);
 
-  /// Soft peach/coral — secondary accent.
-  static const Color accentSecondary = Color(0xFFE8A57C);
+  /// Matte punchy sage for active/interactive buttons and rings.
+  static const Color accentPrimaryBright = Color(0xFF2C553E);
 
-  /// Soft dusty blue — informational accent.
-  static const Color accentInfo = Color(0xFF7C9CC4);
+  /// Subtle soft tint for primary backgrounds and badges.
+  static const Color accentPrimaryDim = Color(0xFFD6E8DC);
 
-  /// Soft coral-red — destructive / error state.
-  static const Color stateDanger = Color(0xFFD98C86);
+  /// Muted terracotta / warm clay — secondary accent.
+  static const Color accentSecondary = Color(0xFFD06548);
 
-  /// Success — matches primary sage green.
-  static const Color stateSuccess = Color(0xFF7FA88A);
+  /// Punchier terracotta for active countdown and focus markers.
+  static const Color accentSecondaryBright = Color(0xFFBA5438);
 
-  /// Warning — matches secondary peach.
-  static const Color stateWarning = Color(0xFFE8A57C);
+  /// Soft slate blue — informational accent.
+  static const Color accentInfo = Color(0xFF4F739D);
 
-  /// Near-black warm text.
-  static const Color textPrimary = Color(0xFF2A2E33);
+  /// Restrained coral-red — destructive / error state.
+  static const Color stateDanger = Color(0xFFC94A42);
 
-  /// Muted/placeholder text — same in both modes.
-  static const Color textMuted = Color(0xFF8B9198);
+  /// Saturated red for cancel and delete.
+  static const Color stateDangerBright = Color(0xFFB83A32);
+
+  /// Success — matches primary forest sage.
+  static const Color stateSuccess = Color(0xFF38664D);
+
+  /// Warning — amber/clay.
+  static const Color stateWarning = Color(0xFFD97736);
+
+  /// Deep near-black graphite text.
+  static const Color textPrimary = Color(0xFF16191D);
+
+  /// Refined secondary text.
+  static const Color textSecondary = Color(0xFF525963);
+
+  /// Muted / placeholder text.
+  static const Color textMuted = Color(0xFF868E99);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
-  /// Subtle warm divider line.
-  static const Color divider = Color(0xFFEAE8E4);
+  /// Ultra-thin hairline divider line.
+  static const Color divider = Color(0xFFE5E8ED);
 
-  /// Shadow tint for elevation effects.
-  static const Color shadow = Color(0xFF2A2E33);
-
-  // ── V1 Brightness Tokens (Light) ───────────────────────────────────────────
-
-  /// Saturated, punchier sage for active/interactive buttons, timer ring, active nav.
-  static const Color accentPrimaryBright = Color(0xFF5FA070);
-
-  /// Flatter, lower-contrast sage for disabled/loading buttons.
-  static const Color accentPrimaryDim = Color(0xFFB7CDBE);
-
-  /// Punchier peach for FAB active/pressed state, live-timer accent.
-  static const Color accentSecondaryBright = Color(0xFFF2954F);
-
-  /// Bright, saturated red for Cancel and Delete actions specifically.
-  static const Color stateDangerBright = Color(0xFFE53935);
+  /// Shadow tint for soft diffuse elevation.
+  static const Color shadow = Color(0xFF16191D);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 
-  static const Color bgBaseDark = Color(0xFF14181D);
-  static const Color bgSurfaceDark = Color(0xFF1C2128);
-  static const Color bgSurfaceElevatedDark = Color(0xFF252D37);
-  static const Color accentPrimaryDark = Color(0xFF8FBB9A);
-  static const Color accentSecondaryDark = Color(0xFFEFB48C);
-  static const Color accentInfoDark = Color(0xFF8FADD1);
-  static const Color stateDangerDark = Color(0xFFE09B95);
-  static const Color stateSuccessDark = Color(0xFF8FBB9A);
-  static const Color stateWarningDark = Color(0xFFEFB48C);
-  static const Color textPrimaryDark = Color(0xFFEDEFF2);
+  /// Deep obsidian graphite — page background.
+  static const Color bgBaseDark = Color(0xFF0F1216);
 
-  /// Muted text — intentionally identical in light and dark.
-  static const Color textMutedDark = Color(0xFF8B9198);
-  static const Color textOnPrimaryDark = Color(0xFF14181D);
-  static const Color dividerDark = Color(0xFF2A3038);
+  /// Matte dark charcoal surface — cards, sheets, inputs.
+  static const Color bgSurfaceDark = Color(0xFF181C22);
+
+  /// Elevated dark surface for nested items and chips.
+  static const Color bgSurfaceElevatedDark = Color(0xFF222832);
+
+  /// Soft luminous sage — primary accent.
+  static const Color accentPrimaryDark = Color(0xFF63BA8B);
+  static const Color accentPrimaryBrightDark = Color(0xFF78CCA0);
+  static const Color accentPrimaryDimDark = Color(0xFF233E30);
+
+  /// Warm clay / terracotta — secondary accent.
+  static const Color accentSecondaryDark = Color(0xFFE88168);
+  static const Color accentSecondaryBrightDark = Color(0xFFF2957E);
+
+  /// Muted slate blue — info accent.
+  static const Color accentInfoDark = Color(0xFF7FA7D6);
+
+  /// Soft coral red — danger.
+  static const Color stateDangerDark = Color(0xFFE26D66);
+  static const Color stateDangerBrightDark = Color(0xFFEE8079);
+
+  static const Color stateSuccessDark = Color(0xFF63BA8B);
+  static const Color stateWarningDark = Color(0xFFECA361);
+
+  /// Crisp off-white text.
+  static const Color textPrimaryDark = Color(0xFFEFF2F6);
+
+  /// Secondary text in dark mode.
+  static const Color textSecondaryDark = Color(0xFFA2ACB8);
+
+  /// Muted text in dark mode.
+  static const Color textMutedDark = Color(0xFF757E8C);
+
+  /// Text on primary in dark mode.
+  static const Color textOnPrimaryDark = Color(0xFF0D1812);
+
+  /// Subtle dark divider line.
+  static const Color dividerDark = Color(0xFF262D37);
+
+  /// Shadow in dark mode.
   static const Color shadowDark = Color(0xFF000000);
-
-  // ── V1 Brightness Tokens (Dark) ────────────────────────────────────────────
-
-  static const Color accentPrimaryBrightDark = Color(0xFF7FE39C);
-  static const Color accentPrimaryDimDark = Color(0xFF3A4A40);
-  static const Color accentSecondaryBrightDark = Color(0xFFFFB877);
-  static const Color stateDangerBrightDark = Color(0xFFFF6659);
 }
 
 /// Convenience extension so call-sites never branch on brightness manually.
-///
-/// ```dart
-/// Container(color: context.accentPrimary)
-/// ```
 extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
@@ -131,7 +151,7 @@ extension AscentColorsX on BuildContext {
       isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary;
 
   Color get textSecondary =>
-      isDark ? const Color(0xFFB0B7C0) : const Color(0xFF555B63);
+      isDark ? AscentColors.textSecondaryDark : AscentColors.textSecondary;
 
   Color get textMuted =>
       isDark ? AscentColors.textMutedDark : AscentColors.textMuted;
@@ -158,4 +178,3 @@ extension AscentColorsX on BuildContext {
       ? AscentColors.stateDangerBrightDark
       : AscentColors.stateDangerBright;
 }
-

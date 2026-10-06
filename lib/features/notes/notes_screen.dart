@@ -291,8 +291,9 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.destructive(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
@@ -782,8 +783,9 @@ class _AddEditNoteSheetState extends ConsumerState<_AddEditNoteSheet> {
             Row(
               children: [
                 Expanded(
-                  child: AscentButton.destructive(
+                  child: AscentButton.outlined(
                     label: 'Cancel',
+                    compact: true,
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -791,6 +793,7 @@ class _AddEditNoteSheetState extends ConsumerState<_AddEditNoteSheet> {
                 Expanded(
                   child: AscentButton.primary(
                     label: widget.existing != null ? 'Update Note' : 'Save Note',
+                    compact: true,
                     onPressed: _save,
                   ),
                 ),

@@ -283,9 +283,10 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                           fontSize: 18,
                         ),
                       ),
-                      TextButton.icon(
-                        icon: const Icon(Icons.add_rounded, size: 18),
-                        label: const Text('Add Task'),
+                      AscentButton.outlined(
+                        icon: Icons.add_rounded,
+                        label: 'Add Task',
+                        compact: true,
                         onPressed: () => _showAddTaskSheet(context),
                       ),
                     ],

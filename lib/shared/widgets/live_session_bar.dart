@@ -445,8 +445,9 @@ class LiveSessionBar extends ConsumerWidget {
                   },
                 ),
                 const SizedBox(height: 8),
-                AscentButton.destructive(
+                AscentButton.outlined(
                   label: 'Cancel',
+                  compact: true,
                   expanded: true,
                   onPressed: () => Navigator.pop(ctx),
                 ),
@@ -498,8 +499,9 @@ Future<void> showStartSessionSheet(
                 onPressed: () => Navigator.pop(ctx, 'stop'),
               ),
               const SizedBox(height: 8),
-              AscentButton.destructive(
+              AscentButton.outlined(
                 label: 'Cancel',
+                compact: true,
                 expanded: true,
                 onPressed: () => Navigator.pop(ctx, 'cancel'),
               ),
@@ -694,8 +696,9 @@ void _openStarterModal(
                 Row(
                   children: [
                     Expanded(
-                      child: AscentButton.destructive(
+                      child: AscentButton.outlined(
                         label: 'Cancel',
+                        compact: true,
                         onPressed: () => Navigator.pop(ctx),
                       ),
                     ),

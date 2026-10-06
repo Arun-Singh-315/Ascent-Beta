@@ -19,6 +19,11 @@ import '../features/resume_vault/resume_vault_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/focus/focus_screen.dart';
 import '../features/reminders/reminders_screen.dart';
+import '../features/money/money_screen.dart';
+import '../features/walk/walk_screen.dart';
+import '../features/ai_assistant/ai_assistant_screen.dart';
+import '../features/habits/habits_screen.dart';
+import '../features/thought_wall/thought_wall_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
@@ -28,6 +33,11 @@ class AscentRoutes {
   static const onboarding = '/onboarding';
   static const home = '/home';
   static const today = '/today';
+  static const money = '/money';
+  static const walk = '/walk';
+  static const aiAssistant = '/ai-assistant';
+  static const habits = '/habits';
+  static const thoughtWall = '/thought-wall';
   static const pipeline = '/pipeline';
   static const pipelineCard = '/pipeline/:id';
   static const analytics = '/analytics';
@@ -74,7 +84,7 @@ final ascentRouter = GoRouter(
     StatefulShellRoute.indexedStack(
       builder: (context, state, shell) => MainScaffold(shell: shell),
       branches: [
-        // Tab 0: Home
+        // Tab 0: Home (Unified life overview)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -86,7 +96,7 @@ final ascentRouter = GoRouter(
           ],
         ),
 
-        // Tab 1: Today (Task Board)
+        // Tab 1: Study & Tasks
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -98,49 +108,31 @@ final ascentRouter = GoRouter(
           ],
         ),
 
-        // Tab 2: Pipeline (Kanban)
+        // Tab 2: Money Management
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.pipeline,
+              path: AscentRoutes.money,
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: PipelineScreen(),
+                child: MoneyScreen(),
               ),
-              routes: [
-                GoRoute(
-                  path: ':id',
-                  parentNavigatorKey: rootNavigatorKey,
-                  builder: (context, state) => CardDetailScreen(
-                    applicationId: int.parse(state.pathParameters['id']!),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
 
-        // Tab 3: Analytics
+        // Tab 3: Walk & Activity Tracking
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.analytics,
+              path: AscentRoutes.walk,
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: AnalyticsScreen(),
+                child: WalkScreen(),
               ),
-              routes: [
-                GoRoute(
-                  path: 'series/:id',
-                  parentNavigatorKey: rootNavigatorKey,
-                  builder: (context, state) => SeriesReportCardScreen(
-                    seriesId: int.parse(state.pathParameters['id']!),
-                  ),
-                ),
-              ],
             ),
           ],
         ),
 
-        // Tab 4: More (drawer hub)
+        // Tab 4: More (Hub & tools)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -150,6 +142,51 @@ final ascentRouter = GoRouter(
               ),
             ),
           ],
+        ),
+      ],
+    ),
+
+    // ── Parent destinations (pushed over the shell) ───────────────────────
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.aiAssistant,
+      builder: (context, state) => const AiAssistantScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.habits,
+      builder: (context, state) => const HabitsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.thoughtWall,
+      builder: (context, state) => const ThoughtWallScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.pipeline,
+      builder: (context, state) => const PipelineScreen(),
+      routes: [
+        GoRoute(
+          path: ':id',
+          parentNavigatorKey: rootNavigatorKey,
+          builder: (context, state) => CardDetailScreen(
+            applicationId: int.parse(state.pathParameters['id']!),
+          ),
+        ),
+      ],
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.analytics,
+      builder: (context, state) => const AnalyticsScreen(),
+      routes: [
+        GoRoute(
+          path: 'series/:id',
+          parentNavigatorKey: rootNavigatorKey,
+          builder: (context, state) => SeriesReportCardScreen(
+            seriesId: int.parse(state.pathParameters['id']!),
+          ),
         ),
       ],
     ),

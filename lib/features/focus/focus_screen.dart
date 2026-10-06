@@ -10,6 +10,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/live_session_bar.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -486,143 +487,131 @@ class _BigClockCard extends StatelessWidget {
     final isPaused = trackingState.isPaused;
     final hasSession = trackingState.activeSession != null;
     final elapsed = trackingState.elapsedSeconds;
+    final accent = context.accentPrimary;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            context.accentPrimary.withValues(alpha: 0.15),
-            context.accentPrimary.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: context.accentPrimary.withValues(alpha: 0.25),
-          width: 1.5,
-        ),
-      ),
+    return AscentCard(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: Column(
         children: [
-          // Task label
+          // Task label pill
           if (hasSession) ...[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: context.accentPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                color: context.bgSurfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.divider, width: 0.8),
               ),
-              child: Text(
-                trackingState.activeSession!.label,
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: context.accentPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isRunning ? accent : Colors.orange,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      trackingState.activeSession!.label,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ] else ...[
             Text(
               'No active session',
               style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
           ],
 
-          // Big clock
-          TweenAnimationBuilder<int>(
-            tween: IntTween(begin: elapsed, end: elapsed),
-            duration: Duration.zero,
-            builder: (context, value, _) {
-              return Text(
-                hasSession ? formatDuration(elapsed) : '00:00',
-                style: TextStyle(
-                  fontSize: 64,
-                  fontWeight: FontWeight.w300,
-                  letterSpacing: -2,
-                  color: hasSession
-                      ? (isRunning ? context.textPrimary : context.textMuted)
-                      : context.textMuted.withValues(alpha: 0.5),
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              );
-            },
+          // Clock digits in JetBrains Mono
+          Text(
+            hasSession ? formatDuration(elapsed) : '00:00',
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 52,
+              fontWeight: FontWeight.w400,
+              letterSpacing: -1.5,
+              color: hasSession
+                  ? (isRunning ? context.textPrimary : context.textMuted)
+                  : context.textMuted.withValues(alpha: 0.5),
+            ),
           ),
 
           if (isPaused) ...[
             const SizedBox(height: 4),
             Text(
               'PAUSED',
-              style: AscentTextStyles.labelSmall.copyWith(
+              style: GoogleFonts.jetBrainsMono(
                 color: context.accentSecondary,
-                letterSpacing: 2,
+                fontSize: 10,
+                letterSpacing: 1.5,
                 fontWeight: FontWeight.w700,
               ),
             ),
           ],
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // Controls
+          // Controls (Compact, clean, professional)
           if (!hasSession)
             AscentButton.primary(
-              label: 'Start Session',
+              label: 'Start Focus Session',
+              icon: Icons.play_arrow_rounded,
+              compact: true,
               onPressed: onStart,
             )
           else ...[
-            // Row 1: [ ⏸ Pause / ▶ Resume ] and [ 🔄 Switch task ]
             Row(
               children: [
                 Expanded(
                   child: isRunning
                       ? AscentButton.secondary(
-                          label: '⏸ Pause',
+                          label: 'Pause',
+                          icon: Icons.pause_rounded,
+                          compact: true,
                           expanded: true,
                           onPressed: onPause,
                         )
-                      : AscentButton.secondary(
-                          label: '▶ Resume',
+                      : AscentButton.primary(
+                          label: 'Resume',
+                          icon: Icons.play_arrow_rounded,
+                          compact: true,
                           expanded: true,
                           onPressed: onResume,
                         ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: AscentButton.secondary(
-                    label: '🔄 Switch task',
+                  child: AscentButton.outlined(
+                    label: 'Switch Task',
+                    icon: Icons.swap_horiz_rounded,
+                    compact: true,
                     expanded: true,
                     onPressed: onSwitchTask,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            // Row 2: Demoted Complete Session action
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: onComplete,
-                icon: Icon(Icons.check_circle_outline_rounded, size: 18, color: context.accentPrimary),
-                label: Text(
-                  'Complete session',
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    color: context.accentPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: context.accentPrimary.withValues(alpha: 0.08),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: context.accentPrimary.withValues(alpha: 0.2)),
-                  ),
-                ),
-              ),
+            const SizedBox(height: 10),
+            AscentButton.ghost(
+              label: 'Complete Session',
+              icon: Icons.check_circle_outline_rounded,
+              compact: true,
+              onPressed: onComplete,
             ),
           ],
         ],

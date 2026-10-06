@@ -717,8 +717,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
             Row(
               children: [
                 Expanded(
-                  child: AscentButton.destructive(
+                  child: AscentButton.outlined(
                     label: 'Cancel',
+                    compact: true,
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
@@ -727,6 +728,7 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
                   flex: 2,
                   child: AscentButton.primary(
                     label: isEditing ? 'Save Changes' : 'Add to Pipeline',
+                    compact: true,
                     loading: _saving,
                     onPressed: _save,
                   ),

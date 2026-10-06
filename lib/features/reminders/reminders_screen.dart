@@ -11,6 +11,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/empty_state.dart';
 
 class RemindersScreen extends ConsumerStatefulWidget {
   const RemindersScreen({super.key});
@@ -291,43 +292,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: AscentButton.fab(
+        icon: Icons.add_rounded,
         onPressed: () => _openAddEditReminderSheet(),
-        icon: const Icon(Icons.add_alert_rounded),
-        label: const Text('Add Reminder'),
-        backgroundColor: context.accentPrimary,
-        foregroundColor: Colors.white,
       ),
       body: remindersAsync.when(
         data: (reminders) {
           if (reminders.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.notifications_none_rounded, size: 64, color: context.textMuted),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No Reminders Yet',
-                      style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Set reminders for upcoming interviews, study blocks, and job applications.',
-                      textAlign: TextAlign.center,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                    ),
-                    const SizedBox(height: 20),
-                    AscentButton.primary(
-                      label: 'Create first reminder',
-                      icon: Icons.add_rounded,
-                      onPressed: () => _openAddEditReminderSheet(),
-                    ),
-                  ],
-                ),
-              ),
+            return EmptyState(
+              icon: Icons.notifications_none_rounded,
+              title: 'No Reminders Yet',
+              subtitle: 'Set reminders for upcoming interviews, study blocks, and application deadlines.',
+              actionLabel: 'Create Reminder',
+              onAction: () => _openAddEditReminderSheet(),
             );
           }
 

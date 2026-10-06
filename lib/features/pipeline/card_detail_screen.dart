@@ -72,8 +72,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.destructive(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),

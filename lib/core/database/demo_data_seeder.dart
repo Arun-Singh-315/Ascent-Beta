@@ -19,6 +19,14 @@ class DemoDataSeeder {
     final today = DateTime(now.year, now.month, now.day);
 
     // ── 1. Clean all existing tables cleanly ─────────────────────────────────
+    await db.customStatement('DELETE FROM ai_chat_messages;');
+    await db.customStatement('DELETE FROM habit_completions;');
+    await db.customStatement('DELETE FROM habits;');
+    await db.customStatement('DELETE FROM daily_activity_goals;');
+    await db.customStatement('DELETE FROM walk_sessions;');
+    await db.customStatement('DELETE FROM savings_goals;');
+    await db.customStatement('DELETE FROM finance_budgets;');
+    await db.customStatement('DELETE FROM finance_transactions;');
     await db.customStatement('DELETE FROM insight_dismissals;');
     await db.customStatement('DELETE FROM note_tags;');
     await db.customStatement('DELETE FROM notes;');
@@ -576,5 +584,71 @@ class DemoDataSeeder {
     } catch (_) {
       // Fallback if filesystem is mock/isolated in test environment
     }
+
+    // ── 15. Finance Records ───────────────────────────────────────────────
+    await db.financeDao.setOverallBudget(20000.0, dailyLimit: 600.0);
+    await db.financeDao.insertTransaction(
+      FinanceTransactionTableCompanion.insert(
+        title: 'Books & Courseware',
+        amount: 850.0,
+        type: const drift.Value('expense'),
+        category: const drift.Value('Education'),
+        date: now.subtract(const Duration(days: 2)),
+        account: const drift.Value('UPI'),
+      ),
+    );
+    await db.financeDao.insertTransaction(
+      FinanceTransactionTableCompanion.insert(
+        title: 'Morning Chai & Snacks',
+        amount: 45.0,
+        type: const drift.Value('expense'),
+        category: const drift.Value('Food & Groceries'),
+        date: now,
+        account: const drift.Value('UPI'),
+      ),
+    );
+    await db.financeDao.insertSavingsGoal(
+      SavingsGoalTableCompanion.insert(
+        title: 'Emergency Fund',
+        targetAmount: 50000.0,
+        savedAmount: const drift.Value(15000.0),
+      ),
+    );
+
+    // ── 16. Walking & Activity Records ────────────────────────────────────
+    await db.walkDao.setActivityGoal(5000.0, 45);
+    await db.walkDao.insertWalk(
+      WalkSessionTableCompanion.insert(
+        startTime: now.subtract(const Duration(hours: 4)),
+        endTime: drift.Value(now.subtract(const Duration(hours: 3, minutes: 25))),
+        durationSeconds: const drift.Value(2100),
+        distanceMeters: const drift.Value(2450.0),
+        calories: const drift.Value(155),
+        avgPaceSecondsPerKm: const drift.Value(857.0),
+        isCompleted: const drift.Value(true),
+        notes: const drift.Value('Brisk evening park loop'),
+      ),
+    );
+
+    // ── 17. Daily Habits ──────────────────────────────────────────────────
+    final h1 = await db.habitDao.insertHabit(
+      const HabitTableCompanion(
+        title: drift.Value('Daily 30m LeetCode / DSA'),
+        category: drift.Value('Study'),
+      ),
+    );
+    await db.habitDao.insertHabit(
+      const HabitTableCompanion(
+        title: drift.Value('30-Minute Outdoor Walk'),
+        category: drift.Value('Fitness'),
+      ),
+    );
+    await db.habitDao.insertHabit(
+      const HabitTableCompanion(
+        title: drift.Value('Drink 3L Water'),
+        category: drift.Value('Health'),
+      ),
+    );
+    await db.habitDao.toggleHabitToday(h1);
   }
 }

@@ -4,15 +4,8 @@ import '../../app/theme/color_tokens.dart';
 
 /// A surface card that follows the Ascent design system.
 ///
-/// Wraps [child] in a rounded, optionally-tappable container with a
-/// consistent shadow and background colour derived from [AscentColors].
-///
-/// ```dart
-/// AscentCard(
-///   onTap: () => _open(item),
-///   child: ListTile(title: Text(item.title)),
-/// )
-/// ```
+/// Features a calm matte background, subtle 0.8px border, gentle diffuse shadow,
+/// and smooth ink ripple when [onTap] is provided.
 class AscentCard extends StatelessWidget {
   const AscentCard({
     super.key,
@@ -21,8 +14,9 @@ class AscentCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.color,
-    this.radius = 16,
+    this.radius = 14,
     this.hasShadow = true,
+    this.hasBorder = true,
   });
 
   /// The content displayed inside the card.
@@ -40,33 +34,34 @@ class AscentCard extends StatelessWidget {
   /// Override the default [AscentColors.bgSurface] background.
   final Color? color;
 
-  /// Corner radius. Defaults to 16.
+  /// Corner radius. Defaults to 14.
   final double radius;
 
-  /// When true (default) adds a subtle 12 px blur shadow.
+  /// When true (default) adds a delicate diffuse shadow.
   final bool hasShadow;
+
+  /// When true (default) adds a refined hairline border.
+  final bool hasBorder;
 
   @override
   Widget build(BuildContext context) {
-    final surfaceColor = color ??
-        (context.isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface);
-    final shadowColor =
-        context.isDark ? AscentColors.shadowDark : AscentColors.shadow;
-
+    final surfaceColor = color ?? context.bgSurface;
+    final shadowColor = context.isDark ? AscentColors.shadowDark : AscentColors.shadow;
+    final borderColor = context.divider;
     final borderRadius = BorderRadius.circular(radius);
 
     return Container(
       margin: margin,
       decoration: BoxDecoration(
-
         color: surfaceColor,
         borderRadius: borderRadius,
+        border: hasBorder ? Border.all(color: borderColor, width: 0.8) : null,
         boxShadow: hasShadow
             ? [
                 BoxShadow(
-                  color: shadowColor.withValues(alpha: 0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: shadowColor.withValues(alpha: context.isDark ? 0.25 : 0.03),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
               ]
             : null,

@@ -16,35 +16,33 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController;
+  late final AnimationController _animController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
-  String _versionString = 'BETA';
+  String _versionString = 'v1.0';
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
 
-    _pulseController = AnimationController(
+    _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000),
     );
 
-    // Spec §1.1: Soft breathing/pulse animation (scale 0.96 <-> 1.0, opacity fade)
-    _scaleAnimation = Tween<double>(begin: 0.96, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutSine),
+    _scaleAnimation = Tween<double>(begin: 0.94, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
     );
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _pulseController,
-        curve: const Interval(0.0, 0.65, curve: Curves.easeOut),
+        parent: _animController,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
       ),
     );
 
-    _pulseController.repeat(reverse: true);
-
+    _animController.forward();
     _checkSessionAndNavigate();
   }
 
@@ -53,19 +51,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       final packageInfo = await PackageInfo.fromPlatform();
       if (mounted) {
         setState(() {
-          _versionString = 'BETA · v${packageInfo.version}';
+          _versionString = 'v${packageInfo.version}';
         });
       }
-    } catch (_) {
-      // Fallback to default
-    }
+    } catch (_) {}
   }
 
   Future<void> _checkSessionAndNavigate() async {
-    // Spec §1.1: 0.8-1.5s max, no spinner, session check underneath
     final startTime = DateTime.now();
 
-    // Check onboarding completion from SharedPreferences and DB
     final hasCompletedOnboardingPref = ref.read(onboardingCompleteProvider);
     bool hasProfile = false;
     try {
@@ -75,7 +69,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         hasProfile = true;
       }
     } catch (_) {
-      // Fallback to pref if DB check in-flight
       hasProfile = hasCompletedOnboardingPref;
     }
 
@@ -96,17 +89,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
-    _pulseController.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final textPrimary = context.textPrimary;
+    final textMuted = context.textMuted;
+    final accentPrimary = context.accentPrimary;
+    final divider = context.divider;
+
     return Scaffold(
       backgroundColor: context.bgBase,
       body: Center(
         child: AnimatedBuilder(
-          animation: _pulseController,
+          animation: _animController,
           builder: (context, child) {
             return FadeTransition(
               opacity: _fadeAnimation,
@@ -119,41 +117,39 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Logo mark: Ascending geometric motif
+              // Geometric Minimalist Logo Mark
               Container(
-                width: 92,
-                height: 92,
+                width: 80,
+                height: 80,
                 decoration: BoxDecoration(
                   color: context.bgSurface,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: divider, width: 0.9),
                   boxShadow: [
                     BoxShadow(
-                      color: context.accentPrimary.withValues(alpha: 0.15),
-                      blurRadius: 28,
-                      offset: const Offset(0, 10),
+                      color: context.isDark
+                          ? Colors.black.withValues(alpha: 0.4)
+                          : accentPrimary.withValues(alpha: 0.08),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
                     ),
                   ],
-                  border: Border.all(
-                    color: context.divider,
-                    width: 1.2,
-                  ),
                 ),
                 child: Center(
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Compass point / ascending chevron motif
                       Icon(
                         Icons.north_east_rounded,
-                        size: 46,
-                        color: context.accentPrimary,
+                        size: 38,
+                        color: accentPrimary,
                       ),
                       Positioned(
-                        bottom: 18,
-                        left: 18,
+                        bottom: 15,
+                        left: 15,
                         child: Container(
-                          width: 8,
-                          height: 8,
+                          width: 6,
+                          height: 6,
                           decoration: BoxDecoration(
                             color: context.accentSecondary,
                             shape: BoxShape.circle,
@@ -164,41 +160,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 28),
-              // App Name in Plus Jakarta Sans
+              const SizedBox(height: 24),
+
+              // Title
               Text(
                 'Ascent',
                 style: AscentTextStyles.displayLarge.copyWith(
-                  color: context.textPrimary,
+                  color: textPrimary,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(height: 8),
-              // Beta pill badge
-              Container(
-                decoration: BoxDecoration(
-                  color: context.accentPrimary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: context.accentPrimary.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                child: Text(
-                  _versionString,
-                  style: AscentTextStyles.captionMedium.copyWith(
-                    color: context.accentPrimaryBright,
-                  ),
+              const SizedBox(height: 6),
+
+              // Subtitle Tagline
+              Text(
+                'Job Prep & Search Operating System',
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
-              const SizedBox(height: 12),
-              // Tagline in Inter
-              Text(
-                'Prepare with purpose',
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: context.textMuted,
-                  letterSpacing: 0.1,
+              const SizedBox(height: 14),
+
+              // Subtle version badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: context.bgSurfaceElevated,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: divider, width: 0.8),
+                ),
+                child: Text(
+                  'BETA · $_versionString',
+                  style: AscentTextStyles.monoCode.copyWith(
+                    fontSize: 11,
+                    color: textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
             ],

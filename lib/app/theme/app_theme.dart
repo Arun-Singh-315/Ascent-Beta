@@ -122,10 +122,10 @@ class AscentTheme {
       labelSmall: AscentTextStyles.labelSmall.copyWith(color: textMuted),
     );
 
-    const cardRadius = Radius.circular(16);
-    const inputRadius = Radius.circular(12);
-    const buttonRadius = Radius.circular(16);
-    const sheetRadius = Radius.circular(24);
+    const cardRadius = Radius.circular(14);
+    const inputRadius = Radius.circular(10);
+    const buttonRadius = Radius.circular(10);
+    const sheetRadius = Radius.circular(20);
 
     return ThemeData(
       useMaterial3: true,
@@ -155,7 +155,8 @@ class AscentTheme {
         color: bgSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(cardRadius),
+          borderRadius: const BorderRadius.all(cardRadius),
+          side: BorderSide(color: divider, width: 0.8),
         ),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
@@ -178,27 +179,27 @@ class AscentTheme {
         filled: true,
         fillColor: bgSurface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide.none,
+          borderRadius: const BorderRadius.all(inputRadius),
+          borderSide: BorderSide(color: divider, width: 1.0),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide.none,
+          borderRadius: const BorderRadius.all(inputRadius),
+          borderSide: BorderSide(color: divider, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: accentPrimary, width: 1.5),
+          borderRadius: const BorderRadius.all(inputRadius),
+          borderSide: BorderSide(color: accentPrimary, width: 1.3),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: stateDanger, width: 1.5),
+          borderRadius: const BorderRadius.all(inputRadius),
+          borderSide: BorderSide(color: stateDanger, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: stateDanger, width: 1.5),
+          borderRadius: const BorderRadius.all(inputRadius),
+          borderSide: BorderSide(color: stateDanger, width: 1.3),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         hintStyle: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
         labelStyle: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
         floatingLabelStyle:
@@ -213,17 +214,17 @@ class AscentTheme {
           overlayColor:
               WidgetStatePropertyAll(textOnPrimary.withValues(alpha: 0.12)),
           elevation: const WidgetStatePropertyAll(0),
-          shadowColor: WidgetStatePropertyAll(Colors.transparent),
-          shape: WidgetStatePropertyAll(
+          shadowColor: const WidgetStatePropertyAll(Colors.transparent),
+          shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
           minimumSize:
-              const WidgetStatePropertyAll(Size(double.infinity, 52)),
-          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelLarge),
+              const WidgetStatePropertyAll(Size(double.infinity, 42)),
+          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
-              EdgeInsets.symmetric(horizontal: 24)),
+              EdgeInsets.symmetric(horizontal: 18, vertical: 10)),
         ),
       ),
 
@@ -233,12 +234,14 @@ class AscentTheme {
           foregroundColor: WidgetStatePropertyAll(accentPrimary),
           overlayColor:
               WidgetStatePropertyAll(accentPrimary.withValues(alpha: 0.08)),
-          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelLarge),
-          shape: WidgetStatePropertyAll(
+          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
+          shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
+          padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 14, vertical: 8)),
         ),
       ),
 
@@ -249,16 +252,18 @@ class AscentTheme {
           overlayColor:
               WidgetStatePropertyAll(accentPrimary.withValues(alpha: 0.08)),
           side: WidgetStatePropertyAll(
-            BorderSide(color: accentPrimary, width: 1.5),
+            BorderSide(color: divider, width: 1.0),
           ),
-          shape: WidgetStatePropertyAll(
+          shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
           minimumSize:
-              const WidgetStatePropertyAll(Size(double.infinity, 52)),
-          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelLarge),
+              const WidgetStatePropertyAll(Size(double.infinity, 42)),
+          textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
+          padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 18, vertical: 10)),
         ),
       ),
 

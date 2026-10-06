@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/ascent_button.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -74,15 +75,10 @@ class MoreScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    TextButton(
+                    AscentButton.outlined(
+                      label: 'Edit',
+                      compact: true,
                       onPressed: () => context.push('/settings'),
-                      child: Text(
-                        'Edit',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: context.accentPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
                     ),
                   ],
                 ),
@@ -91,24 +87,60 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
+          // ── AI Life Assistant ───────────────────────────────────────────
+          _GroupHeader(title: 'INTELLIGENCE & MIND', color: context.accentPrimary),
+          _NavItemTile(
+            icon: Icons.auto_awesome_outlined,
+            title: 'AI Life Assistant & Planner',
+            subtitle: 'On-device planner, natural-language logger & insights',
+            route: '/ai-assistant',
+            color: context.accentPrimary,
+          ),
+          _NavItemTile(
+            icon: Icons.bubble_chart_outlined,
+            title: 'Thought Wall • Mind Space',
+            subtitle: 'Unfiltered self-talk, sparks, daily wins & reflections',
+            route: '/thought-wall',
+            color: const Color(0xFF8338EC),
+          ),
+          const SizedBox(height: 20),
+
+          // ── Life & Habits ────────────────────────────────────────────────
+          _GroupHeader(title: 'LIFE & HABITS', color: context.accentSecondary),
+          _NavItemTile(
+            icon: Icons.checklist_rtl_rounded,
+            title: 'Daily Habits & Routines',
+            subtitle: 'Habit streaks, daily check-offs & momentum',
+            route: '/habits',
+            color: context.accentSecondary,
+          ),
+          _NavItemTile(
+            icon: Icons.view_kanban_outlined,
+            title: 'Job Pipeline Kanban',
+            subtitle: 'Applications, interview stages & offers',
+            route: '/pipeline',
+            color: context.accentSecondary,
+          ),
+          const SizedBox(height: 20),
+
           // ── 2. Prepare Group ─────────────────────────────────────────────
           _GroupHeader(title: 'PREPARE', color: context.accentPrimary),
           _NavItemTile(
-            icon: Icons.alt_route_rounded,
+            icon: Icons.alt_route_outlined,
             title: 'Study Plan & Roadmap',
             subtitle: 'Phase progress, weekly targets & curriculum',
             route: '/study-plan',
             color: context.accentPrimary,
           ),
           _NavItemTile(
-            icon: Icons.code_rounded,
+            icon: Icons.code_outlined,
             title: 'DSA Tracker',
             subtitle: 'Logged algorithms, topic mastery & revisits',
             route: '/dsa',
             color: context.accentPrimary,
           ),
           _NavItemTile(
-            icon: Icons.psychology_alt_rounded,
+            icon: Icons.psychology_outlined,
             title: 'Interview Prep Bank',
             subtitle: 'Question logs, company notes & outcomes',
             route: '/interview-prep',
@@ -119,21 +151,21 @@ class MoreScreen extends ConsumerWidget {
           // ── 3. Track Group ───────────────────────────────────────────────
           _GroupHeader(title: 'TRACK', color: context.accentSecondary),
           _NavItemTile(
-            icon: Icons.calendar_month_rounded,
+            icon: Icons.calendar_month_outlined,
             title: 'Consistency Heatmap',
             subtitle: 'Daily study presence, streak records & logs',
             route: '/consistency',
             color: context.accentSecondary,
           ),
           _NavItemTile(
-            icon: Icons.edit_note_rounded,
+            icon: Icons.edit_note_outlined,
             title: 'Notes & Journal',
             subtitle: 'Topic recaps, quick thoughts & company insights',
             route: '/notes',
             color: context.accentSecondary,
           ),
           _NavItemTile(
-            icon: Icons.notifications_active_rounded,
+            icon: Icons.notifications_none_outlined,
             title: 'Reminders & Alerts',
             subtitle: 'Upcoming rounds, tasks & study alarms',
             route: '/reminders',
@@ -144,7 +176,7 @@ class MoreScreen extends ConsumerWidget {
           // ── 4. Documents Group ───────────────────────────────────────────
           _GroupHeader(title: 'DOCUMENTS', color: context.accentInfo),
           _NavItemTile(
-            icon: Icons.description_rounded,
+            icon: Icons.description_outlined,
             title: 'Resume Vault',
             subtitle: 'Tailored versions, role mappings & files',
             route: '/resume-vault',
@@ -155,7 +187,7 @@ class MoreScreen extends ConsumerWidget {
           // ── 5. Insights Group ────────────────────────────────────────────
           _GroupHeader(title: 'INSIGHTS', color: context.accentPrimary),
           _NavItemTile(
-            icon: Icons.insights_rounded,
+            icon: Icons.insights_outlined,
             title: 'Analytics & Trends',
             subtitle: 'Skill radar, study hours & conversion funnel',
             route: '/analytics',
@@ -166,7 +198,7 @@ class MoreScreen extends ConsumerWidget {
           // ── 6. App Group ─────────────────────────────────────────────────
           _GroupHeader(title: 'PREFERENCES', color: context.textMuted),
           _NavItemTile(
-            icon: Icons.settings_rounded,
+            icon: Icons.settings_outlined,
             title: 'Settings',
             subtitle: 'Theme, study goals, notifications & data backup',
             route: '/settings',

@@ -81,6 +81,129 @@ final reminderDaoProvider = Provider<ReminderDao>(
   (ref) => ReminderDao(ref.watch(databaseProvider)),
 );
 
+final financeDaoProvider = Provider<FinanceDao>(
+  (ref) => FinanceDao(ref.watch(databaseProvider)),
+);
+
+final walkDaoProvider = Provider<WalkDao>(
+  (ref) => WalkDao(ref.watch(databaseProvider)),
+);
+
+final habitDaoProvider = Provider<HabitDao>(
+  (ref) => HabitDao(ref.watch(databaseProvider)),
+);
+
+final aiAssistantDaoProvider = Provider<AiAssistantDao>(
+  (ref) => AiAssistantDao(ref.watch(databaseProvider)),
+);
+
+final waterDaoProvider = Provider<WaterDao>(
+  (ref) => WaterDao(ref.watch(databaseProvider)),
+);
+
+final thoughtDaoProvider = Provider<ThoughtDao>(
+  (ref) => ThoughtDao(ref.watch(databaseProvider)),
+);
+
+// ── Finance Reactive Stream Providers ─────────────────────────────────────────
+
+final todaySpendingStreamProvider = StreamProvider<double>((ref) {
+  final dao = ref.watch(financeDaoProvider);
+  return dao.watchTodaySpending();
+});
+
+final currentMonthSpendingStreamProvider = StreamProvider<double>((ref) {
+  final dao = ref.watch(financeDaoProvider);
+  final now = DateTime.now();
+  return dao.watchMonthSpending(now.year, now.month);
+});
+
+final currentMonthIncomeStreamProvider = StreamProvider<double>((ref) {
+  final dao = ref.watch(financeDaoProvider);
+  final now = DateTime.now();
+  return dao.watchMonthIncome(now.year, now.month);
+});
+
+final overallBudgetStreamProvider = StreamProvider<FinanceBudget?>((ref) {
+  final dao = ref.watch(financeDaoProvider);
+  return dao.watchOverallBudget();
+});
+
+final recentTransactionsStreamProvider = StreamProvider<List<FinanceTransaction>>((ref) {
+  final dao = ref.watch(financeDaoProvider);
+  return dao.watchRecentTransactions(limit: 25);
+});
+
+final savingsGoalsStreamProvider = StreamProvider<List<SavingsGoal>>((ref) {
+  final dao = ref.watch(financeDaoProvider);
+  return dao.watchSavingsGoals();
+});
+
+// ── Walk & Activity Stream Providers ──────────────────────────────────────────
+
+final todayWalkDistanceStreamProvider = StreamProvider<double>((ref) {
+  final dao = ref.watch(walkDaoProvider);
+  return dao.watchTodayDistance();
+});
+
+final weekWalkDistanceStreamProvider = StreamProvider<double>((ref) {
+  final dao = ref.watch(walkDaoProvider);
+  return dao.watchWeekDistance();
+});
+
+final completedWalksStreamProvider = StreamProvider<List<WalkSession>>((ref) {
+  final dao = ref.watch(walkDaoProvider);
+  return dao.watchCompletedWalks();
+});
+
+final activityGoalStreamProvider = StreamProvider<DailyActivityGoal>((ref) {
+  final dao = ref.watch(walkDaoProvider);
+  return dao.watchActivityGoal();
+});
+
+// ── Habits Stream Providers ───────────────────────────────────────────────────
+
+final allHabitsStreamProvider = StreamProvider<List<Habit>>((ref) {
+  final dao = ref.watch(habitDaoProvider);
+  return dao.watchAllHabits();
+});
+
+final todayCompletedHabitIdsStreamProvider = StreamProvider<Set<int>>((ref) {
+  final dao = ref.watch(habitDaoProvider);
+  return dao.watchTodayCompletedHabitIds();
+});
+
+// ── Water Hydration Stream Providers ──────────────────────────────────────────
+
+final todayWaterMlStreamProvider = StreamProvider<int>((ref) {
+  final dao = ref.watch(waterDaoProvider);
+  return dao.watchTodayWaterMl();
+});
+
+final todayWaterLogsStreamProvider = StreamProvider<List<WaterLog>>((ref) {
+  final dao = ref.watch(waterDaoProvider);
+  return dao.watchTodayWaterLogs();
+});
+
+final dailyWaterGoalStreamProvider = StreamProvider<int>((ref) {
+  final dao = ref.watch(waterDaoProvider);
+  return dao.watchDailyWaterGoal();
+});
+
+// ── Thought Wall & Mind Space Stream Providers ────────────────────────────────
+
+final allThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
+  final dao = ref.watch(thoughtDaoProvider);
+  return dao.watchAllThoughts();
+});
+
+final recentThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
+  final dao = ref.watch(thoughtDaoProvider);
+  return dao.watchRecentThoughts(limit: 6);
+});
+
+// ── Reminders & Interviews ───────────────────────────────────────────────────
+
 final nextUpcomingReminderProvider = StreamProvider<Reminder?>((ref) {
   final dao = ref.watch(reminderDaoProvider);
   return dao.watchNextReminder();
@@ -148,6 +271,11 @@ class HomeQuickStats {
 final userProfileStreamProvider = StreamProvider<UserProfile?>((ref) {
   final dao = ref.watch(userProfileDaoProvider);
   return dao.watchProfile();
+});
+
+final todayTasksStreamProvider = StreamProvider<List<Task>>((ref) {
+  final dao = ref.watch(taskDaoProvider);
+  return dao.watchTasksByDate(DateTime.now());
 });
 
 final todayFocusTaskProvider = FutureProvider<Task?>((ref) async {

@@ -114,15 +114,17 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.destructive(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: AscentButton.primary(
+                    child: AscentButton.destructive(
                       label: 'Delete',
+                      compact: true,
                       onPressed: () async {
                         Navigator.pop(ctx);
                         try {
@@ -733,8 +735,9 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
             Row(
               children: [
                 Expanded(
-                  child: AscentButton.destructive(
+                  child: AscentButton.outlined(
                     label: 'Cancel',
+                    compact: true,
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -742,6 +745,7 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
                 Expanded(
                   child: AscentButton.primary(
                     label: widget.existing != null ? 'Update' : 'Save to Vault',
+                    compact: true,
                     loading: _isUploading,
                     onPressed: _save,
                   ),

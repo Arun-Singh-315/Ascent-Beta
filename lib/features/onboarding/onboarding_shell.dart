@@ -10,7 +10,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
-
+import '../../shared/widgets/ascent_card.dart';
 
 // ---------------------------------------------------------------------------
 // Onboarding State Model & Provider
@@ -23,12 +23,7 @@ class OnboardingDraftState {
   final List<String> targetCompanies;
   final DateTime? interviewDate;
   final bool isJustPreparing;
-  final int dsaRating; // 1-5
-  final int systemDesignRating; // 1-5
-  final int coreStackRating; // 1-5
   final int weeklyHours;
-  final String? resumeFileName;
-  final String? resumeFilePath;
   final bool isSubmitting;
 
   const OnboardingDraftState({
@@ -38,12 +33,7 @@ class OnboardingDraftState {
     this.targetCompanies = const [],
     this.interviewDate,
     this.isJustPreparing = true,
-    this.dsaRating = 3,
-    this.systemDesignRating = 2,
-    this.coreStackRating = 3,
     this.weeklyHours = 12,
-    this.resumeFileName,
-    this.resumeFilePath,
     this.isSubmitting = false,
   });
 
@@ -54,12 +44,7 @@ class OnboardingDraftState {
     List<String>? targetCompanies,
     DateTime? interviewDate,
     bool? isJustPreparing,
-    int? dsaRating,
-    int? systemDesignRating,
-    int? coreStackRating,
     int? weeklyHours,
-    String? resumeFileName,
-    String? resumeFilePath,
     bool? isSubmitting,
   }) {
     return OnboardingDraftState(
@@ -69,12 +54,7 @@ class OnboardingDraftState {
       targetCompanies: targetCompanies ?? this.targetCompanies,
       interviewDate: interviewDate ?? this.interviewDate,
       isJustPreparing: isJustPreparing ?? this.isJustPreparing,
-      dsaRating: dsaRating ?? this.dsaRating,
-      systemDesignRating: systemDesignRating ?? this.systemDesignRating,
-      coreStackRating: coreStackRating ?? this.coreStackRating,
       weeklyHours: weeklyHours ?? this.weeklyHours,
-      resumeFileName: resumeFileName ?? this.resumeFileName,
-      resumeFilePath: resumeFilePath ?? this.resumeFilePath,
       isSubmitting: isSubmitting ?? this.isSubmitting,
     );
   }
@@ -108,24 +88,6 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
       state = state.copyWith(targetCompanies: list);
     }
   }
-
-  void setInterviewDate(DateTime? date) =>
-      state = state.copyWith(interviewDate: date, isJustPreparing: false);
-
-  void setJustPreparing() =>
-      state = state.copyWith(interviewDate: null, isJustPreparing: true);
-
-  void setSkillRatings({int? dsa, int? systemDesign, int? coreStack}) =>
-      state = state.copyWith(
-        dsaRating: dsa ?? state.dsaRating,
-        systemDesignRating: systemDesign ?? state.systemDesignRating,
-        coreStackRating: coreStack ?? state.coreStackRating,
-      );
-
-  void setWeeklyHours(int hours) => state = state.copyWith(weeklyHours: hours);
-
-  void setResume(String name, String path) =>
-      state = state.copyWith(resumeFileName: name, resumeFilePath: path);
 
   Future<void> submitAndSeedPlan(BuildContext context, WidgetRef ref) async {
     state = state.copyWith(isSubmitting: true);
@@ -206,7 +168,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     ref.read(onboardingProvider.notifier).setStep(step);
     _pageController.animateToPage(
       step,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
     );
   }
@@ -216,7 +178,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     if (current < _totalSteps - 1) {
       _goToStep(current + 1);
     } else {
-      _showPayoffAndFinish();
+      _finishOnboarding();
     }
   }
 
@@ -227,13 +189,10 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
     }
   }
 
-  Future<void> _showPayoffAndFinish() async {
-    // Show transition "Your plan is ready" dialog / screen
+  Future<void> _finishOnboarding() async {
     await ref.read(onboardingProvider.notifier).submitAndSeedPlan(context, ref);
-
     if (!mounted) return;
 
-    // Show emotional payoff modal/screen
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -252,15 +211,11 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
     final currentStep = state.stepIndex;
-
-    // Step 0: Name + Role (Required - Hide skip)
-    // Step 1: Target companies (Optional - Show skip)
-    // Step 2: Done (no skip needed)
     final canSkip = currentStep == 1;
 
     return PopScope(
       canPop: currentStep == 0,
-      onPopInvokedWithResult: (didPop, result) {
+      onPopInvokedWithResult: (didPop, _) {
         if (!didPop && currentStep > 0) {
           _prevStep();
         }
@@ -271,10 +226,13 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
           backgroundColor: context.bgBase,
           elevation: 0,
           leading: currentStep > 0
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  color: context.textPrimary,
-                  onPressed: _prevStep,
+              ? Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: AscentButton.icon(
+                    icon: Icons.arrow_back_rounded,
+                    compact: true,
+                    onPressed: _prevStep,
+                  ),
                 )
               : null,
           title: _ProgressDots(
@@ -284,36 +242,37 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
           centerTitle: true,
           actions: [
             if (canSkip)
-              TextButton(
-                onPressed: _nextStep,
-                child: Text(
-                  'Skip for now',
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: context.textMuted,
-                  ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: AscentButton.ghost(
+                  label: 'Skip',
+                  compact: true,
+                  onPressed: _nextStep,
                 ),
               )
             else
               const SizedBox(width: 48),
           ],
         ),
-        body: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(), // Managed via Continue/Back
-          children: [
-            _StepNameAndRole(
-              nameController: _nameController,
-              roleController: _roleController,
-              onContinue: _nextStep,
-            ),
-            _StepTargetCompanies(
-              customController: _companyCustomController,
-              onContinue: _nextStep,
-            ),
-            _StepDone(
-              onFinish: _showPayoffAndFinish,
-            ),
-          ],
+        body: SafeArea(
+          child: PageView(
+            controller: _pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _StepNameAndRole(
+                nameController: _nameController,
+                roleController: _roleController,
+                onContinue: _nextStep,
+              ),
+              _StepTargetCompanies(
+                customController: _companyCustomController,
+                onContinue: _nextStep,
+              ),
+              _StepDone(
+                onFinish: _finishOnboarding,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -321,7 +280,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
 }
 
 // ---------------------------------------------------------------------------
-// Progress Dots Indicator
+// Animated Progress Dots Indicator
 // ---------------------------------------------------------------------------
 
 class _ProgressDots extends StatelessWidget {
@@ -339,16 +298,17 @@ class _ProgressDots extends StatelessWidget {
         final isCompleted = index < current;
 
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: isCurrent ? 24 : 7,
-          height: 7,
+          width: isCurrent ? 22 : 6,
+          height: 6,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(3),
             color: isCurrent
                 ? context.accentPrimary
                 : isCompleted
-                    ? context.accentPrimary.withValues(alpha: 0.45)
+                    ? context.accentPrimary.withValues(alpha: 0.4)
                     : context.divider,
           ),
         );
@@ -383,27 +343,43 @@ class _StepNameAndRole extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final textPrimary = context.textPrimary;
+    final textMuted = context.textMuted;
+
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
-          Text(
-            'Let\'s build your plan.',
-            style: AscentTextStyles.displayLarge.copyWith(color: context.textPrimary),
-          ),
           const SizedBox(height: 8),
           Text(
-            'What should we call you, and what target role are you preparing for?',
-            style: AscentTextStyles.bodyLarge.copyWith(color: context.textMuted),
+            'Let\'s build your system.',
+            style: AscentTextStyles.displayLarge.copyWith(
+              color: textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: 32),
-          Text('Your Name', style: AscentTextStyles.labelLarge.copyWith(color: context.textPrimary)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          Text(
+            'What should we call you, and what role are you aiming for?',
+            style: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
+          ),
+          const SizedBox(height: 24),
+
+          // Name field
+          Text(
+            'Your Name',
+            style: AscentTextStyles.labelSmall.copyWith(
+              color: textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
           TextField(
             controller: nameController,
             textCapitalization: TextCapitalization.words,
+            style: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
             decoration: const InputDecoration(
               hintText: 'e.g. Alex',
             ),
@@ -411,12 +387,21 @@ class _StepNameAndRole extends ConsumerWidget {
               ref.read(onboardingProvider.notifier).updateNameRole(val, roleController.text);
             },
           ),
-          const SizedBox(height: 24),
-          Text('Target Role', style: AscentTextStyles.labelLarge.copyWith(color: context.textPrimary)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
+
+          // Target Role field
+          Text(
+            'Target Role',
+            style: AscentTextStyles.labelSmall.copyWith(
+              color: textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
           TextField(
             controller: roleController,
             textCapitalization: TextCapitalization.words,
+            style: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
             decoration: const InputDecoration(
               hintText: 'e.g. Backend Engineer',
             ),
@@ -424,16 +409,23 @@ class _StepNameAndRole extends ConsumerWidget {
               ref.read(onboardingProvider.notifier).updateNameRole(nameController.text, val);
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // Suggestion chips
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: _roleSuggestions.map((suggestion) {
               return ActionChip(
                 label: Text(suggestion),
                 backgroundColor: context.bgSurface,
-                side: BorderSide(color: context.divider),
-                labelStyle: AscentTextStyles.bodySmall.copyWith(color: context.textPrimary),
+                side: BorderSide(color: context.divider, width: 0.8),
+                labelStyle: AscentTextStyles.bodySmall.copyWith(
+                  color: textPrimary,
+                  fontSize: 11.5,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 onPressed: () {
                   roleController.text = suggestion;
                   ref.read(onboardingProvider.notifier).updateNameRole(nameController.text, suggestion);
@@ -441,7 +433,9 @@ class _StepNameAndRole extends ConsumerWidget {
               );
             }).toList(),
           ),
+
           const Spacer(),
+
           AscentButton.primary(
             label: 'Continue',
             onPressed: () {
@@ -458,7 +452,7 @@ class _StepNameAndRole extends ConsumerWidget {
               onContinue();
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
@@ -487,28 +481,37 @@ class _StepTargetCompanies extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(onboardingProvider);
     final selected = state.targetCompanies;
+    final textPrimary = context.textPrimary;
+    final textMuted = context.textMuted;
 
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
-          Text(
-            'Target companies',
-            style: AscentTextStyles.displayLarge.copyWith(color: context.textPrimary),
-          ),
           const SizedBox(height: 8),
           Text(
-            'Add companies on your radar. This seeds your Application Pipeline board.',
-            style: AscentTextStyles.bodyLarge.copyWith(color: context.textMuted),
+            'Target Companies',
+            style: AscentTextStyles.displayLarge.copyWith(
+              color: textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 6),
+          Text(
+            'Select or add target companies to seed your application pipeline.',
+            style: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
+          ),
+          const SizedBox(height: 20),
+
+          // Custom company input row
           Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: customController,
+                  style: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
                   decoration: const InputDecoration(
                     hintText: 'Add custom company...',
                   ),
@@ -519,12 +522,9 @@ class _StepTargetCompanies extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton.filled(
-                style: IconButton.styleFrom(
-                  backgroundColor: context.accentPrimary,
-                  foregroundColor: context.textOnPrimary,
-                ),
-                icon: const Icon(Icons.add_rounded),
+              AscentButton.icon(
+                icon: Icons.add_rounded,
+                compact: false,
                 onPressed: () {
                   ref.read(onboardingProvider.notifier).addCustomCompany(customController.text);
                   customController.clear();
@@ -532,26 +532,34 @@ class _StepTargetCompanies extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Text('Popular choices:', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+
+          Text(
+            'Quick select:',
+            style: AscentTextStyles.labelSmall.copyWith(color: textMuted),
+          ),
+          const SizedBox(height: 10),
+
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: _popularCompanies.map((comp) {
               final isChosen = selected.contains(comp);
               return FilterChip(
                 label: Text(comp),
                 selected: isChosen,
-                selectedColor: context.accentPrimary.withValues(alpha: 0.18),
+                selectedColor: context.accentPrimary.withValues(alpha: 0.14),
                 checkmarkColor: context.accentPrimary,
                 backgroundColor: context.bgSurface,
                 side: BorderSide(
                   color: isChosen ? context.accentPrimary : context.divider,
+                  width: 0.8,
                 ),
-                labelStyle: AscentTextStyles.bodyMedium.copyWith(
-                  color: isChosen ? context.accentPrimary : context.textPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                labelStyle: AscentTextStyles.bodySmall.copyWith(
+                  color: isChosen ? context.accentPrimary : textPrimary,
                   fontWeight: isChosen ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 12,
                 ),
                 onSelected: (_) {
                   ref.read(onboardingProvider.notifier).toggleCompany(comp);
@@ -559,21 +567,22 @@ class _StepTargetCompanies extends ConsumerWidget {
               );
             }).toList(),
           ),
+
           const Spacer(),
+
           AscentButton.primary(
-            label: selected.isEmpty ? 'Continue' : 'Continue with ${selected.length} companies',
+            label: selected.isEmpty ? 'Continue' : 'Continue (${selected.length} chosen)',
             onPressed: onContinue,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 }
 
-
 // ---------------------------------------------------------------------------
-// Screen 3: Done — Let's Go!
+// Screen 3: Done — Ready for Takeoff
 // ---------------------------------------------------------------------------
 
 class _StepDone extends StatelessWidget {
@@ -583,51 +592,139 @@ class _StepDone extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textPrimary = context.textPrimary;
+    final textMuted = context.textMuted;
+
     return Padding(
-      padding: const EdgeInsets.all(24.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const Spacer(),
+
           Container(
-            width: 80,
-            height: 80,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              color: context.accentPrimary.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
+              color: context.accentPrimary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: context.accentPrimary.withValues(alpha: 0.3), width: 0.9),
             ),
             child: Icon(
-              Icons.rocket_launch_rounded,
+              Icons.check_circle_outline_rounded,
               color: context.accentPrimary,
-              size: 40,
+              size: 36,
             ),
           ),
+          const SizedBox(height: 22),
+
+          Text(
+            'Your workspace is ready',
+            style: AscentTextStyles.displayLarge.copyWith(
+              color: textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Text(
+              'Track daily study blocks, practice interview questions, solve DSA, and advance your pipeline.',
+              style: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
+              textAlign: TextAlign.center,
+            ),
+          ),
+
           const SizedBox(height: 28),
-          Text(
-            'You\'re all set!',
-            style: AscentTextStyles.displayLarge.copyWith(color: context.textPrimary),
-            textAlign: TextAlign.center,
+
+          // Feature highlights
+          AscentCard(
+            hasBorder: true,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Column(
+              children: [
+                _FeatureRow(
+                  icon: Icons.timer_outlined,
+                  title: 'Deep Work Timer',
+                  subtitle: 'Precision focus tracking without distractions',
+                ),
+                Divider(color: context.divider, height: 16),
+                _FeatureRow(
+                  icon: Icons.view_kanban_outlined,
+                  title: 'Job Pipeline',
+                  subtitle: 'Manage applications from wishlist to offer',
+                ),
+                Divider(color: context.divider, height: 16),
+                _FeatureRow(
+                  icon: Icons.bolt_outlined,
+                  title: 'Daily Momentum',
+                  subtitle: 'Continuous consistency and streak analytics',
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            'Ascent is ready to help you land your next role.\nTrack tasks, log sessions, and crush interviews.',
-            style: AscentTextStyles.bodyLarge.copyWith(color: context.textMuted),
-            textAlign: TextAlign.center,
-          ),
+
           const Spacer(),
+
           AscentButton.primary(
             label: 'Launch Dashboard →',
             onPressed: onFinish,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 }
 
+class _FeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _FeatureRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: context.accentPrimary),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: context.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
-// "Your Plan Is Ready" Transition Dialog
+// Transition Dialog
 // ---------------------------------------------------------------------------
 
 class _PlanReadyDialog extends StatelessWidget {
@@ -643,39 +740,44 @@ class _PlanReadyDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: context.bgSurface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(28.0),
+        padding: const EdgeInsets.all(22.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: context.accentPrimary.withValues(alpha: 0.15),
+                color: context.accentPrimary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.check_rounded,
                 color: context.accentPrimary,
-                size: 36,
+                size: 28,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              'Your plan is ready.',
-              style: AscentTextStyles.displayMedium.copyWith(color: context.textPrimary),
+              'Workspace Ready',
+              style: AscentTextStyles.displaySmall.copyWith(
+                color: context.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Text(
-              'Ready for takeoff, $targetRole candidate! Your application board is set with $companiesCount target companies. Let\'s land that offer.',
+              'Configured for $targetRole with $companiesCount target companies ready in your pipeline.',
               style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
             AscentButton.primary(
-              label: 'Launch Home Dashboard',
+              label: 'Enter Ascent',
+              compact: true,
               onPressed: () => Navigator.of(context).pop(),
             ),
           ],

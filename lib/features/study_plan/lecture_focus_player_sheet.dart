@@ -100,7 +100,7 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFF1EFEA)),
+          Divider(height: 1, color: context.divider),
 
           // Main scrollable player content
           Expanded(
@@ -188,7 +188,7 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                         child: CircularProgressIndicator(
                           value: state.progressFraction,
                           strokeWidth: 9,
-                          backgroundColor: const Color(0xFFF1EFEA),
+                          backgroundColor: context.divider,
                           color: context.accentSecondary,
                           strokeCap: StrokeCap.round,
                         ),
@@ -388,7 +388,7 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                       ),
 
                       if (_switcherExpanded) ...[
-                        const Divider(height: 1, color: Color(0xFFF1EFEA)),
+                        Divider(height: 1, color: context.divider),
                         ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),

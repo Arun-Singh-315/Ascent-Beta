@@ -278,14 +278,16 @@ class _DailyCheckInBlock extends StatelessWidget {
             children: [
               Expanded(
                 child: AscentButton.primary(
-                  label: todayLog?.present == true ? 'Checked In (Yes)' : 'Yes, showed up',
+                  label: todayLog?.present == true ? 'Checked In' : 'Yes, showed up',
+                  compact: true,
                   onPressed: () => onCheckIn(true, null),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: AscentButton.secondary(
-                  label: todayLog?.present == false ? 'Logged Rest (No)' : 'Rest day / No',
+                child: AscentButton.outlined(
+                  label: todayLog?.present == false ? 'Logged Rest' : 'Rest day / No',
+                  compact: true,
                   onPressed: () => onCheckIn(false, null),
                 ),
               ),

@@ -262,8 +262,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.destructive(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
@@ -271,6 +272,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Expanded(
                     child: AscentButton.primary(
                       label: 'Restore',
+                      compact: true,
                       onPressed: () async {
                         final nav = Navigator.of(ctx);
                         final scaffold = ScaffoldMessenger.of(context);
@@ -358,8 +360,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.destructive(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
@@ -367,6 +370,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Expanded(
                     child: AscentButton.primary(
                       label: 'Seed Demo Data',
+                      compact: true,
                       onPressed: () async {
                         final nav = Navigator.of(ctx);
                         final scaffold = ScaffoldMessenger.of(context);
@@ -432,8 +436,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: AscentButton.destructive(
+                    child: AscentButton.outlined(
                       label: 'Cancel',
+                      compact: true,
                       onPressed: () => Navigator.pop(ctx),
                     ),
                   ),
@@ -823,6 +828,66 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
 
+              // ── Section: Outdoor Walking & GPS Battery Optimization ──────
+              _SectionHeader(title: 'LOCATION & BACKGROUND TRACKING'),
+              AscentCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.directions_walk_rounded, color: Colors.teal, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'GPS Battery Optimization Guide',
+                                style: AscentTextStyles.labelMedium.copyWith(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Keep outdoor walks recording when screen locks',
+                                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.info_outline_rounded, color: Colors.teal),
+                          onPressed: () => _showGpsBatteryGuide(context),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Android OEMs (Samsung, Xiaomi, OnePlus) aggressively stop background GPS when the screen turns off. To record your complete route without pause, set Ascent\'s battery usage to "Unrestricted" in your phone\'s App Info settings.',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: context.textMuted,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    AscentButton.outlined(
+                      label: 'View Setup Guide 🔋',
+                      compact: true,
+                      onPressed: () => _showGpsBatteryGuide(context),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 20),
 
               // ── Section 4: Data & Backup ─────────────────────────────
@@ -987,6 +1052,135 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         },
       ),
       ),
+    );
+  }
+
+  void _showGpsBatteryGuide(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: ctx.bgSurface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: ctx.divider, width: 1.5)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ctx.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.battery_saver_rounded, color: Colors.teal, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Background Walk Tracking Setup',
+                        style: AscentTextStyles.headlineMedium.copyWith(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: ctx.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Prevent Android from killing GPS when locked',
+                        style: AscentTextStyles.bodySmall.copyWith(color: ctx.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _guideStep(
+              number: '1',
+              title: 'Open Android App Settings',
+              description: 'Long press Ascent icon on your home screen > App info (or go to Phone Settings > Apps > Ascent).',
+            ),
+            const SizedBox(height: 12),
+            _guideStep(
+              number: '2',
+              title: 'Set Battery to "Unrestricted"',
+              description: 'Under Battery or App Battery Usage, change setting from "Optimized" to "Unrestricted". This allows continuous GPS recording.',
+            ),
+            const SizedBox(height: 12),
+            _guideStep(
+              number: '3',
+              title: 'Allow Location While Using App',
+              description: 'Ascent runs a foreground walking service with active duration and live route telemetry.',
+            ),
+            const SizedBox(height: 18),
+            AscentButton.primary(
+              label: 'Understood, Got it! 👍',
+              expanded: true,
+              onPressed: () => Navigator.of(ctx).pop(),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _guideStep({required String number, required String title, required String description}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: Colors.teal.withValues(alpha: 0.2),
+          child: Text(
+            number,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AscentTextStyles.labelMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: context.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
