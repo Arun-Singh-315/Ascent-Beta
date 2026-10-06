@@ -31,6 +31,22 @@ class WalkDao extends DatabaseAccessor<AppDatabase> with _$WalkDaoMixin {
     return query.watchSingle().map((row) => row.read(distanceSum) ?? 0.0);
   }
 
+  /// Get total walk distance in meters for a specific date.
+  Future<double> getDistanceForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    final distanceSum = walkSessionTable.distanceMeters.sum();
+    final query = selectOnly(walkSessionTable)
+      ..addColumns([distanceSum])
+      ..where(walkSessionTable.isCompleted.equals(true) &
+          walkSessionTable.startTime.isBiggerOrEqualValue(startOfDay) &
+          walkSessionTable.startTime.isSmallerOrEqualValue(endOfDay));
+
+    final row = await query.getSingleOrNull();
+    return row?.read(distanceSum) ?? 0.0;
+  }
+
   /// Watch this week's total distance in meters (from Monday).
   Stream<double> watchWeekDistance() {
     final now = DateTime.now();

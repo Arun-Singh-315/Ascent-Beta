@@ -1,92 +1,63 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 
-/// Show the new-day morning dialog over [context].
-/// Call once per calendar day from HomeScreen's initState.
+/// Show the executive new-day morning briefing dialog over [context].
+/// Displays a frosted glass freeze overlay, yesterday's multi-module debrief,
+/// and comprehensive inputs for today (hydration kick-off, tasks, focus target, mindset).
 Future<void> showNewDayDialog(BuildContext context, WidgetRef ref) async {
-  // Fetch yesterday's task summary before showing
-  final taskDao = ref.read(taskDaoProvider);
-  final yesterday = DateTime.now().subtract(const Duration(days: 1));
-  final yesterdayTasks = await taskDao
-      .watchTasksByDate(yesterday)
-      .first
-      .timeout(const Duration(seconds: 2), onTimeout: () => []);
-
-  final completed = yesterdayTasks.where((t) => t.actualCompletedDate != null).length;
-  final carriedOver = yesterdayTasks.where((t) => t.actualCompletedDate == null).length;
-
-  if (!context.mounted) return;
-
-  await showModalBottomSheet(
+  HapticFeedback.mediumImpact();
+  return showDialog(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (ctx) => _NewDaySheet(
-      completed: completed,
-      carriedOver: carriedOver,
-      ref: ref,
-    ),
+    barrierDismissible: true,
+    barrierColor: Colors.black.withValues(alpha: 0.65),
+    builder: (ctx) => const _NewDayFreezeDialog(),
   );
 }
 
-class _NewDaySheet extends StatefulWidget {
-  final int completed;
-  final int carriedOver;
-  final WidgetRef ref;
-
-  const _NewDaySheet({
-    required this.completed,
-    required this.carriedOver,
-    required this.ref,
-  });
+class _NewDayFreezeDialog extends ConsumerStatefulWidget {
+  const _NewDayFreezeDialog();
 
   @override
-  State<_NewDaySheet> createState() => _NewDaySheetState();
+  ConsumerState<_NewDayFreezeDialog> createState() => _NewDayFreezeDialogState();
 }
 
-class _NewDaySheetState extends State<_NewDaySheet> {
-  final List<TextEditingController> _taskControllers = [TextEditingController()];
+class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
+  bool _isLoading = true;
   bool _isSaving = false;
 
-  String _greeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
+  // Yesterday's metrics
+  int _completedTasks = 0;
+  List<Task> _carriedOverTasks = [];
+  final Set<int> _selectedCarriedOverTaskIds = {};
+  int _yesterdayFocusSeconds = 0;
+  double _yesterdayWalkMeters = 0.0;
+  int _yesterdayWaterMl = 0;
+  int _waterGoalMl = 2500;
+  int _currentStreak = 0;
 
-  Future<void> _saveAndClose() async {
-    setState(() => _isSaving = true);
-    try {
-      final taskDao = widget.ref.read(taskDaoProvider);
-      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  // Today's action inputs
+  int _selectedWaterMl = 250;
+  int _selectedStudyTargetHours = 4;
+  String _selectedMindset = '⚡ Energized';
+  final List<TextEditingController> _taskControllers = [TextEditingController()];
 
-      for (final ctrl in _taskControllers) {
-        final title = ctrl.text.trim();
-        if (title.isEmpty) continue;
-        await taskDao.insertTask(
-          TaskTableCompanion.insert(
-            title: title,
-            plannedDate: drift.Value(today),
-            priority: const drift.Value('normal'),
-          ),
-        );
-      }
-
-      widget.ref.invalidate(todayFocusTaskProvider);
-    } finally {
-      setState(() => _isSaving = false);
-    }
-
-    if (mounted) Navigator.of(context).pop();
+  @override
+  void initState() {
+    super.initState();
+    _loadYesterdayMetrics();
   }
 
   @override
@@ -97,171 +68,1113 @@ class _NewDaySheetState extends State<_NewDaySheet> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final dateStr = DateFormat('EEEE, MMMM d').format(DateTime.now());
-    final profileAsync = widget.ref.watch(userProfileStreamProvider);
-    final name = profileAsync.value?.name ?? 'there';
+  Future<void> _loadYesterdayMetrics() async {
+    try {
+      final now = DateTime.now();
+      final yesterday = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1));
 
-    return Container(
-      decoration: BoxDecoration(
-        color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      final taskDao = ref.read(taskDaoProvider);
+      final timeSessionDao = ref.read(timeSessionDaoProvider);
+      final walkDao = ref.read(walkDaoProvider);
+      final waterDao = ref.read(waterDaoProvider);
+      final consistencyDao = ref.read(consistencyDaoProvider);
+
+      // 1. Tasks
+      final yesterdayTasksFuture = taskDao
+          .watchTasksByDate(yesterday)
+          .first
+          .timeout(const Duration(seconds: 2), onTimeout: () => []);
+      final overdueTasksFuture = taskDao
+          .watchOverdueTasks()
+          .first
+          .timeout(const Duration(seconds: 2), onTimeout: () => []);
+
+      // 2. Focus / Study
+      final sessionsFuture = timeSessionDao
+          .getSessionsForDate(yesterday)
+          .timeout(const Duration(seconds: 2), onTimeout: () => []);
+
+      // 3. Walk
+      final walkFuture = walkDao
+          .getDistanceForDate(yesterday)
+          .timeout(const Duration(seconds: 2), onTimeout: () => 0.0);
+
+      // 4. Water
+      final waterFuture = waterDao
+          .getWaterForDate(yesterday)
+          .timeout(const Duration(seconds: 2), onTimeout: () => 0);
+      final goalFuture = waterDao
+          .watchDailyWaterGoal()
+          .first
+          .timeout(const Duration(seconds: 2), onTimeout: () => 2500);
+
+      // 5. Streak
+      final streakFuture = consistencyDao
+          .watchCurrentStreak()
+          .first
+          .timeout(const Duration(seconds: 2), onTimeout: () => 0);
+
+      final results = await Future.wait([
+        yesterdayTasksFuture,
+        overdueTasksFuture,
+        sessionsFuture,
+        walkFuture,
+        waterFuture,
+        goalFuture,
+        streakFuture,
+      ]);
+
+      final yesterdayTasks = results[0] as List<Task>;
+      final overdueTasks = results[1] as List<Task>;
+      final sessions = results[2] as List<TimeSession>;
+      final walkMeters = results[3] as double;
+      final waterMl = results[4] as int;
+      final goalMl = results[5] as int;
+      final streak = results[6] as int;
+
+      final completed = yesterdayTasks.where((t) => t.actualCompletedDate != null).length;
+
+      // Uncompleted tasks from yesterday or overdue
+      final uncompletedMap = <int, Task>{};
+      for (final t in yesterdayTasks.where((t) => t.actualCompletedDate == null)) {
+        uncompletedMap[t.id] = t;
+      }
+      for (final t in overdueTasks) {
+        uncompletedMap[t.id] = t;
+      }
+      final carriedOver = uncompletedMap.values.toList();
+
+      final totalFocus = sessions.fold<int>(0, (sum, s) => sum + s.durationSeconds);
+
+      if (mounted) {
+        setState(() {
+          _completedTasks = completed;
+          _carriedOverTasks = carriedOver;
+          _selectedCarriedOverTaskIds.addAll(carriedOver.map((t) => t.id));
+          _yesterdayFocusSeconds = totalFocus;
+          _yesterdayWalkMeters = walkMeters;
+          _yesterdayWaterMl = waterMl;
+          _waterGoalMl = goalMl > 0 ? goalMl : 2500;
+          _currentStreak = streak;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  String _formatFocusDuration(int totalSecs) {
+    if (totalSecs <= 0) return '0m';
+    final hours = totalSecs ~/ 3600;
+    final mins = (totalSecs % 3600) ~/ 60;
+    if (hours > 0 && mins > 0) return '${hours}h ${mins}m';
+    if (hours > 0) return '${hours}h';
+    return '${mins}m';
+  }
+
+  Future<void> _shareDailyBriefing() async {
+    HapticFeedback.lightImpact();
+    final dateStr = DateFormat('EEEE, MMM d, yyyy').format(DateTime.now());
+    final profile = ref.read(userProfileStreamProvider).value;
+    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
+
+    final tasksToCommit = _taskControllers
+        .map((c) => c.text.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+
+    final carriedOverTitles = _carriedOverTasks
+        .where((t) => _selectedCarriedOverTaskIds.contains(t.id))
+        .map((t) => t.title)
+        .toList();
+
+    final allTasks = [...carriedOverTitles, ...tasksToCommit];
+
+    final buffer = StringBuffer();
+    buffer.writeln('🌅 Ascent Daily Briefing · $dateStr');
+    buffer.writeln('👤 Operator: $name');
+    buffer.writeln('────────────────────────────────────────');
+    buffer.writeln('📊 YESTERDAY\'S DEBRIEF:');
+    buffer.writeln('• Tasks: $_completedTasks Completed (${_carriedOverTasks.length} carried over)');
+    buffer.writeln('• Focus / Study: ${_formatFocusDuration(_yesterdayFocusSeconds)}');
+    buffer.writeln(
+      '• Walk & Movement: ${(_yesterdayWalkMeters / 1000).toStringAsFixed(1)} km (~${(_yesterdayWalkMeters / 0.75).round()} steps)',
+    );
+    buffer.writeln('• Hydration: $_yesterdayWaterMl / $_waterGoalMl mL');
+    buffer.writeln('• Consistency Streak: $_currentStreak Days 🔥');
+    buffer.writeln('');
+    buffer.writeln('🎯 TODAY\'S BATTLE PLAN:');
+    buffer.writeln('• Daily Target: $_selectedStudyTargetHours hrs Deep Work');
+    buffer.writeln('• Morning Mindset: $_selectedMindset');
+    if (_selectedWaterMl > 0) {
+      buffer.writeln('• Morning Hydration: +$_selectedWaterMl mL Water kick-off');
+    }
+    if (allTasks.isNotEmpty) {
+      buffer.writeln('• Priority Focus Tasks:');
+      for (int i = 0; i < allTasks.length; i++) {
+        buffer.writeln('  ${i + 1}. ${allTasks[i]}');
+      }
+    }
+    buffer.writeln('────────────────────────────────────────');
+    buffer.writeln('Built with Ascent · High-Agency Operating System');
+
+    SharePlus.instance.share(
+      ShareParams(
+        text: buffer.toString(),
+        subject: 'Ascent Daily Briefing - $dateStr',
       ),
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        top: 24,
-        left: 24,
-        right: 24,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: context.divider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    );
+  }
+
+  Future<void> _commitAndLaunch() async {
+    setState(() => _isSaving = true);
+    HapticFeedback.heavyImpact();
+
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final todayStr = now.toIso8601String().substring(0, 10);
+      final prefs = ref.read(sharedPreferencesProvider);
+
+      final taskDao = ref.read(taskDaoProvider);
+      final waterDao = ref.read(waterDaoProvider);
+
+      // 1. Log morning hydration if selected
+      if (_selectedWaterMl > 0) {
+        await waterDao.addWater(_selectedWaterMl);
+      }
+
+      // 2. Reschedule checked carried-over tasks to today
+      for (final task in _carriedOverTasks) {
+        if (_selectedCarriedOverTaskIds.contains(task.id)) {
+          await taskDao.updateTask(
+            TaskTableCompanion(
+              id: drift.Value(task.id),
+              plannedDate: drift.Value(today),
+              updatedAt: drift.Value(now),
             ),
-            const SizedBox(height: 20),
+          );
+        }
+      }
 
-            // Greeting
-            Row(
+      // 3. Insert new priority tasks
+      for (final ctrl in _taskControllers) {
+        final title = ctrl.text.trim();
+        if (title.isEmpty) continue;
+        await taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: title,
+            plannedDate: drift.Value(today),
+            priority: const drift.Value('high'),
+          ),
+        );
+      }
+
+      // 4. Save preferences and prevent hydration prompt collision
+      await prefs.setString('ascent_new_day_shown', todayStr);
+      await prefs.setInt('ascent_last_hydration_prompt_time', now.millisecondsSinceEpoch);
+      await prefs.setInt('ascent_today_study_target_hours', _selectedStudyTargetHours);
+      await prefs.setString('ascent_morning_mindset', _selectedMindset);
+
+      // 5. Invalidate relevant stream providers
+      ref.invalidate(todayFocusTaskProvider);
+      ref.invalidate(todayTasksStreamProvider);
+      ref.invalidate(todayWaterMlStreamProvider);
+      ref.invalidate(todayWaterLogsStreamProvider);
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+        Navigator.of(context).pop();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
               children: [
-                Text('🌅 ', style: const TextStyle(fontSize: 24)),
+                const Icon(Icons.rocket_launch_rounded, color: Color(0xFF5FA070), size: 20),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '${_greeting()}, $name!',
-                    style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                    _selectedWaterMl > 0
+                        ? 'Plan locked in! +$_selectedWaterMl mL water logged. Conquer your day! 🚀'
+                        : 'Plan locked in! Tasks scheduled. Have a high-agency day! 🚀',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              "It's a new day — $dateStr",
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-            ),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
 
-            if (widget.completed > 0 || widget.carriedOver > 0) ...[
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                decoration: BoxDecoration(
-                  color: context.bgSurfaceElevated,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: context.divider),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Yesterday's wrap:",
-                      style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
-                    ),
-                    const SizedBox(height: 8),
-                    if (widget.completed > 0)
-                      _WrapRow(
-                        icon: '✅',
-                        text: '${widget.completed} task${widget.completed == 1 ? '' : 's'} completed',
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(userProfileStreamProvider).value;
+    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
+    final dateStr = DateFormat('EEEE, MMMM d').format(DateTime.now());
+
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+      child: Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 540,
+            maxHeight: MediaQuery.of(context).size.height * 0.88,
+          ),
+          decoration: BoxDecoration(
+            color: context.bgSurface.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: context.divider.withValues(alpha: 0.8), width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 36,
+                spreadRadius: 4,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: _isLoading
+                ? const _LoadingDebriefState()
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Top Header Bar
+                      _buildHeader(context, name, dateStr),
+
+                      // Scrollable Body Content
+                      Expanded(
+                        child: RawScrollbar(
+                          thumbVisibility: false,
+                          radius: const Radius.circular(8),
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Yesterday's Multi-Module Scorecard
+                                _buildYesterdayScorecard(context),
+
+                                // Carried-over Tasks Section (if any)
+                                if (_carriedOverTasks.isNotEmpty) ...[
+                                  const SizedBox(height: 20),
+                                  _buildCarriedOverSection(context),
+                                ],
+
+                                const SizedBox(height: 22),
+                                // Today's Battle Plan Inputs Header
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: context.accentPrimary.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.flag_rounded,
+                                        size: 16,
+                                        color: context.accentPrimary,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Today\'s Battle Plan',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: context.textPrimary,
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+
+                                // 1. Morning Hydration Boost
+                                _buildHydrationKickoffSection(context),
+                                const SizedBox(height: 18),
+
+                                // 2. Focus Duration Target
+                                _buildStudyTargetSection(context),
+                                const SizedBox(height: 18),
+
+                                // 3. Morning Mindset
+                                _buildMindsetSection(context),
+                                const SizedBox(height: 18),
+
+                                // 4. Priority Tasks Inputs
+                                _buildTodayTasksSection(context),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                    if (widget.carriedOver > 0) ...[
-                      const SizedBox(height: 4),
-                      _WrapRow(
-                        icon: '⚠️',
-                        text: '${widget.carriedOver} task${widget.carriedOver == 1 ? '' : 's'} carried over',
-                      ),
+
+                      // Sticky Bottom Action Footer
+                      _buildFooter(context),
                     ],
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, String name, String dateStr) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 18, 14, 14),
+      decoration: BoxDecoration(
+        color: context.bgSurfaceElevated.withValues(alpha: 0.6),
+        border: Border(bottom: BorderSide(color: context.divider, width: 0.8)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: context.accentPrimary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'EXECUTIVE BRIEFING',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: context.accentPrimary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (_currentStreak > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '🔥 $_currentStreak DAYS',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFFF97316),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                      ),
                   ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${_greeting()}, $name!',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  dateStr,
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.close_rounded, color: context.textMuted, size: 20),
+            onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Dismiss',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildYesterdayScorecard(BuildContext context) {
+    final walkKm = (_yesterdayWalkMeters / 1000).toStringAsFixed(1);
+    final walkSteps = (_yesterdayWalkMeters / 0.75).round();
+    final totalTasks = _completedTasks + _carriedOverTasks.length;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.bgSurfaceElevated,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Yesterday\'s Performance Debrief',
+                style: GoogleFonts.plusJakartaSans(
+                  color: context.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                '24h Summary',
+                style: AscentTextStyles.caption.copyWith(color: context.textMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 4-Card Scorecard Grid
+          Row(
+            children: [
+              Expanded(
+                child: _ScorecardTile(
+                  icon: Icons.check_circle_outline_rounded,
+                  iconColor: const Color(0xFF22C55E),
+                  label: 'Tasks Done',
+                  value: '$_completedTasks / $totalTasks',
+                  subtext: _carriedOverTasks.isEmpty
+                      ? 'All cleared'
+                      : '${_carriedOverTasks.length} carried over',
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ScorecardTile(
+                  icon: Icons.hourglass_top_rounded,
+                  iconColor: const Color(0xFF38BDF8),
+                  label: 'Deep Focus',
+                  value: _formatFocusDuration(_yesterdayFocusSeconds),
+                  subtext: _yesterdayFocusSeconds > 0 ? 'Study logged' : 'Rest day',
                 ),
               ),
             ],
-
-            const SizedBox(height: 24),
-            Text(
-              "Today I'll work on:",
-              style: AscentTextStyles.labelLarge.copyWith(color: context.textPrimary),
-            ),
-            const SizedBox(height: 12),
-
-            // Task input fields
-            ..._taskControllers.asMap().entries.map((entry) {
-              final i = entry.key;
-              final ctrl = entry.value;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TextField(
-                  controller: ctrl,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Review system design notes',
-                    prefixIcon: Icon(Icons.add_circle_outline_rounded, color: context.accentPrimary, size: 20),
-                    suffixIcon: _taskControllers.length > 1
-                        ? IconButton(
-                            icon: Icon(Icons.remove_circle_outline_rounded, color: context.stateDanger, size: 18),
-                            onPressed: () {
-                              setState(() {
-                                _taskControllers[i].dispose();
-                                _taskControllers.removeAt(i);
-                              });
-                            },
-                          )
-                        : null,
-                  ),
-                  onSubmitted: (_) {
-                    setState(() => _taskControllers.add(TextEditingController()));
-                  },
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _ScorecardTile(
+                  icon: Icons.directions_walk_rounded,
+                  iconColor: const Color(0xFFA855F7),
+                  label: 'Movement',
+                  value: '$walkKm km',
+                  subtext: walkSteps > 0 ? '~$walkSteps steps' : 'No walks logged',
                 ),
-              );
-            }),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _ScorecardTile(
+                  icon: Icons.water_drop_rounded,
+                  iconColor: const Color(0xFF0EA5E9),
+                  label: 'Hydration',
+                  value: '$_yesterdayWaterMl mL',
+                  subtext: 'Goal: $_waterGoalMl mL',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Add another task
-            TextButton.icon(
-              onPressed: () => setState(() => _taskControllers.add(TextEditingController())),
-              icon: Icon(Icons.add_rounded, size: 18, color: context.accentPrimary),
-              label: Text(
-                'Add another task...',
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.accentPrimary),
+  Widget _buildCarriedOverSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.replay_rounded, size: 16, color: Color(0xFFF59E0B)),
+              const SizedBox(width: 8),
+              Text(
+                'Carry forward to today (${_carriedOverTasks.length} tasks)',
+                style: GoogleFonts.plusJakartaSans(
+                  color: context.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ..._carriedOverTasks.map((task) {
+            final isChecked = _selectedCarriedOverTaskIds.contains(task.id);
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  if (isChecked) {
+                    _selectedCarriedOverTaskIds.remove(task.id);
+                  } else {
+                    _selectedCarriedOverTaskIds.add(task.id);
+                  }
+                });
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    Icon(
+                      isChecked ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                      size: 18,
+                      color: isChecked ? context.accentPrimary : context.textMuted,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: isChecked ? context.textPrimary : context.textMuted,
+                          decoration: isChecked ? null : TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHydrationKickoffSection(BuildContext context) {
+    final waterOptions = [
+      {'ml': 250, 'label': '+250 mL', 'desc': 'Glass'},
+      {'ml': 350, 'label': '+350 mL', 'desc': 'Mug'},
+      {'ml': 500, 'label': '+500 mL', 'desc': 'Bottle'},
+      {'ml': 0, 'label': 'Skip', 'desc': 'For now'},
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF38BDF8)),
+                const SizedBox(width: 6),
+                Text(
+                  'Morning Hydration Boost',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              _selectedWaterMl > 0 ? 'Adds +$_selectedWaterMl mL' : 'Not logging',
+              style: AscentTextStyles.caption.copyWith(
+                color: _selectedWaterMl > 0 ? const Color(0xFF38BDF8) : context.textMuted,
+                fontWeight: FontWeight.w600,
               ),
             ),
-
-            const SizedBox(height: 20),
-            AscentButton.primary(
-              label: _isSaving ? 'Saving...' : 'Let\'s Go! 🚀',
-              onPressed: _isSaving ? null : _saveAndClose,
-            ),
-            const SizedBox(height: 4),
           ],
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: waterOptions.map((opt) {
+            final ml = opt['ml'] as int;
+            final isSelected = _selectedWaterMl == ml;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedWaterMl = ml);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF0284C7).withValues(alpha: 0.18)
+                          : context.bgSurfaceElevated,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? const Color(0xFF38BDF8)
+                            : context.divider,
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          opt['label'] as String,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: isSelected ? const Color(0xFF38BDF8) : context.textPrimary,
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          opt['desc'] as String,
+                          style: AscentTextStyles.caption.copyWith(
+                            color: context.textMuted,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStudyTargetSection(BuildContext context) {
+    final targets = [2, 4, 6, 8];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF10B981)),
+                const SizedBox(width: 6),
+                Text(
+                  'Daily Focus Target',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '$_selectedStudyTargetHours Hours',
+              style: AscentTextStyles.caption.copyWith(
+                color: const Color(0xFF10B981),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: targets.map((hrs) {
+            final isSelected = _selectedStudyTargetHours == hrs;
+            return Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => _selectedStudyTargetHours = hrs);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF10B981).withValues(alpha: 0.16)
+                          : context.bgSurfaceElevated,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFF10B981) : context.divider,
+                        width: isSelected ? 1.4 : 1.0,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$hrs hrs',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: isSelected ? const Color(0xFF10B981) : context.textPrimary,
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMindsetSection(BuildContext context) {
+    final mindsets = ['⚡ Energized', '🎯 Deep Focus', '🧘 Calm', '☕ Need Coffee'];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.bolt_rounded, size: 16, color: Color(0xFFF59E0B)),
+            const SizedBox(width: 6),
+            Text(
+              'Morning Mindset',
+              style: GoogleFonts.plusJakartaSans(
+                color: context.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: mindsets.map((m) {
+            final isSelected = _selectedMindset == m;
+            return InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedMindset = m);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? context.accentPrimary.withValues(alpha: 0.18)
+                      : context.bgSurfaceElevated,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? context.accentPrimary : context.divider,
+                    width: isSelected ? 1.4 : 1.0,
+                  ),
+                ),
+                child: Text(
+                  m,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: isSelected ? context.accentPrimary : context.textSecondary,
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodayTasksSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.add_task_rounded, size: 16, color: context.accentPrimary),
+                const SizedBox(width: 6),
+                Text(
+                  'Today I will execute on:',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '${_taskControllers.length} focus goal${_taskControllers.length == 1 ? '' : 's'}',
+              style: AscentTextStyles.caption.copyWith(color: context.textMuted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ..._taskControllers.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final ctrl = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: TextField(
+              controller: ctrl,
+              textCapitalization: TextCapitalization.sentences,
+              style: GoogleFonts.plusJakartaSans(fontSize: 13.5, color: context.textPrimary),
+              decoration: InputDecoration(
+                hintText: idx == 0
+                    ? 'e.g. Finish System Design Chapter 4'
+                    : idx == 1
+                        ? 'e.g. Solve 2 Graph DP problems'
+                        : 'e.g. Review Core CS & Mock Interview',
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                prefixIcon: Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: context.accentPrimary.withValues(alpha: 0.7),
+                  size: 18,
+                ),
+                suffixIcon: _taskControllers.length > 1
+                    ? IconButton(
+                        icon: Icon(Icons.remove_circle_outline_rounded,
+                            color: context.stateDanger, size: 18),
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _taskControllers[idx].dispose();
+                            _taskControllers.removeAt(idx);
+                          });
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: context.bgSurfaceElevated,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.divider),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.divider),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.accentPrimary, width: 1.5),
+                ),
+              ),
+              onSubmitted: (_) {
+                setState(() => _taskControllers.add(TextEditingController()));
+              },
+            ),
+          );
+        }),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              setState(() => _taskControllers.add(TextEditingController()));
+            },
+            icon: Icon(Icons.add_rounded, size: 18, color: context.accentPrimary),
+            label: Text(
+              'Add another goal...',
+              style: GoogleFonts.plusJakartaSans(
+                color: context.accentPrimary,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: context.bgSurfaceElevated.withValues(alpha: 0.8),
+        border: Border(top: BorderSide(color: context.divider, width: 0.8)),
+      ),
+      child: Row(
+        children: [
+          // Share Daily Plan Button
+          OutlinedButton.icon(
+            onPressed: _isSaving ? null : _shareDailyBriefing,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: context.textPrimary,
+              side: BorderSide(color: context.divider),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            icon: const Icon(Icons.share_rounded, size: 16),
+            label: Text(
+              'Share',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Primary Let's Go / Conquer Button
+          Expanded(
+            child: AscentButton.primary(
+              label: _isSaving ? 'Locking in...' : 'Let\'s Conquer Today! 🚀',
+              onPressed: _isSaving ? null : _commitAndLaunch,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _WrapRow extends StatelessWidget {
-  final String icon;
-  final String text;
+class _ScorecardTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final String subtext;
 
-  const _WrapRow({required this.icon, required this.text});
+  const _ScorecardTile({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    required this.subtext,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 16)),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: context.bgSurface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: context.divider.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: iconColor),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AscentTextStyles.caption.copyWith(
+                    color: context.textMuted,
+                    fontSize: 10.5,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: GoogleFonts.plusJakartaSans(
+              color: context.textPrimary,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w800,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            subtext,
+            style: AscentTextStyles.caption.copyWith(
+              color: context.textMuted,
+              fontSize: 9.5,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingDebriefState extends StatelessWidget {
+  const _LoadingDebriefState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 36,
+            height: 36,
+            child: CircularProgressIndicator(strokeWidth: 3),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Analyzing Yesterday & Preparing Briefing...',
+            style: GoogleFonts.plusJakartaSans(
+              color: context.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Synthesizing focus time, movement, and hydration',
+            style: AscentTextStyles.caption.copyWith(color: context.textMuted),
+          ),
+        ],
+      ),
     );
   }
 }

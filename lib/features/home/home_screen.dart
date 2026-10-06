@@ -32,24 +32,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkNewDay();
-      ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final newDayShown = await _checkNewDay();
+      if (!newDayShown && mounted) {
+        ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
+      }
     });
   }
 
-  void _checkNewDay() {
+  Future<bool> _checkNewDay() async {
     final prefs = ref.read(sharedPreferencesProvider);
     final lastShown = prefs.getString('ascent_new_day_shown');
     final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-    if (lastShown == null) {
-      prefs.setString('ascent_new_day_shown', todayStr);
-      return;
-    }
     if (lastShown != todayStr) {
       prefs.setString('ascent_new_day_shown', todayStr);
-      showNewDayDialog(context, ref);
+      await showNewDayDialog(context, ref);
+      return true;
     }
+    return false;
   }
 
   @override
@@ -452,29 +452,48 @@ class _HomeHeader extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${_greeting()}, $name',
-                style: GoogleFonts.plusJakartaSans(
-                  color: context.textPrimary,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              showNewDayDialog(context, ref);
+            },
+            borderRadius: BorderRadius.circular(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '${_greeting()}, $name',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: context.textPrimary,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 14,
+                      color: context.accentPrimary.withValues(alpha: 0.7),
+                    ),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$dateStr · $role',
-                style: AscentTextStyles.bodySmall.copyWith(
-                  color: context.textMuted,
-                  fontSize: 12,
+                const SizedBox(height: 2),
+                Text(
+                  '$dateStr · $role',
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         Row(

@@ -54,6 +54,21 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
     return (delete(waterLogTable)..where((l) => l.id.equals(id))).go();
   }
 
+  /// Get total water intake for a specific date in mL.
+  Future<int> getWaterForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    final amountSum = waterLogTable.amountMl.sum();
+    final query = selectOnly(waterLogTable)
+      ..addColumns([amountSum])
+      ..where(waterLogTable.date.isBiggerOrEqualValue(startOfDay) &
+          waterLogTable.date.isSmallerOrEqualValue(endOfDay));
+
+    final row = await query.getSingleOrNull();
+    return row?.read(amountSum) ?? 0;
+  }
+
   /// Watch daily water goal in mL (default 2500 mL).
   Stream<int> watchDailyWaterGoal() {
     return (select(waterGoalTable)..limit(1))
