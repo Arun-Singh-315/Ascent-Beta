@@ -198,7 +198,7 @@ class LiveSessionBar extends ConsumerWidget {
       );
     }
 
-    if (session == null) {
+    if (session == null || trackingState.isFloatingDismissed) {
       return const SizedBox.shrink();
     }
 
@@ -211,9 +211,26 @@ class LiveSessionBar extends ConsumerWidget {
         ? Icons.school_rounded
         : Icons.sports_esports_rounded;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ChatBubbleCard(
+    return Dismissible(
+      key: ValueKey('floating_activity_${session.id}'),
+      direction: DismissDirection.horizontal,
+      onDismissed: (_) {
+        HapticFeedback.lightImpact();
+        ref.read(timeTrackingProvider.notifier).dismissFloatingBar();
+      },
+      background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        color: Colors.transparent,
+      ),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.transparent,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ChatBubbleCard(
         tailPosition: BubbleTailPosition.bottomLeft,
         isPulsing: trackingState.isRunning,
         borderColor: categoryColor.withValues(alpha: 0.5),
@@ -314,6 +331,7 @@ class LiveSessionBar extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

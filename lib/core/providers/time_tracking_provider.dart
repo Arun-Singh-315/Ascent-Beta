@@ -10,6 +10,7 @@ class TimeTrackingState {
   final int elapsedSeconds;
   final bool isRunning;
   final bool isPaused;
+  final bool isFloatingDismissed;
 
   const TimeTrackingState({
     this.activeSession,
@@ -17,6 +18,7 @@ class TimeTrackingState {
     this.elapsedSeconds = 0,
     this.isRunning = false,
     this.isPaused = false,
+    this.isFloatingDismissed = false,
   });
 
   String get formattedTime {
@@ -40,6 +42,7 @@ class TimeTrackingState {
     int? elapsedSeconds,
     bool? isRunning,
     bool? isPaused,
+    bool? isFloatingDismissed,
     bool clearActive = false,
   }) {
     if (clearActive) {
@@ -51,6 +54,7 @@ class TimeTrackingState {
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
+      isFloatingDismissed: isFloatingDismissed ?? this.isFloatingDismissed,
     );
   }
 }
@@ -142,6 +146,14 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     });
   }
 
+  void dismissFloatingBar() {
+    state = state.copyWith(isFloatingDismissed: true);
+  }
+
+  void showFloatingBar() {
+    state = state.copyWith(isFloatingDismissed: false);
+  }
+
   Future<int> startSession({
     required String label,
     required int categoryId,
@@ -149,6 +161,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     int? linkedTaskId,
     String activityRefType = 'task',
   }) async {
+    state = state.copyWith(isFloatingDismissed: false);
     final dao = ref.read(timeSessionDaoProvider);
     return dao.startSession(
       label: label,
@@ -170,6 +183,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
   Future<void> resumeSession() async {
     final session = state.activeSession;
     if (session == null) return;
+    state = state.copyWith(isFloatingDismissed: false);
     final dao = ref.read(timeSessionDaoProvider);
     await dao.resumeSession(session.id);
   }

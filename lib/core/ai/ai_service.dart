@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../learning_hub/learning_hub_provider.dart';
 import '../learning_hub/learning_hub_models.dart';
+import '../walk/walk_tracking_service.dart';
 
 enum AiActionType {
   taskCreated,
@@ -537,9 +539,15 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (!isReschedule) return null;
 
-    final taskDao = ref.read(taskDaoProvider);
-    final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first;
-    final pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
+    List<Task> pending = [];
+    try {
+      final taskDao = ref.read(taskDaoProvider);
+      final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first.timeout(
+        const Duration(milliseconds: 600),
+        onTimeout: () => <Task>[],
+      );
+      pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
+    } catch (_) {}
 
     if (lower.contains('workout') || lower.contains('exercise')) {
       final workoutTask = pending.where((t) =>
@@ -646,63 +654,105 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   Future<AiResponse> _generateDailyPlan(WidgetRef ref) async {
-    final taskDao = ref.read(taskDaoProvider);
-    final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first;
-    final pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
+    final profile = ref.read(userProfileStreamProvider).value;
+    final userName = profile?.name.isNotEmpty == true ? profile!.name : 'Arun';
 
-    final walkDao = ref.read(walkDaoProvider);
-    final todayDistance = await walkDao.watchTodayDistance().first;
+    // 1. Pending tasks with safe timeout
+    List<Task> pending = [];
+    try {
+      final taskDao = ref.read(taskDaoProvider);
+      final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first.timeout(
+        const Duration(milliseconds: 600),
+        onTimeout: () => <Task>[],
+      );
+      pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
+    } catch (_) {}
 
-    final financeDao = ref.read(financeDaoProvider);
-    final todaySpend = await financeDao.watchTodaySpending().first;
-    final budget = await financeDao.watchOverallBudget().first;
+    // 2. Walk status & distance
+    final walkState = ref.read(walkTrackingProvider);
+    final todayDistanceMeters = ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final kmWalked = (todayDistanceMeters / 1000.0).toStringAsFixed(1);
+    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
 
+    // 3. Finance status
+    final todaySpend = ref.read(todaySpendingStreamProvider).value ?? 0.0;
+    final budget = ref.read(overallBudgetStreamProvider).value;
+
+    // 4. Hydration status
+    final waterMl = ref.read(todayWaterMlStreamProvider).value ?? 0;
+    final waterGoal = ref.read(dailyWaterGoalStreamProvider).value ?? 2500;
+
+    // 5. Learning Hub status
     final learningState = ref.read(learningHubProvider);
     final course = learningState.course;
+    Lecture? nextLecture;
+    for (final m in course.modules) {
+      for (final l in m.lectures) {
+        if (!l.isCompleted) {
+          nextLecture = l;
+          break;
+        }
+      }
+      if (nextLecture != null) break;
+    }
+
+    // 6. Upcoming Reminders
+    final nextReminder = ref.read(nextUpcomingReminderProvider).value;
 
     final buffer = StringBuffer();
-    buffer.writeln("Here is your recommended Daily Life Plan:");
-    buffer.writeln("");
+    buffer.writeln("Hi $userName! Here is your live situation & daily game plan:\n");
 
+    // Critical Focus Areas
+    if (waterMl < 1000) {
+      buffer.writeln("💧 **Hydration Alert:** You've only logged $waterMl / $waterGoal mL. Drink a glass of water now!");
+    } else {
+      buffer.writeln("💧 **Hydration:** $waterMl / $waterGoal mL consumed — stay hydrated!");
+    }
+
+    if (isWalkActive) {
+      buffer.writeln("🚶 **Walk Tracker:** Active outdoor session running (${(walkState.distanceKm).toStringAsFixed(2)} km). Pace: ${walkState.formattedPace}/km.");
+    } else if (todayDistanceMeters < 2500) {
+      buffer.writeln("🚶 **Physical Routine:** ${kmWalked}km walked today. Plan an evening walk to hit your 5.0km goal.");
+    } else {
+      buffer.writeln("🚶 **Physical Routine:** Great job! ${kmWalked}km covered today.");
+    }
+
+    if (nextReminder != null) {
+      final dueTime = DateFormat('h:mm a').format(nextReminder.scheduledAt);
+      buffer.writeln("🔔 **Upcoming Reminder:** \"${nextReminder.title}\" scheduled for $dueTime.");
+    }
+
+    buffer.writeln("");
     if (pending.isNotEmpty) {
-      buffer.writeln("🎯 **Core Priorities (Study & Work):**");
+      buffer.writeln("🎯 **Priority Activities (${pending.length} pending today):**");
       for (int i = 0; i < pending.take(3).length; i++) {
-        buffer.writeln("  ${i + 1}. ${pending[i].title} (High focus session)");
+        final p = pending[i];
+        final dur = p.estimatedMinutes != null && p.estimatedMinutes! > 0 ? " (${p.estimatedMinutes}m timer)" : "";
+        buffer.writeln("  ${i + 1}. ${p.title}$dur");
       }
-      buffer.writeln("");
     } else {
-      buffer.writeln("🎯 **Core Priorities:** All scheduled tasks completed! Great time to continue \"${course.title}\".");
-      buffer.writeln("");
+      buffer.writeln("🎯 **Activities:** All today's activities are finished! Zero backlog.");
     }
 
-    // Walking routine
-    final kmWalked = (todayDistance / 1000.0).toStringAsFixed(1);
-    if (todayDistance < 3000) {
-      buffer.writeln("🚶 **Physical Routine:** You have walked ${kmWalked}km today. Plan a 30-minute evening walk to reach 5.0km.");
-    } else {
-      buffer.writeln("🚶 **Physical Routine:** Excellent progress on activity! ${kmWalked}km completed today.");
+    if (nextLecture != null) {
+      buffer.writeln("\n🎓 **Study Target:** Next in \"${course.title}\" is \"${nextLecture.title}\" (${(nextLecture.durationSeconds ~/ 60)}m).");
     }
-    buffer.writeln("");
 
-    // Finance status
-    buffer.writeln(
-      '💰 **Daily Finance:** Spent ₹${todaySpend.toStringAsFixed(0)} today'
-      '${budget != null ? " of your ₹${budget.monthlyLimit.toStringAsFixed(0)}/month budget." : "."}',
-    );
-    buffer.writeln("");
-
-    // Water intake status
-    final waterDao = ref.read(waterDaoProvider);
-    final waterMl = await waterDao.watchTodayWaterMl().first;
-    final waterGoal = await waterDao.watchDailyWaterGoal().first;
-    buffer.writeln('💧 **Hydration:** $waterMl / $waterGoal mL consumed today.');
+    buffer.writeln("\n💰 **Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
+        "${budget != null && budget.monthlyLimit > 0 ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.");
 
     return AiResponse(
       text: buffer.toString(),
+      clarifyingOptions: [
+        if (nextLecture != null) 'Start ${nextLecture.title}',
+        'Log 250ml water',
+        'Add a new activity',
+        'Check pending activities',
+      ],
       proposedAction: AiProposedAction(
         type: AiActionType.dailyPlanSuggested,
-        title: 'Apply Daily Life Schedule',
-        summary: '${pending.length} tasks organized • 1 walk planned • Budget monitored',
+        title: 'Apply Daily Game Plan',
+        summary: '${pending.length} tasks organized • Water & Walk monitored',
         payload: {
           'taskCount': pending.length,
           'walkTargetKm': 5.0,
@@ -712,19 +762,22 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   Future<AiResponse> _generatePersonalInsights(WidgetRef ref) async {
-    final dsaDao = ref.read(dsaDaoProvider);
-    final dsaSolved = await dsaDao.getSolvedCountThisWeek();
+    int dsaSolved = 0;
+    try {
+      final dsaDao = ref.read(dsaDaoProvider);
+      dsaSolved = await dsaDao.getSolvedCountThisWeek().timeout(
+        const Duration(milliseconds: 500),
+        onTimeout: () => 0,
+      );
+    } catch (_) {}
 
-    final walkDao = ref.read(walkDaoProvider);
-    final weekMeters = await walkDao.watchWeekDistance().first;
-    final weekKm = (weekMeters / 1000.0).toStringAsFixed(1);
+    final todayDistanceMeters = ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final weekKm = (todayDistanceMeters / 1000.0).toStringAsFixed(1);
 
-    final financeDao = ref.read(financeDaoProvider);
-    final now = DateTime.now();
-    final monthSpend = await financeDao.watchMonthSpending(now.year, now.month).first;
-    final budget = await financeDao.watchOverallBudget().first;
+    final todaySpend = ref.read(todaySpendingStreamProvider).value ?? 0.0;
+    final budget = ref.read(overallBudgetStreamProvider).value;
 
-    final streak = await ref.read(consistencyDaoProvider).watchCurrentStreak().first;
+    final streak = ref.read(currentStreakStreamProvider).value ?? 0;
 
     final learningState = ref.read(learningHubProvider);
     final course = learningState.course;
@@ -733,10 +786,12 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     buffer.writeln("📊 **Your Deterministic Life Insights:**\n");
     final pct = (course.progressFraction * 100).round();
     buffer.writeln("• **Course Progress:** $pct% completed in \"${course.title}\" (${course.completedLectures}/${course.totalLectures} lectures).");
-    buffer.writeln("• **Study & Practice:** $dsaSolved algorithm problems mastered this week.");
-    buffer.writeln("• **Physical Wellness:** $weekKm km walked this week.");
+    if (dsaSolved > 0) {
+      buffer.writeln("• **Study & Practice:** $dsaSolved algorithm problems mastered this week.");
+    }
+    buffer.writeln("• **Physical Wellness:** $weekKm km active walk recorded.");
     buffer.writeln(
-      '• **Financial Health:** ₹${monthSpend.toStringAsFixed(0)} spent this month'
+      '• **Financial Health:** ₹${todaySpend.toStringAsFixed(0)} spent today'
       '${budget != null ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.',
     );
     buffer.writeln("• **Streak Consistency:** $streak-day continuous momentum active.");

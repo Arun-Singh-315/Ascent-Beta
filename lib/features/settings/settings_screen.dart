@@ -15,7 +15,6 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
-import '../../shared/widgets/skeleton_shimmer.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -527,20 +526,74 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: StreamBuilder<UserProfile?>(
         stream: profileStream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: SkeletonShimmer(height: 250),
-            );
+          if (snapshot.hasData) {
+            _initFromProfile(snapshot.data);
           }
-
-          final profile = snapshot.data;
-          _initFromProfile(profile);
 
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             children: [
-              // ── Section 1: Target & Profile ──────────────────────────
+              // ── Section 1: Appearance & Theme (Day / Night Toggle) ────
+              _SectionHeader(title: 'APPEARANCE & THEME'),
+              AscentCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Display Mode (Day / Night)',
+                          style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w700),
+                        ),
+                        Text(
+                          themeMode == ThemeMode.dark ? 'Night Mode' : (themeMode == ThemeMode.light ? 'Day Mode' : 'System Auto'),
+                          style: AscentTextStyles.captionMedium.copyWith(color: context.accentPrimary, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _ThemeOption(
+                          label: 'Day / Light',
+                          icon: Icons.light_mode_rounded,
+                          isSelected: themeMode == ThemeMode.light,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _ThemeOption(
+                          label: 'Night / Dark',
+                          icon: Icons.dark_mode_rounded,
+                          isSelected: themeMode == ThemeMode.dark,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _ThemeOption(
+                          label: 'System Auto',
+                          icon: Icons.brightness_auto_rounded,
+                          isSelected: themeMode == ThemeMode.system,
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ── Section 2: Target & Profile ──────────────────────────
               _SectionHeader(title: 'TARGET PROFILE'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
@@ -723,47 +776,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
 
-              const SizedBox(height: 20),
 
-              // ── Section 2: Appearance & Theme ────────────────────────
-              _SectionHeader(title: 'APPEARANCE'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Theme Mode',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _ThemeOption(
-                          label: 'System',
-                          icon: Icons.brightness_auto_rounded,
-                          isSelected: themeMode == ThemeMode.system,
-                          onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system),
-                        ),
-                        const SizedBox(width: 8),
-                        _ThemeOption(
-                          label: 'Light',
-                          icon: Icons.light_mode_rounded,
-                          isSelected: themeMode == ThemeMode.light,
-                          onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light),
-                        ),
-                        const SizedBox(width: 8),
-                        _ThemeOption(
-                          label: 'Dark',
-                          icon: Icons.dark_mode_rounded,
-                          isSelected: themeMode == ThemeMode.dark,
-                          onTap: () => ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
 
               const SizedBox(height: 20),
 

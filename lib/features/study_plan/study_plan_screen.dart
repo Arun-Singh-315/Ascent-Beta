@@ -7,6 +7,7 @@ import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import 'add_course_sheet.dart';
 import 'lecture_focus_player_sheet.dart';
+import 'module_lecture_editor_sheets.dart';
 
 class StudyPlanScreen extends ConsumerStatefulWidget {
   const StudyPlanScreen({super.key});
@@ -346,7 +347,7 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
   }
 }
 
-class _ModulesListView extends StatelessWidget {
+class _ModulesListView extends ConsumerWidget {
   final Course course;
   final ValueChanged<int> onSelectLecture;
 
@@ -356,7 +357,7 @@ class _ModulesListView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       children: [
@@ -372,14 +373,23 @@ class _ModulesListView extends StatelessWidget {
               ),
             ),
             TextButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add, size: 14),
+              onPressed: () {
+                showAddModuleSheet(
+                  context,
+                  ref,
+                  course.id,
+                  nextModuleId: course.modules.length + 1,
+                );
+              },
+              icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
               label: const Text('Add Module', style: TextStyle(fontSize: 12)),
             ),
           ],
         ),
         const SizedBox(height: 8),
         ...course.modules.map((module) => _ModuleCard(
+              courseId: course.id,
+              courseModules: course.modules,
               module: module,
               onResume: () {
                 final firstIncomplete = module.lectures.firstWhere(
@@ -395,17 +405,21 @@ class _ModulesListView extends StatelessWidget {
   }
 }
 
-class _ModuleCard extends StatelessWidget {
+class _ModuleCard extends ConsumerWidget {
+  final String courseId;
+  final List<CourseModule> courseModules;
   final CourseModule module;
   final VoidCallback onResume;
 
   const _ModuleCard({
+    required this.courseId,
+    required this.courseModules,
     required this.module,
     required this.onResume,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final firstLecId = module.lectures.isNotEmpty ? module.lectures.first.id : 1;
 
     return Container(
@@ -456,6 +470,47 @@ class _ModuleCard extends StatelessWidget {
                   color: context.textMuted,
                 ),
               ),
+              const SizedBox(width: 4),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded, size: 18, color: context.textMuted),
+                padding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (val) {
+                  if (val == 'edit') {
+                    showEditModuleSheet(context, ref, courseId, module);
+                  } else if (val == 'add_lecture') {
+                    showAddLectureSheet(
+                      context,
+                      ref,
+                      courseId,
+                      courseModules,
+                      defaultModuleId: module.id,
+                    );
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 16),
+                        SizedBox(width: 8),
+                        Text('Edit Module'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'add_lecture',
+                    child: Row(
+                      children: [
+                        Icon(Icons.playlist_add_rounded, size: 16),
+                        SizedBox(width: 8),
+                        Text('Add Lecture'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 10),
@@ -467,17 +522,19 @@ class _ModuleCard extends StatelessWidget {
               color: context.textPrimary,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            module.description,
-            style: TextStyle(
-              fontSize: 12,
-              color: context.textMuted,
-              height: 1.3,
+          if (module.description.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              module.description,
+              style: TextStyle(
+                fontSize: 12,
+                color: context.textMuted,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: [
@@ -503,17 +560,26 @@ class _ModuleCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: context.divider),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  onPressed: () {},
-                  child: Text(
-                    'View Module',
+                  icon: const Icon(Icons.playlist_add_rounded, size: 16),
+                  onPressed: () {
+                    showAddLectureSheet(
+                      context,
+                      ref,
+                      courseId,
+                      courseModules,
+                      defaultModuleId: module.id,
+                    );
+                  },
+                  label: Text(
+                    '+ Lecture',
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: context.textPrimary,
                     ),
@@ -549,7 +615,7 @@ class _ModuleCard extends StatelessWidget {
   }
 }
 
-class _AllLecturesListView extends StatelessWidget {
+class _AllLecturesListView extends ConsumerWidget {
   final Course course;
   final int activeLectureId;
   final ValueChanged<int> onSelectLecture;
@@ -561,75 +627,125 @@ class _AllLecturesListView extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final allLectures = course.modules.expand((m) => m.lectures).toList();
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: allLectures.length,
-      itemBuilder: (context, index) {
-        final lec = allLectures[index];
-        final isCurrent = lec.id == activeLectureId;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${allLectures.length} Lectures Total',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: context.textMuted,
+                ),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
+                label: const Text('Add Lecture', style: TextStyle(fontSize: 12)),
+                onPressed: () {
+                  showAddLectureSheet(
+                    context,
+                    ref,
+                    course.id,
+                    course.modules,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            itemCount: allLectures.length,
+            itemBuilder: (context, index) {
+              final lec = allLectures[index];
+              final isCurrent = lec.id == activeLectureId;
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: isCurrent
-                ? context.accentSecondary.withValues(alpha: 0.12)
-                : context.bgSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isCurrent
-                  ? context.accentSecondary.withValues(alpha: 0.5)
-                  : context.divider.withValues(alpha: 0.7),
-            ),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            leading: CircleAvatar(
-              radius: 14,
-              backgroundColor: isCurrent
-                  ? context.accentSecondary
-                  : (lec.isCompleted
-                      ? context.accentPrimary.withValues(alpha: 0.2)
-                      : context.bgBase),
-              child: lec.isCompleted
-                  ? Icon(Icons.check, size: 14, color: context.accentPrimary)
-                  : Text(
-                      '${lec.id}',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: isCurrent ? Colors.white : context.textPrimary,
-                      ),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: isCurrent
+                      ? context.accentSecondary.withValues(alpha: 0.12)
+                      : context.bgSurface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isCurrent
+                        ? context.accentSecondary.withValues(alpha: 0.5)
+                        : context.divider.withValues(alpha: 0.7),
+                  ),
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  leading: CircleAvatar(
+                    radius: 14,
+                    backgroundColor: isCurrent
+                        ? context.accentSecondary
+                        : (lec.isCompleted
+                            ? context.accentPrimary.withValues(alpha: 0.2)
+                            : context.bgBase),
+                    child: lec.isCompleted
+                        ? Icon(Icons.check, size: 14, color: context.accentPrimary)
+                        : Text(
+                            '${lec.id}',
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isCurrent ? Colors.white : context.textPrimary,
+                            ),
+                          ),
+                  ),
+                  title: Text(
+                    lec.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                      color: context.textPrimary,
                     ),
-            ),
-            title: Text(
-              lec.title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                color: context.textPrimary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            subtitle: Text(
-              lec.moduleTitle,
-              style: TextStyle(fontSize: 11, color: context.textMuted),
-            ),
-            trailing: Text(
-              lec.formattedDuration,
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 12,
-                color: isCurrent ? context.accentSecondary : context.textMuted,
-                fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-              ),
-            ),
-            onTap: () => onSelectLecture(lec.id),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
+                    '${lec.moduleTitle} • ${lec.author}',
+                    style: TextStyle(fontSize: 11, color: context.textMuted),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        lec.formattedDuration,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11.5,
+                          color: isCurrent ? context.accentSecondary : context.textMuted,
+                          fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: Icon(Icons.edit_outlined, size: 16, color: context.textMuted),
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        tooltip: 'Edit lecture',
+                        onPressed: () {
+                          showEditLectureSheet(context, ref, course.id, lec);
+                        },
+                      ),
+                    ],
+                  ),
+                  onTap: () => onSelectLecture(lec.id),
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 }

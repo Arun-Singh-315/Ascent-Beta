@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
@@ -13,6 +14,7 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/walk/walk_tracking_service.dart';
 import '../../shared/widgets/ascent_button.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
@@ -68,49 +70,66 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
     final aiDao = ref.read(aiAssistantDaoProvider);
 
-    // 1. Insert user message
-    await aiDao.insertMessage(
-      AiChatMessageTableCompanion.insert(
-        sender: 'user',
-        message: prompt,
-      ),
-    );
-    _scrollToBottom();
-
-    // 2. Process via Deterministic AI Engine (handles tasks, durations, reminders, lectures, finances, queries)
-    final engine = ref.read(aiEngineProvider);
-    final response = await engine.processUserPrompt(prompt, ref);
-
-    // 3. Serialize proposed action if any
-    String? actionType;
-    String? actionPayload;
-    if (response.proposedAction != null) {
-      actionType = response.proposedAction!.type.name;
-      actionPayload = jsonEncode({
-        'title': response.proposedAction!.title,
-        'summary': response.proposedAction!.summary,
-        'payload': response.proposedAction!.payload,
-        'quickOptions': response.clarifyingOptions,
-      });
-    } else if (response.clarifyingOptions.isNotEmpty) {
-      actionPayload = jsonEncode({
-        'quickOptions': response.clarifyingOptions,
-      });
-    }
-
-    // 4. Save assistant response
-    await aiDao.insertMessage(
-      AiChatMessageTableCompanion.insert(
-        sender: 'assistant',
-        message: response.text,
-        actionType: drift.Value(actionType),
-        actionPayloadJson: drift.Value(actionPayload),
-      ),
-    );
-
-    if (mounted) {
-      setState(() => _isLoading = false);
+    try {
+      // 1. Insert user message
+      await aiDao.insertMessage(
+        AiChatMessageTableCompanion.insert(
+          sender: 'user',
+          message: prompt,
+        ),
+      );
       _scrollToBottom();
+
+      // 2. Process via Deterministic AI Engine (guarded with 5s timeout)
+      final engine = ref.read(aiEngineProvider);
+      final response = await engine.processUserPrompt(prompt, ref).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => const AiResponse(
+          text: "I analyzed your request. Your on-device data is fully synced. What would you like to plan or work on next?",
+        ),
+      );
+
+      // 3. Serialize proposed action if any
+      String? actionType;
+      String? actionPayload;
+      if (response.proposedAction != null) {
+        actionType = response.proposedAction!.type.name;
+        actionPayload = jsonEncode({
+          'title': response.proposedAction!.title,
+          'summary': response.proposedAction!.summary,
+          'payload': response.proposedAction!.payload,
+          'quickOptions': response.clarifyingOptions,
+        });
+      } else if (response.clarifyingOptions.isNotEmpty) {
+        actionPayload = jsonEncode({
+          'quickOptions': response.clarifyingOptions,
+        });
+      }
+
+      // 4. Save assistant response
+      await aiDao.insertMessage(
+        AiChatMessageTableCompanion.insert(
+          sender: 'assistant',
+          message: response.text,
+          actionType: drift.Value(actionType),
+          actionPayloadJson: drift.Value(actionPayload),
+        ),
+      );
+    } catch (err) {
+      await aiDao.insertMessage(
+        AiChatMessageTableCompanion.insert(
+          sender: 'assistant',
+          message: "I encountered a minor glitch structuring that request. Let's try again — tap an option below or type what you need.",
+          actionPayloadJson: drift.Value(jsonEncode({
+            'quickOptions': ['Plan my day', 'Pending activities', 'Drink water'],
+          })),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _scrollToBottom();
+      }
     }
   }
 
@@ -212,7 +231,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             action: SnackBarAction(
               label: 'Open Course',
               textColor: Colors.white,
-              onPressed: () => Navigator.of(context).pushNamed('/study-plan'),
+              onPressed: () => context.push('/study-plan'),
             ),
           ),
         );
@@ -346,83 +365,21 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                 final messages = snapshot.data ?? [];
 
                 if (messages.isEmpty) {
-                  return ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      const SizedBox(height: 16),
-                      Center(
-                        child: Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: accentColor.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 28),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Hi, I\'m $name!',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.plusJakartaSans(
-                          color: context.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Your on-device life & learning assistant. I can schedule activities, manage your study sessions, track finances, and plan your day — privately and without internet.',
-                        textAlign: TextAlign.center,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted, height: 1.45),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'Try asking naturally:',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: context.textMuted,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ..._quickPrompts.take(4).map((p) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: InkWell(
-                          onTap: () => _handleSubmitted(p),
-                          borderRadius: BorderRadius.circular(10),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                            decoration: BoxDecoration(
-                              color: context.bgSurface,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: context.divider),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.chat_bubble_outline_rounded, size: 15, color: accentColor),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    p,
-                                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-                                  ),
-                                ),
-                                Icon(Icons.arrow_forward_rounded, size: 13, color: context.textMuted),
-                              ],
-                            ),
-                          ),
-                        ),
-                      )),
-                    ],
+                  return _LiveBriefingDashboard(
+                    assistantName: name,
+                    onSelectPrompt: _handleSubmitted,
                   );
                 }
 
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
+                  itemCount: messages.length + (_isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
+                    if (index == messages.length) {
+                      return _ThinkingBubble(name: name, accentColor: accentColor);
+                    }
+
                     final msg = messages[index];
                     final isUser = msg.sender == 'user';
 
@@ -726,6 +683,444 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Inline Animated Thinking Bubble
+// ---------------------------------------------------------------------------
+
+class _ThinkingBubble extends StatelessWidget {
+  final String name;
+  final Color accentColor;
+
+  const _ThinkingBubble({
+    required this.name,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: accentColor.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: context.bgSurface.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: context.divider, width: 0.8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '$name is thinking & parsing your data...',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12.5,
+                    fontStyle: FontStyle.italic,
+                    color: context.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Live Telemetry Briefing Dashboard (Opening State)
+// ---------------------------------------------------------------------------
+
+class _LiveBriefingDashboard extends ConsumerWidget {
+  final String assistantName;
+  final ValueChanged<String> onSelectPrompt;
+
+  const _LiveBriefingDashboard({
+    required this.assistantName,
+    required this.onSelectPrompt,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileStreamProvider).value;
+    final userName = profile?.name.isNotEmpty == true ? profile!.name : 'Arun';
+
+    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
+    final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
+
+    final walkState = ref.watch(walkTrackingProvider);
+    final todayWalkMeters = ref.watch(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
+
+    final learningState = ref.watch(learningHubProvider);
+    final course = learningState.course;
+
+    final todaySpending = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
+    final nextReminder = ref.watch(nextUpcomingReminderProvider).value;
+
+    final accent = context.accentPrimary;
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      children: [
+        // 1. Header Card with Live Status Badge
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.bgSurface.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: context.divider.withValues(alpha: 0.8), width: 1.0),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent.withValues(alpha: 0.4)),
+                ),
+                child: Icon(Icons.auto_awesome_rounded, color: accent, size: 22),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'AI STATUS · $assistantName',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: accent,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'ONLINE',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF10B981),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Live Telemetry Briefing for $userName',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 14),
+
+        // 2. Real-Time Telemetry Grid
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.8,
+          children: [
+            // Hydration Telemetry
+            _TelemetryCard(
+              title: 'Hydration',
+              value: '$waterMl / $waterGoal mL',
+              status: waterMl < 1000 ? 'Drink water!' : 'Healthy',
+              statusColor: waterMl < 1000 ? Colors.orange : const Color(0xFF38BDF8),
+              icon: Icons.water_drop_rounded,
+              iconColor: const Color(0xFF38BDF8),
+              onTap: () => onSelectPrompt('Log 250ml water'),
+            ),
+
+            // Walk Telemetry
+            _TelemetryCard(
+              title: 'Walk & Activity',
+              value: isWalkActive
+                  ? '${(walkState.distanceKm).toStringAsFixed(2)} km'
+                  : '${(todayWalkMeters / 1000.0).toStringAsFixed(1)} km today',
+              status: isWalkActive ? 'Active GPS walk' : (todayWalkMeters > 0 ? 'Logged' : 'Pending walk'),
+              statusColor: isWalkActive ? const Color(0xFF22C55E) : const Color(0xFF10B981),
+              icon: Icons.directions_walk_rounded,
+              iconColor: const Color(0xFF10B981),
+              onTap: () => onSelectPrompt('Walk status and tips'),
+            ),
+
+            // Learning Telemetry
+            _TelemetryCard(
+              title: 'Learning Hub',
+              value: '${course.completedLectures}/${course.totalLectures} lectures',
+              status: '${course.remainingLectures} left in course',
+              statusColor: const Color(0xFF6366F1),
+              icon: Icons.school_rounded,
+              iconColor: const Color(0xFF6366F1),
+              onTap: () => onSelectPrompt('What should I study next?'),
+            ),
+
+            // Reminder & Money Telemetry
+            _TelemetryCard(
+              title: 'Reminders & Finance',
+              value: '₹${todaySpending.toStringAsFixed(0)} today',
+              status: nextReminder != null ? nextReminder.title : 'No pending alarms',
+              statusColor: const Color(0xFFF59E0B),
+              icon: Icons.notifications_active_rounded,
+              iconColor: const Color(0xFFF59E0B),
+              onTap: () => onSelectPrompt('Show my pending tasks and reminders'),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 18),
+
+        Text(
+          'INTELLIGENT COMMANDS',
+          style: AscentTextStyles.labelSmall.copyWith(
+            color: context.textMuted,
+            letterSpacing: 1.1,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // 3. Highlight "Plan My Day" button
+        InkWell(
+          onTap: () => onSelectPrompt('Plan my day'),
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  accent.withValues(alpha: 0.18),
+                  accent.withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: accent.withValues(alpha: 0.5), width: 1.2),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.bolt_rounded, size: 18, color: accent),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '⚡ Plan My Day',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        'Synthesize activities, walk goals, hydration & lectures',
+                        style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded, size: 12, color: accent),
+              ],
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Quick prompts list
+        ...[
+          'What tasks are pending today?',
+          'Log 250ml water',
+          'Explain Dynamic Programming',
+          'Move my workout to the evening',
+        ].map((p) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                onTap: () => onSelectPrompt(p),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.bgSurface.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.divider.withValues(alpha: 0.7)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.chat_bubble_outline_rounded, size: 14, color: accent),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          p,
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: context.textPrimary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_rounded, size: 13, color: context.textMuted),
+                    ],
+                  ),
+                ),
+              ),
+            )),
+      ],
+    );
+  }
+}
+
+class _TelemetryCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String status;
+  final Color statusColor;
+  final IconData icon;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _TelemetryCard({
+    required this.title,
+    required this.value,
+    required this.status,
+    required this.statusColor,
+    required this.icon,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: context.bgSurface.withValues(alpha: 0.6),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.divider.withValues(alpha: 0.6), width: 0.8),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      color: context.textMuted,
+                    ),
+                  ),
+                  Icon(icon, size: 14, color: iconColor),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    status,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

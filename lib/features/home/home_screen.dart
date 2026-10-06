@@ -13,6 +13,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
+import '../../core/walk/walk_tracking_service.dart';
 import '../study_plan/lecture_focus_player_sheet.dart';
 import '../today/add_activity_sheet.dart';
 import 'package:flutter/services.dart';
@@ -81,6 +82,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   // 1. Header (Greeting + User Profile + Plan Day)
                   _HomeHeader(profile: profile),
+
+                  // Top indicator for upcoming/pending reminders
+                  const _TopReminderAlertBanner(),
 
                   // Return-user cold start welcome-back banner (>3 days absent)
                   if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
@@ -228,9 +232,34 @@ class _QuickModulesNavHub extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 1. Water
     final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
     final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
-    final expenses = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
+    final waterPercent = waterGoal > 0 ? ((waterMl / waterGoal) * 100).toInt() : 0;
+
+    // 2. Walk
+    final walkState = ref.watch(walkTrackingProvider);
+    final todayWalkMeters = ref.watch(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
+    final walkSubtitle = isWalkActive
+        ? 'Active · ${(walkState.distanceKm).toStringAsFixed(2)} km'
+        : todayWalkMeters > 0
+            ? '${(todayWalkMeters / 1000.0).toStringAsFixed(2)} km walked today'
+            : 'Goal 5.0 km · Tap to start';
+
+    // 3. Money
+    final todaySpending = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
+    final budget = ref.watch(overallBudgetStreamProvider).value;
+    final moneySubtitle = budget != null && budget.monthlyLimit > 0
+        ? '₹${todaySpending.toStringAsFixed(0)} today · Limit ₹${budget.monthlyLimit.toStringAsFixed(0)}'
+        : '₹${todaySpending.toStringAsFixed(0)} logged today';
+
+    // 4. Habits
+    final allHabits = ref.watch(allHabitsStreamProvider).value ?? [];
+    final doneHabitIds = ref.watch(todayCompletedHabitIdsStreamProvider).value ?? {};
+    final habitSubtitle = allHabits.isEmpty
+        ? 'Daily routines & streaks'
+        : '${doneHabitIds.length}/${allHabits.length} completed today';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -264,7 +293,7 @@ class _QuickModulesNavHub extends ConsumerWidget {
             // 1. Hydration
             _NavHubCard(
               title: 'Hydration',
-              subtitle: '$waterMl / $waterGoal mL',
+              subtitle: '$waterMl / $waterGoal mL ($waterPercent%)',
               icon: Icons.water_drop_rounded,
               color: const Color(0xFF38BDF8),
               onTap: () {
@@ -275,9 +304,9 @@ class _QuickModulesNavHub extends ConsumerWidget {
             // 2. Walk & Activity
             _NavHubCard(
               title: 'Walk & Run',
-              subtitle: 'Active GPS tracker',
+              subtitle: walkSubtitle,
               icon: Icons.directions_walk_rounded,
-              color: const Color(0xFF10B981),
+              color: isWalkActive ? const Color(0xFF22C55E) : const Color(0xFF10B981),
               onTap: () {
                 HapticFeedback.lightImpact();
                 context.push('/walk');
@@ -286,7 +315,7 @@ class _QuickModulesNavHub extends ConsumerWidget {
             // 3. Money & Budget
             _NavHubCard(
               title: 'Money',
-              subtitle: '₹${expenses.toStringAsFixed(0)} logged today',
+              subtitle: moneySubtitle,
               icon: Icons.account_balance_wallet_rounded,
               color: const Color(0xFFF59E0B),
               onTap: () {
@@ -297,7 +326,7 @@ class _QuickModulesNavHub extends ConsumerWidget {
             // 4. Daily Habits
             _NavHubCard(
               title: 'Habits',
-              subtitle: 'Daily routines & streaks',
+              subtitle: habitSubtitle,
               icon: Icons.fact_check_rounded,
               color: const Color(0xFF8B5CF6),
               onTap: () {
@@ -393,10 +422,10 @@ class _NavHubCard extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// 1. Header with Plan Day button
+// 1. Header with Day/Night toggle and Settings avatar
 // ---------------------------------------------------------------------------
 
-class _HomeHeader extends StatelessWidget {
+class _HomeHeader extends ConsumerWidget {
   final UserProfile? profile;
 
   const _HomeHeader({required this.profile});
@@ -409,10 +438,11 @@ class _HomeHeader extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
     final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Software Engineer';
     final dateStr = DateFormat('EEEE, MMM d').format(DateTime.now());
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -447,9 +477,28 @@ class _HomeHeader extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Quick Day / Night Toggle button
+            IconButton(
+              tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+              icon: Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                size: 21,
+                color: isDark ? const Color(0xFFFBBF24) : context.textSecondary,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ref.read(themeModeProvider.notifier).setThemeMode(
+                  isDark ? ThemeMode.light : ThemeMode.dark,
+                );
+              },
+            ),
+            const SizedBox(width: 4),
             // Settings / Profile avatar
             InkWell(
-              onTap: () => context.push('/settings'),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/settings');
+              },
               borderRadius: BorderRadius.circular(18),
               child: Container(
                 width: 36,
@@ -474,6 +523,111 @@ class _HomeHeader extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 1b. Top Reminder Alert Banner (Prominent upcoming reminder indication)
+// ---------------------------------------------------------------------------
+
+class _TopReminderAlertBanner extends ConsumerWidget {
+  const _TopReminderAlertBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nextReminderAsync = ref.watch(nextUpcomingReminderProvider);
+    final reminder = nextReminderAsync.value;
+
+    if (reminder == null) return const SizedBox.shrink();
+
+    final dueTime = DateFormat('h:mm a').format(reminder.scheduledAt);
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      decoration: BoxDecoration(
+        color: context.accentSecondary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.accentSecondary.withValues(alpha: 0.35),
+          width: 1.0,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.push('/reminders');
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: context.accentSecondary.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.notifications_active_rounded,
+                    size: 16,
+                    color: context.accentSecondary,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            'UPCOMING REMINDER',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: context.accentSecondary,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '· $dueTime',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              fontSize: 10.5,
+                              color: context.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        reminder.title,
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: context.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 12,
+                  color: context.textMuted.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -991,14 +1145,37 @@ class _ActivityRowItem extends ConsumerWidget {
             // 2. Activity Info (Title, Subtitle/Duration/Tags)
             Expanded(
               child: InkWell(
+                onLongPress: () async {
+                  HapticFeedback.lightImpact();
+                  Task? task;
+                  if (activity.linkedTaskId != null) {
+                    task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                  }
+                  if (context.mounted) {
+                    AddActivitySheet.show(
+                      context,
+                      existingTask: task,
+                      initialTitle: activity.title,
+                      initialKind: activity.kind,
+                      initialDurationMinutes: activity.targetMinutes,
+                    );
+                  }
+                },
                 onTap: () async {
                   if (activity.kind == ActivityKind.todo) {
                     // Open task editor
+                    Task? task;
                     if (activity.linkedTaskId != null) {
-                      final task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
-                      if (context.mounted) {
-                        AddActivitySheet.show(context, existingTask: task);
-                      }
+                      task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                    }
+                    if (context.mounted) {
+                      AddActivitySheet.show(
+                        context,
+                        existingTask: task,
+                        initialTitle: activity.title,
+                        initialKind: activity.kind,
+                        initialDurationMinutes: activity.targetMinutes,
+                      );
                     }
                   } else {
                     // Duration or flexible: start or open focus
@@ -1088,7 +1265,30 @@ class _ActivityRowItem extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.edit_outlined, size: 15, color: context.textMuted),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+              tooltip: 'Edit activity',
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                Task? task;
+                if (activity.linkedTaskId != null) {
+                  task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                }
+                if (context.mounted) {
+                  AddActivitySheet.show(
+                    context,
+                    existingTask: task,
+                    initialTitle: activity.title,
+                    initialKind: activity.kind,
+                    initialDurationMinutes: activity.targetMinutes,
+                  );
+                }
+              },
+            ),
+            const SizedBox(width: 4),
 
             // 3. Right Action: Play / Pause / Start for Timed & Flexible; nothing for To-do
             if (activity.kind != ActivityKind.todo)
@@ -1177,6 +1377,204 @@ class _LearningHubCard extends ConsumerWidget {
     final course = state.course;
     final active = state.activeLecture;
     final activeMod = state.activeModule;
+    final isLive = state.isPlaying || state.isLiveFocusActive;
+
+    if (isLive) {
+      // ── Rich Expanded Active Lecture Container ────────────────────────
+      return Container(
+        decoration: BoxDecoration(
+          color: context.bgSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: context.accentSecondary.withValues(alpha: 0.6),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: context.accentSecondary.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Live Focus Badge
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: state.isPlaying ? context.accentSecondary : Colors.orange,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      state.isPlaying ? 'LIVE LECTURE IN PROGRESS' : 'LECTURE PAUSED',
+                      style: GoogleFonts.jetBrainsMono(
+                        color: state.isPlaying ? context.accentSecondary : Colors.orange,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+                InkWell(
+                  onTap: () => context.push('/study-plan'),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Text(
+                      'View Hub ›',
+                      style: TextStyle(
+                        color: context.textMuted,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // Course & Module Hierarchy
+            Text(
+              '${course.title} • ${activeMod.title}',
+              style: TextStyle(
+                fontSize: 11,
+                color: context.textMuted,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 3),
+
+            // Lecture Title
+            Text(
+              'Lecture ${active.id}: ${active.title}',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: context.textPrimary,
+                height: 1.25,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+
+            // Progress Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: state.progressFraction,
+                minHeight: 6,
+                backgroundColor: context.bgBase,
+                valueColor: AlwaysStoppedAnimation<Color>(context.accentSecondary),
+              ),
+            ),
+            const SizedBox(height: 6),
+
+            // Elapsed / Remaining Time Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '${state.formattedElapsed} / ${active.formattedDuration}',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: state.isPlaying ? context.accentSecondary : context.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${state.formattedRemaining} left (${state.progressPercent}%)',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10.5,
+                    color: context.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+
+            // Interactive Controls Row
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Rewind 15s',
+                  icon: const Icon(Icons.replay_10_rounded, size: 20),
+                  color: context.textPrimary,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(learningHubProvider.notifier).seekBy(-15);
+                  },
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: state.isPlaying
+                          ? Colors.orange.shade700
+                          : context.accentSecondary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: Icon(
+                      state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      size: 18,
+                    ),
+                    label: Text(
+                      state.isPlaying ? 'Pause' : 'Resume Focus',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      ref.read(learningHubProvider.notifier).togglePlayPause();
+                    },
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'Forward 15s',
+                  icon: const Icon(Icons.forward_10_rounded, size: 20),
+                  color: context.textPrimary,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    ref.read(learningHubProvider.notifier).seekBy(15);
+                  },
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'Open Full Player Sheet',
+                  icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                  color: context.textMuted,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    LectureFocusPlayerSheet.show(context);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return AscentCard(
       padding: const EdgeInsets.all(16),
@@ -1301,22 +1699,15 @@ class _LearningHubCard extends ConsumerWidget {
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: state.isPlaying
-                              ? Colors.orange.shade700
-                              : context.accentSecondary,
+                          backgroundColor: context.accentSecondary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        icon: Icon(
-                          state.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
-                          size: 18,
-                        ),
+                        icon: const Icon(Icons.play_circle_fill_rounded, size: 18),
                         label: Text(
-                          state.isPlaying
-                              ? 'Live Focus: ${state.formattedElapsed} • Tap to pause'
-                              : 'Continue Lecture ${active.id}',
+                          'Continue Lecture ${active.id}',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w600,
@@ -1326,11 +1717,7 @@ class _LearningHubCard extends ConsumerWidget {
                         ),
                         onPressed: () {
                           HapticFeedback.lightImpact();
-                          if (state.isPlaying) {
-                            ref.read(learningHubProvider.notifier).pause();
-                          } else {
-                            ref.read(learningHubProvider.notifier).play();
-                          }
+                          ref.read(learningHubProvider.notifier).play();
                         },
                       ),
                     ),

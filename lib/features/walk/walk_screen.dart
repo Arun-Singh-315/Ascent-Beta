@@ -1,10 +1,10 @@
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
@@ -211,7 +211,10 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                   ],
                 )
               else
-                _VectorRouteRadarCanvas(walkState: walkState),
+                _WalkFitnessHud(
+                  walkState: walkState,
+                  targetDistanceKm: targetDistanceKm,
+                ),
 
               // 2. Controls & Mode Toggle Header
               Positioned(
@@ -295,13 +298,13 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _showOnlineMap ? Icons.radar_rounded : Icons.map_outlined,
+                              _showOnlineMap ? Icons.fitness_center_rounded : Icons.map_outlined,
                               size: 14,
                               color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              _showOnlineMap ? 'Radar Mode' : 'Online Map',
+                              _showOnlineMap ? 'Fitness HUD' : 'Map View',
                               style: AscentTextStyles.labelSmall.copyWith(
                                 color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
                                 fontWeight: FontWeight.w600,
@@ -789,249 +792,320 @@ class _MetricCol extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// High-Performance Vector Route Canvas & Radar Painter (Zero-Lag HUD)
+// Modern Fitness Activity HUD (Apple Fitness / Strava Style Arc & Metrics)
 // ---------------------------------------------------------------------------
 
-class _VectorRouteRadarCanvas extends StatelessWidget {
+class _WalkFitnessHud extends StatelessWidget {
   final WalkTrackingState walkState;
+  final double targetDistanceKm;
 
-  const _VectorRouteRadarCanvas({required this.walkState});
+  const _WalkFitnessHud({
+    required this.walkState,
+    required this.targetDistanceKm,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.isDark;
     final accent = context.accentPrimary;
+    final isTracking = walkState.status == WalkTrackingStatus.tracking;
+    final isPaused = walkState.status == WalkTrackingStatus.paused;
+    final isStationary = walkState.isStationary;
+    final distanceKm = walkState.distanceMeters / 1000.0;
+    final progress = (targetDistanceKm > 0 ? distanceKm / targetDistanceKm : 0.0).clamp(0.0, 1.0);
 
     return Container(
-      color: isDark ? const Color(0xFF090D16) : const Color(0xFFF1F5F9),
-      child: Stack(
-        children: [
-          // Cybernetic Radar Grid background
-          CustomPaint(
-            size: Size.infinite,
-            painter: _RadarGridPainter(
-              gridColor: isDark
-                  ? Colors.white.withValues(alpha: 0.04)
-                  : Colors.black.withValues(alpha: 0.04),
-              crosshairColor: isDark
-                  ? Colors.white.withValues(alpha: 0.08)
-                  : Colors.black.withValues(alpha: 0.08),
-            ),
-          ),
-
-          // Route Vector Path
-          if (walkState.routePoints.isNotEmpty)
-            CustomPaint(
-              size: Size.infinite,
-              painter: _RouteVectorPainter(
-                routePoints: walkState.routePoints,
-                currentLat: walkState.currentLat,
-                currentLng: walkState.currentLng,
-                lineColor: accent,
-                pulseColor: const Color(0xFF38BDF8),
-              ),
-            )
-          else
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 120),
-                child: Column(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [const Color(0xFF090D16), const Color(0xFF0F172A)]
+              : [const Color(0xFFF8FAFC), const Color(0xFFEFF6FF)],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 60, bottom: 250, left: 20, right: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // 1. Dynamic Status Indicator Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isTracking
+                      ? (isStationary
+                          ? const Color(0xFF0284C7).withValues(alpha: 0.15)
+                          : const Color(0xFF10B981).withValues(alpha: 0.15))
+                      : (isPaused
+                          ? Colors.amber.withValues(alpha: 0.15)
+                          : context.bgSurface.withValues(alpha: 0.8)),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isTracking
+                        ? (isStationary
+                            ? const Color(0xFF0284C7).withValues(alpha: 0.4)
+                            : const Color(0xFF10B981).withValues(alpha: 0.5))
+                        : (isPaused
+                            ? Colors.amber.withValues(alpha: 0.4)
+                            : context.divider),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(18),
+                      width: 8,
+                      height: 8,
                       decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.08),
                         shape: BoxShape.circle,
-                        border: Border.all(color: accent.withValues(alpha: 0.2)),
-                      ),
-                      child: Icon(
-                        Icons.navigation_rounded,
-                        size: 34,
-                        color: accent,
+                        color: isTracking
+                            ? (isStationary ? const Color(0xFF38BDF8) : const Color(0xFF22C55E))
+                            : (isPaused ? Colors.amber : context.textMuted),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(width: 8),
                     Text(
-                      'High-Performance GPS Radar',
-                      style: AscentTextStyles.bodyMedium.copyWith(
-                        color: context.textPrimary,
-                        fontWeight: FontWeight.w700,
+                      isTracking
+                          ? (isStationary
+                              ? 'RESTING / STATIONARY · 0.0 KM/H'
+                              : 'WALKING · ${walkState.currentSpeedKmh.toStringAsFixed(1)} KM/H')
+                          : (isPaused ? 'SESSION PAUSED' : 'READY FOR OUTDOOR WALK'),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: isTracking
+                            ? (isStationary ? const Color(0xFF38BDF8) : const Color(0xFF22C55E))
+                            : (isPaused ? Colors.amber : context.textSecondary),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      walkState.status == WalkTrackingStatus.tracking
-                          ? 'Tracking route vector at 60 FPS • Zero lag'
-                          : 'Tap "Start Walk" below to trace your route vector',
-                      style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
                     ),
                   ],
                 ),
               ),
-            ),
+
+              // 2. Circular Fitness Progress Ring
+              Center(
+                child: SizedBox(
+                  width: 210,
+                  height: 210,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(210, 210),
+                        painter: _ActivityRingPainter(
+                          progress: progress,
+                          trackColor: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.08),
+                          progressColor: isStationary ? const Color(0xFF38BDF8) : accent,
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            distanceKm.toStringAsFixed(2),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w800,
+                              color: context.textPrimary,
+                              letterSpacing: -1.5,
+                            ),
+                          ),
+                          Text(
+                            'KILOMETERS',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                              color: context.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: context.bgSurface.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              walkState.formattedDuration,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. Stat Badges Row: Current Speed, Cadence / Pace, Energy
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _HudStatItem(
+                    label: 'SPEED',
+                    value: isStationary
+                        ? '0.0'
+                        : walkState.currentSpeedKmh.toStringAsFixed(1),
+                    unit: 'km/h',
+                    icon: Icons.speed_rounded,
+                  ),
+                  _HudStatItem(
+                    label: 'PACE',
+                    value: walkState.formattedPace,
+                    unit: '/km',
+                    icon: Icons.timer_outlined,
+                  ),
+                  _HudStatItem(
+                    label: 'CALORIES',
+                    value: '${walkState.calories}',
+                    unit: 'kcal',
+                    icon: Icons.local_fire_department_rounded,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final IconData icon;
+
+  const _HudStatItem({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.bgSurface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.divider.withValues(alpha: 0.7),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: context.textMuted),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: context.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
+              ),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 2),
+                Text(
+                  unit,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9.5,
+                    color: context.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-class _RadarGridPainter extends CustomPainter {
-  final Color gridColor;
-  final Color crosshairColor;
+class _ActivityRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
 
-  _RadarGridPainter({required this.gridColor, required this.crosshairColor});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final gridPaint = Paint()
-      ..color = gridColor
-      ..strokeWidth = 1.0;
-
-    final crossPaint = Paint()
-      ..color = crosshairColor
-      ..strokeWidth = 1.2;
-
-    const spacing = 32.0;
-
-    // Draw vertical and horizontal grid lines
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
-    }
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-
-    // Draw center concentric radar circles
-    final center = Offset(size.width / 2, (size.height / 2) - 40);
-    final circlePaint = Paint()
-      ..color = crosshairColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    for (double r = 60; r < 240; r += 60) {
-      canvas.drawCircle(center, r, circlePaint);
-    }
-
-    // Center crosshairs
-    canvas.drawLine(Offset(center.dx - 16, center.dy), Offset(center.dx + 16, center.dy), crossPaint);
-    canvas.drawLine(Offset(center.dx, center.dy - 16), Offset(center.dx, center.dy + 16), crossPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _RadarGridPainter oldDelegate) => false;
-}
-
-class _RouteVectorPainter extends CustomPainter {
-  final List<LatLng> routePoints;
-  final double? currentLat;
-  final double? currentLng;
-  final Color lineColor;
-  final Color pulseColor;
-
-  _RouteVectorPainter({
-    required this.routePoints,
-    required this.currentLat,
-    required this.currentLng,
-    required this.lineColor,
-    required this.pulseColor,
+  _ActivityRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (routePoints.isEmpty) return;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 16) / 2;
+    const strokeWidth = 14.0;
 
-    double minLat = routePoints.first.latitude;
-    double maxLat = routePoints.first.latitude;
-    double minLng = routePoints.first.longitude;
-    double maxLng = routePoints.first.longitude;
+    // Track
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, trackPaint);
 
-    for (final pt in routePoints) {
-      if (pt.latitude < minLat) minLat = pt.latitude;
-      if (pt.latitude > maxLat) maxLat = pt.latitude;
-      if (pt.longitude < minLng) minLng = pt.longitude;
-      if (pt.longitude > maxLng) maxLng = pt.longitude;
-    }
-
-    final latSpan = (maxLat - minLat).abs();
-    final lngSpan = (maxLng - minLng).abs();
-    final effectiveLatSpan = latSpan < 0.0001 ? 0.0001 : latSpan;
-    final effectiveLngSpan = lngSpan < 0.0001 ? 0.0001 : lngSpan;
-
-    // Viewport padding (leaving room for top header and bottom controls)
-    const padX = 40.0;
-    const padTop = 80.0;
-    const padBottom = 260.0;
-
-    final drawW = size.width - (padX * 2);
-    final drawH = size.height - padTop - padBottom;
-
-    Offset toScreen(LatLng pt) {
-      final nx = (pt.longitude - minLng) / effectiveLngSpan;
-      final ny = (maxLat - pt.latitude) / effectiveLatSpan;
-      return Offset(padX + (nx * drawW), padTop + (ny * drawH));
-    }
-
-    // 1. Draw glowing path
-    final glowPaint = Paint()
-      ..color = lineColor.withValues(alpha: 0.25)
-      ..strokeWidth = 8.0
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    final linePaint = Paint()
-      ..color = lineColor
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..style = PaintingStyle.stroke;
-
-    final path = ui.Path();
-    final startScreen = toScreen(routePoints.first);
-    path.moveTo(startScreen.dx, startScreen.dy);
-
-    for (int i = 1; i < routePoints.length; i++) {
-      final s = toScreen(routePoints[i]);
-      path.lineTo(s.dx, s.dy);
-    }
-
-    canvas.drawPath(path, glowPaint);
-    canvas.drawPath(path, linePaint);
-
-    // 2. Draw Start Pin
-    final startPaint = Paint()..color = const Color(0xFF10B981);
-    canvas.drawCircle(startScreen, 6.0, startPaint);
-    canvas.drawCircle(
-      startScreen,
-      9.0,
-      Paint()
-        ..color = const Color(0xFF10B981).withValues(alpha: 0.35)
+    // Progress Arc
+    if (progress > 0.0) {
+      final progressPaint = Paint()
+        ..color = progressColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0,
-    );
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
 
-    // 3. Draw Current/Last GPS Beacon
-    final lastPt = routePoints.last;
-    final lastScreen = toScreen(lastPt);
-
-    final beaconPaint = Paint()..color = pulseColor;
-    canvas.drawCircle(lastScreen, 7.0, beaconPaint);
-    canvas.drawCircle(
-      lastScreen,
-      13.0,
-      Paint()
-        ..color = pulseColor.withValues(alpha: 0.3)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
-    );
+      final sweepAngle = 2 * pi * progress;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -pi / 2,
+        sweepAngle,
+        false,
+        progressPaint,
+      );
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _RouteVectorPainter oldDelegate) {
-    return oldDelegate.routePoints.length != routePoints.length ||
-        oldDelegate.currentLat != currentLat ||
-        oldDelegate.currentLng != currentLng;
+  bool shouldRepaint(covariant _ActivityRingPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.progressColor != progressColor;
   }
 }
 

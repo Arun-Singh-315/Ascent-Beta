@@ -64,6 +64,14 @@ class WalkTrackingState {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  double get currentSpeedKmh => currentSpeedMps * 3.6;
+
+  bool get isStationary =>
+      status == WalkTrackingStatus.tracking && currentSpeedMps < 0.4;
+
+  bool get isMoving =>
+      status == WalkTrackingStatus.tracking && currentSpeedMps >= 0.4;
+
   String get formattedDuration {
     final h = durationSeconds ~/ 3600;
     final m = (durationSeconds % 3600) ~/ 60;
@@ -174,10 +182,26 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
 
   void _subscribeGpsStream() {
     _positionSub?.cancel();
-    const locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.bestForNavigation,
-      distanceFilter: 3,
-    );
+
+    late final LocationSettings locationSettings;
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      locationSettings = AndroidSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 2,
+        forceLocationManager: false,
+        intervalDuration: const Duration(seconds: 2),
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationText: "Ascent is actively tracking your outdoor walk session",
+          notificationTitle: "Walking Session Active",
+          enableWakeLock: true,
+        ),
+      );
+    } else {
+      locationSettings = const LocationSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 2,
+      );
+    }
 
     _positionSub = Geolocator.getPositionStream(locationSettings: locationSettings).listen(
       (position) => _processPosition(position),
@@ -222,7 +246,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
         currentLng: position.longitude,
         accuracyMeters: position.accuracy,
         gpsSignal: quality,
-        currentSpeedMps: position.speed > 0 ? position.speed : 0.0,
+        currentSpeedMps: position.speed > 0.4 ? position.speed : 0.0,
         routePoints: [newPoint],
       );
       return;
@@ -236,19 +260,23 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       newPoint.longitude,
     );
 
-    // Filter stationary drift (< 2.0m) and impossible coordinate jumps (> 12 m/s -> > 43 km/h)
-    if (segmentDistance < 2.0) {
+    // Stationary Drift Elimination:
+    // When GPS speed is < 0.4 m/s (approx 1.4 km/h) or displacement is tiny (< 2.5m),
+    // the user is stationary (stopped). Do NOT increment distance or route points.
+    final rawSpeed = position.speed > 0 ? position.speed : 0.0;
+    if (rawSpeed < 0.4 || segmentDistance < 2.5) {
       state = state.copyWith(
         currentLat: position.latitude,
         currentLng: position.longitude,
         accuracyMeters: position.accuracy,
         gpsSignal: quality,
+        currentSpeedMps: 0.0,
       );
       return;
     }
 
-    if (segmentDistance > 200.0 && position.speed > 12.0) {
-      // Outlier jump
+    // Filter impossible outlier coordinate jumps (> 150m and > 12 m/s -> > 43 km/h)
+    if (segmentDistance > 150.0 && rawSpeed > 12.0) {
       return;
     }
 
@@ -261,7 +289,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       accuracyMeters: position.accuracy,
       gpsSignal: quality,
       distanceMeters: updatedDistance,
-      currentSpeedMps: position.speed > 0 ? position.speed : 0.0,
+      currentSpeedMps: rawSpeed,
       calories: (updatedDistance / 1000.0 * 65.0).round(),
       routePoints: updatedPoints,
     );
