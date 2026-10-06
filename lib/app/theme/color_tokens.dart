@@ -27,26 +27,26 @@ class AscentColors {
   /// Subtle soft tint for primary backgrounds and badges.
   static const Color accentPrimaryDim = Color(0xFFD6E8DC);
 
-  /// Muted terracotta / warm clay — secondary accent.
-  static const Color accentSecondary = Color(0xFFD06548);
+  /// Calm composed terracotta / amber cedar — secondary accent (soothing in day mode).
+  static const Color accentSecondary = Color(0xFF8A513E);
 
-  /// Punchier terracotta for active countdown and focus markers.
-  static const Color accentSecondaryBright = Color(0xFFBA5438);
+  /// Composed cedar tone for active countdown and focus markers.
+  static const Color accentSecondaryBright = Color(0xFF9E5C47);
 
   /// Soft slate blue — informational accent.
   static const Color accentInfo = Color(0xFF4F739D);
 
-  /// Restrained coral-red — destructive / error state.
-  static const Color stateDanger = Color(0xFFC94A42);
+  /// Restrained rose-crimson — destructive / error state (calm in day mode).
+  static const Color stateDanger = Color(0xFFBA433C);
 
   /// Saturated red for cancel and delete.
-  static const Color stateDangerBright = Color(0xFFB83A32);
+  static const Color stateDangerBright = Color(0xFFA83630);
 
   /// Success — matches primary forest sage.
   static const Color stateSuccess = Color(0xFF38664D);
 
-  /// Warning — amber/clay.
-  static const Color stateWarning = Color(0xFFD97736);
+  /// Warning — soft warm honey / amber (calm and non-glaring in day mode).
+  static const Color stateWarning = Color(0xFFB46824);
 
   /// Deep near-black graphite text.
   static const Color textPrimary = Color(0xFF16191D);

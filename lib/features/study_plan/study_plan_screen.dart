@@ -198,20 +198,24 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                           decoration: BoxDecoration(
-                                            color: Colors.redAccent.withValues(alpha: 0.1),
+                                            color: context.stateWarning.withValues(alpha: 0.12),
                                             borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: context.stateWarning.withValues(alpha: 0.3),
+                                              width: 0.8,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              const Icon(Icons.warning_amber_rounded, size: 12, color: Colors.redAccent),
+                                              Icon(Icons.timer_outlined, size: 12, color: context.stateWarning),
                                               const SizedBox(width: 4),
                                               Text(
-                                                '-${course.targetMinutesPerDay} min/day',
+                                                '${course.targetMinutesPerDay} min/day target',
                                                 style: GoogleFonts.jetBrainsMono(
                                                   fontSize: 10.5,
                                                   fontWeight: FontWeight.w700,
-                                                  color: Colors.redAccent,
+                                                  color: context.stateWarning,
                                                 ),
                                               ),
                                             ],
@@ -247,31 +251,41 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
 
                           const SizedBox(height: 16),
 
-                          // Continue Lecture Button (matching video green button)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: context.accentSecondary,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(vertical: 13),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                          // Continue Lecture Button (calm forest sage / composed styling)
+                          Builder(
+                            builder: (context) {
+                              final allLectures = course.modules.expand((m) => m.lectures).toList();
+                              final activeIndex = allLectures.indexWhere((l) => l.id == activeLecture.id);
+                              final lectureNum = activeIndex >= 0 ? activeIndex + 1 : 1;
+
+                              return SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: context.accentPrimary,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    LectureFocusPlayerSheet.show(context);
+                                  },
+                                  icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
+                                  label: Text(
+                                    'Continue → Lecture $lectureNum: ${activeLecture.title}',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
-                              onPressed: () {
-                                LectureFocusPlayerSheet.show(context);
-                              },
-                              icon: const Icon(Icons.play_circle_fill_rounded, size: 20),
-                              label: Text(
-                                'Continue → Lecture ${activeLecture.id}',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -279,20 +293,23 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
 
                     const SizedBox(height: 12),
 
-                    // Tab bar
+                    // Tab bar (sleek segmented pill)
                     Container(
                       height: 44,
                       decoration: BoxDecoration(
                         color: context.bgSurface,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
                       ),
                       child: TabBar(
                         controller: _tabController,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        indicatorPadding: const EdgeInsets.all(3),
                         indicator: BoxDecoration(
-                          color: context.accentSecondary,
-                          borderRadius: BorderRadius.circular(12),
+                          color: context.accentPrimary,
+                          borderRadius: BorderRadius.circular(11),
                         ),
+                        dividerColor: Colors.transparent,
                         labelColor: Colors.white,
                         unselectedLabelColor: context.textMuted,
                         labelStyle: GoogleFonts.plusJakartaSans(
@@ -590,7 +607,7 @@ class _ModuleCard extends ConsumerWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: context.accentSecondary,
+                    backgroundColor: context.accentPrimary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -672,34 +689,48 @@ class _AllLecturesListView extends ConsumerWidget {
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: BoxDecoration(
                   color: isCurrent
-                      ? context.accentSecondary.withValues(alpha: 0.12)
+                      ? context.accentPrimary.withValues(alpha: 0.12)
                       : context.bgSurface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isCurrent
-                        ? context.accentSecondary.withValues(alpha: 0.5)
+                        ? context.accentPrimary.withValues(alpha: 0.5)
                         : context.divider.withValues(alpha: 0.7),
                   ),
                 ),
                 child: ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  leading: CircleAvatar(
-                    radius: 14,
-                    backgroundColor: isCurrent
-                        ? context.accentSecondary
-                        : (lec.isCompleted
-                            ? context.accentPrimary.withValues(alpha: 0.2)
-                            : context.bgBase),
-                    child: lec.isCompleted
-                        ? Icon(Icons.check, size: 14, color: context.accentPrimary)
-                        : Text(
-                            '${lec.id}',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isCurrent ? Colors.white : context.textPrimary,
+                  leading: Container(
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? context.accentPrimary
+                          : (lec.isCompleted
+                              ? context.accentPrimary.withValues(alpha: 0.15)
+                              : context.bgBase),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: isCurrent
+                            ? context.accentPrimary
+                            : (lec.isCompleted
+                                ? context.accentPrimary.withValues(alpha: 0.4)
+                                : context.divider),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Center(
+                      child: lec.isCompleted
+                          ? Icon(Icons.check_rounded, size: 14, color: context.accentPrimary)
+                          : Text(
+                              '#${index + 1}',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isCurrent ? Colors.white : context.textPrimary,
+                              ),
                             ),
-                          ),
+                    ),
                   ),
                   title: Text(
                     lec.title,
@@ -722,7 +753,7 @@ class _AllLecturesListView extends ConsumerWidget {
                         lec.formattedDuration,
                         style: GoogleFonts.jetBrainsMono(
                           fontSize: 11.5,
-                          color: isCurrent ? context.accentSecondary : context.textMuted,
+                          color: isCurrent ? context.accentPrimary : context.textMuted,
                           fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                         ),
                       ),

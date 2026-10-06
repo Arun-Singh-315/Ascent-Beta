@@ -1401,43 +1401,79 @@ class _LearningHubCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Live Focus Badge
+            // Top Live Focus Badge & View Hub CTA
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: state.isPlaying ? context.accentSecondary : Colors.orange,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      state.isPlaying ? 'LIVE LECTURE IN PROGRESS' : 'LECTURE PAUSED',
-                      style: GoogleFonts.jetBrainsMono(
-                        color: state.isPlaying ? context.accentSecondary : Colors.orange,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
                 InkWell(
-                  onTap: () => context.push('/study-plan'),
-                  borderRadius: BorderRadius.circular(6),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/study-plan');
+                  },
+                  borderRadius: BorderRadius.circular(8),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    child: Text(
-                      'View Hub ›',
-                      style: TextStyle(
-                        color: context.textMuted,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
+                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: state.isPlaying ? context.accentSecondary : context.stateWarning,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          state.isPlaying ? 'LIVE LECTURE IN PROGRESS' : 'LECTURE PAUSED',
+                          style: GoogleFonts.jetBrainsMono(
+                            color: state.isPlaying ? context.accentSecondary : context.stateWarning,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/study-plan');
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: context.bgBase,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: context.divider.withValues(alpha: 0.8),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View Hub',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: context.textPrimary,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 3),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 10,
+                            color: context.accentSecondary,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1446,16 +1482,26 @@ class _LearningHubCard extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
 
-            // Course & Module Hierarchy
-            Text(
-              '${course.title} • ${activeMod.title}',
-              style: TextStyle(
-                fontSize: 11,
-                color: context.textMuted,
-                fontWeight: FontWeight.w500,
+            // Course & Module Hierarchy (also tappable to navigate to hub)
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/study-plan');
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  '${course.title} • ${activeMod.title}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: context.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 3),
 
@@ -1526,8 +1572,8 @@ class _LearningHubCard extends ConsumerWidget {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: state.isPlaying
-                          ? Colors.orange.shade700
-                          : context.accentSecondary,
+                          ? context.stateWarning
+                          : context.accentPrimary,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 10),

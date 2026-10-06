@@ -15,7 +15,6 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/walk/walk_tracking_service.dart';
-import '../../shared/widgets/ascent_button.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
   const AiAssistantScreen({super.key});
@@ -71,7 +70,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final aiDao = ref.read(aiAssistantDaoProvider);
 
     try {
-      // 1. Insert user message
+      // 1. Insert user message with unique timestamp
       await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(
           sender: 'user',
@@ -85,21 +84,25 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       final response = await engine.processUserPrompt(prompt, ref).timeout(
         const Duration(seconds: 5),
         onTimeout: () => const AiResponse(
-          text: "I analyzed your request. Your on-device data is fully synced. What would you like to plan or work on next?",
+          text: "I processed your request and checked your synced data. What would you like to plan or work on next?",
         ),
       );
 
-      // 3. Serialize proposed action if any
+      // 3. Auto-execute proposed action directly to control app features!
       String? actionType;
       String? actionPayload;
       if (response.proposedAction != null) {
         actionType = response.proposedAction!.type.name;
-        actionPayload = jsonEncode({
+        final pData = {
           'title': response.proposedAction!.title,
           'summary': response.proposedAction!.summary,
           'payload': response.proposedAction!.payload,
           'quickOptions': response.clarifyingOptions,
-        });
+        };
+        actionPayload = jsonEncode(pData);
+
+        // Directly execute action so feature control is instant and effortless!
+        await _performAction(actionType, pData);
       } else if (response.clarifyingOptions.isNotEmpty) {
         actionPayload = jsonEncode({
           'quickOptions': response.clarifyingOptions,
@@ -107,7 +110,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       }
 
       // 4. Save assistant response
-      await aiDao.insertMessage(
+      final assistantMsgId = await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(
           sender: 'assistant',
           message: response.text,
@@ -115,13 +118,17 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           actionPayloadJson: drift.Value(actionPayload),
         ),
       );
+
+      if (actionType != null) {
+        _executedActionMessageIds.add(assistantMsgId);
+      }
     } catch (err) {
       await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(
           sender: 'assistant',
           message: "I encountered a minor glitch structuring that request. Let's try again — tap an option below or type what you need.",
           actionPayloadJson: drift.Value(jsonEncode({
-            'quickOptions': ['Plan my day', 'Pending activities', 'Drink water'],
+            'quickOptions': ['Plan my day', 'Log 250ml water', 'Check activities'],
           })),
         ),
       );
@@ -133,176 +140,101 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     }
   }
 
-  Future<void> _executeApprovedAction(int messageId, String actionType, Map<String, dynamic> actionData) async {
-    HapticFeedback.mediumImpact();
-    final payload = actionData['payload'] as Map<String, dynamic>? ?? {};
-    final name = ref.read(assistantNameProvider);
+  Future<void> _performAction(String actionType, Map<String, dynamic> actionData) async {
+    try {
+      final payload = actionData['payload'] as Map<String, dynamic>? ?? {};
 
-    setState(() {
-      _executedActionMessageIds.add(messageId);
-    });
+      if (actionType == AiActionType.expenseLogged.name) {
+        final amt = (payload['amount'] as num?)?.toDouble() ?? 0.0;
+        final title = payload['title']?.toString() ?? 'Expense';
+        final cat = payload['category']?.toString() ?? 'Other';
+        final acc = payload['account']?.toString() ?? 'UPI';
 
-    if (actionType == AiActionType.expenseLogged.name) {
-      final amt = (payload['amount'] as num?)?.toDouble() ?? 0.0;
-      final title = payload['title']?.toString() ?? 'Expense';
-      final cat = payload['category']?.toString() ?? 'Other';
-      final acc = payload['account']?.toString() ?? 'UPI';
-
-      await ref.read(financeDaoProvider).insertTransaction(
-        FinanceTransactionTableCompanion.insert(
-          title: title,
-          amount: amt,
-          category: drift.Value(cat),
-          account: drift.Value(acc),
-          date: DateTime.now(),
-        ),
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Expense of ₹${amt.toStringAsFixed(0)} saved to finances!'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } else if (actionType == AiActionType.taskCreated.name || actionType == AiActionType.activityCreated.name) {
-      final title = payload['title']?.toString() ?? 'Focus Activity';
-      final planned = payload['plannedDate'] != null
-          ? DateTime.parse(payload['plannedDate'])
-          : DateTime.now();
-      final priority = payload['priority']?.toString() ?? 'medium';
-      final estimatedMinutes = (payload['estimatedMinutes'] as num?)?.toInt();
-
-      await ref.read(taskDaoProvider).insertTask(
-        TaskTableCompanion.insert(
-          title: title,
-          plannedDate: drift.Value(planned),
-          priority: drift.Value(priority),
-          estimatedMinutes: drift.Value(estimatedMinutes),
-        ),
-      );
-
-      // Handle reminder if specified
-      if (payload['reminderTime'] != null) {
-        final reminderTime = DateTime.parse(payload['reminderTime']);
-        final reminderId = await ref.read(reminderDaoProvider).insertReminder(
-          ReminderTableCompanion.insert(
+        await ref.read(financeDaoProvider).insertTransaction(
+          FinanceTransactionTableCompanion.insert(
             title: title,
-            scheduledAt: reminderTime,
-            isActive: const drift.Value(true),
+            amount: amt,
+            category: drift.Value(cat),
+            account: drift.Value(acc),
+            date: DateTime.now(),
           ),
         );
-        try {
-          await NotificationService.instance.scheduleReminderNotification(
-            id: reminderId,
+      } else if (actionType == AiActionType.taskCreated.name || actionType == AiActionType.activityCreated.name) {
+        final title = payload['title']?.toString() ?? 'Focus Activity';
+        DateTime planned = DateTime.now();
+        if (payload['plannedDate'] != null) {
+          try {
+            planned = DateTime.parse(payload['plannedDate']);
+          } catch (_) {}
+        }
+        final priority = payload['priority']?.toString() ?? 'medium';
+        final estimatedMinutes = (payload['estimatedMinutes'] as num?)?.toInt();
+
+        await ref.read(taskDaoProvider).insertTask(
+          TaskTableCompanion.insert(
             title: title,
-            scheduledAt: reminderTime,
-          );
-        } catch (_) {}
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('"$title" added to Activity Hub!'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'View',
-              textColor: Colors.white,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
+            plannedDate: drift.Value(planned),
+            priority: drift.Value(priority),
+            estimatedMinutes: drift.Value(estimatedMinutes),
           ),
         );
-      }
-    } else if (actionType == AiActionType.lectureMarkedComplete.name) {
-      final rawIds = payload['lectureIds'] as List?;
-      final lectureIds = rawIds?.map((e) => (e as num).toInt()).toList() ?? [];
 
-      for (final id in lectureIds) {
-        ref.read(learningHubProvider.notifier).markLectureCompleted(id, completed: true);
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Marked ${lectureIds.length} lecture(s) completed in course! 🎉'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Open Course',
-              textColor: Colors.white,
-              onPressed: () => context.push('/study-plan'),
-            ),
-          ),
-        );
-      }
-    } else if (actionType == AiActionType.scheduleRearranged.name) {
-      if (payload['taskId'] != null && payload['newDate'] != null) {
-        final taskId = (payload['taskId'] as num).toInt();
-        final newDate = DateTime.parse(payload['newDate']);
-        final taskDao = ref.read(taskDaoProvider);
-        await (taskDao.update(taskDao.taskTable)..where((t) => t.id.equals(taskId)))
-            .write(TaskTableCompanion(plannedDate: drift.Value(newDate)));
-      } else if (payload['taskIds'] != null && payload['newDate'] != null) {
-        final taskIds = (payload['taskIds'] as List).map((e) => (e as num).toInt());
-        final newDate = DateTime.parse(payload['newDate']);
-        final taskDao = ref.read(taskDaoProvider);
-        for (final tid in taskIds) {
-          await (taskDao.update(taskDao.taskTable)..where((t) => t.id.equals(tid)))
-              .write(TaskTableCompanion(plannedDate: drift.Value(newDate)));
+        // Handle reminder if specified
+        if (payload['reminderTime'] != null) {
+          try {
+            final reminderTime = DateTime.parse(payload['reminderTime']);
+            final reminderId = await ref.read(reminderDaoProvider).insertReminder(
+              ReminderTableCompanion.insert(
+                title: title,
+                scheduledAt: reminderTime,
+                isActive: const drift.Value(true),
+              ),
+            );
+            await NotificationService.instance.scheduleReminderNotification(
+              id: reminderId,
+              title: title,
+              scheduledAt: reminderTime,
+            );
+          } catch (_) {}
+        }
+      } else if (actionType == AiActionType.lectureMarkedComplete.name) {
+        final rawIds = payload['lectureIds'] as List?;
+        final lectureIds = rawIds?.map((e) => (e as num).toInt()).toList() ?? [];
+        for (final id in lectureIds) {
+          ref.read(learningHubProvider.notifier).markLectureCompleted(id, completed: true);
+        }
+      } else if (actionType == AiActionType.waterLogged.name) {
+        final ml = (payload['amountMl'] as num?)?.toInt() ?? 250;
+        await ref.read(waterDaoProvider).addWater(ml);
+      } else if (actionType == AiActionType.scheduleRearranged.name) {
+        if (payload['taskId'] != null && payload['newDate'] != null) {
+          try {
+            final taskId = (payload['taskId'] as num).toInt();
+            final newDate = DateTime.parse(payload['newDate']);
+            final taskDao = ref.read(taskDaoProvider);
+            await (taskDao.update(taskDao.taskTable)..where((t) => t.id.equals(taskId)))
+                .write(TaskTableCompanion(plannedDate: drift.Value(newDate)));
+          } catch (_) {}
+        } else if (payload['taskIds'] != null && payload['newDate'] != null) {
+          try {
+            final taskIds = (payload['taskIds'] as List).map((e) => (e as num).toInt());
+            final newDate = DateTime.parse(payload['newDate']);
+            final taskDao = ref.read(taskDaoProvider);
+            for (final tid in taskIds) {
+              await (taskDao.update(taskDao.taskTable)..where((t) => t.id.equals(tid)))
+                  .write(TaskTableCompanion(plannedDate: drift.Value(newDate)));
+            }
+          } catch (_) {}
         }
       }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Schedule rearranged! Check Activity Hub.'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'View',
-              textColor: Colors.white,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        );
-      }
-    } else if (actionType == AiActionType.waterLogged.name) {
-      final ml = (payload['amountMl'] as num?)?.toInt() ?? 250;
-      await ref.read(waterDaoProvider).addWater(ml);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$name: +$ml mL water logged! 💧'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } else if (actionType == AiActionType.dailyPlanSuggested.name) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Daily plan active! Check Activity Hub.'),
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'View',
-              textColor: Colors.white,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ),
-        );
-      }
-    } else if (actionType == AiActionType.generalResponse.name) {
-      if (payload['action'] == 'open_study') {
-        Navigator.of(context).pushNamed('/study-plan');
-      }
-    }
+    } catch (_) {}
   }
 
   @override
   Widget build(BuildContext context) {
     final name = ref.watch(assistantNameProvider);
     final messagesStream = ref.watch(aiAssistantDaoProvider).watchRecentMessages();
-    final accentColor = const Color(0xFF4A90E2);
+    final accentColor = context.accentPrimary;
 
     return Scaffold(
       backgroundColor: context.bgBase,
@@ -320,9 +252,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: accentColor.withValues(alpha: 0.12),
+                color: accentColor.withValues(alpha: 0.15),
+                border: Border.all(color: accentColor.withValues(alpha: 0.3)),
               ),
-              child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 17),
+              child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 16),
             ),
             const SizedBox(width: 10),
             Column(
@@ -362,6 +295,18 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             child: StreamBuilder<List<AiChatMessage>>(
               stream: messagesStream,
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'Connecting to memory...',
+                        style: TextStyle(color: context.textMuted, fontSize: 13),
+                      ),
+                    ),
+                  );
+                }
+
                 final messages = snapshot.data ?? [];
 
                 if (messages.isEmpty) {
@@ -373,11 +318,15 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  physics: const AlwaysScrollableScrollPhysics(),
                   itemCount: messages.length + (_isLoading ? 1 : 0),
                   itemBuilder: (context, index) {
                     if (index == messages.length) {
-                      return _ThinkingBubble(name: name, accentColor: accentColor);
+                      return KeyedSubtree(
+                        key: const ValueKey('chat_loading_indicator'),
+                        child: _ThinkingBubble(name: name, accentColor: accentColor),
+                      );
                     }
 
                     final msg = messages[index];
@@ -396,190 +345,29 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       } catch (_) {}
                     }
 
-                    final isExecuted = _executedActionMessageIds.contains(msg.id);
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Column(
-                        crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                        children: [
-                          if (!isUser) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(left: 2, bottom: 4),
-                              child: Text(
-                                name,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: accentColor,
-                                ),
-                              ),
-                            ),
-                          ],
-                          Container(
+                    return KeyedSubtree(
+                      key: ValueKey('chat_item_${msg.id}'),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Align(
+                          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                          child: ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.85,
+                              maxWidth: MediaQuery.sizeOf(context).width * 0.84,
                             ),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: isUser ? accentColor : context.bgSurface,
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(14),
-                                topRight: const Radius.circular(14),
-                                bottomLeft: Radius.circular(isUser ? 14 : 4),
-                                bottomRight: Radius.circular(isUser ? 4 : 14),
-                              ),
-                              border: isUser ? null : Border.all(color: context.divider),
-                            ),
-                            child: Text(
-                              msg.message,
-                              style: AscentTextStyles.bodyMedium.copyWith(
-                                color: isUser ? Colors.white : context.textPrimary,
-                                height: 1.4,
-                              ),
+                            child: _TelegramMessageBubble(
+                              msg: msg,
+                              isUser: isUser,
+                              assistantName: name,
+                              accentColor: accentColor,
+                              actionData: actionData,
+                              messageQuickChips: messageQuickChips,
+                              onSelectChip: _handleSubmitted,
+                              onOpenCourse: () => context.push('/study-plan'),
+                              onOpenHub: () => Navigator.of(context).pop(),
                             ),
                           ),
-
-                          // Action confirmation / interactive card
-                          if (!isUser && msg.actionType != null && actionData != null && actionData['title'] != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.88,
-                              ),
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isExecuted
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.08)
-                                    : accentColor.withValues(alpha: 0.07),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isExecuted
-                                      ? const Color(0xFF10B981).withValues(alpha: 0.3)
-                                      : accentColor.withValues(alpha: 0.25),
-                                ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        isExecuted ? Icons.check_circle_rounded : Icons.bolt_rounded,
-                                        size: 16,
-                                        color: isExecuted ? const Color(0xFF10B981) : accentColor,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          actionData['title']?.toString() ?? 'Action proposed',
-                                          style: AscentTextStyles.labelMedium.copyWith(
-                                            color: context.textPrimary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (actionData['summary'] != null) ...[
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      actionData['summary'].toString(),
-                                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 10),
-                                  if (!isExecuted)
-                                    Row(
-                                      children: [
-                                        AscentButton.primary(
-                                          label: 'Confirm & Save',
-                                          compact: true,
-                                          onPressed: () => _executeApprovedAction(msg.id, msg.actionType!, actionData!),
-                                        ),
-                                      ],
-                                    )
-                                  else
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'Saved to SQLite',
-                                                style: GoogleFonts.plusJakartaSans(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: const Color(0xFF10B981),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const Spacer(),
-                                        TextButton(
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            minimumSize: Size.zero,
-                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          ),
-                                          onPressed: () {
-                                            if (msg.actionType == AiActionType.lectureMarkedComplete.name) {
-                                              Navigator.of(context).pushNamed('/study-plan');
-                                            } else {
-                                              Navigator.of(context).pop();
-                                            }
-                                          },
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                msg.actionType == AiActionType.lectureMarkedComplete.name
-                                                    ? 'Open Course'
-                                                    : 'View in Hub',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: accentColor,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 2),
-                                              Icon(Icons.arrow_forward_rounded, size: 12, color: accentColor),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-
-                          // Clarifying action chips under assistant message
-                          if (!isUser && messageQuickChips.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Wrap(
-                              spacing: 6,
-                              runSpacing: 4,
-                              children: messageQuickChips.map((chipText) {
-                                return ActionChip(
-                                  label: Text(chipText, style: const TextStyle(fontSize: 11)),
-                                  backgroundColor: context.bgSurface,
-                                  side: BorderSide(color: accentColor.withValues(alpha: 0.3)),
-                                  onPressed: () => _handleSubmitted(chipText),
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
                     );
                   },
@@ -684,6 +472,275 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Telegram-Style Translucent Message Bubble with Border
+// ---------------------------------------------------------------------------
+
+class _TelegramMessageBubble extends StatelessWidget {
+  final AiChatMessage msg;
+  final bool isUser;
+  final String assistantName;
+  final Color accentColor;
+  final Map<String, dynamic>? actionData;
+  final List<String> messageQuickChips;
+  final ValueChanged<String> onSelectChip;
+  final VoidCallback onOpenCourse;
+  final VoidCallback onOpenHub;
+
+  const _TelegramMessageBubble({
+    required this.msg,
+    required this.isUser,
+    required this.assistantName,
+    required this.accentColor,
+    required this.actionData,
+    required this.messageQuickChips,
+    required this.onSelectChip,
+    required this.onOpenCourse,
+    required this.onOpenHub,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Telegram-style translucent styling:
+    // User bubble: soft translucent blue tint with 1px crisp border
+    // Bot bubble: translucent surface card with 1px subtle border
+    final userBubbleColor = isDark
+        ? const Color(0xFF1E3A5F).withValues(alpha: 0.35)
+        : const Color(0xFF3B82F6).withValues(alpha: 0.12);
+    final userBorderColor = isDark
+        ? const Color(0xFF60A5FA).withValues(alpha: 0.38)
+        : const Color(0xFF2563EB).withValues(alpha: 0.35);
+
+    final botBubbleColor = isDark
+        ? const Color(0xFF161B22).withValues(alpha: 0.7)
+        : Colors.white.withValues(alpha: 0.88);
+    final botBorderColor = context.divider.withValues(alpha: 0.8);
+
+    final timeString = "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
+
+    return Column(
+      crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Main Message Container
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: BoxDecoration(
+            color: isUser ? userBubbleColor : botBubbleColor,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(isUser ? 16 : 4),
+              bottomRight: Radius.circular(isUser ? 4 : 16),
+            ),
+            border: Border.all(
+              color: isUser ? userBorderColor : botBorderColor,
+              width: 1.0,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Assistant Header Tag
+              if (!isUser) ...[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome_rounded, size: 12, color: accentColor),
+                    const SizedBox(width: 5),
+                    Text(
+                      assistantName,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: accentColor,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+              ],
+
+              // Message Body
+              Text(
+                msg.message,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  color: context.textPrimary,
+                  height: 1.45,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              // Telegram-Style Micro Timestamp Row
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Spacer(),
+                  Text(
+                    timeString,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 9.5,
+                      color: context.textMuted.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  if (isUser) ...[
+                    const SizedBox(width: 3),
+                    Icon(
+                      Icons.done_all_rounded,
+                      size: 11,
+                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Attached Action Confirmation Capsule (Executed Directly)
+        if (!isUser && msg.actionType != null && actionData != null && actionData!['title'] != null) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check_circle_rounded, size: 15, color: Color(0xFF10B981)),
+                const SizedBox(width: 7),
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        actionData!['title'].toString(),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (actionData!['summary'] != null)
+                        Text(
+                          actionData!['summary'].toString(),
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: context.textMuted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    if (msg.actionType == AiActionType.lectureMarkedComplete.name) {
+                      onOpenCourse();
+                    } else {
+                      onOpenHub();
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          msg.actionType == AiActionType.lectureMarkedComplete.name
+                              ? 'Open Course'
+                              : 'View',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF10B981),
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 9,
+                          color: Color(0xFF10B981),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // Clarifying Interactive Quick Action Chips
+        if (!isUser && messageQuickChips.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 5,
+            children: messageQuickChips.map((chipText) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onSelectChip(chipText);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: context.bgSurface.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.35),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.touch_app_rounded, size: 12, color: accentColor),
+                        const SizedBox(width: 5),
+                        Text(
+                          chipText,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -890,7 +947,7 @@ class _LiveBriefingDashboard extends ConsumerWidget {
               title: 'Hydration',
               value: '$waterMl / $waterGoal mL',
               status: waterMl < 1000 ? 'Drink water!' : 'Healthy',
-              statusColor: waterMl < 1000 ? Colors.orange : const Color(0xFF38BDF8),
+              statusColor: waterMl < 1000 ? context.stateWarning : const Color(0xFF38BDF8),
               icon: Icons.water_drop_rounded,
               iconColor: const Color(0xFF38BDF8),
               onTap: () => onSelectPrompt('Log 250ml water'),

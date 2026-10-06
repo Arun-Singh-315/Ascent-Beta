@@ -7,7 +7,7 @@ class AiAssistantDao extends DatabaseAccessor<AppDatabase>
 
   Stream<List<AiChatMessage>> watchRecentMessages({int limit = 60}) {
     return (select(aiChatMessageTable)
-          ..orderBy([(m) => OrderingTerm.asc(m.createdAt)])
+          ..orderBy([(m) => OrderingTerm.asc(m.id)])
           ..limit(limit))
         .watch();
   }
