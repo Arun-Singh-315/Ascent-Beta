@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +13,7 @@ import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
+import 'email_invite_parser_sheet.dart';
 
 class PipelineScreen extends ConsumerStatefulWidget {
   const PipelineScreen({super.key});
@@ -81,6 +83,19 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
     );
   }
 
+  void _openEmailParserSheet(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => const EmailInviteParserSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appDao = ref.watch(applicationDaoProvider);
@@ -95,6 +110,11 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
         backgroundColor: context.bgBase,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.mark_email_read_outlined),
+            tooltip: 'Summarize Recruiter Email',
+            onPressed: () => _openEmailParserSheet(context),
+          ),
           IconButton(
             icon: const Icon(Icons.search_rounded),
             tooltip: 'Search',

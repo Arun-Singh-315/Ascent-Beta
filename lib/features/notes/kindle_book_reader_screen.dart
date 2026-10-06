@@ -5,9 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/text_styles.dart';
+import '../../core/database/app_database.dart';
+import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../shared/widgets/ascent_button.dart';
 
 enum KindleTheme {
   sepia('Warm Sepia', Color(0xFFFBF0D9), Color(0xFF2C2523), Color(0xFFD6C8AC)),
@@ -211,6 +216,276 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
     });
   }
 
+  void _showCreateTaskDialog() {
+    HapticFeedback.lightImpact();
+    final hasPdf = _pdfPath != null && File(_pdfPath!).existsSync();
+    final defaultTitle = hasPdf
+        ? 'Review $_docTitle (Page $_currentPage)'
+        : 'Review ${_sampleStudyChapters[_builtinPageIndex]['title']}';
+    final titleController = TextEditingController(text: defaultTitle);
+    final noteController = TextEditingController();
+    DateTime plannedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    String priority = 'normal';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+            return Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: ctx.divider,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: ctx.accentPrimary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(Icons.playlist_add_check_rounded, color: ctx.accentPrimary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Add Task from Reading',
+                          style: AscentTextStyles.displaySmall.copyWith(
+                            color: ctx.textPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: titleController,
+                      style: AscentTextStyles.bodyMedium.copyWith(color: ctx.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Task Title *',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: noteController,
+                      style: AscentTextStyles.bodySmall.copyWith(color: ctx.textPrimary),
+                      decoration: InputDecoration(
+                        labelText: 'Study Notes / Key Concept (Optional)',
+                        hintText: 'e.g. Practice Spring Security FilterChain or DP pattern',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Text('Priority:', style: AscentTextStyles.labelMedium.copyWith(color: ctx.textPrimary)),
+                        const SizedBox(width: 12),
+                        ChoiceChip(
+                          label: const Text('Normal'),
+                          selected: priority == 'normal',
+                          onSelected: (val) {
+                            if (val) setSheetState(() => priority = 'normal');
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        ChoiceChip(
+                          label: const Text('High 🔥'),
+                          selected: priority == 'high',
+                          onSelected: (val) {
+                            if (val) setSheetState(() => priority = 'high');
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    AscentButton.primary(
+                      label: 'Add to My Tasks',
+                      expanded: true,
+                      onPressed: () async {
+                        final title = titleController.text.trim();
+                        if (title.isEmpty) return;
+
+                        final taskDao = ref.read(taskDaoProvider);
+                        await taskDao.insertTask(
+                          TaskTableCompanion.insert(
+                            title: title,
+                            priority: drift.Value(priority),
+                            plannedDate: drift.Value(plannedDate),
+                            notes: drift.Value(noteController.text.trim().isNotEmpty
+                                ? noteController.text.trim()
+                                : 'Created from Reader: $_docTitle'),
+                          ),
+                        );
+
+                        ref.invalidate(todayFocusTaskProvider);
+
+                        if (sheetCtx.mounted) {
+                          Navigator.of(sheetCtx).pop();
+                        }
+                        HapticFeedback.lightImpact();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Study task added to your Task Board! 🎯'),
+                              behavior: SnackBarBehavior.floating,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showSaveNoteDialog() {
+    HapticFeedback.lightImpact();
+    final hasPdf = _pdfPath != null && File(_pdfPath!).existsSync();
+    final defaultTitle = hasPdf
+        ? 'Notes on $_docTitle (p.$_currentPage)'
+        : 'Notes on ${_sampleStudyChapters[_builtinPageIndex]['title']}';
+    final titleController = TextEditingController(text: defaultTitle);
+    final contentController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetCtx) {
+        final bottomInset = MediaQuery.of(sheetCtx).viewInsets.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.divider,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: context.accentSecondary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.bookmark_add_outlined, color: context.accentSecondary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Capture Reading Note',
+                      style: AscentTextStyles.displaySmall.copyWith(
+                        color: context.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: titleController,
+                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Note Title *',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: contentController,
+                  maxLines: 4,
+                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Key Takeaways / Highlights *',
+                    hintText: 'Record key insights, syntax, questions or formulas...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                AscentButton.primary(
+                  label: 'Save Note to Journal',
+                  expanded: true,
+                  onPressed: () async {
+                    final title = titleController.text.trim();
+                    final content = contentController.text.trim();
+                    if (title.isEmpty || content.isEmpty) return;
+
+                    final notesDao = ref.read(notesDaoProvider);
+                    await notesDao.insertNote(
+                      NoteTableCompanion.insert(
+                        title: drift.Value(title),
+                        content: content,
+                        linkedTopic: drift.Value(_docTitle),
+                        lastInteractedAt: drift.Value(DateTime.now()),
+                      ),
+                    );
+
+                    ref.invalidate(mostRecentNoteProvider);
+
+                    if (sheetCtx.mounted) {
+                      Navigator.of(sheetCtx).pop();
+                    }
+                    HapticFeedback.lightImpact();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Note captured to Notes & Journal! 📝'),
+                          behavior: SnackBarBehavior.floating,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasPdf = _pdfPath != null && File(_pdfPath!).existsSync();
@@ -320,13 +595,23 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                       ),
                     ),
                     IconButton(
+                      tooltip: 'Add Study Task',
+                      icon: Icon(Icons.playlist_add_check_rounded, color: _theme.text, size: 22),
+                      onPressed: _showCreateTaskDialog,
+                    ),
+                    IconButton(
+                      tooltip: 'Capture Note',
+                      icon: Icon(Icons.bookmark_add_outlined, color: _theme.text, size: 20),
+                      onPressed: _showSaveNoteDialog,
+                    ),
+                    IconButton(
                       tooltip: 'Open PDF file from phone',
-                      icon: Icon(Icons.folder_open_rounded, color: _theme.text, size: 22),
+                      icon: Icon(Icons.folder_open_rounded, color: _theme.text, size: 21),
                       onPressed: _pickPdfFile,
                     ),
                     IconButton(
                       tooltip: 'Reading Themes',
-                      icon: Icon(Icons.palette_outlined, color: _theme.text, size: 22),
+                      icon: Icon(Icons.palette_outlined, color: _theme.text, size: 21),
                       onPressed: () => _showThemePicker(context),
                     ),
                   ],
@@ -338,7 +623,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
             AnimatedPositioned(
               duration: const Duration(milliseconds: 240),
               curve: Curves.easeInOut,
-              bottom: _showHud ? 0 : -90,
+              bottom: _showHud ? 0 : -110,
               left: 0,
               right: 0,
               child: Container(
@@ -369,6 +654,67 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                           ),
+                        ),
+                        // Quick Action Pills
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
+                              onTap: _showCreateTaskDialog,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _theme.text.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: _theme.border),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.add_task_rounded, size: 13, color: _theme.text),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Add Task',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: _theme.text,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            InkWell(
+                              onTap: _showSaveNoteDialog,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _theme.text.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: _theme.border),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.bookmark_add_outlined, size: 13, color: _theme.text),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Note',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: _theme.text,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         Text(
                           hasPdf

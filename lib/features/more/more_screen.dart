@@ -88,7 +88,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // ── AI Life Assistant ───────────────────────────────────────────
-          _GroupHeader(title: 'INTELLIGENCE & MIND', color: context.accentPrimary),
+          _GroupHeader(title: 'Intelligence & Mind', color: context.accentPrimary),
           _NavItemTile(
             icon: Icons.auto_awesome_outlined,
             title: 'AI Life Assistant & Planner',
@@ -106,7 +106,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── Life & Habits ────────────────────────────────────────────────
-          _GroupHeader(title: 'LIFE & HABITS', color: context.accentSecondary),
+          _GroupHeader(title: 'Life & Routines', color: context.accentSecondary),
           _NavItemTile(
             icon: Icons.checklist_rtl_rounded,
             title: 'Daily Habits & Routines',
@@ -124,7 +124,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── 2. Prepare Group ─────────────────────────────────────────────
-          _GroupHeader(title: 'PREPARE', color: context.accentPrimary),
+          _GroupHeader(title: 'Interview & Learning', color: context.accentPrimary),
           _NavItemTile(
             icon: Icons.alt_route_outlined,
             title: 'Study Plan & Roadmap',
@@ -149,7 +149,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── 3. Track Group ───────────────────────────────────────────────
-          _GroupHeader(title: 'TRACK', color: context.accentSecondary),
+          _GroupHeader(title: 'Tracking & Notes', color: context.accentSecondary),
           _NavItemTile(
             icon: Icons.calendar_month_outlined,
             title: 'Consistency Heatmap',
@@ -174,7 +174,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── 4. Documents Group ───────────────────────────────────────────
-          _GroupHeader(title: 'DOCUMENTS', color: context.accentInfo),
+          _GroupHeader(title: 'Documents & Resumes', color: context.accentInfo),
           _NavItemTile(
             icon: Icons.description_outlined,
             title: 'Resume Vault',
@@ -185,7 +185,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── 5. Insights Group ────────────────────────────────────────────
-          _GroupHeader(title: 'INSIGHTS', color: context.accentPrimary),
+          _GroupHeader(title: 'Analytics & Growth', color: context.accentPrimary),
           _NavItemTile(
             icon: Icons.insights_outlined,
             title: 'Analytics & Trends',
@@ -196,7 +196,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ── 6. App Group ─────────────────────────────────────────────────
-          _GroupHeader(title: 'PREFERENCES', color: context.textMuted),
+          _GroupHeader(title: 'System & Preferences', color: context.textMuted),
           _NavItemTile(
             icon: Icons.settings_outlined,
             title: 'Settings',
@@ -223,9 +223,9 @@ class _GroupHeader extends StatelessWidget {
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         title,
-        style: AscentTextStyles.labelSmall.copyWith(
+        style: AscentTextStyles.labelMedium.copyWith(
           color: color,
-          letterSpacing: 1.2,
+          letterSpacing: 0.4,
           fontWeight: FontWeight.w700,
         ),
       ),

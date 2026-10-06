@@ -13,6 +13,18 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/empty_state.dart';
 
+enum _ReminderRepeatMode {
+  none('One-time', 'Specific date only', Icons.event_rounded),
+  daily7('7 Days', 'Every day for next week', Icons.date_range_rounded),
+  daily30('Whole Month', 'Every day for next 30 days', Icons.calendar_month_rounded),
+  weekdays('Weekdays', 'Mon to Fri for next 4 weeks', Icons.work_history_outlined);
+
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  const _ReminderRepeatMode(this.label, this.subtitle, this.icon);
+}
+
 class RemindersScreen extends ConsumerStatefulWidget {
   const RemindersScreen({super.key});
 
@@ -25,6 +37,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final titleController = TextEditingController(text: existing?.title ?? '');
     DateTime scheduledDate = existing?.scheduledAt ?? DateTime.now().add(const Duration(hours: 1));
     TimeOfDay scheduledTime = TimeOfDay.fromDateTime(scheduledDate);
+    _ReminderRepeatMode repeatMode = _ReminderRepeatMode.none;
 
     showModalBottomSheet(
       context: context,
@@ -84,13 +97,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
                       decoration: InputDecoration(
                         labelText: 'Reminder Title *',
-                        hintText: 'e.g. Apply to Stripe, Review DP notes',
+                        hintText: 'e.g. Solve LeetCode DP, Review notes, Walk',
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Date & Time',
+                      'Starting Date & Time',
                       style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
                     ),
                     const SizedBox(height: 8),
@@ -156,6 +169,86 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         ),
                       ],
                     ),
+                    if (existing == null) ...[
+                      const SizedBox(height: 18),
+                      Text(
+                        'Repeat Schedule',
+                        style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Schedule daily focus nudges across multiple days or the whole month',
+                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _ReminderRepeatMode.values.map((mode) {
+                          final isSelected = repeatMode == mode;
+                          return ChoiceChip(
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  mode.icon,
+                                  size: 14,
+                                  color: isSelected ? Colors.white : context.textPrimary,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(mode.label),
+                              ],
+                            ),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setSheetState(() => repeatMode = mode);
+                              }
+                            },
+                            selectedColor: context.accentPrimary,
+                            backgroundColor: context.bgBase,
+                            side: BorderSide(
+                              color: isSelected ? context.accentPrimary : context.divider,
+                            ),
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : context.textPrimary,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: context.accentPrimary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: context.accentPrimary.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline_rounded, size: 16, color: context.accentPrimary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                repeatMode == _ReminderRepeatMode.none
+                                    ? 'Fires once on the selected date.'
+                                    : repeatMode == _ReminderRepeatMode.daily7
+                                        ? 'Fires every day for the next 7 days at ${scheduledTime.format(context)}.'
+                                        : repeatMode == _ReminderRepeatMode.daily30
+                                            ? 'Fires every day for the next 30 days (whole month) at ${scheduledTime.format(context)}.'
+                                            : 'Fires every weekday (Mon-Fri) for the next 4 weeks at ${scheduledTime.format(context)}.',
+                                style: AscentTextStyles.bodySmall.copyWith(
+                                  color: context.textPrimary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
                     AscentButton.primary(
                       label: existing == null ? 'Set Reminder' : 'Update Reminder',
@@ -165,7 +258,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         if (title.isEmpty) return;
 
                         final dao = ref.read(reminderDaoProvider);
-                        final fullScheduled = DateTime(
+                        final baseScheduled = DateTime(
                           scheduledDate.year,
                           scheduledDate.month,
                           scheduledDate.day,
@@ -174,26 +267,52 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         );
 
                         if (existing == null) {
-                          final id = await dao.insertReminder(
-                            ReminderTableCompanion(
-                              title: drift.Value(title),
-                              scheduledAt: drift.Value(fullScheduled),
-                              isActive: const drift.Value(true),
-                              createdAt: drift.Value(DateTime.now()),
-                            ),
-                          );
+                          // Handle multi-day / recurring reminder insertion
+                          List<DateTime> datesToSchedule = [];
+                          if (repeatMode == _ReminderRepeatMode.none) {
+                            datesToSchedule.add(baseScheduled);
+                          } else if (repeatMode == _ReminderRepeatMode.daily7) {
+                            for (int i = 0; i < 7; i++) {
+                              datesToSchedule.add(baseScheduled.add(Duration(days: i)));
+                            }
+                          } else if (repeatMode == _ReminderRepeatMode.daily30) {
+                            for (int i = 0; i < 30; i++) {
+                              datesToSchedule.add(baseScheduled.add(Duration(days: i)));
+                            }
+                          } else if (repeatMode == _ReminderRepeatMode.weekdays) {
+                            int added = 0;
+                            DateTime current = baseScheduled;
+                            while (added < 20) {
+                              if (current.weekday >= DateTime.monday && current.weekday <= DateTime.friday) {
+                                datesToSchedule.add(current);
+                                added++;
+                              }
+                              current = current.add(const Duration(days: 1));
+                            }
+                          }
 
-                          await NotificationService.instance.scheduleReminderNotification(
-                            id: id,
-                            title: title,
-                            scheduledAt: fullScheduled,
-                          );
+                          for (final d in datesToSchedule) {
+                            final id = await dao.insertReminder(
+                              ReminderTableCompanion(
+                                title: drift.Value(title),
+                                scheduledAt: drift.Value(d),
+                                isActive: const drift.Value(true),
+                                createdAt: drift.Value(DateTime.now()),
+                              ),
+                            );
+
+                            await NotificationService.instance.scheduleReminderNotification(
+                              id: id,
+                              title: title,
+                              scheduledAt: d,
+                            );
+                          }
                         } else {
                           await dao.updateReminder(
                             ReminderTableCompanion(
                               id: drift.Value(existing.id),
                               title: drift.Value(title),
-                              scheduledAt: drift.Value(fullScheduled),
+                              scheduledAt: drift.Value(baseScheduled),
                               isActive: drift.Value(existing.isActive),
                               createdAt: drift.Value(existing.createdAt),
                             ),
@@ -202,7 +321,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           await NotificationService.instance.scheduleReminderNotification(
                             id: existing.id,
                             title: title,
-                            scheduledAt: fullScheduled,
+                            scheduledAt: baseScheduled,
                           );
                         }
 
@@ -213,7 +332,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           Navigator.of(context).pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(existing == null ? 'Reminder scheduled' : 'Reminder updated'),
+                              content: Text(
+                                existing == null
+                                    ? (repeatMode == _ReminderRepeatMode.none
+                                        ? 'Reminder scheduled'
+                                        : 'Recurring reminders scheduled (${repeatMode.label})')
+                                    : 'Reminder updated',
+                              ),
                               duration: const Duration(seconds: 2),
                             ),
                           );

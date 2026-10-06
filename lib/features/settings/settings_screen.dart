@@ -9,7 +9,6 @@ import 'package:drift/drift.dart' as drift;
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
-import '../../core/database/demo_data_seeder.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -323,82 +322,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _seedDemoData() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: context.accentPrimary.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.auto_awesome_rounded, color: context.accentPrimary, size: 28),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Load Realistic Beta Demo Data?',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This populates rich, realistic job-search data across all screens (Tasks, Pipeline Kanban, 30-day consistency heatmap, DSA logs, Interview Prep, Notes, and Resumes). Perfect for hands-on beta testing.',
-                textAlign: TextAlign.center,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: AscentButton.outlined(
-                      label: 'Cancel',
-                      compact: true,
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AscentButton.primary(
-                      label: 'Seed Demo Data',
-                      compact: true,
-                      onPressed: () async {
-                        final nav = Navigator.of(ctx);
-                        final scaffold = ScaffoldMessenger.of(context);
-                        nav.pop();
-                        final db = ref.read(databaseProvider);
-                        final prefs = ref.read(sharedPreferencesProvider);
-                        await DemoDataSeeder.seedRealisticBetaData(db, prefs: prefs);
-                        setState(() {
-                          _profileLoaded = false;
-                        });
-                        scaffold.showSnackBar(
-                          const SnackBar(
-                            content: Text('Realistic demo data loaded! Check your Dashboard and Pipeline.'),
-                            duration: Duration(seconds: 3),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   void _confirmResetData() {
     showModalBottomSheet(
       context: context,
@@ -512,7 +435,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'You will need to sign in with your credentials (arn / 1234) again. Your local data will remain completely intact.',
+                'You will need to sign in with your account credentials again. Your local data will remain completely intact.',
                 textAlign: TextAlign.center,
                 style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
               ),
@@ -601,8 +524,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           return ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             children: [
-              // ── Section 1: Appearance & Theme (Day / Night Toggle) ────
-              _SectionHeader(title: 'APPEARANCE & THEME'),
+              // ── Section 1: Appearance & Theme ────
+              _SectionHeader(title: 'Appearance & Theme'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -612,7 +535,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Display Mode (Day / Night)',
+                          'Display Mode',
                           style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w700),
                         ),
                         Text(
@@ -661,8 +584,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Section 2: Target & Profile ──────────────────────────
-              _SectionHeader(title: 'TARGET PROFILE'),
+              // ── Section 2: Target Profile & Goals ──────────────────────────
+              _SectionHeader(title: 'Target Profile & Goals'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -844,12 +767,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
 
-
-
               const SizedBox(height: 20),
 
-              // ── Section 2b: AI Assistant Configuration ───────────────
-              _SectionHeader(title: 'AI COPILOT / ASSISTANT'),
+              // ── Section 3: AI Copilot Identity ───────────────
+              _SectionHeader(title: 'AI Copilot Identity'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -877,8 +798,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Section 3: Notifications & Reminders ─────────────────
-              _SectionHeader(title: 'NOTIFICATIONS'),
+              // ── Section 4: Daily Focus & Notifications ─────────────────
+              _SectionHeader(title: 'Daily Focus & Notifications'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -909,7 +830,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           value: true,
                           activeThumbColor: context.accentPrimary,
                           onChanged: (val) async {
-
                             if (val) {
                               await NotificationService.instance.requestPermissions();
                             }
@@ -938,59 +858,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ),
               ),
 
-              // ── Section: Outdoor Walking & GPS Battery Optimization ──────
-              _SectionHeader(title: 'LOCATION & BACKGROUND TRACKING'),
+              const SizedBox(height: 20),
+
+              // ── Section 5: Walk & Background Telemetry ──────
+              _SectionHeader(title: 'Walk & Background Telemetry'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.teal.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.directions_walk_rounded, color: Colors.teal, size: 20),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'GPS Battery Optimization Guide',
-                                style: AscentTextStyles.labelMedium.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Text(
-                                'Keep outdoor walks recording when screen locks',
-                                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.info_outline_rounded, color: Colors.teal),
-                          onPressed: () => _showGpsBatteryGuide(context),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.teal.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.directions_walk_rounded, color: Colors.teal, size: 22),
                     ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Android OEMs (Samsung, Xiaomi, OnePlus) aggressively stop background GPS when the screen turns off. To record your complete route without pause, set Ascent\'s battery usage to "Unrestricted" in your phone\'s App Info settings.',
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: context.textMuted,
-                        height: 1.4,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'GPS Battery Optimization',
+                            style: AscentTextStyles.labelMedium.copyWith(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Keep walk tracking active when screen is locked',
+                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
                     AscentButton.outlined(
-                      label: 'View Setup Guide 🔋',
+                      label: 'Guide',
                       compact: true,
                       onPressed: () => _showGpsBatteryGuide(context),
                     ),
@@ -1000,37 +905,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Section 4: Data & Backup ─────────────────────────────
-              _SectionHeader(title: 'LOCAL DATA & STORAGE'),
+              // ── Section 6: Data & Storage ─────────────────────────────
+              _SectionHeader(title: 'Data & Storage'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: context.accentPrimary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.auto_awesome_rounded, color: context.accentPrimary, size: 20),
-                      ),
-                      title: Text(
-                        'Seed Demo Data (Beta Experience)',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Load realistic job-search data across all screens for testing',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      onTap: _seedDemoData,
-                    ),
-                    const Divider(height: 16),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
                       leading: Container(
@@ -1110,8 +990,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Section: Account & Session ────────────────────────────
-              _SectionHeader(title: 'ACCOUNT & SECURITY'),
+              // ── Section 7: Account & Session ────────────────────────────
+              _SectionHeader(title: 'Account & Session'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1189,8 +1069,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 20),
 
-              // ── Section 5: About Ascent ──────────────────────────────
-              _SectionHeader(title: 'ABOUT ASCENT'),
+              // ── Section 8: About Ascent ──────────────────────────────
+              _SectionHeader(title: 'About Ascent'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1219,7 +1099,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             Text(
-                              'Version 1.0.0 (Build 1) · Local-First OS',
+                              'Beta Version 1.0 · Local-First OS',
                               style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                             ),
                           ],
