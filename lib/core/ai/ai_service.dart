@@ -118,6 +118,16 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       return ambiguousClarification;
     }
 
+    // 7b. Querying Tasks & To-Dos ("what are my tasks today", "show my todo", "my tasks", "show tasks", "what are my todos")
+    if (_isTaskQuery(lower)) {
+      return await _handleTaskQuery(ref);
+    }
+
+    // 7c. Querying Reminders ("what are my reminders", "show reminders", "upcoming reminders")
+    if (_isReminderQuery(lower)) {
+      return await _handleReminderQuery(ref);
+    }
+
     // 8. General Natural Language Task & Activity Creation
     // (Handles: "need to call saurabh at 2", "complete java spring boot today", "need to finish java tutorial today", "add todo need to complete java", "I want to exercise for 30 minutes after waking up", "remind me to apply for jobs tomorrow morning", "I need to study Java for two hours today", "add a task to call my friend")
     final taskMatch = tryParseActivityOrTask(prompt);
@@ -650,6 +660,159 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
           'priority': 'medium',
         },
       ),
+    );
+  }
+
+  bool _isTaskQuery(String lower) {
+    if (lower.contains('what are my task') ||
+        lower.contains('what is my task') ||
+        lower.contains('show my task') ||
+        lower.contains('show task') ||
+        lower.contains('my task') ||
+        lower.contains('tasks today') ||
+        lower.contains('pending task') ||
+        lower.contains('list task') ||
+        lower.contains('show todo') ||
+        lower.contains('show my todo') ||
+        lower.contains('what is my todo') ||
+        lower.contains('what are my todo') ||
+        lower.contains('my todo') ||
+        lower.contains('check todo') ||
+        lower.contains('view todo') ||
+        lower.contains('list todo') ||
+        lower == 'todo' ||
+        lower == 'todos' ||
+        lower == 'tasks') {
+      if (lower.startsWith('add ') ||
+          lower.startsWith('create ') ||
+          lower.startsWith('new ') ||
+          lower.startsWith('insert ')) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool _isReminderQuery(String lower) {
+    if (lower.contains('what are my reminder') ||
+        lower.contains('what is my reminder') ||
+        lower.contains('show my reminder') ||
+        lower.contains('show reminder') ||
+        lower.contains('my reminder') ||
+        lower.contains('upcoming reminder') ||
+        lower.contains('check reminder') ||
+        lower.contains('list reminder') ||
+        lower == 'reminders' ||
+        lower == 'reminder') {
+      if (lower.startsWith('add ') ||
+          lower.startsWith('set ') ||
+          lower.startsWith('create ') ||
+          lower.startsWith('remind me ')) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  Future<AiResponse> _handleTaskQuery(WidgetRef ref) async {
+    final taskDao = ref.read(taskDaoProvider);
+    List<Task> tasks = [];
+    try {
+      tasks = await taskDao.watchTodayTasks().first.timeout(
+        const Duration(milliseconds: 600),
+        onTimeout: () => <Task>[],
+      );
+    } catch (_) {}
+
+    if (tasks.isEmpty) {
+      return const AiResponse(
+        text: "You don't have any tasks scheduled for today! 🎉\n\n"
+            "Would you like me to add one for you? For example:\n"
+            "• \"Study Java for 2 hours today\"\n"
+            "• \"Need to call Saurabh at 2\"\n"
+            "• \"Complete Spring Boot tutorial\"",
+        clarifyingOptions: [
+          'Plan my day',
+          'Need to call Saurabh at 2',
+          'Study Java for 2 hours today',
+        ],
+      );
+    }
+
+    final completed = tasks.where((t) => t.actualCompletedDate != null).toList();
+    final pending = tasks.where((t) => t.actualCompletedDate == null).toList();
+
+    final buffer = StringBuffer();
+    buffer.writeln("Here is your task breakdown for today (${tasks.length} total):");
+    buffer.writeln();
+
+    if (pending.isNotEmpty) {
+      buffer.writeln("📋 Pending (${pending.length}):");
+      for (final t in pending) {
+        final prioTag = t.priority.isNotEmpty ? " [${t.priority.toUpperCase()}]" : "";
+        buffer.writeln("• ${t.title}$prioTag");
+      }
+    } else {
+      buffer.writeln("🎉 All today's tasks are completed! Outstanding job!");
+    }
+
+    if (completed.isNotEmpty) {
+      buffer.writeln();
+      buffer.writeln("✅ Completed (${completed.length}):");
+      for (final t in completed) {
+        buffer.writeln("• ${t.title}");
+      }
+    }
+
+    return AiResponse(
+      text: buffer.toString().trim(),
+      clarifyingOptions: [
+        if (pending.isNotEmpty) 'Plan my day',
+        'Need to call Saurabh at 2',
+        'Study Java for 2 hours today',
+      ],
+    );
+  }
+
+  Future<AiResponse> _handleReminderQuery(WidgetRef ref) async {
+    final reminderDao = ref.read(reminderDaoProvider);
+    List<Reminder> reminders = [];
+    try {
+      reminders = await reminderDao.watchUpcomingReminders().first.timeout(
+        const Duration(milliseconds: 600),
+        onTimeout: () => <Reminder>[],
+      );
+    } catch (_) {}
+
+    if (reminders.isEmpty) {
+      return const AiResponse(
+        text: "You don't have any upcoming reminders set right now! ⏰\n\n"
+            "You can ask me to set one anytime, like:\n"
+            "• \"Remind me to call Saurabh at 2 PM\"\n"
+            "• \"Remind me to drink water in 30 minutes\"",
+        clarifyingOptions: [
+          'What are my tasks today?',
+          'Plan my day',
+        ],
+      );
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln("Here are your upcoming reminders (${reminders.length}):");
+    buffer.writeln();
+    for (final r in reminders) {
+      final timeStr = DateFormat('EEE, MMM d • h:mm a').format(r.scheduledAt);
+      buffer.writeln("⏰ ${r.title} — $timeStr");
+    }
+
+    return AiResponse(
+      text: buffer.toString().trim(),
+      clarifyingOptions: [
+        'What are my tasks today?',
+        'Plan my day',
+      ],
     );
   }
 

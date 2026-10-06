@@ -12,6 +12,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../study_plan/lecture_focus_player_sheet.dart';
@@ -33,6 +34,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
       final newDayShown = await _checkNewDay();
       if (!newDayShown && mounted) {
         ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
@@ -1401,6 +1404,10 @@ class _LearningHubCard extends ConsumerWidget {
     final activeMod = state.activeModule;
     final isLive = state.isPlaying || state.isLiveFocusActive;
 
+    if (!state.hasStartedLearning) {
+      return _buildStartLearningCard(context, ref);
+    }
+
     if (isLive) {
       // ── Rich Expanded Active Lecture Container ────────────────────────
       return Container(
@@ -1859,6 +1866,90 @@ class _LearningHubCard extends ConsumerWidget {
                 },
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStartLearningCard(BuildContext context, WidgetRef ref) {
+    return AscentCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: context.accentSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    'LEARNING HUB',
+                    style: GoogleFonts.jetBrainsMono(
+                      color: context.accentSecondary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/study-plan');
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    'Explore catalog ›',
+                    style: TextStyle(
+                      color: context.accentSecondary,
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Start Learning',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: context.textPrimary,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'You haven\'t started a course yet. Choose a track from Spring Boot, System Design, or DSA to begin your structured practice.',
+            style: AscentTextStyles.bodySmall.copyWith(
+              color: context.textMuted,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+          AscentButton.primary(
+            label: 'Start Learning & Select Course',
+            icon: Icons.rocket_launch_rounded,
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/study-plan');
+            },
           ),
         ],
       ),

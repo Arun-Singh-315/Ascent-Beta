@@ -322,15 +322,19 @@ class _PrimaryButton extends StatelessWidget {
             ),
           ),
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
-          minimumSize: expanded
-              ? Size(double.infinity, height)
-              : Size(compact ? 60 : 90, height),
+          minimumSize: Size(compact ? 60 : 90, height),
         ),
         child: content,
       ),
     );
 
-    return expanded ? SizedBox(width: double.infinity, child: button) : button;
+    if (!expanded) return button;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth.isInfinite) return button;
+        return SizedBox(width: double.infinity, child: button);
+      },
+    );
   }
 }
 
@@ -394,15 +398,19 @@ class _SecondaryButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
           ),
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
-          minimumSize: expanded
-              ? Size(double.infinity, height)
-              : Size(compact ? 60 : 90, height),
+          minimumSize: Size(compact ? 60 : 90, height),
         ),
         child: content,
       ),
     );
 
-    return expanded ? SizedBox(width: double.infinity, child: button) : button;
+    if (!expanded) return button;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth.isInfinite) return button;
+        return SizedBox(width: double.infinity, child: button);
+      },
+    );
   }
 }
 
@@ -466,15 +474,19 @@ class _OutlinedSignatureButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
           ),
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
-          minimumSize: expanded
-              ? Size(double.infinity, height)
-              : Size(compact ? 50 : 80, height),
+          minimumSize: Size(compact ? 50 : 80, height),
         ),
         child: content,
       ),
     );
 
-    return expanded ? SizedBox(width: double.infinity, child: button) : button;
+    if (!expanded) return button;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth.isInfinite) return button;
+        return SizedBox(width: double.infinity, child: button);
+      },
+    );
   }
 }
 
@@ -693,14 +705,18 @@ class _DestructiveButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
           ),
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
-          minimumSize: expanded
-              ? Size(double.infinity, height)
-              : Size(compact ? 60 : 90, height),
+          minimumSize: Size(compact ? 60 : 90, height),
         ),
         child: content,
       ),
     );
 
-    return expanded ? SizedBox(width: double.infinity, child: button) : button;
+    if (!expanded) return button;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth.isInfinite) return button;
+        return SizedBox(width: double.infinity, child: button);
+      },
+    );
   }
 }

@@ -12,6 +12,7 @@ const _kActiveCourseIdKey = 'ascent_learning_hub_active_course_v3';
 const _kActiveLectureIdKey = 'ascent_learning_hub_active_lecture_id_v3';
 const _kLegacyProgressKey = 'ascent_learning_hub_lecture_progress_v2';
 const _kLegacyActiveLectureIdKey = 'ascent_learning_hub_active_lecture_id_v2';
+const _kHasStartedLearningKey = 'ascent_learning_hub_has_started_learning_v1';
 
 class LearningHubState {
   final List<Course> courses;
@@ -23,6 +24,7 @@ class LearningHubState {
   final bool isFloatingDismissed;
   final DateTime? playStartedAt;
   final int sessionBaseElapsed;
+  final bool hasStartedLearning;
 
   const LearningHubState({
     required this.courses,
@@ -34,6 +36,7 @@ class LearningHubState {
     this.isFloatingDismissed = false,
     this.playStartedAt,
     this.sessionBaseElapsed = 0,
+    this.hasStartedLearning = false,
   });
 
   Course get course {
@@ -118,6 +121,7 @@ class LearningHubState {
     bool? isFloatingDismissed,
     DateTime? playStartedAt,
     int? sessionBaseElapsed,
+    bool? hasStartedLearning,
   }) {
     return LearningHubState(
       courses: courses ?? this.courses,
@@ -129,6 +133,7 @@ class LearningHubState {
       isFloatingDismissed: isFloatingDismissed ?? this.isFloatingDismissed,
       playStartedAt: playStartedAt ?? this.playStartedAt,
       sessionBaseElapsed: sessionBaseElapsed ?? this.sessionBaseElapsed,
+      hasStartedLearning: hasStartedLearning ?? this.hasStartedLearning,
     );
   }
 }
@@ -172,6 +177,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       }
     }
 
+    final hasStarted = prefs.getBool(_kHasStartedLearningKey) ??
+        initialCourses.any((c) =>
+            c.completedLectures > 0 ||
+            c.modules.any((m) => m.lectures.any((l) => l.elapsedSeconds > 0)));
+
     ref.onDispose(() {
       _ticker?.cancel();
       _flushTimer?.cancel();
@@ -183,6 +193,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       activeLectureId: activeLecture.id,
       currentElapsedSeconds: activeLecture.elapsedSeconds,
       isPlaying: false,
+      hasStartedLearning: hasStarted,
     );
   }
 
@@ -244,14 +255,25 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     prefs.setInt(_kActiveLectureIdKey, state.activeLectureId);
   }
 
+  void startLearning({String? courseId}) {
+    ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
+    if (courseId != null && courseId != state.activeCourseId) {
+      switchCourse(courseId);
+    } else {
+      state = state.copyWith(hasStartedLearning: true);
+    }
+  }
+
   void play() {
     if (state.isPlaying) return;
 
+    ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
     final now = DateTime.now();
     state = state.copyWith(
       isPlaying: true,
       isLiveFocusActive: true,
       isFloatingDismissed: false,
+      hasStartedLearning: true,
       playStartedAt: now,
       sessionBaseElapsed: state.currentElapsedSeconds,
     );
@@ -346,11 +368,13 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
     if (targetLecture == null) return;
 
+    ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
     state = state.copyWith(
       activeLectureId: lectureId,
       currentElapsedSeconds: targetLecture.elapsedSeconds,
       isPlaying: false,
       isFloatingDismissed: false,
+      hasStartedLearning: true,
       playStartedAt: null,
       sessionBaseElapsed: targetLecture.elapsedSeconds,
     );
@@ -410,12 +434,14 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       active = target.modules.first.lectures.first;
     }
 
+    ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
     state = state.copyWith(
       activeCourseId: target.id,
       activeLectureId: active.id,
       currentElapsedSeconds: active.elapsedSeconds,
       isPlaying: false,
       isFloatingDismissed: false,
+      hasStartedLearning: true,
       playStartedAt: null,
       sessionBaseElapsed: active.elapsedSeconds,
     );

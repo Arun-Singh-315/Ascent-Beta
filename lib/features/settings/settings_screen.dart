@@ -484,8 +484,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final profileStream = ref.watch(userProfileDaoProvider).watchProfile();
+    final profileAsync = ref.watch(userProfileStreamProvider);
     final themeMode = ref.watch(themeModeProvider);
+
+    if (profileAsync.hasValue && profileAsync.value != null) {
+      _initFromProfile(profileAsync.value);
+    }
 
     return PopScope(
       canPop: false,
@@ -523,18 +527,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(width: 8),
           ],
         ),
-      body: StreamBuilder<UserProfile?>(
-        stream: profileStream,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            _initFromProfile(snapshot.data);
-          }
-
-          return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            children: [
-              // ── Section 1: Appearance & Theme ────
-              _SectionHeader(title: 'Appearance & Theme'),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        children: [
+          // ── Section 1: Appearance & Theme ────
+          _SectionHeader(title: 'Appearance & Theme'),
               AscentCard(
                 padding: const EdgeInsets.all(16),
                 child: Column(
@@ -1126,9 +1123,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 40),
             ],
-          );
-        },
-      ),
+          ),
       ),
     );
   }
@@ -1409,6 +1404,7 @@ class _AssistantNameEditorState extends State<_AssistantNameEditor> {
                 AscentButton.primary(
                   label: 'Update',
                   compact: true,
+                  expanded: false,
                   onPressed: () {
                     final newName = _controller.text.trim();
                     if (newName.isNotEmpty) {

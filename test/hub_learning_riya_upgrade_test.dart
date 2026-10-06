@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ascent/core/ai/ai_service.dart';
 import 'package:ascent/core/learning_hub/learning_hub_models.dart';
+import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
+import 'package:ascent/core/learning_hub/default_course_data.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/app/theme/color_tokens.dart' as ascent_colors;
 
@@ -195,6 +197,28 @@ void main() {
       expect(parsed, isNotNull);
       expect(parsed!['title'], contains('call my friend'));
       expect(parsed['kind'], 'todo');
+    });
+
+    test('Identifies task query prompts like "What are my tasks today?" and "show my todo"', () {
+      expect(aiEngine.tryParseActivityOrTask('What are my tasks today?'), isNull);
+      expect(aiEngine.tryParseActivityOrTask('show my todo'), isNull);
+      expect(aiEngine.tryParseActivityOrTask('what are my reminders'), isNull);
+    });
+  });
+
+  group('Learning Hub Started State Tests', () {
+    test('LearningHubState defaults hasStartedLearning to false when not started', () {
+      final course = buildDefaultSpringBootCourse();
+      final state = LearningHubState(
+        courses: [course],
+        activeCourseId: course.id,
+        activeLectureId: 1,
+        hasStartedLearning: false,
+      );
+      expect(state.hasStartedLearning, isFalse);
+
+      final started = state.copyWith(hasStartedLearning: true);
+      expect(started.hasStartedLearning, isTrue);
     });
   });
 

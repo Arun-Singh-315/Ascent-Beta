@@ -23,7 +23,7 @@ Future<void> showNewDayDialog(BuildContext context, WidgetRef ref) async {
   return showDialog(
     context: context,
     barrierDismissible: true,
-    barrierColor: Colors.black.withValues(alpha: 0.65),
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (ctx) => const _NewDayFreezeDialog(),
   );
 }
@@ -339,30 +339,30 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
         _yesterdayWalkMeters == 0 &&
         _yesterdayWaterMl == 0;
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-      child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
-        child: SizedBox(
-          width: dialogWidth,
-          height: dialogHeight,
-          child: Container(
-            decoration: BoxDecoration(
-              color: context.bgSurface.withValues(alpha: 0.96),
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: context.divider, width: 1.2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  blurRadius: 36,
-                  spreadRadius: 4,
-                  offset: const Offset(0, 16),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
+      child: SizedBox(
+        width: dialogWidth,
+        height: dialogHeight,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(26),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: context.bgSurface.withValues(alpha: context.isDark ? 0.94 : 0.98),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(color: context.divider, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    blurRadius: 32,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
               child: Column(
                 children: [
                   // Top Header Bar with Close Button
