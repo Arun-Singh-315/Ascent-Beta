@@ -25,7 +25,7 @@ import '../thought_wall/drop_thought_sheet.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../../shared/widgets/jarvis_copilot_card.dart';
 import '../../shared/widgets/jarvis_omnibar.dart';
-import 'plan_my_day_sheet.dart';
+
 
 enum _HomeViewFilter {
   all('All Cockpit', Icons.dashboard_rounded),
@@ -108,12 +108,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.only(left: 18, right: 18, top: 14, bottom: 90),
                 children: [
-                  // 1. Header (Greeting + JARVIS Button + Compact Plan Day Outlined Button + Avatar)
+                  // 1. Header (Greeting + Settings Avatar)
                   _HomeHeader(profile: profile),
 
                   const SizedBox(height: 12),
 
-                  // Universal JARVIS Omnibar (Natural language 1-step logging & execution)
+                  // Universal Riya Omnibar (Natural language 1-step logging & execution)
                   const JarvisOmnibar(),
 
                   const SizedBox(height: 12),
@@ -143,7 +143,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   const SizedBox(height: 14),
 
-                  // Living JARVIS Companion Card (Omnipresent AI synthesized life intelligence)
+                  // Riya AI Companion Card (lightweight — 3 providers, no continuous animation)
                   const JarvisCopilotCard(),
 
                   const SizedBox(height: 14),
@@ -298,24 +298,7 @@ class _HomeHeader extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // AI Assistant Quick Button
-            AscentButton.outlined(
-              label: 'JARVIS',
-              icon: Icons.auto_awesome_rounded,
-              compact: true,
-              onPressed: () => context.push('/ai-assistant'),
-            ),
-            const SizedBox(width: 6),
-
-            // Plan Day Compact Outlined Control
-            AscentButton.outlined(
-              label: 'Plan Day',
-              compact: true,
-              onPressed: () => PlanMyDaySheet.show(context),
-            ),
-            const SizedBox(width: 8),
-
-            // Profile avatar
+            // Settings / Profile avatar
             InkWell(
               onTap: () => context.push('/settings'),
               borderRadius: BorderRadius.circular(18),
@@ -1069,7 +1052,7 @@ class _QuickStats2x2Grid extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final streakAsync = ref.watch(currentStreakStreamProvider);
-    final streak = streakAsync.value ?? 1;
+    final streak = streakAsync.value ?? 0;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -1091,6 +1074,7 @@ class _QuickStats2x2Grid extends ConsumerWidget {
     final todaySpend = todaySpendAsync.value ?? 0.0;
 
     final todayWalkAsync = ref.watch(todayWalkDistanceStreamProvider);
+    final walkKm = (todayWalkAsync.value ?? 0.0) / 1000.0;
 
     return Column(
       children: [
@@ -1098,40 +1082,30 @@ class _QuickStats2x2Grid extends ConsumerWidget {
           children: [
             // Tile 1: Study Time
             Expanded(
-              child: TweenAnimationBuilder<int>(
-                tween: IntTween(begin: 0, end: studyMinutes),
-                duration: const Duration(milliseconds: 700),
-                curve: Curves.easeOutCubic,
-                builder: (context, val, _) => _StatCard(
-                  icon: Icons.schedule_outlined,
-                  iconColor: context.accentSecondary,
-                  pillText: 'STUDY',
-                  pillColor: context.bgBase,
-                  pillTextColor: context.textMuted,
-                  mainValue: '${val}m logged',
-                  subtitle: 'Daily focus timer',
-                  onTap: () => context.push('/focus'),
-                ),
+              child: _StatCard(
+                icon: Icons.schedule_outlined,
+                iconColor: context.accentSecondary,
+                pillText: 'STUDY',
+                pillColor: context.bgBase,
+                pillTextColor: context.textMuted,
+                mainValue: '${studyMinutes}m logged',
+                subtitle: 'Daily focus timer',
+                onTap: () => context.push('/focus'),
               ),
             ),
             const SizedBox(width: 10),
 
             // Tile 2: Spending / Money
             Expanded(
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: todaySpend),
-                duration: const Duration(milliseconds: 700),
-                curve: Curves.easeOutCubic,
-                builder: (context, val, _) => _StatCard(
-                  icon: Icons.account_balance_wallet_outlined,
-                  iconColor: context.accentPrimary,
-                  pillText: 'FINANCE',
-                  pillColor: context.accentPrimary.withValues(alpha: 0.1),
-                  pillTextColor: context.accentPrimary,
-                  mainValue: '₹${val.toStringAsFixed(0)} today',
-                  subtitle: 'Expense & budgets',
-                  onTap: () => context.push('/money'),
-                ),
+              child: _StatCard(
+                icon: Icons.account_balance_wallet_outlined,
+                iconColor: context.accentPrimary,
+                pillText: 'FINANCE',
+                pillColor: context.accentPrimary.withValues(alpha: 0.1),
+                pillTextColor: context.accentPrimary,
+                mainValue: '₹${todaySpend.toStringAsFixed(0)} today',
+                subtitle: 'Expense & budgets',
+                onTap: () => context.push('/money'),
               ),
             ),
           ],
@@ -1141,40 +1115,30 @@ class _QuickStats2x2Grid extends ConsumerWidget {
           children: [
             // Tile 3: Walking Distance
             Expanded(
-              child: TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0.0, end: (todayWalkAsync.value ?? 0.0) / 1000.0),
-                duration: const Duration(milliseconds: 700),
-                curve: Curves.easeOutCubic,
-                builder: (context, val, _) => _StatCard(
-                  icon: Icons.directions_walk_rounded,
-                  iconColor: Colors.teal,
-                  pillText: 'ACTIVITY',
-                  pillColor: Colors.teal.withValues(alpha: 0.12),
-                  pillTextColor: Colors.teal,
-                  mainValue: '${val.toStringAsFixed(1)} km walked',
-                  subtitle: 'Target 5.0 km',
-                  onTap: () => context.push('/walk'),
-                ),
+              child: _StatCard(
+                icon: Icons.directions_walk_rounded,
+                iconColor: Colors.teal,
+                pillText: 'ACTIVITY',
+                pillColor: Colors.teal.withValues(alpha: 0.12),
+                pillTextColor: Colors.teal,
+                mainValue: '${walkKm.toStringAsFixed(1)} km walked',
+                subtitle: 'Target 5.0 km',
+                onTap: () => context.push('/walk'),
               ),
             ),
             const SizedBox(width: 10),
 
             // Tile 4: Streak Momentum
             Expanded(
-              child: TweenAnimationBuilder<int>(
-                tween: IntTween(begin: 0, end: streak),
-                duration: const Duration(milliseconds: 700),
-                curve: Curves.easeOutCubic,
-                builder: (context, val, _) => _StatCard(
-                  icon: Icons.local_fire_department_outlined,
-                  iconColor: Colors.orange,
-                  pillText: 'STREAK',
-                  pillColor: Colors.orange.withValues(alpha: 0.12),
-                  pillTextColor: Colors.orange,
-                  mainValue: '$val day streak',
-                  subtitle: 'Daily momentum',
-                  onTap: () => context.push('/consistency'),
-                ),
+              child: _StatCard(
+                icon: Icons.local_fire_department_outlined,
+                iconColor: Colors.orange,
+                pillText: 'STREAK',
+                pillColor: Colors.orange.withValues(alpha: 0.12),
+                pillTextColor: Colors.orange,
+                mainValue: '$streak day streak',
+                subtitle: 'Daily momentum',
+                onTap: () => context.push('/consistency'),
               ),
             ),
           ],

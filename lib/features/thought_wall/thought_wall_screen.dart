@@ -7,6 +7,7 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'drop_thought_sheet.dart';
 
@@ -397,23 +398,24 @@ class _ThoughtCard extends ConsumerWidget {
   }
 }
 
-class _JarvisMindReflectionCard extends StatelessWidget {
+class _JarvisMindReflectionCard extends ConsumerWidget {
   final List<Thought> thoughts;
 
   const _JarvisMindReflectionCard({required this.thoughts});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assistantName = ref.watch(assistantNameProvider);
     final wins = thoughts.where((t) => t.mood == 'win').length;
     final sparks = thoughts.where((t) => t.mood == 'idea').length;
 
     String insight;
     if (thoughts.isEmpty) {
-      insight = 'Mind space initialized, sir. This wall is encrypted and stored strictly on-device. Feel free to speak your mind freely.';
+      insight = 'Mind space initialized. This wall is encrypted and stored strictly on-device. Feel free to speak your mind freely.';
     } else if (wins > 0 && wins >= sparks) {
-      insight = 'You have logged $wins wins recently, sir. Your trajectory shows high agency and consistent execution.';
+      insight = 'You have logged $wins wins recently. Your trajectory shows high agency and consistent execution.';
     } else if (sparks > 0) {
-      insight = 'You have captured $sparks creative sparks, sir. Great breakthroughs start with raw unfiltered notes.';
+      insight = 'You have captured $sparks creative sparks. Great breakthroughs start with raw unfiltered notes.';
     } else {
       insight = 'You have ${thoughts.length} reflective notes logged. Unloading cognitive load clears bandwidth for deep work.';
     }
@@ -454,7 +456,7 @@ class _JarvisMindReflectionCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'JARVIS MIND REFLECTION',
+                '${assistantName.toUpperCase()} MIND REFLECTION',
                 style: AscentTextStyles.labelSmall.copyWith(
                   color: const Color(0xFF00B4D8),
                   fontWeight: FontWeight.w800,

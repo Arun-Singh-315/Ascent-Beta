@@ -14,7 +14,8 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
-import '../home/plan_my_day_sheet.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/providers/settings_provider.dart';
 
 class TaskBoardScreen extends ConsumerStatefulWidget {
   const TaskBoardScreen({super.key});
@@ -1033,7 +1034,7 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
   }
 }
 
-class _JarvisTaskCoachCard extends StatelessWidget {
+class _JarvisTaskCoachCard extends ConsumerWidget {
   final int overdueCount;
   final int todayCount;
   final int completedCount;
@@ -1045,14 +1046,15 @@ class _JarvisTaskCoachCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final assistantName = ref.watch(assistantNameProvider);
     String message;
     if (overdueCount > 0) {
-      message = 'Attention, sir: You have $overdueCount overdue items. I advise resolving them first to restore schedule momentum.';
+      message = 'Attention: You have $overdueCount overdue items. Let\'s resolve them first to restore momentum.';
     } else if (todayCount > 0) {
       message = 'All systems nominal. You have $todayCount priority items today. Ready when you are.';
     } else {
-      message = 'Your slate is completely clear for today, sir. You can plan new milestones or rest.';
+      message = 'Your slate is completely clear for today. You can plan new milestones or rest.';
     }
 
     return Container(
@@ -1091,7 +1093,7 @@ class _JarvisTaskCoachCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'JARVIS TASK ORCHESTRATOR',
+                '${assistantName.toUpperCase()} TASK ORCHESTRATOR',
                 style: AscentTextStyles.labelSmall.copyWith(
                   color: const Color(0xFF00B4D8),
                   fontWeight: FontWeight.w800,
@@ -1101,7 +1103,7 @@ class _JarvisTaskCoachCard extends StatelessWidget {
               ),
               const Spacer(),
               InkWell(
-                onTap: () => PlanMyDaySheet.show(context),
+                onTap: () => context.push('/ai-assistant'),
                 borderRadius: BorderRadius.circular(6),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

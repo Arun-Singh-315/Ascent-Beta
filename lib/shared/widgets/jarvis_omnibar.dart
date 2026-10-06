@@ -9,8 +9,11 @@ import '../../app/theme/text_styles.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 
-/// Universal Omnibar for interacting with JARVIS from anywhere
+/// Universal Omnibar for interacting with Riya from anywhere on the home screen.
+/// Handles quick water and expense commands inline; routes everything else to
+/// the full Riya chat screen.
 class JarvisOmnibar extends ConsumerStatefulWidget {
   const JarvisOmnibar({super.key});
 
@@ -38,8 +41,9 @@ class _JarvisOmnibarState extends ConsumerState<JarvisOmnibar> {
     HapticFeedback.mediumImpact();
 
     final engine = ref.read(aiEngineProvider) as LocalDeterministicAiEngine;
+    final name = ref.read(assistantNameProvider);
 
-    // 1. Check if it's a quick water command
+    // 1. Quick water command — execute immediately without opening chat
     final water = engine.tryParseWater(query);
     if (water != null) {
       final ml = water['amountMl'] as int;
@@ -47,7 +51,7 @@ class _JarvisOmnibarState extends ConsumerState<JarvisOmnibar> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('JARVIS: Logged +$ml mL water! 💧'),
+            content: Text('$name: Logged +$ml mL water! 💧'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -55,7 +59,7 @@ class _JarvisOmnibarState extends ConsumerState<JarvisOmnibar> {
       return;
     }
 
-    // 2. Check if it's a quick expense command
+    // 2. Quick expense command — execute immediately without opening chat
     final expense = engine.tryParseExpense(query);
     if (expense != null) {
       final amt = (expense['amount'] as num).toDouble();
@@ -73,7 +77,7 @@ class _JarvisOmnibarState extends ConsumerState<JarvisOmnibar> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('JARVIS: Saved expense ₹${amt.toStringAsFixed(0)} for $title! 💳'),
+            content: Text('$name: Saved expense ₹${amt.toStringAsFixed(0)} for $title! 💳'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -81,27 +85,25 @@ class _JarvisOmnibarState extends ConsumerState<JarvisOmnibar> {
       return;
     }
 
-    // 3. For tasks, general planning, or deep queries -> Route to AI Assistant
-    context.push('/ai-assistant');
+    // 3. All other queries → full Riya chat screen
+    if (mounted) {
+      context.push('/ai-assistant');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final name = ref.watch(assistantNameProvider);
+    final accentColor = const Color(0xFF4A90E2);
+
     return Container(
       decoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: const Color(0xFF0096C7).withValues(alpha: 0.3),
-          width: 1.2,
+          color: accentColor.withValues(alpha: 0.25),
+          width: 1.0,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0096C7).withValues(alpha: 0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 3),
-          ),
-        ],
       ),
       child: TextField(
         controller: _controller,
@@ -110,18 +112,18 @@ class _JarvisOmnibarState extends ConsumerState<JarvisOmnibar> {
         onSubmitted: _handleSubmitted,
         style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
         decoration: InputDecoration(
-          hintText: 'Talk to JARVIS... "spent ₹40 chai", "300ml water", "plan day"',
+          hintText: 'Ask $name... "spent ₹40", "300ml water", "plan my day"',
           hintStyle: AscentTextStyles.bodySmall.copyWith(
-            color: context.textMuted.withValues(alpha: 0.75),
+            color: context.textMuted.withValues(alpha: 0.7),
             fontSize: 12.5,
           ),
-          prefixIcon: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            child: Icon(Icons.auto_awesome_rounded, color: Color(0xFF00B4D8), size: 18),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 17),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 40),
           suffixIcon: IconButton(
-            icon: const Icon(Icons.arrow_upward_rounded, size: 18, color: Color(0xFF00B4D8)),
+            icon: Icon(Icons.arrow_upward_rounded, size: 17, color: accentColor),
             onPressed: () => _handleSubmitted(_controller.text),
           ),
           border: InputBorder.none,

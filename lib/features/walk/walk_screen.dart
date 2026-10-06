@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
@@ -283,19 +284,24 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                           children: [
                             const Icon(Icons.blur_on_rounded, color: Color(0xFF00B4D8), size: 16),
                             const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                walkState.status == WalkTrackingStatus.tracking
-                                    ? 'JARVIS: Cadence steady • Pacing ${walkState.formattedPace}/km • ${(walkState.distanceMeters / 1000.0).toStringAsFixed(2)} km covered'
-                                    : (walkState.status == WalkTrackingStatus.paused
-                                        ? 'JARVIS: Session paused. Catch your breath.'
-                                        : 'JARVIS: Ready for outdoor activity. Target: ${(targetDistanceKm).toStringAsFixed(1)} km.'),
-                                style: AscentTextStyles.bodySmall.copyWith(
-                                  color: const Color(0xFF0096C7),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 11.5,
-                                ),
-                              ),
+                            Builder(
+                              builder: (context) {
+                                final assistantName = ref.watch(assistantNameProvider);
+                                return Expanded(
+                                  child: Text(
+                                    walkState.status == WalkTrackingStatus.tracking
+                                        ? '$assistantName: Cadence steady • Pacing ${walkState.formattedPace}/km • ${(walkState.distanceMeters / 1000.0).toStringAsFixed(2)} km covered'
+                                        : (walkState.status == WalkTrackingStatus.paused
+                                            ? '$assistantName: Session paused. Catch your breath.'
+                                            : '$assistantName: Ready for outdoor activity. Target: ${(targetDistanceKm).toStringAsFixed(1)} km.'),
+                                    style: AscentTextStyles.bodySmall.copyWith(
+                                      color: const Color(0xFF0096C7),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

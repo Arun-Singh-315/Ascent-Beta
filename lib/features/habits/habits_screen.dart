@@ -10,6 +10,13 @@ import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/empty_state.dart';
 
+/// Provides a single batch load of all habit streaks (`Map<int, int>`).
+/// Replaces the per-item FutureBuilder anti-pattern that called getStreak(id) N times.
+final _habitStreaksProvider = FutureProvider.autoDispose<Map<int, int>>((ref) {
+  final dao = ref.watch(habitDaoProvider);
+  return dao.getAllStreaks();
+});
+
 class HabitsScreen extends ConsumerStatefulWidget {
   const HabitsScreen({super.key});
 
@@ -21,7 +28,7 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
   void _showAddHabitDialog() {
     final titleController = TextEditingController();
     String category = 'Health';
-    final categories = ['Health', 'Study', 'Fitness', 'Productivity'];
+    final categories = ['Health', 'Study', 'Fitness', 'Productivity', 'Mindfulness'];
 
     showModalBottomSheet(
       context: context,
@@ -72,6 +79,7 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,
+                runSpacing: 6,
                 children: categories.map((c) {
                   final isSelected = c == category;
                   return ChoiceChip(
@@ -113,6 +121,8 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
                               category: drift.Value(category),
                             ),
                           );
+                          // Invalidate streaks so the new habit gets a 0 streak entry
+                          ref.invalidate(_habitStreaksProvider);
                           if (ctx.mounted) Navigator.pop(ctx);
                         }
                       },
@@ -131,7 +141,11 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(allHabitsStreamProvider);
     final completedIdsAsync = ref.watch(todayCompletedHabitIdsStreamProvider);
+    // Batch streak load: one DB query for all habits, no FutureBuilder per item
+    final streaksAsync = ref.watch(_habitStreaksProvider);
+
     final completedIds = completedIdsAsync.value ?? <int>{};
+    final streaks = streaksAsync.value ?? <int, int>{};
 
     return Scaffold(
       backgroundColor: context.bgBase,
@@ -162,89 +176,97 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
             );
           }
 
+          // Separate active (not completed today) and done habits
+          final activeHabits = habits.where((h) => !completedIds.contains(h.id)).toList();
+          final doneHabits = habits.where((h) => completedIds.contains(h.id)).toList();
+          final allOrdered = [...activeHabits, ...doneHabits];
+
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            itemCount: habits.length,
+            itemCount: allOrdered.length,
             itemBuilder: (context, index) {
-              final habit = habits[index];
+              final habit = allOrdered[index];
               final isDoneToday = completedIds.contains(habit.id);
+              // O(1) streak lookup from pre-fetched batch map
+              final streak = streaks[habit.id] ?? 0;
 
-              return FutureBuilder<int>(
-                future: ref.read(habitDaoProvider).getStreak(habit.id),
-                builder: (context, streakSnap) {
-                  final streak = streakSnap.data ?? 0;
-
-                  return AscentCard(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        InkWell(
-                          onTap: () async {
-                            await ref.read(habitDaoProvider).toggleHabitToday(habit.id);
-                          },
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: isDoneToday ? context.accentPrimary : Colors.transparent,
-                              border: Border.all(
-                                color: isDoneToday ? context.accentPrimary : context.divider,
-                                width: 2,
-                              ),
-                            ),
-                            child: isDoneToday
-                                ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                                : null,
+              return AscentCard(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    // Completion toggle
+                    GestureDetector(
+                      onTap: () async {
+                        await ref.read(habitDaoProvider).toggleHabitToday(habit.id);
+                        // Refresh streak after toggle
+                        ref.invalidate(_habitStreaksProvider);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDoneToday ? context.accentPrimary : Colors.transparent,
+                          border: Border.all(
+                            color: isDoneToday ? context.accentPrimary : context.divider,
+                            width: 2,
                           ),
                         ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        child: isDoneToday
+                            ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            habit.title,
+                            style: AscentTextStyles.labelLarge.copyWith(
+                              color: isDoneToday ? context.textMuted : context.textPrimary,
+                              decoration: isDoneToday ? TextDecoration.lineThrough : null,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
                             children: [
                               Text(
-                                habit.title,
-                                style: AscentTextStyles.labelLarge.copyWith(
-                                  color: isDoneToday ? context.textMuted : context.textPrimary,
-                                  decoration: isDoneToday ? TextDecoration.lineThrough : null,
-                                  fontWeight: FontWeight.w600,
+                                habit.category,
+                                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              ),
+                              if (streak > 0) ...[
+                                const SizedBox(width: 6),
+                                Text('•', style: TextStyle(color: context.divider)),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.local_fire_department_rounded, size: 13, color: Colors.orange),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '$streak-day streak',
+                                  style: AscentTextStyles.bodySmall.copyWith(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  Text(
-                                    habit.category,
-                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text('•', style: TextStyle(color: context.divider)),
-                                  const SizedBox(width: 6),
-                                  Icon(Icons.local_fire_department_rounded, size: 14, color: Colors.orange),
-                                  const SizedBox(width: 2),
-                                  Text(
-                                    '$streak-day streak',
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: Colors.orange,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              ],
                             ],
                           ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete_outline_rounded, size: 18, color: context.textMuted),
-                          onPressed: () => ref.read(habitDaoProvider).deleteHabit(habit.id),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  );
-                },
+                    IconButton(
+                      icon: Icon(Icons.delete_outline_rounded, size: 18, color: context.textMuted),
+                      onPressed: () async {
+                        await ref.read(habitDaoProvider).deleteHabit(habit.id);
+                        ref.invalidate(_habitStreaksProvider);
+                      },
+                    ),
+                  ],
+                ),
               );
             },
           );

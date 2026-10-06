@@ -767,6 +767,35 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
               const SizedBox(height: 20),
 
+              // ── Section 2b: AI Assistant Configuration ───────────────
+              _SectionHeader(title: 'AI COPILOT / ASSISTANT'),
+              AscentCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Assistant Identity',
+                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Customize the name of your onboard AI copilot (defaults to Riya).',
+                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                    ),
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final currentName = ref.watch(assistantNameProvider);
+                        return _AssistantNameEditor(currentName: currentName);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
               // ── Section 3: Notifications & Reminders ─────────────────
               _SectionHeader(title: 'NOTIFICATIONS'),
               AscentCard(
@@ -1253,6 +1282,130 @@ class _ThemeOption extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AssistantNameEditor extends StatefulWidget {
+  final String currentName;
+
+  const _AssistantNameEditor({required this.currentName});
+
+  @override
+  State<_AssistantNameEditor> createState() => _AssistantNameEditorState();
+}
+
+class _AssistantNameEditorState extends State<_AssistantNameEditor> {
+  late final TextEditingController _controller;
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.currentName);
+  }
+
+  @override
+  void didUpdateWidget(covariant _AssistantNameEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentName != widget.currentName && !_isEditing) {
+      _controller.text = widget.currentName;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    onChanged: (_) {
+                      if (!_isEditing) setState(() => _isEditing = true);
+                    },
+                    decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.psychology_outlined, size: 20, color: context.accentPrimary),
+                      hintText: 'e.g. Riya',
+                      filled: true,
+                      fillColor: context.bgBase,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: context.accentPrimary),
+                      ),
+                    ),
+                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AscentButton.primary(
+                  label: 'Update',
+                  compact: true,
+                  onPressed: () {
+                    final newName = _controller.text.trim();
+                    if (newName.isNotEmpty) {
+                      ref.read(assistantNameProvider.notifier).setName(newName);
+                      setState(() => _isEditing = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Assistant renamed to $newName'),
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: ['Riya', 'Aria', 'Jarvis', 'Nova'].map((preset) {
+                final isSelected = widget.currentName == preset;
+                return ChoiceChip(
+                  label: Text(preset),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      _controller.text = preset;
+                      ref.read(assistantNameProvider.notifier).setName(preset);
+                      setState(() => _isEditing = false);
+                    }
+                  },
+                  labelStyle: AscentTextStyles.labelSmall.copyWith(
+                    color: isSelected ? Colors.white : context.textSecondary,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                  selectedColor: context.accentPrimary,
+                  backgroundColor: context.bgBase,
+                  side: BorderSide(color: isSelected ? context.accentPrimary : context.divider),
+                );
+              }).toList(),
+            ),
+          ],
+        );
+      },
     );
   }
 }

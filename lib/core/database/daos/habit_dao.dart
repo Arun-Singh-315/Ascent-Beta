@@ -65,20 +65,53 @@ class HabitDao extends DatabaseAccessor<AppDatabase> with _$HabitDaoMixin {
     }
   }
 
-  /// Calculate current streak for a habit.
+  /// Insert a completion record directly (used in seeding and tests).
+  Future<int> insertCompletion(HabitCompletionTableCompanion companion) =>
+      into(habitCompletionTable).insert(companion);
+
+  /// Calculate current streak for a single habit.
   Future<int> getStreak(int habitId) async {
     final completions = await (select(habitCompletionTable)
           ..where((c) => c.habitId.equals(habitId))
           ..orderBy([(c) => OrderingTerm.desc(c.date)]))
         .get();
 
+    return _computeStreak(completions);
+  }
+
+  /// Batch-compute streak for ALL habits in a single DB query.
+  /// Returns a map of habitId → streak length.
+  /// Use this in list views to avoid N database queries per list item.
+  Future<Map<int, int>> getAllStreaks() async {
+    // One query for all completions, sorted by habit + date desc
+    final allCompletions = await (select(habitCompletionTable)
+          ..orderBy([(c) => OrderingTerm.asc(c.habitId), (c) => OrderingTerm.desc(c.date)]))
+        .get();
+
+    // Group by habitId
+    final Map<int, List<HabitCompletion>> byHabit = {};
+    for (final c in allCompletions) {
+      byHabit.putIfAbsent(c.habitId, () => []).add(c);
+    }
+
+    // Compute streak per habit
+    final Map<int, int> result = {};
+    for (final entry in byHabit.entries) {
+      result[entry.key] = _computeStreak(entry.value);
+    }
+    return result;
+  }
+
+  int _computeStreak(List<HabitCompletion> completions) {
     if (completions.isEmpty) return 0;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
 
-    final dates = completions.map((c) => DateTime(c.date.year, c.date.month, c.date.day)).toSet();
+    final dates = completions
+        .map((c) => DateTime(c.date.year, c.date.month, c.date.day))
+        .toSet();
 
     // Must have completed today or yesterday to have active streak
     DateTime checkDate;

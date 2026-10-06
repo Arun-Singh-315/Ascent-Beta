@@ -168,6 +168,39 @@ void main() {
       final finalCompleted = await db.habitDao.watchTodayCompletedHabitIds().first;
       expect(finalCompleted.contains(habitId), isFalse);
     });
+
+    test('getAllStreaks computes streaks in batch for all habits', () async {
+      final habit1 = await db.habitDao.insertHabit(
+        HabitTableCompanion.insert(title: 'Read 20 pages'),
+      );
+      final habit2 = await db.habitDao.insertHabit(
+        HabitTableCompanion.insert(title: 'Meditate 10 mins'),
+      );
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final yesterday = today.subtract(const Duration(days: 1));
+
+      // habit1 completed today and yesterday (streak 2)
+      await db.habitDao.insertCompletion(HabitCompletionTableCompanion.insert(
+        habitId: habit1,
+        date: yesterday,
+      ));
+      await db.habitDao.insertCompletion(HabitCompletionTableCompanion.insert(
+        habitId: habit1,
+        date: today,
+      ));
+
+      // habit2 completed today only (streak 1)
+      await db.habitDao.insertCompletion(HabitCompletionTableCompanion.insert(
+        habitId: habit2,
+        date: today,
+      ));
+
+      final streaks = await db.habitDao.getAllStreaks();
+      expect(streaks[habit1], 2);
+      expect(streaks[habit2], 1);
+    });
   });
 
   group('Water Hydration Module Tests', () {

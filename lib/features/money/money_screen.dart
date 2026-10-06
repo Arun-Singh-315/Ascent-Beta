@@ -7,6 +7,7 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -371,7 +372,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                           Row(
                             children: [
                               Text(
-                                'JARVIS FINANCIAL COPILOT',
+                                '${ref.watch(assistantNameProvider).toUpperCase()} FINANCIAL COPILOT',
                                 style: AscentTextStyles.labelSmall.copyWith(
                                   color: const Color(0xFF00B4D8),
                                   fontWeight: FontWeight.w800,
