@@ -2,14 +2,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/database_provider.dart';
+import '../learning_hub/learning_hub_provider.dart';
+import '../learning_hub/learning_hub_models.dart';
 
 enum AiActionType {
   taskCreated,
+  activityCreated,
   expenseLogged,
   dailyPlanSuggested,
   conceptExplained,
   personalInsight,
   waterLogged,
+  lectureMarkedComplete,
+  scheduleRearranged,
   generalResponse,
 }
 
@@ -18,12 +23,14 @@ class AiProposedAction {
   final String title;
   final String summary;
   final Map<String, dynamic> payload;
+  final List<String> quickOptions;
 
   const AiProposedAction({
     required this.type,
     required this.title,
     required this.summary,
     required this.payload,
+    this.quickOptions = const [],
   });
 }
 
@@ -31,11 +38,13 @@ class AiResponse {
   final String text;
   final bool isLocalDeterministic;
   final AiProposedAction? proposedAction;
+  final List<String> clarifyingOptions;
 
   const AiResponse({
     required this.text,
     this.isLocalDeterministic = true,
     this.proposedAction,
+    this.clarifyingOptions = const [],
   });
 }
 
@@ -44,17 +53,17 @@ abstract class AiEngineInterface {
   Future<AiResponse> processUserPrompt(String prompt, WidgetRef ref);
 }
 
-/// Free, 100% Offline, Deterministic Local Rule-based AI Engine
+/// Robust, Offline, Deterministic Local Rule-based AI Engine
 class LocalDeterministicAiEngine implements AiEngineInterface {
   @override
   Future<AiResponse> processUserPrompt(String prompt, WidgetRef ref) async {
     final lower = prompt.toLowerCase().trim();
 
-    // 1. Natural Language Expense Logging ("spent ₹150 on coffee", "₹45 snacks", "add expense 200 uber")
+    // 1. Natural Language Expense Logging ("spent ₹150 on coffee", "₹45 chai and snacks")
     final expenseMatch = tryParseExpense(prompt);
     if (expenseMatch != null) {
       return AiResponse(
-        text: 'I parsed your expense of ₹${expenseMatch['amount']} for "${expenseMatch['title']}". Tap below to confirm and save it to your financial records.',
+        text: 'I parsed your expense of ₹${expenseMatch['amount']} for "${expenseMatch['title']}". Confirm below to save it to your financial records.',
         proposedAction: AiProposedAction(
           type: AiActionType.expenseLogged,
           title: 'Log Expense: ₹${expenseMatch['amount']}',
@@ -64,29 +73,12 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       );
     }
 
-    // 2. Natural Language Task Creation ("remind me to study java tomorrow", "add task complete binary trees")
-    final taskMatch = tryParseTask(prompt);
-    if (taskMatch != null) {
-      final dateStr = taskMatch['plannedDate'] != null
-          ? DateFormat('EEE, MMM d').format(DateTime.parse(taskMatch['plannedDate']))
-          : 'Today';
-      return AiResponse(
-        text: 'I structured a new task: "${taskMatch['title']}" scheduled for $dateStr. Tap below to confirm and add it to your Task Board.',
-        proposedAction: AiProposedAction(
-          type: AiActionType.taskCreated,
-          title: 'Create Task: ${taskMatch['title']}',
-          summary: 'Scheduled: $dateStr • Priority: ${taskMatch['priority']}',
-          payload: taskMatch,
-        ),
-      );
-    }
-
-    // 3. Natural Language Water Logging ("drank 250ml water", "drink 500ml water", "log 2 glasses of water")
+    // 2. Hydration Intake ("drank 250ml water", "drink 500ml water", "log 2 glasses of water")
     final waterMatch = tryParseWater(prompt);
     if (waterMatch != null) {
       final ml = waterMatch['amountMl'] as int;
       return AiResponse(
-        text: 'I parsed hydration intake of $ml mL. Tap below to confirm and log it to your daily water target.',
+        text: 'Hydration recorded: $ml mL. Tap below to log it to your daily water target.',
         proposedAction: AiProposedAction(
           type: AiActionType.waterLogged,
           title: 'Log Water: +$ml mL',
@@ -96,17 +88,72 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       );
     }
 
-    // 3. Smart Daily Planner ("plan my day", "daily plan", "schedule my study", "what should i do today")
+    // 3. Lecture Completion ("I finished the first two lectures", "completed lecture 1", "done with first 2 lectures")
+    final lectureCompletion = _tryParseLectureCompletion(lower, ref);
+    if (lectureCompletion != null) {
+      return lectureCompletion;
+    }
+
+    // 4. Free Time & Contextual Guidance ("I have 45 minutes free. What should I work on?")
+    if (lower.contains('free') && (lower.contains('minute') || lower.contains('min') || lower.contains('hour') || lower.contains('what should i') || lower.contains('work on'))) {
+      return _generateFreeTimeGuidance(lower, ref);
+    }
+
+    // 5. Schedule Rescheduling / Rearranging ("move my workout to the evening", "couldn't complete today's study plan. Help me rearrange it")
+    final rescheduleResponse = await _tryParseReschedule(lower, ref);
+    if (rescheduleResponse != null) {
+      return rescheduleResponse;
+    }
+
+    // 6. Sleep Schedule ("I want to sleep by 11 PM", "sleep at 10 pm")
+    if (lower.contains('sleep') && (lower.contains('by') || lower.contains('at') || lower.contains('pm') || lower.contains('tonight'))) {
+      return _handleSleepSchedule(prompt);
+    }
+
+    // 7. Ambiguous activity clarifying check (e.g. "I want to exercise tomorrow" without duration)
+    final ambiguousClarification = _checkAmbiguousClarification(prompt, lower);
+    if (ambiguousClarification != null) {
+      return ambiguousClarification;
+    }
+
+    // 8. General Natural Language Task & Activity Creation
+    // (Handles: "need to call saurabh at 2", "complete java spring boot today", "need to finish java tutorial today", "add todo need to complete java", "I want to exercise for 30 minutes after waking up", "remind me to apply for jobs tomorrow morning", "I need to study Java for two hours today", "add a task to call my friend")
+    final taskMatch = tryParseActivityOrTask(prompt);
+    if (taskMatch != null) {
+      final dateStr = taskMatch['plannedDate'] != null
+          ? DateFormat('EEE, MMM d').format(DateTime.parse(taskMatch['plannedDate']))
+          : 'Today';
+      final kindStr = taskMatch['kind'] == 'duration'
+          ? 'Timed Activity (${taskMatch['estimatedMinutes']}m)'
+          : taskMatch['kind'] == 'flexible'
+              ? 'Flexible Activity'
+              : 'To-do';
+      final reminderInfo = taskMatch['reminderTime'] != null
+          ? ' • Reminder at ${DateFormat('HH:mm').format(DateTime.parse(taskMatch['reminderTime']))}'
+          : '';
+
+      return AiResponse(
+        text: 'I structured a new $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm below to save it to your Activity Hub.',
+        proposedAction: AiProposedAction(
+          type: AiActionType.activityCreated,
+          title: 'Add $kindStr: ${taskMatch['title']}',
+          summary: 'Scheduled: $dateStr • Priority: ${taskMatch['priority']}$reminderInfo',
+          payload: taskMatch,
+        ),
+      );
+    }
+
+    // 9. Smart Daily Planner ("plan my day", "daily plan", "schedule my study", "what should i do today")
     if (lower.contains('plan my day') || lower.contains('daily plan') || lower.contains('schedule my day') || lower.contains('what should i do')) {
       return await _generateDailyPlan(ref);
     }
 
-    // 4. Personal Insights ("how am i doing", "insights", "my spending", "weekly summary", "progress")
+    // 10. Personal Insights ("how am i doing", "insights", "my spending", "weekly summary", "progress")
     if (lower.contains('insight') || lower.contains('summary') || lower.contains('progress') || lower.contains('how am i doing') || lower.contains('spending status')) {
       return await _generatePersonalInsights(ref);
     }
 
-    // 5. Concept Explanation ("explain dynamic programming", "what is binary search", "explain system design", etc.)
+    // 11. Concept Explanation ("explain dynamic programming", "what is binary search", "explain system design", etc.)
     final explanation = tryExplainConcept(lower);
     if (explanation != null) {
       return AiResponse(
@@ -120,20 +167,26 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       );
     }
 
-    // 6. Helpful General Guidance
+    // 12. Contextual Help & Guidance
     return const AiResponse(
       text: "I am your local on-device AI life assistant. Here is what I can do for you:\n\n"
-          "• Log expenses: \"Spent ₹120 on lunch\" or \"₹45 chai and snacks\"\n"
-          "• Create tasks: \"Remind me to practice LeetCode tomorrow\"\n"
-          "• Plan your day: \"Plan my day\" or \"Schedule today's study\"\n"
-          "• Cross-module insights: \"Show my spending & study summary\"\n"
-          "• Explain CS concepts: \"Explain Dynamic Programming\" or \"What is Two Pointers?\"\n\n"
+          "• Manage Activities: \"Need to call Saurabh at 2\" or \"Study Java for 2 hours today\"\n"
+          "• Track Learning: \"Finished the first two lectures\" or \"I have 45 mins free\"\n"
+          "• Organize Day: \"Plan my day\" or \"Move my workout to the evening\"\n"
+          "• Log Finances: \"Spent ₹120 on lunch\" or \"₹45 chai\"\n"
+          "• Computer Science: \"Explain Dynamic Programming\" or \"What is QuickSort?\"\n\n"
           "Everything runs 100% on your device, completely free and private.",
+      clarifyingOptions: [
+        'Plan my day',
+        'Need to call Saurabh at 2',
+        'Study Java for 2 hours today',
+        'Finished first two lectures',
+      ],
     );
   }
 
+  /// Parses Expenses with Indian Rupee and Category detection
   Map<String, dynamic>? tryParseExpense(String input) {
-    // Regular expressions for amounts: ₹35, Rs. 150, 250 rs, etc.
     final amountReg = RegExp(r'(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{1,2})?)\s*(?:₹|rs\.?|inr|rupees)?', caseSensitive: false);
     final match = amountReg.firstMatch(input);
     if (match == null) return null;
@@ -143,18 +196,19 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final amount = double.tryParse(amountStr);
     if (amount == null || amount <= 0) return null;
 
-    // Check if input indicates spending/expense
     final lower = input.toLowerCase();
     final isExpenseKeyword = lower.contains('spent') ||
         lower.contains('bought') ||
         lower.contains('expense') ||
         lower.contains('paid') ||
+        lower.contains('chai') ||
+        lower.contains('lunch') ||
+        lower.contains('dinner') ||
         lower.contains('₹') ||
         lower.contains('rs');
 
     if (!isExpenseKeyword && !lower.startsWith(amountStr)) return null;
 
-    // Extract title & category
     String cleanTitle = input
         .replaceAll(RegExp(r'(?:spent|paid|bought|add expense|expense of|for|on|₹|rs\.?|rupees|inr|[0-9]+(?:\.[0-9]+)?)', caseSensitive: false), ' ')
         .trim();
@@ -162,7 +216,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     String category = 'Other';
     final tLower = cleanTitle.toLowerCase();
-    if (tLower.contains('tea') || tLower.contains('coffee') || tLower.contains('lunch') || tLower.contains('dinner') || tLower.contains('food') || tLower.contains('grocer') || tLower.contains('snack') || tLower.contains('swiggy') || tLower.contains('zomato')) {
+    if (tLower.contains('tea') || tLower.contains('chai') || tLower.contains('coffee') || tLower.contains('lunch') || tLower.contains('dinner') || tLower.contains('food') || tLower.contains('grocer') || tLower.contains('snack') || tLower.contains('swiggy') || tLower.contains('zomato')) {
       category = 'Food & Groceries';
     } else if (tLower.contains('uber') || tLower.contains('ola') || tLower.contains('metro') || tLower.contains('bus') || tLower.contains('auto') || tLower.contains('fuel') || tLower.contains('petrol') || tLower.contains('cab')) {
       category = 'Transport';
@@ -187,6 +241,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     };
   }
 
+  /// Parses Water intake in ml, glasses, or bottles
   Map<String, dynamic>? tryParseWater(String input) {
     final lower = input.toLowerCase();
     if (!lower.contains('water') && !lower.contains('hydrat') && !lower.contains('drank') && !lower.contains('drink')) {
@@ -221,16 +276,50 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     return {'amountMl': ml};
   }
 
-  Map<String, dynamic>? tryParseTask(String input) {
-    final lower = input.toLowerCase();
-    final isTaskIntent = lower.startsWith('remind me') ||
-        lower.startsWith('plan a') ||
-        lower.startsWith('add task') ||
-        lower.startsWith('todo') ||
-        lower.startsWith('create task');
+  /// Parses Natural Language Activity, To-do, or Duration-based item
+  Map<String, dynamic>? tryParseActivityOrTask(String input) {
+    final lower = input.toLowerCase().trim();
 
-    if (!isTaskIntent) return null;
+    // Trigger patterns
+    final isExplicitIntent = RegExp(
+          r'^(?:i\s+)?(?:need to|have to|want to|plan to|must|remind me|add\s+(?:a\s+)?(?:task|todo)|create\s+(?:a\s+)?task|todo|complete|finish|call|buy|pay|submit|study|exercise|workout|meditate|walk)\b',
+          caseSensitive: false,
+        ).hasMatch(lower) ||
+        lower.contains('after waking up') ||
+        lower.contains('tomorrow morning') ||
+        lower.contains('for two hours') ||
+        lower.contains('for 30 minutes') ||
+        (lower.contains('at ') && RegExp(r'at\s+\d+').hasMatch(lower));
 
+    if (!isExplicitIntent) return null;
+
+    // 1. Extract duration if mentioned
+    int? durationMinutes;
+    final minMatch = RegExp(r'(?:for\s+)?(\d+)\s*(?:minutes?|mins?|m\b)', caseSensitive: false).firstMatch(lower);
+    final hrMatch = RegExp(r'(?:for\s+)?(\d+)\s*(?:hours?|hrs?|h\b)', caseSensitive: false).firstMatch(lower);
+    final wordHrMatch = RegExp(r'(?:for\s+)?(one|two|three|four|half(?:\s+an)?)\s*(?:hours?|hr)', caseSensitive: false).firstMatch(lower);
+
+    if (minMatch != null) {
+      durationMinutes = int.tryParse(minMatch.group(1) ?? '');
+    } else if (hrMatch != null) {
+      final hrs = int.tryParse(hrMatch.group(1) ?? '');
+      if (hrs != null) durationMinutes = hrs * 60;
+    } else if (wordHrMatch != null) {
+      final word = wordHrMatch.group(1)?.toLowerCase();
+      if (word == 'one') {
+        durationMinutes = 60;
+      } else if (word == 'two') {
+        durationMinutes = 120;
+      } else if (word == 'three') {
+        durationMinutes = 180;
+      } else if (word == 'four') {
+        durationMinutes = 240;
+      } else if (word != null && word.startsWith('half')) {
+        durationMinutes = 30;
+      }
+    }
+
+    // 2. Extract date
     DateTime plannedDate = DateTime.now();
     if (lower.contains('tomorrow')) {
       plannedDate = plannedDate.add(const Duration(days: 1));
@@ -238,18 +327,322 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       plannedDate = plannedDate.add(const Duration(days: 2));
     }
 
+    // 3. Extract time / reminder
+    DateTime? reminderTime;
+    final timeMatch = RegExp(r'at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', caseSensitive: false).firstMatch(lower);
+    if (timeMatch != null) {
+      int hour = int.tryParse(timeMatch.group(1) ?? '') ?? 9;
+      final minute = int.tryParse(timeMatch.group(2) ?? '0') ?? 0;
+      final amPm = timeMatch.group(3)?.toLowerCase();
+
+      if (amPm == 'pm' && hour < 12) hour += 12;
+      if (amPm == 'am' && hour == 12) hour = 0;
+      // If no AM/PM specified, guess based on context:
+      // "at 2" -> afternoon 14:00 if hour < 7
+      if (amPm == null && hour <= 6) hour += 12;
+
+      reminderTime = DateTime(
+        plannedDate.year,
+        plannedDate.month,
+        plannedDate.day,
+        hour,
+        minute,
+      );
+      // If time already passed today, push to tomorrow
+      if (reminderTime.isBefore(DateTime.now()) && !lower.contains('tomorrow')) {
+        reminderTime = reminderTime.add(const Duration(days: 1));
+        plannedDate = reminderTime;
+      }
+    } else if (lower.contains('tomorrow morning') || lower.contains('after waking up') || lower.contains('in the morning')) {
+      reminderTime = DateTime(plannedDate.year, plannedDate.month, plannedDate.day, 9, 0);
+    } else if (lower.contains('tonight') || lower.contains('this evening')) {
+      reminderTime = DateTime(plannedDate.year, plannedDate.month, plannedDate.day, 20, 0);
+    }
+
+    // 4. Clean title
     String cleanTitle = input
-        .replaceAll(RegExp(r'^(remind me to|plan a|add task|todo|create task)\s*', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s*(tomorrow|today|after lunch|in the morning|tonight|next week)\s*', caseSensitive: false), ' ')
+        .replaceAll(RegExp(r'^(?:i\s+)?(?:need to|have to|want to|plan to|must|remind me to|remind me|add\s+(?:a\s+)?(?:task|todo)(?:\s+to)?|create\s+(?:a\s+)?task|todo:?)\s*', caseSensitive: false), '')
+        .replaceAll(RegExp(r'\s*(?:for\s+\d+\s*(?:minutes?|mins?|hours?|hrs?)|for\s+(?:one|two|three|half(?:\s+an)?)\s*hours?|tomorrow\s+morning|tomorrow|today|tonight|this\s+evening|after\s+waking\s+up|in\s+the\s+morning|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b', caseSensitive: false), ' ')
         .trim();
 
     if (cleanTitle.isEmpty) cleanTitle = 'Focus Activity';
 
+    // 5. Determine activity kind
+    String kind = 'todo';
+    if (durationMinutes != null && durationMinutes > 0) {
+      kind = 'duration';
+    } else {
+      final tLower = cleanTitle.toLowerCase();
+      final isToDotask = tLower.startsWith('call') ||
+          tLower.startsWith('buy') ||
+          tLower.startsWith('pay') ||
+          tLower.startsWith('submit') ||
+          tLower.contains('grocer') ||
+          tLower.contains('bill') ||
+          tLower.contains('friend') ||
+          lower.contains('todo') ||
+          lower.contains('remind me');
+
+      if (!isToDotask && (tLower.contains('exercise') || tLower.contains('workout') || tLower.contains('study') || tLower.contains('meditate') || tLower.contains('walk'))) {
+        kind = 'flexible';
+      }
+    }
+
+    final isHighPriority = lower.contains('urgent') ||
+        lower.contains('priority') ||
+        lower.contains('important') ||
+        lower.contains('must') ||
+        lower.contains('today');
+
     return {
       'title': cleanTitle.length > 100 ? cleanTitle.substring(0, 100) : cleanTitle,
+      'kind': kind,
+      'estimatedMinutes': durationMinutes ?? (kind == 'flexible' ? -1 : null),
       'plannedDate': plannedDate.toIso8601String(),
-      'priority': lower.contains('urgent') || lower.contains('priority') ? 'high' : 'medium',
+      'reminderTime': reminderTime?.toIso8601String(),
+      'priority': isHighPriority ? 'high' : 'medium',
     };
+  }
+
+  /// Backward-compatible alias for task parsing
+  Map<String, dynamic>? tryParseTask(String input) => tryParseActivityOrTask(input);
+
+  /// Parses Lecture Completion commands
+  AiResponse? _tryParseLectureCompletion(String lower, WidgetRef ref) {
+    if (!lower.contains('lecture') && !lower.contains('lectures')) return null;
+    if (!lower.contains('finish') && !lower.contains('completed') && !lower.contains('done')) return null;
+
+    final learningState = ref.read(learningHubProvider);
+    final activeCourse = learningState.course;
+
+    int countToMark = 1;
+    final numMatch = RegExp(r'(?:first\s+)?(\d+)\s*lectures?').firstMatch(lower);
+    final wordMatch = RegExp(r'(?:first\s+)?(one|two|three|four)\s*lectures?').firstMatch(lower);
+
+    if (numMatch != null) {
+      countToMark = int.tryParse(numMatch.group(1) ?? '1') ?? 1;
+    } else if (wordMatch != null) {
+      final w = wordMatch.group(1);
+      if (w == 'one') {
+        countToMark = 1;
+      } else if (w == 'two') {
+        countToMark = 2;
+      } else if (w == 'three') {
+        countToMark = 3;
+      } else if (w == 'four') {
+        countToMark = 4;
+      }
+    }
+
+    // Collect unfinished lectures
+    final unfinishedLectures = <Lecture>[];
+    for (final m in activeCourse.modules) {
+      for (final l in m.lectures) {
+        if (!l.isCompleted) {
+          unfinishedLectures.add(l);
+          if (unfinishedLectures.length >= countToMark) break;
+        }
+      }
+      if (unfinishedLectures.length >= countToMark) break;
+    }
+
+    if (unfinishedLectures.isEmpty) {
+      return AiResponse(
+        text: 'All lectures in "${activeCourse.title}" are already completed! Outstanding work.',
+      );
+    }
+
+    final titles = unfinishedLectures.map((l) => '"${l.title}"').join(', ');
+    final lectureIds = unfinishedLectures.map((l) => l.id).toList();
+
+    return AiResponse(
+      text: 'Great work! I can mark ${unfinishedLectures.length} lecture(s) completed in "${activeCourse.title}": $titles. Tap below to confirm and update your course progress.',
+      proposedAction: AiProposedAction(
+        type: AiActionType.lectureMarkedComplete,
+        title: 'Complete ${unfinishedLectures.length} Lecture(s)',
+        summary: 'Course: ${activeCourse.title} • Updates course completion immediately',
+        payload: {
+          'courseId': activeCourse.id,
+          'lectureIds': lectureIds,
+          'count': unfinishedLectures.length,
+        },
+      ),
+    );
+  }
+
+  /// Handles "I have 45 minutes free. What should I work on?"
+  AiResponse _generateFreeTimeGuidance(String lower, WidgetRef ref) {
+    int availableMins = 45;
+    final minMatch = RegExp(r'(\d+)\s*(?:minutes?|mins?|m\b)').firstMatch(lower);
+    if (minMatch != null) {
+      availableMins = int.tryParse(minMatch.group(1) ?? '45') ?? 45;
+    }
+
+    final learningState = ref.read(learningHubProvider);
+    final activeCourse = learningState.course;
+
+    Lecture? recommendedLecture;
+    for (final m in activeCourse.modules) {
+      for (final l in m.lectures) {
+        if (!l.isCompleted) {
+          recommendedLecture = l;
+          break;
+        }
+      }
+      if (recommendedLecture != null) break;
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln("With **$availableMins minutes free**, here is your optimal focus recommendation:\n");
+
+    if (recommendedLecture != null) {
+      final lecMins = (recommendedLecture.durationSeconds / 60).round();
+      buffer.writeln("🎯 **Recommended Study Session:**");
+      buffer.writeln("• **${recommendedLecture.title}** in *${activeCourse.title}*");
+      buffer.writeln("• Estimated: ~$lecMins mins. Fits perfectly into your time window!");
+    } else {
+      buffer.writeln("🎯 **Study Status:** All lectures in ${activeCourse.title} are up to date!");
+    }
+
+    buffer.writeln("\n💡 **Action:** Tap below to start your study focus session or open your Activity Hub.");
+
+    return AiResponse(
+      text: buffer.toString(),
+      proposedAction: recommendedLecture != null
+          ? AiProposedAction(
+              type: AiActionType.generalResponse,
+              title: 'Study: ${recommendedLecture.title}',
+              summary: '${activeCourse.title} • ${(recommendedLecture.durationSeconds / 60).round()} mins',
+              payload: {
+                'action': 'open_study',
+                'lectureId': recommendedLecture.id,
+              },
+            )
+          : null,
+      clarifyingOptions: [
+        if (recommendedLecture != null) 'Start ${recommendedLecture.title}',
+        'Plan my day',
+        'Show my spending & study summary',
+      ],
+    );
+  }
+
+  /// Handles Rescheduling / Rearranging
+  Future<AiResponse?> _tryParseReschedule(String lower, WidgetRef ref) async {
+    final isReschedule = lower.contains('rearrange') ||
+        lower.contains('reschedule') ||
+        lower.contains('move my') ||
+        lower.contains('couldn\'t complete') ||
+        lower.contains('shift my');
+
+    if (!isReschedule) return null;
+
+    final taskDao = ref.read(taskDaoProvider);
+    final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first;
+    final pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
+
+    if (lower.contains('workout') || lower.contains('exercise')) {
+      final workoutTask = pending.where((t) =>
+          t.title.toLowerCase().contains('workout') ||
+          t.title.toLowerCase().contains('exercise')).firstOrNull;
+
+      final evening = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
+
+      return AiResponse(
+        text: workoutTask != null
+            ? 'I found "${workoutTask.title}". I can reschedule it to this evening at 6:00 PM.'
+            : 'I can schedule an evening workout session for you today at 6:00 PM.',
+        proposedAction: AiProposedAction(
+          type: AiActionType.scheduleRearranged,
+          title: 'Reschedule Workout: 6:00 PM',
+          summary: 'Moved to this evening (18:00) • Reminder set',
+          payload: {
+            'taskId': workoutTask?.id,
+            'title': workoutTask?.title ?? 'Workout',
+            'newDate': evening.toIso8601String(),
+          },
+        ),
+      );
+    }
+
+    if (lower.contains('study plan') || lower.contains('study')) {
+      final tomorrowMorning = DateTime.now().add(const Duration(days: 1));
+      final newDate = DateTime(tomorrowMorning.year, tomorrowMorning.month, tomorrowMorning.day, 9, 0);
+
+      return AiResponse(
+        text: 'Consistency means adapting! I found ${pending.length} pending items today. I can rollover your remaining study tasks to tomorrow morning starting at 9:00 AM.',
+        proposedAction: AiProposedAction(
+          type: AiActionType.scheduleRearranged,
+          title: 'Rollover Study Plan to Tomorrow',
+          summary: 'Re-allocates ${pending.length} pending tasks to tomorrow morning (09:00)',
+          payload: {
+            'taskIds': pending.map((t) => t.id).toList(),
+            'newDate': newDate.toIso8601String(),
+          },
+        ),
+      );
+    }
+
+    return null;
+  }
+
+  /// Sleep Routine Handler
+  AiResponse _handleSleepSchedule(String prompt) {
+    final now = DateTime.now();
+    final sleepTime = DateTime(now.year, now.month, now.day, 23, 0);
+
+    return AiResponse(
+      text: 'Good sleep is essential for optimal learning and cognitive recovery. I can set a Sleep Schedule for 11:00 PM tonight with an 8-hour target and a wind-down reminder at 10:30 PM.',
+      proposedAction: AiProposedAction(
+        type: AiActionType.activityCreated,
+        title: 'Schedule Sleep Routine (11:00 PM)',
+        summary: 'Target: 8h duration • Wind-down reminder at 10:30 PM',
+        payload: {
+          'title': 'Sleep',
+          'kind': 'duration',
+          'estimatedMinutes': 480,
+          'plannedDate': sleepTime.toIso8601String(),
+          'reminderTime': sleepTime.subtract(const Duration(minutes: 30)).toIso8601String(),
+          'priority': 'high',
+        },
+      ),
+    );
+  }
+
+  /// Intelligent clarifying questions for ambiguous duration activities
+  AiResponse? _checkAmbiguousClarification(String input, String lower) {
+    final isAmbiguousWorkout = (lower == 'i want to exercise tomorrow' ||
+        lower == 'exercise tomorrow' ||
+        lower == 'workout tomorrow' ||
+        lower == 'i want to workout tomorrow' ||
+        lower == 'i want to study tomorrow' ||
+        lower == 'study tomorrow');
+
+    if (!isAmbiguousWorkout) return null;
+
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    final activityName = lower.contains('study') ? 'Study Session' : 'Workout';
+
+    return AiResponse(
+      text: 'Sure! Do you want to add $activityName as a simple to-do, or track it with a timer? And roughly how long should I schedule for it?',
+      clarifyingOptions: [
+        'Track 30m $activityName',
+        'Track 45m $activityName',
+        'Add as simple to-do',
+      ],
+      proposedAction: AiProposedAction(
+        type: AiActionType.activityCreated,
+        title: 'Schedule 30m $activityName',
+        summary: 'Tomorrow • 30 mins timer • Ready to confirm or adjust',
+        payload: {
+          'title': activityName,
+          'kind': 'duration',
+          'estimatedMinutes': 30,
+          'plannedDate': tomorrow.toIso8601String(),
+          'priority': 'medium',
+        },
+      ),
+    );
   }
 
   Future<AiResponse> _generateDailyPlan(WidgetRef ref) async {
@@ -264,6 +657,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final todaySpend = await financeDao.watchTodaySpending().first;
     final budget = await financeDao.watchOverallBudget().first;
 
+    final learningState = ref.read(learningHubProvider);
+    final course = learningState.course;
+
     final buffer = StringBuffer();
     buffer.writeln("Here is your recommended Daily Life Plan:");
     buffer.writeln("");
@@ -275,7 +671,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       }
       buffer.writeln("");
     } else {
-      buffer.writeln("🎯 **Core Priorities:** All scheduled tasks completed! Great time to revisit DSA or review notes.");
+      buffer.writeln("🎯 **Core Priorities:** All scheduled tasks completed! Great time to continue \"${course.title}\".");
       buffer.writeln("");
     }
 
@@ -330,8 +726,13 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     final streak = await ref.read(consistencyDaoProvider).watchCurrentStreak().first;
 
+    final learningState = ref.read(learningHubProvider);
+    final course = learningState.course;
+
     final buffer = StringBuffer();
     buffer.writeln("📊 **Your Deterministic Life Insights:**\n");
+    final pct = (course.progressFraction * 100).round();
+    buffer.writeln("• **Course Progress:** $pct% completed in \"${course.title}\" (${course.completedLectures}/${course.totalLectures} lectures).");
     buffer.writeln("• **Study & Practice:** $dsaSolved algorithm problems mastered this week.");
     buffer.writeln("• **Physical Wellness:** $weekKm km walked this week.");
     buffer.writeln(

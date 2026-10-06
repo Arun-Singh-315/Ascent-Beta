@@ -49,7 +49,8 @@ void main() {
     test('Spring Boot course initializes with 4 modules and 37 lectures', () {
       final defaultCourse = buildDefaultSpringBootCourse();
       final state = LearningHubState(
-        course: defaultCourse,
+        courses: [defaultCourse],
+        activeCourseId: defaultCourse.id,
         activeLectureId: 1,
       );
       final course = state.course;

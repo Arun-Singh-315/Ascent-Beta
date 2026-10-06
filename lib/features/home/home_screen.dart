@@ -12,10 +12,9 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
-import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../study_plan/lecture_focus_player_sheet.dart';
-import '../today/task_board_screen.dart';
+import '../today/add_activity_sheet.dart';
 import 'package:flutter/services.dart';
 import '../../shared/widgets/new_day_dialog.dart';
 
@@ -91,13 +90,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   const SizedBox(height: 16),
 
-                  // 2. PRIMARY HERO: Learning Hub Card (37 Lectures, Module Progress & Resume)
-                  const _LearningHubCard(),
+                  // 2. ACTIVITY HUB: Today's activities, intelligent types, active timer & quick add
+                  const _ActivityHubCard(),
 
                   const SizedBox(height: 16),
 
-                  // 3. TODAY'S PRIORITY & FOCUS TASK
-                  const _TodayPriorityCard(),
+                  // 3. LEARNING HUB: Multi-course hero, course switcher, progress & resume
+                  const _LearningHubCard(),
 
                   const SizedBox(height: 16),
 
@@ -219,169 +218,6 @@ class _RiyaSeBaatFloatingButton extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Today's Priority Focus Card
-// ---------------------------------------------------------------------------
-
-class _TodayPriorityCard extends ConsumerWidget {
-  const _TodayPriorityCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final focusTaskAsync = ref.watch(todayFocusTaskProvider);
-    final streakAsync = ref.watch(currentStreakStreamProvider);
-    final streak = streakAsync.value ?? 0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.bgSurface.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: context.divider.withValues(alpha: 0.6),
-          width: 1.0,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.flag_rounded, size: 16, color: context.accentPrimary),
-                  const SizedBox(width: 6),
-                  Text(
-                    'TODAY\'S PRIORITY',
-                    style: GoogleFonts.jetBrainsMono(
-                      color: context.accentPrimary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.7,
-                    ),
-                  ),
-                ],
-              ),
-              if (streak > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.local_fire_department_rounded, size: 12, color: Color(0xFFF59E0B)),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$streak day streak',
-                        style: const TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFF59E0B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          focusTaskAsync.when(
-            loading: () => SkeletonShimmer(height: 44, radius: 10),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (task) {
-              if (task == null) {
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'No priority task set for today',
-                            style: AscentTextStyles.bodyMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Plan your day or pick a study milestone',
-                            style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    AscentButton.secondary(
-                      label: 'Tasks',
-                      icon: Icons.checklist_rounded,
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        context.push('/today');
-                      },
-                    ),
-                  ],
-                );
-              }
-
-              return Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task.title,
-                          style: AscentTextStyles.bodyLarge.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          task.priority.toUpperCase(),
-                          style: AscentTextStyles.monoCode.copyWith(
-                            fontSize: 10,
-                            color: context.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.accentPrimary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    icon: const Icon(Icons.timer_outlined, size: 16),
-                    label: const Text('Focus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      context.push('/focus');
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Quick Life Modules Hub (Transparent Bordered Navigation Cards)
@@ -945,15 +781,8 @@ class _ActivityHubCardState extends ConsumerState<_ActivityHubCard> {
               // Add activity button
               InkWell(
                 onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: context.bgSurface,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                    ),
-                    builder: (_) => const AddTaskSheet(),
-                  );
+                  HapticFeedback.lightImpact();
+                  AddActivitySheet.show(context);
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
@@ -1076,13 +905,22 @@ class _ActivityRowItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
+    final isPaused = activity.status == TodayActivityStatus.paused;
 
     return Dismissible(
       key: ValueKey(activity.id),
       direction: DismissDirection.endToStart,
       onDismissed: (_) async {
-        if (activity.linkedTaskId != null) {
-          await ref.read(taskDaoProvider).deleteTask(activity.linkedTaskId!);
+        HapticFeedback.mediumImpact();
+        await deleteTodayActivity(ref, activity);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Activity "${activity.title}" deleted'),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
         }
       },
       background: Container(
@@ -1096,27 +934,85 @@ class _ActivityRowItem extends ConsumerWidget {
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 7),
-        child: InkWell(
-          onTap: () async {
-            await ref.read(timeTrackingProvider.notifier).switchToTask(
-              title: activity.title,
-              taskId: activity.linkedTaskId,
-              sourceType: activity.sourceType,
-              autoStart: !isRunning,
-            );
-            if (context.mounted) {
-              context.push('/focus');
-            }
-          },
-          child: Row(
-            children: [
-              Icon(
-                isDone ? Icons.check_circle_outline_rounded : Icons.radio_button_unchecked_rounded,
-                color: isDone ? context.accentSecondary : context.divider,
-                size: 20,
+        child: Row(
+          children: [
+            // 1. Completion Checkbox (or duration indicator)
+            if (activity.kind == ActivityKind.todo)
+              InkWell(
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  if (activity.linkedTaskId != null) {
+                    await ref.read(taskDaoProvider).toggleTaskCompletion(
+                          activity.linkedTaskId!,
+                          !isDone,
+                        );
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                    color: isDone ? context.accentSecondary : context.divider,
+                    size: 22,
+                  ),
+                ),
+              )
+            else
+              InkWell(
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  if (activity.linkedTaskId != null) {
+                    await ref.read(taskDaoProvider).toggleTaskCompletion(
+                          activity.linkedTaskId!,
+                          !isDone,
+                        );
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    isDone
+                        ? Icons.check_circle_rounded
+                        : (activity.kind == ActivityKind.duration
+                            ? Icons.timer_outlined
+                            : Icons.all_inclusive_rounded),
+                    color: isDone
+                        ? context.accentSecondary
+                        : (isRunning ? context.accentSecondary : context.textMuted),
+                    size: 22,
+                  ),
+                ),
               ),
-              const SizedBox(width: 9),
-              Expanded(
+
+            const SizedBox(width: 8),
+
+            // 2. Activity Info (Title, Subtitle/Duration/Tags)
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  if (activity.kind == ActivityKind.todo) {
+                    // Open task editor
+                    if (activity.linkedTaskId != null) {
+                      final task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                      if (context.mounted) {
+                        AddActivitySheet.show(context, existingTask: task);
+                      }
+                    }
+                  } else {
+                    // Duration or flexible: start or open focus
+                    await ref.read(timeTrackingProvider.notifier).switchToTask(
+                          title: activity.title,
+                          taskId: activity.linkedTaskId,
+                          sourceType: activity.sourceType,
+                          autoStart: !isRunning,
+                        );
+                    if (context.mounted) {
+                      context.push('/focus');
+                    }
+                  }
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -1124,7 +1020,7 @@ class _ActivityRowItem extends ConsumerWidget {
                       activity.title,
                       style: TextStyle(
                         fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: isDone ? context.textMuted : context.textPrimary,
                         decoration: isDone ? TextDecoration.lineThrough : null,
                       ),
@@ -1132,39 +1028,136 @@ class _ActivityRowItem extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: context.bgBase,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Task',
-                        style: TextStyle(fontSize: 9.5, color: context.textMuted),
-                      ),
+                    Row(
+                      children: [
+                        // Type Tag / Priority Tag
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: context.bgBase,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            activity.kind == ActivityKind.todo
+                                ? (activity.priority != null ? activity.priority!.toUpperCase() : 'TASK')
+                                : (activity.kind == ActivityKind.duration
+                                    ? '${activity.targetMinutes ?? 30} MIN'
+                                    : 'FLEXIBLE'),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w600,
+                              color: activity.priority == 'high'
+                                  ? context.stateDanger
+                                  : context.textMuted,
+                            ),
+                          ),
+                        ),
+
+                        if (activity.isOverdue) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: context.stateDanger.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'OVERDUE',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.bold,
+                                color: context.stateDanger,
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        if (activity.kind == ActivityKind.duration && activity.targetMinutes != null) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            activity.elapsedSecondsToday > 0
+                                ? '${activity.elapsedSecondsToday ~/ 60}m tracked'
+                                : '${activity.targetMinutes}m target',
+                            style: TextStyle(fontSize: 10, color: context.textMuted),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isRunning ? context.accentSecondary.withValues(alpha: 0.12) : context.bgBase,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  activity.elapsedSecondsToday > 0
-                      ? _formatTime(activity.elapsedSecondsToday)
-                      : 'Start',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isRunning ? context.accentSecondary : context.textMuted,
+            ),
+
+            const SizedBox(width: 8),
+
+            // 3. Right Action: Play / Pause / Start for Timed & Flexible; nothing for To-do
+            if (activity.kind != ActivityKind.todo)
+              InkWell(
+                onTap: () async {
+                  HapticFeedback.lightImpact();
+                  if (isRunning) {
+                    ref.read(timeTrackingProvider.notifier).pauseSession();
+                  } else if (isPaused) {
+                    ref.read(timeTrackingProvider.notifier).resumeSession();
+                  } else {
+                    await ref.read(timeTrackingProvider.notifier).switchToTask(
+                          title: activity.title,
+                          taskId: activity.linkedTaskId,
+                          sourceType: activity.sourceType,
+                          autoStart: true,
+                        );
+                    if (context.mounted) {
+                      context.push('/focus');
+                    }
+                  }
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isRunning
+                        ? context.accentSecondary.withValues(alpha: 0.15)
+                        : (isPaused
+                            ? Colors.orange.withValues(alpha: 0.15)
+                            : context.bgBase),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isRunning
+                          ? context.accentSecondary.withValues(alpha: 0.4)
+                          : context.divider,
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isRunning
+                            ? Icons.pause_rounded
+                            : (isPaused ? Icons.play_arrow_rounded : Icons.play_arrow_rounded),
+                        size: 14,
+                        color: isRunning
+                            ? context.accentSecondary
+                            : (isPaused ? Colors.orange : context.textPrimary),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        activity.elapsedSecondsToday > 0
+                            ? _formatTime(activity.elapsedSecondsToday)
+                            : (activity.kind == ActivityKind.duration ? 'Start' : 'Track'),
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: isRunning
+                              ? context.accentSecondary
+                              : (isPaused ? Colors.orange : context.textPrimary),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
@@ -1238,7 +1231,10 @@ class _LearningHubCard extends ConsumerWidget {
           // 4 Metric Chips
           Row(
             children: [
-              _MetricPill(icon: Icons.menu_book_outlined, label: '1 Course'),
+              _MetricPill(
+                icon: Icons.menu_book_outlined,
+                label: '${state.courses.length} Course${state.courses.length == 1 ? "" : "s"}',
+              ),
               const SizedBox(width: 6),
               _MetricPill(icon: Icons.folder_outlined, label: '${course.modules.length} Modules'),
               const SizedBox(width: 6),
@@ -1267,9 +1263,9 @@ class _LearningHubCard extends ConsumerWidget {
                       child: Text(
                         course.title,
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: context.textMuted,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: context.accentSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1299,14 +1295,56 @@ class _LearningHubCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
 
-                // Compact Continue Lecture Button
-                AscentButton.primary(
-                  label: 'Continue Lecture ${active.id}',
-                  icon: Icons.play_circle_outline_rounded,
-                  compact: true,
-                  onPressed: () {
-                    LectureFocusPlayerSheet.show(context);
-                  },
+                // Compact Continue/Focus Lecture Button
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: state.isPlaying
+                              ? Colors.orange.shade700
+                              : context.accentSecondary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: Icon(
+                          state.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+                          size: 18,
+                        ),
+                        label: Text(
+                          state.isPlaying
+                              ? 'Live Focus: ${state.formattedElapsed} • Tap to pause'
+                              : 'Continue Lecture ${active.id}',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          if (state.isPlaying) {
+                            ref.read(learningHubProvider.notifier).pause();
+                          } else {
+                            ref.read(learningHubProvider.notifier).play();
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: 'Open Player',
+                      icon: const Icon(Icons.open_in_full_rounded, size: 18),
+                      color: context.textMuted,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        LectureFocusPlayerSheet.show(context);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),

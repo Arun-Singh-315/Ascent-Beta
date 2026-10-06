@@ -347,16 +347,27 @@ enum TodayActivityStatus {
   done,
 }
 
+enum ActivityKind {
+  todo,
+  duration,
+  flexible,
+}
+
 class TodayActivityItem {
   final String id;
   final String title;
-  final String sourceType; // 'task' | 'dsa' | 'prep' | 'custom'
+  final String sourceType; // 'task' | 'dsa' | 'prep' | 'custom' | 'session'
   final TodayActivityStatus status;
   final int elapsedSecondsToday;
   final int? linkedTaskId;
   final int? linkedSessionId;
   final String categoryTag;
   final String? priority;
+  final ActivityKind kind;
+  final int? targetMinutes;
+  final DateTime? plannedDate;
+  final bool isOverdue;
+  final String? notes;
 
   const TodayActivityItem({
     required this.id,
@@ -368,6 +379,11 @@ class TodayActivityItem {
     this.linkedSessionId,
     required this.categoryTag,
     this.priority,
+    this.kind = ActivityKind.todo,
+    this.targetMinutes,
+    this.plannedDate,
+    this.isOverdue = false,
+    this.notes,
   });
 
   TodayActivityItem copyWith({
@@ -380,6 +396,11 @@ class TodayActivityItem {
     int? linkedSessionId,
     String? categoryTag,
     String? priority,
+    ActivityKind? kind,
+    int? targetMinutes,
+    DateTime? plannedDate,
+    bool? isOverdue,
+    String? notes,
   }) {
     return TodayActivityItem(
       id: id ?? this.id,
@@ -391,6 +412,11 @@ class TodayActivityItem {
       linkedSessionId: linkedSessionId ?? this.linkedSessionId,
       categoryTag: categoryTag ?? this.categoryTag,
       priority: priority ?? this.priority,
+      kind: kind ?? this.kind,
+      targetMinutes: targetMinutes ?? this.targetMinutes,
+      plannedDate: plannedDate ?? this.plannedDate,
+      isOverdue: isOverdue ?? this.isOverdue,
+      notes: notes ?? this.notes,
     );
   }
 }

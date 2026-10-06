@@ -1,14 +1,15 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/database/app_database.dart';
+import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -25,11 +26,15 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
   bool _isLoading = false;
+  final Set<int> _executedActionMessageIds = {};
 
   List<String> get _quickPrompts => [
     'Plan my day',
+    'Need to call Saurabh at 2',
+    'Complete Java Spring Boot today',
+    'Study Java for 2 hours today',
+    'Finished first two lectures',
     'Spent ₹120 on lunch',
-    'Remind me to study tomorrow',
     'How am I doing today?',
     'Log 500ml water',
   ];
@@ -57,11 +62,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final prompt = text.trim();
     if (prompt.isEmpty || _isLoading) return;
 
+    HapticFeedback.lightImpact();
     _textController.clear();
     setState(() => _isLoading = true);
 
     final aiDao = ref.read(aiAssistantDaoProvider);
-    final name = ref.read(assistantNameProvider);
 
     // 1. Insert user message
     await aiDao.insertMessage(
@@ -72,22 +77,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     );
     _scrollToBottom();
 
-    // 2. Check for reminder intent first (handled locally without full AI engine)
-    final lower = prompt.toLowerCase();
-    if (lower.startsWith('remind') || lower.contains('remind me')) {
-      await _processReminderIntent(prompt, name);
-      if (mounted) {
-        setState(() => _isLoading = false);
-        _scrollToBottom();
-      }
-      return;
-    }
-
-    // 3. Process via Local Deterministic AI Engine
+    // 2. Process via Deterministic AI Engine (handles tasks, durations, reminders, lectures, finances, queries)
     final engine = ref.read(aiEngineProvider);
     final response = await engine.processUserPrompt(prompt, ref);
 
-    // 4. Serialize proposed action if any
+    // 3. Serialize proposed action if any
     String? actionType;
     String? actionPayload;
     if (response.proposedAction != null) {
@@ -96,10 +90,15 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         'title': response.proposedAction!.title,
         'summary': response.proposedAction!.summary,
         'payload': response.proposedAction!.payload,
+        'quickOptions': response.clarifyingOptions,
+      });
+    } else if (response.clarifyingOptions.isNotEmpty) {
+      actionPayload = jsonEncode({
+        'quickOptions': response.clarifyingOptions,
       });
     }
 
-    // 5. Save assistant response
+    // 4. Save assistant response
     await aiDao.insertMessage(
       AiChatMessageTableCompanion.insert(
         sender: 'assistant',
@@ -115,63 +114,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     }
   }
 
-  Future<void> _processReminderIntent(String text, String assistantName) async {
-    final lower = text.toLowerCase();
-
-    Duration offset = const Duration(minutes: 30);
-    final minMatch = RegExp(r'in\s+(\d+)\s*(?:mins?|minutes?|m\b)', caseSensitive: false).firstMatch(lower);
-    final hourMatch = RegExp(r'in\s+(\d+)\s*(?:hours?|hrs?|h\b)', caseSensitive: false).firstMatch(lower);
-
-    if (minMatch != null) {
-      final mins = int.tryParse(minMatch.group(1) ?? '30') ?? 30;
-      offset = Duration(minutes: mins);
-    } else if (hourMatch != null) {
-      final hrs = int.tryParse(hourMatch.group(1) ?? '1') ?? 1;
-      offset = Duration(hours: hrs);
-    }
-
-    String title = text;
-    final remindToMatch = RegExp(r'remind\s+(?:me\s+)?(?:to\s+)?(.+?)(?:\s+in\s+\d+|\s+at\s+|$)', caseSensitive: false).firstMatch(text);
-    if (remindToMatch != null) {
-      title = remindToMatch.group(1)?.trim() ?? text;
-    }
-    if (title.isEmpty) title = 'Task reminder';
-    if (title.isNotEmpty) title = title[0].toUpperCase() + title.substring(1);
-
-    final scheduledAt = DateTime.now().add(offset);
-    final reminderDao = ref.read(reminderDaoProvider);
-
-    final id = await reminderDao.insertReminder(
-      ReminderTableCompanion.insert(
-        title: title,
-        scheduledAt: scheduledAt,
-        isActive: const drift.Value(true),
-      ),
-    );
-
-    try {
-      await NotificationService.instance.scheduleReminderNotification(
-        id: id,
-        title: title,
-        scheduledAt: scheduledAt,
-      );
-    } catch (_) {}
-
-    final timeStr = DateFormat('HH:mm').format(scheduledAt);
-    final replyText = '$assistantName: Scheduled reminder "$title" for today at $timeStr. I\'ll notify you on time.';
-
-    final aiDao = ref.read(aiAssistantDaoProvider);
-    await aiDao.insertMessage(
-      AiChatMessageTableCompanion.insert(
-        sender: 'assistant',
-        message: replyText,
-      ),
-    );
-  }
-
-  Future<void> _executeApprovedAction(String actionType, Map<String, dynamic> actionData) async {
+  Future<void> _executeApprovedAction(int messageId, String actionType, Map<String, dynamic> actionData) async {
+    HapticFeedback.mediumImpact();
     final payload = actionData['payload'] as Map<String, dynamic>? ?? {};
     final name = ref.read(assistantNameProvider);
+
+    setState(() {
+      _executedActionMessageIds.add(messageId);
+    });
 
     if (actionType == AiActionType.expenseLogged.name) {
       final amt = (payload['amount'] as num?)?.toDouble() ?? 0.0;
@@ -192,31 +142,108 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Expense ₹${amt.toStringAsFixed(0)} saved!'),
+            content: Text('Expense of ₹${amt.toStringAsFixed(0)} saved to finances!'),
             duration: const Duration(seconds: 2),
           ),
         );
       }
-    } else if (actionType == AiActionType.taskCreated.name) {
-      final title = payload['title']?.toString() ?? 'Task';
+    } else if (actionType == AiActionType.taskCreated.name || actionType == AiActionType.activityCreated.name) {
+      final title = payload['title']?.toString() ?? 'Focus Activity';
       final planned = payload['plannedDate'] != null
           ? DateTime.parse(payload['plannedDate'])
           : DateTime.now();
       final priority = payload['priority']?.toString() ?? 'medium';
+      final estimatedMinutes = (payload['estimatedMinutes'] as num?)?.toInt();
 
       await ref.read(taskDaoProvider).insertTask(
         TaskTableCompanion.insert(
           title: title,
           plannedDate: drift.Value(planned),
           priority: drift.Value(priority),
+          estimatedMinutes: drift.Value(estimatedMinutes),
         ),
       );
+
+      // Handle reminder if specified
+      if (payload['reminderTime'] != null) {
+        final reminderTime = DateTime.parse(payload['reminderTime']);
+        final reminderId = await ref.read(reminderDaoProvider).insertReminder(
+          ReminderTableCompanion.insert(
+            title: title,
+            scheduledAt: reminderTime,
+            isActive: const drift.Value(true),
+          ),
+        );
+        try {
+          await NotificationService.instance.scheduleReminderNotification(
+            id: reminderId,
+            title: title,
+            scheduledAt: reminderTime,
+          );
+        } catch (_) {}
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Task "$title" added!'),
-            duration: const Duration(seconds: 2),
+            content: Text('"$title" added to Activity Hub!'),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        );
+      }
+    } else if (actionType == AiActionType.lectureMarkedComplete.name) {
+      final rawIds = payload['lectureIds'] as List?;
+      final lectureIds = rawIds?.map((e) => (e as num).toInt()).toList() ?? [];
+
+      for (final id in lectureIds) {
+        ref.read(learningHubProvider.notifier).markLectureCompleted(id, completed: true);
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Marked ${lectureIds.length} lecture(s) completed in course! 🎉'),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Open Course',
+              textColor: Colors.white,
+              onPressed: () => Navigator.of(context).pushNamed('/study-plan'),
+            ),
+          ),
+        );
+      }
+    } else if (actionType == AiActionType.scheduleRearranged.name) {
+      if (payload['taskId'] != null && payload['newDate'] != null) {
+        final taskId = (payload['taskId'] as num).toInt();
+        final newDate = DateTime.parse(payload['newDate']);
+        final taskDao = ref.read(taskDaoProvider);
+        await (taskDao.update(taskDao.taskTable)..where((t) => t.id.equals(taskId)))
+            .write(TaskTableCompanion(plannedDate: drift.Value(newDate)));
+      } else if (payload['taskIds'] != null && payload['newDate'] != null) {
+        final taskIds = (payload['taskIds'] as List).map((e) => (e as num).toInt());
+        final newDate = DateTime.parse(payload['newDate']);
+        final taskDao = ref.read(taskDaoProvider);
+        for (final tid in taskIds) {
+          await (taskDao.update(taskDao.taskTable)..where((t) => t.id.equals(tid)))
+              .write(TaskTableCompanion(plannedDate: drift.Value(newDate)));
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Schedule rearranged! Check Activity Hub.'),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
         );
       }
@@ -234,11 +261,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     } else if (actionType == AiActionType.dailyPlanSuggested.name) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Daily plan noted! Check your Activity Hub.'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: const Text('Daily plan active! Check Activity Hub.'),
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'View',
+              textColor: Colors.white,
+              onPressed: () => Navigator.of(context).pop(),
+            ),
           ),
         );
+      }
+    } else if (actionType == AiActionType.generalResponse.name) {
+      if (payload['action'] == 'open_study') {
+        Navigator.of(context).pushNamed('/study-plan');
       }
     }
   }
@@ -261,13 +297,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         title: Row(
           children: [
             Container(
-              width: 30,
-              height: 30,
+              width: 32,
+              height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: accentColor.withValues(alpha: 0.12),
               ),
-              child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 16),
+              child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 17),
             ),
             const SizedBox(width: 10),
             Column(
@@ -337,20 +373,20 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Your personal AI assistant. I can log expenses, add tasks, track water, plan your day, and more — all on your device, completely private.',
+                        'Your on-device life & learning assistant. I can schedule activities, manage your study sessions, track finances, and plan your day — privately and without internet.',
                         textAlign: TextAlign.center,
                         style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted, height: 1.45),
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Try asking:',
+                        'Try asking naturally:',
                         style: AscentTextStyles.labelSmall.copyWith(
                           color: context.textMuted,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ..._quickPrompts.map((p) => Padding(
+                      ..._quickPrompts.take(4).map((p) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: InkWell(
                           onTap: () => _handleSubmitted(p),
@@ -391,11 +427,19 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     final isUser = msg.sender == 'user';
 
                     Map<String, dynamic>? actionData;
+                    List<String> messageQuickChips = [];
                     if (msg.actionPayloadJson != null) {
                       try {
                         actionData = jsonDecode(msg.actionPayloadJson!);
+                        if (actionData?['quickOptions'] is List) {
+                          messageQuickChips = (actionData!['quickOptions'] as List)
+                              .map((e) => e.toString())
+                              .toList();
+                        }
                       } catch (_) {}
                     }
+
+                    final isExecuted = _executedActionMessageIds.contains(msg.id);
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -417,7 +461,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           ],
                           Container(
                             constraints: BoxConstraints(
-                              maxWidth: MediaQuery.of(context).size.width * 0.82,
+                              maxWidth: MediaQuery.of(context).size.width * 0.85,
                             ),
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
@@ -439,25 +483,35 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             ),
                           ),
 
-                          // Action confirmation card
-                          if (!isUser && msg.actionType != null && actionData != null) ...[
+                          // Action confirmation / interactive card
+                          if (!isUser && msg.actionType != null && actionData != null && actionData['title'] != null) ...[
                             const SizedBox(height: 8),
                             Container(
                               constraints: BoxConstraints(
-                                maxWidth: MediaQuery.of(context).size.width * 0.85,
+                                maxWidth: MediaQuery.of(context).size.width * 0.88,
                               ),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: accentColor.withValues(alpha: 0.07),
+                                color: isExecuted
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.08)
+                                    : accentColor.withValues(alpha: 0.07),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: accentColor.withValues(alpha: 0.25)),
+                                border: Border.all(
+                                  color: isExecuted
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.3)
+                                      : accentColor.withValues(alpha: 0.25),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     children: [
-                                      Icon(Icons.bolt_rounded, size: 15, color: accentColor),
+                                      Icon(
+                                        isExecuted ? Icons.check_circle_rounded : Icons.bolt_rounded,
+                                        size: 16,
+                                        color: isExecuted ? const Color(0xFF10B981) : accentColor,
+                                      ),
                                       const SizedBox(width: 6),
                                       Expanded(
                                         child: Text(
@@ -471,20 +525,101 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                     ],
                                   ),
                                   if (actionData['summary'] != null) ...[
-                                    const SizedBox(height: 3),
+                                    const SizedBox(height: 4),
                                     Text(
                                       actionData['summary'].toString(),
                                       style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                                     ),
                                   ],
                                   const SizedBox(height: 10),
-                                  AscentButton.primary(
-                                    label: 'Confirm & Save',
-                                    compact: true,
-                                    onPressed: () => _executeApprovedAction(msg.actionType!, actionData!),
-                                  ),
+                                  if (!isExecuted)
+                                    Row(
+                                      children: [
+                                        AscentButton.primary(
+                                          label: 'Confirm & Save',
+                                          compact: true,
+                                          onPressed: () => _executeApprovedAction(msg.id, msg.actionType!, actionData!),
+                                        ),
+                                      ],
+                                    )
+                                  else
+                                    Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.check, size: 12, color: Color(0xFF10B981)),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'Saved to SQLite',
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: const Color(0xFF10B981),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const Spacer(),
+                                        TextButton(
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          onPressed: () {
+                                            if (msg.actionType == AiActionType.lectureMarkedComplete.name) {
+                                              Navigator.of(context).pushNamed('/study-plan');
+                                            } else {
+                                              Navigator.of(context).pop();
+                                            }
+                                          },
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                msg.actionType == AiActionType.lectureMarkedComplete.name
+                                                    ? 'Open Course'
+                                                    : 'View in Hub',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: accentColor,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 2),
+                                              Icon(Icons.arrow_forward_rounded, size: 12, color: accentColor),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                 ],
                               ),
+                            ),
+                          ],
+
+                          // Clarifying action chips under assistant message
+                          if (!isUser && messageQuickChips.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: messageQuickChips.map((chipText) {
+                                return ActionChip(
+                                  label: Text(chipText, style: const TextStyle(fontSize: 11)),
+                                  backgroundColor: context.bgSurface,
+                                  side: BorderSide(color: accentColor.withValues(alpha: 0.3)),
+                                  onPressed: () => _handleSubmitted(chipText),
+                                );
+                              }).toList(),
                             ),
                           ],
                         ],

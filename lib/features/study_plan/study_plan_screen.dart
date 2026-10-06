@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
+import 'add_course_sheet.dart';
 import 'lecture_focus_player_sheet.dart';
 
 class StudyPlanScreen extends ConsumerStatefulWidget {
@@ -29,6 +30,16 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
     super.dispose();
   }
 
+  void _showCourseSwitcher(BuildContext context, LearningHubState state, LearningHubNotifier notifier) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _CourseSwitcherSheet(state: state, notifier: notifier),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(learningHubProvider);
@@ -46,21 +57,48 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
           color: context.textPrimary,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: Text(
-          course.title,
-          style: GoogleFonts.plusJakartaSans(
-            color: context.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+        title: InkWell(
+          onTap: () => _showCourseSwitcher(context, state, notifier),
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    course.title,
+                    style: GoogleFonts.plusJakartaSans(
+                      color: context.textPrimary,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 20,
+                  color: context.accentSecondary,
+                ),
+              ],
+            ),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Add Course',
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            color: context.accentSecondary,
+            onPressed: () => AddCourseSheet.show(context),
+          ),
+          IconButton(
+            tooltip: 'Switch Course',
+            icon: const Icon(Icons.swap_horiz_rounded),
             color: context.textPrimary,
-            onPressed: () {},
+            onPressed: () => _showCourseSwitcher(context, state, notifier),
           ),
         ],
       ),
@@ -625,3 +663,160 @@ class _CourseNotesView extends StatelessWidget {
     );
   }
 }
+
+class _CourseSwitcherSheet extends StatelessWidget {
+  final LearningHubState state;
+  final LearningHubNotifier notifier;
+
+  const _CourseSwitcherSheet({required this.state, required this.notifier});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
+      ),
+      decoration: BoxDecoration(
+        color: context.bgSurface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.swap_horiz_rounded, color: context.accentSecondary, size: 22),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Switch Course',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: context.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  TextButton.icon(
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('New Course'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      AddCourseSheet.show(context);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: state.courses.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final c = state.courses[index];
+                    final isSelected = c.id == state.activeCourseId;
+
+                    return InkWell(
+                      onTap: () {
+                        notifier.switchCourse(c.id);
+                        Navigator.of(context).pop();
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? context.accentSecondary.withValues(alpha: 0.10)
+                              : context.bgBase,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: isSelected
+                                ? context.accentSecondary
+                                : context.divider.withValues(alpha: 0.6),
+                            width: isSelected ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: isSelected
+                                  ? context.accentSecondary
+                                  : context.divider.withValues(alpha: 0.4),
+                              child: Icon(
+                                isSelected ? Icons.check_rounded : Icons.school_outlined,
+                                size: 18,
+                                color: isSelected ? Colors.white : context.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    c.title,
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      color: context.textPrimary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${c.modules.length} modules • ${c.totalLectures} lectures • ${c.progressPercent}% completed',
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: isSelected ? context.accentSecondary : context.textMuted,
+                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (state.courses.length > 1)
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                                color: context.stateDanger,
+                                onPressed: () {
+                                  notifier.deleteCourse(c.id);
+                                },
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

@@ -7,44 +7,81 @@ import '../providers/settings_provider.dart';
 import 'default_course_data.dart';
 import 'learning_hub_models.dart';
 
-const _kLearningProgressKey = 'ascent_learning_hub_lecture_progress_v2';
-const _kActiveLectureIdKey = 'ascent_learning_hub_active_lecture_id_v2';
+const _kCoursesListKey = 'ascent_learning_hub_courses_v3';
+const _kActiveCourseIdKey = 'ascent_learning_hub_active_course_v3';
+const _kActiveLectureIdKey = 'ascent_learning_hub_active_lecture_id_v3';
+const _kLegacyProgressKey = 'ascent_learning_hub_lecture_progress_v2';
+const _kLegacyActiveLectureIdKey = 'ascent_learning_hub_active_lecture_id_v2';
 
 class LearningHubState {
-  final Course course;
+  final List<Course> courses;
+  final String activeCourseId;
   final int activeLectureId;
   final bool isPlaying;
   final int currentElapsedSeconds;
   final bool isLiveFocusActive;
+  final bool isFloatingDismissed;
+  final DateTime? playStartedAt;
+  final int sessionBaseElapsed;
 
   const LearningHubState({
-    required this.course,
+    required this.courses,
+    required this.activeCourseId,
     required this.activeLectureId,
     this.isPlaying = false,
     this.currentElapsedSeconds = 0,
     this.isLiveFocusActive = false,
+    this.isFloatingDismissed = false,
+    this.playStartedAt,
+    this.sessionBaseElapsed = 0,
   });
 
+  Course get course {
+    for (final c in courses) {
+      if (c.id == activeCourseId) return c;
+    }
+    return courses.isNotEmpty ? courses.first : buildDefaultSpringBootCourse();
+  }
+
   Lecture get activeLecture {
-    for (final module in course.modules) {
+    final curCourse = course;
+    for (final module in curCourse.modules) {
       for (final lecture in module.lectures) {
         if (lecture.id == activeLectureId) {
           return lecture;
         }
       }
     }
-    return course.modules.first.lectures.first;
+    if (curCourse.modules.isNotEmpty && curCourse.modules.first.lectures.isNotEmpty) {
+      return curCourse.modules.first.lectures.first;
+    }
+    return const Lecture(
+      id: 1,
+      moduleId: 1,
+      moduleTitle: 'General',
+      title: 'Introduction',
+      durationSeconds: 300,
+    );
   }
 
   CourseModule get activeModule {
-    for (final module in course.modules) {
+    final curCourse = course;
+    for (final module in curCourse.modules) {
       for (final lecture in module.lectures) {
         if (lecture.id == activeLectureId) {
           return module;
         }
       }
     }
-    return course.modules.first;
+    if (curCourse.modules.isNotEmpty) {
+      return curCourse.modules.first;
+    }
+    return const CourseModule(
+      id: 1,
+      title: 'General Module',
+      durationHours: 1.0,
+      lectures: [],
+    );
   }
 
   int get remainingSeconds {
@@ -72,18 +109,26 @@ class LearningHubState {
   }
 
   LearningHubState copyWith({
-    Course? course,
+    List<Course>? courses,
+    String? activeCourseId,
     int? activeLectureId,
     bool? isPlaying,
     int? currentElapsedSeconds,
     bool? isLiveFocusActive,
+    bool? isFloatingDismissed,
+    DateTime? playStartedAt,
+    int? sessionBaseElapsed,
   }) {
     return LearningHubState(
-      course: course ?? this.course,
+      courses: courses ?? this.courses,
+      activeCourseId: activeCourseId ?? this.activeCourseId,
       activeLectureId: activeLectureId ?? this.activeLectureId,
       isPlaying: isPlaying ?? this.isPlaying,
       currentElapsedSeconds: currentElapsedSeconds ?? this.currentElapsedSeconds,
       isLiveFocusActive: isLiveFocusActive ?? this.isLiveFocusActive,
+      isFloatingDismissed: isFloatingDismissed ?? this.isFloatingDismissed,
+      playStartedAt: playStartedAt ?? this.playStartedAt,
+      sessionBaseElapsed: sessionBaseElapsed ?? this.sessionBaseElapsed,
     );
   }
 }
@@ -95,14 +140,33 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   @override
   LearningHubState build() {
     final prefs = ref.watch(sharedPreferencesProvider);
-    final initialCourse = _loadStoredProgress(prefs);
-    final activeId = prefs.getInt(_kActiveLectureIdKey) ?? 1;
+    final initialCourses = _loadStoredCourses(prefs);
+    final activeCourseId = prefs.getString(_kActiveCourseIdKey) ??
+        (initialCourses.isNotEmpty ? initialCourses.first.id : 'spring_boot_mastery');
 
-    Lecture initialActive = initialCourse.modules.first.lectures.first;
-    for (final m in initialCourse.modules) {
+    Course activeCourse = initialCourses.firstWhere(
+      (c) => c.id == activeCourseId,
+      orElse: () => initialCourses.first,
+    );
+
+    final activeLectureId = prefs.getInt(_kActiveLectureIdKey) ??
+        prefs.getInt(_kLegacyActiveLectureIdKey) ??
+        (activeCourse.modules.isNotEmpty && activeCourse.modules.first.lectures.isNotEmpty
+            ? activeCourse.modules.first.lectures.first.id
+            : 1);
+
+    Lecture activeLecture = const Lecture(
+      id: 1,
+      moduleId: 1,
+      moduleTitle: 'General',
+      title: 'Introduction',
+      durationSeconds: 300,
+    );
+
+    for (final m in activeCourse.modules) {
       for (final l in m.lectures) {
-        if (l.id == activeId) {
-          initialActive = l;
+        if (l.id == activeLectureId) {
+          activeLecture = l;
           break;
         }
       }
@@ -114,85 +178,94 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     });
 
     return LearningHubState(
-      course: initialCourse,
-      activeLectureId: activeId,
-      currentElapsedSeconds: initialActive.elapsedSeconds,
+      courses: initialCourses,
+      activeCourseId: activeCourse.id,
+      activeLectureId: activeLecture.id,
+      currentElapsedSeconds: activeLecture.elapsedSeconds,
       isPlaying: false,
     );
   }
 
-  Course _loadStoredProgress(SharedPreferences prefs) {
-    final baseCourse = buildDefaultSpringBootCourse();
-    final rawJson = prefs.getString(_kLearningProgressKey);
-    if (rawJson == null) return baseCourse;
+  List<Course> _loadStoredCourses(SharedPreferences prefs) {
+    final rawJson = prefs.getString(_kCoursesListKey);
+    if (rawJson != null) {
+      try {
+        final List<dynamic> list = jsonDecode(rawJson);
+        final courses = list.map((item) => Course.fromJson(item as Map<String, dynamic>)).toList();
+        if (courses.isNotEmpty) {
+          return courses;
+        }
+      } catch (_) {}
+    }
 
-    try {
-      final Map<String, dynamic> data = jsonDecode(rawJson);
-      final updatedModules = baseCourse.modules.map((module) {
-        final updatedLectures = module.lectures.map((lecture) {
-          final key = lecture.id.toString();
-          if (data.containsKey(key)) {
-            final item = data[key] as Map<String, dynamic>;
-            final elapsed = (item['elapsed'] as num?)?.toInt() ?? lecture.elapsedSeconds;
-            final completed = item['completed'] == true;
-            return lecture.copyWith(
-              elapsedSeconds: elapsed,
-              isCompleted: completed,
-            );
-          }
-          return lecture;
+    // Initialize with default course and apply legacy progress if present
+    final defaultCourse = buildDefaultSpringBootCourse();
+    final legacyRaw = prefs.getString(_kLegacyProgressKey);
+    if (legacyRaw != null) {
+      try {
+        final Map<String, dynamic> data = jsonDecode(legacyRaw);
+        final updatedModules = defaultCourse.modules.map((module) {
+          final updatedLectures = module.lectures.map((lecture) {
+            final key = lecture.id.toString();
+            if (data.containsKey(key)) {
+              final item = data[key] as Map<String, dynamic>;
+              final elapsed = (item['elapsed'] as num?)?.toInt() ?? lecture.elapsedSeconds;
+              final completed = item['completed'] == true;
+              return lecture.copyWith(
+                elapsedSeconds: elapsed,
+                isCompleted: completed,
+              );
+            }
+            return lecture;
+          }).toList();
+
+          return CourseModule(
+            id: module.id,
+            title: module.title,
+            description: module.description,
+            durationHours: module.durationHours,
+            lectures: updatedLectures,
+          );
         }).toList();
 
-        return CourseModule(
-          id: module.id,
-          title: module.title,
-          description: module.description,
-          durationHours: module.durationHours,
-          lectures: updatedLectures,
-        );
-      }).toList();
-
-      return Course(
-        id: baseCourse.id,
-        title: baseCourse.title,
-        description: baseCourse.description,
-        author: baseCourse.author,
-        daysLeft: baseCourse.daysLeft,
-        targetMinutesPerDay: baseCourse.targetMinutesPerDay,
-        modules: updatedModules,
-      );
-    } catch (_) {
-      return baseCourse;
+        final migrated = defaultCourse.copyWith(modules: updatedModules);
+        return [migrated];
+      } catch (_) {}
     }
+
+    return [defaultCourse];
   }
 
-  void _persistProgress() {
+  void _persistCourses() {
     final prefs = ref.read(sharedPreferencesProvider);
-    final Map<String, dynamic> map = {};
-    for (final mod in state.course.modules) {
-      for (final lec in mod.lectures) {
-        map[lec.id.toString()] = {
-          'elapsed': lec.id == state.activeLectureId
-              ? state.currentElapsedSeconds
-              : lec.elapsedSeconds,
-          'completed': lec.isCompleted,
-        };
-      }
-    }
-    prefs.setString(_kLearningProgressKey, jsonEncode(map));
+    final jsonStr = jsonEncode(state.courses.map((c) => c.toJson()).toList());
+    prefs.setString(_kCoursesListKey, jsonStr);
+    prefs.setString(_kActiveCourseIdKey, state.activeCourseId);
     prefs.setInt(_kActiveLectureIdKey, state.activeLectureId);
   }
 
   void play() {
     if (state.isPlaying) return;
-    state = state.copyWith(isPlaying: true, isLiveFocusActive: true);
+
+    final now = DateTime.now();
+    state = state.copyWith(
+      isPlaying: true,
+      isLiveFocusActive: true,
+      isFloatingDismissed: false,
+      playStartedAt: now,
+      sessionBaseElapsed: state.currentElapsedSeconds,
+    );
 
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      final active = state.activeLecture;
-      final newElapsed = state.currentElapsedSeconds + 1;
+      final startedAt = state.playStartedAt;
+      if (startedAt == null) return;
 
-      if (newElapsed >= active.durationSeconds) {
+      final diff = DateTime.now().difference(startedAt).inSeconds;
+      final active = state.activeLecture;
+      final newElapsed = state.sessionBaseElapsed + diff;
+
+      if (active.durationSeconds > 0 && newElapsed >= active.durationSeconds) {
         // Lecture completed automatically
         markLectureCompleted(active.id);
       } else {
@@ -202,16 +275,20 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     });
 
     _flushTimer?.cancel();
-    _flushTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      _persistProgress();
+    _flushTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _persistCourses();
     });
   }
 
   void pause() {
     _ticker?.cancel();
     _flushTimer?.cancel();
-    _persistProgress();
-    state = state.copyWith(isPlaying: false);
+    _persistCourses();
+    state = state.copyWith(
+      isPlaying: false,
+      playStartedAt: null,
+      sessionBaseElapsed: state.currentElapsedSeconds,
+    );
   }
 
   void togglePlayPause() {
@@ -224,28 +301,39 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
   void seekBy(int offsetSeconds) {
     final active = state.activeLecture;
-    final target = (state.currentElapsedSeconds + offsetSeconds)
-        .clamp(0, active.durationSeconds);
-    state = state.copyWith(currentElapsedSeconds: target);
+    final maxDur = active.durationSeconds > 0 ? active.durationSeconds : 3600;
+    final target = (state.currentElapsedSeconds + offsetSeconds).clamp(0, maxDur);
+
+    final now = DateTime.now();
+    state = state.copyWith(
+      currentElapsedSeconds: target,
+      sessionBaseElapsed: target,
+      playStartedAt: state.isPlaying ? now : null,
+    );
     _updateCurrentLectureInCourse(target, active.isCompleted);
-    _persistProgress();
+    _persistCourses();
   }
 
   void seekTo(double fraction) {
     final active = state.activeLecture;
+    if (active.durationSeconds <= 0) return;
     final target = (active.durationSeconds * fraction).round().clamp(0, active.durationSeconds);
-    state = state.copyWith(currentElapsedSeconds: target);
+
+    final now = DateTime.now();
+    state = state.copyWith(
+      currentElapsedSeconds: target,
+      sessionBaseElapsed: target,
+      playStartedAt: state.isPlaying ? now : null,
+    );
     _updateCurrentLectureInCourse(target, active.isCompleted);
-    _persistProgress();
+    _persistCourses();
   }
 
   void selectLecture(int lectureId, {bool autoPlay = false}) {
-    // Save current lecture
-    _persistProgress();
+    _persistCourses();
     _ticker?.cancel();
     _flushTimer?.cancel();
 
-    // Find new lecture
     Lecture? targetLecture;
     for (final mod in state.course.modules) {
       for (final lec in mod.lectures) {
@@ -262,6 +350,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       activeLectureId: lectureId,
       currentElapsedSeconds: targetLecture.elapsedSeconds,
       isPlaying: false,
+      isFloatingDismissed: false,
+      playStartedAt: null,
+      sessionBaseElapsed: targetLecture.elapsedSeconds,
     );
 
     ref.read(sharedPreferencesProvider).setInt(_kActiveLectureIdKey, lectureId);
@@ -271,28 +362,164 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     }
   }
 
-  void markLectureCompleted(int lectureId) {
-    _updateCurrentLectureInCourse(state.currentElapsedSeconds, true, targetLectureId: lectureId);
-    _persistProgress();
+  void markLectureCompleted(int lectureId, {bool? completed}) {
+    final curLec = state.activeLecture;
+    final markValue = completed ?? true;
+    _updateCurrentLectureInCourse(
+      lectureId == curLec.id ? state.currentElapsedSeconds : null,
+      markValue,
+      targetLectureId: lectureId,
+    );
+    _persistCourses();
 
-    // Advance to next lecture if available
-    final allLectures = state.course.modules.expand((m) => m.lectures).toList();
-    final currentIndex = allLectures.indexWhere((l) => l.id == lectureId);
-    if (currentIndex != -1 && currentIndex + 1 < allLectures.length) {
-      final nextLec = allLectures[currentIndex + 1];
-      selectLecture(nextLec.id, autoPlay: state.isPlaying);
-    } else {
-      pause();
+    if (markValue && lectureId == state.activeLectureId) {
+      // Advance to next lecture if available
+      final allLectures = state.course.modules.expand((m) => m.lectures).toList();
+      final currentIndex = allLectures.indexWhere((l) => l.id == lectureId);
+      if (currentIndex != -1 && currentIndex + 1 < allLectures.length) {
+        final nextLec = allLectures[currentIndex + 1];
+        selectLecture(nextLec.id, autoPlay: state.isPlaying);
+      } else {
+        pause();
+      }
     }
   }
 
-  void _updateCurrentLectureInCourse(int elapsed, bool isCompleted, {int? targetLectureId}) {
+  void switchCourse(String courseId) {
+    if (courseId == state.activeCourseId) return;
+
+    pause();
+
+    final target = state.courses.firstWhere(
+      (c) => c.id == courseId,
+      orElse: () => state.courses.first,
+    );
+
+    Lecture active = const Lecture(
+      id: 1,
+      moduleId: 1,
+      moduleTitle: 'General',
+      title: 'Introduction',
+      durationSeconds: 300,
+    );
+
+    final nextUnfinished = target.nextLecture;
+    if (nextUnfinished != null) {
+      active = nextUnfinished;
+    } else if (target.modules.isNotEmpty && target.modules.first.lectures.isNotEmpty) {
+      active = target.modules.first.lectures.first;
+    }
+
+    state = state.copyWith(
+      activeCourseId: target.id,
+      activeLectureId: active.id,
+      currentElapsedSeconds: active.elapsedSeconds,
+      isPlaying: false,
+      isFloatingDismissed: false,
+      playStartedAt: null,
+      sessionBaseElapsed: active.elapsedSeconds,
+    );
+
+    _persistCourses();
+  }
+
+  void addCourse(Course course) {
+    final updated = [...state.courses, course];
+    state = state.copyWith(courses: updated);
+    _persistCourses();
+    switchCourse(course.id);
+  }
+
+  void updateCourse(Course course) {
+    final updated = state.courses.map((c) => c.id == course.id ? course : c).toList();
+    state = state.copyWith(courses: updated);
+    _persistCourses();
+  }
+
+  void deleteCourse(String courseId) {
+    if (state.courses.length <= 1) return; // Keep at least one course
+    final updated = state.courses.where((c) => c.id != courseId).toList();
+    final nextCourseId = courseId == state.activeCourseId ? updated.first.id : state.activeCourseId;
+    state = state.copyWith(courses: updated);
+    _persistCourses();
+    if (courseId == state.activeCourseId) {
+      switchCourse(nextCourseId);
+    }
+  }
+
+  void addModule(String courseId, CourseModule module) {
+    final course = state.courses.firstWhere((c) => c.id == courseId);
+    final updatedModules = [...course.modules, module];
+    final updatedCourse = course.copyWith(modules: updatedModules);
+    updateCourse(updatedCourse);
+  }
+
+  void updateModule(String courseId, CourseModule module) {
+    final course = state.courses.firstWhere((c) => c.id == courseId);
+    final updatedModules = course.modules.map((m) => m.id == module.id ? module : m).toList();
+    final updatedCourse = course.copyWith(modules: updatedModules);
+    updateCourse(updatedCourse);
+  }
+
+  void deleteModule(String courseId, int moduleId) {
+    final course = state.courses.firstWhere((c) => c.id == courseId);
+    final updatedModules = course.modules.where((m) => m.id != moduleId).toList();
+    final updatedCourse = course.copyWith(modules: updatedModules);
+    updateCourse(updatedCourse);
+  }
+
+  void addLecture(String courseId, int moduleId, Lecture lecture) {
+    final course = state.courses.firstWhere((c) => c.id == courseId);
+    final updatedModules = course.modules.map((m) {
+      if (m.id == moduleId) {
+        return m.copyWith(lectures: [...m.lectures, lecture]);
+      }
+      return m;
+    }).toList();
+    final updatedCourse = course.copyWith(modules: updatedModules);
+    updateCourse(updatedCourse);
+  }
+
+  void updateLecture(String courseId, Lecture lecture) {
+    final course = state.courses.firstWhere((c) => c.id == courseId);
+    final updatedModules = course.modules.map((m) {
+      if (m.id == lecture.moduleId) {
+        final updatedLectures = m.lectures.map((l) => l.id == lecture.id ? lecture : l).toList();
+        return m.copyWith(lectures: updatedLectures);
+      }
+      return m;
+    }).toList();
+    final updatedCourse = course.copyWith(modules: updatedModules);
+    updateCourse(updatedCourse);
+  }
+
+  void deleteLecture(String courseId, int lectureId) {
+    final course = state.courses.firstWhere((c) => c.id == courseId);
+    final updatedModules = course.modules.map((m) {
+      final updatedLectures = m.lectures.where((l) => l.id != lectureId).toList();
+      return m.copyWith(lectures: updatedLectures);
+    }).toList();
+    final updatedCourse = course.copyWith(modules: updatedModules);
+    updateCourse(updatedCourse);
+  }
+
+  void dismissFloatingPlayer() {
+    state = state.copyWith(isFloatingDismissed: true);
+  }
+
+  void showFloatingPlayer() {
+    state = state.copyWith(isFloatingDismissed: false);
+  }
+
+  void _updateCurrentLectureInCourse(int? elapsed, bool isCompleted, {int? targetLectureId}) {
     final targetId = targetLectureId ?? state.activeLectureId;
-    final updatedModules = state.course.modules.map((module) {
+    final activeC = state.course;
+
+    final updatedModules = activeC.modules.map((module) {
       final updatedLectures = module.lectures.map((lecture) {
         if (lecture.id == targetId) {
           return lecture.copyWith(
-            elapsedSeconds: elapsed,
+            elapsedSeconds: elapsed ?? lecture.elapsedSeconds,
             isCompleted: isCompleted,
             lastPlayedAt: DateTime.now(),
           );
@@ -309,17 +536,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       );
     }).toList();
 
-    final updatedCourse = Course(
-      id: state.course.id,
-      title: state.course.title,
-      description: state.course.description,
-      author: state.course.author,
-      daysLeft: state.course.daysLeft,
-      targetMinutesPerDay: state.course.targetMinutesPerDay,
-      modules: updatedModules,
-    );
-
-    state = state.copyWith(course: updatedCourse);
+    final updatedCourse = activeC.copyWith(modules: updatedModules);
+    final updatedCourses = state.courses.map((c) => c.id == updatedCourse.id ? updatedCourse : c).toList();
+    state = state.copyWith(courses: updatedCourses);
   }
 }
 

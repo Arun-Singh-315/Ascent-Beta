@@ -363,6 +363,20 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         categoryTag = 'High Priority';
       }
 
+      ActivityKind kind = ActivityKind.todo;
+      int? targetMinutes;
+      if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+        kind = ActivityKind.duration;
+        targetMinutes = task.estimatedMinutes;
+      } else if (task.estimatedMinutes == -1) {
+        kind = ActivityKind.flexible;
+      }
+
+      final isOverdue = status != TodayActivityStatus.done &&
+          task.plannedDate != null &&
+          DateTime(task.plannedDate!.year, task.plannedDate!.month, task.plannedDate!.day)
+              .isBefore(startOfToday);
+
       items.add(TodayActivityItem(
         id: 'task_${task.id}',
         title: task.title,
@@ -373,6 +387,11 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         linkedSessionId: taskSessions.isNotEmpty ? taskSessions.first.id : null,
         categoryTag: categoryTag,
         priority: task.priority,
+        kind: kind,
+        targetMinutes: targetMinutes,
+        plannedDate: task.plannedDate,
+        isOverdue: isOverdue,
+        notes: task.notes,
       ));
     }
 
@@ -416,6 +435,10 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         linkedTaskId: session.linkedTaskId,
         linkedSessionId: session.id,
         categoryTag: categoryTag,
+        kind: ActivityKind.duration,
+        targetMinutes: (session.durationSeconds > 0) ? (session.durationSeconds / 60).round() : null,
+        plannedDate: session.startedAt,
+        isOverdue: false,
       ));
     }
 
@@ -471,4 +494,25 @@ Stream<(T1, T2)> _combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
   );
 
   return controller.stream;
+}
+
+Future<void> deleteTodayActivity(WidgetRef ref, TodayActivityItem activity) async {
+  if (activity.linkedTaskId != null) {
+    await ref.read(taskDaoProvider).deleteTask(activity.linkedTaskId!);
+    final sessions = await ref.read(timeSessionDaoProvider).watchSessionsForDate(DateTime.now()).first;
+    for (final s in sessions) {
+      if (s.linkedTaskId == activity.linkedTaskId) {
+        await ref.read(timeSessionDaoProvider).deleteSession(s.id);
+      }
+    }
+  }
+  if (activity.linkedSessionId != null) {
+    await ref.read(timeSessionDaoProvider).deleteSession(activity.linkedSessionId!);
+  }
+  if (activity.id.startsWith('session_')) {
+    final sId = int.tryParse(activity.id.replaceFirst('session_', ''));
+    if (sId != null) {
+      await ref.read(timeSessionDaoProvider).deleteSession(sId);
+    }
+  }
 }
