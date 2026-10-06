@@ -618,14 +618,18 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Yesterday\'s Performance Debrief',
-                style: GoogleFonts.plusJakartaSans(
-                  color: context.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(
+                  'Yesterday\'s Performance Debrief',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 '24h Summary',
                 style: AscentTextStyles.caption.copyWith(color: context.textMuted),
@@ -703,12 +707,15 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
             children: [
               const Icon(Icons.replay_rounded, size: 16, color: Color(0xFFF59E0B)),
               const SizedBox(width: 8),
-              Text(
-                'Carry forward to today (${_carriedOverTasks.length} tasks)',
-                style: GoogleFonts.plusJakartaSans(
-                  color: context.textPrimary,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(
+                  'Carry forward to today (${_carriedOverTasks.length} tasks)',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -770,22 +777,27 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF38BDF8)),
-                const SizedBox(width: 6),
-                Text(
-                  'Morning Hydration Boost',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: context.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF38BDF8)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Morning Hydration Boost',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Text(
               _selectedWaterMl > 0 ? 'Adds +$_selectedWaterMl mL' : 'Not logging',
               style: AscentTextStyles.caption.copyWith(
@@ -860,22 +872,27 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF10B981)),
-                const SizedBox(width: 6),
-                Text(
-                  'Daily Focus Target',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: context.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            Expanded(
+              child: Row(
+                children: [
+                  const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF10B981)),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Daily Focus Target',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Text(
               '$_selectedStudyTargetHours Hours',
               style: AscentTextStyles.caption.copyWith(
@@ -997,22 +1014,27 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Icon(Icons.add_task_rounded, size: 16, color: context.accentPrimary),
-                const SizedBox(width: 6),
-                Text(
-                  'Today I will execute on:',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: context.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            Expanded(
+              child: Row(
+                children: [
+                  Icon(Icons.add_task_rounded, size: 16, color: context.accentPrimary),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      'Today I will execute on:',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            const SizedBox(width: 8),
             Text(
               '${_taskControllers.length} focus goal${_taskControllers.length == 1 ? '' : 's'}',
               style: AscentTextStyles.caption.copyWith(color: context.textMuted),
