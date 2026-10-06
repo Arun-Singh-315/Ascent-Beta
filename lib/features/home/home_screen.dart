@@ -17,25 +17,7 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import '../study_plan/lecture_focus_player_sheet.dart';
 import '../today/task_board_screen.dart';
 import 'package:flutter/services.dart';
-import 'package:drift/drift.dart' as drift;
 import '../../shared/widgets/new_day_dialog.dart';
-import '../../shared/widgets/animated_water_card.dart';
-import '../thought_wall/thought_wall_home_card.dart';
-import '../thought_wall/drop_thought_sheet.dart';
-import '../../core/walk/walk_tracking_service.dart';
-import '../../shared/widgets/jarvis_copilot_card.dart';
-import '../../shared/widgets/jarvis_omnibar.dart';
-
-
-enum _HomeViewFilter {
-  all('All Cockpit', Icons.dashboard_rounded),
-  focus('⚡ Focus & Study', Icons.school_rounded),
-  wellness('🌿 Wellness & Mind', Icons.spa_rounded);
-
-  final String label;
-  final IconData icon;
-  const _HomeViewFilter(this.label, this.icon);
-}
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -45,21 +27,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  _HomeViewFilter _selectedFilter = _HomeViewFilter.all;
-
   @override
   void initState() {
     super.initState();
-    final prefs = ref.read(sharedPreferencesProvider);
-    final savedFilter = prefs.getString('home_view_segment');
-    if (savedFilter != null) {
-      for (final f in _HomeViewFilter.values) {
-        if (f.name == savedFilter) {
-          _selectedFilter = f;
-          break;
-        }
-      }
-    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkNewDay();
     });
@@ -86,6 +56,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: context.bgBase,
+      floatingActionButton: const _RiyaSeBaatFloatingButton(),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: profileAsync.when(
           loading: () => const _HomeLoadingView(),
@@ -98,7 +70,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ref.invalidate(userProfileStreamProvider);
                 ref.invalidate(todayFocusTaskProvider);
                 ref.invalidate(currentStreakStreamProvider);
-                ref.invalidate(homeQuickStatsProvider);
+                ref.invalidate(learningHubProvider);
                 ref.invalidate(nextUpcomingInterviewProvider);
                 ref.invalidate(nextUpcomingReminderProvider);
                 ref.invalidate(mostRecentNoteProvider);
@@ -106,20 +78,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: context.accentPrimary,
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(left: 18, right: 18, top: 14, bottom: 90),
+                padding: const EdgeInsets.only(left: 18, right: 18, top: 14, bottom: 96),
                 children: [
-                  // 1. Header (Greeting + Settings Avatar)
+                  // 1. Header (Greeting + User Profile + Plan Day)
                   _HomeHeader(profile: profile),
-
-                  const SizedBox(height: 12),
-
-                  // Universal Riya Omnibar (Natural language 1-step logging & execution)
-                  const JarvisOmnibar(),
-
-                  const SizedBox(height: 12),
-
-                  // Smart 1-Tap Quick Action Dock (Water, Chai, Commute, Walk, Focus)
-                  const _SmartQuickLogDock(),
 
                   // Return-user cold start welcome-back banner (>3 days absent)
                   if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
@@ -127,109 +89,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     _WelcomeBackBanner(days: daysSinceLastOpen),
                   ],
 
-                  // Live GPS Walk Status (if active/paused)
-                  const _LiveWalkSessionCard(),
+                  const SizedBox(height: 16),
 
-                  const SizedBox(height: 14),
+                  // 2. PRIMARY HERO: Learning Hub Card (37 Lectures, Module Progress & Resume)
+                  const _LearningHubCard(),
 
-                  // Segmented Density Switcher (All | Focus & Study | Wellness & Mind)
-                  _HomeSegmentSelector(
-                    selected: _selectedFilter,
-                    onSelected: (filter) {
-                      setState(() => _selectedFilter = filter);
-                      ref.read(sharedPreferencesProvider).setString('home_view_segment', filter.name);
-                    },
+                  const SizedBox(height: 16),
+
+                  // 3. TODAY'S PRIORITY & FOCUS TASK
+                  const _TodayPriorityCard(),
+
+                  const SizedBox(height: 16),
+
+                  // 4. QUICK LIFE MODULES (Transparent Bordered Hub linking to dedicated screens)
+                  const _QuickModulesNavHub(),
+
+                  const SizedBox(height: 16),
+
+                  // 5. Collapsible Secondary Section (Notes & Reminders)
+                  const _CollapsibleSecondarySection(
+                    notesCard: _NotesPreviewCard(),
+                    remindersCard: _RemindersPreviewCard(),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
 
-                  // Riya AI Companion Card (lightweight — 3 providers, no continuous animation)
-                  const JarvisCopilotCard(),
-
-                  const SizedBox(height: 14),
-
-                  // ── Screen Content based on Segment Filter ─────────────────
-                  if (_selectedFilter == _HomeViewFilter.wellness) ...[
-                    // Animated Fluid Water Hydration Card
-                    const AnimatedWaterCard(),
-
-                    const SizedBox(height: 14),
-
-                    // Quick Metrics 2x2 Grid (4 Life Pillars: Study, Money, Walk, Streak)
-                    const _QuickStats2x2Grid(),
-
-                    const SizedBox(height: 14),
-
-                    // Daily Habits Strip (Quick checkoffs)
-                    const _DailyHabitsHomeCard(),
-
-                    const SizedBox(height: 14),
-
-                    // Mind Space • Thought Wall (Me to Me talk)
-                    const ThoughtWallHomeCard(),
-
-                    const SizedBox(height: 18),
-                  ] else if (_selectedFilter == _HomeViewFilter.focus) ...[
-                    // Activity Hub (Hero Card with In-Card Focus Timer & Filter Tabs)
-                    const _ActivityHubCard(),
-
-                    const SizedBox(height: 14),
-
-                    // Learning Hub (Spring Boot Mastery, 4 Modules, 37 Lectures, Resume Button)
-                    const _LearningHubCard(),
-
-                    const SizedBox(height: 14),
-
-                    // Quick Metrics 2x2 Grid (4 Life Pillars: Study, Money, Walk, Streak)
-                    const _QuickStats2x2Grid(),
-
-                    const SizedBox(height: 14),
-
-                    // Notes Preview Card
-                    const _NotesPreviewCard(),
-
-                    const SizedBox(height: 14),
-
-                    // Reminders Card
-                    const _RemindersPreviewCard(),
-
-                    const SizedBox(height: 18),
-                  ] else ...[
-                    // All Cockpit View: Full suite with collapsible secondary tools
-                    const AnimatedWaterCard(),
-
-                    const SizedBox(height: 14),
-
-                    const _ActivityHubCard(),
-
-                    const SizedBox(height: 14),
-
-                    const _LearningHubCard(),
-
-                    const SizedBox(height: 14),
-
-                    const _QuickStats2x2Grid(),
-
-                    const SizedBox(height: 14),
-
-                    const _DailyHabitsHomeCard(),
-
-                    const SizedBox(height: 14),
-
-                    const ThoughtWallHomeCard(),
-
-                    const SizedBox(height: 14),
-
-                    // Collapsible Secondary Section (Notes & Reminders)
-                    const _CollapsibleSecondarySection(
-                      notesCard: _NotesPreviewCard(),
-                      remindersCard: _RemindersPreviewCard(),
-                    ),
-
-                    const SizedBox(height: 18),
-                  ],
-
-                  // Positivity line
+                  // 6. Positivity line
                   _HomePositivityLine(profile: profile),
 
                   const SizedBox(height: 20),
@@ -237,6 +122,434 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Floating AI Gateway: 'Riya se Baat'
+// ---------------------------------------------------------------------------
+
+class _RiyaSeBaatFloatingButton extends StatelessWidget {
+  const _RiyaSeBaatFloatingButton();
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = context.accentPrimary;
+    final isDark = context.isDark;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: isDark ? 0.35 : 0.22),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.push('/ai-assistant');
+          },
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [
+                        const Color(0xFF1E2638).withValues(alpha: 0.95),
+                        const Color(0xFF151A28).withValues(alpha: 0.95),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: 0.96),
+                        const Color(0xFFF8FAFC).withValues(alpha: 0.96),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.55),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.16),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.auto_awesome_rounded,
+                    size: 16,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Riya se Baat',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 11,
+                  color: context.textMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Today's Priority Focus Card
+// ---------------------------------------------------------------------------
+
+class _TodayPriorityCard extends ConsumerWidget {
+  const _TodayPriorityCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final focusTaskAsync = ref.watch(todayFocusTaskProvider);
+    final streakAsync = ref.watch(currentStreakStreamProvider);
+    final streak = streakAsync.value ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.bgSurface.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: context.divider.withValues(alpha: 0.6),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.flag_rounded, size: 16, color: context.accentPrimary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'TODAY\'S PRIORITY',
+                    style: GoogleFonts.jetBrainsMono(
+                      color: context.accentPrimary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.7,
+                    ),
+                  ),
+                ],
+              ),
+              if (streak > 0)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_fire_department_rounded, size: 12, color: Color(0xFFF59E0B)),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$streak day streak',
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFF59E0B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          focusTaskAsync.when(
+            loading: () => SkeletonShimmer(height: 44, radius: 10),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (task) {
+              if (task == null) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'No priority task set for today',
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: context.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Plan your day or pick a study milestone',
+                            style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    AscentButton.secondary(
+                      label: 'Tasks',
+                      icon: Icons.checklist_rounded,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/today');
+                      },
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          task.title,
+                          style: AscentTextStyles.bodyLarge.copyWith(
+                            color: context.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          task.priority.toUpperCase(),
+                          style: AscentTextStyles.monoCode.copyWith(
+                            fontSize: 10,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.accentPrimary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: const Icon(Icons.timer_outlined, size: 16),
+                    label: const Text('Focus', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      context.push('/focus');
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quick Life Modules Hub (Transparent Bordered Navigation Cards)
+// ---------------------------------------------------------------------------
+
+class _QuickModulesNavHub extends ConsumerWidget {
+  const _QuickModulesNavHub();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
+    final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
+    final expenses = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'LIFE MODULES',
+              style: AscentTextStyles.labelSmall.copyWith(
+                color: context.textMuted,
+                letterSpacing: 1.2,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              'Tap to open section',
+              style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted, fontSize: 10.5),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 1.65,
+          children: [
+            // 1. Hydration
+            _NavHubCard(
+              title: 'Hydration',
+              subtitle: '$waterMl / $waterGoal mL',
+              icon: Icons.water_drop_rounded,
+              color: const Color(0xFF38BDF8),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/hydration');
+              },
+            ),
+            // 2. Walk & Activity
+            _NavHubCard(
+              title: 'Walk & Run',
+              subtitle: 'Active GPS tracker',
+              icon: Icons.directions_walk_rounded,
+              color: const Color(0xFF10B981),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/walk');
+              },
+            ),
+            // 3. Money & Budget
+            _NavHubCard(
+              title: 'Money',
+              subtitle: '₹${expenses.toStringAsFixed(0)} logged today',
+              icon: Icons.account_balance_wallet_rounded,
+              color: const Color(0xFFF59E0B),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/money');
+              },
+            ),
+            // 4. Daily Habits
+            _NavHubCard(
+              title: 'Habits',
+              subtitle: 'Daily routines & streaks',
+              icon: Icons.fact_check_rounded,
+              color: const Color(0xFF8B5CF6),
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/habits');
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _NavHubCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _NavHubCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: context.bgSurface.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: context.divider.withValues(alpha: 0.6),
+              width: 1.0,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 16, color: color),
+                  ),
+                  Icon(Icons.arrow_forward_rounded, size: 14, color: context.textMuted.withValues(alpha: 0.6)),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: AscentTextStyles.bodyMedium.copyWith(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: AscentTextStyles.captionMedium.copyWith(
+                      color: context.textMuted,
+                      fontSize: 10.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1042,186 +1355,7 @@ class _MetricPill extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 4. Quick Stats 2x2 Grid (4 Pillars: Study, Money, Walk, Streak)
-// ---------------------------------------------------------------------------
 
-class _QuickStats2x2Grid extends ConsumerWidget {
-  const _QuickStats2x2Grid();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final streakAsync = ref.watch(currentStreakStreamProvider);
-    final streak = streakAsync.value ?? 0;
-
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final sessionsAsync = ref.watch(todayTimeSessionsProvider(today));
-    final sessions = sessionsAsync.value ?? [];
-
-    int studySeconds = 0;
-    for (final s in sessions) {
-      if (s.activityType.toLowerCase() == 'entertainment') continue;
-      studySeconds += TimeSessionDao.computeActiveDurationSeconds(
-        s.startedAt,
-        s.endedAt ?? (s.status == 'running' ? DateTime.now() : s.startedAt),
-        s.pausedIntervals,
-      );
-    }
-    final studyMinutes = studySeconds ~/ 60;
-
-    final todaySpendAsync = ref.watch(todaySpendingStreamProvider);
-    final todaySpend = todaySpendAsync.value ?? 0.0;
-
-    final todayWalkAsync = ref.watch(todayWalkDistanceStreamProvider);
-    final walkKm = (todayWalkAsync.value ?? 0.0) / 1000.0;
-
-    return Column(
-      children: [
-        Row(
-          children: [
-            // Tile 1: Study Time
-            Expanded(
-              child: _StatCard(
-                icon: Icons.schedule_outlined,
-                iconColor: context.accentSecondary,
-                pillText: 'STUDY',
-                pillColor: context.bgBase,
-                pillTextColor: context.textMuted,
-                mainValue: '${studyMinutes}m logged',
-                subtitle: 'Daily focus timer',
-                onTap: () => context.push('/focus'),
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Tile 2: Spending / Money
-            Expanded(
-              child: _StatCard(
-                icon: Icons.account_balance_wallet_outlined,
-                iconColor: context.accentPrimary,
-                pillText: 'FINANCE',
-                pillColor: context.accentPrimary.withValues(alpha: 0.1),
-                pillTextColor: context.accentPrimary,
-                mainValue: '₹${todaySpend.toStringAsFixed(0)} today',
-                subtitle: 'Expense & budgets',
-                onTap: () => context.push('/money'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            // Tile 3: Walking Distance
-            Expanded(
-              child: _StatCard(
-                icon: Icons.directions_walk_rounded,
-                iconColor: Colors.teal,
-                pillText: 'ACTIVITY',
-                pillColor: Colors.teal.withValues(alpha: 0.12),
-                pillTextColor: Colors.teal,
-                mainValue: '${walkKm.toStringAsFixed(1)} km walked',
-                subtitle: 'Target 5.0 km',
-                onTap: () => context.push('/walk'),
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Tile 4: Streak Momentum
-            Expanded(
-              child: _StatCard(
-                icon: Icons.local_fire_department_outlined,
-                iconColor: Colors.orange,
-                pillText: 'STREAK',
-                pillColor: Colors.orange.withValues(alpha: 0.12),
-                pillTextColor: Colors.orange,
-                mainValue: '$streak day streak',
-                subtitle: 'Daily momentum',
-                onTap: () => context.push('/consistency'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String pillText;
-  final Color pillColor;
-  final Color pillTextColor;
-  final String mainValue;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _StatCard({
-    required this.icon,
-    required this.iconColor,
-    required this.pillText,
-    required this.pillColor,
-    required this.pillTextColor,
-    required this.mainValue,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AscentCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(12),
-      radius: 12,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon, size: 18, color: iconColor),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
-                decoration: BoxDecoration(
-                  color: pillColor,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  pillText,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                    color: pillTextColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            mainValue,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: context.textPrimary,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 1),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 10.5, color: context.textMuted),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // 5. Notes Preview Card
@@ -1431,454 +1565,7 @@ class _HomeLoadingView extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// 8. Live GPS Walk Session Card (Active / Paused Status)
-// ---------------------------------------------------------------------------
 
-class _LiveWalkSessionCard extends ConsumerWidget {
-  const _LiveWalkSessionCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final walkState = ref.watch(walkTrackingProvider);
-    if (walkState.status == WalkTrackingStatus.idle) {
-      return const SizedBox.shrink();
-    }
-
-    final isTracking = walkState.status == WalkTrackingStatus.tracking;
-    final km = (walkState.distanceMeters / 1000.0).toStringAsFixed(2);
-
-    return Container(
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: context.accentPrimary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.accentPrimary.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isTracking ? context.accentPrimary : Colors.orange,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isTracking ? 'GPS WALK IN PROGRESS' : 'GPS WALK PAUSED',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isTracking ? context.accentPrimary : Colors.orange,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '$km km • ${walkState.formattedDuration} active',
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    color: context.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          AscentButton.outlined(
-            label: 'View Map',
-            compact: true,
-            onPressed: () => context.push('/walk'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-
-// ---------------------------------------------------------------------------
-// 10. Daily Habits Home Strip (Quick 1-tap checkoff)
-// ---------------------------------------------------------------------------
-
-class _DailyHabitsHomeCard extends ConsumerWidget {
-  const _DailyHabitsHomeCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final habitsAsync = ref.watch(allHabitsStreamProvider);
-    final completedIdsAsync = ref.watch(todayCompletedHabitIdsStreamProvider);
-    final completedIds = completedIdsAsync.value ?? <int>{};
-
-    final habits = habitsAsync.value ?? [];
-    if (habits.isEmpty) return const SizedBox.shrink();
-
-    return AscentCard(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Today\'s Habits',
-                style: AscentTextStyles.headlineMedium.copyWith(
-                  color: context.textPrimary,
-                  fontSize: 15,
-                ),
-              ),
-              InkWell(
-                onTap: () => context.push('/habits'),
-                child: Text(
-                  'Manage (${completedIds.length}/${habits.length}) →',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: context.accentPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: habits.map((h) {
-              final isDone = completedIds.contains(h.id);
-              return ActionChip(
-                avatar: Icon(
-                  isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                  size: 16,
-                  color: isDone ? Colors.white : context.textMuted,
-                ),
-                label: Text(h.title),
-                backgroundColor: isDone ? context.accentPrimary : context.bgBase,
-                labelStyle: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isDone ? FontWeight.w600 : FontWeight.w500,
-                  color: isDone ? Colors.white : context.textPrimary,
-                ),
-                side: BorderSide(color: isDone ? context.accentPrimary : context.divider),
-                onPressed: () async {
-                  HapticFeedback.mediumImpact();
-                  await ref.read(habitDaoProvider).toggleHabitToday(h.id);
-                },
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 11. Smart 1-Tap Quick Action Dock (Zero typing required)
-// ---------------------------------------------------------------------------
-
-class _SmartQuickLogDock extends ConsumerWidget {
-  const _SmartQuickLogDock();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return AscentCard(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.bolt_rounded, size: 16, color: context.accentPrimary),
-              const SizedBox(width: 6),
-              Text(
-                'SMART 1-TAP LOG',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  letterSpacing: 1.1,
-                  fontWeight: FontWeight.w700,
-                  color: context.accentPrimary,
-                ),
-              ),
-              const Spacer(),
-              Text(
-                'Zero typing required',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: context.textMuted,
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _QuickDockChip(
-                  label: '+250ml',
-                  emoji: '💧',
-                  color: const Color(0xFF0096C7),
-                  onTap: () async {
-                    HapticFeedback.mediumImpact();
-                    await ref.read(waterDaoProvider).addWater(250);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('💧 +250 mL water logged! Keep hydrating.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                _QuickDockChip(
-                  label: '₹40 Chai',
-                  emoji: '☕',
-                  color: const Color(0xFFD4A373),
-                  onTap: () async {
-                    HapticFeedback.mediumImpact();
-                    await ref.read(financeDaoProvider).insertTransaction(
-                      FinanceTransactionTableCompanion.insert(
-                        title: 'Tea & Snacks',
-                        amount: 40.0,
-                        category: const drift.Value('Food & Groceries'),
-                        account: const drift.Value('UPI'),
-                        date: DateTime.now(),
-                      ),
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('☕ ₹40 Tea & Snacks saved to expenses!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                _QuickDockChip(
-                  label: '₹50 Metro',
-                  emoji: '🚇',
-                  color: const Color(0xFF4A90E2),
-                  onTap: () async {
-                    HapticFeedback.mediumImpact();
-                    await ref.read(financeDaoProvider).insertTransaction(
-                      FinanceTransactionTableCompanion.insert(
-                        title: 'Metro / Auto commute',
-                        amount: 50.0,
-                        category: const drift.Value('Transport'),
-                        account: const drift.Value('UPI'),
-                        date: DateTime.now(),
-                      ),
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('🚇 ₹50 Metro fare saved to expenses!'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(width: 8),
-                _QuickDockChip(
-                  label: 'Start Walk',
-                  emoji: '🚶',
-                  color: Colors.teal,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/walk');
-                  },
-                ),
-                const SizedBox(width: 8),
-                _QuickDockChip(
-                  label: '25m Focus',
-                  emoji: '⏱',
-                  color: context.accentSecondary,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/focus');
-                  },
-                ),
-                const SizedBox(width: 8),
-                _QuickDockChip(
-                  label: 'AI Plan',
-                  emoji: '🤖',
-                  color: Colors.purple,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/ai-assistant');
-                  },
-                ),
-                const SizedBox(width: 8),
-                _QuickDockChip(
-                  label: 'Thought',
-                  emoji: '🪞',
-                  color: const Color(0xFF8338EC),
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    DropThoughtSheet.show(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuickDockChip extends StatefulWidget {
-  final String label;
-  final String emoji;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickDockChip({
-    required this.label,
-    required this.emoji,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  State<_QuickDockChip> createState() => _QuickDockChipState();
-}
-
-class _QuickDockChipState extends State<_QuickDockChip> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: _pressed ? 0.93 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOutCubic,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: widget.color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: widget.color.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(widget.emoji, style: const TextStyle(fontSize: 14)),
-              const SizedBox(width: 6),
-              Text(
-                widget.label,
-                style: AscentTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Segment Selector & Collapsible Section for Home Screen Density
-// ---------------------------------------------------------------------------
-
-class _HomeSegmentSelector extends StatelessWidget {
-  final _HomeViewFilter selected;
-  final ValueChanged<_HomeViewFilter> onSelected;
-
-  const _HomeSegmentSelector({
-    required this.selected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: context.bgSurfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.divider, width: 0.8),
-      ),
-      child: Row(
-        children: _HomeViewFilter.values.map((filter) {
-          final isSelected = selected == filter;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                HapticFeedback.selectionClick();
-                onSelected(filter);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? context.bgSurface : Colors.transparent,
-                  borderRadius: BorderRadius.circular(9),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      filter.icon,
-                      size: 14,
-                      color: isSelected ? context.accentPrimary : context.textMuted,
-                    ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        filter.label,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? context.textPrimary : context.textMuted,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
 
 class _CollapsibleSecondarySection extends StatefulWidget {
   final Widget notesCard;

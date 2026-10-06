@@ -136,27 +136,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   ],
                 ),
                 child: Center(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.north_east_rounded,
-                        size: 38,
-                        color: accentPrimary,
-                      ),
-                      Positioned(
-                        bottom: 15,
-                        left: 15,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: context.accentSecondary,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.north_east_rounded,
+                    size: 42,
+                    color: accentPrimary,
                   ),
                 ),
               ),

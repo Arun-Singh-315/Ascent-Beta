@@ -24,6 +24,7 @@ import '../features/walk/walk_screen.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
+import '../features/hydration/hydration_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ class AscentRoutes {
   static const walk = '/walk';
   static const aiAssistant = '/ai-assistant';
   static const habits = '/habits';
+  static const hydration = '/hydration';
   static const thoughtWall = '/thought-wall';
   static const pipeline = '/pipeline';
   static const pipelineCard = '/pipeline/:id';
@@ -156,6 +158,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.habits,
       builder: (context, state) => const HabitsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.hydration,
+      builder: (context, state) => const HydrationScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

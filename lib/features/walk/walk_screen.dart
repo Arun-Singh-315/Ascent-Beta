@@ -1,4 +1,6 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -24,6 +26,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     with SingleTickerProviderStateMixin {
   late final MapController _mapController;
   late final TabController _tabController;
+  bool _showOnlineMap = false;
 
   @override
   void initState() {
@@ -162,101 +165,164 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
           // ── Tab 0: Live GPS Tracker ───────────────────────────────────────
           Stack(
             children: [
-              // 1. OpenStreetMap Canvas via flutter_map
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: currentCenter,
-                  initialZoom: 16.0,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.ascent.jobprep',
+              // 1. High-Performance Vector Route Canvas (default zero-lag) OR Online Map
+              if (_showOnlineMap)
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: currentCenter,
+                    initialZoom: 16.0,
                   ),
-                  if (walkState.routePoints.isNotEmpty)
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: walkState.routePoints,
-                          strokeWidth: 4.5,
-                          color: context.accentPrimary,
-                        ),
-                      ],
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.ascent.jobprep',
                     ),
-                  if (walkState.currentLat != null && walkState.currentLng != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(walkState.currentLat!, walkState.currentLng!),
-                          width: 22,
-                          height: 22,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.accentPrimary,
-                              border: Border.all(color: Colors.white, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black26, blurRadius: 4),
-                              ],
+                    if (walkState.routePoints.isNotEmpty)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: walkState.routePoints,
+                            strokeWidth: 4.5,
+                            color: context.accentPrimary,
+                          ),
+                        ],
+                      ),
+                    if (walkState.currentLat != null && walkState.currentLng != null)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: LatLng(walkState.currentLat!, walkState.currentLng!),
+                            width: 22,
+                            height: 22,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: context.accentPrimary,
+                                border: Border.all(color: Colors.white, width: 2.5),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+                        ],
+                      ),
+                  ],
+                )
+              else
+                _VectorRouteRadarCanvas(walkState: walkState),
 
-              // 2. GPS Quality Indicator Badge & Recenter Button
+              // 2. Controls & Mode Toggle Header
               Positioned(
                 top: 14,
                 left: 16,
                 right: 16,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // GPS Quality Indicator
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: context.bgSurface.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: context.divider),
+                        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.gps_fixed_rounded,
-                            size: 14,
+                            size: 13,
                             color: walkState.gpsSignal == GpsSignalQuality.good
                                 ? context.accentPrimary
                                 : (walkState.gpsSignal == GpsSignalQuality.permissionDenied
                                     ? context.stateDanger
                                     : Colors.orange),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Text(
                             walkState.gpsSignal == GpsSignalQuality.good
-                                ? 'GPS Signal: Strong'
+                                ? 'GPS: Strong'
                                 : (walkState.gpsSignal == GpsSignalQuality.permissionDenied
-                                    ? 'Location Permission Needed'
-                                    : 'Acquiring GPS...'),
+                                    ? 'Permission Needed'
+                                    : 'Searching...'),
                             style: AscentTextStyles.labelSmall.copyWith(
                               color: context.textPrimary,
                               fontWeight: FontWeight.w600,
+                              fontSize: 11,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    FloatingActionButton.small(
-                      heroTag: 'recenter_gps_btn',
-                      backgroundColor: context.bgSurface,
-                      foregroundColor: context.textPrimary,
-                      elevation: 2,
-                      onPressed: () => _recenterMap(walkState),
-                      child: const Icon(Icons.my_location_rounded, size: 20),
+                    const Spacer(),
+                    // Online Map / Radar HUD Switcher
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _showOnlineMap = !_showOnlineMap;
+                        });
+                        if (_showOnlineMap) {
+                          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                'Connecting to online map. Turn on internet if tiles don\'t load.',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: context.bgSurface.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _showOnlineMap
+                                ? context.accentPrimary.withValues(alpha: 0.6)
+                                : context.divider.withValues(alpha: 0.8),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showOnlineMap ? Icons.radar_rounded : Icons.map_outlined,
+                              size: 14,
+                              color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _showOnlineMap ? 'Radar Mode' : 'Online Map',
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                    if (_showOnlineMap) ...[
+                      const SizedBox(width: 8),
+                      FloatingActionButton.small(
+                        heroTag: 'recenter_gps_btn',
+                        backgroundColor: context.bgSurface,
+                        foregroundColor: context.textPrimary,
+                        elevation: 2,
+                        onPressed: () => _recenterMap(walkState),
+                        child: const Icon(Icons.my_location_rounded, size: 18),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -721,3 +787,251 @@ class _MetricCol extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// High-Performance Vector Route Canvas & Radar Painter (Zero-Lag HUD)
+// ---------------------------------------------------------------------------
+
+class _VectorRouteRadarCanvas extends StatelessWidget {
+  final WalkTrackingState walkState;
+
+  const _VectorRouteRadarCanvas({required this.walkState});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final accent = context.accentPrimary;
+
+    return Container(
+      color: isDark ? const Color(0xFF090D16) : const Color(0xFFF1F5F9),
+      child: Stack(
+        children: [
+          // Cybernetic Radar Grid background
+          CustomPaint(
+            size: Size.infinite,
+            painter: _RadarGridPainter(
+              gridColor: isDark
+                  ? Colors.white.withValues(alpha: 0.04)
+                  : Colors.black.withValues(alpha: 0.04),
+              crosshairColor: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
+
+          // Route Vector Path
+          if (walkState.routePoints.isNotEmpty)
+            CustomPaint(
+              size: Size.infinite,
+              painter: _RouteVectorPainter(
+                routePoints: walkState.routePoints,
+                currentLat: walkState.currentLat,
+                currentLng: walkState.currentLng,
+                lineColor: accent,
+                pulseColor: const Color(0xFF38BDF8),
+              ),
+            )
+          else
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 120),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.08),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: accent.withValues(alpha: 0.2)),
+                      ),
+                      child: Icon(
+                        Icons.navigation_rounded,
+                        size: 34,
+                        color: accent,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'High-Performance GPS Radar',
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      walkState.status == WalkTrackingStatus.tracking
+                          ? 'Tracking route vector at 60 FPS • Zero lag'
+                          : 'Tap "Start Walk" below to trace your route vector',
+                      style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadarGridPainter extends CustomPainter {
+  final Color gridColor;
+  final Color crosshairColor;
+
+  _RadarGridPainter({required this.gridColor, required this.crosshairColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1.0;
+
+    final crossPaint = Paint()
+      ..color = crosshairColor
+      ..strokeWidth = 1.2;
+
+    const spacing = 32.0;
+
+    // Draw vertical and horizontal grid lines
+    for (double x = 0; x < size.width; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y < size.height; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Draw center concentric radar circles
+    final center = Offset(size.width / 2, (size.height / 2) - 40);
+    final circlePaint = Paint()
+      ..color = crosshairColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    for (double r = 60; r < 240; r += 60) {
+      canvas.drawCircle(center, r, circlePaint);
+    }
+
+    // Center crosshairs
+    canvas.drawLine(Offset(center.dx - 16, center.dy), Offset(center.dx + 16, center.dy), crossPaint);
+    canvas.drawLine(Offset(center.dx, center.dy - 16), Offset(center.dx, center.dy + 16), crossPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadarGridPainter oldDelegate) => false;
+}
+
+class _RouteVectorPainter extends CustomPainter {
+  final List<LatLng> routePoints;
+  final double? currentLat;
+  final double? currentLng;
+  final Color lineColor;
+  final Color pulseColor;
+
+  _RouteVectorPainter({
+    required this.routePoints,
+    required this.currentLat,
+    required this.currentLng,
+    required this.lineColor,
+    required this.pulseColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (routePoints.isEmpty) return;
+
+    double minLat = routePoints.first.latitude;
+    double maxLat = routePoints.first.latitude;
+    double minLng = routePoints.first.longitude;
+    double maxLng = routePoints.first.longitude;
+
+    for (final pt in routePoints) {
+      if (pt.latitude < minLat) minLat = pt.latitude;
+      if (pt.latitude > maxLat) maxLat = pt.latitude;
+      if (pt.longitude < minLng) minLng = pt.longitude;
+      if (pt.longitude > maxLng) maxLng = pt.longitude;
+    }
+
+    final latSpan = (maxLat - minLat).abs();
+    final lngSpan = (maxLng - minLng).abs();
+    final effectiveLatSpan = latSpan < 0.0001 ? 0.0001 : latSpan;
+    final effectiveLngSpan = lngSpan < 0.0001 ? 0.0001 : lngSpan;
+
+    // Viewport padding (leaving room for top header and bottom controls)
+    const padX = 40.0;
+    const padTop = 80.0;
+    const padBottom = 260.0;
+
+    final drawW = size.width - (padX * 2);
+    final drawH = size.height - padTop - padBottom;
+
+    Offset toScreen(LatLng pt) {
+      final nx = (pt.longitude - minLng) / effectiveLngSpan;
+      final ny = (maxLat - pt.latitude) / effectiveLatSpan;
+      return Offset(padX + (nx * drawW), padTop + (ny * drawH));
+    }
+
+    // 1. Draw glowing path
+    final glowPaint = Paint()
+      ..color = lineColor.withValues(alpha: 0.25)
+      ..strokeWidth = 8.0
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    final linePaint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 3.5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..style = PaintingStyle.stroke;
+
+    final path = ui.Path();
+    final startScreen = toScreen(routePoints.first);
+    path.moveTo(startScreen.dx, startScreen.dy);
+
+    for (int i = 1; i < routePoints.length; i++) {
+      final s = toScreen(routePoints[i]);
+      path.lineTo(s.dx, s.dy);
+    }
+
+    canvas.drawPath(path, glowPaint);
+    canvas.drawPath(path, linePaint);
+
+    // 2. Draw Start Pin
+    final startPaint = Paint()..color = const Color(0xFF10B981);
+    canvas.drawCircle(startScreen, 6.0, startPaint);
+    canvas.drawCircle(
+      startScreen,
+      9.0,
+      Paint()
+        ..color = const Color(0xFF10B981).withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0,
+    );
+
+    // 3. Draw Current/Last GPS Beacon
+    final lastPt = routePoints.last;
+    final lastScreen = toScreen(lastPt);
+
+    final beaconPaint = Paint()..color = pulseColor;
+    canvas.drawCircle(lastScreen, 7.0, beaconPaint);
+    canvas.drawCircle(
+      lastScreen,
+      13.0,
+      Paint()
+        ..color = pulseColor.withValues(alpha: 0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RouteVectorPainter oldDelegate) {
+    return oldDelegate.routePoints.length != routePoints.length ||
+        oldDelegate.currentLat != currentLat ||
+        oldDelegate.currentLng != currentLng;
+  }
+}
+

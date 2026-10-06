@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
 
 /// A surface card that follows the Ascent design system.
 ///
-/// Features a calm matte background, subtle 0.8px border, gentle diffuse shadow,
-/// and smooth ink ripple when [onTap] is provided.
+/// Features a calm translucent glassy background, subtle 0.9px border, gentle diffuse shadow,
+/// and smooth ink ripple with tactile haptics when [onTap] is provided.
 class AscentCard extends StatelessWidget {
   const AscentCard({
     super.key,
@@ -14,7 +15,7 @@ class AscentCard extends StatelessWidget {
     this.margin,
     this.onTap,
     this.color,
-    this.radius = 14,
+    this.radius = 16,
     this.hasShadow = true,
     this.hasBorder = true,
   });
@@ -34,7 +35,7 @@ class AscentCard extends StatelessWidget {
   /// Override the default [AscentColors.bgSurface] background.
   final Color? color;
 
-  /// Corner radius. Defaults to 14.
+  /// Corner radius. Defaults to 16.
   final double radius;
 
   /// When true (default) adds a delicate diffuse shadow.
@@ -45,9 +46,12 @@ class AscentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceColor = color ?? context.bgSurface;
+    final surfaceColor = color ??
+        (context.isDark
+            ? context.bgSurface.withValues(alpha: 0.6)
+            : context.bgSurface.withValues(alpha: 0.88));
     final shadowColor = context.isDark ? AscentColors.shadowDark : AscentColors.shadow;
-    final borderColor = context.divider;
+    final borderColor = context.divider.withValues(alpha: context.isDark ? 0.7 : 0.55);
     final borderRadius = BorderRadius.circular(radius);
 
     return Container(
@@ -55,7 +59,7 @@ class AscentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: borderRadius,
-        border: hasBorder ? Border.all(color: borderColor, width: 0.8) : null,
+        border: hasBorder ? Border.all(color: borderColor, width: 0.9) : null,
         boxShadow: hasShadow
             ? [
                 BoxShadow(
@@ -71,7 +75,12 @@ class AscentCard extends StatelessWidget {
         borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
+          onTap: onTap == null
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  onTap!();
+                },
           borderRadius: borderRadius,
           child: Padding(
             padding: padding ?? const EdgeInsets.all(16),
