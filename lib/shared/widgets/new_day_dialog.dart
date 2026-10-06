@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,7 +16,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 
 /// Show the executive new-day morning briefing dialog over [context].
-/// Displays a frosted glass freeze overlay, yesterday's multi-module debrief,
+/// Displays a frosted glass freeze overlay, yesterday's multi-module debrief (or day 1 kick-off),
 /// and comprehensive inputs for today (hydration kick-off, tasks, focus target, mindset).
 Future<void> showNewDayDialog(BuildContext context, WidgetRef ref) async {
   HapticFeedback.mediumImpact();
@@ -83,36 +84,36 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
       final yesterdayTasksFuture = taskDao
           .watchTasksByDate(yesterday)
           .first
-          .timeout(const Duration(seconds: 2), onTimeout: () => []);
+          .timeout(const Duration(seconds: 1), onTimeout: () => []);
       final overdueTasksFuture = taskDao
           .watchOverdueTasks()
           .first
-          .timeout(const Duration(seconds: 2), onTimeout: () => []);
+          .timeout(const Duration(seconds: 1), onTimeout: () => []);
 
       // 2. Focus / Study
       final sessionsFuture = timeSessionDao
           .getSessionsForDate(yesterday)
-          .timeout(const Duration(seconds: 2), onTimeout: () => []);
+          .timeout(const Duration(seconds: 1), onTimeout: () => []);
 
       // 3. Walk
       final walkFuture = walkDao
           .getDistanceForDate(yesterday)
-          .timeout(const Duration(seconds: 2), onTimeout: () => 0.0);
+          .timeout(const Duration(seconds: 1), onTimeout: () => 0.0);
 
       // 4. Water
       final waterFuture = waterDao
           .getWaterForDate(yesterday)
-          .timeout(const Duration(seconds: 2), onTimeout: () => 0);
+          .timeout(const Duration(seconds: 1), onTimeout: () => 0);
       final goalFuture = waterDao
           .watchDailyWaterGoal()
           .first
-          .timeout(const Duration(seconds: 2), onTimeout: () => 2500);
+          .timeout(const Duration(seconds: 1), onTimeout: () => 2500);
 
       // 5. Streak
       final streakFuture = consistencyDao
           .watchCurrentStreak()
           .first
-          .timeout(const Duration(seconds: 2), onTimeout: () => 0);
+          .timeout(const Duration(seconds: 1), onTimeout: () => 0);
 
       final results = await Future.wait([
         yesterdayTasksFuture,
@@ -327,111 +328,119 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
     final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
     final dateStr = DateFormat('EEEE, MMMM d').format(DateTime.now());
 
+    final media = MediaQuery.of(context);
+    final dialogWidth = math.min(media.size.width - 28, 520.0);
+    final dialogHeight = math.min(media.size.height * 0.86, 700.0);
+
+    final isFirstDay = !_isLoading &&
+        _completedTasks == 0 &&
+        _carriedOverTasks.isEmpty &&
+        _yesterdayFocusSeconds == 0 &&
+        _yesterdayWalkMeters == 0 &&
+        _yesterdayWaterMl == 0;
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
       child: Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: 540,
-            maxHeight: MediaQuery.of(context).size.height * 0.88,
-          ),
-          decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: context.divider.withValues(alpha: 0.8), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 36,
-                spreadRadius: 4,
-                offset: const Offset(0, 16),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(26),
-            child: _isLoading
-                ? const _LoadingDebriefState()
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Top Header Bar
-                      _buildHeader(context, name, dateStr),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
+        child: SizedBox(
+          width: dialogWidth,
+          height: dialogHeight,
+          child: Container(
+            decoration: BoxDecoration(
+              color: context.bgSurface.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: context.divider, width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  blurRadius: 36,
+                  spreadRadius: 4,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: Column(
+                children: [
+                  // Top Header Bar with Close Button
+                  _buildHeader(context, name, dateStr),
 
-                      // Scrollable Body Content
-                      Expanded(
-                        child: RawScrollbar(
-                          thumbVisibility: false,
-                          radius: const Radius.circular(8),
-                          child: SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Yesterday's Multi-Module Scorecard
-                                _buildYesterdayScorecard(context),
+                  // Scrollable Body Content
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (_isLoading)
+                            const _LoadingScorecardShimmer()
+                          else if (isFirstDay)
+                            _buildFirstDayWelcome(context)
+                          else
+                            _buildYesterdayScorecard(context),
 
-                                // Carried-over Tasks Section (if any)
-                                if (_carriedOverTasks.isNotEmpty) ...[
-                                  const SizedBox(height: 20),
-                                  _buildCarriedOverSection(context),
-                                ],
+                          // Carried-over Tasks Section (if any)
+                          if (_carriedOverTasks.isNotEmpty) ...[
+                            const SizedBox(height: 18),
+                            _buildCarriedOverSection(context),
+                          ],
 
-                                const SizedBox(height: 22),
-                                // Today's Battle Plan Inputs Header
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(6),
-                                      decoration: BoxDecoration(
-                                        color: context.accentPrimary.withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.flag_rounded,
-                                        size: 16,
-                                        color: context.accentPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Today\'s Battle Plan',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: context.textPrimary,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
+                          const SizedBox(height: 20),
+                          // Today's Battle Plan Inputs Header
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: context.accentPrimary.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                const SizedBox(height: 14),
-
-                                // 1. Morning Hydration Boost
-                                _buildHydrationKickoffSection(context),
-                                const SizedBox(height: 18),
-
-                                // 2. Focus Duration Target
-                                _buildStudyTargetSection(context),
-                                const SizedBox(height: 18),
-
-                                // 3. Morning Mindset
-                                _buildMindsetSection(context),
-                                const SizedBox(height: 18),
-
-                                // 4. Priority Tasks Inputs
-                                _buildTodayTasksSection(context),
-                              ],
-                            ),
+                                child: Icon(
+                                  Icons.flag_rounded,
+                                  size: 16,
+                                  color: context.accentPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Today\'s Battle Plan',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: context.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
+                          const SizedBox(height: 14),
 
-                      // Sticky Bottom Action Footer
-                      _buildFooter(context),
-                    ],
+                          // 1. Morning Hydration Boost
+                          _buildHydrationKickoffSection(context),
+                          const SizedBox(height: 18),
+
+                          // 2. Focus Duration Target
+                          _buildStudyTargetSection(context),
+                          const SizedBox(height: 18),
+
+                          // 3. Morning Mindset
+                          _buildMindsetSection(context),
+                          const SizedBox(height: 18),
+
+                          // 4. Priority Tasks Inputs
+                          _buildTodayTasksSection(context),
+                        ],
+                      ),
+                    ),
                   ),
+
+                  // Sticky Bottom Action Footer
+                  _buildFooter(context),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -440,23 +449,23 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
 
   Widget _buildHeader(BuildContext context, String name, String dateStr) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 14, 14),
+      padding: const EdgeInsets.fromLTRB(18, 16, 12, 14),
       decoration: BoxDecoration(
-        color: context.bgSurfaceElevated.withValues(alpha: 0.6),
+        color: context.bgSurfaceElevated.withValues(alpha: 0.7),
         border: Border(bottom: BorderSide(color: context.divider, width: 0.8)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(13),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
@@ -465,9 +474,9 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                 ),
               ],
             ),
-            child: const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 22),
+            child: const Icon(Icons.wb_sunny_rounded, color: Colors.white, size: 20),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,7 +484,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
                         color: context.accentPrimary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
@@ -484,16 +493,16 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                         'EXECUTIVE BRIEFING',
                         style: GoogleFonts.plusJakartaSans(
                           color: context.accentPrimary,
-                          fontSize: 10,
+                          fontSize: 9.5,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.6,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     if (_currentStreak > 0)
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF97316).withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
@@ -502,7 +511,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                           '🔥 $_currentStreak DAYS',
                           style: GoogleFonts.plusJakartaSans(
                             color: const Color(0xFFF97316),
-                            fontSize: 10,
+                            fontSize: 9.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.4,
                           ),
@@ -510,12 +519,12 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   '${_greeting()}, $name!',
                   style: GoogleFonts.plusJakartaSans(
                     color: context.textPrimary,
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -523,16 +532,68 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                   dateStr,
                   style: AscentTextStyles.bodySmall.copyWith(
                     color: context.textMuted,
-                    fontSize: 12,
+                    fontSize: 11.5,
                   ),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: Icon(Icons.close_rounded, color: context.textMuted, size: 20),
-            onPressed: () => Navigator.of(context).pop(),
+            icon: Icon(Icons.close_rounded, color: context.textMuted, size: 22),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              Navigator.of(context).pop();
+            },
             tooltip: 'Dismiss',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFirstDayWelcome(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: context.bgSurfaceElevated,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.divider),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: context.accentPrimary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.rocket_launch_rounded, color: Color(0xFF5FA070), size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Day 1 Kick-Off · Welcome to Ascent!',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Starting your journey today! Set your hydration, study hours target, and outline today\'s key goals below to build momentum.',
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
+                    fontSize: 11.5,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -545,7 +606,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
     final totalTasks = _completedTasks + _carriedOverTasks.length;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: context.bgSurfaceElevated,
         borderRadius: BorderRadius.circular(18),
@@ -571,7 +632,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           // 4-Card Scorecard Grid
           Row(
             children: [
@@ -629,7 +690,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
 
   Widget _buildCarriedOverSection(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
         color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
@@ -646,7 +707,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                 'Carry forward to today (${_carriedOverTasks.length} tasks)',
                 style: GoogleFonts.plusJakartaSans(
                   color: context.textPrimary,
-                  fontSize: 13,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -683,6 +744,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                         style: AscentTextStyles.bodyMedium.copyWith(
                           color: isChecked ? context.textPrimary : context.textMuted,
                           decoration: isChecked ? null : TextDecoration.lineThrough,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -1038,9 +1100,9 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
 
   Widget _buildFooter(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
       decoration: BoxDecoration(
-        color: context.bgSurfaceElevated.withValues(alpha: 0.8),
+        color: context.bgSurfaceElevated.withValues(alpha: 0.9),
         border: Border(top: BorderSide(color: context.divider, width: 0.8)),
       ),
       child: Row(
@@ -1144,34 +1206,29 @@ class _ScorecardTile extends StatelessWidget {
   }
 }
 
-class _LoadingDebriefState extends StatelessWidget {
-  const _LoadingDebriefState();
+class _LoadingScorecardShimmer extends StatelessWidget {
+  const _LoadingScorecardShimmer();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.bgSurfaceElevated,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: context.divider),
+      ),
+      child: Row(
         children: [
           const SizedBox(
-            width: 36,
-            height: 36,
-            child: CircularProgressIndicator(strokeWidth: 3),
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(width: 12),
           Text(
-            'Analyzing Yesterday & Preparing Briefing...',
-            style: GoogleFonts.plusJakartaSans(
-              color: context.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Synthesizing focus time, movement, and hydration',
-            style: AscentTextStyles.caption.copyWith(color: context.textMuted),
+            'Analyzing yesterday\'s activity...',
+            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
           ),
         ],
       ),

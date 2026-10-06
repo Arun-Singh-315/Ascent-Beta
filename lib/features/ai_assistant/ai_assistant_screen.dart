@@ -14,7 +14,6 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
-import '../../core/walk/walk_tracking_service.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
   const AiAssistantScreen({super.key});
@@ -310,7 +309,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                 final messages = snapshot.data ?? [];
 
                 if (messages.isEmpty) {
-                  return _LiveBriefingDashboard(
+                  return _SoftChatWelcome(
                     assistantName: name,
                     onSelectPrompt: _handleSubmitted,
                   );
@@ -812,14 +811,14 @@ class _ThinkingBubble extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Live Telemetry Briefing Dashboard (Opening State)
+// Soft Minimalist Conversational Welcome (Opening State)
 // ---------------------------------------------------------------------------
 
-class _LiveBriefingDashboard extends ConsumerWidget {
+class _SoftChatWelcome extends ConsumerWidget {
   final String assistantName;
   final ValueChanged<String> onSelectPrompt;
 
-  const _LiveBriefingDashboard({
+  const _SoftChatWelcome({
     required this.assistantName,
     required this.onSelectPrompt,
   });
@@ -827,356 +826,124 @@ class _LiveBriefingDashboard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(userProfileStreamProvider).value;
-    final userName = profile?.name.isNotEmpty == true ? profile!.name : 'Arun';
-
-    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
-    final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
-
-    final walkState = ref.watch(walkTrackingProvider);
-    final todayWalkMeters = ref.watch(todayWalkDistanceStreamProvider).value ?? 0.0;
-    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
-
-    final learningState = ref.watch(learningHubProvider);
-    final course = learningState.course;
-
-    final todaySpending = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
-    final nextReminder = ref.watch(nextUpcomingReminderProvider).value;
-
+    final userName = profile?.name.isNotEmpty == true ? profile!.name.split(' ').first : 'there';
     final accent = context.accentPrimary;
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      children: [
-        // 1. Header Card with Live Status Badge
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: context.divider.withValues(alpha: 0.8), width: 1.0),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: accent.withValues(alpha: 0.4)),
-                ),
-                child: Icon(Icons.auto_awesome_rounded, color: accent, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'AI STATUS · $assistantName',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                            color: accent,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 5,
-                                height: 5,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Color(0xFF10B981),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'ONLINE',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                  color: const Color(0xFF10B981),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Live Telemetry Briefing for $userName',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: context.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 14),
-
-        // 2. Real-Time Telemetry Grid
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 1.8,
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Hydration Telemetry
-            _TelemetryCard(
-              title: 'Hydration',
-              value: '$waterMl / $waterGoal mL',
-              status: waterMl < 1000 ? 'Drink water!' : 'Healthy',
-              statusColor: waterMl < 1000 ? context.stateWarning : const Color(0xFF38BDF8),
-              icon: Icons.water_drop_rounded,
-              iconColor: const Color(0xFF38BDF8),
-              onTap: () => onSelectPrompt('Log 250ml water'),
-            ),
-
-            // Walk Telemetry
-            _TelemetryCard(
-              title: 'Walk & Activity',
-              value: isWalkActive
-                  ? '${(walkState.distanceKm).toStringAsFixed(2)} km'
-                  : '${(todayWalkMeters / 1000.0).toStringAsFixed(1)} km today',
-              status: isWalkActive ? 'Active GPS walk' : (todayWalkMeters > 0 ? 'Logged' : 'Pending walk'),
-              statusColor: isWalkActive ? const Color(0xFF22C55E) : const Color(0xFF10B981),
-              icon: Icons.directions_walk_rounded,
-              iconColor: const Color(0xFF10B981),
-              onTap: () => onSelectPrompt('Walk status and tips'),
-            ),
-
-            // Learning Telemetry
-            _TelemetryCard(
-              title: 'Learning Hub',
-              value: '${course.completedLectures}/${course.totalLectures} lectures',
-              status: '${course.remainingLectures} left in course',
-              statusColor: const Color(0xFF6366F1),
-              icon: Icons.school_rounded,
-              iconColor: const Color(0xFF6366F1),
-              onTap: () => onSelectPrompt('What should I study next?'),
-            ),
-
-            // Reminder & Money Telemetry
-            _TelemetryCard(
-              title: 'Reminders & Finance',
-              value: '₹${todaySpending.toStringAsFixed(0)} today',
-              status: nextReminder != null ? nextReminder.title : 'No pending alarms',
-              statusColor: const Color(0xFFF59E0B),
-              icon: Icons.notifications_active_rounded,
-              iconColor: const Color(0xFFF59E0B),
-              onTap: () => onSelectPrompt('Show my pending tasks and reminders'),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 18),
-
-        Text(
-          'INTELLIGENT COMMANDS',
-          style: AscentTextStyles.labelSmall.copyWith(
-            color: context.textMuted,
-            letterSpacing: 1.1,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // 3. Highlight "Plan My Day" button
-        InkWell(
-          onTap: () => onSelectPrompt('Plan my day'),
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  accent.withValues(alpha: 0.18),
-                  accent.withValues(alpha: 0.08),
+            // Soft glowing avatar
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: context.bgSurfaceElevated,
+                border: Border.all(color: context.divider, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: accent.withValues(alpha: 0.5), width: 1.2),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.bolt_rounded, size: 18, color: accent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '⚡ Plan My Day',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: context.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        'Synthesize activities, walk goals, hydration & lectures',
-                        style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios_rounded, size: 12, color: accent),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 10),
-
-        // Quick prompts list
-        ...[
-          'What tasks are pending today?',
-          'Log 250ml water',
-          'Explain Dynamic Programming',
-          'Move my workout to the evening',
-        ].map((p) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: InkWell(
-                onTap: () => onSelectPrompt(p),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.bgSurface.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.divider.withValues(alpha: 0.7)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.chat_bubble_outline_rounded, size: 14, color: accent),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          p,
-                          style: AscentTextStyles.bodyMedium.copyWith(
-                            color: context.textPrimary,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.arrow_forward_rounded, size: 13, color: context.textMuted),
-                    ],
-                  ),
-                ),
+              child: Center(
+                child: Icon(Icons.auto_awesome_rounded, color: accent, size: 26),
               ),
-            )),
-      ],
-    );
-  }
-}
+            ),
+            const SizedBox(height: 14),
 
-class _TelemetryCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String status;
-  final Color statusColor;
-  final IconData icon;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const _TelemetryCard({
-    required this.title,
-    required this.value,
-    required this.status,
-    required this.statusColor,
-    required this.icon,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.divider.withValues(alpha: 0.6), width: 0.8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Minimal status indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: context.bgSurfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.divider, width: 0.8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    title,
+                    '$assistantName · Private & On-Device',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
                       color: context.textMuted,
                     ),
                   ),
-                  Icon(icon, size: 14, color: iconColor),
                 ],
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: context.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    status,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w600,
-                      color: statusColor,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+            ),
+            const SizedBox(height: 12),
+
+            Text(
+              'Hi $userName 👋',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: context.textPrimary,
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'How can I help you today?',
+              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Soft suggestion pills
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                '⚡ Plan my day',
+                '💧 Log 250ml water',
+                '🎯 What are my tasks today?',
+                '💡 Explain Dynamic Programming',
+                '🏃 Check my walk status',
+              ].map((prompt) {
+                return InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onSelectPrompt(prompt);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: context.bgSurfaceElevated,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: context.divider, width: 1.0),
+                    ),
+                    child: Text(
+                      prompt,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: context.textPrimary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ),
       ),
     );

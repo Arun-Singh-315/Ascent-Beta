@@ -41,6 +41,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(userProfileStreamProvider).value;
+    if (profile != null) {
+      _initFromProfile(profile);
+    }
+  }
+
   void _initFromProfile(UserProfile? profile) {
     if (profile == null || _profileLoaded) return;
     _profileLoaded = true;

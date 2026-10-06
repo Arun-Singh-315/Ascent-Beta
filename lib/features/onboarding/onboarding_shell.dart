@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
@@ -190,18 +191,8 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
   }
 
   Future<void> _finishOnboarding() async {
+    HapticFeedback.mediumImpact();
     await ref.read(onboardingProvider.notifier).submitAndSeedPlan(context, ref);
-    if (!mounted) return;
-
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => _PlanReadyDialog(
-        targetRole: ref.read(onboardingProvider).targetRole,
-        companiesCount: ref.read(onboardingProvider).targetCompanies.length,
-      ),
-    );
-
     if (mounted) {
       context.go('/home');
     }
@@ -723,66 +714,4 @@ class _FeatureRow extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Transition Dialog
-// ---------------------------------------------------------------------------
 
-class _PlanReadyDialog extends StatelessWidget {
-  final String targetRole;
-  final int companiesCount;
-
-  const _PlanReadyDialog({
-    required this.targetRole,
-    required this.companiesCount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: context.bgSurface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(22.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: context.accentPrimary.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_rounded,
-                color: context.accentPrimary,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Workspace Ready',
-              style: AscentTextStyles.displaySmall.copyWith(
-                color: context.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Configured for $targetRole with $companiesCount target companies ready in your pipeline.',
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            AscentButton.primary(
-              label: 'Enter Ascent',
-              compact: true,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

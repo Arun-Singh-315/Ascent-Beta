@@ -268,8 +268,16 @@ class _PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = onPressed != null && !loading;
-    final bg = isEnabled ? context.accentPrimary : context.accentPrimaryDim;
-    final fg = context.textOnPrimary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isEnabled
+        ? (isDark
+            ? context.bgSurfaceElevated.withValues(alpha: 0.92)
+            : const Color(0xFF1E293B).withValues(alpha: 0.94))
+        : context.bgSurfaceElevated.withValues(alpha: 0.4);
+    final fg = isDark ? context.textPrimary : Colors.white;
+    final borderColor = isDark
+        ? context.textPrimary.withValues(alpha: 0.25)
+        : const Color(0xFF0F172A).withValues(alpha: 0.7);
     final height = compact ? 34.0 : 42.0;
     final radius = compact ? 8.0 : 10.0;
 
@@ -290,7 +298,7 @@ class _PrimaryButton extends StatelessWidget {
               Text(
                 label,
                 style: (compact ? AscentTextStyles.labelSmall : AscentTextStyles.labelMedium)
-                    .copyWith(color: fg, fontWeight: FontWeight.w600),
+                    .copyWith(color: fg, fontWeight: FontWeight.w700),
               ),
             ],
           );
@@ -302,12 +310,16 @@ class _PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
           foregroundColor: fg,
-          disabledBackgroundColor: context.accentPrimaryDim,
-          disabledForegroundColor: fg.withValues(alpha: 0.6),
+          disabledBackgroundColor: context.bgSurfaceElevated.withValues(alpha: 0.4),
+          disabledForegroundColor: fg.withValues(alpha: 0.4),
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(radius),
+            side: BorderSide(
+              color: isEnabled ? borderColor : context.divider,
+              width: 1.1,
+            ),
           ),
           padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
           minimumSize: expanded

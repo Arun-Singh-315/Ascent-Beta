@@ -141,7 +141,7 @@ class _AscentBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = context.bgSurface;
     final divider = context.divider;
-    final activeColor = context.accentPrimary;
+    final activeTextColor = context.textPrimary;
     final inactiveColor = context.textMuted;
 
     return Container(
@@ -167,7 +167,7 @@ class _AscentBottomNav extends StatelessWidget {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () => onTap(index),
-                    splashColor: activeColor.withValues(alpha: 0.08),
+                    splashColor: context.divider.withValues(alpha: 0.2),
                     highlightColor: Colors.transparent,
                     child: Center(
                       child: Column(
@@ -179,14 +179,20 @@ class _AscentBottomNav extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? activeColor.withValues(alpha: 0.12)
+                                  ? context.bgSurfaceElevated.withValues(alpha: 0.9)
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isActive
+                                    ? context.divider.withValues(alpha: 0.8)
+                                    : Colors.transparent,
+                                width: 0.8,
+                              ),
                             ),
                             child: Icon(
                               isActive ? tab.activeIcon : tab.icon,
-                              color: isActive ? activeColor : inactiveColor,
-                              size: 20,
+                              color: isActive ? activeTextColor : inactiveColor,
+                              size: 19,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -194,8 +200,8 @@ class _AscentBottomNav extends StatelessWidget {
                             tab.label,
                             style: TextStyle(
                               fontSize: 10,
-                              fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                              color: isActive ? activeColor : inactiveColor,
+                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                              color: isActive ? activeTextColor : inactiveColor,
                               height: 1.1,
                             ),
                           ),
