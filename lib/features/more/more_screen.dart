@@ -33,54 +33,64 @@ class MoreScreen extends ConsumerWidget {
             data: (profile) {
               final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
               final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Job Seeker';
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: context.bgSurface,
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/settings');
+                  },
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.divider),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 26,
-                      backgroundColor: context.accentPrimary.withValues(alpha: 0.15),
-                      child: Text(
-                        name.substring(0, 1).toUpperCase(),
-                        style: AscentTextStyles.displaySmall.copyWith(
-                          color: context.accentPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.bgSurface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.divider),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            name,
-                            style: AscentTextStyles.labelLarge.copyWith(
-                              color: context.textPrimary,
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 26,
+                          backgroundColor: context.accentPrimary.withValues(alpha: 0.15),
+                          child: Text(
+                            name.substring(0, 1).toUpperCase(),
+                            style: AscentTextStyles.displaySmall.copyWith(
+                              color: context.accentPrimary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            role,
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: context.textMuted,
-                            ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                name,
+                                style: AscentTextStyles.labelLarge.copyWith(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                role,
+                                style: AscentTextStyles.bodySmall.copyWith(
+                                  color: context.textMuted,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        AscentButton.outlined(
+                          label: 'Edit',
+                          compact: true,
+                          onPressed: () => context.push('/settings'),
+                        ),
+                      ],
                     ),
-                    AscentButton.outlined(
-                      label: 'Edit',
-                      compact: true,
-                      onPressed: () => context.push('/settings'),
-                    ),
-                  ],
+                  ),
                 ),
               );
             },

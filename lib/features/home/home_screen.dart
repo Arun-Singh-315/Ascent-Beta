@@ -519,27 +519,33 @@ class _HomeHeader extends ConsumerWidget {
             ),
             const SizedBox(width: 4),
             // Settings / Profile avatar
-            InkWell(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.push('/settings');
-              },
-              borderRadius: BorderRadius.circular(18),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: context.bgSurfaceElevated,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: context.divider, width: 0.8),
-                ),
-                child: Center(
-                  child: Text(
-                    name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+            Tooltip(
+              message: 'Settings & Profile',
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/settings');
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: context.bgSurfaceElevated,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: context.divider, width: 1.0),
+                    ),
+                    child: Center(
+                      child: Text(
+                        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: context.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ),
