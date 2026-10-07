@@ -322,3 +322,322 @@ Course buildDefaultSpringBootCourse() {
     modules: modules,
   );
 }
+
+Course buildCompleteJava2026Course() {
+  const mod1Title = 'Java Foundations & Core Syntax';
+  const mod2Title = 'Strings, Control Flow & Arrays';
+  const mod3Title = 'Object-Oriented Programming (OOP) Deep Dive';
+  const mod4Title = 'Advanced Java, Concurrency & Collections';
+
+  final mod1Lectures = [
+    const Lecture(
+      id: 1,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'How to Install Java OpenJDK on Windows 11',
+      durationSeconds: 708, // 11:48
+    ),
+    const Lecture(
+      id: 2,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'What is JDK, JVM, JRE, javac, Byte code, JIT ? Complete Execution Process !',
+      durationSeconds: 743, // 12:23
+    ),
+    const Lecture(
+      id: 3,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Install IntelliJ IDEA in 5 Minutes! 🚀 Easiest Way for Beginners (2026 Windows Guide)',
+      durationSeconds: 295, // 04:55
+    ),
+    const Lecture(
+      id: 4,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Understanding the skeleton of a Java Program | What is main method in Java ?',
+      durationSeconds: 602, // 10:02
+    ),
+    const Lecture(
+      id: 5,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Primitive Data Types in Java in Hindi | Byte, Short, Int, Long, Float, Double, Char & Boolean',
+      durationSeconds: 3429, // 57:09
+    ),
+    const Lecture(
+      id: 6,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Java Essentials: How to Properly Name Your Variables',
+      durationSeconds: 490, // 08:10
+    ),
+    const Lecture(
+      id: 7,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Become a Math Wiz: Understanding Arithmetic Operators – From Basics to Advanced!',
+      durationSeconds: 1878, // 31:18
+    ),
+    const Lecture(
+      id: 8,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Bitwise operators in Java | and, or, not, xor, left shift, right shift & unsigned right shift',
+      durationSeconds: 1060, // 17:40
+    ),
+    const Lecture(
+      id: 9,
+      moduleId: 1,
+      moduleTitle: mod1Title,
+      title: 'Println vs Print vs Printf in Java',
+      durationSeconds: 1249, // 20:49
+    ),
+  ];
+
+  final mod2Lectures = [
+    const Lecture(
+      id: 10,
+      moduleId: 2,
+      moduleTitle: mod2Title,
+      title: 'Java Strings Explained: Understanding String Data Types, Heap Storage, and String Pool',
+      durationSeconds: 1118, // 18:38
+    ),
+    const Lecture(
+      id: 11,
+      moduleId: 2,
+      moduleTitle: mod2Title,
+      title: 'Master Java String Methods: A Comprehensive Guide for Beginners',
+      durationSeconds: 1568, // 26:08
+    ),
+    const Lecture(
+      id: 12,
+      moduleId: 2,
+      moduleTitle: mod2Title,
+      title: 'How to Use Conditional Statements in Java: If, Else If, Else, Switch case',
+      durationSeconds: 1942, // 32:22
+    ),
+    const Lecture(
+      id: 13,
+      moduleId: 2,
+      moduleTitle: mod2Title,
+      title: 'Java Loops Explained: For, While, and Do-While Loops',
+      durationSeconds: 1854, // 30:54
+    ),
+    const Lecture(
+      id: 14,
+      moduleId: 2,
+      moduleTitle: mod2Title,
+      title: 'Mastering Java Arrays: 1D, 2D, and Jagged Arrays Explained',
+      durationSeconds: 2081, // 34:41
+    ),
+  ];
+
+  final mod3Lectures = [
+    const Lecture(
+      id: 15,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Master OOP in Java: Encapsulation, Abstraction, Polymorphism & Inheritance Explained',
+      durationSeconds: 1367, // 22:47
+    ),
+    const Lecture(
+      id: 16,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Methods in Java | Overloading | Signature | Mutability',
+      durationSeconds: 1778, // 29:38
+    ),
+    const Lecture(
+      id: 17,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Easiest Way to Learn Recursion: Beginner-Friendly Guide',
+      durationSeconds: 803, // 13:23
+    ),
+    const Lecture(
+      id: 18,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Understand Packages and Classpath in 15 minutes',
+      durationSeconds: 986, // 16:26
+    ),
+    const Lecture(
+      id: 19,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Encapsulation in Java in 15 minutes',
+      durationSeconds: 1009, // 16:49
+    ),
+    const Lecture(
+      id: 20,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'What are constructors in Java ?',
+      durationSeconds: 480, // 08:00
+    ),
+    const Lecture(
+      id: 21,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Inheritance in Java | Method Overriding | super keyword',
+      durationSeconds: 2076, // 34:36
+    ),
+    const Lecture(
+      id: 22,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Polymorphism: Compile Time vs Run Time (Dynamic Method Dispatch)',
+      durationSeconds: 885, // 14:45
+    ),
+    const Lecture(
+      id: 23,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Abstraction in Java | Abstract Class | Abstract Method',
+      durationSeconds: 1175, // 19:35
+    ),
+    const Lecture(
+      id: 24,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Access Modifiers: Public, Private, Default & Protected',
+      durationSeconds: 1511, // 25:11
+    ),
+    const Lecture(
+      id: 25,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Mastering Static in Java: Static variable, method & block',
+      durationSeconds: 1130, // 18:50
+    ),
+    const Lecture(
+      id: 26,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Mastering the Final Keyword in Java: Everything You Need to Know!',
+      durationSeconds: 636, // 10:36
+    ),
+    const Lecture(
+      id: 27,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Mastering Java Interfaces: Static & Default Methods, Multiple Inheritance Explained',
+      durationSeconds: 1566, // 26:06
+    ),
+    const Lecture(
+      id: 28,
+      moduleId: 3,
+      moduleTitle: mod3Title,
+      title: 'Exploring Inner Classes in Java: Static, Member, Local, and Anonymous Types',
+      durationSeconds: 2125, // 35:25
+    ),
+  ];
+
+  final mod4Lectures = [
+    const Lecture(
+      id: 29,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Master Exceptions in Java: Try, Catch, Finally, Throw, Throws, try-with-resources & Custom...',
+      durationSeconds: 3141, // 52:21
+    ),
+    const Lecture(
+      id: 30,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Mastering Wrapper Classes in Java: Autoboxing, Autounboxing, Methods Explained',
+      durationSeconds: 978, // 16:18
+    ),
+    const Lecture(
+      id: 31,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Master Math in Java: Min, Max, Ceil, Floor, Round, Random, Pi, Log, Sin, Cos & More!',
+      durationSeconds: 625, // 10:25
+    ),
+    const Lecture(
+      id: 32,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Understanding Enums in Java: Internal working, toString, values, ordinal, valueOf & much more !',
+      durationSeconds: 1479, // 24:39
+    ),
+    const Lecture(
+      id: 33,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Java Multithreading: Synchronization, Locks, Executors, Deadlock, CountdownLatch &...',
+      durationSeconds: 14141, // 3:55:41
+    ),
+    const Lecture(
+      id: 34,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Volatile vs Atomic in Java: Thread Safety Explained',
+      durationSeconds: 706, // 11:46
+    ),
+    const Lecture(
+      id: 35,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Java Generics Explained: Classes, Methods, Interfaces, Enums, & Exceptions | Full Tutorial',
+      durationSeconds: 3493, // 58:13
+    ),
+    const Lecture(
+      id: 36,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Complete Java Collections Framework & Streams Masterclass 2026',
+      durationSeconds: 28156, // 7:49:16
+    ),
+    const Lecture(
+      id: 37,
+      moduleId: 4,
+      moduleTitle: mod4Title,
+      title: 'Java String vs StringBuilder vs StringBuffer: Best Practices & Performance',
+      durationSeconds: 795, // 13:15
+    ),
+  ];
+
+  final modules = [
+    CourseModule(
+      id: 1,
+      title: mod1Title,
+      description: 'OpenJDK setup, IntelliJ IDEA, bytecode internals, syntax, operators and I/O',
+      durationHours: 2.9,
+      lectures: mod1Lectures,
+    ),
+    CourseModule(
+      id: 2,
+      title: mod2Title,
+      description: 'Strings deep dive, heap pool, control flow structures and multi-dimensional arrays',
+      durationHours: 2.4,
+      lectures: mod2Lectures,
+    ),
+    CourseModule(
+      id: 3,
+      title: mod3Title,
+      description: 'Comprehensive OOP, inheritance, polymorphism, encapsulation, interfaces and inner classes',
+      durationHours: 4.8,
+      lectures: mod3Lectures,
+    ),
+    CourseModule(
+      id: 4,
+      title: mod4Title,
+      description: 'Exception handling, wrapper classes, multithreading, concurrency locks, generics and streams',
+      durationHours: 14.8,
+      lectures: mod4Lectures,
+    ),
+  ];
+
+  return Course(
+    id: 'java_programming_2026',
+    title: 'Complete Java Programming Course 2026',
+    description: 'Master core Java, OOP, concurrency, collections, and streams with Engineering Digest.',
+    author: 'Engineering Digest',
+    daysLeft: 45,
+    targetMinutesPerDay: 40,
+    modules: modules,
+  );
+}

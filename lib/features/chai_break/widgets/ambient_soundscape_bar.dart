@@ -8,12 +8,16 @@ import '../chai_break_provider.dart';
 class AmbientSoundscapeBar extends StatefulWidget {
   final SoundscapePreset selectedSoundscape;
   final bool isPlaying;
+  final bool isMuted;
+  final VoidCallback? onToggleMute;
   final ValueChanged<SoundscapePreset> onSoundscapeChanged;
 
   const AmbientSoundscapeBar({
     super.key,
     required this.selectedSoundscape,
     required this.isPlaying,
+    this.isMuted = false,
+    this.onToggleMute,
     required this.onSoundscapeChanged,
   });
 
@@ -272,7 +276,25 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                     );
                   },
                 ),
-              const SizedBox(width: 8),
+              if (widget.onToggleMute != null) ...[
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onToggleMute?.call();
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      widget.isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                      color: widget.isMuted ? Colors.white38 : accent,
+                      size: 19,
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 4),
               const Icon(Icons.arrow_drop_down_rounded, color: Colors.white54, size: 22),
             ],
           ),

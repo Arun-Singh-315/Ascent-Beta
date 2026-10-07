@@ -285,6 +285,8 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     AmbientSoundscapeBar(
                       selectedSoundscape: state.selectedSoundscape,
                       isPlaying: state.isRunning,
+                      isMuted: state.isAudioMuted,
+                      onToggleMute: notifier.toggleAudioMute,
                       onSoundscapeChanged: (s) => notifier.selectSoundscape(s),
                     ),
 

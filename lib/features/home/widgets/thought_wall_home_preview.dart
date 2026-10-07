@@ -15,7 +15,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
-    final accentPurple = const Color(0xFF8338EC);
+    final accent = context.accentSecondary;
 
     return AscentCard(
       padding: const EdgeInsets.all(14),
@@ -29,10 +29,10 @@ class ThoughtWallHomePreview extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: accentPurple.withValues(alpha: 0.14),
+                  color: accent.withValues(alpha: 0.14),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.auto_awesome_rounded, size: 15, color: accentPurple),
+                child: Icon(Icons.auto_awesome_rounded, size: 15, color: accent),
               ),
               const SizedBox(width: 8),
               Text(
@@ -41,7 +41,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.0,
-                  color: accentPurple,
+                  color: accent,
                 ),
               ),
               const Spacer(),
@@ -55,7 +55,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
-                    color: accentPurple,
+                    color: accent,
                   ),
                 ),
               ),
@@ -102,7 +102,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: accentPurple.withValues(alpha: 0.12),
+                        color: accent.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
@@ -110,7 +110,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: accentPurple,
+                          color: accent,
                         ),
                       ),
                     ),
@@ -133,10 +133,10 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                   decoration: BoxDecoration(
-                    color: accentPurple.withValues(alpha: 0.05),
+                    color: accent.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: accentPurple.withValues(alpha: 0.2),
+                      color: accent.withValues(alpha: 0.2),
                       width: 0.6,
                     ),
                   ),
@@ -145,7 +145,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                       Icon(
                         thought.isPinned ? Icons.push_pin_rounded : Icons.bubble_chart_outlined,
                         size: 13,
-                        color: accentPurple,
+                        color: accent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(

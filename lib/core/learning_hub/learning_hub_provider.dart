@@ -204,12 +204,20 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         final List<dynamic> list = jsonDecode(rawJson);
         final courses = list.map((item) => Course.fromJson(item as Map<String, dynamic>)).toList();
         if (courses.isNotEmpty) {
+          final javaCourse = buildCompleteJava2026Course();
+          if (!courses.any((c) => c.id == javaCourse.id)) {
+            courses.add(javaCourse);
+          }
+          final springCourse = buildDefaultSpringBootCourse();
+          if (!courses.any((c) => c.id == springCourse.id)) {
+            courses.insert(0, springCourse);
+          }
           return courses;
         }
       } catch (_) {}
     }
 
-    // Initialize with default course and apply legacy progress if present
+    final javaCourse = buildCompleteJava2026Course();
     final defaultCourse = buildDefaultSpringBootCourse();
     final legacyRaw = prefs.getString(_kLegacyProgressKey);
     if (legacyRaw != null) {
@@ -240,11 +248,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         }).toList();
 
         final migrated = defaultCourse.copyWith(modules: updatedModules);
-        return [migrated];
+        return [migrated, javaCourse];
       } catch (_) {}
     }
 
-    return [defaultCourse];
+    return [defaultCourse, javaCourse];
   }
 
   void _persistCourses() {

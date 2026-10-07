@@ -214,16 +214,16 @@ class _ThoughtCard extends ConsumerWidget {
   Color _moodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return const Color(0xFF8338EC);
+        return const Color(0xFF9D84B7); // Soft reflective lavender
       case 'idea':
-        return const Color(0xFFFFB703);
+        return const Color(0xFFE28B57); // Warm amber spark (Ascent accentSecondary)
       case 'win':
-        return const Color(0xFF5FA070);
+        return const Color(0xFF4E9F76); // Sage triumph (Ascent accentPrimary)
       case 'future':
-        return const Color(0xFFFB5607);
+        return const Color(0xFFD97736); // Warm terracotta horizon
       case 'thought':
       default:
-        return const Color(0xFF3A86FF);
+        return const Color(0xFF5A7F96); // Slate calm reflection
     }
   }
 

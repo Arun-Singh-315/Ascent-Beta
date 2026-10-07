@@ -134,6 +134,25 @@ void main() {
       expect(restored.modules.first.lectures.length, 1);
       expect(restored.modules.first.lectures.first.title, 'JVM Internals');
     });
+
+    test('buildCompleteJava2026Course seeds all 37 lectures from Engineering Digest playlist', () {
+      final javaCourse = buildCompleteJava2026Course();
+      expect(javaCourse.id, 'java_programming_2026');
+      expect(javaCourse.title, 'Complete Java Programming Course 2026');
+      expect(javaCourse.author, 'Engineering Digest');
+      expect(javaCourse.modules.length, 4);
+
+      final totalLectures = javaCourse.modules.expand((m) => m.lectures).length;
+      expect(totalLectures, 37);
+
+      final firstLec = javaCourse.modules.first.lectures.first;
+      expect(firstLec.title, 'How to Install Java OpenJDK on Windows 11');
+      expect(firstLec.durationSeconds, 708);
+
+      final lastLec = javaCourse.modules.last.lectures.last;
+      expect(lastLec.title, 'Java String vs StringBuilder vs StringBuffer: Best Practices & Performance');
+      expect(lastLec.durationSeconds, 795);
+    });
   });
 
   group('AI Riya Natural Language Parsing & Intent Upgrade Tests', () {
