@@ -9,6 +9,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 
 class AddActivitySheet extends ConsumerStatefulWidget {
@@ -586,6 +587,59 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   icon: widget.existingTask != null ? Icons.check_rounded : Icons.add_rounded,
                   onPressed: _save,
                 ),
+
+                if (widget.existingTask != null) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        HapticFeedback.mediumImpact();
+                        final nav = Navigator.of(context);
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Delete Activity?'),
+                            content: Text('Are you sure you want to delete "${widget.existingTask!.title}"? This will also remove any linked reminders.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              FilledButton(
+                                style: FilledButton.styleFrom(backgroundColor: context.stateDanger),
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true && mounted) {
+                          final dummyItem = TodayActivityItem(
+                            id: 'task_${widget.existingTask!.id}',
+                            title: widget.existingTask!.title,
+                            sourceType: 'task',
+                            status: TodayActivityStatus.notStarted,
+                            elapsedSecondsToday: 0,
+                            linkedTaskId: widget.existingTask!.id,
+                            categoryTag: 'Task',
+                            kind: ActivityKind.todo,
+                          );
+                          await deleteTodayActivity(ref, dummyItem);
+                          nav.pop();
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.stateDanger,
+                        side: BorderSide(color: context.stateDanger.withValues(alpha: 0.5)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      label: const Text('Delete Activity', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

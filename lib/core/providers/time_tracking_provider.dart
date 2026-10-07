@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
+import '../notifications/notification_service.dart';
 import 'database_provider.dart';
 
 class TimeTrackingState {
@@ -511,6 +512,30 @@ Stream<(T1, T2)> _combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
 }
 
 Future<void> deleteTodayActivity(WidgetRef ref, TodayActivityItem activity) async {
+  // 1. Cascade delete all linked / matching reminders & cancel local notifications
+  try {
+    final reminderDao = ref.read(reminderDaoProvider);
+    final allReminders = await reminderDao.watchAllReminders().first;
+    final actTitleNorm = activity.title.trim().toLowerCase();
+    for (final r in allReminders) {
+      if (r.title.trim().toLowerCase() == actTitleNorm) {
+        await reminderDao.deleteReminder(r.id);
+        await NotificationService.instance.cancel(r.id);
+      }
+    }
+  } catch (_) {}
+
+  // 2. If this activity is currently active in the timer, delete its active session
+  try {
+    final tracking = ref.read(timeTrackingProvider);
+    if (tracking.activeSession != null &&
+        (tracking.activeSession?.linkedTaskId == activity.linkedTaskId ||
+            tracking.activeSession?.label.trim().toLowerCase() == activity.title.trim().toLowerCase())) {
+      await ref.read(timeSessionDaoProvider).deleteSession(tracking.activeSession!.id);
+    }
+  } catch (_) {}
+
+  // 3. Delete linked task and associated time sessions
   if (activity.linkedTaskId != null) {
     await ref.read(taskDaoProvider).deleteTask(activity.linkedTaskId!);
     final sessions = await ref.read(timeSessionDaoProvider).watchSessionsForDate(DateTime.now()).first;

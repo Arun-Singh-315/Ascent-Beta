@@ -163,50 +163,77 @@ class ActivityRowItem extends ConsumerWidget {
 
             const SizedBox(width: 8),
 
-            // ── 3. 44dp CIRCULAR START / ACTION BUTTON ───────────────────
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () async {
+            // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
+            if (activity.kind == ActivityKind.todo) ...[
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: IconButton(
+                  tooltip: 'Edit activity',
+                  icon: Icon(Icons.edit_outlined, size: 18, color: g.inkMuted),
+                  onPressed: () async {
                     HapticFeedback.lightImpact();
-                    if (isRunning) {
-                      ref.read(timeTrackingProvider.notifier).pauseSession();
-                    } else if (isPaused) {
-                      ref.read(timeTrackingProvider.notifier).resumeSession();
-                    } else {
-                      await ref.read(timeTrackingProvider.notifier).switchToTask(
-                            title: activity.title,
-                            taskId: activity.linkedTaskId,
-                            sourceType: activity.sourceType,
-                            autoStart: true,
-                          );
-                      if (context.mounted) {
-                        context.push('/focus');
-                      }
+                    Task? task;
+                    if (activity.linkedTaskId != null) {
+                      task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                    }
+                    if (context.mounted) {
+                      AddActivitySheet.show(
+                        context,
+                        existingTask: task,
+                        initialTitle: activity.title,
+                        initialKind: activity.kind,
+                        initialDurationMinutes: activity.targetMinutes,
+                      );
                     }
                   },
-                  borderRadius: BorderRadius.circular(22),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: g.claySoft,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        isRunning
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        size: 20,
-                        color: g.clay,
+                ),
+              ),
+            ] else ...[
+              SizedBox(
+                width: 44,
+                height: 44,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () async {
+                      HapticFeedback.lightImpact();
+                      if (isRunning) {
+                        ref.read(timeTrackingProvider.notifier).pauseSession();
+                      } else if (isPaused) {
+                        ref.read(timeTrackingProvider.notifier).resumeSession();
+                      } else {
+                        await ref.read(timeTrackingProvider.notifier).switchToTask(
+                              title: activity.title,
+                              taskId: activity.linkedTaskId,
+                              sourceType: activity.sourceType,
+                              autoStart: true,
+                            );
+                        if (context.mounted) {
+                          context.push('/focus');
+                        }
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(22),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: g.claySoft,
+                      ),
+                      child: Center(
+                        child: Icon(
+                          isRunning
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          size: 20,
+                          color: g.clay,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -215,10 +242,10 @@ class ActivityRowItem extends ConsumerWidget {
 
   String _subtitleText(TodayActivityItem act) {
     if (act.kind == ActivityKind.todo) {
-      if (act.priority != null && act.priority!.isNotEmpty) {
-        return act.priority![0].toUpperCase() + act.priority!.substring(1);
-      }
-      return 'Medium';
+      final p = (act.priority != null && act.priority!.isNotEmpty)
+          ? act.priority![0].toUpperCase() + act.priority!.substring(1)
+          : 'Medium';
+      return '$p • To-do';
     }
     if (act.kind == ActivityKind.duration) {
       if (act.elapsedSecondsToday > 0) {

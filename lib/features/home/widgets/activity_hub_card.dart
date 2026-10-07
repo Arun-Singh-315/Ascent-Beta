@@ -28,6 +28,7 @@ class ActivityHubCard extends ConsumerStatefulWidget {
 
 class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   int _selectedTabIndex = 0; // 0: Up Next, 1: Completed, 2: All
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
@@ -254,7 +255,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     isSelected: _selectedTabIndex == 0,
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      setState(() => _selectedTabIndex = 0);
+                      setState(() {
+                        _selectedTabIndex = 0;
+                        _showAll = false;
+                      });
                     },
                   ),
                   const SizedBox(width: 24),
@@ -264,7 +268,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     isSelected: _selectedTabIndex == 1,
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      setState(() => _selectedTabIndex = 1);
+                      setState(() {
+                        _selectedTabIndex = 1;
+                        _showAll = false;
+                      });
                     },
                   ),
                   const SizedBox(width: 24),
@@ -274,14 +281,17 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     isSelected: _selectedTabIndex == 2,
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      setState(() => _selectedTabIndex = 2);
+                      setState(() {
+                        _selectedTabIndex = 2;
+                        _showAll = false;
+                      });
                     },
                   ),
                 ],
               ),
             ),
 
-            // ── ACTIVITIES LIST ───────────────────────────────────────────
+            // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
             if (filteredList.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
@@ -294,8 +304,67 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   ),
                 ),
               )
-            else
-              ...filteredList.map((act) => ActivityRowItem(activity: act)),
+            else ...[
+              // Render either capped items (max 4) or all if expanded
+              for (final act in (_showAll ? filteredList : filteredList.take(4)))
+                ActivityRowItem(activity: act),
+
+              // Show more / Show less toggle when count exceeds 4
+              if (filteredList.length > 4)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _showAll = !_showAll);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _showAll ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                size: 18,
+                                color: g.clay,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _showAll ? 'Show less' : 'Show ${filteredList.length - 4} more',
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.clay,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/today');
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          child: Text(
+                            'Open Board ›',
+                            style: AscentTextStyles.homeSecondary.copyWith(
+                              color: g.inkMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
 
             // ── ADD ACTIVITY ROW ──────────────────────────────────────────
             InkWell(
