@@ -38,6 +38,7 @@ class HomeHeader extends ConsumerWidget {
     final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Software Engineer';
     final dateStr = DateFormat('EEE, d MMM').format(DateTime.now()).toUpperCase();
     final streak = ref.watch(currentStreakStreamProvider).value ?? 0;
+    final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -138,7 +139,7 @@ class HomeHeader extends ConsumerWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Riya se Baat',
+                              assistantName,
                               style: AscentTextStyles.homeSecondary.copyWith(
                                 color: g.ink,
                                 fontWeight: FontWeight.w600,

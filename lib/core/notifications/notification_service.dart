@@ -65,7 +65,9 @@ class NotificationService {
             channelStudyId,
             channelStudyName,
             description: 'Daily study session and goal reminders',
-            importance: Importance.high,
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
           ),
         );
         await androidImpl.createNotificationChannel(
@@ -247,15 +249,27 @@ class NotificationService {
   }) async {
     if (!_isInitialized) await initialize();
 
-    final scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
-    if (scheduledTz.isBefore(tz.TZDateTime.now(tz.local))) return;
+    final nowTz = tz.TZDateTime.now(tz.local);
+    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+
+    // If within 30 seconds in past (boundary latency during saving), schedule for 10 seconds ahead
+    if (scheduledTz.isBefore(nowTz)) {
+      if (nowTz.difference(scheduledTz).inSeconds < 45) {
+        scheduledTz = nowTz.add(const Duration(seconds: 10));
+      } else {
+        debugPrint('Cannot schedule reminder in the past: $scheduledTz (now: $nowTz)');
+        return;
+      }
+    }
 
     const androidDetails = AndroidNotificationDetails(
       channelStudyId,
       channelStudyName,
       channelDescription: 'Ascent reminder notifications',
-      importance: Importance.high,
-      priority: Priority.high,
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
     );
     const darwinDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -278,8 +292,9 @@ class NotificationService {
         body: 'Scheduled reminder: $title',
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
+      debugPrint('Successfully scheduled reminder notification id=$id title="$title" at $scheduledTz');
     } catch (e) {
       debugPrint('Failed to schedule reminder notification: $e');
     }

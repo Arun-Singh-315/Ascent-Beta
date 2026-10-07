@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
+import '../../../core/providers/settings_provider.dart';
 
-class RiyaFloatingGateway extends StatelessWidget {
+class RiyaFloatingGateway extends ConsumerWidget {
   const RiyaFloatingGateway({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accent = context.accentPrimary;
     final isDark = context.isDark;
+    final assistantName = ref.watch(assistantNameProvider);
 
     return Container(
       decoration: BoxDecoration(
@@ -69,7 +72,7 @@ class RiyaFloatingGateway extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Riya se Baat',
+                  assistantName,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,

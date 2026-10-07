@@ -149,12 +149,41 @@ void main() {
 
       // Verify key elements are in tree
       expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.text('Riya se Baat'), findsOneWidget);
+      expect(find.text('Riya'), findsOneWidget);
 
       // Flush 350ms post-frame timer in _HomeScreenState
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
+    });
+
+    testWidgets('HomeHeader dynamically reflects customized assistant identity name', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: HomeHeader(profile: null),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Riya'), findsOneWidget);
+
+      // Change assistant identity to Jarvis
+      await container.read(assistantNameProvider.notifier).setName('Jarvis');
+      await tester.pump();
+
+      expect(find.text('Jarvis'), findsOneWidget);
+      expect(find.text('Riya'), findsNothing);
     });
   });
 }

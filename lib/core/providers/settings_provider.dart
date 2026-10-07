@@ -90,15 +90,21 @@ const _assistantNameKey = 'ascent_assistant_name';
 class AssistantNameNotifier extends Notifier<String> {
   @override
   String build() {
-    final prefs = ref.watch(sharedPreferencesProvider);
-    return prefs.getString(_assistantNameKey) ?? 'Riya';
+    try {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return prefs.getString(_assistantNameKey) ?? 'Riya';
+    } catch (_) {
+      return 'Riya';
+    }
   }
 
   Future<void> setName(String name) async {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return;
-    final prefs = ref.read(sharedPreferencesProvider);
-    await prefs.setString(_assistantNameKey, trimmed);
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setString(_assistantNameKey, trimmed);
+    } catch (_) {}
     state = trimmed;
   }
 

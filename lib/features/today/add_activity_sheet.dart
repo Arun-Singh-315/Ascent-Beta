@@ -92,6 +92,21 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       } else {
         _kind = ActivityKind.todo;
       }
+
+      // Check if existing task has an active reminder
+      Future.microtask(() async {
+        try {
+          final reminders = await ref.read(reminderDaoProvider).watchAllReminders().first;
+          final existing = reminders.where((r) => r.title.toLowerCase() == t.title.toLowerCase()).firstOrNull;
+          if (existing != null && mounted) {
+            setState(() {
+              _hasReminder = true;
+              _selectedDate = existing.scheduledAt;
+              _selectedTime = TimeOfDay.fromDateTime(existing.scheduledAt);
+            });
+          }
+        } catch (_) {}
+      });
     }
   }
 
@@ -132,6 +147,20 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
         _selectedTime.hour,
         _selectedTime.minute,
       );
+      final now = DateTime.now();
+      if (plannedDateTime.isBefore(now)) {
+        if (DateUtils.isSameDay(plannedDateTime, now)) {
+          // If within the same minute (boundary condition when user takes seconds to type & save)
+          if (now.difference(plannedDateTime).inMinutes <= 0) {
+            plannedDateTime = now.add(const Duration(minutes: 1));
+          } else {
+            // Picked an earlier time today: automatically schedule for tomorrow at that time
+            plannedDateTime = plannedDateTime.add(const Duration(days: 1));
+          }
+        } else {
+          plannedDateTime = now.add(const Duration(minutes: 2));
+        }
+      }
     }
 
     int taskId;
@@ -161,10 +190,26 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       );
     }
 
-    // Schedule reminder if toggled
-    if (_hasReminder && plannedDateTime.isAfter(DateTime.now())) {
+    final reminderDao = ref.read(reminderDaoProvider);
+
+    // Clean up previous reminders for this activity to avoid duplicates
+    if (widget.existingTask != null) {
       try {
-        final reminderDao = ref.read(reminderDaoProvider);
+        final allReminders = await reminderDao.watchAllReminders().first;
+        for (final r in allReminders.where((r) =>
+            r.title.toLowerCase() == widget.existingTask!.title.toLowerCase() ||
+            r.title.toLowerCase() == title.toLowerCase())) {
+          await reminderDao.deleteReminder(r.id);
+          await NotificationService.instance.cancel(r.id);
+        }
+      } catch (e) {
+        debugPrint('Error cleaning up existing reminders: $e');
+      }
+    }
+
+    // Schedule reminder if toggled
+    if (_hasReminder) {
+      try {
         final reminderId = await reminderDao.insertReminder(
           ReminderTableCompanion.insert(
             title: title,
@@ -177,7 +222,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           title: title,
           scheduledAt: plannedDateTime,
         );
-      } catch (_) {}
+        debugPrint('Activity reminder saved: id=$reminderId title="$title" at $plannedDateTime');
+      } catch (e) {
+        debugPrint('Error inserting reminder or scheduling notification: $e');
+      }
     }
 
     if (mounted) {
@@ -487,19 +535,50 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       Icon(Icons.notifications_active_outlined, size: 20, color: context.accentPrimary),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Remind me',
-                              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                            ),
-                            if (_hasReminder)
-                              Text(
-                                '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
-                                style: AscentTextStyles.captionMedium.copyWith(color: context.accentPrimary),
+                        child: InkWell(
+                          onTap: _hasReminder
+                              ? () async {
+                                  final pickedTime = await showTimePicker(
+                                    context: context,
+                                    initialTime: _selectedTime,
+                                  );
+                                  if (pickedTime != null) {
+                                    setState(() => _selectedTime = pickedTime);
+                                  }
+                                }
+                              : null,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    'Remind me',
+                                    style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                                  ),
+                                  if (_hasReminder) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '(Tap to edit)',
+                                      style: AscentTextStyles.captionMedium.copyWith(
+                                        color: context.textMuted,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
-                          ],
+                              if (_hasReminder)
+                                Text(
+                                  '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
+                                  style: AscentTextStyles.captionMedium.copyWith(
+                                    color: context.accentPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                       Switch(
@@ -507,9 +586,19 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         activeTrackColor: context.accentPrimary,
                         onChanged: (val) async {
                           if (val) {
+                            await NotificationService.instance.requestPermissions();
+                            if (!context.mounted) return;
+                            final now = TimeOfDay.now();
+                            final isPastToday = DateUtils.isSameDay(_selectedDate, DateTime.now()) &&
+                                (_selectedTime.hour < now.hour ||
+                                    (_selectedTime.hour == now.hour && _selectedTime.minute <= now.minute));
+                            final initial = isPastToday
+                                ? TimeOfDay(hour: (now.hour + (now.minute >= 45 ? 1 : 0)) % 24, minute: (now.minute + 15) % 60)
+                                : _selectedTime;
+
                             final pickedTime = await showTimePicker(
                               context: context,
-                              initialTime: _selectedTime,
+                              initialTime: initial,
                             );
                             if (pickedTime != null) {
                               setState(() {
