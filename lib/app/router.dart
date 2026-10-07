@@ -28,6 +28,7 @@ import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
+import '../features/chai_break/chai_break_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ class AscentRoutes {
   static const habits = '/habits';
   static const hydration = '/hydration';
   static const thoughtWall = '/thought-wall';
+  static const chaiBreak = '/chai-break';
   static const pipeline = '/pipeline';
   static const pipelineCard = '/pipeline/:id';
   static const analytics = '/analytics';
@@ -179,6 +181,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.thoughtWall,
       builder: (context, state) => const ThoughtWallScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.chaiBreak,
+      builder: (context, state) => const ChaiBreakScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

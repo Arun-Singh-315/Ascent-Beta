@@ -347,12 +347,13 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                 const SizedBox(height: 24),
 
                 // Swift Lecture Switcher Card
-                Container(
-                  decoration: BoxDecoration(
-                    color: context.bgBase,
+                Material(
+                  color: context.bgBase,
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+                    side: BorderSide(color: context.divider.withValues(alpha: 0.8)),
                   ),
+                  clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: [
                       // Header
@@ -421,23 +422,24 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                             final lec = all[index];
                             final isCurrent = lec.id == state.activeLectureId;
 
-                            return Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                              decoration: BoxDecoration(
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                              child: Material(
                                 color: isCurrent
                                     ? context.accentSecondary.withValues(alpha: 0.12)
                                     : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                                border: isCurrent
-                                    ? Border.all(color: context.accentSecondary.withValues(alpha: 0.4))
-                                    : null,
-                              ),
-                              child: ListTile(
-                                dense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                                leading: Container(
-                                  width: 26,
-                                  height: 26,
+                                shape: isCurrent
+                                    ? RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(color: context.accentSecondary.withValues(alpha: 0.4)),
+                                      )
+                                    : RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: ListTile(
+                                  dense: true,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                  leading: Container(
+                                    width: 26,
+                                    height: 26,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     color: isCurrent
@@ -492,8 +494,9 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                                   notifier.selectLecture(lec.id, autoPlay: true);
                                 },
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
                         ),
                       ],
                     ],
