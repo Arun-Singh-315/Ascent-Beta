@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../app/theme/color_tokens.dart';
-import '../../core/database/app_database.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/time_tracking_provider.dart';
 import '../../core/services/hydration_reminder_service.dart';
 import '../../shared/widgets/new_day_dialog.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'widgets/activity_hub_card.dart';
+import 'widgets/home_atmosphere.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_reminder_banners.dart';
 import 'widgets/learning_hub_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
-import 'widgets/riya_floating_gateway.dart';
 import 'widgets/secondary_tools_section.dart';
 import 'widgets/thought_wall_home_preview.dart';
 
+/// Redesigned Home Screen according to the Ascent Home Redesign specification:
+/// - 9 cards → 3 intentional surface levels.
+/// - 10 hues → 1 unified Clay accent with neutral ink hierarchy.
+/// - First screen leads with Today execution.
+/// - 24dp gutter, 32dp inter-section spacing.
+/// - Stationary ambient atmosphere painter behind smooth scrolling view.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -54,179 +59,82 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
     final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
 
     return Scaffold(
-      backgroundColor: context.bgBase,
-      floatingActionButton: const RiyaFloatingGateway(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      backgroundColor: g.bg,
       body: SafeArea(
-        child: profileAsync.when(
-          loading: () => const _HomeLoadingView(),
-          error: (err, _) => Center(
-            child: Text('Failed to load dashboard: $err'),
-          ),
-          data: (profile) {
-            return RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(userProfileStreamProvider);
-                ref.invalidate(todayFocusTaskProvider);
-                ref.invalidate(currentStreakStreamProvider);
-                ref.invalidate(learningHubProvider);
-                ref.invalidate(nextUpcomingInterviewProvider);
-                ref.invalidate(nextUpcomingReminderProvider);
-                ref.invalidate(mostRecentNoteProvider);
-                ref.invalidate(recentThoughtsStreamProvider);
-              },
-              color: context.accentPrimary,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(left: 18, right: 18, top: 14, bottom: 96),
-                children: [
-                  // 1. Header (Greeting + User Profile + Streak + Day/Night Toggle)
-                  HomeHeader(profile: profile),
-
-                  // Top indicator for upcoming/pending reminders
-                  const TopReminderAlertBanner(),
-
-                  // Return-user cold start welcome-back banner (>3 days absent)
-                  if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
-                    const SizedBox(height: 12),
-                    WelcomeBackBanner(days: daysSinceLastOpen),
-                  ],
-
-                  const SizedBox(height: 14),
-
-                  // ── SECTION 1: TODAY'S EXECUTION ─────────────────────
-                  _HomeSectionHeader(
-                    icon: Icons.bolt_rounded,
-                    iconColor: context.accentSecondary,
-                    title: "TODAY'S EXECUTION",
-                    subtitle: 'Tasks & Lectures',
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Today's activities, intelligent types, active timer & quick add
-                  const ActivityHubCard(),
-
-                  const SizedBox(height: 14),
-
-                  // Multi-course hero, course switcher, progress & resume
-                  const LearningHubCard(),
-
-                  const SizedBox(height: 20),
-
-                  // ── SECTION 2: LIFE & SANCTUARY MODULES ──────────────
-                  const QuickModulesNavHub(),
-
-                  const SizedBox(height: 20),
-
-                  // ── SECTION 3: MIND SPACE & KNOWLEDGE ARCHIVE ────────
-                  _HomeSectionHeader(
-                    icon: Icons.auto_awesome_rounded,
-                    iconColor: const Color(0xFF8338EC),
-                    title: 'MIND SPACE & REFLECTION',
-                    subtitle: 'Self-Talk & Notes',
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Thought Wall (Quick spark prompt + pinned reflection)
-                  const ThoughtWallHomePreview(),
-
-                  const SizedBox(height: 14),
-
-                  // Collapsible Secondary Section (Notes & Reminders)
-                  const SecondaryToolsSection(),
-
-                  const SizedBox(height: 22),
-
-                  // Positivity line
-                  _HomePositivityLine(profile: profile),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeSectionHeader extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String? subtitle;
-
-  const _HomeSectionHeader({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 12, color: iconColor),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                title,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: context.textMuted,
-                ),
-              ),
-            ],
-          ),
-          if (subtitle != null)
-            Text(
-              subtitle!,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10.5,
-                color: context.textMuted.withValues(alpha: 0.8),
+        child: HomeAtmosphereBackground(
+          child: profileAsync.when(
+            loading: () => const _HomeLoadingView(),
+            error: (err, _) => Center(
+              child: Text(
+                'Failed to load dashboard: $err',
+                style: TextStyle(color: g.inkMuted),
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
+            data: (profile) {
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(userProfileStreamProvider);
+                  ref.invalidate(todayFocusTaskProvider);
+                  ref.invalidate(currentStreakStreamProvider);
+                  ref.invalidate(learningHubProvider);
+                  ref.invalidate(nextUpcomingInterviewProvider);
+                  ref.invalidate(nextUpcomingReminderProvider);
+                  ref.invalidate(mostRecentNoteProvider);
+                  ref.invalidate(recentThoughtsStreamProvider);
+                  ref.invalidate(todayActivitiesProvider);
+                },
+                color: g.clay,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 96),
+                  children: [
+                    // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
+                    HomeHeader(profile: profile),
 
-class _HomePositivityLine extends StatelessWidget {
-  final UserProfile? profile;
-  const _HomePositivityLine({this.profile});
+                    // Top indicator for pending reminders
+                    const TopReminderAlertBanner(),
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Text(
-          'Prepare with purpose — clarity comes from daily reps.',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
-            fontStyle: FontStyle.italic,
-            color: context.textMuted,
+                    // Return-user cold start welcome banner (>3 days absent)
+                    if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
+                      const SizedBox(height: 12),
+                      WelcomeBackBanner(days: daysSinceLastOpen),
+                    ],
+
+                    const SizedBox(height: 24),
+
+                    // ── LEVEL 1: TODAY EXECUTION (PRIMARY) ───────────────
+                    const ActivityHubCard(),
+
+                    const SizedBox(height: 24),
+
+                    // ── LEVEL 2: LEARNING HUB ────────────────────────────
+                    const LearningHubCard(),
+
+                    const SizedBox(height: 32),
+
+                    // ── LEVEL 2: LIFE & SANCTUARY (2x2 GRID + CHAI) ──────
+                    const QuickModulesNavHub(),
+
+                    const SizedBox(height: 32),
+
+                    // ── LEVEL 3: MIND SPACE & SELF-TALK ──────────────────
+                    const ThoughtWallHomePreview(),
+
+                    const SizedBox(height: 32),
+
+                    // ── LEVEL 3: NOTES & REMINDERS ───────────────────────
+                    const SecondaryToolsSection(),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -240,16 +148,16 @@ class _HomeLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(24),
       children: [
         SkeletonShimmer.card(height: 50),
-        const SizedBox(height: 12),
-        SkeletonShimmer.card(height: 80),
-        const SizedBox(height: 12),
-        SkeletonShimmer.card(height: 160),
-        const SizedBox(height: 12),
-        SkeletonShimmer.card(height: 140),
-        const SizedBox(height: 12),
+        const SizedBox(height: 20),
+        SkeletonShimmer.card(height: 120),
+        const SizedBox(height: 20),
+        SkeletonShimmer.card(height: 72),
+        const SizedBox(height: 24),
+        SkeletonShimmer.card(height: 180),
+        const SizedBox(height: 24),
         SkeletonShimmer.card(height: 90),
       ],
     );

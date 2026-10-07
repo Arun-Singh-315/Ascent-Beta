@@ -4,683 +4,449 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/walk/walk_tracking_service.dart';
+import '../../../shared/widgets/glass_surface.dart';
 
-class QuickModulesNavHub extends StatefulWidget {
+/// Level 2 · Secondary: Life
+/// Redesigned according to Ascent Home Redesign spec:
+/// - Single unified glass card with a 2x2 grid.
+/// - Chai & Coffee Break as footer row.
+/// - Progress bars use neutral ink.
+/// - 44dp hit targets with instant hydration quick add.
+class QuickModulesNavHub extends ConsumerWidget {
   const QuickModulesNavHub({super.key});
 
   @override
-  State<QuickModulesNavHub> createState() => _QuickModulesNavHubState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
 
-class _QuickModulesNavHubState extends State<QuickModulesNavHub> {
-  bool _isChaiExpanded = false;
+    // Stream watchers for the 4 life modules
+    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
+    final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
+    final waterProgress = waterGoal > 0 ? (waterMl / waterGoal).clamp(0.0, 1.0) : 0.0;
 
-  @override
-  Widget build(BuildContext context) {
+    final allHabits = ref.watch(allHabitsStreamProvider).value ?? [];
+    final doneHabitIds = ref.watch(todayCompletedHabitIdsStreamProvider).value ?? {};
+    final habitsProgress = allHabits.isNotEmpty ? (doneHabitIds.length / allHabits.length).clamp(0.0, 1.0) : 0.0;
+
+    final walkState = ref.watch(walkTrackingProvider);
+    final todayWalkMeters = ref.watch(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
+    final distanceKm = isWalkActive ? walkState.distanceKm : (todayWalkMeters / 1000.0);
+    final walkProgress = (distanceKm / 5.0).clamp(0.0, 1.0);
+
+    final todaySpending = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section Header
+        // ── SECTION HEADING ───────────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE28B57).withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.coffee_rounded,
-                    size: 12,
-                    color: Color(0xFFE28B57),
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Text(
-                  'LIFE MODULES',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.1,
-                    color: context.textMuted,
-                  ),
-                ),
-              ],
+            Text(
+              'Life',
+              style: AscentTextStyles.homeTitle.copyWith(
+                color: g.ink,
+              ),
             ),
             Text(
-              'Habits · Chai · Health',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 10.5,
-                color: context.textMuted.withValues(alpha: 0.8),
+              'LIFE MODULES',
+              style: AscentTextStyles.homeCaption.copyWith(
+                color: g.inkMuted,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
 
-        // Bento Item 1: Hero Chai & Coffee Break Sanctuary (Maximizable / Minimizable)
-        _ChaiBreakBentoHero(
-          isExpanded: _isChaiExpanded,
-          onToggleExpand: () {
-            HapticFeedback.lightImpact();
-            setState(() {
-              _isChaiExpanded = !_isChaiExpanded;
-            });
-          },
-        ),
+        const SizedBox(height: 12),
 
-        const SizedBox(height: 10),
+        // ── UNIFIED GLASS CARD (2x2 GRID + CHAI FOOTER) ───────────────
+        GlassSurface(
+          radius: 24,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              // 2x2 Grid
+              Row(
+                children: [
+                  // Cell 1: Hydration
+                  Expanded(
+                    child: _LifeGridCell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/hydration');
+                      },
+                      borderRight: true,
+                      borderBottom: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.water_drop_rounded, size: 16, color: g.inkMuted),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Hydration',
+                                  style: AscentTextStyles.homeSecondary.copyWith(
+                                    color: g.inkSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              // Quick + Button
+                              SizedBox(
+                                width: 34,
+                                height: 34,
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    onTap: () async {
+                                      HapticFeedback.mediumImpact();
+                                      await ref.read(databaseProvider).waterDao.addWater(250);
+                                    },
+                                    borderRadius: BorderRadius.circular(17),
+                                    child: Center(
+                                      child: Container(
+                                        width: 26,
+                                        height: 26,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: g.claySoft,
+                                        ),
+                                        child: Icon(Icons.add_rounded, size: 16, color: g.clay),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.bricolageGrotesque(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: g.ink,
+                              ),
+                              children: [
+                                TextSpan(text: '$waterMl'),
+                                TextSpan(
+                                  text: ' of $waterGoal mL',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _NeutralProgressBar(progress: waterProgress),
+                        ],
+                      ),
+                    ),
+                  ),
 
-        // Bento Row: Asymmetrical split cards (Hydration Square + Habits Square)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: Hydration Square Card (with quick inline log)
-            const Expanded(
-              child: _HydrationBentoCard(),
-            ),
-            const SizedBox(width: 10),
-            // Right: Habits Square Card
-            const Expanded(
-              child: _HabitsBentoCard(),
-            ),
-          ],
-        ),
+                  // Cell 2: Habits
+                  Expanded(
+                    child: _LifeGridCell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/habits');
+                      },
+                      borderRight: false,
+                      borderBottom: true,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.checklist_rounded, size: 16, color: g.inkMuted),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Habits',
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.inkSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.bricolageGrotesque(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: g.ink,
+                              ),
+                              children: [
+                                TextSpan(text: '${doneHabitIds.length}'),
+                                TextSpan(
+                                  text: ' of ${allHabits.length} today',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _NeutralProgressBar(progress: habitsProgress),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
-        const SizedBox(height: 10),
+              Row(
+                children: [
+                  // Cell 3: Walk & Run
+                  Expanded(
+                    child: _LifeGridCell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/walk');
+                      },
+                      borderRight: true,
+                      borderBottom: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.directions_walk_rounded, size: 16, color: g.inkMuted),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Walk & Run',
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.inkSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.bricolageGrotesque(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: g.ink,
+                              ),
+                              children: [
+                                TextSpan(text: distanceKm.toStringAsFixed(1)),
+                                TextSpan(
+                                  text: ' of 5 km',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          _NeutralProgressBar(progress: walkProgress),
+                        ],
+                      ),
+                    ),
+                  ),
 
-        // Bento Row: Horizontal split for Walk & Run + Money
-        Row(
-          children: const [
-            Expanded(child: _WalkBentoCard()),
-            SizedBox(width: 10),
-            Expanded(child: _MoneyBentoCard()),
-          ],
+                  // Cell 4: Money
+                  Expanded(
+                    child: _LifeGridCell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/money');
+                      },
+                      borderRight: false,
+                      borderBottom: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.currency_rupee_rounded, size: 16, color: g.inkMuted),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Money',
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.inkSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          RichText(
+                            text: TextSpan(
+                              style: GoogleFonts.bricolageGrotesque(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: g.ink,
+                              ),
+                              children: [
+                                TextSpan(text: '₹${todaySpending.toStringAsFixed(0)}'),
+                                TextSpan(
+                                  text: ' logged',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w400,
+                                    color: g.inkMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const SizedBox(height: 3), // maintains uniform height with progress bars
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // ── FOOTER ROW: CHAI & COFFEE BREAK SANCTUARY ───────────
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: g.line, width: 1.0)),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/chai-break');
+                    },
+                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      child: Row(
+                        children: [
+                          Icon(Icons.coffee_rounded, size: 18, color: g.inkMuted),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              'Chai & Coffee Break',
+                              style: AscentTextStyles.homeHeadline.copyWith(
+                                fontSize: 15,
+                                color: g.ink,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: g.claySoft,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              'SANCTUARY',
+                              style: AscentTextStyles.homeCaption.copyWith(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: g.clay,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: g.inkMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 }
 
-/// Maximizable / Minimizable Hero Bento Card for Chai & Coffee Break
-class _ChaiBreakBentoHero extends StatelessWidget {
-  final bool isExpanded;
-  final VoidCallback onToggleExpand;
+class _LifeGridCell extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final bool borderRight;
+  final bool borderBottom;
 
-  const _ChaiBreakBentoHero({
-    required this.isExpanded,
-    required this.onToggleExpand,
+  const _LifeGridCell({
+    required this.child,
+    required this.onTap,
+    required this.borderRight,
+    required this.borderBottom,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDark;
-    const accent = Color(0xFFE28B57);
+    final g = context.glass;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/chai-break');
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeInOut,
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 96),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: accent.withValues(alpha: isDark ? 0.12 : 0.08),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: accent.withValues(alpha: isDark ? 0.45 : 0.35),
-              width: 1.0,
+            border: Border(
+              right: borderRight ? BorderSide(color: g.line, width: 1.0) : BorderSide.none,
+              bottom: borderBottom ? BorderSide(color: g.line, width: 1.0) : BorderSide.none,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.22),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: accent.withValues(alpha: 0.5)),
-                    ),
-                    child: const Center(
-                      child: Icon(Icons.coffee_rounded, size: 18, color: accent),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              'Chai & Coffee Break',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: context.textPrimary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: accent.withValues(alpha: 0.18),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                'SANCTUARY',
-                                style: GoogleFonts.jetBrainsMono(
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                  color: accent,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Ambient soundscapes • steam wisp • mindful flow',
-                          style: GoogleFonts.plusJakartaSans(
-                            color: context.textMuted,
-                            fontSize: 11,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Maximize / Minimize toggle button
-                  IconButton(
-                    iconSize: 20,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                    icon: Icon(
-                      isExpanded ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded,
-                      color: accent,
-                    ),
-                    tooltip: isExpanded ? 'Minimize card' : 'Maximize quick actions',
-                    onPressed: onToggleExpand,
-                  ),
-                ],
-              ),
-
-              // Maximized content
-              if (isExpanded) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: context.bgSurface.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.divider.withValues(alpha: 0.6)),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _PresetQuickPill(
-                        label: '5m Chai',
-                        accent: accent,
-                        onTap: () => context.push('/chai-break'),
-                      ),
-                      _PresetQuickPill(
-                        label: '10m Coffee',
-                        accent: accent,
-                        onTap: () => context.push('/chai-break'),
-                      ),
-                      _PresetQuickPill(
-                        label: '15m Reset',
-                        accent: accent,
-                        onTap: () => context.push('/chai-break'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Includes non-zero lecture flow resume guarantee',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10.5,
-                        fontStyle: FontStyle.italic,
-                        color: context.textMuted,
-                      ),
-                    ),
-                    Text(
-                      'Open Sanctuary ›',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: accent,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
+          child: child,
         ),
       ),
     );
   }
 }
 
-class _PresetQuickPill extends StatelessWidget {
-  final String label;
-  final Color accent;
-  final VoidCallback onTap;
+class _NeutralProgressBar extends StatelessWidget {
+  final double progress;
 
-  const _PresetQuickPill({
-    required this.label,
-    required this.accent,
-    required this.onTap,
-  });
+  const _NeutralProgressBar({required this.progress});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: accent.withValues(alpha: 0.3)),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: accent,
-          ),
-        ),
+    final g = context.glass;
+
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        color: g.track,
+        borderRadius: BorderRadius.circular(3),
       ),
-    );
-  }
-}
-
-/// Square Bento Tile for Hydration with quick log button
-class _HydrationBentoCard extends ConsumerWidget {
-  const _HydrationBentoCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
-    final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
-    final waterPercent = waterGoal > 0 ? ((waterMl / waterGoal) * 100).toInt() : 0;
-    final progress = waterGoal > 0 ? (waterMl / waterGoal).clamp(0.0, 1.0) : 0.0;
-    const color = Color(0xFF38BDF8);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/hydration');
-        },
-        borderRadius: BorderRadius.circular(16),
+      alignment: Alignment.centerLeft,
+      child: FractionallySizedBox(
+        widthFactor: progress.clamp(0.0, 1.0),
         child: Container(
-          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.divider.withValues(alpha: 0.7)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.water_drop_rounded, size: 15, color: color),
-                  ),
-                  Text(
-                    '$waterPercent%',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Hydration',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$waterMl / $waterGoal mL',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 10.5,
-                  color: context.textMuted,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 3.5,
-                  backgroundColor: context.divider.withValues(alpha: 0.4),
-                  valueColor: const AlwaysStoppedAnimation(color),
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Inline Quick-Add Button
-              InkWell(
-                onTap: () async {
-                  HapticFeedback.mediumImpact();
-                  await ref.read(databaseProvider).waterDao.addWater(250);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '+250 mL',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Square Bento Tile for Daily Habits
-class _HabitsBentoCard extends ConsumerWidget {
-  const _HabitsBentoCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final allHabits = ref.watch(allHabitsStreamProvider).value ?? [];
-    final doneHabitIds = ref.watch(todayCompletedHabitIdsStreamProvider).value ?? {};
-    final progress = allHabits.isNotEmpty ? (doneHabitIds.length / allHabits.length).clamp(0.0, 1.0) : 0.0;
-    const color = Color(0xFF8B5CF6);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/habits');
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.divider.withValues(alpha: 0.7)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.14),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.fact_check_rounded, size: 15, color: color),
-                  ),
-                  Text(
-                    allHabits.isEmpty ? '0/0' : '${doneHabitIds.length}/${allHabits.length}',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Habits',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                allHabits.isEmpty ? 'Daily routines' : '${(progress * 100).toInt()}% completed',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 10.5,
-                  color: context.textMuted,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 3.5,
-                  backgroundColor: context.divider.withValues(alpha: 0.4),
-                  valueColor: const AlwaysStoppedAnimation(color),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: Text(
-                    'Check Routine ›',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: color,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Compact Horizontal Bento Tile for Walk & Run
-class _WalkBentoCard extends ConsumerWidget {
-  const _WalkBentoCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final walkState = ref.watch(walkTrackingProvider);
-    final todayWalkMeters = ref.watch(todayWalkDistanceStreamProvider).value ?? 0.0;
-    final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
-    final distanceKm = isWalkActive ? walkState.distanceKm : (todayWalkMeters / 1000.0);
-    final progress = (distanceKm / 5.0).clamp(0.0, 1.0);
-    const color = Color(0xFF10B981);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/walk');
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.divider.withValues(alpha: 0.7)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.directions_walk_rounded, size: 15, color: color),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Walk & Run',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: context.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '${distanceKm.toStringAsFixed(1)} / 5.0 km',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        color: context.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(2),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 2.5,
-                        backgroundColor: context.divider.withValues(alpha: 0.4),
-                        valueColor: const AlwaysStoppedAnimation(color),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Compact Horizontal Bento Tile for Money
-class _MoneyBentoCard extends ConsumerWidget {
-  const _MoneyBentoCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final todaySpending = ref.watch(todaySpendingStreamProvider).value ?? 0.0;
-    const color = Color(0xFFF59E0B);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/money');
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: context.bgSurface.withValues(alpha: 0.6),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: context.divider.withValues(alpha: 0.7)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.account_balance_wallet_rounded, size: 15, color: color),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Money',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        color: context.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      '₹${todaySpending.toStringAsFixed(0)} logged',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        color: context.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            color: g.inkSecondary,
+            borderRadius: BorderRadius.circular(3),
           ),
         ),
       ),

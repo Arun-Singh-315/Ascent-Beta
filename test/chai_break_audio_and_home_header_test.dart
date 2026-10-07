@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/chai_break/chai_break_provider.dart';
 import 'package:ascent/features/chai_break/widgets/ambient_soundscape_bar.dart';

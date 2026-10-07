@@ -2,171 +2,200 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
-import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../shared/widgets/ascent_card.dart';
+import '../../../shared/widgets/glass_surface.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
 
+/// Level 3 · Supporting: Mind Space
+/// Redesigned according to Ascent Home Redesign spec:
+/// - Open layout with single underline input (no heavy nested boxes).
+/// - Glass thought bubble for latest reflection.
+/// - 44dp hit targets.
 class ThoughtWallHomePreview extends ConsumerWidget {
   const ThoughtWallHomePreview({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
-    final accent = context.accentSecondary;
 
-    return AscentCard(
-      padding: const EdgeInsets.all(14),
-      radius: 16,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.auto_awesome_rounded, size: 15, color: accent),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── SECTION HEADING ───────────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              'Mind space',
+              style: AscentTextStyles.homeTitle.copyWith(
+                color: g.ink,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'MIND SPACE • SELF-TALK',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
-                  color: accent,
-                ),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/thought-wall');
-                },
-                child: Text(
-                  'Open Wall ›',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'MIND SPACE • SELF-TALK',
+                  style: AscentTextStyles.homeCaption.copyWith(
+                    color: g.inkMuted,
+                    letterSpacing: 0.8,
+                    fontSize: 9.5,
                     fontWeight: FontWeight.w600,
-                    color: accent,
                   ),
                 ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/thought-wall');
+                  },
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Open wall',
+                          style: AscentTextStyles.homeSecondary.copyWith(
+                            color: g.clay,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: g.clay,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        // ── OPEN UNDERLINE INPUT ROW ──────────────────────────────────
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              DropThoughtSheet.show(context);
+            },
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: g.line, width: 1.0)),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-
-          // Quick Spark Prompt Capsule
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                DropThoughtSheet.show(context);
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                decoration: BoxDecoration(
-                  color: context.bgBase,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: context.divider.withValues(alpha: 0.8),
-                    width: 0.8,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.edit_outlined, size: 18, color: g.inkMuted),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "What's on your mind?",
+                      style: AscentTextStyles.homeBody.copyWith(
+                        color: g.inkMuted,
+                        fontSize: 14.5,
+                      ),
+                    ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, size: 14, color: context.textMuted),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        "What's on your mind? Tap to drop thought...",
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          color: context.textMuted,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  Text(
+                    'Drop',
+                    style: AscentTextStyles.homeHeadline.copyWith(
+                      color: g.clay,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        'Drop',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: accent,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 4),
+                ],
               ),
             ),
           ),
+        ),
 
-          // Pinned / Latest Thought Preview
-          recentThoughtsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (thoughts) {
-              if (thoughts.isEmpty) return const SizedBox.shrink();
+        // ── LATEST THOUGHT BUBBLE ─────────────────────────────────────
+        recentThoughtsAsync.when(
+          loading: () => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
+          data: (thoughts) {
+            final latestThought = thoughts.isNotEmpty ? thoughts.first : null;
+            final content = latestThought?.content ?? 'its me ;)';
+            final timeAgo = latestThought != null ? _formatTimeAgo(latestThought.createdAt) : 'JUST NOW';
 
-              final thought = thoughts.first;
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: accent.withValues(alpha: 0.2),
-                      width: 0.6,
+            return Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 320),
+                  child: GlassSurface(
+                    radius: 20,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                      bottomRight: Radius.circular(20),
+                      bottomLeft: Radius.circular(6),
                     ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        thought.isPinned ? Icons.push_pin_rounded : Icons.bubble_chart_outlined,
-                        size: 13,
-                        color: accent,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          thought.content,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11.5,
-                            color: context.textPrimary,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/thought-wall');
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          content,
+                          style: AscentTextStyles.homeHeadline.copyWith(
+                            color: g.ink,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w500,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          timeAgo,
+                          style: AscentTextStyles.homeCaption.copyWith(
+                            color: g.inkMuted,
+                            fontSize: 10.5,
+                            letterSpacing: 0.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              ),
+            );
+          },
+        ),
+      ],
     );
+  }
+
+  String _formatTimeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 2) return 'JUST NOW';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}M AGO';
+    if (diff.inHours < 24) return '${diff.inHours}H AGO';
+    return '${diff.inDays}D AGO';
   }
 }

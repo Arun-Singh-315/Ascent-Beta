@@ -4,14 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
-import '../../../shared/widgets/ascent_card.dart';
 import '../../../shared/widgets/skeleton_shimmer.dart';
 import '../../today/add_activity_sheet.dart';
 import 'activity_row_item.dart';
 
+/// Level 1 · Primary: Today
+/// Redesigned according to Ascent Home Redesign spec:
+/// - No heavy box container. Clean typography and hairlines carry structure.
+/// - Single-line progress bar with done count and streak flame.
+/// - Three text tabs with active underline indicator.
+/// - 44dp hit-area task items.
+/// - Inline "Add activity" action row.
 class ActivityHubCard extends ConsumerStatefulWidget {
   const ActivityHubCard({super.key});
 
@@ -24,17 +31,23 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final activitiesAsync = ref.watch(todayActivitiesProvider);
     final trackingState = ref.watch(timeTrackingProvider);
-    final trackingNotifier = ref.read(timeTrackingProvider.notifier);
+    final streak = ref.watch(currentStreakStreamProvider).value ?? 0;
 
     return activitiesAsync.when(
-      loading: () => SkeletonShimmer.card(height: 180),
-      error: (err, _) => AscentCard(child: Text('Error loading activities: $err')),
+      loading: () => SkeletonShimmer.card(height: 140),
+      error: (err, _) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text('Error loading activities: $err', style: TextStyle(color: g.inkMuted)),
+      ),
       data: (activities) {
         final doneActivities = activities.where((a) => a.status == TodayActivityStatus.done).toList();
         final pendingActivities = activities.where((a) => a.status != TodayActivityStatus.done).toList();
         final doneCount = doneActivities.length;
+        final totalCount = activities.length;
+        final progressFraction = totalCount > 0 ? (doneCount / totalCount).clamp(0.0, 1.0) : 0.0;
 
         List<TodayActivityItem> filteredList;
         if (_selectedTabIndex == 0) {
@@ -48,176 +61,195 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
         final activeSession = trackingState.activeSession;
         final hasActiveSession = activeSession != null;
 
-        return AscentCard(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        'Activity Hub',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: context.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: context.bgBase,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: context.divider, width: 0.8),
-                        ),
-                        child: Text(
-                          '$doneCount/${activities.length} Done',
-                          style: GoogleFonts.jetBrainsMono(
-                            color: context.textMuted,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── HEADING ROW: TODAY + VIEW BOARD CTA ───────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                Text(
+                  'Today',
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: g.ink,
                   ),
-                  InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.push('/today');
-                    },
-                    borderRadius: BorderRadius.circular(6),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                      child: Text(
-                        'View board ›',
-                        style: TextStyle(
-                          color: context.accentSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // Active Focus Banner (if active session)
-              if (hasActiveSession) ...[
+                ),
                 InkWell(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    context.push('/focus');
+                    context.push('/today');
                   },
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: trackingState.isRunning
-                          ? context.accentSecondary.withValues(alpha: 0.08)
-                          : context.bgBase,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: trackingState.isRunning
-                            ? context.accentSecondary.withValues(alpha: 0.3)
-                            : context.divider,
-                        width: 0.8,
-                      ),
-                    ),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: trackingState.isRunning
-                                          ? context.accentSecondary
-                                          : Colors.orange,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    trackingState.isRunning ? 'FOCUSING NOW' : 'FOCUS PAUSED',
-                                    style: GoogleFonts.jetBrainsMono(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: trackingState.isRunning
-                                          ? context.accentSecondary
-                                          : Colors.orange,
-                                      letterSpacing: 0.6,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                activeSession.label,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: context.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
                         Text(
-                          trackingState.formattedTime,
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: trackingState.isRunning
-                                ? context.accentSecondary
-                                : context.textMuted,
+                          'View board',
+                          style: AscentTextStyles.homeSecondary.copyWith(
+                            color: g.clay,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: Icon(
-                            trackingState.isRunning
-                                ? Icons.pause_circle_outline_rounded
-                                : Icons.play_circle_outline_rounded,
-                            size: 26,
-                            color: context.accentSecondary,
-                          ),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            if (trackingState.isRunning) {
-                              trackingNotifier.pauseSession();
-                            } else {
-                              trackingNotifier.resumeSession();
-                            }
-                          },
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: g.clay,
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
               ],
+            ),
 
-              // Filter Tabs with Count Badges (Up Next / Completed / All)
-              Row(
+            const SizedBox(height: 10),
+
+            // ── PROGRESS & STREAK ROW (SINGLE CLEAN LINE) ─────────────────
+            Row(
+              children: [
+                // Progress Bar
+                Expanded(
+                  child: Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: g.track,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: progressFraction,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: g.clay,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '$doneCount of $totalCount done',
+                  style: AscentTextStyles.homeSecondary.copyWith(
+                    color: g.inkSecondary,
+                    fontSize: 12.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_fire_department_rounded,
+                      size: 15,
+                      color: g.inkMuted,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$streak',
+                      style: AscentTextStyles.homeSecondary.copyWith(
+                        color: g.inkMuted,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // ── ACTIVE FOCUS BANNER (IF ACTIVE SESSION) ────────────────────
+            if (hasActiveSession) ...[
+              InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/focus');
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: g.claySoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: trackingState.isRunning ? g.clay : Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          activeSession.label,
+                          style: AscentTextStyles.homeHeadline.copyWith(
+                            fontSize: 14,
+                            color: g.ink,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        trackingState.formattedTime,
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: g.clay,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Icon(
+                          trackingState.isRunning
+                              ? Icons.pause_circle_outline_rounded
+                              : Icons.play_circle_outline_rounded,
+                          size: 24,
+                          color: g.clay,
+                        ),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          if (trackingState.isRunning) {
+                            ref.read(timeTrackingProvider.notifier).pauseSession();
+                          } else {
+                            ref.read(timeTrackingProvider.notifier).resumeSession();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // ── TABS: UP NEXT / COMPLETED / ALL ───────────────────────────
+            Container(
+              height: 40,
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: g.line, width: 1.0)),
+              ),
+              child: Row(
                 children: [
-                  _ActivityTabChip(
-                    label: 'Up Next',
+                  _HomeTabItem(
+                    label: 'Up next',
                     count: pendingActivities.length,
                     isSelected: _selectedTabIndex == 0,
                     onTap: () {
@@ -225,8 +257,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       setState(() => _selectedTabIndex = 0);
                     },
                   ),
-                  const SizedBox(width: 6),
-                  _ActivityTabChip(
+                  const SizedBox(width: 24),
+                  _HomeTabItem(
                     label: 'Completed',
                     count: doneCount,
                     isSelected: _selectedTabIndex == 1,
@@ -235,10 +267,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       setState(() => _selectedTabIndex = 1);
                     },
                   ),
-                  const SizedBox(width: 6),
-                  _ActivityTabChip(
+                  const SizedBox(width: 24),
+                  _HomeTabItem(
                     label: 'All',
-                    count: activities.length,
+                    count: totalCount,
                     isSelected: _selectedTabIndex == 2,
                     onTap: () {
                       HapticFeedback.selectionClick();
@@ -247,92 +279,77 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+            ),
 
-              // Filtered activities list
-              if (filteredList.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.checklist_rounded, size: 24, color: context.textMuted),
-                        const SizedBox(height: 6),
-                        Text(
-                          'No activities in this view',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Tap "+ Add activity" below to queue your next task.',
-                          style: TextStyle(fontSize: 11, color: context.textMuted),
-                        ),
-                      ],
+            // ── ACTIVITIES LIST ───────────────────────────────────────────
+            if (filteredList.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text(
+                    'No activities in this view',
+                    style: AscentTextStyles.homeSecondary.copyWith(
+                      color: g.inkMuted,
                     ),
                   ),
-                )
-              else
-                ...filteredList.map((act) => ActivityRowItem(activity: act)),
+                ),
+              )
+            else
+              ...filteredList.map((act) => ActivityRowItem(activity: act)),
 
-              Divider(height: 1, color: context.divider, thickness: 0.8),
-
-              // Add activity button
-              InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  AddActivitySheet.show(context);
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 20,
-                        height: 20,
-                        decoration: BoxDecoration(
-                          color: context.accentSecondary.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(Icons.add, size: 13, color: context.accentSecondary),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Add activity',
-                        style: TextStyle(
-                          color: context.accentSecondary,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12.5,
+            // ── ADD ACTIVITY ROW ──────────────────────────────────────────
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                AddActivitySheet.show(context);
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 48),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: Center(
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: g.claySoft,
+                          ),
+                          child: Icon(Icons.add_rounded, size: 16, color: g.clay),
                         ),
                       ),
-                      const Spacer(),
-                      Text(
-                        'Swipe left to delete',
-                        style: TextStyle(fontSize: 10, color: context.textMuted),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Add activity',
+                      style: AscentTextStyles.homeHeadline.copyWith(
+                        color: g.clay,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _ActivityTabChip extends StatelessWidget {
+class _HomeTabItem extends StatelessWidget {
   final String label;
   final int count;
   final bool isSelected;
   final VoidCallback onTap;
 
-  const _ActivityTabChip({
+  const _HomeTabItem({
     required this.label,
     required this.count,
     required this.isSelected,
@@ -341,52 +358,46 @@ class _ActivityTabChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? context.accentSecondary.withValues(alpha: 0.12)
-              : context.bgBase,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? context.accentSecondary.withValues(alpha: 0.35)
-                : context.divider,
-            width: 0.8,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? context.accentSecondary : context.textMuted,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: isSelected ? context.accentSecondary : context.divider,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '$count',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w700,
-                  color: isSelected ? Colors.white : context.textPrimary,
+      child: Stack(
+        alignment: Alignment.bottomCenter,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AscentTextStyles.homeSecondary.copyWith(
+                    color: isSelected ? g.ink : g.inkMuted,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  ),
                 ),
+                const SizedBox(width: 5),
+                Text(
+                  '$count',
+                  style: AscentTextStyles.homeCaption.copyWith(
+                    color: g.inkMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (isSelected)
+            Container(
+              height: 2,
+              width: 40,
+              decoration: BoxDecoration(
+                color: g.clay,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

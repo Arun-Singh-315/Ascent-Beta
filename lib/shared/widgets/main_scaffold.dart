@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 
 import 'package:flutter/services.dart';
 
@@ -141,7 +142,6 @@ class _AscentBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = context.bgSurface;
     final divider = context.divider;
-    final activeTextColor = context.textPrimary;
     final inactiveColor = context.textMuted;
 
     return Container(
@@ -179,19 +179,13 @@ class _AscentBottomNav extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
                             decoration: BoxDecoration(
                               color: isActive
-                                  ? context.bgSurfaceElevated.withValues(alpha: 0.9)
+                                  ? context.glass.claySoft
                                   : Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isActive
-                                    ? context.divider.withValues(alpha: 0.8)
-                                    : Colors.transparent,
-                                width: 0.8,
-                              ),
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Icon(
                               isActive ? tab.activeIcon : tab.icon,
-                              color: isActive ? activeTextColor : inactiveColor,
+                              color: isActive ? context.glass.clay : inactiveColor,
                               size: 19,
                             ),
                           ),
@@ -201,7 +195,7 @@ class _AscentBottomNav extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                              color: isActive ? activeTextColor : inactiveColor,
+                              color: isActive ? context.glass.ink : inactiveColor,
                               height: 1.1,
                             ),
                           ),

@@ -143,5 +143,53 @@ class AscentTextStyles {
         fontWeight: FontWeight.w500,
         height: 1.1,
       );
+
+  // ── Home Redesign Type Scale (Tokens) ────────────────────────────────────
+
+  /// Display 34 / 40 · 600 (Bricolage Grotesque)
+  static TextStyle get homeDisplay => GoogleFonts.bricolageGrotesque(
+        fontSize: 34,
+        fontWeight: FontWeight.w600,
+        height: 40 / 34,
+        letterSpacing: -0.5,
+      );
+
+  /// Title 22 / 28 · 600 (Bricolage Grotesque)
+  static TextStyle get homeTitle => GoogleFonts.bricolageGrotesque(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        height: 28 / 22,
+        letterSpacing: -0.3,
+      );
+
+  /// Headline 17 / 24 · 600 (DM Sans)
+  static TextStyle get homeHeadline => GoogleFonts.dmSans(
+        fontSize: 17,
+        fontWeight: FontWeight.w600,
+        height: 24 / 17,
+      );
+
+  /// Body 15 / 22 · 400 (DM Sans)
+  static TextStyle get homeBody => GoogleFonts.dmSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 22 / 15,
+      );
+
+  /// Secondary 13 / 18 · 400 (DM Sans)
+  static TextStyle get homeSecondary => GoogleFonts.dmSans(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        height: 18 / 13,
+      );
+
+  /// Caption 11 / 16 · 500 (DM Sans)
+  static TextStyle get homeCaption => GoogleFonts.dmSans(
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        height: 16 / 11,
+        letterSpacing: 0.4,
+      );
 }
+
 

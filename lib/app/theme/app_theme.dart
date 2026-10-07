@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'color_tokens.dart';
+import 'glass_theme.dart';
 import 'text_styles.dart';
 
 /// Provides the light and dark [ThemeData] for the Ascent app.
@@ -341,6 +342,9 @@ class AscentTheme {
             AscentTextStyles.bodyMedium.copyWith(color: textMuted),
         elevation: 0,
       ),
+      extensions: [
+        isDark ? AscentGlass.dark : AscentGlass.light,
+      ],
     );
   }
 }

@@ -6,10 +6,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 
+/// Redesigned HomeHeader based on Ascent Home Redesign spec:
+/// - Top row: uppercase date caption on left, Riya glass pill + avatar (+ streak) on right.
+/// - Display name with Bricolage Grotesque (34/40).
+/// - Secondary greeting "Good morning / afternoon / evening,".
+/// - Role micro-badge.
+/// - Centralized Riya AI gateway button linking to /ai-assistant.
 class HomeHeader extends ConsumerWidget {
   final UserProfile? profile;
 
@@ -17,231 +25,354 @@ class HomeHeader extends ConsumerWidget {
 
   String _greeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
-  }
-
-  IconData _greetingIcon() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return Icons.wb_sunny_rounded;
-    if (hour < 17) return Icons.wb_twilight_rounded;
-    return Icons.nightlight_round;
+    if (hour < 12) return 'Good morning,';
+    if (hour < 17) return 'Good afternoon,';
+    return 'Good evening,';
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final isDark = context.isDark;
     final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
     final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Software Engineer';
-    final dateStr = DateFormat('EEE, MMM d').format(DateTime.now());
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dateStr = DateFormat('EEE, d MMM').format(DateTime.now()).toUpperCase();
     final streak = ref.watch(currentStreakStreamProvider).value ?? 0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── LEFT: GREETING, HERO NAME & ROLE ─────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Top time & context subline with subtle warm icon
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _greetingIcon(),
-                      size: 13,
-                      color: const Color(0xFFF59E0B),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '${_greeting()} · $dateStr',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: context.textMuted,
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                // Hero user name (never truncated by streak, full horizontal width)
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/settings');
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Text(
-                    name,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: context.textPrimary,
-                      fontSize: 21,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
-                      height: 1.2,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                // Target role tag
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/settings');
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: context.accentSecondary.withValues(alpha: isDark ? 0.12 : 0.08),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: context.accentSecondary.withValues(alpha: 0.25),
-                        width: 0.8,
-                      ),
-                    ),
-                    child: Text(
-                      role,
-                      style: GoogleFonts.jetBrainsMono(
-                        color: context.accentSecondary,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          // ── RIGHT: SLEEK ACTIONS CLUSTER (Streak + Theme + Avatar) ────
+          // ── TOP ROW: DATE CAPTION & ACTION PILLS (RIYA + AVATAR) ───────
           Row(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Dedicated Interactive Streak Flame Pill
-              Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showStreakDetailsSheet(context, streak, isDark);
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE28B57).withValues(alpha: isDark ? 0.20 : 0.12),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: const Color(0xFFE28B57).withValues(alpha: 0.45),
-                        width: 0.9,
+              // Date Caption
+              Text(
+                dateStr,
+                style: AscentTextStyles.homeCaption.copyWith(
+                  color: g.inkMuted,
+                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              // Right cluster: Interactive Streak flame + Riya button + Avatar
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Streak Pill
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _showStreakDetailsSheet(context, streak, isDark);
+                      },
+                      borderRadius: BorderRadius.circular(99),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: g.claySoft,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: g.edge, width: 1.0),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.local_fire_department_rounded,
+                              size: 14,
+                              color: g.clay,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '$streak',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: g.clay,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.local_fire_department_rounded,
-                          size: 14,
-                          color: Color(0xFFE28B57),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Riya glass pill button
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/ai-assistant');
+                      },
+                      borderRadius: BorderRadius.circular(99),
+                      child: Container(
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: g.fill,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: g.edge, width: 1.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: g.shadow.withValues(alpha: isDark ? 0.3 : 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          '$streak',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFFE28B57),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 14,
+                              color: g.clay,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Riya se Baat',
+                              style: AscentTextStyles.homeSecondary.copyWith(
+                                color: g.ink,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Avatar Circle (opens profile & quick settings sheet)
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        _showProfileSheet(context, ref, name, role, isDark);
+                      },
+                      borderRadius: BorderRadius.circular(99),
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: g.claySoft,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: g.edge, width: 1.0),
+                        ),
+                        child: Center(
+                          child: Text(
+                            name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                            style: GoogleFonts.bricolageGrotesque(
+                              color: g.ink,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-
-              // Theme Mode Toggle button
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: context.bgSurfaceElevated,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: context.divider, width: 0.8),
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 18,
-                  tooltip: isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode',
-                  icon: Icon(
-                    isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                    color: isDark ? const Color(0xFFFBBF24) : context.textSecondary,
-                  ),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    ref.read(themeModeProvider.notifier).setThemeMode(
-                      isDark ? ThemeMode.light : ThemeMode.dark,
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 6),
-
-              // Settings / Profile avatar
-              Tooltip(
-                message: 'Profile & Settings',
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/settings');
-                  },
-                  borderRadius: BorderRadius.circular(18),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: context.accentPrimary.withValues(alpha: 0.18),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: context.accentPrimary.withValues(alpha: 0.45),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
-                        style: GoogleFonts.plusJakartaSans(
-                          color: context.accentPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13.5,
-                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
+
+          const SizedBox(height: 14),
+
+          // ── GREETING & DISPLAY NAME ───────────────────────────────────
+          Text(
+            _greeting(),
+            style: AscentTextStyles.homeBody.copyWith(
+              color: g.inkSecondary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            name,
+            style: AscentTextStyles.homeDisplay.copyWith(
+              color: g.ink,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+
+          if (role.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/settings');
+              },
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: g.claySoft,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: g.clay.withValues(alpha: 0.25),
+                    width: 0.8,
+                  ),
+                ),
+                child: Text(
+                  role,
+                  style: GoogleFonts.jetBrainsMono(
+                    color: g.clay,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
+  void _showProfileSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String name,
+    String role,
+    bool isDark,
+  ) {
+    final g = context.glass;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: ctx.bgSurfaceElevated,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: ctx.divider, width: 1),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: ctx.divider,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: g.claySoft,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: g.edge),
+                    ),
+                    child: Center(
+                      child: Text(
+                        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                        style: GoogleFonts.bricolageGrotesque(
+                          color: g.ink,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.bricolageGrotesque(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: ctx.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          role,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: ctx.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Divider(color: ctx.divider, height: 1),
+              const SizedBox(height: 12),
+
+              // Theme Mode switch
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                  color: g.clay,
+                ),
+                title: Text(
+                  'Dark Theme',
+                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                ),
+                trailing: Switch(
+                  value: isDark,
+                  activeTrackColor: g.clay,
+                  onChanged: (val) {
+                    HapticFeedback.lightImpact();
+                    ref.read(themeModeProvider.notifier).setThemeMode(
+                          val ? ThemeMode.dark : ThemeMode.light,
+                        );
+                  },
+                ),
+              ),
+
+              // Full Settings Link
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.settings_outlined, color: ctx.textMuted),
+                title: Text(
+                  'Settings & Profile',
+                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.of(ctx).pop();
+                  context.push('/settings');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showStreakDetailsSheet(BuildContext context, int streak, bool isDark) {
+    final g = context.glass;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -257,7 +388,6 @@ class HomeHeader extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Grab handle
               Container(
                 width: 36,
                 height: 4,
@@ -267,88 +397,47 @@ class HomeHeader extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Flame icon circle
               Container(
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: const Color(0xFFE28B57).withValues(alpha: isDark ? 0.22 : 0.12),
+                  color: g.claySoft,
                   border: Border.all(
-                    color: const Color(0xFFE28B57).withValues(alpha: 0.5),
+                    color: g.clay.withValues(alpha: 0.5),
                     width: 1.5,
                   ),
                 ),
-                child: const Center(
+                child: Center(
                   child: Icon(
                     Icons.local_fire_department_rounded,
                     size: 36,
-                    color: Color(0xFFE28B57),
+                    color: g.clay,
                   ),
                 ),
               ),
               const SizedBox(height: 14),
-
-              // Streak number
               Text(
                 '$streak Day${streak == 1 ? '' : 's'} Active',
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.bricolageGrotesque(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: ctx.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
-
               Text(
                 streak > 0
                     ? 'Consistency is your edge. Complete any activity today to keep the flame alive.'
                     : 'Start your streak today. Check off an activity to ignite the flame.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
+                style: GoogleFonts.dmSans(
                   fontSize: 13,
                   color: ctx.textMuted,
                   height: 1.4,
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Status card
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: ctx.bgBase,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: ctx.divider, width: 0.8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      streak > 0 ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-                      size: 18,
-                      color: streak > 0 ? ctx.accentSecondary : ctx.textMuted,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        streak > 0
-                            ? 'Streak is active for today.'
-                            : 'Log or complete a task today to start your streak.',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          color: ctx.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Dismiss button
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
@@ -357,7 +446,7 @@ class HomeHeader extends ConsumerWidget {
                     Navigator.of(ctx).pop();
                   },
                   style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFE28B57),
+                    backgroundColor: g.clay,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -366,7 +455,7 @@ class HomeHeader extends ConsumerWidget {
                   ),
                   child: Text(
                     'Keep Going',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: GoogleFonts.dmSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

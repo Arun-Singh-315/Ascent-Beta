@@ -2,27 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../today/add_activity_sheet.dart';
 
+/// Redesigned task row matching Ascent Home Redesign:
+/// - 44dp hit area circular checkbox
+/// - 17/24 headline font
+/// - Clean subtitle / priority tag
+/// - 44dp circular start button (one-tap focus/timer start)
+/// - Clean hairline divider
 class ActivityRowItem extends ConsumerWidget {
   final TodayActivityItem activity;
 
   const ActivityRowItem({super.key, required this.activity});
 
-  String _formatTime(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
@@ -45,73 +47,66 @@ class ActivityRowItem extends ConsumerWidget {
       },
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 14),
-        decoration: BoxDecoration(
-          color: context.stateDanger.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(Icons.delete_outline_rounded, color: context.stateDanger, size: 20),
+        padding: const EdgeInsets.only(right: 16),
+        color: context.stateDanger.withValues(alpha: 0.15),
+        child: Icon(Icons.delete_outline_rounded, color: context.stateDanger, size: 22),
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 7),
+        constraints: const BoxConstraints(minHeight: 64),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: g.line, width: 1.0)),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         child: Row(
           children: [
-            // 1. Completion Checkbox (or duration indicator)
-            if (activity.kind == ActivityKind.todo)
-              InkWell(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  if (activity.linkedTaskId != null) {
-                    await ref.read(taskDaoProvider).toggleTaskCompletion(
-                          activity.linkedTaskId!,
-                          !isDone,
-                        );
-                  }
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(
-                    isDone ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                    color: isDone ? context.accentSecondary : context.divider,
-                    size: 22,
-                  ),
-                ),
-              )
-            else
-              InkWell(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  if (activity.linkedTaskId != null) {
-                    await ref.read(taskDaoProvider).toggleTaskCompletion(
-                          activity.linkedTaskId!,
-                          !isDone,
-                        );
-                  }
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(4),
-                  child: Icon(
-                    isDone
-                        ? Icons.check_circle_rounded
-                        : (activity.kind == ActivityKind.duration
-                            ? Icons.timer_outlined
-                            : Icons.all_inclusive_rounded),
-                    color: isDone
-                        ? context.accentSecondary
-                        : (isRunning ? context.accentSecondary : context.textMuted),
-                    size: 22,
+            // ── 1. CIRCULAR CHECK TARGET (44dp hit area, 28dp visual circle) ────
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    HapticFeedback.mediumImpact();
+                    if (activity.linkedTaskId != null) {
+                      await ref.read(taskDaoProvider).toggleTaskCompletion(
+                            activity.linkedTaskId!,
+                            !isDone,
+                          );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(22),
+                  child: Center(
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDone ? g.clay : Colors.transparent,
+                        border: Border.all(
+                          color: isDone ? g.clay : g.inkMuted,
+                          width: 1.75,
+                        ),
+                      ),
+                      child: isDone
+                          ? const Icon(
+                              Icons.check_rounded,
+                              size: 16,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
                   ),
                 ),
               ),
+            ),
 
             const SizedBox(width: 8),
 
-            // 2. Activity Info (Title, Subtitle/Duration/Tags)
+            // ── 2. TASK TITLE & SUBTITLE ──────────────────────────────────
             Expanded(
               child: InkWell(
-                onLongPress: () async {
+                onTap: () async {
                   HapticFeedback.lightImpact();
                   Task? task;
                   if (activity.linkedTaskId != null) {
@@ -127,44 +122,14 @@ class ActivityRowItem extends ConsumerWidget {
                     );
                   }
                 },
-                onTap: () async {
-                  if (activity.kind == ActivityKind.todo) {
-                    // Open task editor
-                    Task? task;
-                    if (activity.linkedTaskId != null) {
-                      task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
-                    }
-                    if (context.mounted) {
-                      AddActivitySheet.show(
-                        context,
-                        existingTask: task,
-                        initialTitle: activity.title,
-                        initialKind: activity.kind,
-                        initialDurationMinutes: activity.targetMinutes,
-                      );
-                    }
-                  } else {
-                    // Duration or flexible: start or open focus
-                    await ref.read(timeTrackingProvider.notifier).switchToTask(
-                          title: activity.title,
-                          taskId: activity.linkedTaskId,
-                          sourceType: activity.sourceType,
-                          autoStart: !isRunning,
-                        );
-                    if (context.mounted) {
-                      context.push('/focus');
-                    }
-                  }
-                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       activity.title,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: isDone ? context.textMuted : context.textPrimary,
+                      style: AscentTextStyles.homeHeadline.copyWith(
+                        color: isDone ? g.inkMuted : g.ink,
                         decoration: isDone ? TextDecoration.lineThrough : null,
                       ),
                       maxLines: 1,
@@ -173,55 +138,20 @@ class ActivityRowItem extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        // Type Tag / Priority Tag
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                          decoration: BoxDecoration(
-                            color: context.bgBase,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            activity.kind == ActivityKind.todo
-                                ? (activity.priority != null ? activity.priority!.toUpperCase() : 'TASK')
-                                : (activity.kind == ActivityKind.duration
-                                    ? '${activity.targetMinutes ?? 30} MIN'
-                                    : 'FLEXIBLE'),
-                            style: TextStyle(
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.w600,
-                              color: activity.priority == 'high'
-                                  ? context.stateDanger
-                                  : context.textMuted,
-                            ),
+                        Text(
+                          _subtitleText(activity),
+                          style: AscentTextStyles.homeSecondary.copyWith(
+                            color: g.inkMuted,
                           ),
                         ),
-
                         if (activity.isOverdue) ...[
                           const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: context.stateDanger.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'OVERDUE',
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.bold,
-                                color: context.stateDanger,
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        if (activity.kind == ActivityKind.duration && activity.targetMinutes != null) ...[
-                          const SizedBox(width: 6),
                           Text(
-                            activity.elapsedSecondsToday > 0
-                                ? '${activity.elapsedSecondsToday ~/ 60}m tracked'
-                                : '${activity.targetMinutes}m target',
-                            style: TextStyle(fontSize: 10, color: context.textMuted),
+                            '• Overdue',
+                            style: AscentTextStyles.homeSecondary.copyWith(
+                              color: context.stateDanger,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ],
                       ],
@@ -231,101 +161,71 @@ class ActivityRowItem extends ConsumerWidget {
               ),
             ),
 
-            IconButton(
-              icon: Icon(Icons.edit_outlined, size: 15, color: context.textMuted),
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-              tooltip: 'Edit activity',
-              onPressed: () async {
-                HapticFeedback.lightImpact();
-                Task? task;
-                if (activity.linkedTaskId != null) {
-                  task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
-                }
-                if (context.mounted) {
-                  AddActivitySheet.show(
-                    context,
-                    existingTask: task,
-                    initialTitle: activity.title,
-                    initialKind: activity.kind,
-                    initialDurationMinutes: activity.targetMinutes,
-                  );
-                }
-              },
-            ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
 
-            // 3. Right Action: Play / Pause / Start for Timed & Flexible
-            if (activity.kind != ActivityKind.todo)
-              InkWell(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  if (isRunning) {
-                    ref.read(timeTrackingProvider.notifier).pauseSession();
-                  } else if (isPaused) {
-                    ref.read(timeTrackingProvider.notifier).resumeSession();
-                  } else {
-                    await ref.read(timeTrackingProvider.notifier).switchToTask(
-                          title: activity.title,
-                          taskId: activity.linkedTaskId,
-                          sourceType: activity.sourceType,
-                          autoStart: true,
-                        );
-                    if (context.mounted) {
-                      context.push('/focus');
+            // ── 3. 44dp CIRCULAR START / ACTION BUTTON ───────────────────
+            SizedBox(
+              width: 44,
+              height: 44,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    HapticFeedback.lightImpact();
+                    if (isRunning) {
+                      ref.read(timeTrackingProvider.notifier).pauseSession();
+                    } else if (isPaused) {
+                      ref.read(timeTrackingProvider.notifier).resumeSession();
+                    } else {
+                      await ref.read(timeTrackingProvider.notifier).switchToTask(
+                            title: activity.title,
+                            taskId: activity.linkedTaskId,
+                            sourceType: activity.sourceType,
+                            autoStart: true,
+                          );
+                      if (context.mounted) {
+                        context.push('/focus');
+                      }
                     }
-                  }
-                },
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isRunning
-                        ? context.accentSecondary.withValues(alpha: 0.15)
-                        : (isPaused
-                            ? Colors.orange.withValues(alpha: 0.15)
-                            : context.bgBase),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isRunning
-                          ? context.accentSecondary.withValues(alpha: 0.4)
-                          : context.divider,
-                      width: 0.8,
+                  },
+                  borderRadius: BorderRadius.circular(22),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: g.claySoft,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
+                    child: Center(
+                      child: Icon(
                         isRunning
                             ? Icons.pause_rounded
-                            : (isPaused ? Icons.play_arrow_rounded : Icons.play_arrow_rounded),
-                        size: 14,
-                        color: isRunning
-                            ? context.accentSecondary
-                            : (isPaused ? Colors.orange : context.textPrimary),
+                            : Icons.play_arrow_rounded,
+                        size: 20,
+                        color: g.clay,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        activity.elapsedSecondsToday > 0
-                            ? _formatTime(activity.elapsedSecondsToday)
-                            : (activity.kind == ActivityKind.duration ? 'Start' : 'Track'),
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isRunning
-                              ? context.accentSecondary
-                              : (isPaused ? Colors.orange : context.textPrimary),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String _subtitleText(TodayActivityItem act) {
+    if (act.kind == ActivityKind.todo) {
+      if (act.priority != null && act.priority!.isNotEmpty) {
+        return act.priority![0].toUpperCase() + act.priority!.substring(1);
+      }
+      return 'Medium';
+    }
+    if (act.kind == ActivityKind.duration) {
+      if (act.elapsedSecondsToday > 0) {
+        return '${act.elapsedSecondsToday ~/ 60}m tracked / ${act.targetMinutes ?? 30}m';
+      }
+      return '${act.targetMinutes ?? 30}m target';
+    }
+    return 'Flexible focus';
   }
 }
