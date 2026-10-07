@@ -1,50 +1,57 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum SoundscapePreset {
   tapriCafeRain(
     'Tapri Cafe & Rain',
-    'Cozy rain on tin roof with distant cafe murmur',
+    'Cozy rain on tin roof with warm cafe murmur',
     0xFFE28B57,
-    'https://actions.google.com/sounds/v1/weather/rain_heavy.ogg',
+    'audio/tapri_rain.wav',
   ),
   acousticLofi(
     'Acoustic Lo-Fi',
     'Warm Rhodes piano & mellow cafe ambience',
     0xFF8338EC,
-    'https://actions.google.com/sounds/v1/ambiences/coffee_shop.ogg',
+    'audio/acoustic_lofi.wav',
   ),
   zenRiverChimes(
     'Zen River & Chimes',
     'Gentle flowing stream & singing bowl chimes',
     0xFF38BDF8,
-    'https://actions.google.com/sounds/v1/weather/stream_water.ogg',
+    'audio/zen_river.wav',
   ),
   campfireWarmth(
     'Campfire Warmth',
     'Crackling wood embers & evening mountain breeze',
     0xFFF59E0B,
-    'https://actions.google.com/sounds/v1/household/fireplace.ogg',
+    'audio/campfire_warmth.wav',
   ),
   silentZen(
     'Pure Silence',
     'Zero audio, deep silent breath',
     0xFF94A3B8,
     '',
+  ),
+  customSystemAudio(
+    'System / My Music',
+    'Play custom song or audio from your device',
+    0xFF10B981,
+    '',
   );
 
   final String title;
   final String description;
   final int accentColorHex;
-  final String audioUrl;
+  final String assetPath;
 
   const SoundscapePreset(
     this.title,
     this.description,
     this.accentColorHex,
-    this.audioUrl,
+    this.assetPath,
   );
 }
 
@@ -65,6 +72,9 @@ class ChaiBreakState {
   final BreathPhase breathPhase;
   final bool isBreathingGuideEnabled;
   final bool isAudioMuted;
+  final String? customAudioPath;
+  final String? customAudioName;
+  final double volume;
 
   const ChaiBreakState({
     this.totalDurationSeconds = 600, // 10 minutes default
@@ -74,7 +84,15 @@ class ChaiBreakState {
     this.breathPhase = BreathPhase.inhale,
     this.isBreathingGuideEnabled = true,
     this.isAudioMuted = false,
+    this.customAudioPath,
+    this.customAudioName,
+    this.volume = 0.85,
   });
+
+  bool get isPlayingCustomAudio =>
+      selectedSoundscape == SoundscapePreset.customSystemAudio &&
+      customAudioPath != null &&
+      customAudioPath!.isNotEmpty;
 
   int get elapsedSeconds => totalDurationSeconds - remainingSeconds;
 
@@ -97,6 +115,9 @@ class ChaiBreakState {
     BreathPhase? breathPhase,
     bool? isBreathingGuideEnabled,
     bool? isAudioMuted,
+    String? customAudioPath,
+    String? customAudioName,
+    double? volume,
   }) {
     return ChaiBreakState(
       totalDurationSeconds: totalDurationSeconds ?? this.totalDurationSeconds,
@@ -106,6 +127,9 @@ class ChaiBreakState {
       breathPhase: breathPhase ?? this.breathPhase,
       isBreathingGuideEnabled: isBreathingGuideEnabled ?? this.isBreathingGuideEnabled,
       isAudioMuted: isAudioMuted ?? this.isAudioMuted,
+      customAudioPath: customAudioPath ?? this.customAudioPath,
+      customAudioName: customAudioName ?? this.customAudioName,
+      volume: volume ?? this.volume,
     );
   }
 }
@@ -152,12 +176,27 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   Future<void> _playCurrentSoundscape() async {
     if (_player == null) return;
     try {
-      final url = state.selectedSoundscape.audioUrl;
-      if (url.isEmpty || state.isAudioMuted || !state.isRunning) {
+      if (state.isAudioMuted || !state.isRunning) {
+        await _player?.pause().catchError((_) {});
+        return;
+      }
+
+      await _player?.setVolume(state.volume).catchError((_) {});
+
+      if (state.selectedSoundscape == SoundscapePreset.customSystemAudio) {
+        if (state.customAudioPath != null && state.customAudioPath!.isNotEmpty) {
+          await _player?.play(DeviceFileSource(state.customAudioPath!)).catchError((_) {});
+        } else {
+          await _player?.pause().catchError((_) {});
+        }
+        return;
+      }
+
+      final asset = state.selectedSoundscape.assetPath;
+      if (asset.isEmpty) {
         await _player?.pause().catchError((_) {});
       } else {
-        await _player?.setVolume(0.85).catchError((_) {});
-        await _player?.play(UrlSource(url)).catchError((_) {});
+        await _player?.play(AssetSource(asset)).catchError((_) {});
       }
     } catch (_) {
       // Graceful fallback for offline mode or mock testing environments
@@ -166,6 +205,41 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
 
   void toggleAudioMute() {
     state = state.copyWith(isAudioMuted: !state.isAudioMuted);
+    _playCurrentSoundscape();
+  }
+
+  void setVolume(double vol) {
+    final clamped = vol.clamp(0.0, 1.0);
+    state = state.copyWith(volume: clamped);
+    _player?.setVolume(clamped).catchError((_) {});
+  }
+
+  Future<void> pickCustomAudioFile() async {
+    try {
+      final picked = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac', 'opus'],
+      );
+
+      if (picked != null && picked.path != null) {
+        final path = picked.path!;
+        final name = picked.name;
+        state = state.copyWith(
+          selectedSoundscape: SoundscapePreset.customSystemAudio,
+          customAudioPath: path,
+          customAudioName: name,
+        );
+        await _playCurrentSoundscape();
+      }
+    } catch (_) {}
+  }
+
+  void clearCustomAudio() {
+    state = state.copyWith(
+      selectedSoundscape: SoundscapePreset.tapriCafeRain,
+      customAudioPath: null,
+      customAudioName: null,
+    );
     _playCurrentSoundscape();
   }
 

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/walk/walk_tracking_service.dart';
 
@@ -30,27 +29,35 @@ class _QuickModulesNavHubState extends State<QuickModulesNavHub> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.dashboard_customize_outlined,
-                  size: 14,
-                  color: context.accentSecondary,
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE28B57).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.coffee_rounded,
+                    size: 12,
+                    color: Color(0xFFE28B57),
+                  ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 7),
                 Text(
                   'LIFE MODULES',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: context.textMuted,
-                    letterSpacing: 1.2,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: context.textMuted,
                   ),
                 ),
               ],
             ),
             Text(
-              'Interactive Bento Hub',
-              style: AscentTextStyles.captionMedium.copyWith(
-                color: context.textMuted,
+              'Habits · Chai · Health',
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 10.5,
+                color: context.textMuted.withValues(alpha: 0.8),
               ),
             ),
           ],

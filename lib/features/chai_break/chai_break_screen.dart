@@ -53,7 +53,9 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(chaiBreakProvider);
     final notifier = ref.read(chaiBreakProvider.notifier);
-    final accentColor = Color(state.selectedSoundscape.accentColorHex);
+    final accentColor = state.selectedSoundscape == SoundscapePreset.customSystemAudio
+        ? const Color(0xFF10B981)
+        : Color(state.selectedSoundscape.accentColorHex);
 
     return Scaffold(
       backgroundColor: const Color(0xFF101318),
@@ -286,8 +288,13 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       selectedSoundscape: state.selectedSoundscape,
                       isPlaying: state.isRunning,
                       isMuted: state.isAudioMuted,
+                      customAudioName: state.customAudioName,
+                      volume: state.volume,
                       onToggleMute: notifier.toggleAudioMute,
                       onSoundscapeChanged: (s) => notifier.selectSoundscape(s),
+                      onPickCustomAudio: notifier.pickCustomAudioFile,
+                      onClearCustomAudio: notifier.clearCustomAudio,
+                      onVolumeChanged: notifier.setVolume,
                     ),
 
                     const SizedBox(height: 20),

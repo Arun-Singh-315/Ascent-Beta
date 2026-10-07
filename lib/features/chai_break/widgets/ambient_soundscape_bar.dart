@@ -9,16 +9,26 @@ class AmbientSoundscapeBar extends StatefulWidget {
   final SoundscapePreset selectedSoundscape;
   final bool isPlaying;
   final bool isMuted;
+  final String? customAudioName;
+  final double volume;
   final VoidCallback? onToggleMute;
   final ValueChanged<SoundscapePreset> onSoundscapeChanged;
+  final VoidCallback? onPickCustomAudio;
+  final VoidCallback? onClearCustomAudio;
+  final ValueChanged<double>? onVolumeChanged;
 
   const AmbientSoundscapeBar({
     super.key,
     required this.selectedSoundscape,
     required this.isPlaying,
     this.isMuted = false,
+    this.customAudioName,
+    this.volume = 0.85,
     this.onToggleMute,
     required this.onSoundscapeChanged,
+    this.onPickCustomAudio,
+    this.onClearCustomAudio,
+    this.onVolumeChanged,
   });
 
   @override
@@ -44,7 +54,9 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
   @override
   void didUpdateWidget(covariant AmbientSoundscapeBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final shouldAnimate = widget.isPlaying && widget.selectedSoundscape != SoundscapePreset.silentZen;
+    final shouldAnimate = widget.isPlaying &&
+        widget.selectedSoundscape != SoundscapePreset.silentZen &&
+        !widget.isMuted;
     if (shouldAnimate && !_animController.isAnimating) {
       _animController.repeat();
     } else if (!shouldAnimate && _animController.isAnimating) {
@@ -63,12 +75,13 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF181C22),
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -78,7 +91,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Choose Break Ambience',
+                      'Choose Break Audio & Music',
                       style: GoogleFonts.plusJakartaSans(
                         color: Colors.white,
                         fontSize: 17,
@@ -91,9 +104,153 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                ...SoundscapePreset.values.map((preset) {
-                  final isSelected = preset == widget.selectedSoundscape;
+                const SizedBox(height: 6),
+                Text(
+                  'Select an offline atmospheric soundscape or open any song from your system',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    color: Colors.white54,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // ── PLAY FROM SYSTEM CARD ────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(
+                        alpha: widget.selectedSoundscape == SoundscapePreset.customSystemAudio ? 0.7 : 0.3,
+                      ),
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.22),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.folder_open_rounded,
+                              color: Color(0xFF10B981),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Play from System / Device',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.customAudioName != null
+                                      ? 'Loaded: ${widget.customAudioName}'
+                                      : 'Open MP3, WAV, M4A, FLAC from your files',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: widget.customAudioName != null
+                                        ? const Color(0xFF34D399)
+                                        : Colors.white60,
+                                    fontSize: 11.5,
+                                    fontWeight: widget.customAudioName != null
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.of(ctx).pop();
+                                widget.onPickCustomAudio?.call();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                foregroundColor: Colors.black,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              icon: const Icon(Icons.audio_file_rounded, size: 16),
+                              label: Text(
+                                widget.customAudioName != null
+                                    ? 'Change Song File'
+                                    : 'Pick Song from System',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (widget.customAudioName != null) ...[
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              onPressed: () {
+                                widget.onClearCustomAudio?.call();
+                                Navigator.of(ctx).pop();
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white70,
+                                side: const BorderSide(color: Colors.white24),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: const Text('Clear', style: TextStyle(fontSize: 12)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+                Text(
+                  'AMBIENT SOUNDSCAPES (OFFLINE READY)',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.1,
+                    color: Colors.white54,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // ── PRESET SOUNDSCAPES ────────────────────────────
+                ...SoundscapePreset.values
+                    .where((p) => p != SoundscapePreset.customSystemAudio)
+                    .map((preset) {
+                  final isSelected =
+                      preset == widget.selectedSoundscape && widget.customAudioName == null;
                   final accent = Color(preset.accentColorHex);
 
                   return Padding(
@@ -110,7 +267,9 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           decoration: BoxDecoration(
-                            color: isSelected ? accent.withValues(alpha: 0.16) : const Color(0xFF222832),
+                            color: isSelected
+                                ? accent.withValues(alpha: 0.16)
+                                : const Color(0xFF222832),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected ? accent : Colors.white.withValues(alpha: 0.08),
@@ -176,7 +335,14 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
 
   @override
   Widget build(BuildContext context) {
-    final accent = Color(widget.selectedSoundscape.accentColorHex);
+    final isCustom = widget.selectedSoundscape == SoundscapePreset.customSystemAudio &&
+        widget.customAudioName != null;
+    final accent = isCustom
+        ? const Color(0xFF10B981)
+        : Color(widget.selectedSoundscape.accentColorHex);
+
+    final title = isCustom ? (widget.customAudioName ?? 'System Song') : widget.selectedSoundscape.title;
+    final subtitle = isCustom ? 'Playing from device storage' : widget.selectedSoundscape.description;
 
     return Material(
       color: Colors.transparent,
@@ -203,9 +369,11 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  widget.selectedSoundscape == SoundscapePreset.silentZen
-                      ? Icons.volume_off_rounded
-                      : Icons.music_note_rounded,
+                  isCustom
+                      ? Icons.folder_open_rounded
+                      : (widget.selectedSoundscape == SoundscapePreset.silentZen
+                          ? Icons.volume_off_rounded
+                          : Icons.music_note_rounded),
                   color: accent,
                   size: 16,
                 ),
@@ -219,7 +387,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                     Row(
                       children: [
                         Text(
-                          'AMBIENCE: ',
+                          isCustom ? 'MY SONG: ' : 'AMBIENCE: ',
                           style: GoogleFonts.jetBrainsMono(
                             fontSize: 10,
                             letterSpacing: 1.1,
@@ -227,19 +395,23 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                             color: accent,
                           ),
                         ),
-                        Text(
-                          widget.selectedSoundscape.title,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 1),
                     Text(
-                      widget.selectedSoundscape.description,
+                      subtitle,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         color: Colors.white60,
@@ -252,7 +424,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
               ),
               const SizedBox(width: 10),
               // Equalizer Waveform Bars
-              if (widget.selectedSoundscape != SoundscapePreset.silentZen)
+              if (widget.selectedSoundscape != SoundscapePreset.silentZen && !widget.isMuted)
                 AnimatedBuilder(
                   animation: _animController,
                   builder: (context, _) {

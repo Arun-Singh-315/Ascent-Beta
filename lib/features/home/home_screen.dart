@@ -98,32 +98,50 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   const SizedBox(height: 14),
 
-                  // 2. Mind Space / Thought Wall (Quick spark prompt + pinned reflection)
-                  const ThoughtWallHomePreview(),
+                  // ── SECTION 1: TODAY'S EXECUTION ─────────────────────
+                  _HomeSectionHeader(
+                    icon: Icons.bolt_rounded,
+                    iconColor: context.accentSecondary,
+                    title: "TODAY'S EXECUTION",
+                    subtitle: 'Tasks & Lectures',
+                  ),
+                  const SizedBox(height: 8),
 
-                  const SizedBox(height: 16),
-
-                  // 3. ACTIVITY HUB: Today's activities, intelligent types, active timer & quick add
+                  // Today's activities, intelligent types, active timer & quick add
                   const ActivityHubCard(),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
-                  // 4. LEARNING HUB: Multi-course hero, course switcher, progress & resume
+                  // Multi-course hero, course switcher, progress & resume
                   const LearningHubCard(),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  // 5. QUICK LIFE MODULES (Hydration, Walk, Money, Habits + Chai Break Sanctuary)
+                  // ── SECTION 2: LIFE & SANCTUARY MODULES ──────────────
                   const QuickModulesNavHub(),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
-                  // 6. Collapsible Secondary Section (Notes & Reminders)
+                  // ── SECTION 3: MIND SPACE & KNOWLEDGE ARCHIVE ────────
+                  _HomeSectionHeader(
+                    icon: Icons.auto_awesome_rounded,
+                    iconColor: const Color(0xFF8338EC),
+                    title: 'MIND SPACE & REFLECTION',
+                    subtitle: 'Self-Talk & Notes',
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Thought Wall (Quick spark prompt + pinned reflection)
+                  const ThoughtWallHomePreview(),
+
+                  const SizedBox(height: 14),
+
+                  // Collapsible Secondary Section (Notes & Reminders)
                   const SecondaryToolsSection(),
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 22),
 
-                  // 7. Positivity line
+                  // Positivity line
                   _HomePositivityLine(profile: profile),
 
                   const SizedBox(height: 20),
@@ -132,6 +150,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _HomeSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+
+  const _HomeSectionHeader({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 12, color: iconColor),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                title,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.1,
+                  color: context.textMuted,
+                ),
+              ),
+            ],
+          ),
+          if (subtitle != null)
+            Text(
+              subtitle!,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                color: context.textMuted.withValues(alpha: 0.8),
+              ),
+            ),
+        ],
       ),
     );
   }
