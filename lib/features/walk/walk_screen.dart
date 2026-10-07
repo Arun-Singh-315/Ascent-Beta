@@ -7,12 +7,14 @@ import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 
 class WalkScreen extends ConsumerStatefulWidget {
@@ -131,32 +133,30 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
         ? LatLng(walkState.currentLat!, walkState.currentLng!)
         : const LatLng(28.6139, 77.2090); // default fallback coordinate
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        title: Text(
-          'Walking & Activity',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Walking & Activity',
+      subtitle: 'Live GPS tracker & daily goals',
+      glow2: g.sage,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.battery_saver_rounded, color: g.sage),
+          tooltip: 'Background GPS Setup',
+          onPressed: () => _showGpsBatteryGuide(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.battery_saver_rounded, color: Colors.teal),
-            tooltip: 'Background GPS Setup',
-            onPressed: () => _showGpsBatteryGuide(context),
-          ),
+      ],
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: g.sage,
+        unselectedLabelColor: g.inkMuted,
+        indicatorColor: g.sage,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        tabs: const [
+          Tab(text: 'Live GPS Tracker'),
+          Tab(text: 'Walk History & Goals'),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: context.accentPrimary,
-          unselectedLabelColor: context.textMuted,
-          indicatorColor: context.accentPrimary,
-          tabs: const [
-            Tab(text: 'Live GPS Tracker'),
-            Tab(text: 'Walk History & Goals'),
-          ],
-        ),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -640,10 +640,10 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.teal.withValues(alpha: 0.15),
+                    color: ctx.glass.sageSoft,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.battery_saver_rounded, color: Colors.teal, size: 22),
+                  child: Icon(Icons.battery_saver_rounded, color: ctx.glass.sage, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -655,12 +655,12 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                         style: AscentTextStyles.headlineMedium.copyWith(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: ctx.textPrimary,
+                          color: ctx.glass.ink,
                         ),
                       ),
                       Text(
                         'Prevent Android from killing GPS when locked',
-                        style: AscentTextStyles.bodySmall.copyWith(color: ctx.textMuted),
+                        style: AscentTextStyles.bodySmall.copyWith(color: ctx.glass.inkMuted),
                       ),
                     ],
                   ),
@@ -699,15 +699,16 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
   }
 
   Widget _guideStep({required String number, required String title, required String description}) {
+    final g = context.glass;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: Colors.teal.withValues(alpha: 0.2),
+          backgroundColor: g.sageSoft,
           child: Text(
             number,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: g.sage),
           ),
         ),
         const SizedBox(width: 10),

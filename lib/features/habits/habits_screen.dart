@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 
 /// Provides a single batch load of all habit streaks (`Map<int, int>`).
@@ -147,23 +149,18 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
     final completedIds = completedIdsAsync.value ?? <int>{};
     final streaks = streaksAsync.value ?? <int, int>{};
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        title: Text(
-          'Daily Habits & Routines',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Daily Habits & Routines',
+      subtitle: 'Momentum, streaks & daily tracking',
+      glow2: g.sage,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.add_rounded, color: g.clay, size: 28),
+          onPressed: _showAddHabitDialog,
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_rounded, color: context.accentPrimary, size: 28),
-            onPressed: _showAddHabitDialog,
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      ],
       body: habitsAsync.when(
         data: (habits) {
           if (habits.isEmpty) {

@@ -1105,7 +1105,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                             ),
                             Text(
-                              'Beta Version 1.0 · Local-First OS',
+                              'Beta Version 1.0.1 · Local-First OS',
                               style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                             ),
                           ],

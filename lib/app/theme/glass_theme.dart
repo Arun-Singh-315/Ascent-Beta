@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'color_tokens.dart';
 
 /// Glass theme tokens for the Ascent design system.
-/// Defined according to the Ascent Home Redesign spec:
+/// Defined according to the Ascent Liquid Glass specification:
 /// - Light base: #F4F3F8, Clay: #A4523A
 /// - Dark base: #0D1016, Clay: #E6A088
+/// - Harmonic Accents: Slate (Study), Sage (Walk/Health), Amber (Focus/Cash), Coral (Urgent/Danger)
 class AscentGlass extends ThemeExtension<AscentGlass> {
   final Color bg;
   final Color fill;
@@ -17,8 +18,22 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   final Color track;
   final Color nav;
   final Color shadow;
+
+  // Primary brand / Home anchor
   final Color clay;
   final Color claySoft;
+
+  // Harmonic contextual accents
+  final Color slate;
+  final Color slateSoft;
+  final Color sage;
+  final Color sageSoft;
+  final Color amber;
+  final Color amberSoft;
+  final Color coral;
+  final Color coralSoft;
+
+  // Unified typography ink
   final Color ink;
   final Color inkSecondary;
   final Color inkMuted;
@@ -36,6 +51,14 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     required this.shadow,
     required this.clay,
     required this.claySoft,
+    required this.slate,
+    required this.slateSoft,
+    required this.sage,
+    required this.sageSoft,
+    required this.amber,
+    required this.amberSoft,
+    required this.coral,
+    required this.coralSoft,
     required this.ink,
     required this.inkSecondary,
     required this.inkMuted,
@@ -54,6 +77,14 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     shadow: Color.fromRGBO(30, 34, 60, 0.22),
     clay: Color(0xFFA4523A),
     claySoft: Color.fromRGBO(164, 82, 58, 0.11),
+    slate: Color(0xFF4A68B0),
+    slateSoft: Color.fromRGBO(74, 104, 176, 0.11),
+    sage: Color(0xFF2C6B45),
+    sageSoft: Color.fromRGBO(44, 107, 69, 0.11),
+    amber: Color(0xFFB06822),
+    amberSoft: Color.fromRGBO(176, 104, 34, 0.11),
+    coral: Color(0xFFA63B34),
+    coralSoft: Color.fromRGBO(166, 59, 52, 0.11),
     ink: Color(0xFF1B1E2B),
     inkSecondary: Color(0xFF4A4E5F),
     inkMuted: Color(0xFF6A6E7E),
@@ -72,6 +103,14 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     shadow: Color.fromRGBO(0, 0, 0, 0.50),
     clay: Color(0xFFE6A088),
     claySoft: Color.fromRGBO(230, 160, 136, 0.14),
+    slate: Color(0xFF7E98D6),
+    slateSoft: Color.fromRGBO(126, 152, 214, 0.14),
+    sage: Color(0xFF63BA8B),
+    sageSoft: Color.fromRGBO(99, 186, 139, 0.14),
+    amber: Color(0xFFECA361),
+    amberSoft: Color.fromRGBO(236, 163, 97, 0.14),
+    coral: Color(0xFFE26D66),
+    coralSoft: Color.fromRGBO(226, 109, 102, 0.14),
     ink: Color(0xFFECEAF2),
     inkSecondary: Color(0xFFB4B7C6),
     inkMuted: Color(0xFF9094A4),
@@ -91,6 +130,14 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     Color? shadow,
     Color? clay,
     Color? claySoft,
+    Color? slate,
+    Color? slateSoft,
+    Color? sage,
+    Color? sageSoft,
+    Color? amber,
+    Color? amberSoft,
+    Color? coral,
+    Color? coralSoft,
     Color? ink,
     Color? inkSecondary,
     Color? inkMuted,
@@ -108,6 +155,14 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
       shadow: shadow ?? this.shadow,
       clay: clay ?? this.clay,
       claySoft: claySoft ?? this.claySoft,
+      slate: slate ?? this.slate,
+      slateSoft: slateSoft ?? this.slateSoft,
+      sage: sage ?? this.sage,
+      sageSoft: sageSoft ?? this.sageSoft,
+      amber: amber ?? this.amber,
+      amberSoft: amberSoft ?? this.amberSoft,
+      coral: coral ?? this.coral,
+      coralSoft: coralSoft ?? this.coralSoft,
       ink: ink ?? this.ink,
       inkSecondary: inkSecondary ?? this.inkSecondary,
       inkMuted: inkMuted ?? this.inkMuted,
@@ -130,6 +185,14 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
       shadow: Color.lerp(shadow, other.shadow, t)!,
       clay: Color.lerp(clay, other.clay, t)!,
       claySoft: Color.lerp(claySoft, other.claySoft, t)!,
+      slate: Color.lerp(slate, other.slate, t)!,
+      slateSoft: Color.lerp(slateSoft, other.slateSoft, t)!,
+      sage: Color.lerp(sage, other.sage, t)!,
+      sageSoft: Color.lerp(sageSoft, other.sageSoft, t)!,
+      amber: Color.lerp(amber, other.amber, t)!,
+      amberSoft: Color.lerp(amberSoft, other.amberSoft, t)!,
+      coral: Color.lerp(coral, other.coral, t)!,
+      coralSoft: Color.lerp(coralSoft, other.coralSoft, t)!,
       ink: Color.lerp(ink, other.ink, t)!,
       inkSecondary: Color.lerp(inkSecondary, other.inkSecondary, t)!,
       inkMuted: Color.lerp(inkMuted, other.inkMuted, t)!,

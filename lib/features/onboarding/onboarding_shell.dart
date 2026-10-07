@@ -97,10 +97,12 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
       final profileDao = ref.read(userProfileDaoProvider);
 
       // 1. Upsert Profile
+      final cleanName = state.name.trim();
+      final cleanRole = state.targetRole.trim();
       await profileDao.upsertProfile(
         UserProfileTableCompanion(
-          name: drift.Value(state.name.isEmpty ? 'Learner' : state.name),
-          targetRole: drift.Value(state.targetRole.isEmpty ? 'Software Engineer' : state.targetRole),
+          name: drift.Value(cleanName.isEmpty ? 'Learner' : cleanName),
+          targetRole: drift.Value(cleanRole.isEmpty ? 'Software Engineer' : cleanRole),
           targetCompanies: drift.Value(jsonEncode(state.targetCompanies)),
           interviewDate: drift.Value(state.interviewDate),
           weeklyHoursAvailable: drift.Value(state.weeklyHours),
@@ -115,7 +117,7 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
         await appDao.insertApplication(
           ApplicationTableCompanion.insert(
             company: comp,
-            role: state.targetRole.isEmpty ? 'Software Engineer' : state.targetRole,
+            role: cleanRole.isEmpty ? 'Software Engineer' : cleanRole,
             currentStage: const drift.Value('wishlist'),
             updatedAt: drift.Value(DateTime.now()),
           ),
@@ -312,7 +314,7 @@ class _ProgressDots extends StatelessWidget {
 // Screen 1: Name + Role
 // ---------------------------------------------------------------------------
 
-class _StepNameAndRole extends ConsumerWidget {
+class _StepNameAndRole extends ConsumerStatefulWidget {
   final TextEditingController nameController;
   final TextEditingController roleController;
   final VoidCallback onContinue;
@@ -323,6 +325,11 @@ class _StepNameAndRole extends ConsumerWidget {
     required this.onContinue,
   });
 
+  @override
+  ConsumerState<_StepNameAndRole> createState() => _StepNameAndRoleState();
+}
+
+class _StepNameAndRoleState extends ConsumerState<_StepNameAndRole> {
   static const _roleSuggestions = [
     'Backend Engineer',
     'Frontend Engineer',
@@ -333,9 +340,40 @@ class _StepNameAndRole extends ConsumerWidget {
   ];
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    widget.nameController.addListener(_rebuild);
+    widget.roleController.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    widget.nameController.removeListener(_rebuild);
+    widget.roleController.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final textPrimary = context.textPrimary;
     final textMuted = context.textMuted;
+
+    final name = widget.nameController.text.trim();
+    final role = widget.roleController.text.trim();
+    final isNameValid = name.length >= 2;
+    final isRoleValid = role.isNotEmpty;
+    final canContinue = isNameValid && isRoleValid;
+
+    String buttonLabel = 'Continue';
+    if (!isNameValid) {
+      buttonLabel = 'Enter your name to continue';
+    } else if (!isRoleValid) {
+      buttonLabel = 'Enter or select your target role';
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
@@ -353,51 +391,72 @@ class _StepNameAndRole extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'What should we call you, and what role are you aiming for?',
+            'Please enter your name and target role to personalize your workspace (both required).',
             style: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
           ),
           const SizedBox(height: 24),
 
           // Name field
-          Text(
-            'Your Name',
-            style: AscentTextStyles.labelSmall.copyWith(
-              color: textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Text(
+                'Your Name',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(color: context.stateDanger, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           TextField(
-            controller: nameController,
+            controller: widget.nameController,
             textCapitalization: TextCapitalization.words,
             style: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'e.g. Alex',
+              errorText: widget.nameController.text.isNotEmpty && !isNameValid
+                  ? 'Name must be at least 2 characters'
+                  : null,
             ),
             onChanged: (val) {
-              ref.read(onboardingProvider.notifier).updateNameRole(val, roleController.text);
+              ref.read(onboardingProvider.notifier).updateNameRole(val, widget.roleController.text);
             },
           ),
           const SizedBox(height: 18),
 
           // Target Role field
-          Text(
-            'Target Role',
-            style: AscentTextStyles.labelSmall.copyWith(
-              color: textPrimary,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            children: [
+              Text(
+                'Target Role',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(color: context.stateDanger, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           TextField(
-            controller: roleController,
+            controller: widget.roleController,
             textCapitalization: TextCapitalization.words,
             style: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
             decoration: const InputDecoration(
               hintText: 'e.g. Backend Engineer',
             ),
             onChanged: (val) {
-              ref.read(onboardingProvider.notifier).updateNameRole(nameController.text, val);
+              ref.read(onboardingProvider.notifier).updateNameRole(widget.nameController.text, val);
             },
           ),
           const SizedBox(height: 14),
@@ -418,8 +477,8 @@ class _StepNameAndRole extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 onPressed: () {
-                  roleController.text = suggestion;
-                  ref.read(onboardingProvider.notifier).updateNameRole(nameController.text, suggestion);
+                  widget.roleController.text = suggestion;
+                  ref.read(onboardingProvider.notifier).updateNameRole(widget.nameController.text, suggestion);
                 },
               );
             }).toList(),
@@ -428,20 +487,16 @@ class _StepNameAndRole extends ConsumerWidget {
           const Spacer(),
 
           AscentButton.primary(
-            label: 'Continue',
-            onPressed: () {
-              if (nameController.text.trim().isEmpty) {
-                nameController.text = 'Learner';
-              }
-              if (roleController.text.trim().isEmpty) {
-                roleController.text = 'Software Engineer';
-              }
-              ref.read(onboardingProvider.notifier).updateNameRole(
-                nameController.text.trim(),
-                roleController.text.trim(),
-              );
-              onContinue();
-            },
+            label: buttonLabel,
+            onPressed: canContinue
+                ? () {
+                    ref.read(onboardingProvider.notifier).updateNameRole(
+                      name,
+                      role,
+                    );
+                    widget.onContinue();
+                  }
+                : null,
           ),
           const SizedBox(height: 12),
         ],
@@ -474,6 +529,7 @@ class _StepTargetCompanies extends ConsumerWidget {
     final selected = state.targetCompanies;
     final textPrimary = context.textPrimary;
     final textMuted = context.textMuted;
+    final canContinue = selected.isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
@@ -491,7 +547,7 @@ class _StepTargetCompanies extends ConsumerWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Select or add target companies to seed your application pipeline.',
+            'Select or add at least 1 target company to seed your application pipeline (required).',
             style: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
           ),
           const SizedBox(height: 20),
@@ -526,7 +582,7 @@ class _StepTargetCompanies extends ConsumerWidget {
           const SizedBox(height: 16),
 
           Text(
-            'Quick select:',
+            'Quick select (choose at least 1):',
             style: AscentTextStyles.labelSmall.copyWith(color: textMuted),
           ),
           const SizedBox(height: 10),
@@ -562,8 +618,10 @@ class _StepTargetCompanies extends ConsumerWidget {
           const Spacer(),
 
           AscentButton.primary(
-            label: selected.isEmpty ? 'Continue' : 'Continue (${selected.length} chosen)',
-            onPressed: onContinue,
+            label: selected.isEmpty
+                ? 'Select at least 1 company to continue'
+                : 'Continue (${selected.length} chosen)',
+            onPressed: canContinue ? onContinue : null,
           ),
           const SizedBox(height: 12),
         ],

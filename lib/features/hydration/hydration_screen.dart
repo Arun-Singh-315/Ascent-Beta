@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/animated_water_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import 'hydration_popup_dialog.dart';
 
 class HydrationScreen extends ConsumerStatefulWidget {
@@ -108,56 +109,31 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
     final targetMl = goalAsync.value ?? 2500;
     final percent = ((currentMl / targetMl) * 100).toInt();
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: false,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Hydration Tracker',
+      subtitle: 'Daily fluid health & vitality',
+      glow2: g.slate,
+      actions: [
+        IconButton(
+          tooltip: 'Trigger Hydration Pop-up Alert',
+          icon: Icon(Icons.water_drop_rounded, color: g.slate),
           onPressed: () {
             HapticFeedback.lightImpact();
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
+            HydrationPopupDialog.show(context);
           },
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hydration Tracker',
-              style: AscentTextStyles.headlineMedium.copyWith(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              'Daily Fluid Health & Vitality',
-              style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted),
-            ),
-          ],
+        IconButton(
+          tooltip: 'Edit Daily Goal',
+          icon: Icon(Icons.tune_rounded, color: g.clay),
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            _showSetGoalDialog(targetMl);
+          },
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Trigger Hydration Pop-up Alert',
-            icon: const Icon(Icons.water_drop_rounded, color: Color(0xFF38BDF8)),
-            onPressed: () => HydrationPopupDialog.show(context),
-          ),
-          IconButton(
-            tooltip: 'Edit Daily Goal',
-            icon: Icon(Icons.tune_rounded, color: context.accentPrimary),
-            onPressed: () => _showSetGoalDialog(targetMl),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
-        child: ListView(
+      ],
+      body: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           children: [
             // 1. Standalone Fluid Animated Card (Isolated strictly on this screen)
@@ -409,7 +385,6 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             const SizedBox(height: 24),
           ],
         ),
-      ),
     );
   }
 }

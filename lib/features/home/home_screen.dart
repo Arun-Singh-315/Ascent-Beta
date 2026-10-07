@@ -7,9 +7,9 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/services/hydration_reminder_service.dart';
-import '../../shared/widgets/new_day_dialog.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'widgets/activity_hub_card.dart';
+import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_reminder_banners.dart';
@@ -38,23 +38,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
-      final newDayShown = await _checkNewDay();
-      if (!newDayShown && mounted) {
-        ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
-      }
+      ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
     });
-  }
-
-  Future<bool> _checkNewDay() async {
-    final prefs = ref.read(sharedPreferencesProvider);
-    final lastShown = prefs.getString('ascent_new_day_shown');
-    final todayStr = DateTime.now().toIso8601String().substring(0, 10);
-    if (lastShown != todayStr) {
-      prefs.setString('ascent_new_day_shown', todayStr);
-      await showNewDayDialog(context, ref);
-      return true;
-    }
-    return false;
   }
 
   @override
@@ -98,6 +83,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // Top indicator for pending reminders
                     const TopReminderAlertBanner(),
+
+                    // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
+                    DayOneTutorialCard(userName: profile?.name ?? 'Friend'),
 
                     // Return-user cold start welcome banner (>3 days absent)
                     if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[

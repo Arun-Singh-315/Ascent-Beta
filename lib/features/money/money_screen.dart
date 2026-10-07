@@ -4,12 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'add_transaction_sheet.dart';
 import 'budget_settings_sheet.dart';
@@ -61,23 +63,26 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
   }
 
   Color _categoryColor(BuildContext context, String category) {
+    final g = context.glass;
     switch (category) {
       case 'Food & Groceries':
-        return context.accentSecondary;
+        return g.clay;
       case 'Transport':
-        return context.accentPrimary;
+        return g.slate;
       case 'Shopping':
-        return Colors.purpleAccent;
+        return g.amber;
       case 'Education':
-        return Colors.indigoAccent;
+        return g.slate;
       case 'Bills & Subscriptions':
-        return Colors.amber;
+        return g.coral;
       case 'Health':
-        return context.stateDanger;
+        return g.sage;
       case 'Entertainment':
-        return Colors.teal;
+        return g.clay;
+      case 'Savings':
+        return g.sage;
       default:
-        return context.textMuted;
+        return g.inkMuted;
     }
   }
 
@@ -213,38 +218,35 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     final remainingBudget = (monthlyLimit - monthSpend).clamp(0.0, double.infinity);
     final budgetProgress = (monthSpend / monthlyLimit).clamp(0.0, 1.0);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        title: Text(
-          'Money & Budgets',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Money & Budgets',
+      subtitle: 'Personal ledger & savings goals',
+      glow2: g.amber,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.tune_outlined, color: g.ink),
+          tooltip: 'Budget Limits',
+          onPressed: () => BudgetSettingsSheet.show(context, currentBudget: budget),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.tune_outlined, color: context.textPrimary),
-            tooltip: 'Budget Limits',
-            onPressed: () => BudgetSettingsSheet.show(context, currentBudget: budget),
-          ),
-          IconButton(
-            icon: Icon(Icons.add_rounded, color: context.accentSecondary, size: 28),
-            tooltip: 'Record Expense',
-            onPressed: () => AddTransactionSheet.show(context),
-          ),
-          const SizedBox(width: 8),
+        IconButton(
+          icon: Icon(Icons.add_rounded, color: g.clay, size: 28),
+          tooltip: 'Record Expense',
+          onPressed: () => AddTransactionSheet.show(context),
+        ),
+      ],
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: g.clay,
+        unselectedLabelColor: g.inkMuted,
+        indicatorColor: g.clay,
+        indicatorSize: TabBarIndicatorSize.label,
+        dividerColor: Colors.transparent,
+        tabs: const [
+          Tab(text: 'Transactions & Trends'),
+          Tab(text: 'Budgets & Goals'),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: context.accentSecondary,
-          unselectedLabelColor: context.textMuted,
-          indicatorColor: context.accentSecondary,
-          tabs: const [
-            Tab(text: 'Transactions & Trends'),
-            Tab(text: 'Budgets & Goals'),
-          ],
-        ),
       ),
       body: TabBarView(
         controller: _tabController,

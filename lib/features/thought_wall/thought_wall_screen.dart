@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'drop_thought_sheet.dart';
 
@@ -37,41 +39,26 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   Widget build(BuildContext context) {
     final thoughtsAsync = ref.watch(allThoughtsStreamProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Thought Wall',
-              style: AscentTextStyles.headlineMedium.copyWith(
-                color: context.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            Text(
-              'Mind space • Me to Me talk',
-              style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
-            ),
-          ],
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Thought Wall',
+      subtitle: 'Mind space • Me to Me talk',
+      glow2: g.slate,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.add_comment_rounded, color: g.clay),
+          tooltip: 'Drop a thought',
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            DropThoughtSheet.show(context);
+          },
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_comment_rounded),
-            tooltip: 'Drop a thought',
-            onPressed: () => DropThoughtSheet.show(context),
-          ),
-        ],
-      ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF8338EC),
+        backgroundColor: g.clay,
         foregroundColor: Colors.white,
-        elevation: 4,
+        elevation: 2,
         icon: const Icon(Icons.edit_note_rounded, size: 20),
         label: Text(
           'Drop a Thought ✨',

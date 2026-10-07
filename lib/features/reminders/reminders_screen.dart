@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 
 enum _ReminderRepeatMode {
@@ -42,7 +43,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: context.bgSurface,
+      backgroundColor: context.glass.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -205,13 +206,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                 setSheetState(() => repeatMode = mode);
                               }
                             },
-                            selectedColor: context.accentPrimary,
-                            backgroundColor: context.bgBase,
+                            selectedColor: context.glass.claySoft,
+                            backgroundColor: context.glass.fill,
                             side: BorderSide(
-                              color: isSelected ? context.accentPrimary : context.divider,
+                              color: isSelected ? context.glass.clay : context.glass.edge,
                             ),
                             labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : context.textPrimary,
+                              color: isSelected ? context.glass.clay : context.glass.ink,
                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                               fontSize: 12,
                             ),
@@ -222,13 +223,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: context.accentPrimary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: context.accentPrimary.withValues(alpha: 0.2)),
+                          color: context.glass.claySoft,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: context.glass.clay.withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.info_outline_rounded, size: 16, color: context.accentPrimary),
+                            Icon(Icons.info_outline_rounded, size: 16, color: context.glass.clay),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -367,7 +368,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            style: TextButton.styleFrom(foregroundColor: context.glass.coral),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
           ),
@@ -397,26 +398,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   Widget build(BuildContext context) {
     final remindersAsync = ref.watch(allRemindersProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        title: Text(
-          'Reminders & Alerts',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/home');
-            }
-          },
-        ),
-      ),
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Reminders & Alerts',
+      subtitle: 'Scheduled notifications & deadlines',
       floatingActionButton: AscentButton.fab(
         icon: Icons.add_rounded,
         onPressed: () => _openAddEditReminderSheet(),
@@ -445,7 +431,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   'Upcoming (${upcoming.length})',
                   style: AscentTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: context.accentPrimary,
+                    color: g.clay,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -457,7 +443,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   'Past or Completed (${past.length})',
                   style: AscentTextStyles.labelLarge.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: context.textMuted,
+                    color: g.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -466,13 +452,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
+        loading: () => Center(child: CircularProgressIndicator(color: g.clay)),
+        error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: g.inkMuted))),
       ),
     );
   }
 
   Widget _buildReminderTile(Reminder reminder, {required bool isUpcoming}) {
+    final g = context.glass;
     final formattedTime = DateFormat('EEE, MMM d • h:mm a').format(reminder.scheduledAt);
 
     return Dismissible(
@@ -486,10 +473,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: Colors.redAccent.withValues(alpha: 0.15),
+          color: g.coralSoft,
           borderRadius: BorderRadius.circular(16),
         ),
-        child: const Icon(Icons.delete_outline, color: Colors.redAccent),
+        child: Icon(Icons.delete_outline, color: g.coral),
       ),
       child: AscentCard(
         margin: const EdgeInsets.only(bottom: 10),
@@ -501,27 +488,26 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isUpcoming
-                    ? context.accentSecondary.withValues(alpha: 0.15)
-                    : context.divider.withValues(alpha: 0.4),
+                color: isUpcoming ? g.claySoft : g.fill,
                 shape: BoxShape.circle,
+                border: Border.all(color: isUpcoming ? g.clay.withValues(alpha: 0.25) : g.edge, width: 0.8),
               ),
               child: Icon(
                 isUpcoming ? Icons.notifications_active_rounded : Icons.notifications_off_outlined,
                 size: 20,
-                color: isUpcoming ? context.accentSecondary : context.textMuted,
+                color: isUpcoming ? g.clay : g.inkMuted,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+               crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     reminder.title,
                     style: AscentTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: isUpcoming ? context.textPrimary : context.textMuted,
+                      color: isUpcoming ? g.ink : g.inkMuted,
                       decoration: isUpcoming ? null : TextDecoration.lineThrough,
                     ),
                   ),
@@ -529,14 +515,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   Text(
                     formattedTime,
                     style: AscentTextStyles.bodySmall.copyWith(
-                      color: isUpcoming ? context.textMuted : context.textMuted.withValues(alpha: 0.7),
+                      color: isUpcoming ? g.inkMuted : g.inkMuted.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
               ),
             ),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, size: 20, color: context.textMuted),
+              icon: Icon(Icons.more_vert_rounded, size: 20, color: g.inkMuted),
               padding: EdgeInsets.zero,
               onSelected: (val) {
                 if (val == 'edit') {
@@ -556,13 +542,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline, size: 16, color: Colors.redAccent),
-                      SizedBox(width: 8),
-                      Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                      Icon(Icons.delete_outline, size: 16, color: g.coral),
+                      const SizedBox(width: 8),
+                      Text('Delete', style: TextStyle(color: g.coral)),
                     ],
                   ),
                 ),

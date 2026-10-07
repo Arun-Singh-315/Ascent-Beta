@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 
 /// A surface card that follows the Ascent design system.
 ///
@@ -46,12 +47,10 @@ class AscentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surfaceColor = color ??
-        (context.isDark
-            ? context.bgSurface.withValues(alpha: 0.6)
-            : context.bgSurface.withValues(alpha: 0.88));
-    final shadowColor = context.isDark ? AscentColors.shadowDark : AscentColors.shadow;
-    final borderColor = context.divider.withValues(alpha: context.isDark ? 0.7 : 0.55);
+    final g = context.glass;
+    final surfaceColor = color ?? g.fill;
+    final shadowColor = g.shadow;
+    final borderColor = g.edge;
     final borderRadius = BorderRadius.circular(radius);
 
     return Container(

@@ -6,12 +6,14 @@ import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/live_session_bar.dart';
 import '../today/add_activity_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -246,47 +248,28 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
       totalLoggedTodaySeconds += trackingState.elapsedSeconds;
     }
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // App Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
-                    style: IconButton.styleFrom(
-                      backgroundColor: context.bgSurface,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Focus Timer',
-                      style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(() => _showStats = !_showStats),
-                    icon: Icon(
-                      _showStats ? Icons.bar_chart_rounded : Icons.bar_chart_outlined,
-                      color: _showStats ? context.accentPrimary : context.textMuted,
-                    ),
-                    tooltip: 'Today\'s stats',
-                  ),
-                ],
-              ),
-            ),
+    final g = context.glass;
 
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
+    return AscentScaffold(
+      title: 'Focus Timer',
+      subtitle: 'Deep work & interval stopwatch',
+      glow2: g.amber,
+      actions: [
+        IconButton(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            setState(() => _showStats = !_showStats);
+          },
+          icon: Icon(
+            _showStats ? Icons.bar_chart_rounded : Icons.bar_chart_outlined,
+            color: _showStats ? g.clay : g.inkMuted,
+          ),
+          tooltip: 'Today\'s stats',
+        ),
+      ],
+      body: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        children: [
                   // ── Today across all tasks strip ───────────────────────────
                   Container(
                     margin: const EdgeInsets.only(bottom: 16),
@@ -467,10 +450,6 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                   const SizedBox(height: 32),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -532,7 +511,7 @@ class _BigClockCard extends StatelessWidget {
                     height: 6,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isRunning ? accent : Colors.orange,
+                      color: isRunning ? accent : context.glass.amber,
                     ),
                   ),
                   const SizedBox(width: 6),

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/insight_engine/series_engine.dart';
@@ -11,6 +12,7 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
@@ -50,33 +52,28 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
   Widget build(BuildContext context) {
     final taskDao = ref.watch(taskDaoProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        title: Text(
-          'Tasks & Today',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: Icon(
-              Icons.filter_list_rounded,
-              color: _priorityFilter != 'All' ? context.accentPrimary : context.textPrimary,
-            ),
-            tooltip: 'Filter by priority',
-            initialValue: _priorityFilter,
-            onSelected: (val) => setState(() => _priorityFilter = val),
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'All', child: Text('All Priorities')),
-              const PopupMenuItem(value: 'high', child: Text('High Priority')),
-              const PopupMenuItem(value: 'medium', child: Text('Medium Priority')),
-              const PopupMenuItem(value: 'low', child: Text('Low Priority')),
-            ],
+    final g = context.glass;
+
+    return AscentScaffold(
+      title: 'Tasks & Today',
+      subtitle: 'Actionable to-dos & study tasks',
+      actions: [
+        PopupMenuButton<String>(
+          icon: Icon(
+            Icons.filter_list_rounded,
+            color: _priorityFilter != 'All' ? g.clay : g.inkMuted,
           ),
-        ],
-      ),
+          tooltip: 'Filter by priority',
+          initialValue: _priorityFilter,
+          onSelected: (val) => setState(() => _priorityFilter = val),
+          itemBuilder: (context) => [
+            const PopupMenuItem(value: 'All', child: Text('All Priorities')),
+            const PopupMenuItem(value: 'high', child: Text('High Priority')),
+            const PopupMenuItem(value: 'medium', child: Text('Medium Priority')),
+            const PopupMenuItem(value: 'low', child: Text('Low Priority')),
+          ],
+        ),
+      ],
       floatingActionButton: AscentButton.fab(
         icon: Icons.add_rounded,
         onPressed: () => _openAddTaskSheet(context),
