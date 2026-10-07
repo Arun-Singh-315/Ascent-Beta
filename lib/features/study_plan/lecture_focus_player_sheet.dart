@@ -12,6 +12,7 @@ class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => const LectureFocusPlayerSheet(),
     );
@@ -32,7 +33,9 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
     final activeMod = state.activeModule;
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.92,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.92,
+      ),
       decoration: BoxDecoration(
         color: context.bgSurface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -44,11 +47,26 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // 1. Top Header Handle + Title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: SafeArea(
+        top: true,
+        bottom: true,
+        child: Column(
+          children: [
+            // Drag handle
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 4),
+              child: Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            // 1. Top Header Handle + Title
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -256,12 +274,16 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                         width: 68,
                         height: 68,
                         decoration: BoxDecoration(
-                          color: context.accentSecondary,
+                          color: context.accentPrimary.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: context.accentPrimary.withValues(alpha: 0.45),
+                            width: 1.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: context.accentSecondary.withValues(alpha: 0.35),
-                              blurRadius: 16,
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
                           ],
@@ -269,7 +291,7 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                         child: Icon(
                           state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                           size: 38,
-                          color: Colors.white,
+                          color: context.accentPrimary,
                         ),
                       ),
                     ),
@@ -483,6 +505,7 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

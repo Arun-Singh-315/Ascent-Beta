@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:google_fonts/google_fonts.dart';
@@ -37,117 +38,167 @@ class LiveSessionBar extends ConsumerWidget {
     final session = trackingState.activeSession;
 
     // Check if learning hub lecture is active
-    if (session == null && (learningState.isPlaying || learningState.isLiveFocusActive)) {
+    if (session == null &&
+        (learningState.isPlaying || learningState.isLiveFocusActive) &&
+        !learningState.isFloatingDismissed) {
       final activeLec = learningState.activeLecture;
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: context.bgSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.accentSecondary.withValues(alpha: 0.5)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
+      final curCourse = learningState.course;
+      final curModule = learningState.activeModule;
+
+      return Dismissible(
+        key: ValueKey('floating_lecture_${activeLec.id}'),
+        direction: DismissDirection.horizontal,
+        onDismissed: (_) {
+          HapticFeedback.lightImpact();
+          ref.read(learningHubProvider.notifier).dismissFloatingPlayer();
+        },
+        background: Container(
+          alignment: Alignment.centerLeft,
+          padding: const EdgeInsets.only(left: 20),
+          color: Colors.transparent,
+        ),
+        secondaryBackground: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          color: Colors.transparent,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: context.bgSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: context.accentSecondary.withValues(alpha: 0.5),
+                width: 1,
               ),
-            ],
-          ),
-          child: InkWell(
-            onTap: () => LectureFocusPlayerSheet.show(context),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: context.accentSecondary.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.school_rounded, color: context.accentSecondary, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: learningState.isPlaying ? context.accentSecondary : Colors.orange,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              'Lecture ${activeLec.id}: ${activeLec.title}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AscentTextStyles.labelMedium.copyWith(
-                                color: context.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Text(
-                            learningState.formattedRemaining,
-                            style: AscentTextStyles.monoCode.copyWith(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: learningState.isPlaying
-                                  ? context.accentSecondary
-                                  : context.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            learningState.isPlaying ? '• Live Focus' : '• Paused',
-                            style: AscentTextStyles.captionMedium.copyWith(
-                              color: learningState.isPlaying
-                                  ? context.accentSecondary
-                                  : context.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    learningState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: context.textPrimary,
-                    size: 24,
-                  ),
-                  onPressed: () => ref.read(learningHubProvider.notifier).togglePlayPause(),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.stop_rounded,
-                    color: context.stateDangerBright,
-                    size: 24,
-                  ),
-                  onPressed: () => ref.read(learningHubProvider.notifier).pause(),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
+            ),
+            child: InkWell(
+              onTap: () => LectureFocusPlayerSheet.show(context),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.accentSecondary.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.school_rounded, color: context.accentSecondary, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${curCourse.title} • ${curModule.title}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: context.textMuted,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: BoxDecoration(
+                                color: learningState.isPlaying ? context.accentSecondary : Colors.orange,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Lecture ${activeLec.id}: ${activeLec.title}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AscentTextStyles.labelMedium.copyWith(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Text(
+                              learningState.formattedElapsed,
+                              style: AscentTextStyles.monoCode.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: learningState.isPlaying
+                                    ? context.accentSecondary
+                                    : context.textMuted,
+                              ),
+                            ),
+                            Text(
+                              ' / ${activeLec.formattedDuration}',
+                              style: AscentTextStyles.monoCode.copyWith(
+                                fontSize: 11,
+                                color: context.textMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              learningState.isPlaying ? '• Live Focus' : '• Paused',
+                              style: AscentTextStyles.captionMedium.copyWith(
+                                color: learningState.isPlaying
+                                    ? context.accentSecondary
+                                    : context.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      learningState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                      color: context.textPrimary,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      ref.read(learningHubProvider.notifier).togglePlayPause();
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.stop_rounded,
+                      color: context.stateDangerBright,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      HapticFeedback.lightImpact();
+                      ref.read(learningHubProvider.notifier).pause();
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       );
     }
 
-    if (session == null) {
+    if (session == null || trackingState.isFloatingDismissed) {
       return const SizedBox.shrink();
     }
 
@@ -160,9 +211,26 @@ class LiveSessionBar extends ConsumerWidget {
         ? Icons.school_rounded
         : Icons.sports_esports_rounded;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ChatBubbleCard(
+    return Dismissible(
+      key: ValueKey('floating_activity_${session.id}'),
+      direction: DismissDirection.horizontal,
+      onDismissed: (_) {
+        HapticFeedback.lightImpact();
+        ref.read(timeTrackingProvider.notifier).dismissFloatingBar();
+      },
+      background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        color: Colors.transparent,
+      ),
+      secondaryBackground: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        color: Colors.transparent,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: ChatBubbleCard(
         tailPosition: BubbleTailPosition.bottomLeft,
         isPulsing: trackingState.isRunning,
         borderColor: categoryColor.withValues(alpha: 0.5),
@@ -263,6 +331,7 @@ class LiveSessionBar extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 

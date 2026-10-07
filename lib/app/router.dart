@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/splash_screen.dart';
+import '../features/auth/login_screen.dart';
 
 import '../features/onboarding/onboarding_shell.dart';
 import '../features/home/home_screen.dart';
@@ -10,7 +11,9 @@ import '../features/pipeline/card_detail_screen.dart';
 import '../features/analytics/analytics_screen.dart';
 import '../features/analytics/series_report_card_screen.dart';
 import '../features/more/more_screen.dart';
+import '../features/study_plan/course_catalog_screen.dart';
 import '../features/study_plan/study_plan_screen.dart';
+import '../features/notes/kindle_book_reader_screen.dart';
 import '../features/dsa/dsa_screen.dart';
 import '../features/interview_prep/interview_prep_screen.dart';
 import '../features/consistency/consistency_screen.dart';
@@ -24,19 +27,23 @@ import '../features/walk/walk_screen.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
+import '../features/hydration/hydration_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
 
 class AscentRoutes {
   static const splash = '/';
+  static const login = '/login';
   static const onboarding = '/onboarding';
   static const home = '/home';
+  static const bookReader = '/book-reader';
   static const today = '/today';
   static const money = '/money';
   static const walk = '/walk';
   static const aiAssistant = '/ai-assistant';
   static const habits = '/habits';
+  static const hydration = '/hydration';
   static const thoughtWall = '/thought-wall';
   static const pipeline = '/pipeline';
   static const pipelineCard = '/pipeline/:id';
@@ -72,6 +79,12 @@ final ascentRouter = GoRouter(
     GoRoute(
       path: AscentRoutes.splash,
       builder: (context, state) => const SplashScreen(),
+    ),
+
+    // ── Login (no shell — full screen) ───────────────────────────────────────
+    GoRoute(
+      path: AscentRoutes.login,
+      builder: (context, state) => const LoginScreen(),
     ),
 
     // ── Onboarding (no shell — full screen flow) ──────────────────────────
@@ -159,6 +172,11 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.hydration,
+      builder: (context, state) => const HydrationScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.thoughtWall,
       builder: (context, state) => const ThoughtWallScreen(),
     ),
@@ -195,7 +213,21 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.studyPlan,
-      builder: (context, state) => const StudyPlanScreen(),
+      builder: (context, state) => const CourseCatalogScreen(),
+      routes: [
+        GoRoute(
+          path: 'course/:id',
+          parentNavigatorKey: rootNavigatorKey,
+          builder: (context, state) => StudyPlanScreen(
+            courseId: state.pathParameters['id'],
+          ),
+        ),
+      ],
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.bookReader,
+      builder: (context, state) => const KindleBookReaderScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

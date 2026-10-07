@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
 
+import 'package:flutter/services.dart';
+
 import 'ascent_drawer.dart';
 import 'live_session_bar.dart';
 
 /// The persistent shell wrapping the bottom navigation bar.
 /// Each tab maintains its own independent navigation stack via
 /// [StatefulShellRoute.indexedStack].
-class MainScaffold extends StatelessWidget {
+class MainScaffold extends StatefulWidget {
   final StatefulNavigationShell shell;
 
   const MainScaffold({super.key, required this.shell});
@@ -22,27 +24,107 @@ class MainScaffold extends StatelessWidget {
   ];
 
   @override
+  State<MainScaffold> createState() => _MainScaffoldState();
+}
+
+class _MainScaffoldState extends State<MainScaffold> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  DateTime? _lastBackPressTime;
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: const AscentDrawer(),
-      body: shell,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const LiveSessionBar(),
-          _AscentBottomNav(
-            currentIndex: shell.currentIndex,
-            onTap: (index) => shell.goBranch(
-              index,
-              initialLocation: index == shell.currentIndex,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        // 1. If drawer is open, close it cleanly first
+        if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
+          _scaffoldKey.currentState?.closeDrawer();
+          return;
+        }
+
+        // 2. If user is on a secondary tab, navigate back to Home (Tab 0)
+        if (widget.shell.currentIndex != 0) {
+          HapticFeedback.selectionClick();
+          widget.shell.goBranch(0);
+          return;
+        }
+
+        // 3. User is on Home tab: double back within 2 seconds to exit app
+        final now = DateTime.now();
+        if (_lastBackPressTime == null ||
+            now.difference(_lastBackPressTime!) > const Duration(seconds: 2)) {
+          _lastBackPressTime = now;
+          HapticFeedback.lightImpact();
+
+          final messenger = ScaffoldMessenger.of(context);
+          messenger.removeCurrentSnackBar();
+          messenger.showSnackBar(
+            SnackBar(
+              content: const Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.touch_app_rounded, size: 16, color: Colors.white70),
+                  SizedBox(width: 8),
+                  Text(
+                    'Press back again to exit',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.95),
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 0.8,
+                ),
+              ),
+              margin: const EdgeInsets.only(bottom: 74, left: 60, right: 60),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
-            tabs: _tabs,
-          ),
-        ],
+          );
+          return;
+        }
+
+        // Second press confirmed within 2 seconds -> exit app
+        SystemNavigator.pop();
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        drawer: const AscentDrawer(),
+        body: widget.shell,
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const LiveSessionBar(),
+            _AscentBottomNav(
+              currentIndex: widget.shell.currentIndex,
+              onTap: (index) {
+                HapticFeedback.selectionClick();
+                widget.shell.goBranch(
+                  index,
+                  initialLocation: index == widget.shell.currentIndex,
+                );
+              },
+              tabs: MainScaffold._tabs,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
 
 class _AscentBottomNav extends StatelessWidget {
   final int currentIndex;

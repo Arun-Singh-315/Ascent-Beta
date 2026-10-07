@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
@@ -24,6 +26,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     with SingleTickerProviderStateMixin {
   late final MapController _mapController;
   late final TabController _tabController;
+  bool _showOnlineMap = false;
 
   @override
   void initState() {
@@ -162,101 +165,167 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
           // ── Tab 0: Live GPS Tracker ───────────────────────────────────────
           Stack(
             children: [
-              // 1. OpenStreetMap Canvas via flutter_map
-              FlutterMap(
-                mapController: _mapController,
-                options: MapOptions(
-                  initialCenter: currentCenter,
-                  initialZoom: 16.0,
-                ),
-                children: [
-                  TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.ascent.jobprep',
+              // 1. High-Performance Vector Route Canvas (default zero-lag) OR Online Map
+              if (_showOnlineMap)
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: currentCenter,
+                    initialZoom: 16.0,
                   ),
-                  if (walkState.routePoints.isNotEmpty)
-                    PolylineLayer(
-                      polylines: [
-                        Polyline(
-                          points: walkState.routePoints,
-                          strokeWidth: 4.5,
-                          color: context.accentPrimary,
-                        ),
-                      ],
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.ascent.jobprep',
                     ),
-                  if (walkState.currentLat != null && walkState.currentLng != null)
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(walkState.currentLat!, walkState.currentLng!),
-                          width: 22,
-                          height: 22,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: context.accentPrimary,
-                              border: Border.all(color: Colors.white, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black26, blurRadius: 4),
-                              ],
+                    if (walkState.routePoints.isNotEmpty)
+                      PolylineLayer(
+                        polylines: [
+                          Polyline(
+                            points: walkState.routePoints,
+                            strokeWidth: 4.5,
+                            color: context.accentPrimary,
+                          ),
+                        ],
+                      ),
+                    if (walkState.currentLat != null && walkState.currentLng != null)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            point: LatLng(walkState.currentLat!, walkState.currentLng!),
+                            width: 22,
+                            height: 22,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: context.accentPrimary,
+                                border: Border.all(color: Colors.white, width: 2.5),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
+                        ],
+                      ),
+                  ],
+                )
+              else
+                _WalkFitnessHud(
+                  walkState: walkState,
+                  targetDistanceKm: targetDistanceKm,
+                ),
 
-              // 2. GPS Quality Indicator Badge & Recenter Button
+              // 2. Controls & Mode Toggle Header
               Positioned(
                 top: 14,
                 left: 16,
                 right: 16,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // GPS Quality Indicator
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: context.bgSurface.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: context.divider),
+                        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             Icons.gps_fixed_rounded,
-                            size: 14,
+                            size: 13,
                             color: walkState.gpsSignal == GpsSignalQuality.good
                                 ? context.accentPrimary
                                 : (walkState.gpsSignal == GpsSignalQuality.permissionDenied
                                     ? context.stateDanger
                                     : Colors.orange),
                           ),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 5),
                           Text(
                             walkState.gpsSignal == GpsSignalQuality.good
-                                ? 'GPS Signal: Strong'
+                                ? 'GPS: Strong'
                                 : (walkState.gpsSignal == GpsSignalQuality.permissionDenied
-                                    ? 'Location Permission Needed'
-                                    : 'Acquiring GPS...'),
+                                    ? 'Permission Needed'
+                                    : 'Searching...'),
                             style: AscentTextStyles.labelSmall.copyWith(
                               color: context.textPrimary,
                               fontWeight: FontWeight.w600,
+                              fontSize: 11,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    FloatingActionButton.small(
-                      heroTag: 'recenter_gps_btn',
-                      backgroundColor: context.bgSurface,
-                      foregroundColor: context.textPrimary,
-                      elevation: 2,
-                      onPressed: () => _recenterMap(walkState),
-                      child: const Icon(Icons.my_location_rounded, size: 20),
+                    const Spacer(),
+                    // Online Map / Radar HUD Switcher
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _showOnlineMap = !_showOnlineMap;
+                        });
+                        if (_showOnlineMap) {
+                          ScaffoldMessenger.of(context).removeCurrentSnackBar();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text(
+                                'Connecting to online map. Turn on internet if tiles don\'t load.',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: context.bgSurface.withValues(alpha: 0.92),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _showOnlineMap
+                                ? context.accentPrimary.withValues(alpha: 0.6)
+                                : context.divider.withValues(alpha: 0.8),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _showOnlineMap ? Icons.fitness_center_rounded : Icons.map_outlined,
+                              size: 14,
+                              color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _showOnlineMap ? 'Fitness HUD' : 'Map View',
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                    if (_showOnlineMap) ...[
+                      const SizedBox(width: 8),
+                      FloatingActionButton.small(
+                        heroTag: 'recenter_gps_btn',
+                        backgroundColor: context.bgSurface,
+                        foregroundColor: context.textPrimary,
+                        elevation: 2,
+                        onPressed: () => _recenterMap(walkState),
+                        child: const Icon(Icons.my_location_rounded, size: 18),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -721,3 +790,322 @@ class _MetricCol extends StatelessWidget {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Modern Fitness Activity HUD (Apple Fitness / Strava Style Arc & Metrics)
+// ---------------------------------------------------------------------------
+
+class _WalkFitnessHud extends StatelessWidget {
+  final WalkTrackingState walkState;
+  final double targetDistanceKm;
+
+  const _WalkFitnessHud({
+    required this.walkState,
+    required this.targetDistanceKm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = context.isDark;
+    final accent = context.accentPrimary;
+    final isTracking = walkState.status == WalkTrackingStatus.tracking;
+    final isPaused = walkState.status == WalkTrackingStatus.paused;
+    final isStationary = walkState.isStationary;
+    final distanceKm = walkState.distanceMeters / 1000.0;
+    final progress = (targetDistanceKm > 0 ? distanceKm / targetDistanceKm : 0.0).clamp(0.0, 1.0);
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [const Color(0xFF090D16), const Color(0xFF0F172A)]
+              : [const Color(0xFFF8FAFC), const Color(0xFFEFF6FF)],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 60, bottom: 250, left: 20, right: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // 1. Dynamic Status Indicator Pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isTracking
+                      ? (isStationary
+                          ? const Color(0xFF0284C7).withValues(alpha: 0.15)
+                          : const Color(0xFF10B981).withValues(alpha: 0.15))
+                      : (isPaused
+                          ? Colors.amber.withValues(alpha: 0.15)
+                          : context.bgSurface.withValues(alpha: 0.8)),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isTracking
+                        ? (isStationary
+                            ? const Color(0xFF0284C7).withValues(alpha: 0.4)
+                            : const Color(0xFF10B981).withValues(alpha: 0.5))
+                        : (isPaused
+                            ? Colors.amber.withValues(alpha: 0.4)
+                            : context.divider),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isTracking
+                            ? (isStationary ? const Color(0xFF38BDF8) : const Color(0xFF22C55E))
+                            : (isPaused ? Colors.amber : context.textMuted),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isTracking
+                          ? (isStationary
+                              ? 'RESTING / STATIONARY · 0.0 KM/H'
+                              : 'WALKING · ${walkState.currentSpeedKmh.toStringAsFixed(1)} KM/H')
+                          : (isPaused ? 'SESSION PAUSED' : 'READY FOR OUTDOOR WALK'),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.6,
+                        color: isTracking
+                            ? (isStationary ? const Color(0xFF38BDF8) : const Color(0xFF22C55E))
+                            : (isPaused ? Colors.amber : context.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 2. Circular Fitness Progress Ring
+              Center(
+                child: SizedBox(
+                  width: 210,
+                  height: 210,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(210, 210),
+                        painter: _ActivityRingPainter(
+                          progress: progress,
+                          trackColor: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.08),
+                          progressColor: isStationary ? const Color(0xFF38BDF8) : accent,
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            distanceKm.toStringAsFixed(2),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w800,
+                              color: context.textPrimary,
+                              letterSpacing: -1.5,
+                            ),
+                          ),
+                          Text(
+                            'KILOMETERS',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.5,
+                              color: context.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: context.bgSurface.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              walkState.formattedDuration,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. Stat Badges Row: Current Speed, Cadence / Pace, Energy
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _HudStatItem(
+                    label: 'SPEED',
+                    value: isStationary
+                        ? '0.0'
+                        : walkState.currentSpeedKmh.toStringAsFixed(1),
+                    unit: 'km/h',
+                    icon: Icons.speed_rounded,
+                  ),
+                  _HudStatItem(
+                    label: 'PACE',
+                    value: walkState.formattedPace,
+                    unit: '/km',
+                    icon: Icons.timer_outlined,
+                  ),
+                  _HudStatItem(
+                    label: 'CALORIES',
+                    value: '${walkState.calories}',
+                    unit: 'kcal',
+                    icon: Icons.local_fire_department_rounded,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final String unit;
+  final IconData icon;
+
+  const _HudStatItem({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.bgSurface.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: context.divider.withValues(alpha: 0.7),
+          width: 0.8,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12, color: context.textMuted),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: context.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: context.textPrimary,
+                ),
+              ),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 2),
+                Text(
+                  unit,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 9.5,
+                    color: context.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+
+  _ActivityRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 16) / 2;
+    const strokeWidth = 14.0;
+
+    // Track
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    canvas.drawCircle(center, radius, trackPaint);
+
+    // Progress Arc
+    if (progress > 0.0) {
+      final progressPaint = Paint()
+        ..color = progressColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      final sweepAngle = 2 * pi * progress;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -pi / 2,
+        sweepAngle,
+        false,
+        progressPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ActivityRingPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.progressColor != progressColor;
+  }
+}
+

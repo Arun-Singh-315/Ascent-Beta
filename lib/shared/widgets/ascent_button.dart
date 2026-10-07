@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
@@ -229,7 +230,10 @@ class _TapScaleWrapperState extends State<_TapScaleWrapper> {
     if (!widget.enabled) return widget.child;
 
     return Listener(
-      onPointerDown: (_) => setState(() => _pressed = true),
+      onPointerDown: (_) {
+        HapticFeedback.lightImpact();
+        setState(() => _pressed = true);
+      },
       onPointerUp: (_) => setState(() => _pressed = false),
       onPointerCancel: (_) => setState(() => _pressed = false),
       child: AnimatedScale(

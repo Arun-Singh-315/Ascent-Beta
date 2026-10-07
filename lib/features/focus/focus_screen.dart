@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
@@ -12,6 +13,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/live_session_bar.dart';
+import '../today/add_activity_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
@@ -400,6 +402,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                             );
                           }) ?? 0;
 
+                          final isTodoOnly = task.estimatedMinutes == null || task.estimatedMinutes == 0;
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 8),
                             child: _TaskRow(
@@ -407,14 +410,33 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                               isActive: isActive,
                               isDone: isDone,
                               timeSpent: _formatMinutes(taskSeconds),
+                              onEdit: () {
+                                AddActivitySheet.show(context, existingTask: task);
+                              },
                               onTap: isDone
                                   ? null
-                                  : () {
-                                      ref.read(timeTrackingProvider.notifier).switchToTask(
-                                            title: task.title,
-                                            taskId: task.id,
-                                          );
-                                    },
+                                  : (isTodoOnly
+                                      ? () async {
+                                          final taskDao = ref.read(taskDaoProvider);
+                                          HapticFeedback.lightImpact();
+                                          await taskDao.markComplete(task.id);
+                                          ref.invalidate(todayFocusTaskProvider);
+                                          if (context.mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Completed "${task.title}"'),
+                                                duration: const Duration(seconds: 2),
+                                                behavior: SnackBarBehavior.floating,
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      : () {
+                                          ref.read(timeTrackingProvider.notifier).switchToTask(
+                                                title: task.title,
+                                                taskId: task.id,
+                                              );
+                                        }),
                               onToggleDone: () async {
                                 final taskDao = ref.read(taskDaoProvider);
                                 if (isDone) {
@@ -752,6 +774,7 @@ class _TaskRow extends StatelessWidget {
   final String timeSpent;
   final VoidCallback? onTap;
   final VoidCallback onToggleDone;
+  final VoidCallback? onEdit;
 
   const _TaskRow({
     required this.task,
@@ -760,16 +783,19 @@ class _TaskRow extends StatelessWidget {
     required this.timeSpent,
     this.onTap,
     required this.onToggleDone,
+    this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isTodoOnly = task.estimatedMinutes == null || task.estimatedMinutes == 0;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
         decoration: BoxDecoration(
           color: isActive
               ? context.accentPrimary.withValues(alpha: 0.12)
@@ -808,7 +834,7 @@ class _TaskRow extends StatelessWidget {
             ),
             const SizedBox(width: 12),
 
-            // Task title
+            // Task title + chips
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -823,24 +849,58 @@ class _TaskRow extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (timeSpent != '0m') ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      timeSpent,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isActive ? context.accentPrimary : context.textMuted,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: context.bgBase,
+                          borderRadius: BorderRadius.circular(5),
+                          border: Border.all(color: context.divider, width: 0.6),
+                        ),
+                        child: Text(
+                          isTodoOnly
+                              ? (task.priority.toUpperCase())
+                              : (task.estimatedMinutes == -1 ? 'FLEXIBLE' : '${task.estimatedMinutes}M TIMER'),
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: context.textMuted,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                      if (timeSpent != '0m') ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          timeSpent,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            color: isActive ? context.accentPrimary : context.textMuted,
+                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
 
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
 
-            // Active indicator / start button
+            // Edit button
+            if (onEdit != null)
+              IconButton(
+                icon: Icon(Icons.edit_outlined, size: 16, color: context.textMuted),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                tooltip: 'Edit task',
+                onPressed: onEdit,
+              ),
+
+            // Active indicator / Finish chip (for To-Do) / Start timer button (for Timed)
             if (isActive)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -864,12 +924,42 @@ class _TaskRow extends StatelessWidget {
                   ],
                 ),
               )
-            else if (!isDone)
-              Icon(
-                Icons.play_circle_outline_rounded,
-                size: 22,
-                color: context.textMuted,
-              ),
+            else if (!isDone) ...[
+              if (isTodoOnly)
+                InkWell(
+                  onTap: onToggleDone,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.accentPrimary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: context.accentPrimary.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_rounded, size: 12, color: context.accentPrimary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Finish',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: context.accentPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  Icons.play_circle_outline_rounded,
+                  size: 22,
+                  color: context.textMuted,
+                ),
+            ],
           ],
         ),
       ),
