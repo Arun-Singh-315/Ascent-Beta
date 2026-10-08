@@ -169,15 +169,22 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
           startedAt: now,
         );
       }
+      if (_activeSessionId != null) {
+        await sessionDao.heartbeat(_activeSessionId!, state.currentElapsedSeconds);
+      }
     } catch (_) {}
   }
 
   void _syncPauseSession() {
     if (_activeSessionId != null) {
       final sId = _activeSessionId!;
+      final currentElapsed = state.currentElapsedSeconds;
       Future.microtask(() async {
         try {
-          await ref.read(timeSessionDaoProvider).pauseSession(sId);
+          final sessionDao = ref.read(timeSessionDaoProvider);
+          await sessionDao.heartbeat(sId, currentElapsed);
+          await sessionDao.pauseSession(sId);
+          await sessionDao.heartbeat(sId, currentElapsed);
         } catch (_) {}
       });
     }

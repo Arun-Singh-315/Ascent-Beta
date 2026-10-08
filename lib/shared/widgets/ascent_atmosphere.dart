@@ -23,8 +23,8 @@ class AscentAtmosphereBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final color1 = glow1 ?? g.glow1;
-    final color2 = glow2 ?? g.glow2;
+    final color1 = softenGlow(glow1 ?? g.glow1, maxAlpha: 0.18);
+    final color2 = softenGlow(glow2 ?? g.glow2, maxAlpha: 0.14);
 
     return Stack(
       children: [
@@ -41,6 +41,13 @@ class AscentAtmosphereBackground extends StatelessWidget {
         child,
       ],
     );
+  }
+
+  static Color softenGlow(Color color, {double maxAlpha = 0.14}) {
+    if (color.a > maxAlpha) {
+      return color.withValues(alpha: maxAlpha);
+    }
+    return color;
   }
 }
 

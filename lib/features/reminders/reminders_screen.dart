@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
@@ -34,6 +35,21 @@ class RemindersScreen extends ConsumerStatefulWidget {
 }
 
 class _RemindersScreenState extends ConsumerState<RemindersScreen> {
+  bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkNotificationPermission();
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    final enabled = await NotificationService.instance.areNotificationsEnabled();
+    if (mounted) {
+      setState(() => _notificationsEnabled = enabled);
+    }
+  }
+
   void _openAddEditReminderSheet([Reminder? existing]) {
     final titleController = TextEditingController(text: existing?.title ?? '');
     DateTime scheduledDate = existing?.scheduledAt ?? DateTime.now().add(const Duration(hours: 1));
@@ -426,6 +442,51 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           return ListView(
             padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
             children: [
+              if (!_notificationsEnabled) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: g.amberSoft,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: g.amber.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.notifications_off_rounded, color: g.amber, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Notifications Disabled',
+                              style: AscentTextStyles.labelMedium.copyWith(
+                                color: g.ink,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Enable notifications to receive your scheduled alerts and streak reminders.',
+                              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () async {
+                          HapticFeedback.lightImpact();
+                          await NotificationService.instance.requestPermissions();
+                          await _checkNotificationPermission();
+                        },
+                        child: Text('Enable', style: TextStyle(color: g.amber, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (upcoming.isNotEmpty) ...[
                 Text(
                   'Upcoming (${upcoming.length})',

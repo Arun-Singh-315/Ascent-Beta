@@ -138,7 +138,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     return AscentScaffold(
       title: 'Walking & Activity',
       subtitle: 'Live GPS tracker & daily goals',
-      glow2: g.sage,
+      glow2: g.sageSoft,
       actions: [
         IconButton(
           icon: Icon(Icons.battery_saver_rounded, color: g.sage),

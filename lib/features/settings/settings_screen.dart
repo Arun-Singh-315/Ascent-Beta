@@ -934,11 +934,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             icon: Icons.bolt_rounded,
                             compact: true,
                             onPressed: () async {
-                              await NotificationService.instance.sendTestBoostNotification();
+                              final sent = await NotificationService.instance.sendTestBoostNotification();
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('🔥 Raw boost notification fired to status bar!'),
+                                  SnackBar(
+                                    content: Text(
+                                      sent
+                                          ? '🔥 Raw boost notification fired to status bar!'
+                                          : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
+                                    ),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );
@@ -953,15 +957,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             icon: Icons.send_rounded,
                             compact: true,
                             onPressed: () async {
-                              await NotificationService.instance.showInstantNotification(
+                              final sent = await NotificationService.instance.showInstantNotification(
                                 id: 101,
                                 title: 'Ascent — Daily Focus',
                                 body: 'Ready to take 1 small step today? Check your focus task.',
                               );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Test notification sent!'),
+                                  SnackBar(
+                                    content: Text(
+                                      sent
+                                          ? 'Test notification sent to status bar!'
+                                          : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
+                                    ),
                                     behavior: SnackBarBehavior.floating,
                                   ),
                                 );

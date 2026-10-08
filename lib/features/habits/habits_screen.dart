@@ -262,7 +262,7 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
     return AscentScaffold(
       title: 'Daily Habits & Routines',
       subtitle: 'Momentum, streaks & daily tracking',
-      glow2: g.sage,
+      glow2: g.sageSoft,
       actions: [
         IconButton(
           icon: Icon(Icons.add_rounded, color: g.clay, size: 28),

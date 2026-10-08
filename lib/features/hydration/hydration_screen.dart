@@ -114,7 +114,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
     return AscentScaffold(
       title: 'Hydration Tracker',
       subtitle: 'Daily fluid health & vitality',
-      glow2: g.slate,
+      glow2: g.slateSoft,
       actions: [
         IconButton(
           tooltip: 'Trigger Hydration Pop-up Alert',

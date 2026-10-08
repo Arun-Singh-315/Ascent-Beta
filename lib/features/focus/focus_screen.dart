@@ -253,7 +253,7 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     return AscentScaffold(
       title: 'Focus Timer',
       subtitle: 'Deep work & interval stopwatch',
-      glow2: g.amber,
+      glow2: g.amberSoft,
       actions: [
         IconButton(
           onPressed: () {

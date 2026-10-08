@@ -10,6 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await NotificationService.instance.initialize();
+  NotificationService.instance.requestPermissions();
   await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
 
   final prefs = await SharedPreferences.getInstance();

@@ -38,7 +38,7 @@ class NotificationService {
       debugPrint('Error initializing timezone: $e');
     }
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings('@drawable/ic_launcher_foreground');
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -113,13 +113,46 @@ class NotificationService {
     }
   }
 
-  /// Request permissions on Android 13+ and iOS.
+  /// Checks if notifications are currently permitted by the OS.
+  Future<bool> areNotificationsEnabled() async {
+    try {
+      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl != null) {
+        final enabled = await androidImpl.areNotificationsEnabled();
+        return enabled ?? false;
+      }
+    } catch (e) {
+      debugPrint('Error checking notifications enabled: $e');
+    }
+    return true;
+  }
+
+  /// Requests exact alarms access on Android 12+.
+  Future<bool> requestExactAlarmsPermission() async {
+    try {
+      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImpl != null) {
+        await androidImpl.requestExactAlarmsPermission();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error requesting exact alarm permission: $e');
+    }
+    return false;
+  }
+
+  /// Request permissions on Android 13+ (POST_NOTIFICATIONS) and iOS.
   Future<bool> requestPermissions() async {
     try {
       final androidImpl = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
         final granted = await androidImpl.requestNotificationsPermission();
+        try {
+          await androidImpl.requestExactAlarmsPermission();
+        } catch (_) {}
         return granted ?? false;
       }
       final iosImpl = _plugin.resolvePlatformSpecificImplementation<
@@ -156,6 +189,7 @@ class NotificationService {
       channelDescription: channelDescription,
       importance: importance,
       priority: priority,
+      icon: '@drawable/ic_launcher_foreground',
       color: const Color(0xFF00B4D8),
       enableLights: true,
       ledColor: const Color(0xFF00B4D8),
@@ -195,7 +229,7 @@ class NotificationService {
   }
 
   /// Shows an immediate stylized notification.
-  Future<void> showInstantNotification({
+  Future<bool> showInstantNotification({
     int id = 999,
     required String title,
     required String body,
@@ -205,6 +239,16 @@ class NotificationService {
     String channelName = channelBoostNudgesName,
   }) async {
     if (!_isInitialized) await initialize();
+
+    // Ensure permissions on Android 13+ / iOS
+    final enabled = await areNotificationsEnabled();
+    if (!enabled) {
+      final granted = await requestPermissions();
+      if (!granted) {
+        debugPrint('Cannot show instant notification: permissions denied by user.');
+        return false;
+      }
+    }
 
     final notificationDetails = _buildModernNotificationDetails(
       channelId: channelId,
@@ -225,13 +269,15 @@ class NotificationService {
         notificationDetails: notificationDetails,
         payload: payload,
       );
+      return true;
     } catch (e) {
       debugPrint('Failed to show notification: $e');
+      return false;
     }
   }
 
   /// Alias for showInstantNotification with fixed id 999
-  Future<void> sendInstantNotification({
+  Future<bool> sendInstantNotification({
     int id = 999,
     required String title,
     required String body,
@@ -240,9 +286,9 @@ class NotificationService {
       showInstantNotification(id: id, title: title, body: body, payload: payload);
 
   /// Fires an instant raw brotherly boost preview for user testing.
-  Future<void> sendTestBoostNotification() async {
+  Future<bool> sendTestBoostNotification() async {
     final msg = BoostNotificationCopy.forTestBoost();
-    await showInstantNotification(
+    return showInstantNotification(
       id: 777,
       title: msg.title,
       body: msg.body,
@@ -410,9 +456,22 @@ class NotificationService {
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
-      debugPrint('Successfully scheduled reminder notification id=$id title="${boostMsg.title}" at $scheduledTz');
-    } catch (e) {
-      debugPrint('Failed to schedule reminder notification: $e');
+      debugPrint('Successfully scheduled exact reminder id=$id at $scheduledTz');
+    } catch (exactErr) {
+      debugPrint('Exact alarm failed ($exactErr), falling back to inexactAllowWhileIdle for id=$id');
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: boostMsg.title,
+          body: boostMsg.body,
+          scheduledDate: scheduledTz,
+          notificationDetails: notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+        debugPrint('Successfully scheduled inexact reminder fallback id=$id at $scheduledTz');
+      } catch (e) {
+        debugPrint('Failed to schedule reminder notification fallback: $e');
+      }
     }
 
     // Schedule the 20-minute follow-up accountability nudge ("Yo bro where you at?")
@@ -437,9 +496,22 @@ class NotificationService {
           notificationDetails: followUpDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         );
-        debugPrint('Scheduled accountability follow-up nudge id=${id + followUpIdOffset} at $followUpTz');
-      } catch (e) {
-        debugPrint('Failed to schedule follow-up nudge: $e');
+        debugPrint('Scheduled exact accountability follow-up nudge id=${id + followUpIdOffset} at $followUpTz');
+      } catch (exactErr) {
+        debugPrint('Exact follow-up failed ($exactErr), falling back to inexactAllowWhileIdle for id=${id + followUpIdOffset}');
+        try {
+          await _plugin.zonedSchedule(
+            id: id + followUpIdOffset,
+            title: followUpBoost.title,
+            body: followUpBoost.body,
+            scheduledDate: followUpTz,
+            notificationDetails: followUpDetails,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          );
+          debugPrint('Scheduled inexact follow-up fallback id=${id + followUpIdOffset} at $followUpTz');
+        } catch (e) {
+          debugPrint('Failed to schedule follow-up nudge: $e');
+        }
       }
     }
   }

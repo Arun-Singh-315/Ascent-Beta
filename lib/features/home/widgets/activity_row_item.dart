@@ -7,8 +7,10 @@ import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
+import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
+import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../today/add_activity_sheet.dart';
 
 /// Redesigned task row matching Ascent Home Redesign:
@@ -68,6 +70,14 @@ class ActivityRowItem extends ConsumerWidget {
                 child: InkWell(
                   onTap: () async {
                     HapticFeedback.mediumImpact();
+                    if (activity.sourceType == 'lecture') {
+                      final learningState = ref.read(learningHubProvider);
+                      ref.read(learningHubProvider.notifier).markLectureCompleted(
+                            learningState.activeLectureId,
+                            completed: !isDone,
+                          );
+                      return;
+                    }
                     if (activity.linkedTaskId != null) {
                       await ref.read(taskDaoProvider).toggleTaskCompletion(
                             activity.linkedTaskId!,
@@ -108,6 +118,10 @@ class ActivityRowItem extends ConsumerWidget {
               child: InkWell(
                 onTap: () async {
                   HapticFeedback.lightImpact();
+                  if (activity.sourceType == 'lecture') {
+                    LectureFocusPlayerSheet.show(context);
+                    return;
+                  }
                   Task? task;
                   if (activity.linkedTaskId != null) {
                     task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
@@ -198,6 +212,10 @@ class ActivityRowItem extends ConsumerWidget {
                   child: InkWell(
                     onTap: () async {
                       HapticFeedback.lightImpact();
+                      if (activity.sourceType == 'lecture') {
+                        ref.read(learningHubProvider.notifier).togglePlayPause();
+                        return;
+                      }
                       if (isRunning) {
                         ref.read(timeTrackingProvider.notifier).pauseSession();
                       } else if (isPaused) {
@@ -248,10 +266,14 @@ class ActivityRowItem extends ConsumerWidget {
       return '$p • To-do';
     }
     if (act.kind == ActivityKind.duration) {
+      final targetMins = act.targetMinutes ?? 30;
       if (act.elapsedSecondsToday > 0) {
-        return '${act.elapsedSecondsToday ~/ 60}m tracked / ${act.targetMinutes ?? 30}m';
+        final m = act.elapsedSecondsToday ~/ 60;
+        final s = act.elapsedSecondsToday % 60;
+        final timeStr = '$m:${s.toString().padLeft(2, '0')}';
+        return '$timeStr tracked / ${targetMins}m';
       }
-      return '${act.targetMinutes ?? 30}m target';
+      return '${targetMins}m target';
     }
     return 'Flexible focus';
   }
