@@ -347,6 +347,53 @@ void main() {
       await tester.pumpAndSettle();
       expect(addPressed, isTrue);
     });
+
+    testWidgets('Rule 7 Capping: HomeDismissibleRemindersSection only renders 1 primary reminder even if 7 exist, with +X more chip', (tester) async {
+      bool viewAllTriggered = false;
+
+      final sevenReminders = List.generate(
+        7,
+        (i) => Reminder(
+          id: i + 1,
+          title: 'Reminder #$i',
+          scheduledAt: DateTime.now().add(Duration(minutes: (i + 1) * 15)),
+          isActive: true,
+          linkedTaskId: null,
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(MaterialApp(
+        theme: AscentTheme.dark(),
+        home: Scaffold(
+          body: HomeDismissibleRemindersSection(
+            reminders: sevenReminders,
+            onDismissReminder: (_) async {},
+            onViewAll: () {
+              viewAllTriggered = true;
+            },
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Only the first (primary) reminder should be rendered as a card
+      expect(find.text('Reminder #0'), findsOneWidget);
+      expect(find.text('Reminder #1'), findsNothing);
+      expect(find.text('Reminder #2'), findsNothing);
+      expect(find.text('Reminder #6'), findsNothing);
+
+      // Total count badge should show 7
+      expect(find.text('7'), findsOneWidget);
+
+      // Overflow indicator should show "+6 more reminders inside • View all"
+      expect(find.text('+6 more reminders inside • View all'), findsOneWidget);
+
+      // Tapping the overflow indicator triggers navigation to full reminders screen
+      await tester.tap(find.text('+6 more reminders inside • View all'));
+      await tester.pumpAndSettle();
+      expect(viewAllTriggered, isTrue);
+    });
   });
 
   group('Study Streak Card Visibility Toggle Tests', () {

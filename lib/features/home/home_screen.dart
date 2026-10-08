@@ -181,6 +181,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     HomeDismissibleRemindersSection(
                       reminders: visibleReminders,
                       onAddReminder: () => context.push('/reminders'),
+                      onViewAll: () => context.push('/reminders'),
                       onDismissReminder: (reminder) async {
                         await ref.read(dismissedTodayReminderIdsProvider.notifier).dismissReminderId(reminder.id);
                       },
