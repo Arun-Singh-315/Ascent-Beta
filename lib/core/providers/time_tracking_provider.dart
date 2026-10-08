@@ -6,6 +6,7 @@ import '../notifications/notification_service.dart';
 import '../learning_hub/learning_hub_provider.dart';
 import '../learning_hub/learning_hub_models.dart';
 import 'database_provider.dart';
+import 'settings_provider.dart';
 
 class TimeTrackingState {
   final TimeSession? activeSession;
@@ -76,7 +77,9 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       if (session == null) {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
-        state = const TimeTrackingState();
+        if (state.activeSession != null || state.isRunning || state.isPaused || state.elapsedSeconds != 0) {
+          state = const TimeTrackingState();
+        }
         return;
       }
 
@@ -323,6 +326,64 @@ final todayTimeSessionsProvider =
 });
 
 // ---------------------------------------------------------------------------
+// Dismissed Today Activities Provider (prevents swiped items from resurrecting)
+// ---------------------------------------------------------------------------
+
+final dismissedTodayActivityIdsProvider =
+    NotifierProvider<DismissedTodayActivityIdsNotifier, Set<String>>(
+  DismissedTodayActivityIdsNotifier.new,
+);
+
+class DismissedTodayActivityIdsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() {
+    return _loadFromPrefs();
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return 'ascent_dismissed_today_activities_${now.year}_${now.month}_${now.day}';
+  }
+
+  Set<String> _loadFromPrefs() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList(_todayKey()) ?? [];
+      return list.toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> dismissActivityId(String id) async {
+    final next = {...state, id};
+    state = next;
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setStringList(_todayKey(), next.toList());
+    } catch (_) {}
+  }
+
+  Future<void> unDismissActivityId(String id) async {
+    if (!state.contains(id)) return;
+    final next = Set<String>.from(state)..remove(id);
+    state = next;
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setStringList(_todayKey(), next.toList());
+    } catch (_) {}
+  }
+
+  Future<void> clearDismissedForToday() async {
+    state = {};
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.remove(_todayKey());
+    } catch (_) {}
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Unified Today Activities Provider (§2.2, §5.3)
 // ---------------------------------------------------------------------------
 
@@ -331,6 +392,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final learningHub = ref.watch(learningHubProvider);
+  final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
 
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
@@ -339,7 +401,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   final tasksStream = taskDao.watchTasksByDate(startOfToday);
   final sessionsStream = sessionDao.watchSessionsForDate(startOfToday);
 
-  await for (final (tasks, sessions) in _combineStreams(tasksStream, sessionsStream)) {
+  await for (final (tasks, sessions) in combineStreams(tasksStream, sessionsStream)) {
     final List<TodayActivityItem> items = [];
     final Set<int> accountedSessionIds = {};
     bool lectureAccountedFor = false;
@@ -422,11 +484,14 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
       int elapsed;
       int? targetMinutes;
       TodayActivityStatus status;
+      bool isCurActiveLec = false;
+      Lecture? matchedLec;
 
       if (isLecture) {
         lectureAccountedFor = true;
-        final isCurActiveLec = session.label.contains(learningHub.activeLecture.title);
+        isCurActiveLec = session.label.contains(learningHub.activeLecture.title);
         if (isCurActiveLec) {
+          matchedLec = learningHub.activeLecture;
           elapsed = learningHub.currentElapsedSeconds;
           targetMinutes = (learningHub.activeLecture.durationSeconds > 0)
               ? (learningHub.activeLecture.durationSeconds / 60).round()
@@ -441,7 +506,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
             status = TodayActivityStatus.notStarted;
           }
         } else {
-          Lecture? matchedLec;
           for (final mod in learningHub.course.modules) {
             for (final lec in mod.lectures) {
               if (session.label.contains(lec.title)) {
@@ -491,10 +555,18 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         targetMinutes = (session.durationSeconds > 0) ? (session.durationSeconds / 60).round() : null;
       }
 
+      String itemId;
+      if (isLecture) {
+        final matchedId = matchedLec?.id ?? (isCurActiveLec ? learningHub.activeLecture.id : null);
+        itemId = matchedId != null ? 'lecture_$matchedId' : 'session_${session.id}';
+      } else {
+        itemId = 'session_${session.id}';
+      }
+
       String categoryTag = session.activityType == 'entertainment' ? 'Break' : 'Study';
 
       items.add(TodayActivityItem(
-        id: isLecture ? 'lecture_${learningHub.activeLecture.id}' : 'session_${session.id}',
+        id: itemId,
         title: session.label,
         sourceType: session.activityRefType,
         status: status,
@@ -544,6 +616,40 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
       ));
     }
 
+    // 2.6 Guarantee all lectures from the active course completed today remain visible in Completed
+    final curCourse = learningHub.course;
+    for (final mod in curCourse.modules) {
+      for (final lec in mod.lectures) {
+        if (lec.isCompleted &&
+            lec.lastPlayedAt != null &&
+            lec.lastPlayedAt!.isAfter(startOfToday)) {
+          final lecItemId = 'lecture_${lec.id}';
+          if (!items.any((it) => it.id == lecItemId)) {
+            final targetMins = (lec.durationSeconds > 0)
+                ? (lec.durationSeconds / 60).round()
+                : 5;
+            items.add(TodayActivityItem(
+              id: lecItemId,
+              title: '${curCourse.title}: ${lec.title}',
+              sourceType: 'lecture',
+              status: TodayActivityStatus.done,
+              elapsedSecondsToday: lec.durationSeconds > 0 ? lec.durationSeconds : lec.elapsedSeconds,
+              linkedTaskId: null,
+              linkedSessionId: null,
+              categoryTag: 'Study',
+              kind: ActivityKind.duration,
+              targetMinutes: targetMins,
+              plannedDate: lec.lastPlayedAt,
+              isOverdue: false,
+            ));
+          }
+        }
+      }
+    }
+
+    // 2.7 Filter out any activities that the user explicitly removed/dismissed for today
+    items.removeWhere((item) => dismissedIds.contains(item.id));
+
     // 3. Sort items: inProgress first (0), paused second (1), notStarted third (2), done last (3)
     items.sort((a, b) {
       int score(TodayActivityStatus s) => switch (s) {
@@ -561,7 +667,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   }
 });
 
-Stream<(T1, T2)> _combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
+Stream<(T1, T2)> combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
   late StreamController<(T1, T2)> controller;
   T1? val1;
   T2? val2;
@@ -600,7 +706,7 @@ Stream<(T1, T2)> _combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
 
 /// Cleanly and completely deletes a task and cascades across all reminders,
 /// local notification alarms, running timers, and child subtasks with zero orphaned state (Rule 8).
-Future<void> deleteTaskAndCleanCascade(WidgetRef ref, int taskId, {String? taskTitle}) async {
+Future<void> deleteTaskAndCleanCascade(dynamic ref, int taskId, {String? taskTitle}) async {
   // 1. Cancel local notification alarms and delete reminders by linkedTaskId (and title fallback)
   try {
     final reminderDao = ref.read(reminderDaoProvider);
@@ -658,15 +764,40 @@ Future<void> deleteTaskAndCleanCascade(WidgetRef ref, int taskId, {String? taskT
   } catch (_) {}
 }
 
-Future<void> deleteTodayActivity(WidgetRef ref, TodayActivityItem activity) async {
+Future<void> deleteTodayActivity(dynamic ref, TodayActivityItem activity) async {
+  // 1. Mark as dismissed for today so it will never resurrect in today's activities
+  await ref.read(dismissedTodayActivityIdsProvider.notifier).dismissActivityId(activity.id);
+
+  // 2. If it's a lecture, pause playback in Learning Hub and pause any running timer session
+  if (activity.sourceType == 'lecture' || activity.id.startsWith('lecture_')) {
+    try {
+      final learningState = ref.read(learningHubProvider);
+      if (learningState.isPlaying) {
+        ref.read(learningHubProvider.notifier).pause();
+      }
+      final activeSession = ref.read(timeTrackingProvider).activeSession;
+      if (activeSession != null &&
+          (activeSession.activityRefType == 'lecture' ||
+              activeSession.label.contains(activity.title) ||
+              activity.title.contains(activeSession.label))) {
+        ref.read(timeTrackingProvider.notifier).pauseSession();
+      }
+    } catch (_) {}
+  }
+
+  // 3. If linked to a task, cascade delete
   if (activity.linkedTaskId != null) {
     await deleteTaskAndCleanCascade(ref, activity.linkedTaskId!, taskTitle: activity.title);
   }
+
+  // 4. If linked to a session, delete session from database
   if (activity.linkedSessionId != null) {
     try {
       await ref.read(timeSessionDaoProvider).deleteSession(activity.linkedSessionId!);
     } catch (_) {}
   }
+
+  // 5. If it's a standalone session
   if (activity.id.startsWith('session_')) {
     final sId = int.tryParse(activity.id.replaceFirst('session_', ''));
     if (sId != null) {

@@ -14,7 +14,6 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
-import 'package:ascent/shared/widgets/main_scaffold.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override

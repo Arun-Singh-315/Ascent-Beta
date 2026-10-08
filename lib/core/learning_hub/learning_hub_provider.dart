@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' as drift;
 import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/time_tracking_provider.dart';
 import 'default_course_data.dart';
 import 'learning_hub_models.dart';
 
@@ -361,6 +362,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   void play() {
     if (state.isPlaying) return;
 
+    _unDismissLecture(state.activeLectureId);
     ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
     final now = DateTime.now();
     state = state.copyWith(
@@ -454,7 +456,14 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _persistCourses();
   }
 
+  void _unDismissLecture(int lectureId) {
+    try {
+      ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId('lecture_$lectureId');
+    } catch (_) {}
+  }
+
   void selectLecture(int lectureId, {bool autoPlay = false}) {
+    _unDismissLecture(lectureId);
     _persistCourses();
     _ticker?.cancel();
     _flushTimer?.cancel();

@@ -310,8 +310,8 @@ class _TaskItemTile extends ConsumerWidget {
 
     return Dismissible(
       key: ValueKey('task_${task.id}'),
-      direction: isCompletedView
-          ? DismissDirection.endToStart
+      direction: (isCompletedView || isDone)
+          ? DismissDirection.none
           : DismissDirection.horizontal,
       // Swipe Right: Complete
       background: Container(
@@ -339,17 +339,12 @@ class _TaskItemTile extends ConsumerWidget {
         if (direction == DismissDirection.startToEnd) {
           await taskDao.markComplete(task.id);
           if (context.mounted) {
-            showUndoSnackbar(
-              context,
-              message: 'Task marked complete!',
-              onUndo: () async {
-                await taskDao.updateTask(
-                  TaskTableCompanion(
-                    id: drift.Value(task.id),
-                    actualCompletedDate: const drift.Value(null),
-                  ),
-                );
-              },
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Task marked complete!'),
+                duration: Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
             );
           }
           return false;
@@ -444,17 +439,12 @@ class _TaskItemTile extends ConsumerWidget {
                   // Checkbox button
                   InkWell(
                     onTap: () async {
-                      final taskDao = ref.read(taskDaoProvider);
                       if (isDone) {
-                        await taskDao.updateTask(
-                          TaskTableCompanion(
-                            id: drift.Value(task.id),
-                            actualCompletedDate: const drift.Value(null),
-                          ),
-                        );
-                      } else {
-                        await taskDao.markComplete(task.id);
+                        // Once completed, it cannot be undone or brought back to active (one way only).
+                        return;
                       }
+                      final taskDao = ref.read(taskDaoProvider);
+                      await taskDao.markComplete(task.id);
                     },
                     borderRadius: BorderRadius.circular(12),
                     child: Container(

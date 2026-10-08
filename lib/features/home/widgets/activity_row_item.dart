@@ -34,14 +34,19 @@ class ActivityRowItem extends ConsumerWidget {
 
     return Dismissible(
       key: ValueKey(activity.id),
-      direction: DismissDirection.endToStart,
+      direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
       onDismissed: (_) async {
         HapticFeedback.mediumImpact();
         await deleteTodayActivity(ref, activity);
         if (context.mounted) {
+          final isLecture = activity.sourceType == 'lecture';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Activity "${activity.title}" deleted'),
+              content: Text(
+                isLecture
+                    ? 'Removed from today\'s activities'
+                    : 'Activity "${activity.title}" deleted',
+              ),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
             ),
@@ -87,19 +92,24 @@ class ActivityRowItem extends ConsumerWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () async {
+                    if (isDone) {
+                      // Once completed, it cannot be undone or brought to active (one way only).
+                      return;
+                    }
                     HapticFeedback.mediumImpact();
                     if (activity.sourceType == 'lecture') {
-                      final learningState = ref.read(learningHubProvider);
+                      final lectureId = int.tryParse(activity.id.replaceFirst('lecture_', '')) ??
+                          ref.read(learningHubProvider).activeLectureId;
                       ref.read(learningHubProvider.notifier).markLectureCompleted(
-                            learningState.activeLectureId,
-                            completed: !isDone,
+                            lectureId,
+                            completed: true,
                           );
                       return;
                     }
                     if (activity.linkedTaskId != null) {
                       await ref.read(taskDaoProvider).toggleTaskCompletion(
                             activity.linkedTaskId!,
-                            !isDone,
+                            true,
                           );
                     }
                   },
