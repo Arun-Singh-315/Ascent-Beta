@@ -27,6 +27,7 @@ class AscentAtmosphereBackground extends StatelessWidget {
     final color2 = softenGlow(glow2 ?? g.glow2, maxAlpha: 0.14);
 
     return Stack(
+      fit: StackFit.expand,
       children: [
         Positioned.fill(
           child: RepaintBoundary(
@@ -38,7 +39,9 @@ class AscentAtmosphereBackground extends StatelessWidget {
             ),
           ),
         ),
-        child,
+        Positioned.fill(
+          child: child,
+        ),
       ],
     );
   }

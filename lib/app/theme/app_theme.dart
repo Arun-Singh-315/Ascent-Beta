@@ -222,7 +222,7 @@ class AscentTheme {
             ),
           ),
           minimumSize:
-              const WidgetStatePropertyAll(Size(double.infinity, 42)),
+              const WidgetStatePropertyAll(Size(64, 42)),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 18, vertical: 10)),
@@ -261,7 +261,7 @@ class AscentTheme {
             ),
           ),
           minimumSize:
-              const WidgetStatePropertyAll(Size(double.infinity, 42)),
+              const WidgetStatePropertyAll(Size(64, 42)),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
               EdgeInsets.symmetric(horizontal: 18, vertical: 10)),

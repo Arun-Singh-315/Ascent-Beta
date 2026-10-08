@@ -149,6 +149,7 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                       elevation: 0,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: const EdgeInsets.symmetric(vertical: 10),
+                      minimumSize: const Size(64, 40),
                     ),
                     onPressed: () {
                       _dismissTutorial();
@@ -167,6 +168,7 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     foregroundColor: g.ink,
+                    minimumSize: const Size(64, 40),
                   ),
                   onPressed: _dismissTutorial,
                   child: const Text('Got it! 👍', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),

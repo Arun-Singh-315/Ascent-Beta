@@ -11,9 +11,11 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
+import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
+import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -69,6 +71,7 @@ void main() {
         todayActivitiesProvider.overrideWith((ref) => Stream.value(customActivities ?? [])),
       ],
       child: MaterialApp(
+        theme: AscentTheme.dark(),
         home: child,
       ),
     );
@@ -219,6 +222,63 @@ void main() {
       final thoughts = await db.thoughtDao.watchAllThoughts().first;
       expect(thoughts.any((t) => t.id == id), isTrue);
       expect(thoughts.first.content, contains('Mind Space'));
+    });
+
+    testWidgets('DayOneTutorialCard renders cleanly with theme button styling without layout crash', (tester) async {
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: MaterialApp(
+          theme: AscentTheme.dark(),
+          home: const Scaffold(
+            body: DayOneTutorialCard(
+              userName: 'Test User',
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add First Activity 🚀'), findsOneWidget);
+      expect(find.text('Got it! 👍'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('HomeScreen renders cleanly in both Light and Dark mode without layout assertion errors', (tester) async {
+      for (final theme in [AscentTheme.light(), AscentTheme.dark()]) {
+        await tester.pumpWidget(ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
+            currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
+            todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1000)),
+            dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2000)),
+            todayWalkDistanceStreamProvider.overrideWith((ref) => Stream.value(1500.0)),
+            todaySpendingStreamProvider.overrideWith((ref) => Stream.value(200.0)),
+            overallBudgetStreamProvider.overrideWith((ref) => Stream.value(null)),
+            activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
+            todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
+            activeMomentumChallengeStreamProvider.overrideWith((ref) => Stream.value(null)),
+            todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
+            recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
+            nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
+            userProfileStreamProvider.overrideWith((ref) => Stream.value(null)),
+            todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
+            todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
+          ],
+          child: MaterialApp(
+            theme: theme,
+            home: const HomeScreen(),
+          ),
+        ));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      }
     });
   });
 }
