@@ -14568,6 +14568,2601 @@ class CourseTableCompanion extends UpdateCompanion<CourseEntry> {
   }
 }
 
+class $MomentumChallengeTableTable extends MomentumChallengeTable
+    with TableInfo<$MomentumChallengeTableTable, MomentumChallenge> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MomentumChallengeTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetEndDateMeta = const VerificationMeta(
+    'targetEndDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> targetEndDate =
+      GeneratedColumn<DateTime>(
+        'target_end_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _durationDaysMeta = const VerificationMeta(
+    'durationDays',
+  );
+  @override
+  late final GeneratedColumn<int> durationDays = GeneratedColumn<int>(
+    'duration_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(30),
+  );
+  static const VerificationMeta _startWeightKgMeta = const VerificationMeta(
+    'startWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> startWeightKg = GeneratedColumn<double>(
+    'start_weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetWeightKgMeta = const VerificationMeta(
+    'targetWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> targetWeightKg = GeneratedColumn<double>(
+    'target_weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _currentWeightKgMeta = const VerificationMeta(
+    'currentWeightKg',
+  );
+  @override
+  late final GeneratedColumn<double> currentWeightKg = GeneratedColumn<double>(
+    'current_weight_kg',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ageMeta = const VerificationMeta('age');
+  @override
+  late final GeneratedColumn<int> age = GeneratedColumn<int>(
+    'age',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _heightCmMeta = const VerificationMeta(
+    'heightCm',
+  );
+  @override
+  late final GeneratedColumn<double> heightCm = GeneratedColumn<double>(
+    'height_cm',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _biologicalSexMeta = const VerificationMeta(
+    'biologicalSex',
+  );
+  @override
+  late final GeneratedColumn<String> biologicalSex = GeneratedColumn<String>(
+    'biological_sex',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('male'),
+  );
+  static const VerificationMeta _targetWakeTimeMinutesMeta =
+      const VerificationMeta('targetWakeTimeMinutes');
+  @override
+  late final GeneratedColumn<int> targetWakeTimeMinutes = GeneratedColumn<int>(
+    'target_wake_time_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(360),
+  );
+  static const VerificationMeta _targetWindDownMinutesMeta =
+      const VerificationMeta('targetWindDownMinutes');
+  @override
+  late final GeneratedColumn<int> targetWindDownMinutes = GeneratedColumn<int>(
+    'target_wind_down_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1320),
+  );
+  static const VerificationMeta _baselineWakeTimeMinutesMeta =
+      const VerificationMeta('baselineWakeTimeMinutes');
+  @override
+  late final GeneratedColumn<int> baselineWakeTimeMinutes =
+      GeneratedColumn<int>(
+        'baseline_wake_time_minutes',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(480),
+      );
+  static const VerificationMeta _baselineBedTimeMinutesMeta =
+      const VerificationMeta('baselineBedTimeMinutes');
+  @override
+  late final GeneratedColumn<int> baselineBedTimeMinutes = GeneratedColumn<int>(
+    'baseline_bed_time_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1410),
+  );
+  static const VerificationMeta _gymSplitMeta = const VerificationMeta(
+    'gymSplit',
+  );
+  @override
+  late final GeneratedColumn<String> gymSplit = GeneratedColumn<String>(
+    'gym_split',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('upper_lower'),
+  );
+  static const VerificationMeta _gymDaysPerWeekMeta = const VerificationMeta(
+    'gymDaysPerWeek',
+  );
+  @override
+  late final GeneratedColumn<int> gymDaysPerWeek = GeneratedColumn<int>(
+    'gym_days_per_week',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(4),
+  );
+  static const VerificationMeta _workoutDurationMinutesMeta =
+      const VerificationMeta('workoutDurationMinutes');
+  @override
+  late final GeneratedColumn<int> workoutDurationMinutes = GeneratedColumn<int>(
+    'workout_duration_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(45),
+  );
+  static const VerificationMeta _walkingBaselineLevelMeta =
+      const VerificationMeta('walkingBaselineLevel');
+  @override
+  late final GeneratedColumn<String> walkingBaselineLevel =
+      GeneratedColumn<String>(
+        'walking_baseline_level',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('moderate'),
+      );
+  static const VerificationMeta _fitnessExperienceMeta = const VerificationMeta(
+    'fitnessExperience',
+  );
+  @override
+  late final GeneratedColumn<String> fitnessExperience =
+      GeneratedColumn<String>(
+        'fitness_experience',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('intermediate'),
+      );
+  static const VerificationMeta _physicalLimitationsMeta =
+      const VerificationMeta('physicalLimitations');
+  @override
+  late final GeneratedColumn<String> physicalLimitations =
+      GeneratedColumn<String>(
+        'physical_limitations',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(''),
+      );
+  static const VerificationMeta _coachingPersonalityMeta =
+      const VerificationMeta('coachingPersonality');
+  @override
+  late final GeneratedColumn<String> coachingPersonality =
+      GeneratedColumn<String>(
+        'coaching_personality',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('strict_supportive'),
+      );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    startDate,
+    targetEndDate,
+    durationDays,
+    startWeightKg,
+    targetWeightKg,
+    currentWeightKg,
+    age,
+    heightCm,
+    biologicalSex,
+    targetWakeTimeMinutes,
+    targetWindDownMinutes,
+    baselineWakeTimeMinutes,
+    baselineBedTimeMinutes,
+    gymSplit,
+    gymDaysPerWeek,
+    workoutDurationMinutes,
+    walkingBaselineLevel,
+    fitnessExperience,
+    physicalLimitations,
+    coachingPersonality,
+    status,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'momentum_challenges';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MomentumChallenge> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('target_end_date')) {
+      context.handle(
+        _targetEndDateMeta,
+        targetEndDate.isAcceptableOrUnknown(
+          data['target_end_date']!,
+          _targetEndDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_targetEndDateMeta);
+    }
+    if (data.containsKey('duration_days')) {
+      context.handle(
+        _durationDaysMeta,
+        durationDays.isAcceptableOrUnknown(
+          data['duration_days']!,
+          _durationDaysMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_weight_kg')) {
+      context.handle(
+        _startWeightKgMeta,
+        startWeightKg.isAcceptableOrUnknown(
+          data['start_weight_kg']!,
+          _startWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_weight_kg')) {
+      context.handle(
+        _targetWeightKgMeta,
+        targetWeightKg.isAcceptableOrUnknown(
+          data['target_weight_kg']!,
+          _targetWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('current_weight_kg')) {
+      context.handle(
+        _currentWeightKgMeta,
+        currentWeightKg.isAcceptableOrUnknown(
+          data['current_weight_kg']!,
+          _currentWeightKgMeta,
+        ),
+      );
+    }
+    if (data.containsKey('age')) {
+      context.handle(
+        _ageMeta,
+        age.isAcceptableOrUnknown(data['age']!, _ageMeta),
+      );
+    }
+    if (data.containsKey('height_cm')) {
+      context.handle(
+        _heightCmMeta,
+        heightCm.isAcceptableOrUnknown(data['height_cm']!, _heightCmMeta),
+      );
+    }
+    if (data.containsKey('biological_sex')) {
+      context.handle(
+        _biologicalSexMeta,
+        biologicalSex.isAcceptableOrUnknown(
+          data['biological_sex']!,
+          _biologicalSexMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_wake_time_minutes')) {
+      context.handle(
+        _targetWakeTimeMinutesMeta,
+        targetWakeTimeMinutes.isAcceptableOrUnknown(
+          data['target_wake_time_minutes']!,
+          _targetWakeTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_wind_down_minutes')) {
+      context.handle(
+        _targetWindDownMinutesMeta,
+        targetWindDownMinutes.isAcceptableOrUnknown(
+          data['target_wind_down_minutes']!,
+          _targetWindDownMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('baseline_wake_time_minutes')) {
+      context.handle(
+        _baselineWakeTimeMinutesMeta,
+        baselineWakeTimeMinutes.isAcceptableOrUnknown(
+          data['baseline_wake_time_minutes']!,
+          _baselineWakeTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('baseline_bed_time_minutes')) {
+      context.handle(
+        _baselineBedTimeMinutesMeta,
+        baselineBedTimeMinutes.isAcceptableOrUnknown(
+          data['baseline_bed_time_minutes']!,
+          _baselineBedTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('gym_split')) {
+      context.handle(
+        _gymSplitMeta,
+        gymSplit.isAcceptableOrUnknown(data['gym_split']!, _gymSplitMeta),
+      );
+    }
+    if (data.containsKey('gym_days_per_week')) {
+      context.handle(
+        _gymDaysPerWeekMeta,
+        gymDaysPerWeek.isAcceptableOrUnknown(
+          data['gym_days_per_week']!,
+          _gymDaysPerWeekMeta,
+        ),
+      );
+    }
+    if (data.containsKey('workout_duration_minutes')) {
+      context.handle(
+        _workoutDurationMinutesMeta,
+        workoutDurationMinutes.isAcceptableOrUnknown(
+          data['workout_duration_minutes']!,
+          _workoutDurationMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('walking_baseline_level')) {
+      context.handle(
+        _walkingBaselineLevelMeta,
+        walkingBaselineLevel.isAcceptableOrUnknown(
+          data['walking_baseline_level']!,
+          _walkingBaselineLevelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('fitness_experience')) {
+      context.handle(
+        _fitnessExperienceMeta,
+        fitnessExperience.isAcceptableOrUnknown(
+          data['fitness_experience']!,
+          _fitnessExperienceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('physical_limitations')) {
+      context.handle(
+        _physicalLimitationsMeta,
+        physicalLimitations.isAcceptableOrUnknown(
+          data['physical_limitations']!,
+          _physicalLimitationsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('coaching_personality')) {
+      context.handle(
+        _coachingPersonalityMeta,
+        coachingPersonality.isAcceptableOrUnknown(
+          data['coaching_personality']!,
+          _coachingPersonalityMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MomentumChallenge map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MomentumChallenge(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      )!,
+      targetEndDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}target_end_date'],
+      )!,
+      durationDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_days'],
+      )!,
+      startWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}start_weight_kg'],
+      ),
+      targetWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_weight_kg'],
+      ),
+      currentWeightKg: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}current_weight_kg'],
+      ),
+      age: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}age'],
+      ),
+      heightCm: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}height_cm'],
+      ),
+      biologicalSex: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}biological_sex'],
+      )!,
+      targetWakeTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_wake_time_minutes'],
+      )!,
+      targetWindDownMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_wind_down_minutes'],
+      )!,
+      baselineWakeTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}baseline_wake_time_minutes'],
+      )!,
+      baselineBedTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}baseline_bed_time_minutes'],
+      )!,
+      gymSplit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gym_split'],
+      )!,
+      gymDaysPerWeek: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}gym_days_per_week'],
+      )!,
+      workoutDurationMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}workout_duration_minutes'],
+      )!,
+      walkingBaselineLevel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}walking_baseline_level'],
+      )!,
+      fitnessExperience: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}fitness_experience'],
+      )!,
+      physicalLimitations: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}physical_limitations'],
+      )!,
+      coachingPersonality: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}coaching_personality'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MomentumChallengeTableTable createAlias(String alias) {
+    return $MomentumChallengeTableTable(attachedDatabase, alias);
+  }
+}
+
+class MomentumChallenge extends DataClass
+    implements Insertable<MomentumChallenge> {
+  final int id;
+  final DateTime startDate;
+  final DateTime targetEndDate;
+  final int durationDays;
+  final double? startWeightKg;
+  final double? targetWeightKg;
+  final double? currentWeightKg;
+  final int? age;
+  final double? heightCm;
+  final String biologicalSex;
+  final int targetWakeTimeMinutes;
+  final int targetWindDownMinutes;
+  final int baselineWakeTimeMinutes;
+  final int baselineBedTimeMinutes;
+  final String gymSplit;
+  final int gymDaysPerWeek;
+  final int workoutDurationMinutes;
+  final String walkingBaselineLevel;
+  final String fitnessExperience;
+  final String physicalLimitations;
+  final String coachingPersonality;
+  final String status;
+  final DateTime createdAt;
+  const MomentumChallenge({
+    required this.id,
+    required this.startDate,
+    required this.targetEndDate,
+    required this.durationDays,
+    this.startWeightKg,
+    this.targetWeightKg,
+    this.currentWeightKg,
+    this.age,
+    this.heightCm,
+    required this.biologicalSex,
+    required this.targetWakeTimeMinutes,
+    required this.targetWindDownMinutes,
+    required this.baselineWakeTimeMinutes,
+    required this.baselineBedTimeMinutes,
+    required this.gymSplit,
+    required this.gymDaysPerWeek,
+    required this.workoutDurationMinutes,
+    required this.walkingBaselineLevel,
+    required this.fitnessExperience,
+    required this.physicalLimitations,
+    required this.coachingPersonality,
+    required this.status,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['start_date'] = Variable<DateTime>(startDate);
+    map['target_end_date'] = Variable<DateTime>(targetEndDate);
+    map['duration_days'] = Variable<int>(durationDays);
+    if (!nullToAbsent || startWeightKg != null) {
+      map['start_weight_kg'] = Variable<double>(startWeightKg);
+    }
+    if (!nullToAbsent || targetWeightKg != null) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg);
+    }
+    if (!nullToAbsent || currentWeightKg != null) {
+      map['current_weight_kg'] = Variable<double>(currentWeightKg);
+    }
+    if (!nullToAbsent || age != null) {
+      map['age'] = Variable<int>(age);
+    }
+    if (!nullToAbsent || heightCm != null) {
+      map['height_cm'] = Variable<double>(heightCm);
+    }
+    map['biological_sex'] = Variable<String>(biologicalSex);
+    map['target_wake_time_minutes'] = Variable<int>(targetWakeTimeMinutes);
+    map['target_wind_down_minutes'] = Variable<int>(targetWindDownMinutes);
+    map['baseline_wake_time_minutes'] = Variable<int>(baselineWakeTimeMinutes);
+    map['baseline_bed_time_minutes'] = Variable<int>(baselineBedTimeMinutes);
+    map['gym_split'] = Variable<String>(gymSplit);
+    map['gym_days_per_week'] = Variable<int>(gymDaysPerWeek);
+    map['workout_duration_minutes'] = Variable<int>(workoutDurationMinutes);
+    map['walking_baseline_level'] = Variable<String>(walkingBaselineLevel);
+    map['fitness_experience'] = Variable<String>(fitnessExperience);
+    map['physical_limitations'] = Variable<String>(physicalLimitations);
+    map['coaching_personality'] = Variable<String>(coachingPersonality);
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  MomentumChallengeTableCompanion toCompanion(bool nullToAbsent) {
+    return MomentumChallengeTableCompanion(
+      id: Value(id),
+      startDate: Value(startDate),
+      targetEndDate: Value(targetEndDate),
+      durationDays: Value(durationDays),
+      startWeightKg: startWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(startWeightKg),
+      targetWeightKg: targetWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetWeightKg),
+      currentWeightKg: currentWeightKg == null && nullToAbsent
+          ? const Value.absent()
+          : Value(currentWeightKg),
+      age: age == null && nullToAbsent ? const Value.absent() : Value(age),
+      heightCm: heightCm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(heightCm),
+      biologicalSex: Value(biologicalSex),
+      targetWakeTimeMinutes: Value(targetWakeTimeMinutes),
+      targetWindDownMinutes: Value(targetWindDownMinutes),
+      baselineWakeTimeMinutes: Value(baselineWakeTimeMinutes),
+      baselineBedTimeMinutes: Value(baselineBedTimeMinutes),
+      gymSplit: Value(gymSplit),
+      gymDaysPerWeek: Value(gymDaysPerWeek),
+      workoutDurationMinutes: Value(workoutDurationMinutes),
+      walkingBaselineLevel: Value(walkingBaselineLevel),
+      fitnessExperience: Value(fitnessExperience),
+      physicalLimitations: Value(physicalLimitations),
+      coachingPersonality: Value(coachingPersonality),
+      status: Value(status),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MomentumChallenge.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MomentumChallenge(
+      id: serializer.fromJson<int>(json['id']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      targetEndDate: serializer.fromJson<DateTime>(json['targetEndDate']),
+      durationDays: serializer.fromJson<int>(json['durationDays']),
+      startWeightKg: serializer.fromJson<double?>(json['startWeightKg']),
+      targetWeightKg: serializer.fromJson<double?>(json['targetWeightKg']),
+      currentWeightKg: serializer.fromJson<double?>(json['currentWeightKg']),
+      age: serializer.fromJson<int?>(json['age']),
+      heightCm: serializer.fromJson<double?>(json['heightCm']),
+      biologicalSex: serializer.fromJson<String>(json['biologicalSex']),
+      targetWakeTimeMinutes: serializer.fromJson<int>(
+        json['targetWakeTimeMinutes'],
+      ),
+      targetWindDownMinutes: serializer.fromJson<int>(
+        json['targetWindDownMinutes'],
+      ),
+      baselineWakeTimeMinutes: serializer.fromJson<int>(
+        json['baselineWakeTimeMinutes'],
+      ),
+      baselineBedTimeMinutes: serializer.fromJson<int>(
+        json['baselineBedTimeMinutes'],
+      ),
+      gymSplit: serializer.fromJson<String>(json['gymSplit']),
+      gymDaysPerWeek: serializer.fromJson<int>(json['gymDaysPerWeek']),
+      workoutDurationMinutes: serializer.fromJson<int>(
+        json['workoutDurationMinutes'],
+      ),
+      walkingBaselineLevel: serializer.fromJson<String>(
+        json['walkingBaselineLevel'],
+      ),
+      fitnessExperience: serializer.fromJson<String>(json['fitnessExperience']),
+      physicalLimitations: serializer.fromJson<String>(
+        json['physicalLimitations'],
+      ),
+      coachingPersonality: serializer.fromJson<String>(
+        json['coachingPersonality'],
+      ),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'targetEndDate': serializer.toJson<DateTime>(targetEndDate),
+      'durationDays': serializer.toJson<int>(durationDays),
+      'startWeightKg': serializer.toJson<double?>(startWeightKg),
+      'targetWeightKg': serializer.toJson<double?>(targetWeightKg),
+      'currentWeightKg': serializer.toJson<double?>(currentWeightKg),
+      'age': serializer.toJson<int?>(age),
+      'heightCm': serializer.toJson<double?>(heightCm),
+      'biologicalSex': serializer.toJson<String>(biologicalSex),
+      'targetWakeTimeMinutes': serializer.toJson<int>(targetWakeTimeMinutes),
+      'targetWindDownMinutes': serializer.toJson<int>(targetWindDownMinutes),
+      'baselineWakeTimeMinutes': serializer.toJson<int>(
+        baselineWakeTimeMinutes,
+      ),
+      'baselineBedTimeMinutes': serializer.toJson<int>(baselineBedTimeMinutes),
+      'gymSplit': serializer.toJson<String>(gymSplit),
+      'gymDaysPerWeek': serializer.toJson<int>(gymDaysPerWeek),
+      'workoutDurationMinutes': serializer.toJson<int>(workoutDurationMinutes),
+      'walkingBaselineLevel': serializer.toJson<String>(walkingBaselineLevel),
+      'fitnessExperience': serializer.toJson<String>(fitnessExperience),
+      'physicalLimitations': serializer.toJson<String>(physicalLimitations),
+      'coachingPersonality': serializer.toJson<String>(coachingPersonality),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  MomentumChallenge copyWith({
+    int? id,
+    DateTime? startDate,
+    DateTime? targetEndDate,
+    int? durationDays,
+    Value<double?> startWeightKg = const Value.absent(),
+    Value<double?> targetWeightKg = const Value.absent(),
+    Value<double?> currentWeightKg = const Value.absent(),
+    Value<int?> age = const Value.absent(),
+    Value<double?> heightCm = const Value.absent(),
+    String? biologicalSex,
+    int? targetWakeTimeMinutes,
+    int? targetWindDownMinutes,
+    int? baselineWakeTimeMinutes,
+    int? baselineBedTimeMinutes,
+    String? gymSplit,
+    int? gymDaysPerWeek,
+    int? workoutDurationMinutes,
+    String? walkingBaselineLevel,
+    String? fitnessExperience,
+    String? physicalLimitations,
+    String? coachingPersonality,
+    String? status,
+    DateTime? createdAt,
+  }) => MomentumChallenge(
+    id: id ?? this.id,
+    startDate: startDate ?? this.startDate,
+    targetEndDate: targetEndDate ?? this.targetEndDate,
+    durationDays: durationDays ?? this.durationDays,
+    startWeightKg: startWeightKg.present
+        ? startWeightKg.value
+        : this.startWeightKg,
+    targetWeightKg: targetWeightKg.present
+        ? targetWeightKg.value
+        : this.targetWeightKg,
+    currentWeightKg: currentWeightKg.present
+        ? currentWeightKg.value
+        : this.currentWeightKg,
+    age: age.present ? age.value : this.age,
+    heightCm: heightCm.present ? heightCm.value : this.heightCm,
+    biologicalSex: biologicalSex ?? this.biologicalSex,
+    targetWakeTimeMinutes: targetWakeTimeMinutes ?? this.targetWakeTimeMinutes,
+    targetWindDownMinutes: targetWindDownMinutes ?? this.targetWindDownMinutes,
+    baselineWakeTimeMinutes:
+        baselineWakeTimeMinutes ?? this.baselineWakeTimeMinutes,
+    baselineBedTimeMinutes:
+        baselineBedTimeMinutes ?? this.baselineBedTimeMinutes,
+    gymSplit: gymSplit ?? this.gymSplit,
+    gymDaysPerWeek: gymDaysPerWeek ?? this.gymDaysPerWeek,
+    workoutDurationMinutes:
+        workoutDurationMinutes ?? this.workoutDurationMinutes,
+    walkingBaselineLevel: walkingBaselineLevel ?? this.walkingBaselineLevel,
+    fitnessExperience: fitnessExperience ?? this.fitnessExperience,
+    physicalLimitations: physicalLimitations ?? this.physicalLimitations,
+    coachingPersonality: coachingPersonality ?? this.coachingPersonality,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  MomentumChallenge copyWithCompanion(MomentumChallengeTableCompanion data) {
+    return MomentumChallenge(
+      id: data.id.present ? data.id.value : this.id,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      targetEndDate: data.targetEndDate.present
+          ? data.targetEndDate.value
+          : this.targetEndDate,
+      durationDays: data.durationDays.present
+          ? data.durationDays.value
+          : this.durationDays,
+      startWeightKg: data.startWeightKg.present
+          ? data.startWeightKg.value
+          : this.startWeightKg,
+      targetWeightKg: data.targetWeightKg.present
+          ? data.targetWeightKg.value
+          : this.targetWeightKg,
+      currentWeightKg: data.currentWeightKg.present
+          ? data.currentWeightKg.value
+          : this.currentWeightKg,
+      age: data.age.present ? data.age.value : this.age,
+      heightCm: data.heightCm.present ? data.heightCm.value : this.heightCm,
+      biologicalSex: data.biologicalSex.present
+          ? data.biologicalSex.value
+          : this.biologicalSex,
+      targetWakeTimeMinutes: data.targetWakeTimeMinutes.present
+          ? data.targetWakeTimeMinutes.value
+          : this.targetWakeTimeMinutes,
+      targetWindDownMinutes: data.targetWindDownMinutes.present
+          ? data.targetWindDownMinutes.value
+          : this.targetWindDownMinutes,
+      baselineWakeTimeMinutes: data.baselineWakeTimeMinutes.present
+          ? data.baselineWakeTimeMinutes.value
+          : this.baselineWakeTimeMinutes,
+      baselineBedTimeMinutes: data.baselineBedTimeMinutes.present
+          ? data.baselineBedTimeMinutes.value
+          : this.baselineBedTimeMinutes,
+      gymSplit: data.gymSplit.present ? data.gymSplit.value : this.gymSplit,
+      gymDaysPerWeek: data.gymDaysPerWeek.present
+          ? data.gymDaysPerWeek.value
+          : this.gymDaysPerWeek,
+      workoutDurationMinutes: data.workoutDurationMinutes.present
+          ? data.workoutDurationMinutes.value
+          : this.workoutDurationMinutes,
+      walkingBaselineLevel: data.walkingBaselineLevel.present
+          ? data.walkingBaselineLevel.value
+          : this.walkingBaselineLevel,
+      fitnessExperience: data.fitnessExperience.present
+          ? data.fitnessExperience.value
+          : this.fitnessExperience,
+      physicalLimitations: data.physicalLimitations.present
+          ? data.physicalLimitations.value
+          : this.physicalLimitations,
+      coachingPersonality: data.coachingPersonality.present
+          ? data.coachingPersonality.value
+          : this.coachingPersonality,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MomentumChallenge(')
+          ..write('id: $id, ')
+          ..write('startDate: $startDate, ')
+          ..write('targetEndDate: $targetEndDate, ')
+          ..write('durationDays: $durationDays, ')
+          ..write('startWeightKg: $startWeightKg, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('currentWeightKg: $currentWeightKg, ')
+          ..write('age: $age, ')
+          ..write('heightCm: $heightCm, ')
+          ..write('biologicalSex: $biologicalSex, ')
+          ..write('targetWakeTimeMinutes: $targetWakeTimeMinutes, ')
+          ..write('targetWindDownMinutes: $targetWindDownMinutes, ')
+          ..write('baselineWakeTimeMinutes: $baselineWakeTimeMinutes, ')
+          ..write('baselineBedTimeMinutes: $baselineBedTimeMinutes, ')
+          ..write('gymSplit: $gymSplit, ')
+          ..write('gymDaysPerWeek: $gymDaysPerWeek, ')
+          ..write('workoutDurationMinutes: $workoutDurationMinutes, ')
+          ..write('walkingBaselineLevel: $walkingBaselineLevel, ')
+          ..write('fitnessExperience: $fitnessExperience, ')
+          ..write('physicalLimitations: $physicalLimitations, ')
+          ..write('coachingPersonality: $coachingPersonality, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    startDate,
+    targetEndDate,
+    durationDays,
+    startWeightKg,
+    targetWeightKg,
+    currentWeightKg,
+    age,
+    heightCm,
+    biologicalSex,
+    targetWakeTimeMinutes,
+    targetWindDownMinutes,
+    baselineWakeTimeMinutes,
+    baselineBedTimeMinutes,
+    gymSplit,
+    gymDaysPerWeek,
+    workoutDurationMinutes,
+    walkingBaselineLevel,
+    fitnessExperience,
+    physicalLimitations,
+    coachingPersonality,
+    status,
+    createdAt,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MomentumChallenge &&
+          other.id == this.id &&
+          other.startDate == this.startDate &&
+          other.targetEndDate == this.targetEndDate &&
+          other.durationDays == this.durationDays &&
+          other.startWeightKg == this.startWeightKg &&
+          other.targetWeightKg == this.targetWeightKg &&
+          other.currentWeightKg == this.currentWeightKg &&
+          other.age == this.age &&
+          other.heightCm == this.heightCm &&
+          other.biologicalSex == this.biologicalSex &&
+          other.targetWakeTimeMinutes == this.targetWakeTimeMinutes &&
+          other.targetWindDownMinutes == this.targetWindDownMinutes &&
+          other.baselineWakeTimeMinutes == this.baselineWakeTimeMinutes &&
+          other.baselineBedTimeMinutes == this.baselineBedTimeMinutes &&
+          other.gymSplit == this.gymSplit &&
+          other.gymDaysPerWeek == this.gymDaysPerWeek &&
+          other.workoutDurationMinutes == this.workoutDurationMinutes &&
+          other.walkingBaselineLevel == this.walkingBaselineLevel &&
+          other.fitnessExperience == this.fitnessExperience &&
+          other.physicalLimitations == this.physicalLimitations &&
+          other.coachingPersonality == this.coachingPersonality &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
+}
+
+class MomentumChallengeTableCompanion
+    extends UpdateCompanion<MomentumChallenge> {
+  final Value<int> id;
+  final Value<DateTime> startDate;
+  final Value<DateTime> targetEndDate;
+  final Value<int> durationDays;
+  final Value<double?> startWeightKg;
+  final Value<double?> targetWeightKg;
+  final Value<double?> currentWeightKg;
+  final Value<int?> age;
+  final Value<double?> heightCm;
+  final Value<String> biologicalSex;
+  final Value<int> targetWakeTimeMinutes;
+  final Value<int> targetWindDownMinutes;
+  final Value<int> baselineWakeTimeMinutes;
+  final Value<int> baselineBedTimeMinutes;
+  final Value<String> gymSplit;
+  final Value<int> gymDaysPerWeek;
+  final Value<int> workoutDurationMinutes;
+  final Value<String> walkingBaselineLevel;
+  final Value<String> fitnessExperience;
+  final Value<String> physicalLimitations;
+  final Value<String> coachingPersonality;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  const MomentumChallengeTableCompanion({
+    this.id = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.targetEndDate = const Value.absent(),
+    this.durationDays = const Value.absent(),
+    this.startWeightKg = const Value.absent(),
+    this.targetWeightKg = const Value.absent(),
+    this.currentWeightKg = const Value.absent(),
+    this.age = const Value.absent(),
+    this.heightCm = const Value.absent(),
+    this.biologicalSex = const Value.absent(),
+    this.targetWakeTimeMinutes = const Value.absent(),
+    this.targetWindDownMinutes = const Value.absent(),
+    this.baselineWakeTimeMinutes = const Value.absent(),
+    this.baselineBedTimeMinutes = const Value.absent(),
+    this.gymSplit = const Value.absent(),
+    this.gymDaysPerWeek = const Value.absent(),
+    this.workoutDurationMinutes = const Value.absent(),
+    this.walkingBaselineLevel = const Value.absent(),
+    this.fitnessExperience = const Value.absent(),
+    this.physicalLimitations = const Value.absent(),
+    this.coachingPersonality = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MomentumChallengeTableCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime startDate,
+    required DateTime targetEndDate,
+    this.durationDays = const Value.absent(),
+    this.startWeightKg = const Value.absent(),
+    this.targetWeightKg = const Value.absent(),
+    this.currentWeightKg = const Value.absent(),
+    this.age = const Value.absent(),
+    this.heightCm = const Value.absent(),
+    this.biologicalSex = const Value.absent(),
+    this.targetWakeTimeMinutes = const Value.absent(),
+    this.targetWindDownMinutes = const Value.absent(),
+    this.baselineWakeTimeMinutes = const Value.absent(),
+    this.baselineBedTimeMinutes = const Value.absent(),
+    this.gymSplit = const Value.absent(),
+    this.gymDaysPerWeek = const Value.absent(),
+    this.workoutDurationMinutes = const Value.absent(),
+    this.walkingBaselineLevel = const Value.absent(),
+    this.fitnessExperience = const Value.absent(),
+    this.physicalLimitations = const Value.absent(),
+    this.coachingPersonality = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : startDate = Value(startDate),
+       targetEndDate = Value(targetEndDate);
+  static Insertable<MomentumChallenge> custom({
+    Expression<int>? id,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? targetEndDate,
+    Expression<int>? durationDays,
+    Expression<double>? startWeightKg,
+    Expression<double>? targetWeightKg,
+    Expression<double>? currentWeightKg,
+    Expression<int>? age,
+    Expression<double>? heightCm,
+    Expression<String>? biologicalSex,
+    Expression<int>? targetWakeTimeMinutes,
+    Expression<int>? targetWindDownMinutes,
+    Expression<int>? baselineWakeTimeMinutes,
+    Expression<int>? baselineBedTimeMinutes,
+    Expression<String>? gymSplit,
+    Expression<int>? gymDaysPerWeek,
+    Expression<int>? workoutDurationMinutes,
+    Expression<String>? walkingBaselineLevel,
+    Expression<String>? fitnessExperience,
+    Expression<String>? physicalLimitations,
+    Expression<String>? coachingPersonality,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (startDate != null) 'start_date': startDate,
+      if (targetEndDate != null) 'target_end_date': targetEndDate,
+      if (durationDays != null) 'duration_days': durationDays,
+      if (startWeightKg != null) 'start_weight_kg': startWeightKg,
+      if (targetWeightKg != null) 'target_weight_kg': targetWeightKg,
+      if (currentWeightKg != null) 'current_weight_kg': currentWeightKg,
+      if (age != null) 'age': age,
+      if (heightCm != null) 'height_cm': heightCm,
+      if (biologicalSex != null) 'biological_sex': biologicalSex,
+      if (targetWakeTimeMinutes != null)
+        'target_wake_time_minutes': targetWakeTimeMinutes,
+      if (targetWindDownMinutes != null)
+        'target_wind_down_minutes': targetWindDownMinutes,
+      if (baselineWakeTimeMinutes != null)
+        'baseline_wake_time_minutes': baselineWakeTimeMinutes,
+      if (baselineBedTimeMinutes != null)
+        'baseline_bed_time_minutes': baselineBedTimeMinutes,
+      if (gymSplit != null) 'gym_split': gymSplit,
+      if (gymDaysPerWeek != null) 'gym_days_per_week': gymDaysPerWeek,
+      if (workoutDurationMinutes != null)
+        'workout_duration_minutes': workoutDurationMinutes,
+      if (walkingBaselineLevel != null)
+        'walking_baseline_level': walkingBaselineLevel,
+      if (fitnessExperience != null) 'fitness_experience': fitnessExperience,
+      if (physicalLimitations != null)
+        'physical_limitations': physicalLimitations,
+      if (coachingPersonality != null)
+        'coaching_personality': coachingPersonality,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MomentumChallengeTableCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? startDate,
+    Value<DateTime>? targetEndDate,
+    Value<int>? durationDays,
+    Value<double?>? startWeightKg,
+    Value<double?>? targetWeightKg,
+    Value<double?>? currentWeightKg,
+    Value<int?>? age,
+    Value<double?>? heightCm,
+    Value<String>? biologicalSex,
+    Value<int>? targetWakeTimeMinutes,
+    Value<int>? targetWindDownMinutes,
+    Value<int>? baselineWakeTimeMinutes,
+    Value<int>? baselineBedTimeMinutes,
+    Value<String>? gymSplit,
+    Value<int>? gymDaysPerWeek,
+    Value<int>? workoutDurationMinutes,
+    Value<String>? walkingBaselineLevel,
+    Value<String>? fitnessExperience,
+    Value<String>? physicalLimitations,
+    Value<String>? coachingPersonality,
+    Value<String>? status,
+    Value<DateTime>? createdAt,
+  }) {
+    return MomentumChallengeTableCompanion(
+      id: id ?? this.id,
+      startDate: startDate ?? this.startDate,
+      targetEndDate: targetEndDate ?? this.targetEndDate,
+      durationDays: durationDays ?? this.durationDays,
+      startWeightKg: startWeightKg ?? this.startWeightKg,
+      targetWeightKg: targetWeightKg ?? this.targetWeightKg,
+      currentWeightKg: currentWeightKg ?? this.currentWeightKg,
+      age: age ?? this.age,
+      heightCm: heightCm ?? this.heightCm,
+      biologicalSex: biologicalSex ?? this.biologicalSex,
+      targetWakeTimeMinutes:
+          targetWakeTimeMinutes ?? this.targetWakeTimeMinutes,
+      targetWindDownMinutes:
+          targetWindDownMinutes ?? this.targetWindDownMinutes,
+      baselineWakeTimeMinutes:
+          baselineWakeTimeMinutes ?? this.baselineWakeTimeMinutes,
+      baselineBedTimeMinutes:
+          baselineBedTimeMinutes ?? this.baselineBedTimeMinutes,
+      gymSplit: gymSplit ?? this.gymSplit,
+      gymDaysPerWeek: gymDaysPerWeek ?? this.gymDaysPerWeek,
+      workoutDurationMinutes:
+          workoutDurationMinutes ?? this.workoutDurationMinutes,
+      walkingBaselineLevel: walkingBaselineLevel ?? this.walkingBaselineLevel,
+      fitnessExperience: fitnessExperience ?? this.fitnessExperience,
+      physicalLimitations: physicalLimitations ?? this.physicalLimitations,
+      coachingPersonality: coachingPersonality ?? this.coachingPersonality,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (targetEndDate.present) {
+      map['target_end_date'] = Variable<DateTime>(targetEndDate.value);
+    }
+    if (durationDays.present) {
+      map['duration_days'] = Variable<int>(durationDays.value);
+    }
+    if (startWeightKg.present) {
+      map['start_weight_kg'] = Variable<double>(startWeightKg.value);
+    }
+    if (targetWeightKg.present) {
+      map['target_weight_kg'] = Variable<double>(targetWeightKg.value);
+    }
+    if (currentWeightKg.present) {
+      map['current_weight_kg'] = Variable<double>(currentWeightKg.value);
+    }
+    if (age.present) {
+      map['age'] = Variable<int>(age.value);
+    }
+    if (heightCm.present) {
+      map['height_cm'] = Variable<double>(heightCm.value);
+    }
+    if (biologicalSex.present) {
+      map['biological_sex'] = Variable<String>(biologicalSex.value);
+    }
+    if (targetWakeTimeMinutes.present) {
+      map['target_wake_time_minutes'] = Variable<int>(
+        targetWakeTimeMinutes.value,
+      );
+    }
+    if (targetWindDownMinutes.present) {
+      map['target_wind_down_minutes'] = Variable<int>(
+        targetWindDownMinutes.value,
+      );
+    }
+    if (baselineWakeTimeMinutes.present) {
+      map['baseline_wake_time_minutes'] = Variable<int>(
+        baselineWakeTimeMinutes.value,
+      );
+    }
+    if (baselineBedTimeMinutes.present) {
+      map['baseline_bed_time_minutes'] = Variable<int>(
+        baselineBedTimeMinutes.value,
+      );
+    }
+    if (gymSplit.present) {
+      map['gym_split'] = Variable<String>(gymSplit.value);
+    }
+    if (gymDaysPerWeek.present) {
+      map['gym_days_per_week'] = Variable<int>(gymDaysPerWeek.value);
+    }
+    if (workoutDurationMinutes.present) {
+      map['workout_duration_minutes'] = Variable<int>(
+        workoutDurationMinutes.value,
+      );
+    }
+    if (walkingBaselineLevel.present) {
+      map['walking_baseline_level'] = Variable<String>(
+        walkingBaselineLevel.value,
+      );
+    }
+    if (fitnessExperience.present) {
+      map['fitness_experience'] = Variable<String>(fitnessExperience.value);
+    }
+    if (physicalLimitations.present) {
+      map['physical_limitations'] = Variable<String>(physicalLimitations.value);
+    }
+    if (coachingPersonality.present) {
+      map['coaching_personality'] = Variable<String>(coachingPersonality.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MomentumChallengeTableCompanion(')
+          ..write('id: $id, ')
+          ..write('startDate: $startDate, ')
+          ..write('targetEndDate: $targetEndDate, ')
+          ..write('durationDays: $durationDays, ')
+          ..write('startWeightKg: $startWeightKg, ')
+          ..write('targetWeightKg: $targetWeightKg, ')
+          ..write('currentWeightKg: $currentWeightKg, ')
+          ..write('age: $age, ')
+          ..write('heightCm: $heightCm, ')
+          ..write('biologicalSex: $biologicalSex, ')
+          ..write('targetWakeTimeMinutes: $targetWakeTimeMinutes, ')
+          ..write('targetWindDownMinutes: $targetWindDownMinutes, ')
+          ..write('baselineWakeTimeMinutes: $baselineWakeTimeMinutes, ')
+          ..write('baselineBedTimeMinutes: $baselineBedTimeMinutes, ')
+          ..write('gymSplit: $gymSplit, ')
+          ..write('gymDaysPerWeek: $gymDaysPerWeek, ')
+          ..write('workoutDurationMinutes: $workoutDurationMinutes, ')
+          ..write('walkingBaselineLevel: $walkingBaselineLevel, ')
+          ..write('fitnessExperience: $fitnessExperience, ')
+          ..write('physicalLimitations: $physicalLimitations, ')
+          ..write('coachingPersonality: $coachingPersonality, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MomentumCommitmentTableTable extends MomentumCommitmentTable
+    with TableInfo<$MomentumCommitmentTableTable, MomentumCommitment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MomentumCommitmentTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _challengeIdMeta = const VerificationMeta(
+    'challengeId',
+  );
+  @override
+  late final GeneratedColumn<int> challengeId = GeneratedColumn<int>(
+    'challenge_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES momentum_challenges (id)',
+    ),
+  );
+  static const VerificationMeta _dayNumberMeta = const VerificationMeta(
+    'dayNumber',
+  );
+  @override
+  late final GeneratedColumn<int> dayNumber = GeneratedColumn<int>(
+    'day_number',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _scheduledDateMeta = const VerificationMeta(
+    'scheduledDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scheduledDate =
+      GeneratedColumn<DateTime>(
+        'scheduled_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _commitmentTypeMeta = const VerificationMeta(
+    'commitmentType',
+  );
+  @override
+  late final GeneratedColumn<String> commitmentType = GeneratedColumn<String>(
+    'commitment_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 200,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetDurationMinutesMeta =
+      const VerificationMeta('targetDurationMinutes');
+  @override
+  late final GeneratedColumn<int> targetDurationMinutes = GeneratedColumn<int>(
+    'target_duration_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetDistanceMetersMeta =
+      const VerificationMeta('targetDistanceMeters');
+  @override
+  late final GeneratedColumn<double> targetDistanceMeters =
+      GeneratedColumn<double>(
+        'target_distance_meters',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _scheduledTimeMinutesMeta =
+      const VerificationMeta('scheduledTimeMinutes');
+  @override
+  late final GeneratedColumn<int> scheduledTimeMinutes = GeneratedColumn<int>(
+    'scheduled_time_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _wasAdaptedMeta = const VerificationMeta(
+    'wasAdapted',
+  );
+  @override
+  late final GeneratedColumn<bool> wasAdapted = GeneratedColumn<bool>(
+    'was_adapted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("was_adapted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _adaptationReasonMeta = const VerificationMeta(
+    'adaptationReason',
+  );
+  @override
+  late final GeneratedColumn<String> adaptationReason = GeneratedColumn<String>(
+    'adaptation_reason',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _notificationIdMeta = const VerificationMeta(
+    'notificationId',
+  );
+  @override
+  late final GeneratedColumn<int> notificationId = GeneratedColumn<int>(
+    'notification_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _linkedWalkSessionIdMeta =
+      const VerificationMeta('linkedWalkSessionId');
+  @override
+  late final GeneratedColumn<int> linkedWalkSessionId = GeneratedColumn<int>(
+    'linked_walk_session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _linkedHabitIdMeta = const VerificationMeta(
+    'linkedHabitId',
+  );
+  @override
+  late final GeneratedColumn<int> linkedHabitId = GeneratedColumn<int>(
+    'linked_habit_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _linkedTimeSessionIdMeta =
+      const VerificationMeta('linkedTimeSessionId');
+  @override
+  late final GeneratedColumn<int> linkedTimeSessionId = GeneratedColumn<int>(
+    'linked_time_session_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metricLoggedValueMeta = const VerificationMeta(
+    'metricLoggedValue',
+  );
+  @override
+  late final GeneratedColumn<double> metricLoggedValue =
+      GeneratedColumn<double>(
+        'metric_logged_value',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _metricLoggedTypeMeta = const VerificationMeta(
+    'metricLoggedType',
+  );
+  @override
+  late final GeneratedColumn<String> metricLoggedType = GeneratedColumn<String>(
+    'metric_logged_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _metadataJsonMeta = const VerificationMeta(
+    'metadataJson',
+  );
+  @override
+  late final GeneratedColumn<String> metadataJson = GeneratedColumn<String>(
+    'metadata_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    challengeId,
+    dayNumber,
+    scheduledDate,
+    commitmentType,
+    title,
+    description,
+    targetDurationMinutes,
+    targetDistanceMeters,
+    scheduledTimeMinutes,
+    isCompleted,
+    completedAt,
+    wasAdapted,
+    adaptationReason,
+    notificationId,
+    linkedWalkSessionId,
+    linkedHabitId,
+    linkedTimeSessionId,
+    metricLoggedValue,
+    metricLoggedType,
+    metadataJson,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'momentum_commitments';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MomentumCommitment> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('challenge_id')) {
+      context.handle(
+        _challengeIdMeta,
+        challengeId.isAcceptableOrUnknown(
+          data['challenge_id']!,
+          _challengeIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_challengeIdMeta);
+    }
+    if (data.containsKey('day_number')) {
+      context.handle(
+        _dayNumberMeta,
+        dayNumber.isAcceptableOrUnknown(data['day_number']!, _dayNumberMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayNumberMeta);
+    }
+    if (data.containsKey('scheduled_date')) {
+      context.handle(
+        _scheduledDateMeta,
+        scheduledDate.isAcceptableOrUnknown(
+          data['scheduled_date']!,
+          _scheduledDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledDateMeta);
+    }
+    if (data.containsKey('commitment_type')) {
+      context.handle(
+        _commitmentTypeMeta,
+        commitmentType.isAcceptableOrUnknown(
+          data['commitment_type']!,
+          _commitmentTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_commitmentTypeMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_duration_minutes')) {
+      context.handle(
+        _targetDurationMinutesMeta,
+        targetDurationMinutes.isAcceptableOrUnknown(
+          data['target_duration_minutes']!,
+          _targetDurationMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_distance_meters')) {
+      context.handle(
+        _targetDistanceMetersMeta,
+        targetDistanceMeters.isAcceptableOrUnknown(
+          data['target_distance_meters']!,
+          _targetDistanceMetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scheduled_time_minutes')) {
+      context.handle(
+        _scheduledTimeMinutesMeta,
+        scheduledTimeMinutes.isAcceptableOrUnknown(
+          data['scheduled_time_minutes']!,
+          _scheduledTimeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
+          _isCompletedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('was_adapted')) {
+      context.handle(
+        _wasAdaptedMeta,
+        wasAdapted.isAcceptableOrUnknown(data['was_adapted']!, _wasAdaptedMeta),
+      );
+    }
+    if (data.containsKey('adaptation_reason')) {
+      context.handle(
+        _adaptationReasonMeta,
+        adaptationReason.isAcceptableOrUnknown(
+          data['adaptation_reason']!,
+          _adaptationReasonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('notification_id')) {
+      context.handle(
+        _notificationIdMeta,
+        notificationId.isAcceptableOrUnknown(
+          data['notification_id']!,
+          _notificationIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linked_walk_session_id')) {
+      context.handle(
+        _linkedWalkSessionIdMeta,
+        linkedWalkSessionId.isAcceptableOrUnknown(
+          data['linked_walk_session_id']!,
+          _linkedWalkSessionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linked_habit_id')) {
+      context.handle(
+        _linkedHabitIdMeta,
+        linkedHabitId.isAcceptableOrUnknown(
+          data['linked_habit_id']!,
+          _linkedHabitIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('linked_time_session_id')) {
+      context.handle(
+        _linkedTimeSessionIdMeta,
+        linkedTimeSessionId.isAcceptableOrUnknown(
+          data['linked_time_session_id']!,
+          _linkedTimeSessionIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('metric_logged_value')) {
+      context.handle(
+        _metricLoggedValueMeta,
+        metricLoggedValue.isAcceptableOrUnknown(
+          data['metric_logged_value']!,
+          _metricLoggedValueMeta,
+        ),
+      );
+    }
+    if (data.containsKey('metric_logged_type')) {
+      context.handle(
+        _metricLoggedTypeMeta,
+        metricLoggedType.isAcceptableOrUnknown(
+          data['metric_logged_type']!,
+          _metricLoggedTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('metadata_json')) {
+      context.handle(
+        _metadataJsonMeta,
+        metadataJson.isAcceptableOrUnknown(
+          data['metadata_json']!,
+          _metadataJsonMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  MomentumCommitment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MomentumCommitment(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      challengeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}challenge_id'],
+      )!,
+      dayNumber: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}day_number'],
+      )!,
+      scheduledDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_date'],
+      )!,
+      commitmentType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}commitment_type'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      targetDurationMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_duration_minutes'],
+      ),
+      targetDistanceMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_distance_meters'],
+      ),
+      scheduledTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}scheduled_time_minutes'],
+      ),
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      wasAdapted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}was_adapted'],
+      )!,
+      adaptationReason: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}adaptation_reason'],
+      ),
+      notificationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}notification_id'],
+      ),
+      linkedWalkSessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_walk_session_id'],
+      ),
+      linkedHabitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_habit_id'],
+      ),
+      linkedTimeSessionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_time_session_id'],
+      ),
+      metricLoggedValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}metric_logged_value'],
+      ),
+      metricLoggedType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metric_logged_type'],
+      ),
+      metadataJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}metadata_json'],
+      )!,
+    );
+  }
+
+  @override
+  $MomentumCommitmentTableTable createAlias(String alias) {
+    return $MomentumCommitmentTableTable(attachedDatabase, alias);
+  }
+}
+
+class MomentumCommitment extends DataClass
+    implements Insertable<MomentumCommitment> {
+  final int id;
+  final int challengeId;
+  final int dayNumber;
+  final DateTime scheduledDate;
+  final String commitmentType;
+  final String title;
+  final String? description;
+  final int? targetDurationMinutes;
+  final double? targetDistanceMeters;
+  final int? scheduledTimeMinutes;
+  final bool isCompleted;
+  final DateTime? completedAt;
+  final bool wasAdapted;
+  final String? adaptationReason;
+  final int? notificationId;
+  final int? linkedWalkSessionId;
+  final int? linkedHabitId;
+  final int? linkedTimeSessionId;
+  final double? metricLoggedValue;
+  final String? metricLoggedType;
+  final String metadataJson;
+  const MomentumCommitment({
+    required this.id,
+    required this.challengeId,
+    required this.dayNumber,
+    required this.scheduledDate,
+    required this.commitmentType,
+    required this.title,
+    this.description,
+    this.targetDurationMinutes,
+    this.targetDistanceMeters,
+    this.scheduledTimeMinutes,
+    required this.isCompleted,
+    this.completedAt,
+    required this.wasAdapted,
+    this.adaptationReason,
+    this.notificationId,
+    this.linkedWalkSessionId,
+    this.linkedHabitId,
+    this.linkedTimeSessionId,
+    this.metricLoggedValue,
+    this.metricLoggedType,
+    required this.metadataJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['challenge_id'] = Variable<int>(challengeId);
+    map['day_number'] = Variable<int>(dayNumber);
+    map['scheduled_date'] = Variable<DateTime>(scheduledDate);
+    map['commitment_type'] = Variable<String>(commitmentType);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    if (!nullToAbsent || targetDurationMinutes != null) {
+      map['target_duration_minutes'] = Variable<int>(targetDurationMinutes);
+    }
+    if (!nullToAbsent || targetDistanceMeters != null) {
+      map['target_distance_meters'] = Variable<double>(targetDistanceMeters);
+    }
+    if (!nullToAbsent || scheduledTimeMinutes != null) {
+      map['scheduled_time_minutes'] = Variable<int>(scheduledTimeMinutes);
+    }
+    map['is_completed'] = Variable<bool>(isCompleted);
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    map['was_adapted'] = Variable<bool>(wasAdapted);
+    if (!nullToAbsent || adaptationReason != null) {
+      map['adaptation_reason'] = Variable<String>(adaptationReason);
+    }
+    if (!nullToAbsent || notificationId != null) {
+      map['notification_id'] = Variable<int>(notificationId);
+    }
+    if (!nullToAbsent || linkedWalkSessionId != null) {
+      map['linked_walk_session_id'] = Variable<int>(linkedWalkSessionId);
+    }
+    if (!nullToAbsent || linkedHabitId != null) {
+      map['linked_habit_id'] = Variable<int>(linkedHabitId);
+    }
+    if (!nullToAbsent || linkedTimeSessionId != null) {
+      map['linked_time_session_id'] = Variable<int>(linkedTimeSessionId);
+    }
+    if (!nullToAbsent || metricLoggedValue != null) {
+      map['metric_logged_value'] = Variable<double>(metricLoggedValue);
+    }
+    if (!nullToAbsent || metricLoggedType != null) {
+      map['metric_logged_type'] = Variable<String>(metricLoggedType);
+    }
+    map['metadata_json'] = Variable<String>(metadataJson);
+    return map;
+  }
+
+  MomentumCommitmentTableCompanion toCompanion(bool nullToAbsent) {
+    return MomentumCommitmentTableCompanion(
+      id: Value(id),
+      challengeId: Value(challengeId),
+      dayNumber: Value(dayNumber),
+      scheduledDate: Value(scheduledDate),
+      commitmentType: Value(commitmentType),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      targetDurationMinutes: targetDurationMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetDurationMinutes),
+      targetDistanceMeters: targetDistanceMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetDistanceMeters),
+      scheduledTimeMinutes: scheduledTimeMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scheduledTimeMinutes),
+      isCompleted: Value(isCompleted),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      wasAdapted: Value(wasAdapted),
+      adaptationReason: adaptationReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(adaptationReason),
+      notificationId: notificationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(notificationId),
+      linkedWalkSessionId: linkedWalkSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedWalkSessionId),
+      linkedHabitId: linkedHabitId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedHabitId),
+      linkedTimeSessionId: linkedTimeSessionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedTimeSessionId),
+      metricLoggedValue: metricLoggedValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metricLoggedValue),
+      metricLoggedType: metricLoggedType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(metricLoggedType),
+      metadataJson: Value(metadataJson),
+    );
+  }
+
+  factory MomentumCommitment.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MomentumCommitment(
+      id: serializer.fromJson<int>(json['id']),
+      challengeId: serializer.fromJson<int>(json['challengeId']),
+      dayNumber: serializer.fromJson<int>(json['dayNumber']),
+      scheduledDate: serializer.fromJson<DateTime>(json['scheduledDate']),
+      commitmentType: serializer.fromJson<String>(json['commitmentType']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      targetDurationMinutes: serializer.fromJson<int?>(
+        json['targetDurationMinutes'],
+      ),
+      targetDistanceMeters: serializer.fromJson<double?>(
+        json['targetDistanceMeters'],
+      ),
+      scheduledTimeMinutes: serializer.fromJson<int?>(
+        json['scheduledTimeMinutes'],
+      ),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      wasAdapted: serializer.fromJson<bool>(json['wasAdapted']),
+      adaptationReason: serializer.fromJson<String?>(json['adaptationReason']),
+      notificationId: serializer.fromJson<int?>(json['notificationId']),
+      linkedWalkSessionId: serializer.fromJson<int?>(
+        json['linkedWalkSessionId'],
+      ),
+      linkedHabitId: serializer.fromJson<int?>(json['linkedHabitId']),
+      linkedTimeSessionId: serializer.fromJson<int?>(
+        json['linkedTimeSessionId'],
+      ),
+      metricLoggedValue: serializer.fromJson<double?>(
+        json['metricLoggedValue'],
+      ),
+      metricLoggedType: serializer.fromJson<String?>(json['metricLoggedType']),
+      metadataJson: serializer.fromJson<String>(json['metadataJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'challengeId': serializer.toJson<int>(challengeId),
+      'dayNumber': serializer.toJson<int>(dayNumber),
+      'scheduledDate': serializer.toJson<DateTime>(scheduledDate),
+      'commitmentType': serializer.toJson<String>(commitmentType),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'targetDurationMinutes': serializer.toJson<int?>(targetDurationMinutes),
+      'targetDistanceMeters': serializer.toJson<double?>(targetDistanceMeters),
+      'scheduledTimeMinutes': serializer.toJson<int?>(scheduledTimeMinutes),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'wasAdapted': serializer.toJson<bool>(wasAdapted),
+      'adaptationReason': serializer.toJson<String?>(adaptationReason),
+      'notificationId': serializer.toJson<int?>(notificationId),
+      'linkedWalkSessionId': serializer.toJson<int?>(linkedWalkSessionId),
+      'linkedHabitId': serializer.toJson<int?>(linkedHabitId),
+      'linkedTimeSessionId': serializer.toJson<int?>(linkedTimeSessionId),
+      'metricLoggedValue': serializer.toJson<double?>(metricLoggedValue),
+      'metricLoggedType': serializer.toJson<String?>(metricLoggedType),
+      'metadataJson': serializer.toJson<String>(metadataJson),
+    };
+  }
+
+  MomentumCommitment copyWith({
+    int? id,
+    int? challengeId,
+    int? dayNumber,
+    DateTime? scheduledDate,
+    String? commitmentType,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    Value<int?> targetDurationMinutes = const Value.absent(),
+    Value<double?> targetDistanceMeters = const Value.absent(),
+    Value<int?> scheduledTimeMinutes = const Value.absent(),
+    bool? isCompleted,
+    Value<DateTime?> completedAt = const Value.absent(),
+    bool? wasAdapted,
+    Value<String?> adaptationReason = const Value.absent(),
+    Value<int?> notificationId = const Value.absent(),
+    Value<int?> linkedWalkSessionId = const Value.absent(),
+    Value<int?> linkedHabitId = const Value.absent(),
+    Value<int?> linkedTimeSessionId = const Value.absent(),
+    Value<double?> metricLoggedValue = const Value.absent(),
+    Value<String?> metricLoggedType = const Value.absent(),
+    String? metadataJson,
+  }) => MomentumCommitment(
+    id: id ?? this.id,
+    challengeId: challengeId ?? this.challengeId,
+    dayNumber: dayNumber ?? this.dayNumber,
+    scheduledDate: scheduledDate ?? this.scheduledDate,
+    commitmentType: commitmentType ?? this.commitmentType,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    targetDurationMinutes: targetDurationMinutes.present
+        ? targetDurationMinutes.value
+        : this.targetDurationMinutes,
+    targetDistanceMeters: targetDistanceMeters.present
+        ? targetDistanceMeters.value
+        : this.targetDistanceMeters,
+    scheduledTimeMinutes: scheduledTimeMinutes.present
+        ? scheduledTimeMinutes.value
+        : this.scheduledTimeMinutes,
+    isCompleted: isCompleted ?? this.isCompleted,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    wasAdapted: wasAdapted ?? this.wasAdapted,
+    adaptationReason: adaptationReason.present
+        ? adaptationReason.value
+        : this.adaptationReason,
+    notificationId: notificationId.present
+        ? notificationId.value
+        : this.notificationId,
+    linkedWalkSessionId: linkedWalkSessionId.present
+        ? linkedWalkSessionId.value
+        : this.linkedWalkSessionId,
+    linkedHabitId: linkedHabitId.present
+        ? linkedHabitId.value
+        : this.linkedHabitId,
+    linkedTimeSessionId: linkedTimeSessionId.present
+        ? linkedTimeSessionId.value
+        : this.linkedTimeSessionId,
+    metricLoggedValue: metricLoggedValue.present
+        ? metricLoggedValue.value
+        : this.metricLoggedValue,
+    metricLoggedType: metricLoggedType.present
+        ? metricLoggedType.value
+        : this.metricLoggedType,
+    metadataJson: metadataJson ?? this.metadataJson,
+  );
+  MomentumCommitment copyWithCompanion(MomentumCommitmentTableCompanion data) {
+    return MomentumCommitment(
+      id: data.id.present ? data.id.value : this.id,
+      challengeId: data.challengeId.present
+          ? data.challengeId.value
+          : this.challengeId,
+      dayNumber: data.dayNumber.present ? data.dayNumber.value : this.dayNumber,
+      scheduledDate: data.scheduledDate.present
+          ? data.scheduledDate.value
+          : this.scheduledDate,
+      commitmentType: data.commitmentType.present
+          ? data.commitmentType.value
+          : this.commitmentType,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      targetDurationMinutes: data.targetDurationMinutes.present
+          ? data.targetDurationMinutes.value
+          : this.targetDurationMinutes,
+      targetDistanceMeters: data.targetDistanceMeters.present
+          ? data.targetDistanceMeters.value
+          : this.targetDistanceMeters,
+      scheduledTimeMinutes: data.scheduledTimeMinutes.present
+          ? data.scheduledTimeMinutes.value
+          : this.scheduledTimeMinutes,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      wasAdapted: data.wasAdapted.present
+          ? data.wasAdapted.value
+          : this.wasAdapted,
+      adaptationReason: data.adaptationReason.present
+          ? data.adaptationReason.value
+          : this.adaptationReason,
+      notificationId: data.notificationId.present
+          ? data.notificationId.value
+          : this.notificationId,
+      linkedWalkSessionId: data.linkedWalkSessionId.present
+          ? data.linkedWalkSessionId.value
+          : this.linkedWalkSessionId,
+      linkedHabitId: data.linkedHabitId.present
+          ? data.linkedHabitId.value
+          : this.linkedHabitId,
+      linkedTimeSessionId: data.linkedTimeSessionId.present
+          ? data.linkedTimeSessionId.value
+          : this.linkedTimeSessionId,
+      metricLoggedValue: data.metricLoggedValue.present
+          ? data.metricLoggedValue.value
+          : this.metricLoggedValue,
+      metricLoggedType: data.metricLoggedType.present
+          ? data.metricLoggedType.value
+          : this.metricLoggedType,
+      metadataJson: data.metadataJson.present
+          ? data.metadataJson.value
+          : this.metadataJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MomentumCommitment(')
+          ..write('id: $id, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('dayNumber: $dayNumber, ')
+          ..write('scheduledDate: $scheduledDate, ')
+          ..write('commitmentType: $commitmentType, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('targetDurationMinutes: $targetDurationMinutes, ')
+          ..write('targetDistanceMeters: $targetDistanceMeters, ')
+          ..write('scheduledTimeMinutes: $scheduledTimeMinutes, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('wasAdapted: $wasAdapted, ')
+          ..write('adaptationReason: $adaptationReason, ')
+          ..write('notificationId: $notificationId, ')
+          ..write('linkedWalkSessionId: $linkedWalkSessionId, ')
+          ..write('linkedHabitId: $linkedHabitId, ')
+          ..write('linkedTimeSessionId: $linkedTimeSessionId, ')
+          ..write('metricLoggedValue: $metricLoggedValue, ')
+          ..write('metricLoggedType: $metricLoggedType, ')
+          ..write('metadataJson: $metadataJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    id,
+    challengeId,
+    dayNumber,
+    scheduledDate,
+    commitmentType,
+    title,
+    description,
+    targetDurationMinutes,
+    targetDistanceMeters,
+    scheduledTimeMinutes,
+    isCompleted,
+    completedAt,
+    wasAdapted,
+    adaptationReason,
+    notificationId,
+    linkedWalkSessionId,
+    linkedHabitId,
+    linkedTimeSessionId,
+    metricLoggedValue,
+    metricLoggedType,
+    metadataJson,
+  ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MomentumCommitment &&
+          other.id == this.id &&
+          other.challengeId == this.challengeId &&
+          other.dayNumber == this.dayNumber &&
+          other.scheduledDate == this.scheduledDate &&
+          other.commitmentType == this.commitmentType &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.targetDurationMinutes == this.targetDurationMinutes &&
+          other.targetDistanceMeters == this.targetDistanceMeters &&
+          other.scheduledTimeMinutes == this.scheduledTimeMinutes &&
+          other.isCompleted == this.isCompleted &&
+          other.completedAt == this.completedAt &&
+          other.wasAdapted == this.wasAdapted &&
+          other.adaptationReason == this.adaptationReason &&
+          other.notificationId == this.notificationId &&
+          other.linkedWalkSessionId == this.linkedWalkSessionId &&
+          other.linkedHabitId == this.linkedHabitId &&
+          other.linkedTimeSessionId == this.linkedTimeSessionId &&
+          other.metricLoggedValue == this.metricLoggedValue &&
+          other.metricLoggedType == this.metricLoggedType &&
+          other.metadataJson == this.metadataJson);
+}
+
+class MomentumCommitmentTableCompanion
+    extends UpdateCompanion<MomentumCommitment> {
+  final Value<int> id;
+  final Value<int> challengeId;
+  final Value<int> dayNumber;
+  final Value<DateTime> scheduledDate;
+  final Value<String> commitmentType;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<int?> targetDurationMinutes;
+  final Value<double?> targetDistanceMeters;
+  final Value<int?> scheduledTimeMinutes;
+  final Value<bool> isCompleted;
+  final Value<DateTime?> completedAt;
+  final Value<bool> wasAdapted;
+  final Value<String?> adaptationReason;
+  final Value<int?> notificationId;
+  final Value<int?> linkedWalkSessionId;
+  final Value<int?> linkedHabitId;
+  final Value<int?> linkedTimeSessionId;
+  final Value<double?> metricLoggedValue;
+  final Value<String?> metricLoggedType;
+  final Value<String> metadataJson;
+  const MomentumCommitmentTableCompanion({
+    this.id = const Value.absent(),
+    this.challengeId = const Value.absent(),
+    this.dayNumber = const Value.absent(),
+    this.scheduledDate = const Value.absent(),
+    this.commitmentType = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.targetDurationMinutes = const Value.absent(),
+    this.targetDistanceMeters = const Value.absent(),
+    this.scheduledTimeMinutes = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.wasAdapted = const Value.absent(),
+    this.adaptationReason = const Value.absent(),
+    this.notificationId = const Value.absent(),
+    this.linkedWalkSessionId = const Value.absent(),
+    this.linkedHabitId = const Value.absent(),
+    this.linkedTimeSessionId = const Value.absent(),
+    this.metricLoggedValue = const Value.absent(),
+    this.metricLoggedType = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+  });
+  MomentumCommitmentTableCompanion.insert({
+    this.id = const Value.absent(),
+    required int challengeId,
+    required int dayNumber,
+    required DateTime scheduledDate,
+    required String commitmentType,
+    required String title,
+    this.description = const Value.absent(),
+    this.targetDurationMinutes = const Value.absent(),
+    this.targetDistanceMeters = const Value.absent(),
+    this.scheduledTimeMinutes = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.wasAdapted = const Value.absent(),
+    this.adaptationReason = const Value.absent(),
+    this.notificationId = const Value.absent(),
+    this.linkedWalkSessionId = const Value.absent(),
+    this.linkedHabitId = const Value.absent(),
+    this.linkedTimeSessionId = const Value.absent(),
+    this.metricLoggedValue = const Value.absent(),
+    this.metricLoggedType = const Value.absent(),
+    this.metadataJson = const Value.absent(),
+  }) : challengeId = Value(challengeId),
+       dayNumber = Value(dayNumber),
+       scheduledDate = Value(scheduledDate),
+       commitmentType = Value(commitmentType),
+       title = Value(title);
+  static Insertable<MomentumCommitment> custom({
+    Expression<int>? id,
+    Expression<int>? challengeId,
+    Expression<int>? dayNumber,
+    Expression<DateTime>? scheduledDate,
+    Expression<String>? commitmentType,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<int>? targetDurationMinutes,
+    Expression<double>? targetDistanceMeters,
+    Expression<int>? scheduledTimeMinutes,
+    Expression<bool>? isCompleted,
+    Expression<DateTime>? completedAt,
+    Expression<bool>? wasAdapted,
+    Expression<String>? adaptationReason,
+    Expression<int>? notificationId,
+    Expression<int>? linkedWalkSessionId,
+    Expression<int>? linkedHabitId,
+    Expression<int>? linkedTimeSessionId,
+    Expression<double>? metricLoggedValue,
+    Expression<String>? metricLoggedType,
+    Expression<String>? metadataJson,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (challengeId != null) 'challenge_id': challengeId,
+      if (dayNumber != null) 'day_number': dayNumber,
+      if (scheduledDate != null) 'scheduled_date': scheduledDate,
+      if (commitmentType != null) 'commitment_type': commitmentType,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (targetDurationMinutes != null)
+        'target_duration_minutes': targetDurationMinutes,
+      if (targetDistanceMeters != null)
+        'target_distance_meters': targetDistanceMeters,
+      if (scheduledTimeMinutes != null)
+        'scheduled_time_minutes': scheduledTimeMinutes,
+      if (isCompleted != null) 'is_completed': isCompleted,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (wasAdapted != null) 'was_adapted': wasAdapted,
+      if (adaptationReason != null) 'adaptation_reason': adaptationReason,
+      if (notificationId != null) 'notification_id': notificationId,
+      if (linkedWalkSessionId != null)
+        'linked_walk_session_id': linkedWalkSessionId,
+      if (linkedHabitId != null) 'linked_habit_id': linkedHabitId,
+      if (linkedTimeSessionId != null)
+        'linked_time_session_id': linkedTimeSessionId,
+      if (metricLoggedValue != null) 'metric_logged_value': metricLoggedValue,
+      if (metricLoggedType != null) 'metric_logged_type': metricLoggedType,
+      if (metadataJson != null) 'metadata_json': metadataJson,
+    });
+  }
+
+  MomentumCommitmentTableCompanion copyWith({
+    Value<int>? id,
+    Value<int>? challengeId,
+    Value<int>? dayNumber,
+    Value<DateTime>? scheduledDate,
+    Value<String>? commitmentType,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<int?>? targetDurationMinutes,
+    Value<double?>? targetDistanceMeters,
+    Value<int?>? scheduledTimeMinutes,
+    Value<bool>? isCompleted,
+    Value<DateTime?>? completedAt,
+    Value<bool>? wasAdapted,
+    Value<String?>? adaptationReason,
+    Value<int?>? notificationId,
+    Value<int?>? linkedWalkSessionId,
+    Value<int?>? linkedHabitId,
+    Value<int?>? linkedTimeSessionId,
+    Value<double?>? metricLoggedValue,
+    Value<String?>? metricLoggedType,
+    Value<String>? metadataJson,
+  }) {
+    return MomentumCommitmentTableCompanion(
+      id: id ?? this.id,
+      challengeId: challengeId ?? this.challengeId,
+      dayNumber: dayNumber ?? this.dayNumber,
+      scheduledDate: scheduledDate ?? this.scheduledDate,
+      commitmentType: commitmentType ?? this.commitmentType,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      targetDurationMinutes:
+          targetDurationMinutes ?? this.targetDurationMinutes,
+      targetDistanceMeters: targetDistanceMeters ?? this.targetDistanceMeters,
+      scheduledTimeMinutes: scheduledTimeMinutes ?? this.scheduledTimeMinutes,
+      isCompleted: isCompleted ?? this.isCompleted,
+      completedAt: completedAt ?? this.completedAt,
+      wasAdapted: wasAdapted ?? this.wasAdapted,
+      adaptationReason: adaptationReason ?? this.adaptationReason,
+      notificationId: notificationId ?? this.notificationId,
+      linkedWalkSessionId: linkedWalkSessionId ?? this.linkedWalkSessionId,
+      linkedHabitId: linkedHabitId ?? this.linkedHabitId,
+      linkedTimeSessionId: linkedTimeSessionId ?? this.linkedTimeSessionId,
+      metricLoggedValue: metricLoggedValue ?? this.metricLoggedValue,
+      metricLoggedType: metricLoggedType ?? this.metricLoggedType,
+      metadataJson: metadataJson ?? this.metadataJson,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (challengeId.present) {
+      map['challenge_id'] = Variable<int>(challengeId.value);
+    }
+    if (dayNumber.present) {
+      map['day_number'] = Variable<int>(dayNumber.value);
+    }
+    if (scheduledDate.present) {
+      map['scheduled_date'] = Variable<DateTime>(scheduledDate.value);
+    }
+    if (commitmentType.present) {
+      map['commitment_type'] = Variable<String>(commitmentType.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (targetDurationMinutes.present) {
+      map['target_duration_minutes'] = Variable<int>(
+        targetDurationMinutes.value,
+      );
+    }
+    if (targetDistanceMeters.present) {
+      map['target_distance_meters'] = Variable<double>(
+        targetDistanceMeters.value,
+      );
+    }
+    if (scheduledTimeMinutes.present) {
+      map['scheduled_time_minutes'] = Variable<int>(scheduledTimeMinutes.value);
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (wasAdapted.present) {
+      map['was_adapted'] = Variable<bool>(wasAdapted.value);
+    }
+    if (adaptationReason.present) {
+      map['adaptation_reason'] = Variable<String>(adaptationReason.value);
+    }
+    if (notificationId.present) {
+      map['notification_id'] = Variable<int>(notificationId.value);
+    }
+    if (linkedWalkSessionId.present) {
+      map['linked_walk_session_id'] = Variable<int>(linkedWalkSessionId.value);
+    }
+    if (linkedHabitId.present) {
+      map['linked_habit_id'] = Variable<int>(linkedHabitId.value);
+    }
+    if (linkedTimeSessionId.present) {
+      map['linked_time_session_id'] = Variable<int>(linkedTimeSessionId.value);
+    }
+    if (metricLoggedValue.present) {
+      map['metric_logged_value'] = Variable<double>(metricLoggedValue.value);
+    }
+    if (metricLoggedType.present) {
+      map['metric_logged_type'] = Variable<String>(metricLoggedType.value);
+    }
+    if (metadataJson.present) {
+      map['metadata_json'] = Variable<String>(metadataJson.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MomentumCommitmentTableCompanion(')
+          ..write('id: $id, ')
+          ..write('challengeId: $challengeId, ')
+          ..write('dayNumber: $dayNumber, ')
+          ..write('scheduledDate: $scheduledDate, ')
+          ..write('commitmentType: $commitmentType, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('targetDurationMinutes: $targetDurationMinutes, ')
+          ..write('targetDistanceMeters: $targetDistanceMeters, ')
+          ..write('scheduledTimeMinutes: $scheduledTimeMinutes, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('wasAdapted: $wasAdapted, ')
+          ..write('adaptationReason: $adaptationReason, ')
+          ..write('notificationId: $notificationId, ')
+          ..write('linkedWalkSessionId: $linkedWalkSessionId, ')
+          ..write('linkedHabitId: $linkedHabitId, ')
+          ..write('linkedTimeSessionId: $linkedTimeSessionId, ')
+          ..write('metricLoggedValue: $metricLoggedValue, ')
+          ..write('metricLoggedType: $metricLoggedType, ')
+          ..write('metadataJson: $metadataJson')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -14623,6 +17218,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WaterGoalTableTable waterGoalTable = $WaterGoalTableTable(this);
   late final $ThoughtTableTable thoughtTable = $ThoughtTableTable(this);
   late final $CourseTableTable courseTable = $CourseTableTable(this);
+  late final $MomentumChallengeTableTable momentumChallengeTable =
+      $MomentumChallengeTableTable(this);
+  late final $MomentumCommitmentTableTable momentumCommitmentTable =
+      $MomentumCommitmentTableTable(this);
   late final UserProfileDao userProfileDao = UserProfileDao(
     this as AppDatabase,
   );
@@ -14660,6 +17259,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final WaterDao waterDao = WaterDao(this as AppDatabase);
   late final ThoughtDao thoughtDao = ThoughtDao(this as AppDatabase);
   late final CourseDao courseDao = CourseDao(this as AppDatabase);
+  late final MomentumDao momentumDao = MomentumDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -14694,6 +17294,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     waterGoalTable,
     thoughtTable,
     courseTable,
+    momentumChallengeTable,
+    momentumCommitmentTable,
   ];
 }
 
@@ -25297,6 +27899,1391 @@ typedef $$CourseTableTableProcessedTableManager =
       CourseEntry,
       PrefetchHooks Function()
     >;
+typedef $$MomentumChallengeTableTableCreateCompanionBuilder =
+    MomentumChallengeTableCompanion Function({
+      Value<int> id,
+      required DateTime startDate,
+      required DateTime targetEndDate,
+      Value<int> durationDays,
+      Value<double?> startWeightKg,
+      Value<double?> targetWeightKg,
+      Value<double?> currentWeightKg,
+      Value<int?> age,
+      Value<double?> heightCm,
+      Value<String> biologicalSex,
+      Value<int> targetWakeTimeMinutes,
+      Value<int> targetWindDownMinutes,
+      Value<int> baselineWakeTimeMinutes,
+      Value<int> baselineBedTimeMinutes,
+      Value<String> gymSplit,
+      Value<int> gymDaysPerWeek,
+      Value<int> workoutDurationMinutes,
+      Value<String> walkingBaselineLevel,
+      Value<String> fitnessExperience,
+      Value<String> physicalLimitations,
+      Value<String> coachingPersonality,
+      Value<String> status,
+      Value<DateTime> createdAt,
+    });
+typedef $$MomentumChallengeTableTableUpdateCompanionBuilder =
+    MomentumChallengeTableCompanion Function({
+      Value<int> id,
+      Value<DateTime> startDate,
+      Value<DateTime> targetEndDate,
+      Value<int> durationDays,
+      Value<double?> startWeightKg,
+      Value<double?> targetWeightKg,
+      Value<double?> currentWeightKg,
+      Value<int?> age,
+      Value<double?> heightCm,
+      Value<String> biologicalSex,
+      Value<int> targetWakeTimeMinutes,
+      Value<int> targetWindDownMinutes,
+      Value<int> baselineWakeTimeMinutes,
+      Value<int> baselineBedTimeMinutes,
+      Value<String> gymSplit,
+      Value<int> gymDaysPerWeek,
+      Value<int> workoutDurationMinutes,
+      Value<String> walkingBaselineLevel,
+      Value<String> fitnessExperience,
+      Value<String> physicalLimitations,
+      Value<String> coachingPersonality,
+      Value<String> status,
+      Value<DateTime> createdAt,
+    });
+
+final class $$MomentumChallengeTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MomentumChallengeTableTable,
+          MomentumChallenge
+        > {
+  $$MomentumChallengeTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<
+    $MomentumCommitmentTableTable,
+    List<MomentumCommitment>
+  >
+  _momentumCommitmentTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.momentumCommitmentTable,
+        aliasName:
+            'momentum_challenges__id__momentum_commitments__challenge_id',
+      );
+
+  $$MomentumCommitmentTableTableProcessedTableManager
+  get momentumCommitmentTableRefs {
+    final manager = $$MomentumCommitmentTableTableTableManager(
+      $_db,
+      $_db.momentumCommitmentTable,
+    ).filter((f) => f.challengeId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _momentumCommitmentTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$MomentumChallengeTableTableFilterComposer
+    extends Composer<_$AppDatabase, $MomentumChallengeTableTable> {
+  $$MomentumChallengeTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get targetEndDate => $composableBuilder(
+    column: $table.targetEndDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationDays => $composableBuilder(
+    column: $table.durationDays,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get startWeightKg => $composableBuilder(
+    column: $table.startWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get currentWeightKg => $composableBuilder(
+    column: $table.currentWeightKg,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get age => $composableBuilder(
+    column: $table.age,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get heightCm => $composableBuilder(
+    column: $table.heightCm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get biologicalSex => $composableBuilder(
+    column: $table.biologicalSex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetWakeTimeMinutes => $composableBuilder(
+    column: $table.targetWakeTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetWindDownMinutes => $composableBuilder(
+    column: $table.targetWindDownMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get baselineWakeTimeMinutes => $composableBuilder(
+    column: $table.baselineWakeTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get baselineBedTimeMinutes => $composableBuilder(
+    column: $table.baselineBedTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gymSplit => $composableBuilder(
+    column: $table.gymSplit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get gymDaysPerWeek => $composableBuilder(
+    column: $table.gymDaysPerWeek,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get workoutDurationMinutes => $composableBuilder(
+    column: $table.workoutDurationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get walkingBaselineLevel => $composableBuilder(
+    column: $table.walkingBaselineLevel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fitnessExperience => $composableBuilder(
+    column: $table.fitnessExperience,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get physicalLimitations => $composableBuilder(
+    column: $table.physicalLimitations,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get coachingPersonality => $composableBuilder(
+    column: $table.coachingPersonality,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> momentumCommitmentTableRefs(
+    Expression<bool> Function($$MomentumCommitmentTableTableFilterComposer f) f,
+  ) {
+    final $$MomentumCommitmentTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.momentumCommitmentTable,
+          getReferencedColumn: (t) => t.challengeId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MomentumCommitmentTableTableFilterComposer(
+                $db: $db,
+                $table: $db.momentumCommitmentTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$MomentumChallengeTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $MomentumChallengeTableTable> {
+  $$MomentumChallengeTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get targetEndDate => $composableBuilder(
+    column: $table.targetEndDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationDays => $composableBuilder(
+    column: $table.durationDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get startWeightKg => $composableBuilder(
+    column: $table.startWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get currentWeightKg => $composableBuilder(
+    column: $table.currentWeightKg,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get age => $composableBuilder(
+    column: $table.age,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get heightCm => $composableBuilder(
+    column: $table.heightCm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get biologicalSex => $composableBuilder(
+    column: $table.biologicalSex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetWakeTimeMinutes => $composableBuilder(
+    column: $table.targetWakeTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetWindDownMinutes => $composableBuilder(
+    column: $table.targetWindDownMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get baselineWakeTimeMinutes => $composableBuilder(
+    column: $table.baselineWakeTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get baselineBedTimeMinutes => $composableBuilder(
+    column: $table.baselineBedTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gymSplit => $composableBuilder(
+    column: $table.gymSplit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get gymDaysPerWeek => $composableBuilder(
+    column: $table.gymDaysPerWeek,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get workoutDurationMinutes => $composableBuilder(
+    column: $table.workoutDurationMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get walkingBaselineLevel => $composableBuilder(
+    column: $table.walkingBaselineLevel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fitnessExperience => $composableBuilder(
+    column: $table.fitnessExperience,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get physicalLimitations => $composableBuilder(
+    column: $table.physicalLimitations,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get coachingPersonality => $composableBuilder(
+    column: $table.coachingPersonality,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MomentumChallengeTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MomentumChallengeTableTable> {
+  $$MomentumChallengeTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get targetEndDate => $composableBuilder(
+    column: $table.targetEndDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationDays => $composableBuilder(
+    column: $table.durationDays,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get startWeightKg => $composableBuilder(
+    column: $table.startWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get targetWeightKg => $composableBuilder(
+    column: $table.targetWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get currentWeightKg => $composableBuilder(
+    column: $table.currentWeightKg,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get age =>
+      $composableBuilder(column: $table.age, builder: (column) => column);
+
+  GeneratedColumn<double> get heightCm =>
+      $composableBuilder(column: $table.heightCm, builder: (column) => column);
+
+  GeneratedColumn<String> get biologicalSex => $composableBuilder(
+    column: $table.biologicalSex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetWakeTimeMinutes => $composableBuilder(
+    column: $table.targetWakeTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetWindDownMinutes => $composableBuilder(
+    column: $table.targetWindDownMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get baselineWakeTimeMinutes => $composableBuilder(
+    column: $table.baselineWakeTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get baselineBedTimeMinutes => $composableBuilder(
+    column: $table.baselineBedTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get gymSplit =>
+      $composableBuilder(column: $table.gymSplit, builder: (column) => column);
+
+  GeneratedColumn<int> get gymDaysPerWeek => $composableBuilder(
+    column: $table.gymDaysPerWeek,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get workoutDurationMinutes => $composableBuilder(
+    column: $table.workoutDurationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get walkingBaselineLevel => $composableBuilder(
+    column: $table.walkingBaselineLevel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fitnessExperience => $composableBuilder(
+    column: $table.fitnessExperience,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get physicalLimitations => $composableBuilder(
+    column: $table.physicalLimitations,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get coachingPersonality => $composableBuilder(
+    column: $table.coachingPersonality,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> momentumCommitmentTableRefs<T extends Object>(
+    Expression<T> Function($$MomentumCommitmentTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$MomentumCommitmentTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.momentumCommitmentTable,
+          getReferencedColumn: (t) => t.challengeId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MomentumCommitmentTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.momentumCommitmentTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$MomentumChallengeTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MomentumChallengeTableTable,
+          MomentumChallenge,
+          $$MomentumChallengeTableTableFilterComposer,
+          $$MomentumChallengeTableTableOrderingComposer,
+          $$MomentumChallengeTableTableAnnotationComposer,
+          $$MomentumChallengeTableTableCreateCompanionBuilder,
+          $$MomentumChallengeTableTableUpdateCompanionBuilder,
+          (MomentumChallenge, $$MomentumChallengeTableTableReferences),
+          MomentumChallenge,
+          PrefetchHooks Function({bool momentumCommitmentTableRefs})
+        > {
+  $$MomentumChallengeTableTableTableManager(
+    _$AppDatabase db,
+    $MomentumChallengeTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MomentumChallengeTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$MomentumChallengeTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$MomentumChallengeTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> startDate = const Value.absent(),
+                Value<DateTime> targetEndDate = const Value.absent(),
+                Value<int> durationDays = const Value.absent(),
+                Value<double?> startWeightKg = const Value.absent(),
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<double?> currentWeightKg = const Value.absent(),
+                Value<int?> age = const Value.absent(),
+                Value<double?> heightCm = const Value.absent(),
+                Value<String> biologicalSex = const Value.absent(),
+                Value<int> targetWakeTimeMinutes = const Value.absent(),
+                Value<int> targetWindDownMinutes = const Value.absent(),
+                Value<int> baselineWakeTimeMinutes = const Value.absent(),
+                Value<int> baselineBedTimeMinutes = const Value.absent(),
+                Value<String> gymSplit = const Value.absent(),
+                Value<int> gymDaysPerWeek = const Value.absent(),
+                Value<int> workoutDurationMinutes = const Value.absent(),
+                Value<String> walkingBaselineLevel = const Value.absent(),
+                Value<String> fitnessExperience = const Value.absent(),
+                Value<String> physicalLimitations = const Value.absent(),
+                Value<String> coachingPersonality = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => MomentumChallengeTableCompanion(
+                id: id,
+                startDate: startDate,
+                targetEndDate: targetEndDate,
+                durationDays: durationDays,
+                startWeightKg: startWeightKg,
+                targetWeightKg: targetWeightKg,
+                currentWeightKg: currentWeightKg,
+                age: age,
+                heightCm: heightCm,
+                biologicalSex: biologicalSex,
+                targetWakeTimeMinutes: targetWakeTimeMinutes,
+                targetWindDownMinutes: targetWindDownMinutes,
+                baselineWakeTimeMinutes: baselineWakeTimeMinutes,
+                baselineBedTimeMinutes: baselineBedTimeMinutes,
+                gymSplit: gymSplit,
+                gymDaysPerWeek: gymDaysPerWeek,
+                workoutDurationMinutes: workoutDurationMinutes,
+                walkingBaselineLevel: walkingBaselineLevel,
+                fitnessExperience: fitnessExperience,
+                physicalLimitations: physicalLimitations,
+                coachingPersonality: coachingPersonality,
+                status: status,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime startDate,
+                required DateTime targetEndDate,
+                Value<int> durationDays = const Value.absent(),
+                Value<double?> startWeightKg = const Value.absent(),
+                Value<double?> targetWeightKg = const Value.absent(),
+                Value<double?> currentWeightKg = const Value.absent(),
+                Value<int?> age = const Value.absent(),
+                Value<double?> heightCm = const Value.absent(),
+                Value<String> biologicalSex = const Value.absent(),
+                Value<int> targetWakeTimeMinutes = const Value.absent(),
+                Value<int> targetWindDownMinutes = const Value.absent(),
+                Value<int> baselineWakeTimeMinutes = const Value.absent(),
+                Value<int> baselineBedTimeMinutes = const Value.absent(),
+                Value<String> gymSplit = const Value.absent(),
+                Value<int> gymDaysPerWeek = const Value.absent(),
+                Value<int> workoutDurationMinutes = const Value.absent(),
+                Value<String> walkingBaselineLevel = const Value.absent(),
+                Value<String> fitnessExperience = const Value.absent(),
+                Value<String> physicalLimitations = const Value.absent(),
+                Value<String> coachingPersonality = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => MomentumChallengeTableCompanion.insert(
+                id: id,
+                startDate: startDate,
+                targetEndDate: targetEndDate,
+                durationDays: durationDays,
+                startWeightKg: startWeightKg,
+                targetWeightKg: targetWeightKg,
+                currentWeightKg: currentWeightKg,
+                age: age,
+                heightCm: heightCm,
+                biologicalSex: biologicalSex,
+                targetWakeTimeMinutes: targetWakeTimeMinutes,
+                targetWindDownMinutes: targetWindDownMinutes,
+                baselineWakeTimeMinutes: baselineWakeTimeMinutes,
+                baselineBedTimeMinutes: baselineBedTimeMinutes,
+                gymSplit: gymSplit,
+                gymDaysPerWeek: gymDaysPerWeek,
+                workoutDurationMinutes: workoutDurationMinutes,
+                walkingBaselineLevel: walkingBaselineLevel,
+                fitnessExperience: fitnessExperience,
+                physicalLimitations: physicalLimitations,
+                coachingPersonality: coachingPersonality,
+                status: status,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$MomentumChallengeTableTable, MomentumChallenge>(
+                    table,
+                  ),
+                  $$MomentumChallengeTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({momentumCommitmentTableRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (momentumCommitmentTableRefs) db.momentumCommitmentTable,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (momentumCommitmentTableRefs)
+                    await $_getPrefetchedData<
+                      MomentumChallenge,
+                      $MomentumChallengeTableTable,
+                      MomentumCommitment
+                    >(
+                      currentTable: table,
+                      referencedTable: $$MomentumChallengeTableTableReferences
+                          ._momentumCommitmentTableRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$MomentumChallengeTableTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).momentumCommitmentTableRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.challengeId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MomentumChallengeTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MomentumChallengeTableTable,
+      MomentumChallenge,
+      $$MomentumChallengeTableTableFilterComposer,
+      $$MomentumChallengeTableTableOrderingComposer,
+      $$MomentumChallengeTableTableAnnotationComposer,
+      $$MomentumChallengeTableTableCreateCompanionBuilder,
+      $$MomentumChallengeTableTableUpdateCompanionBuilder,
+      (MomentumChallenge, $$MomentumChallengeTableTableReferences),
+      MomentumChallenge,
+      PrefetchHooks Function({bool momentumCommitmentTableRefs})
+    >;
+typedef $$MomentumCommitmentTableTableCreateCompanionBuilder =
+    MomentumCommitmentTableCompanion Function({
+      Value<int> id,
+      required int challengeId,
+      required int dayNumber,
+      required DateTime scheduledDate,
+      required String commitmentType,
+      required String title,
+      Value<String?> description,
+      Value<int?> targetDurationMinutes,
+      Value<double?> targetDistanceMeters,
+      Value<int?> scheduledTimeMinutes,
+      Value<bool> isCompleted,
+      Value<DateTime?> completedAt,
+      Value<bool> wasAdapted,
+      Value<String?> adaptationReason,
+      Value<int?> notificationId,
+      Value<int?> linkedWalkSessionId,
+      Value<int?> linkedHabitId,
+      Value<int?> linkedTimeSessionId,
+      Value<double?> metricLoggedValue,
+      Value<String?> metricLoggedType,
+      Value<String> metadataJson,
+    });
+typedef $$MomentumCommitmentTableTableUpdateCompanionBuilder =
+    MomentumCommitmentTableCompanion Function({
+      Value<int> id,
+      Value<int> challengeId,
+      Value<int> dayNumber,
+      Value<DateTime> scheduledDate,
+      Value<String> commitmentType,
+      Value<String> title,
+      Value<String?> description,
+      Value<int?> targetDurationMinutes,
+      Value<double?> targetDistanceMeters,
+      Value<int?> scheduledTimeMinutes,
+      Value<bool> isCompleted,
+      Value<DateTime?> completedAt,
+      Value<bool> wasAdapted,
+      Value<String?> adaptationReason,
+      Value<int?> notificationId,
+      Value<int?> linkedWalkSessionId,
+      Value<int?> linkedHabitId,
+      Value<int?> linkedTimeSessionId,
+      Value<double?> metricLoggedValue,
+      Value<String?> metricLoggedType,
+      Value<String> metadataJson,
+    });
+
+final class $$MomentumCommitmentTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MomentumCommitmentTableTable,
+          MomentumCommitment
+        > {
+  $$MomentumCommitmentTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $MomentumChallengeTableTable _challengeIdTable(_$AppDatabase db) =>
+      db.momentumChallengeTable.createAlias(
+        'momentum_commitments__challenge_id__momentum_challenges__id',
+      );
+
+  $$MomentumChallengeTableTableProcessedTableManager get challengeId {
+    final $_column = $_itemColumn<int>('challenge_id')!;
+
+    final manager = $$MomentumChallengeTableTableTableManager(
+      $_db,
+      $_db.momentumChallengeTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_challengeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MomentumCommitmentTableTableFilterComposer
+    extends Composer<_$AppDatabase, $MomentumCommitmentTableTable> {
+  $$MomentumCommitmentTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get dayNumber => $composableBuilder(
+    column: $table.dayNumber,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledDate => $composableBuilder(
+    column: $table.scheduledDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get commitmentType => $composableBuilder(
+    column: $table.commitmentType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetDurationMinutes => $composableBuilder(
+    column: $table.targetDurationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get targetDistanceMeters => $composableBuilder(
+    column: $table.targetDistanceMeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get scheduledTimeMinutes => $composableBuilder(
+    column: $table.scheduledTimeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get wasAdapted => $composableBuilder(
+    column: $table.wasAdapted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get adaptationReason => $composableBuilder(
+    column: $table.adaptationReason,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get notificationId => $composableBuilder(
+    column: $table.notificationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get linkedWalkSessionId => $composableBuilder(
+    column: $table.linkedWalkSessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get linkedHabitId => $composableBuilder(
+    column: $table.linkedHabitId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get linkedTimeSessionId => $composableBuilder(
+    column: $table.linkedTimeSessionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get metricLoggedValue => $composableBuilder(
+    column: $table.metricLoggedValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metricLoggedType => $composableBuilder(
+    column: $table.metricLoggedType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$MomentumChallengeTableTableFilterComposer get challengeId {
+    final $$MomentumChallengeTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.challengeId,
+          referencedTable: $db.momentumChallengeTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MomentumChallengeTableTableFilterComposer(
+                $db: $db,
+                $table: $db.momentumChallengeTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MomentumCommitmentTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $MomentumCommitmentTableTable> {
+  $$MomentumCommitmentTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get dayNumber => $composableBuilder(
+    column: $table.dayNumber,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledDate => $composableBuilder(
+    column: $table.scheduledDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get commitmentType => $composableBuilder(
+    column: $table.commitmentType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetDurationMinutes => $composableBuilder(
+    column: $table.targetDurationMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get targetDistanceMeters => $composableBuilder(
+    column: $table.targetDistanceMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get scheduledTimeMinutes => $composableBuilder(
+    column: $table.scheduledTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get wasAdapted => $composableBuilder(
+    column: $table.wasAdapted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get adaptationReason => $composableBuilder(
+    column: $table.adaptationReason,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get notificationId => $composableBuilder(
+    column: $table.notificationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get linkedWalkSessionId => $composableBuilder(
+    column: $table.linkedWalkSessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get linkedHabitId => $composableBuilder(
+    column: $table.linkedHabitId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get linkedTimeSessionId => $composableBuilder(
+    column: $table.linkedTimeSessionId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get metricLoggedValue => $composableBuilder(
+    column: $table.metricLoggedValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metricLoggedType => $composableBuilder(
+    column: $table.metricLoggedType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$MomentumChallengeTableTableOrderingComposer get challengeId {
+    final $$MomentumChallengeTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.challengeId,
+          referencedTable: $db.momentumChallengeTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MomentumChallengeTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.momentumChallengeTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MomentumCommitmentTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MomentumCommitmentTableTable> {
+  $$MomentumCommitmentTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get dayNumber =>
+      $composableBuilder(column: $table.dayNumber, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get scheduledDate => $composableBuilder(
+    column: $table.scheduledDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get commitmentType => $composableBuilder(
+    column: $table.commitmentType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetDurationMinutes => $composableBuilder(
+    column: $table.targetDurationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get targetDistanceMeters => $composableBuilder(
+    column: $table.targetDistanceMeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get scheduledTimeMinutes => $composableBuilder(
+    column: $table.scheduledTimeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get wasAdapted => $composableBuilder(
+    column: $table.wasAdapted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get adaptationReason => $composableBuilder(
+    column: $table.adaptationReason,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get notificationId => $composableBuilder(
+    column: $table.notificationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get linkedWalkSessionId => $composableBuilder(
+    column: $table.linkedWalkSessionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get linkedHabitId => $composableBuilder(
+    column: $table.linkedHabitId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get linkedTimeSessionId => $composableBuilder(
+    column: $table.linkedTimeSessionId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get metricLoggedValue => $composableBuilder(
+    column: $table.metricLoggedValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metricLoggedType => $composableBuilder(
+    column: $table.metricLoggedType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get metadataJson => $composableBuilder(
+    column: $table.metadataJson,
+    builder: (column) => column,
+  );
+
+  $$MomentumChallengeTableTableAnnotationComposer get challengeId {
+    final $$MomentumChallengeTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.challengeId,
+          referencedTable: $db.momentumChallengeTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$MomentumChallengeTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.momentumChallengeTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$MomentumCommitmentTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MomentumCommitmentTableTable,
+          MomentumCommitment,
+          $$MomentumCommitmentTableTableFilterComposer,
+          $$MomentumCommitmentTableTableOrderingComposer,
+          $$MomentumCommitmentTableTableAnnotationComposer,
+          $$MomentumCommitmentTableTableCreateCompanionBuilder,
+          $$MomentumCommitmentTableTableUpdateCompanionBuilder,
+          (MomentumCommitment, $$MomentumCommitmentTableTableReferences),
+          MomentumCommitment,
+          PrefetchHooks Function({bool challengeId})
+        > {
+  $$MomentumCommitmentTableTableTableManager(
+    _$AppDatabase db,
+    $MomentumCommitmentTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MomentumCommitmentTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$MomentumCommitmentTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$MomentumCommitmentTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> challengeId = const Value.absent(),
+                Value<int> dayNumber = const Value.absent(),
+                Value<DateTime> scheduledDate = const Value.absent(),
+                Value<String> commitmentType = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<int?> targetDurationMinutes = const Value.absent(),
+                Value<double?> targetDistanceMeters = const Value.absent(),
+                Value<int?> scheduledTimeMinutes = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<bool> wasAdapted = const Value.absent(),
+                Value<String?> adaptationReason = const Value.absent(),
+                Value<int?> notificationId = const Value.absent(),
+                Value<int?> linkedWalkSessionId = const Value.absent(),
+                Value<int?> linkedHabitId = const Value.absent(),
+                Value<int?> linkedTimeSessionId = const Value.absent(),
+                Value<double?> metricLoggedValue = const Value.absent(),
+                Value<String?> metricLoggedType = const Value.absent(),
+                Value<String> metadataJson = const Value.absent(),
+              }) => MomentumCommitmentTableCompanion(
+                id: id,
+                challengeId: challengeId,
+                dayNumber: dayNumber,
+                scheduledDate: scheduledDate,
+                commitmentType: commitmentType,
+                title: title,
+                description: description,
+                targetDurationMinutes: targetDurationMinutes,
+                targetDistanceMeters: targetDistanceMeters,
+                scheduledTimeMinutes: scheduledTimeMinutes,
+                isCompleted: isCompleted,
+                completedAt: completedAt,
+                wasAdapted: wasAdapted,
+                adaptationReason: adaptationReason,
+                notificationId: notificationId,
+                linkedWalkSessionId: linkedWalkSessionId,
+                linkedHabitId: linkedHabitId,
+                linkedTimeSessionId: linkedTimeSessionId,
+                metricLoggedValue: metricLoggedValue,
+                metricLoggedType: metricLoggedType,
+                metadataJson: metadataJson,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int challengeId,
+                required int dayNumber,
+                required DateTime scheduledDate,
+                required String commitmentType,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                Value<int?> targetDurationMinutes = const Value.absent(),
+                Value<double?> targetDistanceMeters = const Value.absent(),
+                Value<int?> scheduledTimeMinutes = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<bool> wasAdapted = const Value.absent(),
+                Value<String?> adaptationReason = const Value.absent(),
+                Value<int?> notificationId = const Value.absent(),
+                Value<int?> linkedWalkSessionId = const Value.absent(),
+                Value<int?> linkedHabitId = const Value.absent(),
+                Value<int?> linkedTimeSessionId = const Value.absent(),
+                Value<double?> metricLoggedValue = const Value.absent(),
+                Value<String?> metricLoggedType = const Value.absent(),
+                Value<String> metadataJson = const Value.absent(),
+              }) => MomentumCommitmentTableCompanion.insert(
+                id: id,
+                challengeId: challengeId,
+                dayNumber: dayNumber,
+                scheduledDate: scheduledDate,
+                commitmentType: commitmentType,
+                title: title,
+                description: description,
+                targetDurationMinutes: targetDurationMinutes,
+                targetDistanceMeters: targetDistanceMeters,
+                scheduledTimeMinutes: scheduledTimeMinutes,
+                isCompleted: isCompleted,
+                completedAt: completedAt,
+                wasAdapted: wasAdapted,
+                adaptationReason: adaptationReason,
+                notificationId: notificationId,
+                linkedWalkSessionId: linkedWalkSessionId,
+                linkedHabitId: linkedHabitId,
+                linkedTimeSessionId: linkedTimeSessionId,
+                metricLoggedValue: metricLoggedValue,
+                metricLoggedType: metricLoggedType,
+                metadataJson: metadataJson,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $MomentumCommitmentTableTable,
+                    MomentumCommitment
+                  >(table),
+                  $$MomentumCommitmentTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({challengeId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (challengeId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.challengeId,
+                                referencedTable:
+                                    $$MomentumCommitmentTableTableReferences
+                                        ._challengeIdTable(db),
+                                referencedColumn:
+                                    $$MomentumCommitmentTableTableReferences
+                                        ._challengeIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MomentumCommitmentTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MomentumCommitmentTableTable,
+      MomentumCommitment,
+      $$MomentumCommitmentTableTableFilterComposer,
+      $$MomentumCommitmentTableTableOrderingComposer,
+      $$MomentumCommitmentTableTableAnnotationComposer,
+      $$MomentumCommitmentTableTableCreateCompanionBuilder,
+      $$MomentumCommitmentTableTableUpdateCompanionBuilder,
+      (MomentumCommitment, $$MomentumCommitmentTableTableReferences),
+      MomentumCommitment,
+      PrefetchHooks Function({bool challengeId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -25372,6 +29359,16 @@ class $AppDatabaseManager {
       $$ThoughtTableTableTableManager(_db, _db.thoughtTable);
   $$CourseTableTableTableManager get courseTable =>
       $$CourseTableTableTableManager(_db, _db.courseTable);
+  $$MomentumChallengeTableTableTableManager get momentumChallengeTable =>
+      $$MomentumChallengeTableTableTableManager(
+        _db,
+        _db.momentumChallengeTable,
+      );
+  $$MomentumCommitmentTableTableTableManager get momentumCommitmentTable =>
+      $$MomentumCommitmentTableTableTableManager(
+        _db,
+        _db.momentumCommitmentTable,
+      );
 }
 
 mixin _$UserProfileDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -25836,4 +29833,27 @@ class CourseDaoManager {
   CourseDaoManager(this._db);
   $$CourseTableTableTableManager get courseTable =>
       $$CourseTableTableTableManager(_db.attachedDatabase, _db.courseTable);
+}
+
+mixin _$MomentumDaoMixin on DatabaseAccessor<AppDatabase> {
+  $MomentumChallengeTableTable get momentumChallengeTable =>
+      attachedDatabase.momentumChallengeTable;
+  $MomentumCommitmentTableTable get momentumCommitmentTable =>
+      attachedDatabase.momentumCommitmentTable;
+  MomentumDaoManager get managers => MomentumDaoManager(this);
+}
+
+class MomentumDaoManager {
+  final _$MomentumDaoMixin _db;
+  MomentumDaoManager(this._db);
+  $$MomentumChallengeTableTableTableManager get momentumChallengeTable =>
+      $$MomentumChallengeTableTableTableManager(
+        _db.attachedDatabase,
+        _db.momentumChallengeTable,
+      );
+  $$MomentumCommitmentTableTableTableManager get momentumCommitmentTable =>
+      $$MomentumCommitmentTableTableTableManager(
+        _db.attachedDatabase,
+        _db.momentumCommitmentTable,
+      );
 }

@@ -20,7 +20,7 @@ class MainScaffold extends StatefulWidget {
     _TabItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
     _TabItem(icon: Icons.checklist_outlined, activeIcon: Icons.checklist_rounded, label: 'Study'),
     _TabItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet_rounded, label: 'Money'),
-    _TabItem(icon: Icons.directions_walk_outlined, activeIcon: Icons.directions_walk_rounded, label: 'Walk'),
+    _TabItem(icon: Icons.bolt_outlined, activeIcon: Icons.bolt_rounded, label: 'Momentum'),
     _TabItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view_rounded, label: 'More'),
   ];
 

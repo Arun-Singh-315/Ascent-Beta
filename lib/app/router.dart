@@ -24,6 +24,8 @@ import '../features/focus/focus_screen.dart';
 import '../features/reminders/reminders_screen.dart';
 import '../features/money/money_screen.dart';
 import '../features/walk/walk_screen.dart';
+import '../features/momentum/momentum_screen.dart';
+import '../features/momentum/momentum_onboarding_screen.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/habits/habits_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
@@ -42,6 +44,8 @@ class AscentRoutes {
   static const today = '/today';
   static const money = '/money';
   static const walk = '/walk';
+  static const momentum = '/momentum';
+  static const momentumOnboarding = '/momentum/onboarding';
   static const aiAssistant = '/ai-assistant';
   static const habits = '/habits';
   static const hydration = '/hydration';
@@ -135,13 +139,13 @@ final ascentRouter = GoRouter(
           ],
         ),
 
-        // Tab 3: Walk & Activity Tracking
+        // Tab 3: Momentum & Fitness Engine
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.walk,
+              path: AscentRoutes.momentum,
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: WalkScreen(),
+                child: MomentumScreen(),
               ),
             ),
           ],
@@ -162,6 +166,16 @@ final ascentRouter = GoRouter(
     ),
 
     // ── Parent destinations (pushed over the shell) ───────────────────────
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.momentumOnboarding,
+      builder: (context, state) => const MomentumOnboardingScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.walk,
+      builder: (context, state) => const WalkScreen(),
+    ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.aiAssistant,

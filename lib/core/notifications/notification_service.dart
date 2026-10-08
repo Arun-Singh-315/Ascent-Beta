@@ -27,6 +27,12 @@ class NotificationService {
   static const String channelCatchUpName = 'Daily Catch-up Nudge';
   static const String channelTimerId = 'ascent_timer_alerts';
   static const String channelTimerName = 'Live Session & Timer Alerts';
+  static const String channelMomentumWakeId = 'ascent_momentum_wake';
+  static const String channelMomentumWakeName = 'Momentum Wake-Up Alert';
+  static const String channelMomentumCommitmentId = 'ascent_momentum_commitments';
+  static const String channelMomentumCommitmentName = 'Momentum Scheduled Sessions';
+  static const String channelMomentumWindDownId = 'ascent_momentum_winddown';
+  static const String channelMomentumWindDownName = 'Momentum Evening Wind-Down';
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -103,6 +109,38 @@ class NotificationService {
             channelTimerName,
             description: 'Alerts when sessions or breaks conclude',
             importance: Importance.high,
+          ),
+        );
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelMomentumWakeId,
+            channelMomentumWakeName,
+            description: 'Alarms for target wake-up times and circadian entrainment',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+            enableLights: true,
+            ledColor: Color(0xFF00B4D8),
+          ),
+        );
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelMomentumCommitmentId,
+            channelMomentumCommitmentName,
+            description: 'Reminders for scheduled gym workouts, outdoor walks, and supporting habits',
+            importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelMomentumWindDownId,
+            channelMomentumWindDownName,
+            description: 'Evening wind-down notifications to protect your 8-hour sleep recovery window',
+            importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
           ),
         );
       }
@@ -512,6 +550,203 @@ class NotificationService {
         } catch (e) {
           debugPrint('Failed to schedule follow-up nudge: $e');
         }
+      }
+    }
+  }
+
+  /// Schedules a 6:00 AM (or target time) wake alarm for Momentum with persistent vibration and alarm sound.
+  Future<void> scheduleMomentumWakeAlarm({
+    required int id,
+    required DateTime scheduledAt,
+    required String title,
+    required String body,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final nowTz = tz.TZDateTime.now(tz.local);
+    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+    if (scheduledTz.isBefore(nowTz)) {
+      if (nowTz.difference(scheduledTz).inSeconds < 45) {
+        scheduledTz = nowTz.add(const Duration(seconds: 10));
+      } else {
+        return;
+      }
+    }
+
+    final androidDetails = AndroidNotificationDetails(
+      channelMomentumWakeId,
+      channelMomentumWakeName,
+      channelDescription: 'Alarms for target wake-up times and circadian entrainment',
+      importance: Importance.max,
+      priority: Priority.max,
+      icon: '@drawable/ic_launcher_foreground',
+      color: const Color(0xFF00B4D8),
+      category: AndroidNotificationCategory.alarm,
+      fullScreenIntent: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      enableLights: true,
+      ledColor: const Color(0xFF00B4D8),
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 1000]),
+      subText: 'Ascent • Momentum Wake Alert',
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: '⏰ 06:00 AM Wake Call',
+      ),
+      playSound: true,
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.critical,
+      subtitle: 'Ascent • Momentum Wake Alert',
+    );
+
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: darwinDetails,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledTz,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      debugPrint('Scheduled exact Momentum wake alarm id=$id at $scheduledTz');
+    } catch (e) {
+      debugPrint('Exact wake alarm failed ($e), falling back to inexactAllowWhileIdle for id=$id');
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      } catch (err) {
+        debugPrint('Failed to schedule Momentum wake alarm fallback: $err');
+      }
+    }
+  }
+
+  /// Schedules a workout, walk, or habit session reminder for Momentum.
+  Future<void> scheduleMomentumCommitmentReminder({
+    required int id,
+    required DateTime scheduledAt,
+    required String title,
+    required String body,
+    String? summaryText,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final nowTz = tz.TZDateTime.now(tz.local);
+    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+    if (scheduledTz.isBefore(nowTz)) {
+      if (nowTz.difference(scheduledTz).inSeconds < 45) {
+        scheduledTz = nowTz.add(const Duration(seconds: 10));
+      } else {
+        return;
+      }
+    }
+
+    final details = _buildModernNotificationDetails(
+      channelId: channelMomentumCommitmentId,
+      channelName: channelMomentumCommitmentName,
+      channelDescription: 'Reminders for scheduled gym workouts and outdoor walks',
+      title: title,
+      body: body,
+      summaryText: summaryText ?? '⚡ Momentum Session',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledTz,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      debugPrint('Scheduled exact Momentum commitment id=$id at $scheduledTz');
+    } catch (e) {
+      debugPrint('Exact commitment failed ($e), falling back to inexact for id=$id');
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      } catch (err) {
+        debugPrint('Failed to schedule Momentum commitment fallback: $err');
+      }
+    }
+  }
+
+  /// Schedules 10:00 PM evening wind-down notification to protect sleep window.
+  Future<void> scheduleMomentumWindDownReminder({
+    required int id,
+    required DateTime scheduledAt,
+    required String title,
+    required String body,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final nowTz = tz.TZDateTime.now(tz.local);
+    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+    if (scheduledTz.isBefore(nowTz)) {
+      if (nowTz.difference(scheduledTz).inSeconds < 45) {
+        scheduledTz = nowTz.add(const Duration(seconds: 10));
+      } else {
+        return;
+      }
+    }
+
+    final details = _buildModernNotificationDetails(
+      channelId: channelMomentumWindDownId,
+      channelName: channelMomentumWindDownName,
+      channelDescription: 'Evening wind-down reminder to protect your 8-hour sleep opportunity',
+      title: title,
+      body: body,
+      summaryText: '🌙 Wind-Down & Recovery',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledTz,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+      debugPrint('Scheduled exact Momentum wind-down id=$id at $scheduledTz');
+    } catch (e) {
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        );
+      } catch (err) {
+        debugPrint('Failed to schedule Momentum wind-down fallback: $err');
       }
     }
   }

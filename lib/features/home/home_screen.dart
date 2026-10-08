@@ -14,6 +14,7 @@ import 'widgets/home_atmosphere.dart';
 import 'widgets/home_header.dart';
 import 'widgets/home_reminder_banners.dart';
 import 'widgets/learning_hub_card.dart';
+import 'widgets/momentum_home_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
 import 'widgets/secondary_tools_section.dart';
 import 'widgets/thought_wall_home_preview.dart';
@@ -72,6 +73,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref.invalidate(mostRecentNoteProvider);
                   ref.invalidate(recentThoughtsStreamProvider);
                   ref.invalidate(todayActivitiesProvider);
+                  ref.invalidate(activeMomentumChallengeStreamProvider);
+                  ref.invalidate(todayMomentumCommitmentsStreamProvider);
                 },
                 color: g.clay,
                 child: ListView(
@@ -93,7 +96,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       WelcomeBackBanner(days: daysSinceLastOpen),
                     ],
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+
+                    // ── MOMENTUM 30-DAY CHALLENGE & SUMMARY CARD ────────
+                    const MomentumHomeCard(),
+
+                    const SizedBox(height: 20),
 
                     // ── LEVEL 1: TODAY EXECUTION (PRIMARY) ───────────────
                     const ActivityHubCard(),

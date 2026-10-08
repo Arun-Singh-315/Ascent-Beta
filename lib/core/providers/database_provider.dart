@@ -109,6 +109,23 @@ final courseDaoProvider = Provider<CourseDao>(
   (ref) => CourseDao(ref.watch(databaseProvider)),
 );
 
+final momentumDaoProvider = Provider<MomentumDao>(
+  (ref) => MomentumDao(ref.watch(databaseProvider)),
+);
+
+// ── Momentum Reactive Stream Providers ─────────────────────────────────────────
+
+final activeMomentumChallengeStreamProvider = StreamProvider<MomentumChallenge?>((ref) {
+  final dao = ref.watch(momentumDaoProvider);
+  return dao.watchActiveChallenge();
+});
+
+final todayMomentumCommitmentsStreamProvider = StreamProvider<List<MomentumCommitment>>((ref) {
+  final dao = ref.watch(momentumDaoProvider);
+  final now = DateTime.now();
+  return dao.watchCommitmentsForDate(now);
+});
+
 // ── Finance Reactive Stream Providers ─────────────────────────────────────────
 
 final todaySpendingStreamProvider = StreamProvider<double>((ref) {
