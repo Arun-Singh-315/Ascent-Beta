@@ -444,24 +444,23 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 ),
                 const SizedBox(height: 20),
                 AscentButton.primary(
-                  label: 'Save Note to Journal',
+                  label: 'Save Reflection to Mind Space',
                   expanded: true,
                   onPressed: () async {
                     final title = titleController.text.trim();
                     final content = contentController.text.trim();
                     if (title.isEmpty || content.isEmpty) return;
 
-                    final notesDao = ref.read(notesDaoProvider);
-                    await notesDao.insertNote(
-                      NoteTableCompanion.insert(
-                        title: drift.Value(title),
-                        content: content,
-                        linkedTopic: drift.Value(_docTitle),
-                        lastInteractedAt: drift.Value(DateTime.now()),
+                    final thoughtDao = ref.read(thoughtDaoProvider);
+                    await thoughtDao.insertThought(
+                      ThoughtTableCompanion.insert(
+                        content: '📖 $_docTitle: $title\n\n$content',
+                        createdAt: drift.Value(DateTime.now()),
+                        mood: const drift.Value('learning'),
                       ),
                     );
 
-                    ref.invalidate(mostRecentNoteProvider);
+                    ref.invalidate(recentThoughtsStreamProvider);
 
                     if (sheetCtx.mounted) {
                       Navigator.of(sheetCtx).pop();
@@ -470,7 +469,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Note captured to Notes & Journal! 📝'),
+                          content: Text('Saved reflection to Mind Space! 💭'),
                           behavior: SnackBarBehavior.floating,
                           duration: Duration(seconds: 2),
                         ),

@@ -4,7 +4,6 @@ import '../database/app_database.dart';
 import '../repository/local/local_application_repository.dart';
 import '../repository/local/local_consistency_repository.dart';
 import '../repository/local/local_dsa_repository.dart';
-import '../repository/local/local_notes_repository.dart';
 import '../repository/local/local_task_repository.dart';
 import '../repository/local/local_user_profile_repository.dart';
 import '../repository/repository_interface.dart';
@@ -44,10 +43,6 @@ final consistencyDaoProvider = Provider<ConsistencyDao>(
 
 final dsaDaoProvider = Provider<DsaDao>(
   (ref) => DsaDao(ref.watch(databaseProvider)),
-);
-
-final notesDaoProvider = Provider<NotesDao>(
-  (ref) => NotesDao(ref.watch(databaseProvider)),
 );
 
 final seriesDaoProvider = Provider<SeriesDao>(
@@ -252,11 +247,6 @@ final allUpcomingInterviewsProvider = StreamProvider<List<UpcomingInterview>>((r
   return dao.watchUpcomingInterviews();
 });
 
-final mostRecentNoteProvider = StreamProvider<Note?>((ref) {
-  final dao = ref.watch(notesDaoProvider);
-  return dao.watchAllNotes().map((list) => list.firstOrNull);
-});
-
 // ---------------------------------------------------------------------------
 // Repository providers (backed by local DAOs)
 // ---------------------------------------------------------------------------
@@ -279,10 +269,6 @@ final consistencyRepositoryProvider = Provider<IConsistencyRepository>(
 
 final dsaRepositoryProvider = Provider<IDsaRepository>(
   (ref) => LocalDsaRepository(ref.watch(dsaDaoProvider)),
-);
-
-final notesRepositoryProvider = Provider<INotesRepository>(
-  (ref) => LocalNotesRepository(ref.watch(notesDaoProvider)),
 );
 
 // ---------------------------------------------------------------------------

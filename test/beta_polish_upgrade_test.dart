@@ -79,21 +79,18 @@ void main() {
       expect(task.notes, contains('Kindle Reader'));
     });
 
-    test('Reader-to-Notes Integration in Database', () async {
-      final noteId = await db.notesDao.insertNote(
-        NoteTableCompanion.insert(
-          title: const drift.Value('Key Takeaway: Spring Security Filter Chain'),
-          content: 'DelegatingFilterProxy forwards to SecurityFilterChain with stateless JWT auth.',
-          linkedTopic: const drift.Value('Spring Boot Architecture'),
-          lastInteractedAt: drift.Value(DateTime.now()),
+    test('Reader-to-Mind Space Integration in Database', () async {
+      final thoughtId = await db.thoughtDao.insertThought(
+        const ThoughtTableCompanion(
+          content: drift.Value('Key Takeaway: DelegatingFilterProxy forwards to SecurityFilterChain with stateless JWT auth.'),
+          mood: drift.Value('idea'),
         ),
       );
 
-      final notes = await db.notesDao.watchAllNotes().first;
-      expect(notes.any((n) => n.id == noteId), isTrue);
-      final note = notes.firstWhere((n) => n.id == noteId);
-      expect(note.title, contains('Spring Security Filter Chain'));
-      expect(note.linkedTopic, 'Spring Boot Architecture');
+      final thoughts = await db.thoughtDao.watchAllThoughts().first;
+      expect(thoughts.any((t) => t.id == thoughtId), isTrue);
+      final thought = thoughts.firstWhere((t) => t.id == thoughtId);
+      expect(thought.content, contains('DelegatingFilterProxy'));
     });
 
     test('Smart Email Recruiter Invite Parsing logic', () {

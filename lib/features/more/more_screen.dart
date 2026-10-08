@@ -232,14 +232,6 @@ class MoreScreen extends ConsumerWidget {
                 ),
                 _TileDivider(),
                 _MoreListTile(
-                  icon: Icons.edit_note_rounded,
-                  iconTint: g.slate,
-                  title: 'Notes & Journal',
-                  subtitle: 'Topic recaps, quick thoughts & company insights',
-                  route: '/notes',
-                ),
-                _TileDivider(),
-                _MoreListTile(
                   icon: Icons.notifications_none_rounded,
                   iconTint: g.amber,
                   title: 'Reminders & Alerts',

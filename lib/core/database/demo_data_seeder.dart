@@ -29,8 +29,6 @@ class DemoDataSeeder {
     await db.customStatement('DELETE FROM finance_budgets;');
     await db.customStatement('DELETE FROM finance_transactions;');
     await db.customStatement('DELETE FROM insight_dismissals;');
-    await db.customStatement('DELETE FROM note_tags;');
-    await db.customStatement('DELETE FROM notes;');
     await db.customStatement('DELETE FROM interview_prep;');
     await db.customStatement('DELETE FROM resumes;');
     await db.customStatement('DELETE FROM application_status_history;');
@@ -481,66 +479,7 @@ class DemoDataSeeder {
       ),
     );
 
-    // ── 10. Notes & Cheatsheets ──────────────────────────────────────────────
-    final notesDao = db.notesDao;
-    final note1Id = await notesDao.insertNote(
-      NoteTableCompanion.insert(
-        title: const drift.Value('System Design: CAP Theorem & Distributed Consensus'),
-        content: '# CAP Theorem & Consensus Cheatsheet\n\n'
-            '- **CP**: Consistency + Partition Tolerance (e.g. Zookeeper, Raft, etcd). Rejects writes during partitions rather than returning stale data.\n'
-            '- **AP**: Availability + Partition Tolerance (e.g. Cassandra, DynamoDB). Eventually consistent, always accepts writes.\n\n'
-            '### Raft Invariant Checklist\n'
-            '1. Election Safety: At most one leader can be elected in a given term.\n'
-            '2. Leader Append-Only: A leader never overwrites or truncates its log.\n'
-            '3. Log Matching: If two logs contain an entry with the same index and term, they are identical up to that index.',
-        linkedTopic: const drift.Value('System Design'),
-        linkedCompany: const drift.Value('Stripe'),
-        createdAt: drift.Value(now.subtract(const Duration(days: 8))),
-        updatedAt: drift.Value(now.subtract(const Duration(days: 1))),
-        lastInteractedAt: drift.Value(now),
-      ),
-    );
-    await notesDao.addTag(note1Id, 'system-design');
-    await notesDao.addTag(note1Id, 'cheatsheet');
-
-    final note2Id = await notesDao.insertNote(
-      NoteTableCompanion.insert(
-        title: const drift.Value('Behavioral STAR Stories Matrix (Leadership & Conflicts)'),
-        content: '# STAR Stories Matrix\n\n'
-            '### Story 1: Disagree and Commit\n'
-            '- **Situation**: Architect pushed for GraphQL across entire backend, but frontend team lacked query tooling.\n'
-            '- **Task**: Prevent 3-month roadmap delay while modernizing API layer.\n'
-            '- **Action**: Built lightweight REST+BFF proxy service as stepping stone with OpenAPI automated types.\n'
-            '- **Result**: Shipped on time; reduced payload latency by 35%.\n\n'
-            '### Story 2: Mentoring & Growing Engineers\n'
-            '- Paired with 2 junior developers on distributed tracing project; both promoted within 12 months.',
-        linkedTopic: const drift.Value('Behavioral'),
-        linkedCompany: const drift.Value('Datadog'),
-        createdAt: drift.Value(now.subtract(const Duration(days: 12))),
-        updatedAt: drift.Value(now.subtract(const Duration(days: 2))),
-        lastInteractedAt: drift.Value(now.subtract(const Duration(days: 1))),
-      ),
-    );
-    await notesDao.addTag(note2Id, 'behavioral');
-    await notesDao.addTag(note2Id, 'interview-qa');
-
-    final note3Id = await notesDao.insertNote(
-      NoteTableCompanion.insert(
-        title: const drift.Value('Database Sharding & Caching Patterns'),
-        content: '# Caching Patterns\n\n'
-            '1. **Cache-Aside (Lazy Loading)**: Application reads cache; on miss, queries DB and fills cache.\n'
-            '2. **Write-Through**: Application writes to cache; cache writes to DB synchronously.\n'
-            '3. **Write-Behind (Write-Back)**: Cache queues async writes to database. High throughput, risk on crash.',
-        linkedTopic: const drift.Value('Architecture'),
-        createdAt: drift.Value(now.subtract(const Duration(days: 15))),
-        updatedAt: drift.Value(now.subtract(const Duration(days: 5))),
-        lastInteractedAt: drift.Value(now.subtract(const Duration(days: 4))),
-      ),
-    );
-    await notesDao.addTag(note3Id, 'system-design');
-    await notesDao.addTag(note3Id, 'cheatsheet');
-
-    // ── 11. Resume Vault ─────────────────────────────────────────────────────
+    // ── 10. Resume Vault ─────────────────────────────────────────────────────
     final resumeDao = db.resumeDao;
     try {
       final appDocDir = await getApplicationDocumentsDirectory();

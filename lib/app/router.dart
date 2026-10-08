@@ -13,11 +13,10 @@ import '../features/analytics/series_report_card_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/study_plan/course_catalog_screen.dart';
 import '../features/study_plan/study_plan_screen.dart';
-import '../features/notes/kindle_book_reader_screen.dart';
+import '../features/book_reader/kindle_book_reader_screen.dart';
 import '../features/dsa/dsa_screen.dart';
 import '../features/interview_prep/interview_prep_screen.dart';
 import '../features/consistency/consistency_screen.dart';
-import '../features/notes/notes_screen.dart';
 import '../features/resume_vault/resume_vault_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/focus/focus_screen.dart';
@@ -61,7 +60,6 @@ class AscentRoutes {
   static const dsa = '/dsa';
   static const interviewPrep = '/interview-prep';
   static const consistency = '/consistency';
-  static const notes = '/notes';
   static const resumeVault = '/resume-vault';
   static const settings = '/settings';
   static const focus = '/focus';
@@ -116,13 +114,13 @@ final ascentRouter = GoRouter(
           ],
         ),
 
-        // Tab 1: Study & Tasks
+        // Tab 1: Reminders & Alerts
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: AscentRoutes.today,
+              path: AscentRoutes.reminders,
               pageBuilder: (context, state) => const NoTransitionPage(
-                child: TaskBoardScreen(),
+                child: RemindersScreen(),
               ),
             ),
           ],
@@ -273,13 +271,13 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.consistency,
-      builder: (context, state) => const ConsistencyScreen(),
+      path: AscentRoutes.today,
+      builder: (context, state) => const TaskBoardScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.notes,
-      builder: (context, state) => const NotesScreen(),
+      path: AscentRoutes.consistency,
+      builder: (context, state) => const ConsistencyScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -295,11 +293,6 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.focus,
       builder: (context, state) => const FocusScreen(),
-    ),
-    GoRoute(
-      parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.reminders,
-      builder: (context, state) => const RemindersScreen(),
     ),
   ],
 );

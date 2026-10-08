@@ -142,7 +142,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final apps = await db.applicationDao.watchAllApplications().first;
       final consistency = await db.consistencyDao.watchAllLogs().first;
       final dsa = await db.dsaDao.watchAllLogs().first;
-      final notes = await db.notesDao.watchAllNotes().first;
       final questions = await db.interviewPrepDao.watchAllQuestions().first;
       final resumes = await db.resumeDao.watchAllResumes().first;
 
@@ -163,7 +162,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'applications': apps.map((a) => {'company': a.company, 'role': a.role, 'currentStage': a.currentStage, 'salary': a.salary, 'jobUrl': a.jobUrl, 'notes': a.notes}).toList(),
         'consistency': consistency.map((c) => {'date': c.date.toIso8601String(), 'present': c.present, 'note': c.note, 'hours': c.hoursStudied}).toList(),
         'dsa': dsa.map((d) => {'problemName': d.problemName, 'topic': d.topic, 'difficulty': d.difficulty, 'dateSolved': d.dateSolved.toIso8601String(), 'revisitFlag': d.revisitFlag}).toList(),
-        'notes': notes.map((n) => {'title': n.title, 'content': n.content, 'topic': n.linkedTopic, 'company': n.linkedCompany}).toList(),
         'questions': questions.map((q) => {'question': q.questionAsked, 'category': q.category, 'company': q.company, 'outcome': q.outcome, 'notes': q.answerNotes}).toList(),
         'resumes': resumes.map((r) => {'versionLabel': r.versionLabel, 'tailoredForCompany': r.tailoredForCompany, 'notes': r.notes}).toList(),
       };
@@ -431,8 +429,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           await prefs.clear();
                           final db = ref.read(databaseProvider);
                           await db.customStatement('DELETE FROM insight_dismissals;');
-                          await db.customStatement('DELETE FROM note_tags;');
-                          await db.customStatement('DELETE FROM notes;');
                           await db.customStatement('DELETE FROM interview_prep;');
                           await db.customStatement('DELETE FROM resumes;');
                           await db.customStatement('DELETE FROM application_status_history;');

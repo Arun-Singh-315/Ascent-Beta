@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
@@ -53,12 +54,29 @@ class ActivityRowItem extends ConsumerWidget {
         color: context.stateDanger.withValues(alpha: 0.15),
         child: Icon(Icons.delete_outline_rounded, color: context.stateDanger, size: 22),
       ),
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
         constraints: const BoxConstraints(minHeight: 64),
+        margin: (isRunning || isPaused)
+            ? const EdgeInsets.symmetric(vertical: 4)
+            : EdgeInsets.zero,
         decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: g.line, width: 1.0)),
+          color: isRunning
+              ? g.claySoft.withValues(alpha: 0.35)
+              : (isPaused ? g.claySoft.withValues(alpha: 0.18) : Colors.transparent),
+          borderRadius: (isRunning || isPaused)
+              ? BorderRadius.circular(12)
+              : BorderRadius.zero,
+          border: isRunning
+              ? Border.all(color: g.clay.withValues(alpha: 0.35), width: 1.0)
+              : (isPaused
+                  ? Border.all(color: g.clay.withValues(alpha: 0.18), width: 1.0)
+                  : Border(bottom: BorderSide(color: g.line, width: 1.0))),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: (isRunning || isPaused) ? 12 : 0,
+          vertical: 10,
+        ),
         child: Row(
           children: [
             // ── 1. CIRCULAR CHECK TARGET (44dp hit area, 28dp visual circle) ────
@@ -94,7 +112,7 @@ class ActivityRowItem extends ConsumerWidget {
                         shape: BoxShape.circle,
                         color: isDone ? g.clay : Colors.transparent,
                         border: Border.all(
-                          color: isDone ? g.clay : g.inkMuted,
+                          color: isDone ? g.clay : (isRunning ? g.clay : g.inkMuted),
                           width: 1.75,
                         ),
                       ),
@@ -113,11 +131,15 @@ class ActivityRowItem extends ConsumerWidget {
 
             const SizedBox(width: 8),
 
-            // ── 2. TASK TITLE & SUBTITLE ──────────────────────────────────
+            // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
             Expanded(
               child: InkWell(
                 onTap: () async {
                   HapticFeedback.lightImpact();
+                  if (isRunning || isPaused) {
+                    context.push('/focus');
+                    return;
+                  }
                   if (activity.sourceType == 'lecture') {
                     LectureFocusPlayerSheet.show(context);
                     return;
@@ -149,15 +171,53 @@ class ActivityRowItem extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Row(
                       children: [
-                        Text(
-                          _subtitleText(activity),
-                          style: AscentTextStyles.homeSecondary.copyWith(
-                            color: g.inkMuted,
+                        if (isRunning) ...[
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: g.clay,
+                            ),
                           ),
-                        ),
+                          Text(
+                            _runningTimerText(activity),
+                            style: GoogleFonts.jetBrainsMono(
+                              color: g.clay,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ] else if (isPaused) ...[
+                          Container(
+                            width: 6,
+                            height: 6,
+                            margin: const EdgeInsets.only(right: 6),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.orange.shade400,
+                            ),
+                          ),
+                          Text(
+                            'Paused • ${_runningTimerText(activity)}',
+                            style: GoogleFonts.jetBrainsMono(
+                              color: Colors.orange.shade400,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ] else ...[
+                          Text(
+                            _subtitleText(activity),
+                            style: AscentTextStyles.homeSecondary.copyWith(
+                              color: g.inkMuted,
+                            ),
+                          ),
+                        ],
                         if (activity.isOverdue) ...[
                           const SizedBox(width: 6),
                           Text(
@@ -227,16 +287,13 @@ class ActivityRowItem extends ConsumerWidget {
                               sourceType: activity.sourceType,
                               autoStart: true,
                             );
-                        if (context.mounted) {
-                          context.push('/focus');
-                        }
                       }
                     },
                     borderRadius: BorderRadius.circular(22),
                     child: Container(
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: g.claySoft,
+                        color: isRunning ? g.clay : g.claySoft,
                       ),
                       child: Center(
                         child: Icon(
@@ -244,7 +301,7 @@ class ActivityRowItem extends ConsumerWidget {
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
                           size: 20,
-                          color: g.clay,
+                          color: isRunning ? Colors.white : g.clay,
                         ),
                       ),
                     ),
@@ -256,6 +313,17 @@ class ActivityRowItem extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _runningTimerText(TodayActivityItem act) {
+    final elapsed = act.elapsedSecondsToday;
+    final m = elapsed ~/ 60;
+    final s = elapsed % 60;
+    final timeStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    if (act.targetMinutes != null && act.targetMinutes! > 0) {
+      return '$timeStr / ${act.targetMinutes}m';
+    }
+    return '$timeStr tracked';
   }
 
   String _subtitleText(TodayActivityItem act) {

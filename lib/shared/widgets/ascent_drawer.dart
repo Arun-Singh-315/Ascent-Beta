@@ -115,9 +115,9 @@ class AscentDrawer extends ConsumerWidget {
               color: context.accentSecondary,
             ),
             _DrawerTile(
-              icon: Icons.edit_note_rounded,
-              label: 'Notes & Journal',
-              route: '/notes',
+              icon: Icons.bubble_chart_rounded,
+              label: 'Mind Space',
+              route: '/thought-wall',
               color: context.accentSecondary,
             ),
             const SizedBox(height: 16),

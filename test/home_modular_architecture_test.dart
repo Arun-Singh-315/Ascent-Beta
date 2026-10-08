@@ -66,7 +66,6 @@ void main() {
         activeMomentumChallengeStreamProvider.overrideWith((ref) => Stream.value(null)),
         todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
-        mostRecentNoteProvider.overrideWith((ref) => Stream.value(null)),
         nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
         userProfileStreamProvider.overrideWith((ref) => Stream.value(null)),
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),

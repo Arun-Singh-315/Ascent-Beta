@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
@@ -34,7 +32,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final activitiesAsync = ref.watch(todayActivitiesProvider);
-    final trackingState = ref.watch(timeTrackingProvider);
     final streak = ref.watch(currentStreakStreamProvider).value ?? 0;
 
     return activitiesAsync.when(
@@ -50,17 +47,26 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
         final totalCount = activities.length;
         final progressFraction = totalCount > 0 ? (doneCount / totalCount).clamp(0.0, 1.0) : 0.0;
 
+        // Sort so that any currently active running activity is prioritised at the top
+        final sortedPending = <TodayActivityItem>[...pendingActivities]..sort((a, b) {
+          if (a.status == TodayActivityStatus.inProgress && b.status != TodayActivityStatus.inProgress) return -1;
+          if (b.status == TodayActivityStatus.inProgress && a.status != TodayActivityStatus.inProgress) return 1;
+          return 0;
+        });
+        final sortedAll = <TodayActivityItem>[...activities]..sort((a, b) {
+          if (a.status == TodayActivityStatus.inProgress && b.status != TodayActivityStatus.inProgress) return -1;
+          if (b.status == TodayActivityStatus.inProgress && a.status != TodayActivityStatus.inProgress) return 1;
+          return 0;
+        });
+
         List<TodayActivityItem> filteredList;
         if (_selectedTabIndex == 0) {
-          filteredList = pendingActivities;
+          filteredList = sortedPending;
         } else if (_selectedTabIndex == 1) {
           filteredList = doneActivities;
         } else {
-          filteredList = activities;
+          filteredList = sortedAll;
         }
-
-        final activeSession = trackingState.activeSession;
-        final hasActiveSession = activeSession != null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,81 +171,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             ),
 
             const SizedBox(height: 14),
-
-            // ── ACTIVE FOCUS BANNER (IF ACTIVE SESSION) ────────────────────
-            if (hasActiveSession) ...[
-              InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/focus');
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: g.claySoft,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: g.clay.withValues(alpha: 0.3),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: trackingState.isRunning ? g.clay : Colors.orange,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          activeSession.label,
-                          style: AscentTextStyles.homeHeadline.copyWith(
-                            fontSize: 14,
-                            color: g.ink,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      Text(
-                        trackingState.formattedTime,
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: g.clay,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Icon(
-                          trackingState.isRunning
-                              ? Icons.pause_circle_outline_rounded
-                              : Icons.play_circle_outline_rounded,
-                          size: 24,
-                          color: g.clay,
-                        ),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          if (trackingState.isRunning) {
-                            ref.read(timeTrackingProvider.notifier).pauseSession();
-                          } else {
-                            ref.read(timeTrackingProvider.notifier).resumeSession();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
 
             // ── TABS: UP NEXT / COMPLETED / ALL ───────────────────────────
             Container(

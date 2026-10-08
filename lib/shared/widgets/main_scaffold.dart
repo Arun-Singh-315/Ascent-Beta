@@ -18,7 +18,7 @@ class MainScaffold extends StatefulWidget {
 
   static const _tabs = [
     _TabItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _TabItem(icon: Icons.checklist_outlined, activeIcon: Icons.checklist_rounded, label: 'Study'),
+    _TabItem(icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded, label: 'Reminders'),
     _TabItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet_rounded, label: 'Money'),
     _TabItem(icon: Icons.bolt_outlined, activeIcon: Icons.bolt_rounded, label: 'Momentum'),
     _TabItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view_rounded, label: 'More'),

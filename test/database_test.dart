@@ -174,11 +174,15 @@ void main() {
       final questions = await db.interviewPrepDao.watchAllQuestions().first;
       expect(questions.length, greaterThanOrEqualTo(4));
 
-      // Verify Notes and Tags
-      final notes = await db.notesDao.watchAllNotes().first;
-      expect(notes.length, greaterThanOrEqualTo(3));
-      final tags = await db.notesDao.getTagsForNote(notes.first.id);
-      expect(tags, isNotEmpty);
+      // Verify Mind Space / Thoughts
+      await db.thoughtDao.insertThought(
+        const ThoughtTableCompanion(
+          content: drift.Value('Great breakthroughs start with raw unfiltered notes.'),
+          mood: drift.Value('thought'),
+        ),
+      );
+      final thoughts = await db.thoughtDao.watchAllThoughts().first;
+      expect(thoughts, isNotEmpty);
     });
 
     test('TimeSessionDao tracks session lifecycle and duration', () async {

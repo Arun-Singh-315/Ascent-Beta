@@ -12,17 +12,15 @@ import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_header.dart';
-import 'widgets/home_reminder_banners.dart';
 import 'widgets/learning_hub_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
-import 'widgets/secondary_tools_section.dart';
 import 'widgets/thought_wall_home_preview.dart';
+import 'widgets/welcome_back_banner.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
-/// - 9 cards → 3 intentional surface levels.
-/// - 10 hues → 1 unified Clay accent with neutral ink hierarchy.
+/// - Clean intentional surface levels.
+/// - Clay accent with neutral ink hierarchy.
 /// - First screen leads with Today execution.
-/// - 24dp gutter, 32dp inter-section spacing.
 /// - Stationary ambient atmosphere painter behind smooth scrolling view.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -68,8 +66,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref.invalidate(currentStreakStreamProvider);
                   ref.invalidate(learningHubProvider);
                   ref.invalidate(nextUpcomingInterviewProvider);
-                  ref.invalidate(nextUpcomingReminderProvider);
-                  ref.invalidate(mostRecentNoteProvider);
                   ref.invalidate(recentThoughtsStreamProvider);
                   ref.invalidate(todayActivitiesProvider);
                   ref.invalidate(activeMomentumChallengeStreamProvider);
@@ -82,9 +78,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   children: [
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
-
-                    // Top indicator for pending reminders
-                    const TopReminderAlertBanner(),
 
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? 'Friend'),
@@ -112,13 +105,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     const SizedBox(height: 32),
 
-                    // ── LEVEL 3: MIND SPACE & SELF-TALK ──────────────────
+                    // ── LEVEL 3: MIND SPACE & SELF-TALK (NOTES) ──────────
                     const ThoughtWallHomePreview(),
-
-                    const SizedBox(height: 32),
-
-                    // ── LEVEL 3: NOTES & REMINDERS ───────────────────────
-                    const SecondaryToolsSection(),
 
                     const SizedBox(height: 24),
                   ],

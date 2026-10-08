@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:ascent/core/learning_hub/learning_hub_models.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/notes/kindle_book_reader_screen.dart';
+import 'package:ascent/features/book_reader/kindle_book_reader_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -104,24 +104,3 @@ abstract interface class IDsaRepository {
   /// Number of problems solved in the current week.
   Future<int> getSolvedCountThisWeek();
 }
-
-// ---------------------------------------------------------------------------
-// INotesRepository
-// ---------------------------------------------------------------------------
-
-abstract interface class INotesRepository {
-  /// Stream of all notes, most recently updated first.
-  Stream<List<Note>> watchAllNotes();
-
-  /// Stream of notes whose title or content contains [query].
-  Stream<List<Note>> searchNotes(String query);
-
-  /// Inserts a new note and returns its id.
-  Future<int> insertNote(NoteTableCompanion companion);
-
-  /// Deletes the note and its tag rows.
-  Future<void> deleteNote(int id);
-
-  /// Stream of notes that have not been interacted with in [daysThreshold] days.
-  Stream<List<Note>> watchStaleNotes(int daysThreshold);
-}

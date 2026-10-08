@@ -9,7 +9,6 @@ import 'tables/dsa_log_table.dart';
 import 'tables/enums.dart';
 import 'tables/insight_dismissal_table.dart';
 import 'tables/interview_prep_table.dart';
-import 'tables/notes_table.dart';
 import 'tables/reminder_table.dart';
 import 'tables/resume_table.dart';
 import 'tables/series_table.dart';
@@ -35,7 +34,6 @@ part 'daos/task_dao.dart';
 part 'daos/application_dao.dart';
 part 'daos/consistency_dao.dart';
 part 'daos/dsa_dao.dart';
-part 'daos/notes_dao.dart';
 part 'daos/series_dao.dart';
 part 'daos/study_phase_dao.dart';
 part 'daos/resume_dao.dart';
@@ -65,8 +63,6 @@ part 'daos/medicine_dao.dart';
     ConsistencyLogTable,
     ResumeTable,
     InterviewPrepTable,
-    NoteTable,
-    NoteTagTable,
     InsightDismissalTable,
     SessionCategoryTable,
     TimeSessionTable,
@@ -93,7 +89,6 @@ part 'daos/medicine_dao.dart';
     ApplicationDao,
     ConsistencyDao,
     DsaDao,
-    NotesDao,
     SeriesDao,
     StudyPhaseDao,
     ResumeDao,
