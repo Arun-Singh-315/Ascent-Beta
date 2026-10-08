@@ -231,3 +231,22 @@ final streakCelebrationEventProvider =
     NotifierProvider<StreakCelebrationEventNotifier, StudyStreakStatus?>(() {
   return StreakCelebrationEventNotifier();
 });
+
+/// Controls visibility/expansion of the StudyStreakMeterCard on HomeScreen
+class StudyStreakCardVisibilityNotifier extends Notifier<bool> {
+  @override
+  bool build() => true; // Default expanded when entering Home
+
+  void toggle() {
+    state = !state;
+  }
+
+  void setVisible(bool visible) {
+    state = visible;
+  }
+}
+
+final studyStreakCardVisibleProvider =
+    NotifierProvider<StudyStreakCardVisibilityNotifier, bool>(() {
+  return StudyStreakCardVisibilityNotifier();
+});

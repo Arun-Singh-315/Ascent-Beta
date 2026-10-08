@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/database/app_database.dart';
@@ -8,25 +9,135 @@ import '../../../core/database/app_database.dart';
 class HomeDismissibleRemindersSection extends StatelessWidget {
   final List<Reminder> reminders;
   final Future<void> Function(Reminder reminder) onDismissReminder;
+  final Future<void> Function(Reminder reminder)? onCompleteReminder;
+  final VoidCallback? onAddReminder;
 
   const HomeDismissibleRemindersSection({
     super.key,
     required this.reminders,
     required this.onDismissReminder,
+    this.onCompleteReminder,
+    this.onAddReminder,
   });
 
   String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final reminderDate = DateTime(dt.year, dt.month, dt.day);
     final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
     final minute = dt.minute.toString().padLeft(2, '0');
     final period = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$hour:$minute $period';
+    final timeStr = '$hour:$minute $period';
+
+    final diffDays = reminderDate.difference(today).inDays;
+    if (diffDays == 0) {
+      if (dt.isBefore(now)) {
+        return 'Overdue today • $timeStr';
+      }
+      return 'Today • $timeStr';
+    } else if (diffDays == 1) {
+      return 'Tomorrow • $timeStr';
+    } else if (diffDays < 0) {
+      return 'Past due • $timeStr';
+    } else {
+      return '${DateFormat('EEE, d MMM').format(dt)} • $timeStr';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (reminders.isEmpty) return const SizedBox.shrink();
-
     final g = context.glass;
+
+    if (reminders.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'REMINDERS',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: g.inkMuted,
+                ),
+              ),
+              if (onAddReminder != null)
+                InkWell(
+                  onTap: onAddReminder,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, size: 14, color: g.clay),
+                        const SizedBox(width: 2),
+                        Text(
+                          'Add',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: g.clay,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: g.fill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: g.edge),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.notifications_none_rounded, size: 18, color: g.clay),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'No active reminders scheduled',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: g.inkMuted,
+                    ),
+                  ),
+                ),
+                if (onAddReminder != null)
+                  InkWell(
+                    onTap: onAddReminder,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: g.clay.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: g.clay.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        'Set',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: g.clay,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -34,27 +145,65 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              'TODAY\'S REMINDERS',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
-                color: g.inkMuted,
-              ),
+            Row(
+              children: [
+                Text(
+                  'REMINDERS',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    color: g.inkMuted,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: g.clay.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${reminders.length}',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: g.clay,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            Text(
-              'Swipe to dismiss',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: g.inkMuted.withValues(alpha: 0.7),
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Swipe to dismiss',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: g.inkMuted.withValues(alpha: 0.7),
+                  ),
+                ),
+                if (onAddReminder != null) ...[
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: onAddReminder,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      child: Icon(Icons.add_rounded, size: 16, color: g.clay),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
         const SizedBox(height: 8),
         ...reminders.map((reminder) {
+          final isOverdue = reminder.scheduledAt.isBefore(DateTime.now());
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Dismissible(
@@ -91,7 +240,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Text(
-                      'Done',
+                      'Mark Done',
                       style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w600),
                     ),
                     SizedBox(width: 8),
@@ -99,26 +248,36 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                   ],
                 ),
               ),
-              onDismissed: (_) {
+              onDismissed: (direction) {
                 HapticFeedback.lightImpact();
-                onDismissReminder(reminder);
+                if (direction == DismissDirection.endToStart && onCompleteReminder != null) {
+                  onCompleteReminder!(reminder);
+                } else {
+                  onDismissReminder(reminder);
+                }
               },
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: g.fill,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: g.edge),
+                  border: Border.all(
+                    color: isOverdue ? Colors.redAccent.withValues(alpha: 0.35) : g.edge,
+                  ),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: g.clay.withValues(alpha: 0.12),
+                        color: (isOverdue ? Colors.redAccent : g.clay).withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.notifications_active_rounded, size: 18, color: g.clay),
+                      child: Icon(
+                        isOverdue ? Icons.notification_important_rounded : Icons.notifications_active_rounded,
+                        size: 18,
+                        color: isOverdue ? Colors.redAccent : g.clay,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -140,8 +299,8 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                             _formatTime(reminder.scheduledAt),
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: g.inkMuted,
+                              fontWeight: isOverdue ? FontWeight.w600 : FontWeight.w500,
+                              color: isOverdue ? Colors.redAccent : g.inkMuted,
                             ),
                           ),
                         ],

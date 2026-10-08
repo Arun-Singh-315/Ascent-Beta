@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/glass_theme.dart';
 import '../../core/auth/auth_provider.dart';
+import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -72,6 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final profileAsync = ref.watch(userProfileStreamProvider);
     final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
     final studyStreak = ref.watch(studyStreakProvider);
+    final isStreakCardVisible = ref.watch(studyStreakCardVisibleProvider);
     final visibleReminders = ref.watch(homeVisibleRemindersProvider);
 
     // Listen for celebratory streak unlocked event
@@ -150,26 +154,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       WelcomeBackBanner(days: daysSinceLastOpen),
                     ],
 
-                    const SizedBox(height: 16),
-
-                    // ── STREAK DOPAMINE METER (REAL-TIME PROGRESS & URGENCY) ──
-                    StudyStreakMeterCard(
-                      status: studyStreak,
-                      onTap: () {
-                        StreakCelebrationDialog.show(context, studyStreak);
-                      },
+                    // ── STREAK DOPAMINE METER (TOGGLEABLE VIA HEADER FLAME) ──
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      child: isStreakCardVisible
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(height: 16),
+                                StudyStreakMeterCard(
+                                  status: studyStreak,
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    ref.read(studyStreakCardVisibleProvider.notifier).toggle();
+                                  },
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
                     ),
 
-                    // ── HOME DISMISSIBLE REMINDERS (SWIPE TO REMOVE) ──────────
-                    if (visibleReminders.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      HomeDismissibleRemindersSection(
-                        reminders: visibleReminders,
-                        onDismissReminder: (reminder) async {
-                          await ref.read(dismissedTodayReminderIdsProvider.notifier).dismissReminderId(reminder.id);
-                        },
-                      ),
-                    ],
+                    const SizedBox(height: 16),
+
+                    // ── HOME DISMISSIBLE REMINDERS (SWIPE TO REMOVE / ACTION) ──
+                    HomeDismissibleRemindersSection(
+                      reminders: visibleReminders,
+                      onAddReminder: () => context.push('/reminders'),
+                      onDismissReminder: (reminder) async {
+                        await ref.read(dismissedTodayReminderIdsProvider.notifier).dismissReminderId(reminder.id);
+                      },
+                      onCompleteReminder: (reminder) async {
+                        try {
+                          final dao = ref.read(reminderDaoProvider);
+                          await dao.updateReminder(reminder.toCompanion(true).copyWith(isActive: const drift.Value(false)));
+                          await NotificationService.instance.cancel(reminder.id);
+                          ref.invalidate(allRemindersProvider);
+                        } catch (_) {}
+                      },
+                    ),
 
                     const SizedBox(height: 16),
 

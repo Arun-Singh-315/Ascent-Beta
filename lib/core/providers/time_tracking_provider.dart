@@ -445,16 +445,16 @@ final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
   final remindersAsync = ref.watch(allRemindersProvider);
   final dismissedIds = ref.watch(dismissedTodayReminderIdsProvider);
   final reminders = remindersAsync.value ?? [];
-  final now = DateTime.now();
-  final startOfDay = DateTime(now.year, now.month, now.day);
-  final endOfDay = startOfDay.add(const Duration(days: 1));
 
-  return reminders.where((r) {
+  final visible = reminders.where((r) {
     if (!r.isActive) return false;
     if (dismissedIds.contains(r.id)) return false;
-    final scheduled = r.scheduledAt;
-    return scheduled.isAfter(startOfDay) && scheduled.isBefore(endOfDay);
+    return true;
   }).toList();
+
+  // Order soonest first
+  visible.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+  return visible;
 });
 
 // ---------------------------------------------------------------------------

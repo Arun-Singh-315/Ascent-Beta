@@ -17,6 +17,7 @@ import 'package:ascent/core/streak/study_streak_models.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
+import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 
 class FakeAuthNotifier extends AuthNotifier {
@@ -319,6 +320,82 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(dismissed, isTrue);
+    });
+
+    testWidgets('HomeDismissibleRemindersSection renders interactive empty state when reminders list is empty', (tester) async {
+      bool addPressed = false;
+
+      await tester.pumpWidget(MaterialApp(
+        theme: AscentTheme.dark(),
+        home: Scaffold(
+          body: HomeDismissibleRemindersSection(
+            reminders: const [],
+            onDismissReminder: (_) async {},
+            onAddReminder: () {
+              addPressed = true;
+            },
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('REMINDERS'), findsOneWidget);
+      expect(find.text('No active reminders scheduled'), findsOneWidget);
+      expect(find.text('Set'), findsOneWidget);
+
+      await tester.tap(find.text('Set'));
+      await tester.pumpAndSettle();
+      expect(addPressed, isTrue);
+    });
+  });
+
+  group('Study Streak Card Visibility Toggle Tests', () {
+    test('StudyStreakCardVisibilityNotifier defaults to true and toggles cleanly', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(container.read(studyStreakCardVisibleProvider), isTrue);
+
+      container.read(studyStreakCardVisibleProvider.notifier).toggle();
+      expect(container.read(studyStreakCardVisibleProvider), isFalse);
+
+      container.read(studyStreakCardVisibleProvider.notifier).toggle();
+      expect(container.read(studyStreakCardVisibleProvider), isTrue);
+    });
+
+    testWidgets('HomeHeader streak flame pill tap toggles studyStreakCardVisibleProvider', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: HomeHeader(profile: null),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(container.read(studyStreakCardVisibleProvider), isTrue);
+
+      // Tap on the streak pill in the header
+      await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
+      await tester.pumpAndSettle();
+
+      // Card visibility should now be toggled to false (hidden)
+      expect(container.read(studyStreakCardVisibleProvider), isFalse);
+
+      // Tap again to restore
+      await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
+      await tester.pumpAndSettle();
+      expect(container.read(studyStreakCardVisibleProvider), isTrue);
     });
   });
 }

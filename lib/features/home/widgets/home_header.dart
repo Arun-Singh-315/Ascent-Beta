@@ -39,6 +39,7 @@ class HomeHeader extends ConsumerWidget {
     final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Software Engineer';
     final dateStr = DateFormat('EEE, d MMM').format(DateTime.now()).toUpperCase();
     final studyStreak = ref.watch(studyStreakProvider);
+    final isStreakCardVisible = ref.watch(studyStreakCardVisibleProvider);
     final legacyStreak = ref.watch(currentStreakStreamProvider).value ?? 0;
     final streak = studyStreak.displayStreakDays > 0 ? studyStreak.displayStreakDays : legacyStreak;
     final assistantName = ref.watch(assistantNameProvider);
@@ -67,21 +68,28 @@ class HomeHeader extends ConsumerWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Streak Pill
+                  // Streak Pill (Toggles Home Streak Card visibility)
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
                         HapticFeedback.lightImpact();
+                        ref.read(studyStreakCardVisibleProvider.notifier).toggle();
+                      },
+                      onLongPress: () {
+                        HapticFeedback.mediumImpact();
                         _showStreakDetailsSheet(context, streak, isDark);
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: g.claySoft,
+                          color: isStreakCardVisible ? g.claySoft : g.fill,
                           borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: g.edge, width: 1.0),
+                          border: Border.all(
+                            color: isStreakCardVisible ? g.clay : g.edge,
+                            width: 1.0,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
