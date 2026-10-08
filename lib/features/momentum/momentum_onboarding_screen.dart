@@ -141,7 +141,7 @@ class _MomentumOnboardingScreenState extends ConsumerState<MomentumOnboardingScr
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('🎉 30-Day Momentum Challenge initialized!'),
+            content: Text('🎉 Momentum protocol initialized!'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -163,8 +163,8 @@ class _MomentumOnboardingScreenState extends ConsumerState<MomentumOnboardingScr
     final g = context.glass;
 
     return AscentScaffold(
-      title: 'Ascent Momentum',
-      subtitle: 'Personalized 30-Day Fitness Challenge',
+      title: 'Momentum',
+      subtitle: 'Personalized protocol assessment',
       glow2: g.claySoft,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
@@ -227,7 +227,7 @@ class _MomentumOnboardingScreenState extends ConsumerState<MomentumOnboardingScr
                 Expanded(
                   flex: 2,
                   child: AscentButton.primary(
-                    label: _currentStep == 3 ? (_isGenerating ? 'Building Plan...' : 'Generate 30-Day Plan ⚡') : 'Next Step',
+                    label: _currentStep == 3 ? (_isGenerating ? 'Building Plan...' : 'Generate Plan ⚡') : 'Next Step',
                     loading: _isGenerating,
                     onPressed: _nextStep,
                   ),
@@ -597,7 +597,7 @@ class _MomentumOnboardingScreenState extends ConsumerState<MomentumOnboardingScr
                 children: [
                   Icon(Icons.auto_awesome_rounded, color: g.clay, size: 20),
                   const SizedBox(width: 8),
-                  Text('30-Day Momentum Blueprint Ready', style: TextStyle(color: g.ink, fontWeight: FontWeight.bold)),
+                  Text('Momentum Blueprint Ready', style: TextStyle(color: g.ink, fontWeight: FontWeight.bold)),
                 ],
               ),
               const SizedBox(height: 8),

@@ -8,7 +8,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/momentum/momentum_service.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
-import '../../momentum/momentum_onboarding_screen.dart';
 
 /// Lightweight, ultra-fast (<100ms) Momentum Card on the Home Screen.
 /// Follows GEMINI.md Rule 2: Zero continuous GPS listeners, zero heavy animation loops.
@@ -60,7 +59,7 @@ class MomentumHomeCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '30-Day Momentum Challenge',
+                  'Momentum',
                   style: TextStyle(
                     color: g.ink,
                     fontSize: 14,
@@ -69,7 +68,7 @@ class MomentumHomeCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '6:00 AM wake entrainment & gym/walk routine.',
+                  '6:00 AM wake entrainment, walks & workout routine.',
                   style: TextStyle(
                     color: g.inkMuted,
                     fontSize: 11,
@@ -82,10 +81,7 @@ class MomentumHomeCard extends ConsumerWidget {
           InkWell(
             onTap: () {
               HapticFeedback.lightImpact();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MomentumOnboardingScreen()),
-              );
+              context.push('/momentum-onboarding');
             },
             borderRadius: BorderRadius.circular(10),
             child: Container(
@@ -179,7 +175,7 @@ class MomentumHomeCard extends ConsumerWidget {
                         Icon(Icons.bolt_rounded, size: 16, color: g.clay),
                         const SizedBox(width: 6),
                         Text(
-                          'MOMENTUM • DAY $currentDayNumber OF 30',
+                          'MOMENTUM • DAY $currentDayNumber',
                           style: TextStyle(
                             color: g.ink,
                             fontSize: 11,

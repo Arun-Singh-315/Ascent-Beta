@@ -109,7 +109,7 @@ class BoostNotificationCopy {
   /// Instant test boost preview.
   static NotificationMessage forTestBoost() {
     return const NotificationMessage(
-      title: 'Yo bro! Ascent Momentum Engine is ACTIVE 🔥',
+      title: 'Yo bro! Momentum Engine is ACTIVE 🔥',
       body:
           'We\'ve got your back. Missing you? We\'ll nudge you. Just 5 minutes is all it takes to conquer any day. Let\'s do it bro!',
       summary: '⚡ Raw Boost Active',

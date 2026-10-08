@@ -150,7 +150,7 @@ class MoreScreen extends ConsumerWidget {
                 _MoreListTile(
                   icon: Icons.local_fire_department_rounded,
                   iconTint: g.coral,
-                  title: '30-Day Momentum Challenge',
+                  title: 'Momentum',
                   subtitle: 'Personalized protocol, milestone timeline & streak engine',
                   route: '/momentum',
                 ),

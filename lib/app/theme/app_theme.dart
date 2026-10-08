@@ -277,16 +277,21 @@ class AscentTheme {
 
       // ── Snack bar ────────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: textPrimary,
-        contentTextStyle: AscentTextStyles.bodyMedium
-            .copyWith(color: Colors.white),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+        backgroundColor: isDark ? const Color(0xFF1E222D) : const Color(0xFF1B1E2B),
+        contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
+          color: const Color(0xFFF1F5F9),
+          fontWeight: FontWeight.w500,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(14)),
+          side: BorderSide(
+            color: isDark ? const Color(0x33FFFFFF) : const Color(0x1F000000),
+            width: 0.9,
+          ),
         ),
         behavior: SnackBarBehavior.floating,
-        width: 340,
         actionTextColor: accentPrimary,
-        elevation: 4,
+        elevation: 6,
       ),
 
       // ── Bottom sheet ─────────────────────────────────────────────────────────
