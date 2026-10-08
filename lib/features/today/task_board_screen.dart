@@ -18,6 +18,7 @@ import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/settings_provider.dart';
+import 'add_activity_sheet.dart';
 
 class TaskBoardScreen extends ConsumerStatefulWidget {
   const TaskBoardScreen({super.key});
@@ -34,17 +35,10 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
     int? parentTaskId,
     int? prefilledApplicationId,
   }) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => AddTaskSheet(
-        parentTaskId: parentTaskId,
-        prefilledApplicationId: prefilledApplicationId,
-      ),
+    AddActivitySheet.show(
+      context,
+      parentTaskId: parentTaskId,
+      prefilledApplicationId: prefilledApplicationId,
     );
   }
 
@@ -409,7 +403,7 @@ class _TaskItemTile extends ConsumerWidget {
 
           if (confirmed != true) return false;
 
-          await taskDao.deleteTask(task.id);
+          await deleteTaskAndCleanCascade(ref, task.id, taskTitle: task.title);
           if (context.mounted) {
             showUndoSnackbar(
               context,
@@ -425,6 +419,7 @@ class _TaskItemTile extends ConsumerWidget {
                     linkedPhaseId: drift.Value(task.linkedPhaseId),
                     parentTaskId: drift.Value(task.parentTaskId),
                     linkedApplicationId: drift.Value(task.linkedApplicationId),
+                    estimatedMinutes: drift.Value(task.estimatedMinutes),
                   ),
                 );
               },
@@ -437,15 +432,7 @@ class _TaskItemTile extends ConsumerWidget {
         padding: const EdgeInsets.only(bottom: 8),
         child: AscentCard(
           onTap: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: context.bgSurface,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-              ),
-              builder: (ctx) => AddTaskSheet(existingTask: task),
-            );
+            AddActivitySheet.show(context, existingTask: task);
           },
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Column(
@@ -577,6 +564,32 @@ class _TaskItemTile extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () async {
+                        await ref.read(timeTrackingProvider.notifier).switchToTask(
+                              title: task.title,
+                              taskId: task.id,
+                              sourceType: 'task',
+                              autoStart: true,
+                            );
+                        if (context.mounted) {
+                          context.push('/focus');
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(18),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: context.accentPrimary.withValues(alpha: 0.12),
+                        ),
+                        child: Icon(Icons.play_arrow_rounded, color: context.accentPrimary, size: 20),
+                      ),
+                    ),
+                  ],
                 ],
               ),
               // §7: Sub-entries rendered as an indented checklist
@@ -666,370 +679,8 @@ class _TaskItemTile extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Add Task Bottom Sheet (§7 Simplified with 3 fields + optional Advanced)
+// Jarvis Task Coach Card
 // ---------------------------------------------------------------------------
-
-class AddTaskSheet extends ConsumerStatefulWidget {
-  final Task? existingTask;
-  final int? parentTaskId;
-  final int? prefilledApplicationId;
-  final String? initialTitle;
-
-  const AddTaskSheet({
-    super.key,
-    this.existingTask,
-    this.parentTaskId,
-    this.prefilledApplicationId,
-    this.initialTitle,
-  });
-
-  @override
-  ConsumerState<AddTaskSheet> createState() => _AddTaskSheetState();
-}
-
-class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
-  final _titleController = TextEditingController();
-  final _notesController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
-  String _priority = 'medium';
-  int? _selectedApplicationId;
-  int? _selectedSeriesId;
-  int? _selectedPhaseId;
-  bool _startSessionNow = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedApplicationId = widget.prefilledApplicationId;
-    if (widget.initialTitle != null) {
-      _titleController.text = widget.initialTitle!;
-    }
-
-    if (widget.existingTask != null) {
-      final t = widget.existingTask!;
-      _titleController.text = t.title;
-      _notesController.text = t.notes ?? '';
-      _selectedDate = t.plannedDate ?? DateTime.now();
-      _priority = t.priority;
-      _selectedSeriesId = t.seriesId;
-      _selectedPhaseId = t.linkedPhaseId;
-      _selectedApplicationId = t.linkedApplicationId;
-    }
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  DateTime _getWeekend() {
-    final now = DateTime.now();
-    final daysUntilSaturday = (DateTime.saturday - now.weekday) % 7;
-    return now.add(Duration(days: daysUntilSaturday == 0 ? 7 : daysUntilSaturday));
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final appsAsync = ref.watch(applicationDaoProvider).watchAllApplications();
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final weekend = _getWeekend();
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  widget.existingTask != null
-                      ? 'Edit Task'
-                      : (widget.parentTaskId != null ? 'New Sub-Task' : 'New Task'),
-                  style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // 1. Title (Required, autofocus)
-            TextField(
-              controller: _titleController,
-              autofocus: true,
-              textCapitalization: TextCapitalization.sentences,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-              decoration: InputDecoration(
-                hintText: widget.parentTaskId != null
-                    ? 'Sub-task description (e.g. Solve 2 LeetCode mediums)'
-                    : 'What needs to be done? (e.g. Review System Design)',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                filled: true,
-                fillColor: context.bgBase,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // 2. Planned Date (Defaults to today, quick chips)
-            Text(
-              'Planned Date: ${DateFormat('EEE, MMM d').format(_selectedDate)}',
-              style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('Today'),
-                  selected: _isSameDay(_selectedDate, today),
-                  selectedColor: context.accentPrimary.withValues(alpha: 0.2),
-                  onSelected: (_) => setState(() => _selectedDate = today),
-                ),
-                ChoiceChip(
-                  label: const Text('Tomorrow'),
-                  selected: _isSameDay(_selectedDate, tomorrow),
-                  selectedColor: context.accentPrimary.withValues(alpha: 0.2),
-                  onSelected: (_) => setState(() => _selectedDate = tomorrow),
-                ),
-                ChoiceChip(
-                  label: const Text('This Weekend'),
-                  selected: _isSameDay(_selectedDate, weekend),
-                  selectedColor: context.accentPrimary.withValues(alpha: 0.2),
-                  onSelected: (_) => setState(() => _selectedDate = weekend),
-                ),
-                ActionChip(
-                  avatar: const Icon(Icons.calendar_month_rounded, size: 16),
-                  label: const Text('Pick date'),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 7)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      setState(() => _selectedDate = picked);
-                    }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-
-            // 3. Optional: Link to Application
-            StreamBuilder<List<ApplicationRow>>(
-              stream: appsAsync,
-              builder: (context, snapshot) {
-                final apps = snapshot.data ?? [];
-                if (apps.isEmpty) return const SizedBox.shrink();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Link to Application (Optional)',
-                      style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
-                    ),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<int?>(
-                      initialValue: _selectedApplicationId,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: context.bgBase,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      hint: Text('None (General task)', style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted)),
-                      items: [
-                        const DropdownMenuItem<int?>(
-                          value: null,
-                          child: Text('None (General task)'),
-                        ),
-                        ...apps.map((a) => DropdownMenuItem<int?>(
-                              value: a.id,
-                              child: Text('${a.company} — ${a.role}', overflow: TextOverflow.ellipsis),
-                            )),
-                      ],
-                      onChanged: (val) => setState(() => _selectedApplicationId = val),
-                    ),
-                    const SizedBox(height: 14),
-                  ],
-                );
-              },
-            ),
-
-            // Toggle: Start session for this task now
-            if (widget.existingTask == null) ...[
-              Container(
-                decoration: BoxDecoration(
-                  color: context.accentPrimary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.accentPrimary.withValues(alpha: 0.2)),
-                ),
-                child: SwitchListTile(
-                  title: Text(
-                    'Start session for this task now',
-                    style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                  ),
-                  subtitle: Text(
-                    'Immediately begins live focus tracking',
-                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                  ),
-                  value: _startSessionNow,
-                  activeThumbColor: context.accentPrimary,
-                  onChanged: (val) => setState(() => _startSessionNow = val),
-                ),
-              ),
-              const SizedBox(height: 14),
-            ],
-
-            // Collapsible Advanced Options
-            Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                title: Text(
-                  'Advanced options',
-                  style: AscentTextStyles.labelMedium.copyWith(color: context.textMuted),
-                ),
-                children: [
-                  TextField(
-                    controller: _notesController,
-                    textCapitalization: TextCapitalization.sentences,
-                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'Notes or reference link (optional)',
-                      hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      filled: true,
-                      fillColor: context.bgBase,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Text('Priority:', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
-                      const SizedBox(width: 12),
-                      ...['low', 'medium', 'high'].map((p) {
-                        final isSelected = _priority == p;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            label: Text(p.toUpperCase()),
-                            selected: isSelected,
-                            selectedColor: p == 'high'
-                                ? context.stateDanger.withValues(alpha: 0.2)
-                                : context.accentPrimary.withValues(alpha: 0.2),
-                            side: BorderSide(
-                              color: isSelected ? context.accentPrimary : context.divider,
-                            ),
-                            labelStyle: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: isSelected ? context.textPrimary : context.textMuted,
-                            ),
-                            onSelected: (_) => setState(() => _priority = p),
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            Row(
-              children: [
-                Expanded(
-                  child: AscentButton.outlined(
-                    label: 'Cancel',
-                    compact: true,
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AscentButton.primary(
-                    label: widget.existingTask != null ? 'Save Changes' : 'Add Task',
-                    compact: true,
-                    onPressed: () async {
-                      final title = _titleController.text.trim();
-                      if (title.isEmpty) return;
-
-                      final taskDao = ref.read(taskDaoProvider);
-                      if (widget.existingTask != null) {
-                        await taskDao.updateTask(
-                          TaskTableCompanion(
-                            id: drift.Value(widget.existingTask!.id),
-                            title: drift.Value(title),
-                            notes: drift.Value(
-                                _notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
-                            plannedDate: drift.Value(_selectedDate),
-                            priority: drift.Value(_priority),
-                            seriesId: drift.Value(_selectedSeriesId),
-                            linkedPhaseId: drift.Value(_selectedPhaseId),
-                            linkedApplicationId: drift.Value(_selectedApplicationId),
-                            lastInteractedAt: drift.Value(DateTime.now()),
-                          ),
-                        );
-                      } else {
-                        final newTaskId = await taskDao.insertTask(
-                          TaskTableCompanion.insert(
-                            title: title,
-                            notes: drift.Value(
-                                _notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
-                            plannedDate: drift.Value(_selectedDate),
-                            priority: drift.Value(_priority),
-                            seriesId: drift.Value(_selectedSeriesId),
-                            linkedPhaseId: drift.Value(_selectedPhaseId),
-                            parentTaskId: drift.Value(widget.parentTaskId),
-                            linkedApplicationId: drift.Value(_selectedApplicationId),
-                            lastInteractedAt: drift.Value(DateTime.now()),
-                          ),
-                        );
-
-                        if (_startSessionNow && context.mounted) {
-                          await ref.read(timeTrackingProvider.notifier).startSession(
-                            label: title,
-                            categoryId: 1,
-                            activityType: 'study',
-                            linkedTaskId: newTaskId,
-                          );
-                        }
-                      }
-
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _JarvisTaskCoachCard extends ConsumerWidget {
   final int overdueCount;

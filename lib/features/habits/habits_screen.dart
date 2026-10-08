@@ -139,6 +139,114 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
     );
   }
 
+  void _showEditHabitDialog(Habit habit) {
+    final titleController = TextEditingController(text: habit.title);
+    String category = habit.category;
+    final categories = ['Health', 'Study', 'Fitness', 'Productivity', 'Mindfulness'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Edit Habit',
+                    style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary, fontSize: 18),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Habit Title',
+                  filled: true,
+                  fillColor: context.bgBase,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text('Category', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: categories.map((c) {
+                  final isSelected = c == category;
+                  return ChoiceChip(
+                    label: Text(c),
+                    selected: isSelected,
+                    selectedColor: context.accentPrimary,
+                    backgroundColor: context.bgBase,
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : context.textPrimary,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                    onSelected: (sel) {
+                      if (sel) setSheetState(() => category = c);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: AscentButton.outlined(
+                      label: 'Cancel',
+                      compact: true,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AscentButton.primary(
+                      label: 'Save Changes',
+                      compact: true,
+                      onPressed: () async {
+                        final title = titleController.text.trim();
+                        if (title.isNotEmpty) {
+                          await ref.read(habitDaoProvider).patchHabit(
+                            habit.id,
+                            title: title,
+                            category: category,
+                          );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final habitsAsync = ref.watch(allHabitsStreamProvider);
@@ -218,45 +326,58 @@ class _HabitsScreenState extends ConsumerState<HabitsScreen> {
                     ),
                     const SizedBox(width: 14),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            habit.title,
-                            style: AscentTextStyles.labelLarge.copyWith(
-                              color: isDoneToday ? context.textMuted : context.textPrimary,
-                              decoration: isDoneToday ? TextDecoration.lineThrough : null,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
+                      child: InkWell(
+                        onTap: () => _showEditHabitDialog(habit),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                habit.category,
-                                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                              ),
-                              if (streak > 0) ...[
-                                const SizedBox(width: 6),
-                                Text('•', style: TextStyle(color: context.divider)),
-                                const SizedBox(width: 6),
-                                const Icon(Icons.local_fire_department_rounded, size: 13, color: Colors.orange),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '$streak-day streak',
-                                  style: AscentTextStyles.bodySmall.copyWith(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                habit.title,
+                                style: AscentTextStyles.labelLarge.copyWith(
+                                  color: isDoneToday ? context.textMuted : context.textPrimary,
+                                  decoration: isDoneToday ? TextDecoration.lineThrough : null,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                              ],
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                children: [
+                                  Text(
+                                    habit.category,
+                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                                  ),
+                                  if (streak > 0) ...[
+                                    const SizedBox(width: 6),
+                                    Text('•', style: TextStyle(color: context.divider)),
+                                    const SizedBox(width: 6),
+                                    const Icon(Icons.local_fire_department_rounded, size: 13, color: Colors.orange),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      '$streak-day streak',
+                                      style: AscentTextStyles.bodySmall.copyWith(
+                                        color: Colors.orange,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
                     IconButton(
+                      icon: Icon(Icons.edit_outlined, size: 18, color: context.textMuted),
+                      tooltip: 'Edit Habit',
+                      onPressed: () => _showEditHabitDialog(habit),
+                    ),
+                    IconButton(
                       icon: Icon(Icons.delete_outline_rounded, size: 18, color: context.textMuted),
+                      tooltip: 'Delete Habit',
                       onPressed: () async {
                         await ref.read(habitDaoProvider).deleteHabit(habit.id);
                         ref.invalidate(_habitStreaksProvider);

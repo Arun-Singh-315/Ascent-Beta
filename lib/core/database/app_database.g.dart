@@ -8940,6 +8940,20 @@ class $ReminderTableTable extends ReminderTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _linkedTaskIdMeta = const VerificationMeta(
+    'linkedTaskId',
+  );
+  @override
+  late final GeneratedColumn<int> linkedTaskId = GeneratedColumn<int>(
+    'linked_task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tasks (id)',
+    ),
+  );
   static const VerificationMeta _scheduledAtMeta = const VerificationMeta(
     'scheduledAt',
   );
@@ -8982,6 +8996,7 @@ class $ReminderTableTable extends ReminderTable
   List<GeneratedColumn> get $columns => [
     id,
     title,
+    linkedTaskId,
     scheduledAt,
     isActive,
     createdAt,
@@ -9008,6 +9023,15 @@ class $ReminderTableTable extends ReminderTable
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('linked_task_id')) {
+      context.handle(
+        _linkedTaskIdMeta,
+        linkedTaskId.isAcceptableOrUnknown(
+          data['linked_task_id']!,
+          _linkedTaskIdMeta,
+        ),
+      );
     }
     if (data.containsKey('scheduled_at')) {
       context.handle(
@@ -9049,6 +9073,10 @@ class $ReminderTableTable extends ReminderTable
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      linkedTaskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_task_id'],
+      ),
       scheduledAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}scheduled_at'],
@@ -9076,6 +9104,9 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   /// The text content/label of the reminder.
   final String title;
 
+  /// Optional FK to linked [TaskTable] for cascading cleanup and zero ghost notifications.
+  final int? linkedTaskId;
+
   /// Scheduled date & time for the reminder notification.
   final DateTime scheduledAt;
 
@@ -9085,6 +9116,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   const Reminder({
     required this.id,
     required this.title,
+    this.linkedTaskId,
     required this.scheduledAt,
     required this.isActive,
     required this.createdAt,
@@ -9094,6 +9126,9 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['title'] = Variable<String>(title);
+    if (!nullToAbsent || linkedTaskId != null) {
+      map['linked_task_id'] = Variable<int>(linkedTaskId);
+    }
     map['scheduled_at'] = Variable<DateTime>(scheduledAt);
     map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -9104,6 +9139,9 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     return ReminderTableCompanion(
       id: Value(id),
       title: Value(title),
+      linkedTaskId: linkedTaskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedTaskId),
       scheduledAt: Value(scheduledAt),
       isActive: Value(isActive),
       createdAt: Value(createdAt),
@@ -9118,6 +9156,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     return Reminder(
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
+      linkedTaskId: serializer.fromJson<int?>(json['linkedTaskId']),
       scheduledAt: serializer.fromJson<DateTime>(json['scheduledAt']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -9129,6 +9168,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
+      'linkedTaskId': serializer.toJson<int?>(linkedTaskId),
       'scheduledAt': serializer.toJson<DateTime>(scheduledAt),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -9138,12 +9178,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   Reminder copyWith({
     int? id,
     String? title,
+    Value<int?> linkedTaskId = const Value.absent(),
     DateTime? scheduledAt,
     bool? isActive,
     DateTime? createdAt,
   }) => Reminder(
     id: id ?? this.id,
     title: title ?? this.title,
+    linkedTaskId: linkedTaskId.present ? linkedTaskId.value : this.linkedTaskId,
     scheduledAt: scheduledAt ?? this.scheduledAt,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt ?? this.createdAt,
@@ -9152,6 +9194,9 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     return Reminder(
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
+      linkedTaskId: data.linkedTaskId.present
+          ? data.linkedTaskId.value
+          : this.linkedTaskId,
       scheduledAt: data.scheduledAt.present
           ? data.scheduledAt.value
           : this.scheduledAt,
@@ -9165,6 +9210,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     return (StringBuffer('Reminder(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('linkedTaskId: $linkedTaskId, ')
           ..write('scheduledAt: $scheduledAt, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
@@ -9173,13 +9219,15 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   }
 
   @override
-  int get hashCode => Object.hash(id, title, scheduledAt, isActive, createdAt);
+  int get hashCode =>
+      Object.hash(id, title, linkedTaskId, scheduledAt, isActive, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Reminder &&
           other.id == this.id &&
           other.title == this.title &&
+          other.linkedTaskId == this.linkedTaskId &&
           other.scheduledAt == this.scheduledAt &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
@@ -9188,12 +9236,14 @@ class Reminder extends DataClass implements Insertable<Reminder> {
 class ReminderTableCompanion extends UpdateCompanion<Reminder> {
   final Value<int> id;
   final Value<String> title;
+  final Value<int?> linkedTaskId;
   final Value<DateTime> scheduledAt;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
   const ReminderTableCompanion({
     this.id = const Value.absent(),
     this.title = const Value.absent(),
+    this.linkedTaskId = const Value.absent(),
     this.scheduledAt = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -9201,6 +9251,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
   ReminderTableCompanion.insert({
     this.id = const Value.absent(),
     required String title,
+    this.linkedTaskId = const Value.absent(),
     required DateTime scheduledAt,
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -9209,6 +9260,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
   static Insertable<Reminder> custom({
     Expression<int>? id,
     Expression<String>? title,
+    Expression<int>? linkedTaskId,
     Expression<DateTime>? scheduledAt,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
@@ -9216,6 +9268,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (title != null) 'title': title,
+      if (linkedTaskId != null) 'linked_task_id': linkedTaskId,
       if (scheduledAt != null) 'scheduled_at': scheduledAt,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
@@ -9225,6 +9278,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
   ReminderTableCompanion copyWith({
     Value<int>? id,
     Value<String>? title,
+    Value<int?>? linkedTaskId,
     Value<DateTime>? scheduledAt,
     Value<bool>? isActive,
     Value<DateTime>? createdAt,
@@ -9232,6 +9286,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     return ReminderTableCompanion(
       id: id ?? this.id,
       title: title ?? this.title,
+      linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
@@ -9246,6 +9301,9 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (linkedTaskId.present) {
+      map['linked_task_id'] = Variable<int>(linkedTaskId.value);
     }
     if (scheduledAt.present) {
       map['scheduled_at'] = Variable<DateTime>(scheduledAt.value);
@@ -9264,6 +9322,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     return (StringBuffer('ReminderTableCompanion(')
           ..write('id: $id, ')
           ..write('title: $title, ')
+          ..write('linkedTaskId: $linkedTaskId, ')
           ..write('scheduledAt: $scheduledAt, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
@@ -13790,6 +13849,725 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
   }
 }
 
+class $CourseTableTable extends CourseTable
+    with TableInfo<$CourseTableTable, CourseEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CourseTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+    'author',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('Instructor'),
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('General'),
+  );
+  static const VerificationMeta _sourceUrlMeta = const VerificationMeta(
+    'sourceUrl',
+  );
+  @override
+  late final GeneratedColumn<String> sourceUrl = GeneratedColumn<String>(
+    'source_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetCompletionDateMeta =
+      const VerificationMeta('targetCompletionDate');
+  @override
+  late final GeneratedColumn<DateTime> targetCompletionDate =
+      GeneratedColumn<DateTime>(
+        'target_completion_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _daysLeftMeta = const VerificationMeta(
+    'daysLeft',
+  );
+  @override
+  late final GeneratedColumn<int> daysLeft = GeneratedColumn<int>(
+    'days_left',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(30),
+  );
+  static const VerificationMeta _targetMinutesPerDayMeta =
+      const VerificationMeta('targetMinutesPerDay');
+  @override
+  late final GeneratedColumn<int> targetMinutesPerDay = GeneratedColumn<int>(
+    'target_minutes_per_day',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(45),
+  );
+  static const VerificationMeta _modulesJsonMeta = const VerificationMeta(
+    'modulesJson',
+  );
+  @override
+  late final GeneratedColumn<String> modulesJson = GeneratedColumn<String>(
+    'modules_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    description,
+    author,
+    category,
+    sourceUrl,
+    targetCompletionDate,
+    daysLeft,
+    targetMinutesPerDay,
+    modulesJson,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'courses';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CourseEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('author')) {
+      context.handle(
+        _authorMeta,
+        author.isAcceptableOrUnknown(data['author']!, _authorMeta),
+      );
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    }
+    if (data.containsKey('source_url')) {
+      context.handle(
+        _sourceUrlMeta,
+        sourceUrl.isAcceptableOrUnknown(data['source_url']!, _sourceUrlMeta),
+      );
+    }
+    if (data.containsKey('target_completion_date')) {
+      context.handle(
+        _targetCompletionDateMeta,
+        targetCompletionDate.isAcceptableOrUnknown(
+          data['target_completion_date']!,
+          _targetCompletionDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('days_left')) {
+      context.handle(
+        _daysLeftMeta,
+        daysLeft.isAcceptableOrUnknown(data['days_left']!, _daysLeftMeta),
+      );
+    }
+    if (data.containsKey('target_minutes_per_day')) {
+      context.handle(
+        _targetMinutesPerDayMeta,
+        targetMinutesPerDay.isAcceptableOrUnknown(
+          data['target_minutes_per_day']!,
+          _targetMinutesPerDayMeta,
+        ),
+      );
+    }
+    if (data.containsKey('modules_json')) {
+      context.handle(
+        _modulesJsonMeta,
+        modulesJson.isAcceptableOrUnknown(
+          data['modules_json']!,
+          _modulesJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_modulesJsonMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CourseEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CourseEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      author: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      sourceUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_url'],
+      ),
+      targetCompletionDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}target_completion_date'],
+      ),
+      daysLeft: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}days_left'],
+      )!,
+      targetMinutesPerDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_minutes_per_day'],
+      )!,
+      modulesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}modules_json'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $CourseTableTable createAlias(String alias) {
+    return $CourseTableTable(attachedDatabase, alias);
+  }
+}
+
+class CourseEntry extends DataClass implements Insertable<CourseEntry> {
+  final String id;
+  final String title;
+  final String description;
+  final String author;
+  final String category;
+  final String? sourceUrl;
+  final DateTime? targetCompletionDate;
+  final int daysLeft;
+  final int targetMinutesPerDay;
+  final String modulesJson;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const CourseEntry({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.author,
+    required this.category,
+    this.sourceUrl,
+    this.targetCompletionDate,
+    required this.daysLeft,
+    required this.targetMinutesPerDay,
+    required this.modulesJson,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['description'] = Variable<String>(description);
+    map['author'] = Variable<String>(author);
+    map['category'] = Variable<String>(category);
+    if (!nullToAbsent || sourceUrl != null) {
+      map['source_url'] = Variable<String>(sourceUrl);
+    }
+    if (!nullToAbsent || targetCompletionDate != null) {
+      map['target_completion_date'] = Variable<DateTime>(targetCompletionDate);
+    }
+    map['days_left'] = Variable<int>(daysLeft);
+    map['target_minutes_per_day'] = Variable<int>(targetMinutesPerDay);
+    map['modules_json'] = Variable<String>(modulesJson);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  CourseTableCompanion toCompanion(bool nullToAbsent) {
+    return CourseTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      description: Value(description),
+      author: Value(author),
+      category: Value(category),
+      sourceUrl: sourceUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceUrl),
+      targetCompletionDate: targetCompletionDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetCompletionDate),
+      daysLeft: Value(daysLeft),
+      targetMinutesPerDay: Value(targetMinutesPerDay),
+      modulesJson: Value(modulesJson),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory CourseEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CourseEntry(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String>(json['description']),
+      author: serializer.fromJson<String>(json['author']),
+      category: serializer.fromJson<String>(json['category']),
+      sourceUrl: serializer.fromJson<String?>(json['sourceUrl']),
+      targetCompletionDate: serializer.fromJson<DateTime?>(
+        json['targetCompletionDate'],
+      ),
+      daysLeft: serializer.fromJson<int>(json['daysLeft']),
+      targetMinutesPerDay: serializer.fromJson<int>(
+        json['targetMinutesPerDay'],
+      ),
+      modulesJson: serializer.fromJson<String>(json['modulesJson']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String>(description),
+      'author': serializer.toJson<String>(author),
+      'category': serializer.toJson<String>(category),
+      'sourceUrl': serializer.toJson<String?>(sourceUrl),
+      'targetCompletionDate': serializer.toJson<DateTime?>(
+        targetCompletionDate,
+      ),
+      'daysLeft': serializer.toJson<int>(daysLeft),
+      'targetMinutesPerDay': serializer.toJson<int>(targetMinutesPerDay),
+      'modulesJson': serializer.toJson<String>(modulesJson),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  CourseEntry copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? author,
+    String? category,
+    Value<String?> sourceUrl = const Value.absent(),
+    Value<DateTime?> targetCompletionDate = const Value.absent(),
+    int? daysLeft,
+    int? targetMinutesPerDay,
+    String? modulesJson,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => CourseEntry(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    author: author ?? this.author,
+    category: category ?? this.category,
+    sourceUrl: sourceUrl.present ? sourceUrl.value : this.sourceUrl,
+    targetCompletionDate: targetCompletionDate.present
+        ? targetCompletionDate.value
+        : this.targetCompletionDate,
+    daysLeft: daysLeft ?? this.daysLeft,
+    targetMinutesPerDay: targetMinutesPerDay ?? this.targetMinutesPerDay,
+    modulesJson: modulesJson ?? this.modulesJson,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  CourseEntry copyWithCompanion(CourseTableCompanion data) {
+    return CourseEntry(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      author: data.author.present ? data.author.value : this.author,
+      category: data.category.present ? data.category.value : this.category,
+      sourceUrl: data.sourceUrl.present ? data.sourceUrl.value : this.sourceUrl,
+      targetCompletionDate: data.targetCompletionDate.present
+          ? data.targetCompletionDate.value
+          : this.targetCompletionDate,
+      daysLeft: data.daysLeft.present ? data.daysLeft.value : this.daysLeft,
+      targetMinutesPerDay: data.targetMinutesPerDay.present
+          ? data.targetMinutesPerDay.value
+          : this.targetMinutesPerDay,
+      modulesJson: data.modulesJson.present
+          ? data.modulesJson.value
+          : this.modulesJson,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CourseEntry(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('author: $author, ')
+          ..write('category: $category, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('targetCompletionDate: $targetCompletionDate, ')
+          ..write('daysLeft: $daysLeft, ')
+          ..write('targetMinutesPerDay: $targetMinutesPerDay, ')
+          ..write('modulesJson: $modulesJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    author,
+    category,
+    sourceUrl,
+    targetCompletionDate,
+    daysLeft,
+    targetMinutesPerDay,
+    modulesJson,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CourseEntry &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.author == this.author &&
+          other.category == this.category &&
+          other.sourceUrl == this.sourceUrl &&
+          other.targetCompletionDate == this.targetCompletionDate &&
+          other.daysLeft == this.daysLeft &&
+          other.targetMinutesPerDay == this.targetMinutesPerDay &&
+          other.modulesJson == this.modulesJson &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class CourseTableCompanion extends UpdateCompanion<CourseEntry> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> description;
+  final Value<String> author;
+  final Value<String> category;
+  final Value<String?> sourceUrl;
+  final Value<DateTime?> targetCompletionDate;
+  final Value<int> daysLeft;
+  final Value<int> targetMinutesPerDay;
+  final Value<String> modulesJson;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const CourseTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.author = const Value.absent(),
+    this.category = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.targetCompletionDate = const Value.absent(),
+    this.daysLeft = const Value.absent(),
+    this.targetMinutesPerDay = const Value.absent(),
+    this.modulesJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CourseTableCompanion.insert({
+    required String id,
+    required String title,
+    this.description = const Value.absent(),
+    this.author = const Value.absent(),
+    this.category = const Value.absent(),
+    this.sourceUrl = const Value.absent(),
+    this.targetCompletionDate = const Value.absent(),
+    this.daysLeft = const Value.absent(),
+    this.targetMinutesPerDay = const Value.absent(),
+    required String modulesJson,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       modulesJson = Value(modulesJson);
+  static Insertable<CourseEntry> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<String>? author,
+    Expression<String>? category,
+    Expression<String>? sourceUrl,
+    Expression<DateTime>? targetCompletionDate,
+    Expression<int>? daysLeft,
+    Expression<int>? targetMinutesPerDay,
+    Expression<String>? modulesJson,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (author != null) 'author': author,
+      if (category != null) 'category': category,
+      if (sourceUrl != null) 'source_url': sourceUrl,
+      if (targetCompletionDate != null)
+        'target_completion_date': targetCompletionDate,
+      if (daysLeft != null) 'days_left': daysLeft,
+      if (targetMinutesPerDay != null)
+        'target_minutes_per_day': targetMinutesPerDay,
+      if (modulesJson != null) 'modules_json': modulesJson,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CourseTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? description,
+    Value<String>? author,
+    Value<String>? category,
+    Value<String?>? sourceUrl,
+    Value<DateTime?>? targetCompletionDate,
+    Value<int>? daysLeft,
+    Value<int>? targetMinutesPerDay,
+    Value<String>? modulesJson,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return CourseTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      author: author ?? this.author,
+      category: category ?? this.category,
+      sourceUrl: sourceUrl ?? this.sourceUrl,
+      targetCompletionDate: targetCompletionDate ?? this.targetCompletionDate,
+      daysLeft: daysLeft ?? this.daysLeft,
+      targetMinutesPerDay: targetMinutesPerDay ?? this.targetMinutesPerDay,
+      modulesJson: modulesJson ?? this.modulesJson,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (sourceUrl.present) {
+      map['source_url'] = Variable<String>(sourceUrl.value);
+    }
+    if (targetCompletionDate.present) {
+      map['target_completion_date'] = Variable<DateTime>(
+        targetCompletionDate.value,
+      );
+    }
+    if (daysLeft.present) {
+      map['days_left'] = Variable<int>(daysLeft.value);
+    }
+    if (targetMinutesPerDay.present) {
+      map['target_minutes_per_day'] = Variable<int>(targetMinutesPerDay.value);
+    }
+    if (modulesJson.present) {
+      map['modules_json'] = Variable<String>(modulesJson.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CourseTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('author: $author, ')
+          ..write('category: $category, ')
+          ..write('sourceUrl: $sourceUrl, ')
+          ..write('targetCompletionDate: $targetCompletionDate, ')
+          ..write('daysLeft: $daysLeft, ')
+          ..write('targetMinutesPerDay: $targetMinutesPerDay, ')
+          ..write('modulesJson: $modulesJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13844,6 +14622,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $WaterLogTableTable waterLogTable = $WaterLogTableTable(this);
   late final $WaterGoalTableTable waterGoalTable = $WaterGoalTableTable(this);
   late final $ThoughtTableTable thoughtTable = $ThoughtTableTable(this);
+  late final $CourseTableTable courseTable = $CourseTableTable(this);
   late final UserProfileDao userProfileDao = UserProfileDao(
     this as AppDatabase,
   );
@@ -13880,6 +14659,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final WaterDao waterDao = WaterDao(this as AppDatabase);
   late final ThoughtDao thoughtDao = ThoughtDao(this as AppDatabase);
+  late final CourseDao courseDao = CourseDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -13913,6 +14693,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     waterLogTable,
     waterGoalTable,
     thoughtTable,
+    courseTable,
   ];
 }
 
@@ -16283,6 +17064,24 @@ final class $$TaskTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$ReminderTableTable, List<Reminder>>
+  _reminderTableRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.reminderTable,
+    aliasName: 'tasks__id__reminders__linked_task_id',
+  );
+
+  $$ReminderTableTableProcessedTableManager get reminderTableRefs {
+    final manager = $$ReminderTableTableTableManager(
+      $_db,
+      $_db.reminderTable,
+    ).filter((f) => f.linkedTaskId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_reminderTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$TaskTableTableFilterComposer
@@ -16467,6 +17266,31 @@ class $$TaskTableTableFilterComposer
           }) => $$TimeSessionTableTableFilterComposer(
             $db: $db,
             $table: $db.timeSessionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> reminderTableRefs(
+    Expression<bool> Function($$ReminderTableTableFilterComposer f) f,
+  ) {
+    final $$ReminderTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.linkedTaskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableFilterComposer(
+            $db: $db,
+            $table: $db.reminderTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -16822,6 +17646,31 @@ class $$TaskTableTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> reminderTableRefs<T extends Object>(
+    Expression<T> Function($$ReminderTableTableAnnotationComposer a) f,
+  ) {
+    final $$ReminderTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.linkedTaskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TaskTableTableTableManager
@@ -16843,6 +17692,7 @@ class $$TaskTableTableTableManager
             bool parentTaskId,
             bool linkedApplicationId,
             bool timeSessionTableRefs,
+            bool reminderTableRefs,
           })
         > {
   $$TaskTableTableTableManager(_$AppDatabase db, $TaskTableTable table)
@@ -16947,11 +17797,13 @@ class $$TaskTableTableTableManager
                 parentTaskId = false,
                 linkedApplicationId = false,
                 timeSessionTableRefs = false,
+                reminderTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (timeSessionTableRefs) db.timeSessionTable,
+                    if (reminderTableRefs) db.reminderTable,
                   ],
                   addJoins:
                       <
@@ -17047,6 +17899,27 @@ class $$TaskTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (reminderTableRefs)
+                        await $_getPrefetchedData<
+                          Task,
+                          $TaskTableTable,
+                          Reminder
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TaskTableTableReferences
+                              ._reminderTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TaskTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).reminderTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.linkedTaskId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -17073,6 +17946,7 @@ typedef $$TaskTableTableProcessedTableManager =
         bool parentTaskId,
         bool linkedApplicationId,
         bool timeSessionTableRefs,
+        bool reminderTableRefs,
       })
     >;
 typedef $$DsaLogTableTableCreateCompanionBuilder =
@@ -20960,6 +21834,7 @@ typedef $$ReminderTableTableCreateCompanionBuilder =
     ReminderTableCompanion Function({
       Value<int> id,
       required String title,
+      Value<int?> linkedTaskId,
       required DateTime scheduledAt,
       Value<bool> isActive,
       Value<DateTime> createdAt,
@@ -20968,10 +21843,37 @@ typedef $$ReminderTableTableUpdateCompanionBuilder =
     ReminderTableCompanion Function({
       Value<int> id,
       Value<String> title,
+      Value<int?> linkedTaskId,
       Value<DateTime> scheduledAt,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
+
+final class $$ReminderTableTableReferences
+    extends BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder> {
+  $$ReminderTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TaskTableTable _linkedTaskIdTable(_$AppDatabase db) =>
+      db.taskTable.createAlias('reminders__linked_task_id__tasks__id');
+
+  $$TaskTableTableProcessedTableManager? get linkedTaskId {
+    final $_column = $_itemColumn<int>('linked_task_id');
+    if ($_column == null) return null;
+    final manager = $$TaskTableTableTableManager(
+      $_db,
+      $_db.taskTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_linkedTaskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
 
 class $$ReminderTableTableFilterComposer
     extends Composer<_$AppDatabase, $ReminderTableTable> {
@@ -21006,6 +21908,29 @@ class $$ReminderTableTableFilterComposer
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$TaskTableTableFilterComposer get linkedTaskId {
+    final $$TaskTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableFilterComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ReminderTableTableOrderingComposer
@@ -21041,6 +21966,29 @@ class $$ReminderTableTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$TaskTableTableOrderingComposer get linkedTaskId {
+    final $$TaskTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ReminderTableTableAnnotationComposer
@@ -21068,6 +22016,29 @@ class $$ReminderTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$TaskTableTableAnnotationComposer get linkedTaskId {
+    final $$TaskTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ReminderTableTableTableManager
@@ -21081,12 +22052,9 @@ class $$ReminderTableTableTableManager
           $$ReminderTableTableAnnotationComposer,
           $$ReminderTableTableCreateCompanionBuilder,
           $$ReminderTableTableUpdateCompanionBuilder,
-          (
-            Reminder,
-            BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder>,
-          ),
+          (Reminder, $$ReminderTableTableReferences),
           Reminder,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool linkedTaskId})
         > {
   $$ReminderTableTableTableManager(_$AppDatabase db, $ReminderTableTable table)
     : super(
@@ -21103,12 +22071,14 @@ class $$ReminderTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<int?> linkedTaskId = const Value.absent(),
                 Value<DateTime> scheduledAt = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ReminderTableCompanion(
                 id: id,
                 title: title,
+                linkedTaskId: linkedTaskId,
                 scheduledAt: scheduledAt,
                 isActive: isActive,
                 createdAt: createdAt,
@@ -21117,12 +22087,14 @@ class $$ReminderTableTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String title,
+                Value<int?> linkedTaskId = const Value.absent(),
                 required DateTime scheduledAt,
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ReminderTableCompanion.insert(
                 id: id,
                 title: title,
+                linkedTaskId: linkedTaskId,
                 scheduledAt: scheduledAt,
                 isActive: isActive,
                 createdAt: createdAt,
@@ -21131,15 +22103,51 @@ class $$ReminderTableTableTableManager
               .map(
                 (e) => (
                   e.readTable<$ReminderTableTable, Reminder>(table),
-                  BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  $$ReminderTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({linkedTaskId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (linkedTaskId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.linkedTaskId,
+                                referencedTable: $$ReminderTableTableReferences
+                                    ._linkedTaskIdTable(db),
+                                referencedColumn: $$ReminderTableTableReferences
+                                    ._linkedTaskIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ),
       );
 }
@@ -21154,9 +22162,9 @@ typedef $$ReminderTableTableProcessedTableManager =
       $$ReminderTableTableAnnotationComposer,
       $$ReminderTableTableCreateCompanionBuilder,
       $$ReminderTableTableUpdateCompanionBuilder,
-      (Reminder, BaseReferences<_$AppDatabase, $ReminderTableTable, Reminder>),
+      (Reminder, $$ReminderTableTableReferences),
       Reminder,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool linkedTaskId})
     >;
 typedef $$FinanceTransactionTableTableCreateCompanionBuilder =
     FinanceTransactionTableCompanion Function({
@@ -23939,6 +24947,356 @@ typedef $$ThoughtTableTableProcessedTableManager =
       Thought,
       PrefetchHooks Function()
     >;
+typedef $$CourseTableTableCreateCompanionBuilder =
+    CourseTableCompanion Function({
+      required String id,
+      required String title,
+      Value<String> description,
+      Value<String> author,
+      Value<String> category,
+      Value<String?> sourceUrl,
+      Value<DateTime?> targetCompletionDate,
+      Value<int> daysLeft,
+      Value<int> targetMinutesPerDay,
+      required String modulesJson,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$CourseTableTableUpdateCompanionBuilder =
+    CourseTableCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String> description,
+      Value<String> author,
+      Value<String> category,
+      Value<String?> sourceUrl,
+      Value<DateTime?> targetCompletionDate,
+      Value<int> daysLeft,
+      Value<int> targetMinutesPerDay,
+      Value<String> modulesJson,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$CourseTableTableFilterComposer
+    extends Composer<_$AppDatabase, $CourseTableTable> {
+  $$CourseTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get targetCompletionDate => $composableBuilder(
+    column: $table.targetCompletionDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get daysLeft => $composableBuilder(
+    column: $table.daysLeft,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetMinutesPerDay => $composableBuilder(
+    column: $table.targetMinutesPerDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get modulesJson => $composableBuilder(
+    column: $table.modulesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$CourseTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $CourseTableTable> {
+  $$CourseTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceUrl => $composableBuilder(
+    column: $table.sourceUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get targetCompletionDate => $composableBuilder(
+    column: $table.targetCompletionDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get daysLeft => $composableBuilder(
+    column: $table.daysLeft,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetMinutesPerDay => $composableBuilder(
+    column: $table.targetMinutesPerDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get modulesJson => $composableBuilder(
+    column: $table.modulesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CourseTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CourseTableTable> {
+  $$CourseTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceUrl =>
+      $composableBuilder(column: $table.sourceUrl, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get targetCompletionDate => $composableBuilder(
+    column: $table.targetCompletionDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get daysLeft =>
+      $composableBuilder(column: $table.daysLeft, builder: (column) => column);
+
+  GeneratedColumn<int> get targetMinutesPerDay => $composableBuilder(
+    column: $table.targetMinutesPerDay,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get modulesJson => $composableBuilder(
+    column: $table.modulesJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$CourseTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CourseTableTable,
+          CourseEntry,
+          $$CourseTableTableFilterComposer,
+          $$CourseTableTableOrderingComposer,
+          $$CourseTableTableAnnotationComposer,
+          $$CourseTableTableCreateCompanionBuilder,
+          $$CourseTableTableUpdateCompanionBuilder,
+          (
+            CourseEntry,
+            BaseReferences<_$AppDatabase, $CourseTableTable, CourseEntry>,
+          ),
+          CourseEntry,
+          PrefetchHooks Function()
+        > {
+  $$CourseTableTableTableManager(_$AppDatabase db, $CourseTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CourseTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CourseTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CourseTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> author = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String?> sourceUrl = const Value.absent(),
+                Value<DateTime?> targetCompletionDate = const Value.absent(),
+                Value<int> daysLeft = const Value.absent(),
+                Value<int> targetMinutesPerDay = const Value.absent(),
+                Value<String> modulesJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CourseTableCompanion(
+                id: id,
+                title: title,
+                description: description,
+                author: author,
+                category: category,
+                sourceUrl: sourceUrl,
+                targetCompletionDate: targetCompletionDate,
+                daysLeft: daysLeft,
+                targetMinutesPerDay: targetMinutesPerDay,
+                modulesJson: modulesJson,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<String> description = const Value.absent(),
+                Value<String> author = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<String?> sourceUrl = const Value.absent(),
+                Value<DateTime?> targetCompletionDate = const Value.absent(),
+                Value<int> daysLeft = const Value.absent(),
+                Value<int> targetMinutesPerDay = const Value.absent(),
+                required String modulesJson,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CourseTableCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                author: author,
+                category: category,
+                sourceUrl: sourceUrl,
+                targetCompletionDate: targetCompletionDate,
+                daysLeft: daysLeft,
+                targetMinutesPerDay: targetMinutesPerDay,
+                modulesJson: modulesJson,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$CourseTableTable, CourseEntry>(table),
+                  BaseReferences<_$AppDatabase, $CourseTableTable, CourseEntry>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$CourseTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CourseTableTable,
+      CourseEntry,
+      $$CourseTableTableFilterComposer,
+      $$CourseTableTableOrderingComposer,
+      $$CourseTableTableAnnotationComposer,
+      $$CourseTableTableCreateCompanionBuilder,
+      $$CourseTableTableUpdateCompanionBuilder,
+      (
+        CourseEntry,
+        BaseReferences<_$AppDatabase, $CourseTableTable, CourseEntry>,
+      ),
+      CourseEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -24012,6 +25370,8 @@ class $AppDatabaseManager {
       $$WaterGoalTableTableTableManager(_db, _db.waterGoalTable);
   $$ThoughtTableTableTableManager get thoughtTable =>
       $$ThoughtTableTableTableManager(_db, _db.thoughtTable);
+  $$CourseTableTableTableManager get courseTable =>
+      $$CourseTableTableTableManager(_db, _db.courseTable);
 }
 
 mixin _$UserProfileDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -24318,6 +25678,11 @@ class UpcomingInterviewDaoManager {
 }
 
 mixin _$ReminderDaoMixin on DatabaseAccessor<AppDatabase> {
+  $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
+  $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
+  $ApplicationTableTable get applicationTable =>
+      attachedDatabase.applicationTable;
+  $TaskTableTable get taskTable => attachedDatabase.taskTable;
   $ReminderTableTable get reminderTable => attachedDatabase.reminderTable;
   ReminderDaoManager get managers => ReminderDaoManager(this);
 }
@@ -24325,6 +25690,20 @@ mixin _$ReminderDaoMixin on DatabaseAccessor<AppDatabase> {
 class ReminderDaoManager {
   final _$ReminderDaoMixin _db;
   ReminderDaoManager(this._db);
+  $$StudyPhaseTableTableTableManager get studyPhaseTable =>
+      $$StudyPhaseTableTableTableManager(
+        _db.attachedDatabase,
+        _db.studyPhaseTable,
+      );
+  $$SeriesTableTableTableManager get seriesTable =>
+      $$SeriesTableTableTableManager(_db.attachedDatabase, _db.seriesTable);
+  $$ApplicationTableTableTableManager get applicationTable =>
+      $$ApplicationTableTableTableManager(
+        _db.attachedDatabase,
+        _db.applicationTable,
+      );
+  $$TaskTableTableTableManager get taskTable =>
+      $$TaskTableTableTableManager(_db.attachedDatabase, _db.taskTable);
   $$ReminderTableTableTableManager get reminderTable =>
       $$ReminderTableTableTableManager(_db.attachedDatabase, _db.reminderTable);
 }
@@ -24445,4 +25824,16 @@ class ThoughtDaoManager {
   ThoughtDaoManager(this._db);
   $$ThoughtTableTableTableManager get thoughtTable =>
       $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
+}
+
+mixin _$CourseDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CourseTableTable get courseTable => attachedDatabase.courseTable;
+  CourseDaoManager get managers => CourseDaoManager(this);
+}
+
+class CourseDaoManager {
+  final _$CourseDaoMixin _db;
+  CourseDaoManager(this._db);
+  $$CourseTableTableTableManager get courseTable =>
+      $$CourseTableTableTableManager(_db.attachedDatabase, _db.courseTable);
 }

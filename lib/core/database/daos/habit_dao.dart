@@ -19,6 +19,15 @@ class HabitDao extends DatabaseAccessor<AppDatabase> with _$HabitDaoMixin {
     return update(habitTable).replace(entry);
   }
 
+  Future<int> patchHabit(int id, {String? title, String? category}) {
+    return (update(habitTable)..where((h) => h.id.equals(id))).write(
+      HabitTableCompanion(
+        title: title != null ? Value(title) : const Value.absent(),
+        category: category != null ? Value(category) : const Value.absent(),
+      ),
+    );
+  }
+
   Future<int> deleteHabit(int id) async {
     await (delete(habitCompletionTable)..where((c) => c.habitId.equals(id))).go();
     return (delete(habitTable)..where((h) => h.id.equals(id))).go();

@@ -105,6 +105,10 @@ final thoughtDaoProvider = Provider<ThoughtDao>(
   (ref) => ThoughtDao(ref.watch(databaseProvider)),
 );
 
+final courseDaoProvider = Provider<CourseDao>(
+  (ref) => CourseDao(ref.watch(databaseProvider)),
+);
+
 // ── Finance Reactive Stream Providers ─────────────────────────────────────────
 
 final todaySpendingStreamProvider = StreamProvider<double>((ref) {
@@ -411,7 +415,7 @@ class TodayActivityItem {
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       linkedSessionId: linkedSessionId ?? this.linkedSessionId,
       categoryTag: categoryTag ?? this.categoryTag,
-      priority: priority ?? this.priority,
+      priority: priority ?? this.priority, 
       kind: kind ?? this.kind,
       targetMinutes: targetMinutes ?? this.targetMinutes,
       plannedDate: plannedDate ?? this.plannedDate,

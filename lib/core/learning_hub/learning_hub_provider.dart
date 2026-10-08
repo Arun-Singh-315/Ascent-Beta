@@ -1,8 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:drift/drift.dart' as drift;
 
+import '../database/app_database.dart';
+import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
 import 'default_course_data.dart';
 import 'learning_hub_models.dart';
@@ -141,6 +145,55 @@ class LearningHubState {
 class LearningHubNotifier extends Notifier<LearningHubState> {
   Timer? _ticker;
   Timer? _flushTimer;
+  int? _activeSessionId;
+
+  Future<void> _syncStartSession(DateTime now) async {
+    try {
+      final sessionDao = ref.read(timeSessionDaoProvider);
+      final activeLec = state.activeLecture;
+      final curCourse = state.course;
+      final sessionLabel = '${curCourse.title}: ${activeLec.title}';
+
+      final existing = await sessionDao.getTodayActiveOrPausedSessionByLabel(sessionLabel);
+      if (existing != null) {
+        _activeSessionId = existing.id;
+        if (existing.status == 'paused') {
+          await sessionDao.resumeSession(existing.id);
+        }
+      } else {
+        _activeSessionId = await sessionDao.startSession(
+          label: sessionLabel,
+          categoryId: 1, // Study category
+          activityType: 'study',
+          activityRefType: 'lecture',
+          startedAt: now,
+        );
+      }
+    } catch (_) {}
+  }
+
+  void _syncPauseSession() {
+    if (_activeSessionId != null) {
+      final sId = _activeSessionId!;
+      Future.microtask(() async {
+        try {
+          await ref.read(timeSessionDaoProvider).pauseSession(sId);
+        } catch (_) {}
+      });
+    }
+  }
+
+  void _syncCompleteSession() {
+    if (_activeSessionId != null) {
+      final sId = _activeSessionId!;
+      _activeSessionId = null;
+      Future.microtask(() async {
+        try {
+          await ref.read(timeSessionDaoProvider).completeSession(sId);
+        } catch (_) {}
+      });
+    }
+  }
 
   @override
   LearningHubState build() {
@@ -261,6 +314,32 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     prefs.setString(_kCoursesListKey, jsonStr);
     prefs.setString(_kActiveCourseIdKey, state.activeCourseId);
     prefs.setInt(_kActiveLectureIdKey, state.activeLectureId);
+
+    // Durable SQLite persistence via CourseDao
+    Future.microtask(() async {
+      try {
+        final courseDao = ref.read(courseDaoProvider);
+        for (final c in state.courses) {
+          await courseDao.upsertCourse(
+            CourseTableCompanion.insert(
+              id: c.id,
+              title: c.title,
+              description: drift.Value(c.description),
+              author: drift.Value(c.author),
+              category: drift.Value(c.category),
+              sourceUrl: drift.Value(c.sourceUrl),
+              targetCompletionDate: drift.Value(c.targetCompletionDate),
+              daysLeft: drift.Value(c.daysLeft),
+              targetMinutesPerDay: drift.Value(c.targetMinutesPerDay),
+              modulesJson: jsonEncode(c.modules.map((m) => m.toJson()).toList()),
+              updatedAt: drift.Value(DateTime.now()),
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('CourseDao persistence sync warning: $e');
+      }
+    });
   }
 
   void startLearning({String? courseId}) {
@@ -286,6 +365,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       sessionBaseElapsed: state.currentElapsedSeconds,
     );
 
+    // Sync active session in SQLite TimeSessionDao
+    _syncStartSession(now);
+
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final startedAt = state.playStartedAt;
@@ -294,6 +376,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       final diff = DateTime.now().difference(startedAt).inSeconds;
       final active = state.activeLecture;
       final newElapsed = state.sessionBaseElapsed + diff;
+
+      // Periodic 5s heartbeat to SQLite time session
+      if (diff > 0 && diff % 5 == 0 && _activeSessionId != null) {
+        ref.read(timeSessionDaoProvider).heartbeat(_activeSessionId!, newElapsed);
+      }
 
       if (active.durationSeconds > 0 && newElapsed >= active.durationSeconds) {
         // Lecture completed automatically
@@ -313,6 +400,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   void pause() {
     _ticker?.cancel();
     _flushTimer?.cancel();
+    _syncPauseSession();
     _persistCourses();
     state = state.copyWith(
       isPlaying: false,
@@ -363,6 +451,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _persistCourses();
     _ticker?.cancel();
     _flushTimer?.cancel();
+    _syncPauseSession();
 
     Lecture? targetLecture;
     for (final mod in state.course.modules) {
@@ -403,6 +492,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       targetLectureId: lectureId,
     );
     _persistCourses();
+    _syncCompleteSession();
 
     if (markValue && lectureId == state.activeLectureId) {
       // Advance to next lecture if available
@@ -416,6 +506,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       }
     }
   }
+
 
   void switchCourse(String courseId) {
     if (courseId == state.activeCourseId) return;

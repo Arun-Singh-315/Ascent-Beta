@@ -50,4 +50,15 @@ class ReminderDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteReminder(int id) {
     return (delete(reminderTable)..where((r) => r.id.equals(id))).go();
   }
+
+  /// Get reminders linked to a specific task ID.
+  Future<List<Reminder>> getRemindersByTaskId(int taskId) {
+    return (select(reminderTable)..where((r) => r.linkedTaskId.equals(taskId))).get();
+  }
+
+  /// Delete reminders linked to a specific task ID.
+  Future<int> deleteRemindersByTaskId(int taskId) {
+    return (delete(reminderTable)..where((r) => r.linkedTaskId.equals(taskId))).go();
+  }
 }
+

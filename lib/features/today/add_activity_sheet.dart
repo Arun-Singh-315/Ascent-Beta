@@ -17,6 +17,8 @@ class AddActivitySheet extends ConsumerStatefulWidget {
   final String? initialTitle;
   final ActivityKind? initialKind;
   final int? initialDurationMinutes;
+  final int? parentTaskId;
+  final int? prefilledApplicationId;
 
   const AddActivitySheet({
     super.key,
@@ -24,6 +26,8 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     this.initialTitle,
     this.initialKind,
     this.initialDurationMinutes,
+    this.parentTaskId,
+    this.prefilledApplicationId,
   });
 
   static Future<void> show(
@@ -32,6 +36,8 @@ class AddActivitySheet extends ConsumerStatefulWidget {
     String? initialTitle,
     ActivityKind? initialKind,
     int? initialDurationMinutes,
+    int? parentTaskId,
+    int? prefilledApplicationId,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -43,6 +49,8 @@ class AddActivitySheet extends ConsumerStatefulWidget {
         initialTitle: initialTitle,
         initialKind: initialKind,
         initialDurationMinutes: initialDurationMinutes,
+        parentTaskId: parentTaskId,
+        prefilledApplicationId: prefilledApplicationId,
       ),
     );
   }
@@ -174,6 +182,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           plannedDate: drift.Value(plannedDateTime),
           priority: drift.Value(_priority),
           estimatedMinutes: drift.Value(estMinutes),
+          parentTaskId: drift.Value(widget.parentTaskId ?? widget.existingTask?.parentTaskId),
+          linkedApplicationId: drift.Value(widget.prefilledApplicationId ?? widget.existingTask?.linkedApplicationId),
           lastInteractedAt: drift.Value(DateTime.now()),
         ),
       );
@@ -185,6 +195,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           plannedDate: drift.Value(plannedDateTime),
           priority: drift.Value(_priority),
           estimatedMinutes: drift.Value(estMinutes),
+          parentTaskId: drift.Value(widget.parentTaskId),
+          linkedApplicationId: drift.Value(widget.prefilledApplicationId),
           lastInteractedAt: drift.Value(DateTime.now()),
         ),
       );
@@ -195,6 +207,11 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
     // Clean up previous reminders for this activity to avoid duplicates
     if (widget.existingTask != null) {
       try {
+        final linkedReminders = await reminderDao.getRemindersByTaskId(widget.existingTask!.id);
+        for (final r in linkedReminders) {
+          await reminderDao.deleteReminder(r.id);
+          await NotificationService.instance.cancel(r.id);
+        }
         final allReminders = await reminderDao.watchAllReminders().first;
         for (final r in allReminders.where((r) =>
             r.title.toLowerCase() == widget.existingTask!.title.toLowerCase() ||
@@ -215,6 +232,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
             title: title,
             scheduledAt: plannedDateTime,
             isActive: const drift.Value(true),
+            linkedTaskId: drift.Value(taskId),
           ),
         );
         await NotificationService.instance.scheduleReminderNotification(
@@ -222,11 +240,12 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           title: title,
           scheduledAt: plannedDateTime,
         );
-        debugPrint('Activity reminder saved: id=$reminderId title="$title" at $plannedDateTime');
+        debugPrint('Activity reminder saved: id=$reminderId title="$title" at $plannedDateTime linked to task $taskId');
       } catch (e) {
         debugPrint('Error inserting reminder or scheduling notification: $e');
       }
     }
+
 
     if (mounted) {
       Navigator.of(context).pop();

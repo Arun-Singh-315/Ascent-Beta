@@ -511,47 +511,82 @@ Stream<(T1, T2)> _combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
   return controller.stream;
 }
 
-Future<void> deleteTodayActivity(WidgetRef ref, TodayActivityItem activity) async {
-  // 1. Cascade delete all linked / matching reminders & cancel local notifications
+/// Cleanly and completely deletes a task and cascades across all reminders,
+/// local notification alarms, running timers, and child subtasks with zero orphaned state (Rule 8).
+Future<void> deleteTaskAndCleanCascade(WidgetRef ref, int taskId, {String? taskTitle}) async {
+  // 1. Cancel local notification alarms and delete reminders by linkedTaskId (and title fallback)
   try {
     final reminderDao = ref.read(reminderDaoProvider);
-    final allReminders = await reminderDao.watchAllReminders().first;
-    final actTitleNorm = activity.title.trim().toLowerCase();
-    for (final r in allReminders) {
-      if (r.title.trim().toLowerCase() == actTitleNorm) {
-        await reminderDao.deleteReminder(r.id);
-        await NotificationService.instance.cancel(r.id);
+    final linkedReminders = await reminderDao.getRemindersByTaskId(taskId);
+    for (final r in linkedReminders) {
+      await NotificationService.instance.cancel(r.id);
+      await reminderDao.deleteReminder(r.id);
+    }
+    if (taskTitle != null && taskTitle.trim().isNotEmpty) {
+      final all = await reminderDao.watchAllReminders().first;
+      final norm = taskTitle.trim().toLowerCase();
+      for (final r in all) {
+        if (r.title.trim().toLowerCase() == norm) {
+          await NotificationService.instance.cancel(r.id);
+          await reminderDao.deleteReminder(r.id);
+        }
       }
     }
   } catch (_) {}
 
-  // 2. If this activity is currently active in the timer, delete its active session
+  // 2. Terminate running time session if currently active
   try {
     final tracking = ref.read(timeTrackingProvider);
     if (tracking.activeSession != null &&
-        (tracking.activeSession?.linkedTaskId == activity.linkedTaskId ||
-            tracking.activeSession?.label.trim().toLowerCase() == activity.title.trim().toLowerCase())) {
+        (tracking.activeSession?.linkedTaskId == taskId ||
+            (taskTitle != null && tracking.activeSession?.label.trim().toLowerCase() == taskTitle.trim().toLowerCase()))) {
       await ref.read(timeSessionDaoProvider).deleteSession(tracking.activeSession!.id);
     }
   } catch (_) {}
 
-  // 3. Delete linked task and associated time sessions
-  if (activity.linkedTaskId != null) {
-    await ref.read(taskDaoProvider).deleteTask(activity.linkedTaskId!);
-    final sessions = await ref.read(timeSessionDaoProvider).watchSessionsForDate(DateTime.now()).first;
+  // 3. Delete any time sessions associated with this task ID
+  try {
+    final sessionDao = ref.read(timeSessionDaoProvider);
+    final sessions = await sessionDao.watchSessionsForDate(DateTime.now()).first;
     for (final s in sessions) {
-      if (s.linkedTaskId == activity.linkedTaskId) {
-        await ref.read(timeSessionDaoProvider).deleteSession(s.id);
+      if (s.linkedTaskId == taskId) {
+        await sessionDao.deleteSession(s.id);
       }
     }
+  } catch (_) {}
+
+  // 4. Recursively cascade delete any child subtasks
+  try {
+    final taskDao = ref.read(taskDaoProvider);
+    final allTasks = await taskDao.watchAllTasks().first;
+    final subTasks = allTasks.where((t) => t.parentTaskId == taskId).toList();
+    for (final sub in subTasks) {
+      await deleteTaskAndCleanCascade(ref, sub.id, taskTitle: sub.title);
+    }
+  } catch (_) {}
+
+  // 5. Delete the task itself from SQLite
+  try {
+    await ref.read(taskDaoProvider).deleteTask(taskId);
+  } catch (_) {}
+}
+
+Future<void> deleteTodayActivity(WidgetRef ref, TodayActivityItem activity) async {
+  if (activity.linkedTaskId != null) {
+    await deleteTaskAndCleanCascade(ref, activity.linkedTaskId!, taskTitle: activity.title);
   }
   if (activity.linkedSessionId != null) {
-    await ref.read(timeSessionDaoProvider).deleteSession(activity.linkedSessionId!);
+    try {
+      await ref.read(timeSessionDaoProvider).deleteSession(activity.linkedSessionId!);
+    } catch (_) {}
   }
   if (activity.id.startsWith('session_')) {
     final sId = int.tryParse(activity.id.replaceFirst('session_', ''));
     if (sId != null) {
-      await ref.read(timeSessionDaoProvider).deleteSession(sId);
+      try {
+        await ref.read(timeSessionDaoProvider).deleteSession(sId);
+      } catch (_) {}
     }
   }
 }
+

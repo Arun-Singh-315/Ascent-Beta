@@ -12,7 +12,7 @@ import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
-import '../today/task_board_screen.dart';
+import '../today/add_activity_sheet.dart';
 import 'pipeline_screen.dart';
 
 class CardDetailScreen extends ConsumerStatefulWidget {
@@ -400,17 +400,10 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                           icon: Icon(Icons.add_circle_outline_rounded, color: context.accentPrimary),
                           tooltip: 'Add Task',
                           onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
-                              isScrollControlled: true,
-                              backgroundColor: context.bgSurface,
-                              shape: const RoundedRectangleBorder(
-                                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                              ),
-                              builder: (ctx) => AddTaskSheet(
-                                prefilledApplicationId: app.id,
-                                initialTitle: '${app.company} - ',
-                              ),
+                            AddActivitySheet.show(
+                              context,
+                              prefilledApplicationId: app.id,
+                              initialTitle: '${app.company} - ',
                             );
                           },
                         ),
