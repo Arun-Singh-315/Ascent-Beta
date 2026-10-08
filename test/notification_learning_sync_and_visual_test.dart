@@ -7,7 +7,6 @@ import 'package:drift/native.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
-import 'package:ascent/core/learning_hub/learning_hub_models.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/shared/widgets/ascent_atmosphere.dart';
