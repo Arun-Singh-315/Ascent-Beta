@@ -33,6 +33,8 @@ class NotificationService {
   static const String channelMomentumCommitmentName = 'Momentum Scheduled Sessions';
   static const String channelMomentumWindDownId = 'ascent_momentum_winddown';
   static const String channelMomentumWindDownName = 'Momentum Evening Wind-Down';
+  static const String channelMedicineId = 'ascent_medicine_reminders';
+  static const String channelMedicineName = 'Medicine & Prescription Reminders';
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -139,6 +141,16 @@ class NotificationService {
             channelMomentumWindDownName,
             description: 'Evening wind-down notifications to protect your 8-hour sleep recovery window',
             importance: Importance.high,
+            playSound: true,
+            enableVibration: true,
+          ),
+        );
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelMedicineId,
+            channelMedicineName,
+            description: 'Timely reminders for prescribed medicines, tablets, and doses',
+            importance: Importance.max,
             playSound: true,
             enableVibration: true,
           ),
@@ -747,6 +759,69 @@ class NotificationService {
         );
       } catch (err) {
         debugPrint('Failed to schedule Momentum wind-down fallback: $err');
+      }
+    }
+  }
+
+  /// Schedules a dedicated reminder for taking medicine/prescriptions.
+  Future<void> scheduleMedicineReminder({
+    required int id,
+    required String medicineName,
+    required String dosage,
+    required String instructions,
+    required DateTime scheduledAt,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final nowTz = tz.TZDateTime.now(tz.local);
+    var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
+
+    if (scheduledTz.isBefore(nowTz)) {
+      if (nowTz.difference(scheduledTz).inSeconds < 45) {
+        scheduledTz = nowTz.add(const Duration(seconds: 10));
+      } else {
+        debugPrint('Cannot schedule medicine in past: $scheduledTz');
+        return;
+      }
+    }
+
+    final title = '💊 Time for your Medicine: $medicineName';
+    final body = 'Please take $dosage ($instructions). Health is your greatest momentum!';
+
+    final details = _buildModernNotificationDetails(
+      channelId: channelMedicineId,
+      channelName: channelMedicineName,
+      channelDescription: 'Medicine and prescription dose alerts',
+      title: title,
+      body: body,
+      summaryText: 'Prescription Schedule',
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduledTz,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: '/medicine',
+      );
+      debugPrint('Scheduled exact medicine reminder id=$id at $scheduledTz');
+    } catch (e) {
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: scheduledTz,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: '/medicine',
+        );
+        debugPrint('Scheduled fallback medicine reminder id=$id at $scheduledTz');
+      } catch (err) {
+        debugPrint('Failed to schedule medicine reminder: $err');
       }
     }
   }

@@ -36,6 +36,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     'Finished first two lectures',
     'Spent ₹120 on lunch',
     'How am I doing today?',
+    'What are my medicines today?',
     'Log 500ml water',
   ];
 

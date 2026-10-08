@@ -192,6 +192,9 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     } else {
       await markIncomplete(id);
     }
+    try {
+      await db.medicineDao.syncDoseFromTask(id, completed);
+    } catch (_) {}
   }
 
   /// Deletes the task with [id].  Returns the number of deleted rows (0 or 1).

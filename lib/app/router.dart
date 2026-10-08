@@ -27,7 +27,7 @@ import '../features/walk/walk_screen.dart';
 import '../features/momentum/momentum_screen.dart';
 import '../features/momentum/momentum_onboarding_screen.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
-import '../features/habits/habits_screen.dart';
+import '../features/medicine/medicine_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
@@ -45,9 +45,10 @@ class AscentRoutes {
   static const money = '/money';
   static const walk = '/walk';
   static const momentum = '/momentum';
-  static const momentumOnboarding = '/momentum/onboarding';
+  static const momentumOnboarding = '/momentum-onboarding';
+  static const momentumOnboardingAlt = '/momentum/onboarding';
+  static const medicine = '/medicine';
   static const aiAssistant = '/ai-assistant';
-  static const habits = '/habits';
   static const hydration = '/hydration';
   static const thoughtWall = '/thought-wall';
   static const chaiBreak = '/chai-break';
@@ -173,6 +174,11 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.momentumOnboardingAlt,
+      builder: (context, state) => const MomentumOnboardingScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.walk,
       builder: (context, state) => const WalkScreen(),
     ),
@@ -183,8 +189,8 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
-      path: AscentRoutes.habits,
-      builder: (context, state) => const HabitsScreen(),
+      path: AscentRoutes.medicine,
+      builder: (context, state) => const MedicineScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

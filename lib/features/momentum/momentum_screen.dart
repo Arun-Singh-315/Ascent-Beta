@@ -279,7 +279,7 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
 
     return AscentScaffold(
       title: 'Momentum',
-      subtitle: 'Personalized Fitness & Habit Engine',
+      subtitle: 'Personalized Fitness & Routine Engine',
       glow2: g.claySoft,
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1084,6 +1084,7 @@ class _TimelineItem extends StatelessWidget {
         icon = Icons.bedtime_rounded;
         iconColor = Colors.indigoAccent;
         break;
+      case 'hydration':
       default:
         icon = Icons.water_drop_rounded;
         iconColor = Colors.blue;

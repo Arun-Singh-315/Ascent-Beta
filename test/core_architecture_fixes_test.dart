@@ -124,36 +124,42 @@ void main() {
       expect(allReminders.first.title, 'Drink water');
     });
 
-    test('HabitDao.patchHabit preserves creation date and frequency while updating title/category', () async {
-      final initialDate = DateTime(2026, 1, 15);
-      final habitId = await db.habitDao.insertHabit(
-        HabitTableCompanion.insert(
-          title: 'Drink 2L Water',
-          category: const drift.Value('Health'),
-          frequency: const drift.Value('daily'),
-          createdAt: drift.Value(initialDate),
+    test('MedicineDao preserves start date and duration while updating instructions/dosage', () async {
+      final startDate = DateTime(2026, 1, 15);
+      final medId = await db.medicineDao.insertMedicine(
+        MedicineTableCompanion.insert(
+          name: 'Vitamin D3',
+          dosage: '1000 IU',
+          scheduledTimes: '["09:00"]',
+          durationDays: const drift.Value(30),
+          startDate: startDate,
+          instructions: const drift.Value('Take with breakfast'),
         ),
       );
 
-      final before = (await db.habitDao.watchAllHabits().first).firstWhere((h) => h.id == habitId);
-      expect(before.title, 'Drink 2L Water');
-      expect(before.category, 'Health');
-      expect(before.frequency, 'daily');
-      expect(before.createdAt, initialDate);
+      final before = await db.medicineDao.getMedicineById(medId);
+      expect(before, isNotNull);
+      expect(before!.name, 'Vitamin D3');
+      expect(before.dosage, '1000 IU');
+      expect(before.durationDays, 30);
+      expect(before.startDate, startDate);
 
-      // Patch title and category
-      await db.habitDao.patchHabit(
-        habitId,
-        title: 'Drink 3L Water & Electrolytes',
-        category: 'Fitness',
+      await db.medicineDao.updateMedicine(
+        MedicineTableCompanion(
+          id: drift.Value(medId),
+          name: const drift.Value('Vitamin D3 + K2'),
+          dosage: const drift.Value('2000 IU'),
+          instructions: const drift.Value('Take with meal and water'),
+        ),
       );
 
-      final after = (await db.habitDao.watchAllHabits().first).firstWhere((h) => h.id == habitId);
-      expect(after.title, 'Drink 3L Water & Electrolytes');
-      expect(after.category, 'Fitness');
-      // Verify frequency and createdAt were strictly preserved
-      expect(after.frequency, 'daily');
-      expect(after.createdAt, initialDate);
+      final after = await db.medicineDao.getMedicineById(medId);
+      expect(after, isNotNull);
+      expect(after!.name, 'Vitamin D3 + K2');
+      expect(after.dosage, '2000 IU');
+      expect(after.instructions, 'Take with meal and water');
+      expect(after.durationDays, 30);
+      expect(after.startDate, startDate);
     });
 
     test('Activity classification integrity: to-do vs duration task distinction', () async {

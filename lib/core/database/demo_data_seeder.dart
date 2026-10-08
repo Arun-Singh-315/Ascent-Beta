@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_database.dart';
 import 'tables/enums.dart';
+import '../medicine/medicine_service.dart';
 
 /// Seeds realistic, production-quality beta demonstration data into the local SQLite database.
 /// This allows beta testing every screen and feature end-to-end without requiring tedious manual data entry.
@@ -20,8 +21,8 @@ class DemoDataSeeder {
 
     // ── 1. Clean all existing tables cleanly ─────────────────────────────────
     await db.customStatement('DELETE FROM ai_chat_messages;');
-    await db.customStatement('DELETE FROM habit_completions;');
-    await db.customStatement('DELETE FROM habits;');
+    await db.customStatement('DELETE FROM medicine_logs;');
+    await db.customStatement('DELETE FROM medicines;');
     await db.customStatement('DELETE FROM daily_activity_goals;');
     await db.customStatement('DELETE FROM walk_sessions;');
     await db.customStatement('DELETE FROM savings_goals;');
@@ -630,25 +631,16 @@ class DemoDataSeeder {
       ),
     );
 
-    // ── 17. Daily Habits ──────────────────────────────────────────────────
-    final h1 = await db.habitDao.insertHabit(
-      const HabitTableCompanion(
-        title: drift.Value('Daily 30m LeetCode / DSA'),
-        category: drift.Value('Study'),
-      ),
+    // ── 17. Prescription & Medicines ──────────────────────────────────────
+    final medicineService = MedicineService(db);
+    await medicineService.addMedicine(
+      name: 'Vitamin D3 1000IU',
+      dosage: '1 Capsule',
+      scheduledTimes: ['08:00'],
+      durationDays: 14,
+      startDate: today,
+      instructions: 'After breakfast',
+      type: 'capsule',
     );
-    await db.habitDao.insertHabit(
-      const HabitTableCompanion(
-        title: drift.Value('30-Minute Outdoor Walk'),
-        category: drift.Value('Fitness'),
-      ),
-    );
-    await db.habitDao.insertHabit(
-      const HabitTableCompanion(
-        title: drift.Value('Drink 3L Water'),
-        category: drift.Value('Health'),
-      ),
-    );
-    await db.habitDao.toggleHabitToday(h1);
   }
 }

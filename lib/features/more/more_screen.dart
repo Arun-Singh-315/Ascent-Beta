@@ -164,11 +164,11 @@ class MoreScreen extends ConsumerWidget {
                 ),
                 _TileDivider(),
                 _MoreListTile(
-                  icon: Icons.checklist_rtl_rounded,
-                  iconTint: g.slate,
-                  title: 'Daily Habits & Routines',
-                  subtitle: 'Habit streaks, daily check-offs & momentum triggers',
-                  route: '/habits',
+                  icon: Icons.medication_rounded,
+                  iconTint: g.clay,
+                  title: 'Medicine & Prescriptions',
+                  subtitle: 'Daily dose schedules, timing reminders & tracking',
+                  route: '/medicine',
                 ),
                 _TileDivider(),
                 _MoreListTile(

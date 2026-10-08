@@ -61,8 +61,10 @@ void main() {
         todayWalkDistanceStreamProvider.overrideWith((ref) => Stream.value(2400.0)),
         todaySpendingStreamProvider.overrideWith((ref) => Stream.value(350.0)),
         overallBudgetStreamProvider.overrideWith((ref) => Stream.value(null)),
-        allHabitsStreamProvider.overrideWith((ref) => Stream.value([])),
-        todayCompletedHabitIdsStreamProvider.overrideWith((ref) => Stream.value({})),
+        activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
+        todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
+        activeMomentumChallengeStreamProvider.overrideWith((ref) => Stream.value(null)),
+        todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         mostRecentNoteProvider.overrideWith((ref) => Stream.value(null)),
         nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
@@ -117,17 +119,16 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('QuickModulesNavHub renders all 4 modules and Chai Break sanctuary card', (tester) async {
+    testWidgets('QuickModulesNavHub renders Momentum progress, Medicine, Hydration and Chai Break', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(const Scaffold(body: QuickModulesNavHub())),
       );
 
       await tester.pump();
-      expect(find.text('LIFE MODULES'), findsOneWidget);
+      expect(find.text('DAILY PROTOCOL'), findsOneWidget);
       expect(find.text('Hydration'), findsOneWidget);
-      expect(find.text('Walk & Run'), findsOneWidget);
-      expect(find.text('Money'), findsOneWidget);
-      expect(find.text('Habits'), findsOneWidget);
+      expect(find.text('Medicine'), findsOneWidget);
+      expect(find.text('Momentum 30-Day Protocol'), findsOneWidget);
       expect(find.text('Chai & Coffee Break'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());

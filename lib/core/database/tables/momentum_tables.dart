@@ -39,7 +39,7 @@ class MomentumCommitmentTable extends Table {
   IntColumn get challengeId => integer().references(MomentumChallengeTable, #id)();
   IntColumn get dayNumber => integer()(); // 1..30
   DateTimeColumn get scheduledDate => dateTime()(); // normalized to midnight
-  TextColumn get commitmentType => text()(); // 'wake', 'walk', 'gym', 'habit', 'wind_down'
+  TextColumn get commitmentType => text()(); // 'wake', 'walk', 'gym', 'hydration', 'wind_down'
   TextColumn get title => text().withLength(min: 1, max: 200)();
   TextColumn get description => text().nullable()();
   IntColumn get targetDurationMinutes => integer().nullable()();

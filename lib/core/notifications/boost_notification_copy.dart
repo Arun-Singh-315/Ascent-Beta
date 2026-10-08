@@ -93,7 +93,7 @@ class BoostNotificationCopy {
       NotificationMessage(
         title: 'Bro, don\'t let the streak die tonight! 🔥',
         body:
-            'Missing you today. Just 5 mins on your top priority or habits. Future you will be proud tomorrow morning. Let\'s do it.',
+            'Missing you today. Just 5 mins on your top priority tasks. Future you will be proud tomorrow morning. Let\'s do it.',
         summary: '⚡ Streak Guardian',
       ),
       NotificationMessage(

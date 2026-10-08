@@ -8,6 +8,7 @@ import '../repository/local/local_notes_repository.dart';
 import '../repository/local/local_task_repository.dart';
 import '../repository/local/local_user_profile_repository.dart';
 import '../repository/repository_interface.dart';
+import '../medicine/medicine_service.dart';
 
 // ---------------------------------------------------------------------------
 // Database singleton
@@ -89,10 +90,6 @@ final walkDaoProvider = Provider<WalkDao>(
   (ref) => WalkDao(ref.watch(databaseProvider)),
 );
 
-final habitDaoProvider = Provider<HabitDao>(
-  (ref) => HabitDao(ref.watch(databaseProvider)),
-);
-
 final aiAssistantDaoProvider = Provider<AiAssistantDao>(
   (ref) => AiAssistantDao(ref.watch(databaseProvider)),
 );
@@ -112,6 +109,31 @@ final courseDaoProvider = Provider<CourseDao>(
 final momentumDaoProvider = Provider<MomentumDao>(
   (ref) => MomentumDao(ref.watch(databaseProvider)),
 );
+
+final medicineDaoProvider = Provider<MedicineDao>(
+  (ref) => MedicineDao(ref.watch(databaseProvider)),
+);
+
+final medicineServiceProvider = Provider<MedicineService>(
+  (ref) => MedicineService(ref.watch(databaseProvider)),
+);
+
+// ── Medicine Reactive Stream Providers ─────────────────────────────────────────
+
+final activeMedicinesStreamProvider = StreamProvider<List<Medicine>>((ref) {
+  final dao = ref.watch(medicineDaoProvider);
+  return dao.watchActiveMedicines();
+});
+
+final allMedicinesStreamProvider = StreamProvider<List<Medicine>>((ref) {
+  final dao = ref.watch(medicineDaoProvider);
+  return dao.watchAllMedicines();
+});
+
+final todayMedicineLogsStreamProvider = StreamProvider<List<MedicineLog>>((ref) {
+  final dao = ref.watch(medicineDaoProvider);
+  return dao.watchTodayMedicineLogs();
+});
 
 // ── Momentum Reactive Stream Providers ─────────────────────────────────────────
 
@@ -182,17 +204,7 @@ final activityGoalStreamProvider = StreamProvider<DailyActivityGoal>((ref) {
   return dao.watchActivityGoal();
 });
 
-// ── Habits Stream Providers ───────────────────────────────────────────────────
 
-final allHabitsStreamProvider = StreamProvider<List<Habit>>((ref) {
-  final dao = ref.watch(habitDaoProvider);
-  return dao.watchAllHabits();
-});
-
-final todayCompletedHabitIdsStreamProvider = StreamProvider<Set<int>>((ref) {
-  final dao = ref.watch(habitDaoProvider);
-  return dao.watchTodayCompletedHabitIds();
-});
 
 // ── Water Hydration Stream Providers ──────────────────────────────────────────
 

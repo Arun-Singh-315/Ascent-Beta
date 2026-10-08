@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/ai/ai_service.dart';
+import 'package:ascent/core/medicine/medicine_service.dart';
 
 void main() {
   late AppDatabase db;
@@ -138,68 +139,24 @@ void main() {
     });
   });
 
-  group('Daily Habits & Routines Module Tests', () {
-    test('Creates habits, toggles completion, and tracks completed IDs', () async {
-      // Insert habit
-      final habitId = await db.habitDao.insertHabit(
-        HabitTableCompanion.insert(
-          title: '30-minute morning walk',
-          category: const drift.Value('Health'),
-        ),
+  group('Medicine Management Module Tests', () {
+    test('Creates medicine prescription, logs doses, and marks dose taken', () async {
+      final service = MedicineService(db);
+      final medId = await service.addMedicine(
+        name: 'Paracetamol',
+        dosage: '1 Tablet',
+        scheduledTimes: ['08:00', '20:00'],
+        durationDays: 3,
+        startDate: DateTime.now(),
       );
-      expect(habitId, isPositive);
+      expect(medId, isPositive);
 
-      // Watch completed IDs for today (initially empty)
-      final initialCompleted = await db.habitDao.watchTodayCompletedHabitIds().first;
-      expect(initialCompleted.contains(habitId), isFalse);
+      final logs = await db.medicineDao.watchTodayMedicineLogs().first;
+      expect(logs.length, 2);
 
-      // Toggle completion for today
-      final isNowCompleted = await db.habitDao.toggleHabitToday(habitId);
-      expect(isNowCompleted, isTrue);
-
-      // Check status after toggle
-      final updatedCompleted = await db.habitDao.watchTodayCompletedHabitIds().first;
-      expect(updatedCompleted.contains(habitId), isTrue);
-
-      // Toggle again to uncomplete
-      final toggledOff = await db.habitDao.toggleHabitToday(habitId);
-      expect(toggledOff, isFalse);
-
-      final finalCompleted = await db.habitDao.watchTodayCompletedHabitIds().first;
-      expect(finalCompleted.contains(habitId), isFalse);
-    });
-
-    test('getAllStreaks computes streaks in batch for all habits', () async {
-      final habit1 = await db.habitDao.insertHabit(
-        HabitTableCompanion.insert(title: 'Read 20 pages'),
-      );
-      final habit2 = await db.habitDao.insertHabit(
-        HabitTableCompanion.insert(title: 'Meditate 10 mins'),
-      );
-
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final yesterday = today.subtract(const Duration(days: 1));
-
-      // habit1 completed today and yesterday (streak 2)
-      await db.habitDao.insertCompletion(HabitCompletionTableCompanion.insert(
-        habitId: habit1,
-        date: yesterday,
-      ));
-      await db.habitDao.insertCompletion(HabitCompletionTableCompanion.insert(
-        habitId: habit1,
-        date: today,
-      ));
-
-      // habit2 completed today only (streak 1)
-      await db.habitDao.insertCompletion(HabitCompletionTableCompanion.insert(
-        habitId: habit2,
-        date: today,
-      ));
-
-      final streaks = await db.habitDao.getAllStreaks();
-      expect(streaks[habit1], 2);
-      expect(streaks[habit2], 1);
+      await service.toggleDose(logs.first.id, true);
+      final updatedLogs = await db.medicineDao.watchTodayMedicineLogs().first;
+      expect(updatedLogs.first.isTaken, isTrue);
     });
   });
 

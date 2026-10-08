@@ -6,6 +6,7 @@ import '../providers/database_provider.dart';
 import '../learning_hub/learning_hub_provider.dart';
 import '../learning_hub/learning_hub_models.dart';
 import '../walk/walk_tracking_service.dart';
+import '../medicine/medicine_service.dart';
 
 enum AiActionType {
   taskCreated,
@@ -126,6 +127,11 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     // 7c. Querying Reminders ("what are my reminders", "show reminders", "upcoming reminders")
     if (_isReminderQuery(lower)) {
       return await _handleReminderQuery(ref);
+    }
+
+    // 7d. Querying Medicine & Prescriptions ("what are my medicines", "show medicines", "did i take my medicine")
+    if (_isMedicineQuery(lower)) {
+      return await _handleMedicineQuery(ref);
     }
 
     // 8. General Natural Language Task & Activity Creation
@@ -816,6 +822,86 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     );
   }
 
+  bool _isMedicineQuery(String lower) {
+    if (lower.contains('medicine') ||
+        lower.contains('medicines') ||
+        lower.contains('pill') ||
+        lower.contains('pills') ||
+        lower.contains('dose') ||
+        lower.contains('doses') ||
+        lower.contains('medication') ||
+        lower.contains('prescription')) {
+      if (lower.startsWith('add ') ||
+          lower.startsWith('schedule ') ||
+          lower.startsWith('take ') ||
+          lower.startsWith('remind me to take')) {
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  Future<AiResponse> _handleMedicineQuery(WidgetRef ref) async {
+    final dao = ref.read(medicineDaoProvider);
+    List<MedicineLog> logs = [];
+    List<Medicine> meds = [];
+    try {
+      logs = await dao.watchTodayMedicineLogs().first.timeout(
+            const Duration(milliseconds: 600),
+            onTimeout: () => <MedicineLog>[],
+          );
+      meds = await dao.watchActiveMedicines().first.timeout(
+            const Duration(milliseconds: 600),
+            onTimeout: () => <Medicine>[],
+          );
+    } catch (_) {}
+
+    if (logs.isEmpty) {
+      if (meds.isEmpty) {
+        return const AiResponse(
+          text: "You don't have any active prescriptions or medicines scheduled today! 💊\n\n"
+              "You can add one in the Medicine tab or ask me to schedule one anytime.",
+          clarifyingOptions: [
+            'What are my tasks today?',
+            'Plan my day',
+          ],
+        );
+      } else {
+        return AiResponse(
+          text: "You have ${meds.length} active prescription(s), but no doses are scheduled for today. 💊",
+          clarifyingOptions: [
+            'What are my tasks today?',
+            'Plan my day',
+          ],
+        );
+      }
+    }
+
+    final total = logs.length;
+    final taken = logs.where((l) => l.isTaken).length;
+
+    final buffer = StringBuffer();
+    buffer.writeln("Here is your medicine schedule for today ($taken/$total doses completed): 💊\n");
+
+    for (final log in logs) {
+      final med = meds.where((m) => m.id == log.medicineId).firstOrNull;
+      final medName = med?.name ?? 'Prescription';
+      final medDosage = med?.dosage ?? '';
+      final timeStr = MedicineService.formatTimeSlot(log.timeSlot);
+      final status = log.isTaken ? "✅ Taken" : "⏳ Pending";
+      buffer.writeln("• $timeStr — $medName ($medDosage) [$status]");
+    }
+
+    return AiResponse(
+      text: buffer.toString().trim(),
+      clarifyingOptions: [
+        'Plan my day',
+        'What are my tasks today?',
+      ],
+    );
+  }
+
   Future<AiResponse> _generateDailyPlan(WidgetRef ref) async {
     final profile = ref.read(userProfileStreamProvider).value;
     final userName = profile?.name.isNotEmpty == true ? profile!.name : 'Arun';
@@ -870,6 +956,17 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       buffer.writeln("💧 **Hydration Alert:** You've only logged $waterMl / $waterGoal mL. Drink a glass of water now!");
     } else {
       buffer.writeln("💧 **Hydration:** $waterMl / $waterGoal mL consumed — stay hydrated!");
+    }
+
+    final todayMedLogs = ref.read(todayMedicineLogsStreamProvider).value ?? [];
+    final totalMeds = todayMedLogs.length;
+    final takenMeds = todayMedLogs.where((l) => l.isTaken).length;
+    if (totalMeds > 0) {
+      if (takenMeds == totalMeds) {
+        buffer.writeln("💊 **Medication:** All $totalMeds doses taken today! Great consistency.");
+      } else {
+        buffer.writeln("💊 **Medication:** $takenMeds of $totalMeds doses taken today. Stay on track with your prescription!");
+      }
     }
 
     if (isWalkActive) {

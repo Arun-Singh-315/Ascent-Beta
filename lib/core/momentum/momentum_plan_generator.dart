@@ -81,13 +81,13 @@ class MomentumPlanGenerator {
         ),
       );
 
-      // ── Commitment 2: Daily Morning Hydration Habit ───────────────────────
+      // ── Commitment 2: Daily Morning Hydration Routine ─────────────────────
       commitments.add(
         MomentumCommitmentTableCompanion.insert(
           challengeId: challengeId,
           dayNumber: day,
           scheduledDate: scheduledDate,
-          commitmentType: 'habit',
+          commitmentType: 'hydration',
           title: 'Morning Hydration (500ml)',
           description: const Value('Hydrate immediately upon rising to elevate alertness and digestion.'),
           scheduledTimeMinutes: Value(wakeTimeMinutes + 10),
