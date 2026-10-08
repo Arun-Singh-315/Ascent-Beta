@@ -17,12 +17,37 @@ import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 
+import 'package:ascent/core/auth/auth_provider.dart';
+
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
   TimeTrackingState build() {
     return const TimeTrackingState();
   }
 }
+
+class FakeAuthNotifier extends AuthNotifier {
+  final bool _isAuth;
+  FakeAuthNotifier([this._isAuth = true]);
+
+  @override
+  AuthState build() => AuthState(isAuthenticated: _isAuth, username: 'arn');
+}
+
+final _testUserProfile = UserProfile(
+  id: 1,
+  name: 'Arun Singh',
+  targetRole: 'Software Engineer',
+  targetCompanies: '["Google"]',
+  weeklyHoursAvailable: 10,
+  preferredStudyWindow: 'morning',
+  skillSelfRatings: '{}',
+  createdAt: DateTime.now(),
+  updatedAt: DateTime.now(),
+  onboardingComplete: true,
+  interviewDate: null,
+  lastOpenedAt: null,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -48,11 +73,18 @@ void main() {
     await db.close();
   });
 
-  Widget buildTestableWidget(Widget child, {List<TodayActivityItem>? customActivities}) {
+  Widget buildTestableWidget(
+    Widget child, {
+    List<TodayActivityItem>? customActivities,
+    UserProfile? customProfile,
+    bool hasProfile = true,
+    bool isAuthenticated = true,
+  }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        authProvider.overrideWith(() => FakeAuthNotifier(isAuthenticated)),
         timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1000)),
@@ -66,7 +98,7 @@ void main() {
         todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
-        userProfileStreamProvider.overrideWith((ref) => Stream.value(null)),
+        userProfileStreamProvider.overrideWith((ref) => Stream.value(hasProfile ? (customProfile ?? _testUserProfile) : null)),
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
         todayActivitiesProvider.overrideWith((ref) => Stream.value(customActivities ?? [])),
       ],
@@ -251,6 +283,7 @@ void main() {
           overrides: [
             databaseProvider.overrideWithValue(db),
             sharedPreferencesProvider.overrideWithValue(prefs),
+            authProvider.overrideWith(() => FakeAuthNotifier()),
             timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
             currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
             todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1000)),
@@ -264,7 +297,7 @@ void main() {
             todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
             recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
             nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
-            userProfileStreamProvider.overrideWith((ref) => Stream.value(null)),
+            userProfileStreamProvider.overrideWith((ref) => Stream.value(_testUserProfile)),
             todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
             todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
           ],
@@ -279,6 +312,41 @@ void main() {
         await tester.pumpWidget(const SizedBox());
         await tester.pump(Duration.zero);
       }
+    });
+
+    testWidgets('HomeScreen compulsory blockage redirects un-onboarded user to /onboarding', (tester) async {
+      // Missing profile
+      await tester.pumpWidget(buildTestableWidget(
+        const HomeScreen(),
+        hasProfile: false,
+      ));
+      // First frame might be loading or stream dispatch
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Should never render "Learner" and must show blockage indicator
+      expect(find.text('Learner'), findsNothing);
+      expect(find.byKey(const ValueKey('blockage_profile_indicator')), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('HomeScreen compulsory blockage redirects unauthenticated user to /login', (tester) async {
+      await tester.pumpWidget(buildTestableWidget(
+        const HomeScreen(),
+        isAuthenticated: false,
+      ));
+      await tester.pump();
+
+      // Unauthenticated user is immediately blocked
+      expect(find.text('Learner'), findsNothing);
+      expect(find.byKey(const ValueKey('blockage_auth_indicator')), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
     });
   });
 }

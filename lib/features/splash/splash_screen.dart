@@ -61,34 +61,46 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _checkSessionAndNavigate() async {
     final startTime = DateTime.now();
 
-    final hasCompletedOnboardingPref = ref.read(onboardingCompleteProvider);
-    bool hasProfile = false;
+    final isAuth = ref.read(authProvider).isAuthenticated;
+
+    bool hasValidProfile = false;
     try {
       final profileDao = ref.read(userProfileDaoProvider);
       final profile = await profileDao.getProfile();
-      if (profile != null && profile.onboardingComplete) {
-        hasProfile = true;
+      if (profile != null &&
+          profile.onboardingComplete &&
+          profile.name.trim().isNotEmpty &&
+          profile.name.trim().toLowerCase() != 'learner' &&
+          profile.targetRole.trim().isNotEmpty) {
+        hasValidProfile = true;
       }
     } catch (_) {
-      hasProfile = hasCompletedOnboardingPref;
+      hasValidProfile = false;
     }
 
-    final isAuth = ref.read(authProvider).isAuthenticated;
+    if (!hasValidProfile) {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setBool('ascent_onboarding_complete', false);
+      ref.invalidate(onboardingCompleteProvider);
+    }
 
     final elapsed = DateTime.now().difference(startTime);
-    final remainingWait = const Duration(milliseconds: 1100) - elapsed;
+    final remainingWait = const Duration(milliseconds: 1400) - elapsed;
     if (remainingWait > Duration.zero) {
       await Future.delayed(remainingWait);
     }
 
     if (!mounted) return;
 
+    final router = GoRouter.maybeOf(context);
+    if (router == null) return;
+
     if (!isAuth) {
-      context.go('/login');
-    } else if (hasCompletedOnboardingPref || hasProfile) {
-      context.go('/home');
+      router.go('/login');
+    } else if (hasValidProfile) {
+      router.go('/home');
     } else {
-      context.go('/onboarding');
+      router.go('/onboarding');
     }
   }
 

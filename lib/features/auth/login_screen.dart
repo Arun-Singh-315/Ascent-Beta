@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/database_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -52,11 +53,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (success) {
       HapticFeedback.lightImpact();
-      final hasCompletedOnboarding = ref.read(onboardingCompleteProvider);
-      if (hasCompletedOnboarding) {
-        context.go('/home');
-      } else {
-        context.go('/onboarding');
+      bool hasValidProfile = false;
+      try {
+        final profileDao = ref.read(userProfileDaoProvider);
+        final profile = await profileDao.getProfile();
+        if (profile != null &&
+            profile.onboardingComplete &&
+            profile.name.trim().isNotEmpty &&
+            profile.name.trim().toLowerCase() != 'learner' &&
+            profile.targetRole.trim().isNotEmpty) {
+          hasValidProfile = true;
+        }
+      } catch (_) {
+        hasValidProfile = false;
+      }
+
+      if (!hasValidProfile) {
+        final prefs = ref.read(sharedPreferencesProvider);
+        await prefs.setBool('ascent_onboarding_complete', false);
+        ref.invalidate(onboardingCompleteProvider);
+      }
+
+      if (!mounted) return;
+
+      final router = GoRouter.maybeOf(context);
+      if (router != null) {
+        if (hasValidProfile) {
+          router.go('/home');
+        } else {
+          router.go('/onboarding');
+        }
       }
     } else {
       HapticFeedback.heavyImpact();

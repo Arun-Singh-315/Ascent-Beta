@@ -99,10 +99,14 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
       // 1. Upsert Profile
       final cleanName = state.name.trim();
       final cleanRole = state.targetRole.trim();
+      if (cleanName.length < 2 || cleanRole.isEmpty) {
+        state = state.copyWith(isSubmitting: false);
+        return;
+      }
       await profileDao.upsertProfile(
         UserProfileTableCompanion(
-          name: drift.Value(cleanName.isEmpty ? 'Learner' : cleanName),
-          targetRole: drift.Value(cleanRole.isEmpty ? 'Software Engineer' : cleanRole),
+          name: drift.Value(cleanName),
+          targetRole: drift.Value(cleanRole),
           targetCompanies: drift.Value(jsonEncode(state.targetCompanies)),
           interviewDate: drift.Value(state.interviewDate),
           weeklyHoursAvailable: drift.Value(state.weeklyHours),
@@ -204,7 +208,6 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
     final currentStep = state.stepIndex;
-    final canSkip = currentStep == 1;
 
     return PopScope(
       canPop: currentStep == 0,
@@ -233,18 +236,8 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
             current: currentStep,
           ),
           centerTitle: true,
-          actions: [
-            if (canSkip)
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: AscentButton.ghost(
-                  label: 'Skip',
-                  compact: true,
-                  onPressed: _nextStep,
-                ),
-              )
-            else
-              const SizedBox(width: 48),
+          actions: const [
+            SizedBox(width: 48),
           ],
         ),
         body: SafeArea(

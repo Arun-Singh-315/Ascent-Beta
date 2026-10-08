@@ -14,6 +14,7 @@ import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 
+import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:drift/drift.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -22,6 +23,26 @@ class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
     return const TimeTrackingState();
   }
 }
+
+class FakeAuthNotifier extends AuthNotifier {
+  @override
+  AuthState build() => const AuthState(isAuthenticated: true, username: 'arn');
+}
+
+final _modularTestProfile = UserProfile(
+  id: 1,
+  name: 'Arun',
+  targetRole: 'Software Engineer',
+  targetCompanies: '["Google"]',
+  weeklyHoursAvailable: 10,
+  preferredStudyWindow: 'morning',
+  skillSelfRatings: '{}',
+  createdAt: DateTime.now(),
+  updatedAt: DateTime.now(),
+  onboardingComplete: true,
+  interviewDate: null,
+  lastOpenedAt: null,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +75,7 @@ void main() {
       overrides: [
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
+        authProvider.overrideWith(() => FakeAuthNotifier()),
         timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1500)),
@@ -67,7 +89,7 @@ void main() {
         todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
-        userProfileStreamProvider.overrideWith((ref) => Stream.value(null)),
+        userProfileStreamProvider.overrideWith((ref) => Stream.value(_modularTestProfile)),
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
         todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
       ],

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../app/theme/glass_theme.dart';
+import '../../core/auth/auth_provider.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -43,6 +45,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+
+    // ── Blockage Guard 1: Authentication Required ──
+    final isAuth = ref.watch(authProvider).isAuthenticated;
+    if (!isAuth) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final router = GoRouter.maybeOf(context);
+        if (router != null) {
+          router.go('/login');
+        }
+      });
+      return Scaffold(
+        backgroundColor: g.bg,
+        body: const Center(
+          child: CircularProgressIndicator(key: ValueKey('blockage_auth_indicator')),
+        ),
+      );
+    }
+
     final profileAsync = ref.watch(userProfileStreamProvider);
     final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
 
@@ -59,6 +80,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             data: (profile) {
+              // ── Blockage Guard 2: Compulsory Profile & Onboarding Completion ──
+              final isValidProfile = profile != null &&
+                  profile.onboardingComplete &&
+                  profile.name.trim().isNotEmpty &&
+                  profile.name.trim().toLowerCase() != 'learner' &&
+                  profile.targetRole.trim().isNotEmpty;
+
+              if (!isValidProfile) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  final router = GoRouter.maybeOf(context);
+                  if (router != null) {
+                    router.go('/onboarding');
+                  }
+                });
+                return const Center(
+                  child: CircularProgressIndicator(key: ValueKey('blockage_profile_indicator')),
+                );
+              }
+
               return RefreshIndicator(
                 onRefresh: () async {
                   ref.invalidate(userProfileStreamProvider);
@@ -80,7 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     HomeHeader(profile: profile),
 
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
-                    DayOneTutorialCard(userName: profile?.name ?? 'Friend'),
+                    DayOneTutorialCard(userName: profile.name),
 
                     // Return-user cold start welcome banner (>3 days absent)
                     if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
