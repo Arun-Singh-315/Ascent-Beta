@@ -1,11 +1,13 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'boost_notification_copy.dart';
 
 /// Notification Service for Ascent.
-/// Provides safe local notifications for daily check-in reminders and interview deadlines
-/// without requiring dangerous exact alarm permissions that trigger Google Play policy issues.
+/// Provides modern, stylish notifications with rich typography, custom vibration,
+/// accent coloring, and raw brotherly momentum boosts (5-Minute Rule & Streak Guardian).
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -13,9 +15,14 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
-  // Channel constants
+  // Offset used to pair a task reminder with its 20-minute follow-up nudge
+  static const int followUpIdOffset = 500000;
+
+  // Notification Channel Constants
+  static const String channelBoostNudgesId = 'ascent_boost_nudges';
+  static const String channelBoostNudgesName = 'Raw Momentum & Streak Guardian';
   static const String channelStudyId = 'ascent_study_reminders';
-  static const String channelStudyName = 'Study Reminders';
+  static const String channelStudyName = 'Study & Task Reminders';
   static const String channelCatchUpId = 'ascent_catch_up';
   static const String channelCatchUpName = 'Daily Catch-up Nudge';
   static const String channelTimerId = 'ascent_timer_alerts';
@@ -56,10 +63,22 @@ class NotificationService {
         },
       );
 
-      // Create Android Channels
+      // Create Android Notification Channels
       final androidImpl = _plugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelBoostNudgesId,
+            channelBoostNudgesName,
+            description: 'Raw brotherly momentum nudges, 5-minute rule, and streak guardian',
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+            enableLights: true,
+            ledColor: Color(0xFF00B4D8),
+          ),
+        );
         await androidImpl.createNotificationChannel(
           const AndroidNotificationChannel(
             channelStudyId,
@@ -119,32 +138,83 @@ class NotificationService {
     return true;
   }
 
-  /// Shows an immediate notification (e.g. test, or milestone achieved).
-  Future<void> showInstantNotification({
-    int id = 999,
+  /// Builds a modern, stylized NotificationDetails payload with expandable text,
+  /// tactile vibration, and Ascent cyan brand accent color.
+  NotificationDetails _buildModernNotificationDetails({
+    required String channelId,
+    required String channelName,
+    required String channelDescription,
     required String title,
     required String body,
-    String? payload,
-    String channelId = channelStudyId,
-    String channelName = channelStudyName,
-  }) async {
-    if (!_isInitialized) await initialize();
-
+    String? summaryText,
+    Importance importance = Importance.max,
+    Priority priority = Priority.max,
+  }) {
     final androidDetails = AndroidNotificationDetails(
       channelId,
       channelName,
-      channelDescription: 'Ascent instant alerts',
-      importance: Importance.high,
-      priority: Priority.high,
+      channelDescription: channelDescription,
+      importance: importance,
+      priority: priority,
+      color: const Color(0xFF00B4D8),
+      enableLights: true,
+      ledColor: const Color(0xFF00B4D8),
+      ledOnMs: 500,
+      ledOffMs: 500,
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 150, 80, 220]),
+      subText: 'Ascent • Momentum Engine',
+      category: AndroidNotificationCategory.reminder,
+      styleInformation: BigTextStyleInformation(
+        body,
+        htmlFormatBigText: false,
+        contentTitle: title,
+        htmlFormatContentTitle: false,
+        summaryText: summaryText ?? '⚡ 5-Min Rule',
+        htmlFormatSummaryText: false,
+      ),
+      playSound: true,
     );
-    const darwinDetails = DarwinNotificationDetails();
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+      subtitle: 'Ascent • Momentum Engine',
+    );
+
     const linuxDetails = LinuxNotificationDetails();
 
-    final notificationDetails = NotificationDetails(
+    return NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
       macOS: darwinDetails,
       linux: linuxDetails,
+    );
+  }
+
+  /// Shows an immediate stylized notification.
+  Future<void> showInstantNotification({
+    int id = 999,
+    required String title,
+    required String body,
+    String? summaryText,
+    String? payload,
+    String channelId = channelBoostNudgesId,
+    String channelName = channelBoostNudgesName,
+  }) async {
+    if (!_isInitialized) await initialize();
+
+    final notificationDetails = _buildModernNotificationDetails(
+      channelId: channelId,
+      channelName: channelName,
+      channelDescription: 'Ascent instant alerts',
+      title: title,
+      body: body,
+      summaryText: summaryText,
+      importance: Importance.high,
+      priority: Priority.high,
     );
 
     try {
@@ -169,6 +239,19 @@ class NotificationService {
   }) =>
       showInstantNotification(id: id, title: title, body: body, payload: payload);
 
+  /// Fires an instant raw brotherly boost preview for user testing.
+  Future<void> sendTestBoostNotification() async {
+    final msg = BoostNotificationCopy.forTestBoost();
+    await showInstantNotification(
+      id: 777,
+      title: msg.title,
+      body: msg.body,
+      summaryText: msg.summary,
+      channelId: channelBoostNudgesId,
+      channelName: channelBoostNudgesName,
+    );
+  }
+
   /// Schedules daily repeating reminder at given TimeOfDay using safe inexact idle alarms.
   Future<void> scheduleDailyReminder({
     required TimeOfDay time,
@@ -179,22 +262,15 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     final scheduledTz = _nextInstanceOfTime(time);
-
-    const androidDetails = AndroidNotificationDetails(
-      channelStudyId,
-      channelStudyName,
+    final notificationDetails = _buildModernNotificationDetails(
+      channelId: channelStudyId,
+      channelName: channelStudyName,
       channelDescription: 'Daily study session and goal reminders',
+      title: title,
+      body: body,
+      summaryText: '⚡ Daily Prime',
       importance: Importance.high,
       priority: Priority.high,
-    );
-    const darwinDetails = DarwinNotificationDetails();
-    const linuxDetails = LinuxNotificationDetails();
-
-    const notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-      macOS: darwinDetails,
-      linux: linuxDetails,
     );
 
     try {
@@ -209,6 +285,57 @@ class NotificationService {
       );
     } catch (e) {
       debugPrint('Failed to schedule daily reminder: $e');
+    }
+  }
+
+  /// Daily Mid-day (14:30) and Evening Streak Guardian (20:30) brotherly nudges.
+  Future<void> scheduleDailyMomentumGuardianNudges() async {
+    if (!_isInitialized) await initialize();
+
+    // 1. Midday 14:30 Check-in
+    final midMsg = BoostNotificationCopy.forMiddayCheck();
+    await _scheduleDailyBoost(
+      id: 201,
+      time: const TimeOfDay(hour: 14, minute: 30),
+      msg: midMsg,
+    );
+
+    // 2. Evening 20:30 Streak Guardian
+    final eveningMsg = BoostNotificationCopy.forEveningStreakGuardian();
+    await _scheduleDailyBoost(
+      id: 202,
+      time: const TimeOfDay(hour: 20, minute: 30),
+      msg: eveningMsg,
+    );
+  }
+
+  Future<void> _scheduleDailyBoost({
+    required int id,
+    required TimeOfDay time,
+    required NotificationMessage msg,
+  }) async {
+    final scheduledTz = _nextInstanceOfTime(time);
+    final details = _buildModernNotificationDetails(
+      channelId: channelBoostNudgesId,
+      channelName: channelBoostNudgesName,
+      channelDescription: 'Daily momentum and streak guardian nudges',
+      title: msg.title,
+      body: msg.body,
+      summaryText: msg.summary,
+    );
+
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: msg.title,
+        body: msg.body,
+        scheduledDate: scheduledTz,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    } catch (e) {
+      debugPrint('Failed to schedule daily boost $id: $e');
     }
   }
 
@@ -241,11 +368,13 @@ class NotificationService {
     return scheduledDate;
   }
 
-  /// Schedules a one-time reminder at a specific DateTime.
+  /// Schedules a one-time reminder at a specific DateTime with raw boost copy
+  /// and an automated 20-minute follow-up accountability nudge.
   Future<void> scheduleReminderNotification({
     required int id,
     required String title,
     required DateTime scheduledAt,
+    bool scheduleFollowUp = true,
   }) async {
     if (!_isInitialized) await initialize();
 
@@ -262,48 +391,64 @@ class NotificationService {
       }
     }
 
-    const androidDetails = AndroidNotificationDetails(
-      channelStudyId,
-      channelStudyName,
-      channelDescription: 'Ascent reminder notifications',
-      importance: Importance.max,
-      priority: Priority.max,
-      playSound: true,
-      enableVibration: true,
-    );
-    const darwinDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-    const linuxDetails = LinuxNotificationDetails();
-
-    const notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-      macOS: darwinDetails,
-      linux: linuxDetails,
+    final boostMsg = BoostNotificationCopy.forScheduledTask(title);
+    final notificationDetails = _buildModernNotificationDetails(
+      channelId: channelBoostNudgesId,
+      channelName: channelBoostNudgesName,
+      channelDescription: 'Ascent raw momentum reminders and 5-min rule',
+      title: boostMsg.title,
+      body: boostMsg.body,
+      summaryText: boostMsg.summary,
     );
 
     try {
       await _plugin.zonedSchedule(
         id: id,
-        title: title,
-        body: 'Scheduled reminder: $title',
+        title: boostMsg.title,
+        body: boostMsg.body,
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
-      debugPrint('Successfully scheduled reminder notification id=$id title="$title" at $scheduledTz');
+      debugPrint('Successfully scheduled reminder notification id=$id title="${boostMsg.title}" at $scheduledTz');
     } catch (e) {
       debugPrint('Failed to schedule reminder notification: $e');
     }
+
+    // Schedule the 20-minute follow-up accountability nudge ("Yo bro where you at?")
+    if (scheduleFollowUp) {
+      final followUpTz = scheduledTz.add(const Duration(minutes: 20));
+      final followUpBoost = BoostNotificationCopy.forMissingYouFollowUp(title);
+      final followUpDetails = _buildModernNotificationDetails(
+        channelId: channelBoostNudgesId,
+        channelName: channelBoostNudgesName,
+        channelDescription: 'Accountability follow-up nudges',
+        title: followUpBoost.title,
+        body: followUpBoost.body,
+        summaryText: followUpBoost.summary,
+      );
+
+      try {
+        await _plugin.zonedSchedule(
+          id: id + followUpIdOffset,
+          title: followUpBoost.title,
+          body: followUpBoost.body,
+          scheduledDate: followUpTz,
+          notificationDetails: followUpDetails,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        );
+        debugPrint('Scheduled accountability follow-up nudge id=${id + followUpIdOffset} at $followUpTz');
+      } catch (e) {
+        debugPrint('Failed to schedule follow-up nudge: $e');
+      }
+    }
   }
 
-  /// Cancels a notification by id.
+  /// Cancels a notification by id and also cancels any linked follow-up accountability nudge.
   Future<void> cancel(int id) async {
     try {
       await _plugin.cancel(id: id);
+      await _plugin.cancel(id: id + followUpIdOffset);
     } catch (e) {
       debugPrint('Failed to cancel notification: $e');
     }

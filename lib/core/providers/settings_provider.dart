@@ -116,3 +116,58 @@ class AssistantNameNotifier extends Notifier<String> {
 final assistantNameProvider = NotifierProvider<AssistantNameNotifier, String>(
   AssistantNameNotifier.new,
 );
+
+// ── Raw Boost Tone & Follow-up Nudges Preferences ─────────────────────────
+
+const _rawBoostToneKey = 'ascent_raw_boost_tone_enabled';
+const _accountabilityFollowUpKey = 'ascent_accountability_followup_enabled';
+
+class RawBoostToneNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    try {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return prefs.getBool(_rawBoostToneKey) ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setBool(_rawBoostToneKey, enabled);
+    } catch (_) {}
+    state = enabled;
+  }
+}
+
+final rawBoostToneEnabledProvider = NotifierProvider<RawBoostToneNotifier, bool>(
+  RawBoostToneNotifier.new,
+);
+
+class AccountabilityFollowUpNotifier extends Notifier<bool> {
+  @override
+  bool build() {
+    try {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return prefs.getBool(_accountabilityFollowUpKey) ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setBool(_accountabilityFollowUpKey, enabled);
+    } catch (_) {}
+    state = enabled;
+  }
+}
+
+final accountabilityFollowUpEnabledProvider =
+    NotifierProvider<AccountabilityFollowUpNotifier, bool>(
+  AccountabilityFollowUpNotifier.new,
+);
+

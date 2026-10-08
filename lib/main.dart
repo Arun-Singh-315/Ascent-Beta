@@ -10,6 +10,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await NotificationService.instance.initialize();
+  await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
 
   final prefs = await SharedPreferences.getInstance();
   await touchLastOpened(prefs);

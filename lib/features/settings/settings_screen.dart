@@ -810,6 +810,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
+                    // 1. Daily Check-in & Streak Guardian
                     Row(
                       children: [
                         Icon(Icons.notifications_active_outlined, color: context.accentPrimary),
@@ -819,14 +820,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Daily Check-in Reminder',
+                                'Daily Momentum & Streak Guardian',
                                 style: AscentTextStyles.labelMedium.copyWith(
                                   color: context.textPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               Text(
-                                'Keep your momentum with morning focus prompts',
+                                'Mid-day 2:30 PM push & 8:30 PM streak protection',
                                 style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                               ),
                             ],
@@ -838,27 +839,137 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           onChanged: (val) async {
                             if (val) {
                               await NotificationService.instance.requestPermissions();
+                              await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
                             }
                           },
                         ),
                       ],
                     ),
-                    const Divider(height: 24),
-                    AscentButton.ghost(
-                      label: 'Send Test Notification',
-                      icon: Icons.send_rounded,
-                      onPressed: () async {
-                        await NotificationService.instance.showInstantNotification(
-                          id: 101,
-                          title: 'Ascent — Daily Focus',
-                          body: 'Ready to take 1 small step today? Check your focus task.',
+                    const Divider(height: 20),
+
+                    // 2. Raw Brotherly Boost Tone (5-Min Rule)
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final rawBoost = ref.watch(rawBoostToneEnabledProvider);
+                        return Row(
+                          children: [
+                            Icon(Icons.bolt_rounded, color: const Color(0xFF00B4D8)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Raw Boost Tone (5-Min Rule)',
+                                    style: AscentTextStyles.labelMedium.copyWith(
+                                      color: context.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Authentic brotherly prompts: "Yo bro, just 5 mins, start the clock"',
+                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: rawBoost,
+                              activeThumbColor: const Color(0xFF00B4D8),
+                              onChanged: (val) {
+                                ref.read(rawBoostToneEnabledProvider.notifier).setEnabled(val);
+                              },
+                            ),
+                          ],
                         );
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Test notification sent!')),
-                          );
-                        }
                       },
+                    ),
+                    const Divider(height: 20),
+
+                    // 3. Accountability Follow-up Nudges
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final followUp = ref.watch(accountabilityFollowUpEnabledProvider);
+                        return Row(
+                          children: [
+                            Icon(Icons.alarm_on_rounded, color: const Color(0xFF48CAE4)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Accountability Follow-Up Nudges',
+                                    style: AscentTextStyles.labelMedium.copyWith(
+                                      color: context.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Nudges you 20 mins later if you haven\'t shown up on the board',
+                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: followUp,
+                              activeThumbColor: const Color(0xFF48CAE4),
+                              onChanged: (val) {
+                                ref.read(accountabilityFollowUpEnabledProvider.notifier).setEnabled(val);
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const Divider(height: 24),
+
+                    // 4. Test Notification Action Buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: AscentButton.primary(
+                            label: 'Send Raw Boost',
+                            icon: Icons.bolt_rounded,
+                            compact: true,
+                            onPressed: () async {
+                              await NotificationService.instance.sendTestBoostNotification();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('🔥 Raw boost notification fired to status bar!'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: AscentButton.ghost(
+                            label: 'Standard Test',
+                            icon: Icons.send_rounded,
+                            compact: true,
+                            onPressed: () async {
+                              await NotificationService.instance.showInstantNotification(
+                                id: 101,
+                                title: 'Ascent — Daily Focus',
+                                body: 'Ready to take 1 small step today? Check your focus task.',
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Test notification sent!'),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
