@@ -5,6 +5,7 @@ import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
 import '../learning_hub/learning_hub_provider.dart';
 import '../learning_hub/learning_hub_models.dart';
+import '../streak/study_streak_provider.dart';
 import 'database_provider.dart';
 import 'settings_provider.dart';
 
@@ -134,6 +135,13 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
         DateTime.now(),
         session.pausedIntervals,
       );
+
+      // Increment active study seconds for non-lecture study sessions
+      if ((session.activityType.toLowerCase() == 'study' ||
+              state.activeCategory?.name.toLowerCase() == 'study') &&
+          session.activityRefType != 'lecture') {
+        ref.read(studyStreakProvider.notifier).addStudySeconds(1);
+      }
 
       state = state.copyWith(elapsedSeconds: elapsed);
     });
@@ -382,6 +390,72 @@ class DismissedTodayActivityIdsNotifier extends Notifier<Set<String>> {
     } catch (_) {}
   }
 }
+
+// ---------------------------------------------------------------------------
+// Dismissed Reminders for Home View
+// ---------------------------------------------------------------------------
+
+final dismissedTodayReminderIdsProvider =
+    NotifierProvider<DismissedTodayReminderIdsNotifier, Set<int>>(
+  DismissedTodayReminderIdsNotifier.new,
+);
+
+class DismissedTodayReminderIdsNotifier extends Notifier<Set<int>> {
+  @override
+  Set<int> build() {
+    return _loadFromPrefs();
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return 'ascent_dismissed_today_reminders_${now.year}_${now.month}_${now.day}';
+  }
+
+  Set<int> _loadFromPrefs() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final list = prefs.getStringList(_todayKey()) ?? [];
+      return list.map((e) => int.tryParse(e)).whereType<int>().toSet();
+    } catch (_) {
+      return {};
+    }
+  }
+
+  Future<void> dismissReminderId(int id) async {
+    final next = {...state, id};
+    state = next;
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setStringList(_todayKey(), next.map((e) => e.toString()).toList());
+    } catch (_) {}
+  }
+
+  Future<void> unDismissReminderId(int id) async {
+    if (!state.contains(id)) return;
+    final next = Set<int>.from(state)..remove(id);
+    state = next;
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      await prefs.setStringList(_todayKey(), next.map((e) => e.toString()).toList());
+    } catch (_) {}
+  }
+}
+
+final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
+  final remindersAsync = ref.watch(allRemindersProvider);
+  final dismissedIds = ref.watch(dismissedTodayReminderIdsProvider);
+  final reminders = remindersAsync.value ?? [];
+  final now = DateTime.now();
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final endOfDay = startOfDay.add(const Duration(days: 1));
+
+  return reminders.where((r) {
+    if (!r.isActive) return false;
+    if (dismissedIds.contains(r.id)) return false;
+    final scheduled = r.scheduledAt;
+    return scheduled.isAfter(startOfDay) && scheduled.isBefore(endOfDay);
+  }).toList();
+});
 
 // ---------------------------------------------------------------------------
 // Unified Today Activities Provider (§2.2, §5.3)

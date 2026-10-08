@@ -9,13 +9,18 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/services/hydration_reminder_service.dart';
+import '../../core/streak/study_streak_models.dart';
+import '../../core/streak/study_streak_provider.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/home_atmosphere.dart';
+import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
 import 'widgets/learning_hub_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
+import 'widgets/streak_celebration_dialog.dart';
+import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/welcome_back_banner.dart';
 
@@ -66,6 +71,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final profileAsync = ref.watch(userProfileStreamProvider);
     final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
+    final studyStreak = ref.watch(studyStreakProvider);
+    final visibleReminders = ref.watch(homeVisibleRemindersProvider);
+
+    // Listen for celebratory streak unlocked event
+    ref.listen<StudyStreakStatus?>(streakCelebrationEventProvider, (prev, next) {
+      if (next != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          StreakCelebrationDialog.show(context, next);
+          ref.read(streakCelebrationEventProvider.notifier).clear();
+        });
+      }
+    });
 
     return Scaffold(
       backgroundColor: g.bg,
@@ -111,6 +129,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ref.invalidate(todayActivitiesProvider);
                   ref.invalidate(activeMomentumChallengeStreamProvider);
                   ref.invalidate(todayMomentumCommitmentsStreamProvider);
+                  ref.invalidate(studyStreakProvider);
+                  ref.invalidate(allRemindersProvider);
+                  ref.invalidate(dismissedTodayReminderIdsProvider);
                 },
                 color: g.clay,
                 child: ListView(
@@ -127,6 +148,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
                       const SizedBox(height: 12),
                       WelcomeBackBanner(days: daysSinceLastOpen),
+                    ],
+
+                    const SizedBox(height: 16),
+
+                    // ── STREAK DOPAMINE METER (REAL-TIME PROGRESS & URGENCY) ──
+                    StudyStreakMeterCard(
+                      status: studyStreak,
+                      onTap: () {
+                        StreakCelebrationDialog.show(context, studyStreak);
+                      },
+                    ),
+
+                    // ── HOME DISMISSIBLE REMINDERS (SWIPE TO REMOVE) ──────────
+                    if (visibleReminders.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      HomeDismissibleRemindersSection(
+                        reminders: visibleReminders,
+                        onDismissReminder: (reminder) async {
+                          await ref.read(dismissedTodayReminderIdsProvider.notifier).dismissReminderId(reminder.id);
+                        },
+                      ),
                     ],
 
                     const SizedBox(height: 16),

@@ -9,6 +9,7 @@ import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/time_tracking_provider.dart';
+import '../streak/study_streak_provider.dart';
 import 'default_course_data.dart';
 import 'learning_hub_models.dart';
 
@@ -385,6 +386,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       final diff = DateTime.now().difference(startedAt).inSeconds;
       final active = state.activeLecture;
       final newElapsed = state.sessionBaseElapsed + diff;
+
+      // Increment active study watch seconds for strict study streak
+      ref.read(studyStreakProvider.notifier).addStudySeconds(1);
 
       // Periodic 5s heartbeat to SQLite time session
       if (diff > 0 && diff % 5 == 0 && _activeSessionId != null) {

@@ -11,6 +11,7 @@ import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/streak/study_streak_provider.dart';
 
 /// Redesigned HomeHeader based on Ascent Home Redesign spec:
 /// - Top row: uppercase date caption on left, Riya glass pill + avatar (+ streak) on right.
@@ -37,7 +38,9 @@ class HomeHeader extends ConsumerWidget {
     final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
     final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Software Engineer';
     final dateStr = DateFormat('EEE, d MMM').format(DateTime.now()).toUpperCase();
-    final streak = ref.watch(currentStreakStreamProvider).value ?? 0;
+    final studyStreak = ref.watch(studyStreakProvider);
+    final legacyStreak = ref.watch(currentStreakStreamProvider).value ?? 0;
+    final streak = studyStreak.displayStreakDays > 0 ? studyStreak.displayStreakDays : legacyStreak;
     final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
