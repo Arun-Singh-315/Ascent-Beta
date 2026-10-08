@@ -96,12 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       WelcomeBackBanner(days: daysSinceLastOpen),
                     ],
 
-                    const SizedBox(height: 16),
-
-                    // ── MOMENTUM 30-DAY CHALLENGE & SUMMARY CARD ────────
-                    const MomentumHomeCard(),
-
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     // ── LEVEL 1: TODAY EXECUTION (PRIMARY) ───────────────
                     const ActivityHubCard(),
@@ -110,6 +105,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     // ── LEVEL 2: LEARNING HUB ────────────────────────────
                     const LearningHubCard(),
+
+                    const SizedBox(height: 24),
+
+                    // ── LEVEL 2: MOMENTUM 30-DAY CHALLENGE ───────────────
+                    const MomentumHomeCard(),
 
                     const SizedBox(height: 32),
 

@@ -2,220 +2,294 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../app/theme/color_tokens.dart';
+
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
-import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        title: Text(
-          'Explore Ascent',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        backgroundColor: context.bgBase,
-        elevation: 0,
-      ),
+    return AscentScaffold(
+      title: 'More',
+      subtitle: 'Ascent modules & hubs',
+      showBackButton: false,
+      glow2: g.claySoft,
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          // ── 1. Profile Card (Top, not buried - Spec §7) ──────────────────
+          // ── 1. Profile & Account Card ─────────────────────────────────────
           profileAsync.when(
-            loading: () => const SizedBox(height: 72),
+            loading: () => const SizedBox(height: 76),
             error: (_, _) => const SizedBox(),
             data: (profile) {
               final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
               final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Job Seeker';
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/settings');
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.bgSurface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: context.divider),
+              final initial = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A';
+
+              return AscentCard(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/settings');
+                },
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: g.claySoft,
+                        border: Border.all(color: g.clay.withValues(alpha: 0.3), width: 1.2),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        initial,
+                        style: AscentTextStyles.displaySmall.copyWith(
+                          color: g.clay,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: context.accentPrimary.withValues(alpha: 0.15),
-                          child: Text(
-                            name.substring(0, 1).toUpperCase(),
-                            style: AscentTextStyles.displaySmall.copyWith(
-                              color: context.accentPrimary,
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: AscentTextStyles.labelLarge.copyWith(
+                              color: g.ink,
                               fontWeight: FontWeight.w700,
+                              fontSize: 16,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                style: AscentTextStyles.labelLarge.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                role,
-                                style: AscentTextStyles.bodySmall.copyWith(
-                                  color: context.textMuted,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 2),
+                          Text(
+                            role,
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: g.inkMuted,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        AscentButton.outlined(
-                          label: 'Edit',
-                          compact: true,
-                          onPressed: () => context.push('/settings'),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: g.edge, width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.tune_rounded, size: 14, color: g.clay),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Edit',
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: g.ink,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 22),
 
-          // ── AI Life Assistant ───────────────────────────────────────────
-          _GroupHeader(title: 'Intelligence & Mind', color: context.accentPrimary),
-          _NavItemTile(
-            icon: Icons.auto_awesome_outlined,
-            title: 'AI Life Assistant & Planner',
-            subtitle: 'On-device planner, natural-language logger & insights',
-            route: '/ai-assistant',
-            color: context.accentPrimary,
+          // ── 2. Intelligence & Mind ────────────────────────────────────────
+          _GroupHeader(title: 'INTELLIGENCE & COPILOT', dotColor: g.clay),
+          AscentCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _MoreListTile(
+                  icon: Icons.auto_awesome_rounded,
+                  iconTint: g.clay,
+                  title: 'AI Life Assistant & Planner',
+                  subtitle: 'On-device planner, natural-language logger & insights',
+                  route: '/ai-assistant',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.bubble_chart_rounded,
+                  iconTint: const Color(0xFF8338EC),
+                  title: 'Thought Wall • Mind Space',
+                  subtitle: 'Unfiltered self-talk, sparks, daily wins & reflections',
+                  route: '/thought-wall',
+                ),
+              ],
+            ),
           ),
-          _NavItemTile(
-            icon: Icons.bubble_chart_outlined,
-            title: 'Thought Wall • Mind Space',
-            subtitle: 'Unfiltered self-talk, sparks, daily wins & reflections',
-            route: '/thought-wall',
-            color: const Color(0xFF8338EC),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // ── Life & Habits ────────────────────────────────────────────────
-          _GroupHeader(title: 'Life & Routines', color: context.accentSecondary),
-          _NavItemTile(
-            icon: Icons.checklist_rtl_rounded,
-            title: 'Daily Habits & Routines',
-            subtitle: 'Habit streaks, daily check-offs & momentum',
-            route: '/habits',
-            color: context.accentSecondary,
+          // ── 3. Life & Momentum ───────────────────────────────────────────
+          _GroupHeader(title: 'LIFE & MOMENTUM', dotColor: g.coral),
+          AscentCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _MoreListTile(
+                  icon: Icons.local_fire_department_rounded,
+                  iconTint: g.coral,
+                  title: '30-Day Momentum Challenge',
+                  subtitle: 'Personalized protocol, milestone timeline & streak engine',
+                  route: '/momentum',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.directions_walk_rounded,
+                  iconTint: g.sage,
+                  title: 'Walk & Run Outdoor Tracker',
+                  subtitle: 'Live GPS route telemetry, cadence, steps & endurance',
+                  route: '/walk',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.checklist_rtl_rounded,
+                  iconTint: g.slate,
+                  title: 'Daily Habits & Routines',
+                  subtitle: 'Habit streaks, daily check-offs & momentum triggers',
+                  route: '/habits',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.view_kanban_outlined,
+                  iconTint: g.amber,
+                  title: 'Job Pipeline Kanban',
+                  subtitle: 'Applications, interview stages, offers & compensation',
+                  route: '/pipeline',
+                ),
+              ],
+            ),
           ),
-          _NavItemTile(
-            icon: Icons.view_kanban_outlined,
-            title: 'Job Pipeline Kanban',
-            subtitle: 'Applications, interview stages & offers',
-            route: '/pipeline',
-            color: context.accentSecondary,
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // ── 2. Prepare Group ─────────────────────────────────────────────
-          _GroupHeader(title: 'Interview & Learning', color: context.accentPrimary),
-          _NavItemTile(
-            icon: Icons.alt_route_outlined,
-            title: 'Study Plan & Roadmap',
-            subtitle: 'Phase progress, weekly targets & curriculum',
-            route: '/study-plan',
-            color: context.accentPrimary,
+          // ── 4. Study & Career Hub ─────────────────────────────────────────
+          _GroupHeader(title: 'STUDY & CAREER', dotColor: g.slate),
+          AscentCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _MoreListTile(
+                  icon: Icons.alt_route_rounded,
+                  iconTint: g.slate,
+                  title: 'Study Plan & Roadmap',
+                  subtitle: 'Phase progress, weekly targets & curriculum pacing',
+                  route: '/study-plan',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.code_rounded,
+                  iconTint: g.clay,
+                  title: 'DSA Tracker',
+                  subtitle: 'Logged algorithms, topic mastery & spaced revisits',
+                  route: '/dsa',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.psychology_outlined,
+                  iconTint: const Color(0xFF6C5CE7),
+                  title: 'Interview Prep Bank',
+                  subtitle: 'Question logs, company notes & behavioral rounds',
+                  route: '/interview-prep',
+                ),
+              ],
+            ),
           ),
-          _NavItemTile(
-            icon: Icons.code_outlined,
-            title: 'DSA Tracker',
-            subtitle: 'Logged algorithms, topic mastery & revisits',
-            route: '/dsa',
-            color: context.accentPrimary,
-          ),
-          _NavItemTile(
-            icon: Icons.psychology_outlined,
-            title: 'Interview Prep Bank',
-            subtitle: 'Question logs, company notes & outcomes',
-            route: '/interview-prep',
-            color: context.accentPrimary,
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // ── 3. Track Group ───────────────────────────────────────────────
-          _GroupHeader(title: 'Tracking & Notes', color: context.accentSecondary),
-          _NavItemTile(
-            icon: Icons.calendar_month_outlined,
-            title: 'Consistency Heatmap',
-            subtitle: 'Daily study presence, streak records & logs',
-            route: '/consistency',
-            color: context.accentSecondary,
+          // ── 5. Tracking & Productivity ────────────────────────────────────
+          _GroupHeader(title: 'TRACKING & PRODUCTIVITY', dotColor: g.sage),
+          AscentCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _MoreListTile(
+                  icon: Icons.calendar_month_outlined,
+                  iconTint: g.sage,
+                  title: 'Consistency Heatmap',
+                  subtitle: 'Daily study presence, streak records & activity logs',
+                  route: '/consistency',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.edit_note_rounded,
+                  iconTint: g.slate,
+                  title: 'Notes & Journal',
+                  subtitle: 'Topic recaps, quick thoughts & company insights',
+                  route: '/notes',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.notifications_none_rounded,
+                  iconTint: g.amber,
+                  title: 'Reminders & Alerts',
+                  subtitle: 'Upcoming rounds, scheduled tasks & study alarms',
+                  route: '/reminders',
+                ),
+              ],
+            ),
           ),
-          _NavItemTile(
-            icon: Icons.edit_note_outlined,
-            title: 'Notes & Journal',
-            subtitle: 'Topic recaps, quick thoughts & company insights',
-            route: '/notes',
-            color: context.accentSecondary,
-          ),
-          _NavItemTile(
-            icon: Icons.notifications_none_outlined,
-            title: 'Reminders & Alerts',
-            subtitle: 'Upcoming rounds, tasks & study alarms',
-            route: '/reminders',
-            color: context.accentSecondary,
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // ── 4. Documents Group ───────────────────────────────────────────
-          _GroupHeader(title: 'Documents & Resumes', color: context.accentInfo),
-          _NavItemTile(
-            icon: Icons.description_outlined,
-            title: 'Resume Vault',
-            subtitle: 'Tailored versions, role mappings & files',
-            route: '/resume-vault',
-            color: context.accentInfo,
+          // ── 6. Documents & Insights ───────────────────────────────────────
+          _GroupHeader(title: 'DOCUMENTS & INSIGHTS', dotColor: g.amber),
+          AscentCard(
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                _MoreListTile(
+                  icon: Icons.description_outlined,
+                  iconTint: g.clay,
+                  title: 'Resume Vault',
+                  subtitle: 'Tailored versions, role mappings & targeted PDFs',
+                  route: '/resume-vault',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.insights_rounded,
+                  iconTint: g.slate,
+                  title: 'Analytics & Trends',
+                  subtitle: 'Skill radar, study hours & conversion funnel',
+                  route: '/analytics',
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 22),
 
-          // ── 5. Insights Group ────────────────────────────────────────────
-          _GroupHeader(title: 'Analytics & Growth', color: context.accentPrimary),
-          _NavItemTile(
-            icon: Icons.insights_outlined,
-            title: 'Analytics & Trends',
-            subtitle: 'Skill radar, study hours & conversion funnel',
-            route: '/analytics',
-            color: context.accentPrimary,
+          // ── 7. Preferences ───────────────────────────────────────────────
+          _GroupHeader(title: 'SYSTEM & PREFERENCES', dotColor: g.inkMuted),
+          AscentCard(
+            padding: EdgeInsets.zero,
+            child: _MoreListTile(
+              icon: Icons.tune_rounded,
+              iconTint: g.inkMuted,
+              title: 'Settings',
+              subtitle: 'Theme, study goals, notifications & data backup',
+              route: '/settings',
+            ),
           ),
-          const SizedBox(height: 20),
-
-          // ── 6. App Group ─────────────────────────────────────────────────
-          _GroupHeader(title: 'System & Preferences', color: context.textMuted),
-          _NavItemTile(
-            icon: Icons.settings_outlined,
-            title: 'Settings',
-            subtitle: 'Theme, study goals, notifications & data backup',
-            route: '/settings',
-            color: context.textMuted,
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 36),
         ],
       ),
     );
@@ -224,79 +298,135 @@ class MoreScreen extends ConsumerWidget {
 
 class _GroupHeader extends StatelessWidget {
   final String title;
-  final Color color;
+  final Color dotColor;
 
-  const _GroupHeader({required this.title, required this.color});
+  const _GroupHeader({required this.title, required this.dotColor});
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: AscentTextStyles.labelMedium.copyWith(
-          color: color,
-          letterSpacing: 0.4,
-          fontWeight: FontWeight.w700,
+      child: Row(
+        children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: dotColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: AscentTextStyles.labelSmall.copyWith(
+              color: g.inkMuted,
+              letterSpacing: 0.9,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MoreListTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconTint;
+  final String title;
+  final String subtitle;
+  final String route;
+
+  const _MoreListTile({
+    required this.icon,
+    required this.iconTint,
+    required this.title,
+    required this.subtitle,
+    required this.route,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push(route);
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconTint.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: iconTint.withValues(alpha: 0.18),
+                    width: 0.8,
+                  ),
+                ),
+                child: Icon(icon, color: iconTint, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: g.inkMuted.withValues(alpha: 0.5),
+                size: 18,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _NavItemTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String route;
-  final Color color;
-
-  const _NavItemTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.route,
-    required this.color,
-  });
-
+class _TileDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: context.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.divider),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: color, size: 22),
-        ),
-        title: Text(
-          title,
-          style: AscentTextStyles.labelLarge.copyWith(
-            color: context.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Text(
-          subtitle,
-          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-        ),
-        trailing: Icon(
-          Icons.chevron_right_rounded,
-          color: context.textMuted,
-          size: 20,
-        ),
-        onTap: () => context.push(route),
-      ),
+    final g = context.glass;
+    return Divider(
+      height: 1,
+      thickness: 0.8,
+      color: g.line,
+      indent: 56,
+      endIndent: 12,
     );
   }
 }

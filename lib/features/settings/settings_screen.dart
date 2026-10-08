@@ -6,7 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
-import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
@@ -15,6 +15,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -32,6 +33,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   int _weeklyHours = 10;
   String _studyWindow = 'morning';
   bool _profileLoaded = false;
+
+  // Collapsible section visibility states to keep UI calm & decluttered
+  bool _expandCareerGoals = false;
+  bool _expandGpsTelemetry = false;
+  bool _expandNotificationTests = false;
+  bool _expandDataStorage = false;
+  bool _expandAccountSystem = false;
 
   @override
   void dispose() {
@@ -97,12 +105,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Saved'),
+            content: Text('Settings saved'),
             duration: Duration(milliseconds: 1500),
             behavior: SnackBarBehavior.floating,
           ),
         );
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 150));
         if (mounted) {
           if (context.canPop()) {
             context.pop();
@@ -166,10 +174,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: context.bgSurface,
+          backgroundColor: context.glass.bg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: context.glass.edge),
+          ),
           title: Text(
             'Export Ascent Backup',
-            style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+            style: AscentTextStyles.displaySmall.copyWith(color: context.glass.ink),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -178,21 +190,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 Text(
                   'Your local SQLite database is serialized and ready to export:',
-                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                  style: AscentTextStyles.bodyMedium.copyWith(color: context.glass.inkMuted),
                 ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: context.bgBase,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: context.divider),
+                    color: context.glass.fill,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: context.glass.edge),
                   ),
                   child: Text(
                     jsonStr,
                     style: AscentTextStyles.monoCode.copyWith(
-                      color: context.textPrimary,
-                      fontSize: 12,
+                      color: context.glass.ink,
+                      fontSize: 11,
                     ),
                   ),
                 ),
@@ -202,11 +214,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Close'),
+              child: Text('Close', style: TextStyle(color: context.glass.inkMuted)),
             ),
             ElevatedButton.icon(
               icon: const Icon(Icons.copy_rounded, size: 16),
               label: const Text('Copy JSON'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.glass.clay,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: jsonStr));
                 Navigator.pop(ctx);
@@ -232,41 +249,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: context.bgSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
+        final g = ctx.glass;
         final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomInset),
+        return Container(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+          decoration: BoxDecoration(
+            color: g.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: g.edge, width: 1.2)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Restore Backup (JSON)',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Paste previously exported Ascent backup JSON below to restore:',
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: textController,
-                maxLines: 6,
-                style: AscentTextStyles.monoCode.copyWith(fontSize: 12, color: context.textPrimary),
-                decoration: InputDecoration(
-                  hintText: '{\n  "version": "1.0.0",\n  "profile": { ... }\n}',
-                  hintStyle: AscentTextStyles.monoCode.copyWith(fontSize: 12, color: context.textMuted),
-                  filled: true,
-                  fillColor: context.bgBase,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: g.edge,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+              Text(
+                'Restore Backup (JSON)',
+                style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Paste previously exported Ascent backup JSON below to restore:',
+                style: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: textController,
+                maxLines: 5,
+                style: AscentTextStyles.monoCode.copyWith(fontSize: 12, color: g.ink),
+                decoration: InputDecoration(
+                  hintText: '{\n  "version": "1.0.0",\n  "profile": { ... }\n}',
+                  hintStyle: AscentTextStyles.monoCode.copyWith(fontSize: 12, color: g.inkMuted),
+                  filled: true,
+                  fillColor: g.fill,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: g.edge),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: g.edge),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
@@ -334,156 +372,308 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _confirmResetData() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: context.bgSurface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
+      builder: (ctx) {
+        final g = ctx.glass;
+        return Container(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: context.stateDanger.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.warning_amber_rounded, color: context.stateDanger, size: 28),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Reset All Data?',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This will wipe all tasks, applications, consistency history, and reset your onboarding flow. This action cannot be undone.',
-                textAlign: TextAlign.center,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: AscentButton.outlined(
-                      label: 'Cancel',
-                      compact: true,
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AscentButton.destructive(
-                      label: 'Reset Everything',
-                      onPressed: () async {
-                        final nav = Navigator.of(ctx);
-                        nav.pop();
-                        final prefs = ref.read(sharedPreferencesProvider);
-                        await prefs.clear();
-                        final db = ref.read(databaseProvider);
-                        // Clean all tables cleanly
-                        await db.customStatement('DELETE FROM insight_dismissals;');
-                        await db.customStatement('DELETE FROM note_tags;');
-                        await db.customStatement('DELETE FROM notes;');
-                        await db.customStatement('DELETE FROM interview_prep;');
-                        await db.customStatement('DELETE FROM resumes;');
-                        await db.customStatement('DELETE FROM application_status_history;');
-                        await db.customStatement('DELETE FROM applications;');
-                        await db.customStatement('DELETE FROM tasks;');
-                        await db.customStatement('DELETE FROM series;');
-                        await db.customStatement('DELETE FROM study_phases;');
-                        await db.customStatement('DELETE FROM dsa_logs;');
-                        await db.customStatement('DELETE FROM time_sessions;');
-                        await db.customStatement('DELETE FROM consistency_logs;');
-                        await db.customStatement('DELETE FROM user_profiles;');
-
-                        if (mounted) {
-                          context.go('/onboarding');
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          decoration: BoxDecoration(
+            color: g.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: g.coral.withValues(alpha: 0.3), width: 1.5)),
           ),
-        ),
-      ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: g.coralSoft,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: g.coral.withValues(alpha: 0.3)),
+                  ),
+                  child: Icon(Icons.warning_amber_rounded, color: g.coral, size: 28),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Reset All Data?',
+                  style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'This will wipe all tasks, applications, consistency history, and reset your onboarding flow. This action cannot be undone.',
+                  textAlign: TextAlign.center,
+                  style: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AscentButton.outlined(
+                        label: 'Cancel',
+                        compact: true,
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AscentButton.destructive(
+                        label: 'Reset Everything',
+                        onPressed: () async {
+                          final nav = Navigator.of(ctx);
+                          nav.pop();
+                          final prefs = ref.read(sharedPreferencesProvider);
+                          await prefs.clear();
+                          final db = ref.read(databaseProvider);
+                          await db.customStatement('DELETE FROM insight_dismissals;');
+                          await db.customStatement('DELETE FROM note_tags;');
+                          await db.customStatement('DELETE FROM notes;');
+                          await db.customStatement('DELETE FROM interview_prep;');
+                          await db.customStatement('DELETE FROM resumes;');
+                          await db.customStatement('DELETE FROM application_status_history;');
+                          await db.customStatement('DELETE FROM applications;');
+                          await db.customStatement('DELETE FROM tasks;');
+                          await db.customStatement('DELETE FROM series;');
+                          await db.customStatement('DELETE FROM study_phases;');
+                          await db.customStatement('DELETE FROM dsa_logs;');
+                          await db.customStatement('DELETE FROM time_sessions;');
+                          await db.customStatement('DELETE FROM consistency_logs;');
+                          await db.customStatement('DELETE FROM user_profiles;');
+
+                          if (mounted) {
+                            context.go('/onboarding');
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   void _confirmSignOut() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: context.bgSurface,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
+      builder: (ctx) {
+        final g = ctx.glass;
+        return Container(
           padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: g.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: g.edge, width: 1.2)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: g.claySoft,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: g.clay.withValues(alpha: 0.3)),
+                  ),
+                  child: Icon(Icons.logout_rounded, color: g.clay, size: 24),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Sign Out of Ascent?',
+                  style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'You will need to sign in with your credentials again. Your local data will remain completely intact.',
+                  textAlign: TextAlign.center,
+                  style: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: AscentButton.outlined(
+                        label: 'Cancel',
+                        compact: true,
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AscentButton.primary(
+                        label: 'Sign Out',
+                        compact: true,
+                        onPressed: () async {
+                          Navigator.pop(ctx);
+                          HapticFeedback.mediumImpact();
+                          await ref.read(authProvider.notifier).logout();
+                          if (mounted) {
+                            context.go('/login');
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showGpsBatteryGuide(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final g = ctx.glass;
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: g.bg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border(top: BorderSide(color: g.edge, width: 1.5)),
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: context.accentPrimary.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: g.edge,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-                child: Icon(Icons.logout_rounded, color: context.accentPrimary, size: 24),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Sign Out of Ascent?',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'You will need to sign in with your account credentials again. Your local data will remain completely intact.',
-                textAlign: TextAlign.center,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-              ),
-              const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(
-                    child: AscentButton.outlined(
-                      label: 'Cancel',
-                      compact: true,
-                      onPressed: () => Navigator.pop(ctx),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: g.sageSoft,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: g.sage.withValues(alpha: 0.3)),
                     ),
+                    child: Icon(Icons.battery_saver_rounded, color: g.sage, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: AscentButton.primary(
-                      label: 'Sign Out',
-                      compact: true,
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        HapticFeedback.mediumImpact();
-                        await ref.read(authProvider.notifier).logout();
-                        if (mounted) {
-                          context.go('/login');
-                        }
-                      },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Background Walk Tracking Setup',
+                          style: AscentTextStyles.headlineMedium.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: g.ink,
+                          ),
+                        ),
+                        Text(
+                          'Prevent Android from killing GPS when locked',
+                          style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              _guideStep(
+                number: '1',
+                title: 'Open Android App Settings',
+                description: 'Long press Ascent icon on home screen > App info (or go to Phone Settings > Apps > Ascent).',
+              ),
+              const SizedBox(height: 12),
+              _guideStep(
+                number: '2',
+                title: 'Set Battery to "Unrestricted"',
+                description: 'Under Battery or App Battery Usage, change setting to "Unrestricted" for uninterrupted route GPS.',
+              ),
+              const SizedBox(height: 12),
+              _guideStep(
+                number: '3',
+                title: 'Allow Location While Using App',
+                description: 'Ascent runs a foreground walking service with real-time route polyline & step tracking.',
+              ),
+              const SizedBox(height: 18),
+              AscentButton.primary(
+                label: 'Understood, Got it! 👍',
+                expanded: true,
+                onPressed: () => Navigator.of(ctx).pop(),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _guideStep({required String number, required String title, required String description}) {
+    final g = context.glass;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: g.sageSoft,
+          child: Text(
+            number,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: g.sage),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AscentTextStyles.labelMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: g.ink,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                description,
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: g.inkMuted,
+                  height: 1.35,
+                ),
+              ),
             ],
           ),
         ),
-      ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
     final themeMode = ref.watch(themeModeProvider);
 
@@ -497,252 +687,443 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         if (didPop) return;
         await _persistAndReturn();
       },
-      child: Scaffold(
-        backgroundColor: context.bgBase,
-        appBar: AppBar(
-          backgroundColor: context.bgBase,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
-            onPressed: _persistAndReturn,
-          ),
-          title: Text(
-            'Settings',
-            style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-          ),
-          actions: [
-            TextButton.icon(
+      child: AscentScaffold(
+        title: 'Settings',
+        subtitle: 'Preferences & profile',
+        showBackButton: true,
+        onBack: _persistAndReturn,
+        glow2: g.slateSoft,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton.icon(
               onPressed: _persistAndReturn,
               icon: _savedSuccess
-                  ? Icon(Icons.check_rounded, color: context.accentPrimary, size: 18)
+                  ? Icon(Icons.check_rounded, color: g.clay, size: 18)
                   : const SizedBox.shrink(),
               label: Text(
                 _savedSuccess ? 'Saved' : 'Save',
                 style: AscentTextStyles.labelLarge.copyWith(
-                  color: context.accentPrimary,
+                  color: g.clay,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-          ],
-        ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        children: [
-          // ── Section 1: Appearance & Theme ────
-          _SectionHeader(title: 'Appearance & Theme'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Display Mode',
-                          style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w700),
-                        ),
-                        Text(
-                          themeMode == ThemeMode.dark ? 'Night Mode' : (themeMode == ThemeMode.light ? 'Day Mode' : 'System Auto'),
-                          style: AscentTextStyles.captionMedium.copyWith(color: context.accentPrimary, fontWeight: FontWeight.w600),
-                        ),
-                      ],
+          ),
+        ],
+        body: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          children: [
+            // ── Section 1: Target Profile & Identity (Always Visible) ────────
+            _SectionHeader(title: 'Target Profile & Identity', dotColor: g.clay),
+            AscentCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Your Name',
+                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _nameController,
+                    style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Alex Hunter',
+                      hintStyle: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                      filled: true,
+                      fillColor: g.fill,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: g.edge),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: g.edge),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: g.clay, width: 1.2),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _ThemeOption(
-                          label: 'Day / Light',
-                          icon: Icons.light_mode_rounded,
-                          isSelected: themeMode == ThemeMode.light,
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _ThemeOption(
-                          label: 'Night / Dark',
-                          icon: Icons.dark_mode_rounded,
-                          isSelected: themeMode == ThemeMode.dark,
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _ThemeOption(
-                          label: 'System Auto',
-                          icon: Icons.brightness_auto_rounded,
-                          isSelected: themeMode == ThemeMode.system,
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
-                          },
-                        ),
-                      ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  Text(
+                    'Target Role',
+                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _roleController,
+                    style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Senior Software Engineer',
+                      hintStyle: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                      filled: true,
+                      fillColor: g.fill,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: g.edge),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: g.edge),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: g.clay, width: 1.2),
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // AI Copilot Identity Sub-section
+                  Row(
+                    children: [
+                      Icon(Icons.auto_awesome_rounded, size: 16, color: g.clay),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AI Copilot Name',
+                        style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Personalize the identity of your on-device planner copilot.',
+                    style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                  ),
+                  const SizedBox(height: 10),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final currentName = ref.watch(assistantNameProvider);
+                      return _AssistantNameEditor(currentName: currentName);
+                    },
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
-
-              // ── Section 2: Target Profile & Goals ──────────────────────────
-              _SectionHeader(title: 'Target Profile & Goals'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Your Name',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _nameController,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: context.bgBase,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: context.divider),
-                        ),
+            // ── Section 2: Appearance & Theme (Always Visible) ───────────────
+            _SectionHeader(title: 'Appearance & Theme', dotColor: g.slate),
+            AscentCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Display Mode',
+                        style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w700),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    Text(
-                      'Target Role',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: _roleController,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'e.g. Senior Software Engineer',
-                        hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                        filled: true,
-                        fillColor: context.bgBase,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: context.divider),
-                        ),
+                      Text(
+                        themeMode == ThemeMode.dark ? 'Night Mode' : (themeMode == ThemeMode.light ? 'Day Mode' : 'System Auto'),
+                        style: AscentTextStyles.captionMedium.copyWith(color: g.clay, fontWeight: FontWeight.w600),
                       ),
-                    ),
-                    const SizedBox(height: 14),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _ThemeOption(
+                        label: 'Day / Light',
+                        icon: Icons.light_mode_rounded,
+                        isSelected: themeMode == ThemeMode.light,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _ThemeOption(
+                        label: 'Night / Dark',
+                        icon: Icons.dark_mode_rounded,
+                        isSelected: themeMode == ThemeMode.dark,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _ThemeOption(
+                        label: 'System Auto',
+                        icon: Icons.brightness_auto_rounded,
+                        isSelected: themeMode == ThemeMode.system,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
 
-                    // Weekly Hours Slider
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Weekly Study Budget',
-                          style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+            // ── Section 3: Daily Focus & Notifications (Always Visible) ──────
+            _SectionHeader(title: 'Daily Focus & Notifications', dotColor: g.sage),
+            AscentCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // 1. Daily Check-in & Streak Guardian
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: g.claySoft,
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        Text(
-                          '$_weeklyHours hrs / wk',
-                          style: AscentTextStyles.monoCode.copyWith(
-                            color: context.accentPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: _weeklyHours.toDouble(),
-                      min: 5,
-                      max: 40,
-                      divisions: 7,
-                      activeColor: context.accentPrimary,
-                      onChanged: (val) => setState(() => _weeklyHours = val.round()),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Target Interview Date
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
+                        child: Icon(Icons.notifications_active_outlined, color: g.clay, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Target Interview Date',
-                              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                              'Daily Momentum & Streak Guardian',
+                              style: AscentTextStyles.labelMedium.copyWith(
+                                color: g.ink,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             Text(
-                              _interviewDate != null
-                                  ? DateFormat.yMMMd().format(_interviewDate!)
-                                  : 'No deadline set',
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              '2:30 PM mid-day push & 8:30 PM streak protection',
+                              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
                             ),
                           ],
                         ),
-                        TextButton(
-                          child: Text(_interviewDate == null ? 'Set Date' : 'Change'),
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _interviewDate ??
-                                  DateTime.now().add(const Duration(days: 30)),
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
-                            );
-                            if (picked != null) {
-                              setState(() => _interviewDate = picked);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
+                      ),
+                      Switch(
+                        value: true,
+                        activeThumbColor: g.clay,
+                        activeTrackColor: g.claySoft,
+                        onChanged: (val) async {
+                          if (val) {
+                            await NotificationService.instance.requestPermissions();
+                            await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  _Divider(color: g.line),
 
-                    // Target Companies
-                    Text(
-                      'Target Companies',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _companyInputController,
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textPrimary),
-                            decoration: InputDecoration(
-                              hintText: 'Add company (e.g. Stripe)',
-                              hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                              filled: true,
-                              fillColor: context.bgBase,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: context.divider),
-                              ),
+                  // 2. Raw Brotherly Boost Tone (5-Min Rule)
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final rawBoost = ref.watch(rawBoostToneEnabledProvider);
+                      return Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00B4D8).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            onSubmitted: (val) {
-                              final text = val.trim();
-                              if (text.isNotEmpty && !_targetCompanies.contains(text)) {
-                                setState(() {
-                                  _targetCompanies.add(text);
-                                  _companyInputController.clear();
-                                });
-                              }
+                            child: const Icon(Icons.bolt_rounded, color: Color(0xFF00B4D8), size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Raw Boost Tone (5-Min Rule)',
+                                  style: AscentTextStyles.labelMedium.copyWith(
+                                    color: g.ink,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Brotherly prompts: "Yo bro, just 5 mins, start clock"',
+                                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: rawBoost,
+                            activeThumbColor: const Color(0xFF00B4D8),
+                            activeTrackColor: const Color(0xFF00B4D8).withValues(alpha: 0.2),
+                            onChanged: (val) {
+                              ref.read(rawBoostToneEnabledProvider.notifier).setEnabled(val);
                             },
                           ),
+                        ],
+                      );
+                    },
+                  ),
+                  _Divider(color: g.line),
+
+                  // 3. Accountability Follow-up Nudges
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final followUp = ref.watch(accountabilityFollowUpEnabledProvider);
+                      return Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF48CAE4).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.alarm_on_rounded, color: Color(0xFF48CAE4), size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Accountability Follow-Up Nudges',
+                                  style: AscentTextStyles.labelMedium.copyWith(
+                                    color: g.ink,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Nudges you 20 mins later if not yet checked in',
+                                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: followUp,
+                            activeThumbColor: const Color(0xFF48CAE4),
+                            activeTrackColor: const Color(0xFF48CAE4).withValues(alpha: 0.2),
+                            onChanged: (val) {
+                              ref.read(accountabilityFollowUpEnabledProvider.notifier).setEnabled(val);
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
+            _SectionHeader(title: 'Advanced Options & Tools', dotColor: g.inkMuted),
+
+            // ── Collapsible 1: Career Goals & Target Companies ──────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.track_changes_rounded,
+              iconTint: g.slate,
+              title: 'Career Milestones & Companies',
+              subtitle: 'Weekly study budget, deadline & target companies',
+              isExpanded: _expandCareerGoals,
+              onToggle: () => setState(() => _expandCareerGoals = !_expandCareerGoals),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Weekly Study Budget',
+                        style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                      ),
+                      Text(
+                        '$_weeklyHours hrs / wk',
+                        style: AscentTextStyles.monoCode.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(Icons.add_circle_outline_rounded, color: context.accentPrimary),
-                          onPressed: () {
-                            final text = _companyInputController.text.trim();
+                      ),
+                    ],
+                  ),
+                  Slider(
+                    value: _weeklyHours.toDouble(),
+                    min: 5,
+                    max: 40,
+                    divisions: 7,
+                    activeColor: g.clay,
+                    inactiveColor: g.edge,
+                    onChanged: (val) => setState(() => _weeklyHours = val.round()),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Target Interview Date
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Target Interview Date',
+                            style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            _interviewDate != null
+                                ? DateFormat.yMMMd().format(_interviewDate!)
+                                : 'No deadline set',
+                            style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                          ),
+                        ],
+                      ),
+                      AscentButton.outlined(
+                        label: _interviewDate == null ? 'Set Date' : 'Change',
+                        compact: true,
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _interviewDate ?? DateTime.now().add(const Duration(days: 30)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                          );
+                          if (picked != null) {
+                            setState(() => _interviewDate = picked);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Target Companies
+                  Text(
+                    'Target Companies',
+                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _companyInputController,
+                          style: AscentTextStyles.bodySmall.copyWith(color: g.ink),
+                          decoration: InputDecoration(
+                            hintText: 'Add company (e.g. Stripe)',
+                            hintStyle: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                            filled: true,
+                            fillColor: g.fill,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: g.edge),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: g.edge),
+                            ),
+                          ),
+                          onSubmitted: (val) {
+                            final text = val.trim();
                             if (text.isNotEmpty && !_targetCompanies.contains(text)) {
                               setState(() {
                                 _targetCompanies.add(text);
@@ -751,648 +1132,537 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             }
                           },
                         ),
-                      ],
-                    ),
-                    if (_targetCompanies.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: _targetCompanies.map((c) {
-                          return Chip(
-                            label: Text(c),
-                            labelStyle: AscentTextStyles.labelSmall.copyWith(color: context.textPrimary),
-                            backgroundColor: context.bgBase,
-                            deleteIcon: const Icon(Icons.close_rounded, size: 14),
-                            onDeleted: () => setState(() => _targetCompanies.remove(c)),
-                          );
-                        }).toList(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(Icons.add_circle_outline_rounded, color: g.clay),
+                        onPressed: () {
+                          final text = _companyInputController.text.trim();
+                          if (text.isNotEmpty && !_targetCompanies.contains(text)) {
+                            setState(() {
+                              _targetCompanies.add(text);
+                              _companyInputController.clear();
+                            });
+                          }
+                        },
                       ),
                     ],
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Section 3: AI Copilot Identity ───────────────
-              _SectionHeader(title: 'AI Copilot Identity'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Assistant Identity',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Customize the name of your onboard AI copilot (defaults to Riya).',
-                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                    ),
-                    const SizedBox(height: 12),
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final currentName = ref.watch(assistantNameProvider);
-                        return _AssistantNameEditor(currentName: currentName);
-                      },
+                  ),
+                  if (_targetCompanies.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _targetCompanies.map((c) {
+                        return Chip(
+                          label: Text(c),
+                          labelStyle: AscentTextStyles.labelSmall.copyWith(color: g.ink),
+                          backgroundColor: g.fill,
+                          side: BorderSide(color: g.edge),
+                          deleteIcon: Icon(Icons.close_rounded, size: 14, color: g.inkMuted),
+                          onDeleted: () => setState(() => _targetCompanies.remove(c)),
+                        );
+                      }).toList(),
                     ),
                   ],
-                ),
+                ],
               ),
+            ),
+            const SizedBox(height: 12),
 
-              const SizedBox(height: 20),
+            // ── Collapsible 2: Walk & Background Telemetry ───────────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.directions_walk_rounded,
+              iconTint: g.sage,
+              title: 'Walk & GPS Telemetry',
+              subtitle: 'Background GPS & battery optimization setup',
+              isExpanded: _expandGpsTelemetry,
+              onToggle: () => setState(() => _expandGpsTelemetry = !_expandGpsTelemetry),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Background Walk Tracking',
+                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Allows Ascent to record accurate GPS routes, steps, and distance while your device is locked in your pocket.',
+                    style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted, height: 1.35),
+                  ),
+                  const SizedBox(height: 12),
+                  AscentButton.outlined(
+                    label: 'View Android Battery Guide',
+                    icon: Icons.battery_saver_rounded,
+                    compact: true,
+                    expanded: true,
+                    onPressed: () => _showGpsBatteryGuide(context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
 
-              // ── Section 4: Daily Focus & Notifications ─────────────────
-              _SectionHeader(title: 'Daily Focus & Notifications'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    // 1. Daily Check-in & Streak Guardian
-                    Row(
-                      children: [
-                        Icon(Icons.notifications_active_outlined, color: context.accentPrimary),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Daily Momentum & Streak Guardian',
-                                style: AscentTextStyles.labelMedium.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.w600,
+            // ── Collapsible 3: Notification Diagnostics ──────────────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.bug_report_outlined,
+              iconTint: const Color(0xFF00B4D8),
+              title: 'Notification Diagnostics & Tests',
+              subtitle: 'Verify status bar alerts & push channels',
+              isExpanded: _expandNotificationTests,
+              onToggle: () => setState(() => _expandNotificationTests = !_expandNotificationTests),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Instant System Bar Test',
+                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Send instant notifications to verify lock-screen badges, sounds, and permissions.',
+                    style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AscentButton.primary(
+                          label: 'Send Raw Boost',
+                          icon: Icons.bolt_rounded,
+                          compact: true,
+                          onPressed: () async {
+                            final sent = await NotificationService.instance.sendTestBoostNotification();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    sent
+                                        ? '🔥 Raw boost notification fired to status bar!'
+                                        : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
+                                  ),
+                                  behavior: SnackBarBehavior.floating,
                                 ),
-                              ),
-                              Text(
-                                'Mid-day 2:30 PM push & 8:30 PM streak protection',
-                                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: true,
-                          activeThumbColor: context.accentPrimary,
-                          onChanged: (val) async {
-                            if (val) {
-                              await NotificationService.instance.requestPermissions();
-                              await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
+                              );
                             }
                           },
                         ),
-                      ],
-                    ),
-                    const Divider(height: 20),
-
-                    // 2. Raw Brotherly Boost Tone (5-Min Rule)
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final rawBoost = ref.watch(rawBoostToneEnabledProvider);
-                        return Row(
-                          children: [
-                            Icon(Icons.bolt_rounded, color: const Color(0xFF00B4D8)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Raw Boost Tone (5-Min Rule)',
-                                    style: AscentTextStyles.labelMedium.copyWith(
-                                      color: context.textPrimary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: AscentButton.ghost(
+                          label: 'Standard Test',
+                          icon: Icons.send_rounded,
+                          compact: true,
+                          onPressed: () async {
+                            final sent = await NotificationService.instance.showInstantNotification(
+                              id: 101,
+                              title: 'Ascent — Daily Focus',
+                              body: 'Ready to take 1 small step today? Check your focus task.',
+                            );
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    sent
+                                        ? 'Test notification sent to status bar!'
+                                        : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
                                   ),
-                                  Text(
-                                    'Authentic brotherly prompts: "Yo bro, just 5 mins, start the clock"',
-                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: rawBoost,
-                              activeThumbColor: const Color(0xFF00B4D8),
-                              onChanged: (val) {
-                                ref.read(rawBoostToneEnabledProvider.notifier).setEnabled(val);
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const Divider(height: 20),
-
-                    // 3. Accountability Follow-up Nudges
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final followUp = ref.watch(accountabilityFollowUpEnabledProvider);
-                        return Row(
-                          children: [
-                            Icon(Icons.alarm_on_rounded, color: const Color(0xFF48CAE4)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Accountability Follow-Up Nudges',
-                                    style: AscentTextStyles.labelMedium.copyWith(
-                                      color: context.textPrimary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Nudges you 20 mins later if you haven\'t shown up on the board',
-                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: followUp,
-                              activeThumbColor: const Color(0xFF48CAE4),
-                              onChanged: (val) {
-                                ref.read(accountabilityFollowUpEnabledProvider.notifier).setEnabled(val);
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const Divider(height: 24),
-
-                    // 4. Test Notification Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AscentButton.primary(
-                            label: 'Send Raw Boost',
-                            icon: Icons.bolt_rounded,
-                            compact: true,
-                            onPressed: () async {
-                              final sent = await NotificationService.instance.sendTestBoostNotification();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      sent
-                                          ? '🔥 Raw boost notification fired to status bar!'
-                                          : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: AscentButton.ghost(
-                            label: 'Standard Test',
-                            icon: Icons.send_rounded,
-                            compact: true,
-                            onPressed: () async {
-                              final sent = await NotificationService.instance.showInstantNotification(
-                                id: 101,
-                                title: 'Ascent — Daily Focus',
-                                body: 'Ready to take 1 small step today? Check your focus task.',
+                                  behavior: SnackBarBehavior.floating,
+                                ),
                               );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      sent
-                                          ? 'Test notification sent to status bar!'
-                                          : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
-                                    ),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                            },
-                          ),
+                            }
+                          },
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 12),
 
-              const SizedBox(height: 20),
-
-              // ── Section 5: Walk & Background Telemetry ──────
-              _SectionHeader(title: 'Walk & Background Telemetry'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
+            // ── Collapsible 4: Data & Storage ────────────────────────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.inventory_2_outlined,
+              iconTint: g.amber,
+              title: 'Data & Storage Management',
+              subtitle: 'JSON backup export, database restore & wipe',
+              isExpanded: _expandDataStorage,
+              onToggle: () => setState(() => _expandDataStorage = !_expandDataStorage),
+              child: Column(
+                children: [
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.teal.withValues(alpha: 0.12),
+                        color: g.slateSoft,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.directions_walk_rounded, color: Colors.teal, size: 22),
+                      child: Icon(Icons.download_rounded, color: g.slate, size: 20),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'GPS Battery Optimization',
-                            style: AscentTextStyles.labelMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Keep walk tracking active when screen is locked',
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                          ),
-                        ],
+                    title: Text(
+                      'Export Backup (JSON)',
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    AscentButton.outlined(
-                      label: 'Guide',
-                      compact: true,
-                      onPressed: () => _showGpsBatteryGuide(context),
+                    subtitle: Text(
+                      'Export full SQLite snapshot for data portability',
+                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
                     ),
-                  ],
-                ),
+                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
+                    onTap: _exportData,
+                  ),
+                  _Divider(color: g.line),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: g.sageSoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.upload_rounded, color: g.sage, size: 20),
+                    ),
+                    title: Text(
+                      'Restore Backup (JSON)',
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Restore tasks, logs, and settings from JSON',
+                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                    ),
+                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
+                    onTap: _importData,
+                  ),
+                  _Divider(color: g.line),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: g.coralSoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(Icons.delete_forever_rounded, color: g.coral, size: 20),
+                    ),
+                    title: Text(
+                      'Reset All Data',
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.coral,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Wipe local database and restart onboarding',
+                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                    ),
+                    onTap: _confirmResetData,
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 12),
 
-              const SizedBox(height: 20),
-
-              // ── Section 6: Data & Storage ─────────────────────────────
-              _SectionHeader(title: 'Data & Storage'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: context.accentInfo.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.download_rounded, color: context.accentInfo, size: 20),
-                      ),
-                      title: Text(
-                        'Export Backup (JSON)',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Export full SQLite snapshot for data portability',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      onTap: _exportData,
-                    ),
-                    const Divider(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: context.accentSecondary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.upload_rounded, color: context.accentSecondary, size: 20),
-                      ),
-                      title: Text(
-                        'Restore Backup (JSON)',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Restore your tasks, applications, and settings from JSON',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      onTap: _importData,
-                    ),
-                    const Divider(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: context.stateDanger.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.delete_forever_rounded, color: context.stateDanger, size: 20),
-                      ),
-                      title: Text(
-                        'Reset All Data',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: context.stateDanger,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Wipe local database and restart onboarding',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      ),
-                      onTap: _confirmResetData,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Section 7: Account & Session ────────────────────────────
-              _SectionHeader(title: 'Account & Session'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final auth = ref.watch(authProvider);
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: context.accentSecondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(Icons.person_rounded, color: context.accentSecondary, size: 20),
+            // ── Collapsible 5: Account & System Info ─────────────────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.shield_outlined,
+              iconTint: g.inkMuted,
+              title: 'Account & System Info',
+              subtitle: 'Active session, security lock & version details',
+              isExpanded: _expandAccountSystem,
+              onToggle: () => setState(() => _expandAccountSystem = !_expandAccountSystem),
+              child: Column(
+                children: [
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final auth = ref.watch(authProvider);
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: g.claySoft,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          title: Text(
-                            'Active Account',
-                            style: AscentTextStyles.labelMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
+                          child: Icon(Icons.person_rounded, color: g.clay, size: 20),
+                        ),
+                        title: Text(
+                          'Active Account',
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            color: g.ink,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Signed in as @${auth.username}',
+                          style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: g.claySoft,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Verified',
+                            style: TextStyle(
+                              color: g.clay,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: Text(
-                            'Signed in as @${auth.username}',
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: context.accentPrimary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Verified',
-                              style: TextStyle(
-                                color: context.accentPrimary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 16),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: context.stateDanger.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.logout_rounded, color: context.stateDanger, size: 20),
+                      );
+                    },
+                  ),
+                  _Divider(color: g.line),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: g.coralSoft,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      title: Text(
-                        'Sign Out',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: context.stateDanger,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        'Lock session and return to login screen',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      ),
-                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14),
-                      onTap: _confirmSignOut,
+                      child: Icon(Icons.logout_rounded, color: g.coral, size: 20),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Section 8: About Ascent ──────────────────────────────
-              _SectionHeader(title: 'About Ascent'),
-              AscentCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                    title: Text(
+                      'Sign Out',
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.coral,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Lock session and return to login screen',
+                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                    ),
+                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
+                    onTap: _confirmSignOut,
+                  ),
+                  _Divider(color: g.line),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Row(
                       children: [
                         Container(
                           width: 36,
                           height: 36,
                           decoration: BoxDecoration(
-                            color: context.accentPrimary.withValues(alpha: 0.15),
+                            color: g.claySoft,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.north_east_rounded, color: context.accentPrimary, size: 20),
+                          child: Icon(Icons.north_east_rounded, color: g.clay, size: 20),
                         ),
                         const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Ascent Beta',
+                              'Ascent Beta · v1.0.1',
                               style: AscentTextStyles.labelLarge.copyWith(
-                                color: context.textPrimary,
+                                color: g.ink,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'Beta Version 1.0.1 · Local-First OS',
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              'Zero anxiety, continuous momentum. 100% on-device SQLite.',
+                              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted, fontSize: 11),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ascent is built on zero anxiety and continuous momentum. 100% of your data stays strictly on your device in a local SQLite database.',
-                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted, height: 1.4),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 40),
-            ],
-          ),
-      ),
-    );
-  }
-
-  void _showGpsBatteryGuide(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: ctx.bgSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: ctx.divider, width: 1.5)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: ctx.divider,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.teal.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.battery_saver_rounded, color: Colors.teal, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Background Walk Tracking Setup',
-                        style: AscentTextStyles.headlineMedium.copyWith(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: ctx.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        'Prevent Android from killing GPS when locked',
-                        style: AscentTextStyles.bodySmall.copyWith(color: ctx.textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _guideStep(
-              number: '1',
-              title: 'Open Android App Settings',
-              description: 'Long press Ascent icon on your home screen > App info (or go to Phone Settings > Apps > Ascent).',
-            ),
-            const SizedBox(height: 12),
-            _guideStep(
-              number: '2',
-              title: 'Set Battery to "Unrestricted"',
-              description: 'Under Battery or App Battery Usage, change setting from "Optimized" to "Unrestricted". This allows continuous GPS recording.',
-            ),
-            const SizedBox(height: 12),
-            _guideStep(
-              number: '3',
-              title: 'Allow Location While Using App',
-              description: 'Ascent runs a foreground walking service with active duration and live route telemetry.',
-            ),
-            const SizedBox(height: 18),
-            AscentButton.primary(
-              label: 'Understood, Got it! 👍',
-              expanded: true,
-              onPressed: () => Navigator.of(ctx).pop(),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 40),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _guideStep({required String number, required String title, required String description}) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CircleAvatar(
-          radius: 12,
-          backgroundColor: Colors.teal.withValues(alpha: 0.2),
-          child: Text(
-            number,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AscentTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                description,
-                style: AscentTextStyles.bodySmall.copyWith(
-                  color: context.textMuted,
-                  height: 1.35,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
 
 class _SectionHeader extends StatelessWidget {
   final String title;
+  final Color dotColor;
 
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, this.dotColor = Colors.grey});
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        title,
-        style: AscentTextStyles.labelSmall.copyWith(
-          color: context.textMuted,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
+      child: Row(
+        children: [
+          Container(
+            width: 5,
+            height: 5,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: dotColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: AscentTextStyles.labelSmall.copyWith(
+              color: g.inkMuted,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Divider extends StatelessWidget {
+  final Color color;
+
+  const _Divider({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 20,
+      thickness: 0.8,
+      color: color,
+    );
+  }
+}
+
+class _CollapsibleSettingsCard extends StatelessWidget {
+  final IconData icon;
+  final Color iconTint;
+  final String title;
+  final String subtitle;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final Widget child;
+
+  const _CollapsibleSettingsCard({
+    required this.icon,
+    required this.iconTint,
+    required this.title,
+    required this.subtitle,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+
+    return AscentCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                onToggle();
+              },
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: iconTint.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: iconTint.withValues(alpha: 0.2)),
+                      ),
+                      child: Icon(icon, color: iconTint, size: 18),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: AscentTextStyles.labelMedium.copyWith(
+                              color: g.ink,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: g.inkMuted,
+                              fontSize: 11.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isExpanded ? g.claySoft : g.fill,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isExpanded ? g.clay.withValues(alpha: 0.3) : g.edge,
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            isExpanded ? 'Hide' : 'Show',
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: isExpanded ? g.clay : g.inkMuted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                            size: 16,
+                            color: isExpanded ? g.clay : g.inkMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (isExpanded) ...[
+            Divider(height: 1, thickness: 0.8, color: g.line),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: child,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -1413,6 +1683,8 @@ class _ThemeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -1420,24 +1692,24 @@ class _ThemeOption extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? context.accentPrimary : context.bgBase,
+            color: isSelected ? g.clay : g.fill,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? context.accentPrimary : context.divider,
+              color: isSelected ? g.clay : g.edge,
             ),
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                color: isSelected ? Colors.white : context.textSecondary,
+                color: isSelected ? Colors.white : g.inkSecondary,
                 size: 20,
               ),
               const SizedBox(height: 6),
               Text(
                 label,
                 style: AscentTextStyles.labelSmall.copyWith(
-                  color: isSelected ? Colors.white : context.textPrimary,
+                  color: isSelected ? Colors.white : g.ink,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
@@ -1449,16 +1721,16 @@ class _ThemeOption extends StatelessWidget {
   }
 }
 
-class _AssistantNameEditor extends StatefulWidget {
+class _AssistantNameEditor extends ConsumerStatefulWidget {
   final String currentName;
 
   const _AssistantNameEditor({required this.currentName});
 
   @override
-  State<_AssistantNameEditor> createState() => _AssistantNameEditorState();
+  ConsumerState<_AssistantNameEditor> createState() => _AssistantNameEditorState();
 }
 
-class _AssistantNameEditorState extends State<_AssistantNameEditor> {
+class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
   late final TextEditingController _controller;
   bool _isEditing = false;
 
@@ -1484,92 +1756,90 @@ class _AssistantNameEditorState extends State<_AssistantNameEditor> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer(
-      builder: (context, ref, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    final g = context.glass;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _controller,
-                    onChanged: (_) {
-                      if (!_isEditing) setState(() => _isEditing = true);
-                    },
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.psychology_outlined, size: 20, color: context.accentPrimary),
-                      hintText: 'e.g. Riya',
-                      filled: true,
-                      fillColor: context.bgBase,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: context.divider),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: context.divider),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: context.accentPrimary),
-                      ),
-                    ),
-                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w600),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                onChanged: (_) {
+                  if (!_isEditing) setState(() => _isEditing = true);
+                },
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.psychology_outlined, size: 20, color: g.clay),
+                  hintText: 'e.g. Riya',
+                  filled: true,
+                  fillColor: g.fill,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: g.edge),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: g.edge),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: g.clay),
                   ),
                 ),
-                const SizedBox(width: 8),
-                AscentButton.primary(
-                  label: 'Update',
-                  compact: true,
-                  expanded: false,
-                  onPressed: () {
-                    final newName = _controller.text.trim();
-                    if (newName.isNotEmpty) {
-                      ref.read(assistantNameProvider.notifier).setName(newName);
-                      setState(() => _isEditing = false);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Assistant renamed to $newName'),
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
+                style: AscentTextStyles.bodyMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+              ),
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: ['Riya', 'Aria', 'Jarvis', 'Nova'].map((preset) {
-                final isSelected = widget.currentName == preset;
-                return ChoiceChip(
-                  label: Text(preset),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) {
-                      _controller.text = preset;
-                      ref.read(assistantNameProvider.notifier).setName(preset);
-                      setState(() => _isEditing = false);
-                    }
-                  },
-                  labelStyle: AscentTextStyles.labelSmall.copyWith(
-                    color: isSelected ? Colors.white : context.textSecondary,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                  selectedColor: context.accentPrimary,
-                  backgroundColor: context.bgBase,
-                  side: BorderSide(color: isSelected ? context.accentPrimary : context.divider),
-                );
-              }).toList(),
+            const SizedBox(width: 8),
+            AscentButton.primary(
+              label: 'Update',
+              compact: true,
+              expanded: false,
+              onPressed: () {
+                final newName = _controller.text.trim();
+                if (newName.isNotEmpty) {
+                  ref.read(assistantNameProvider.notifier).setName(newName);
+                  setState(() => _isEditing = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Assistant renamed to $newName'),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
             ),
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: ['Riya', 'Aria', 'Jarvis', 'Nova'].map((preset) {
+            final isSelected = widget.currentName == preset;
+            return ChoiceChip(
+              label: Text(preset),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  _controller.text = preset;
+                  ref.read(assistantNameProvider.notifier).setName(preset);
+                  setState(() => _isEditing = false);
+                }
+              },
+              labelStyle: AscentTextStyles.labelSmall.copyWith(
+                color: isSelected ? Colors.white : g.inkSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+              selectedColor: g.clay,
+              backgroundColor: g.fill,
+              side: BorderSide(color: isSelected ? g.clay : g.edge),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
