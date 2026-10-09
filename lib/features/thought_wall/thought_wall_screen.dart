@@ -26,13 +26,14 @@ class ThoughtWallScreen extends ConsumerStatefulWidget {
 class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   String _activeFilter = 'all';
 
-  final Map<String, String> _filterLabels = {
-    'all': 'All Thoughts',
-    'me_to_me': '🪞 Me to Me',
-    'idea': '💡 Sparks',
-    'win': '🏆 Wins',
-    'future': '🔮 Future Me',
-    'pinned': '📌 Pinned',
+  final Map<String, (String, IconData)> _filterMeta = const {
+    'all': ('All Thoughts', Icons.bubble_chart_rounded),
+    'me_to_me': ('Me to Me', Icons.psychology_alt_rounded),
+    'thought': ('Raw Thoughts', Icons.insights_rounded),
+    'idea': ('Sparks', Icons.lightbulb_rounded),
+    'win': ('Wins', Icons.emoji_events_rounded),
+    'future': ('Future Me', Icons.schedule_send_rounded),
+    'pinned': ('Pinned', Icons.push_pin_rounded),
   };
 
   @override
@@ -61,7 +62,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         elevation: 2,
         icon: const Icon(Icons.edit_note_rounded, size: 20),
         label: Text(
-          'Drop a Thought ✨',
+          'Drop a Thought',
           style: AscentTextStyles.labelMedium.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -80,14 +81,23 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: ListView(
               scrollDirection: Axis.horizontal,
-              children: _filterLabels.entries.map((entry) {
+              children: _filterMeta.entries.map((entry) {
                 final isSelected = _activeFilter == entry.key;
+                final label = entry.value.$1;
+                final icon = entry.value.$2;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     selected: isSelected,
                     showCheckmark: false,
-                    label: Text(entry.value),
+                    label: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 14, color: isSelected ? context.accentPrimary : context.textMuted),
+                        const SizedBox(width: 5),
+                        Text(label),
+                      ],
+                    ),
                     backgroundColor: context.bgSurface,
                     selectedColor: context.accentPrimary.withValues(alpha: 0.15),
                     labelStyle: AscentTextStyles.labelSmall.copyWith(
@@ -166,19 +176,19 @@ class _ThoughtCard extends ConsumerWidget {
     required this.index,
   });
 
-  String _moodEmoji(String mood) {
+  IconData _moodIcon(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return '🪞';
+        return Icons.psychology_alt_rounded;
       case 'idea':
-        return '💡';
+        return Icons.lightbulb_rounded;
       case 'win':
-        return '🏆';
+        return Icons.emoji_events_rounded;
       case 'future':
-        return '🔮';
+        return Icons.schedule_send_rounded;
       case 'thought':
       default:
-        return '💭';
+        return Icons.insights_rounded;
     }
   }
 
@@ -187,37 +197,37 @@ class _ThoughtCard extends ConsumerWidget {
       case 'me_to_me':
         return 'Me to Me';
       case 'idea':
-        return 'Spark';
+        return 'Idea';
       case 'win':
         return 'Daily Win';
       case 'future':
         return 'Future Self';
       case 'thought':
       default:
-        return 'Reflection';
+        return 'Raw Thought';
     }
   }
 
   Color _moodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return const Color(0xFF9D84B7); // Soft reflective lavender
+        return const Color(0xFF6366F1); // Refined Indigo
       case 'idea':
-        return const Color(0xFFE28B57); // Warm amber spark (Ascent accentSecondary)
+        return const Color(0xFFD97706); // Warm Amber
       case 'win':
-        return const Color(0xFF4E9F76); // Sage triumph (Ascent accentPrimary)
+        return const Color(0xFF16A34A); // Sage Green
       case 'future':
-        return const Color(0xFFD97736); // Warm terracotta horizon
+        return const Color(0xFFEA580C); // Terracotta
       case 'thought':
       default:
-        return const Color(0xFF5A7F96); // Slate calm reflection
+        return const Color(0xFF0284C7); // Sky Deep
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final moodColor = _moodColor(thought.mood);
-    final emoji = _moodEmoji(thought.mood);
+    final icon = _moodIcon(thought.mood);
     final label = _moodLabel(thought.mood);
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
 
@@ -236,53 +246,88 @@ class _ThoughtCard extends ConsumerWidget {
       },
       child: Padding(
         padding: const EdgeInsets.only(bottom: 12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: context.bgSurface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: thought.isPinned
-                  ? context.accentPrimary.withValues(alpha: 0.5)
-                  : moodColor.withValues(alpha: 0.25),
-              width: thought.isPinned ? 1.5 : 1.0,
+        child: Dismissible(
+          key: ValueKey('thought_${thought.id}'),
+          direction: DismissDirection.endToStart,
+          onDismissed: (_) async {
+            HapticFeedback.mediumImpact();
+            await ref.read(thoughtDaoProvider).deleteThought(thought.id);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Thought removed'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          },
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: (thought.isPinned ? context.accentPrimary : moodColor).withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Remove',
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+              ],
+            ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top meta row
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: moodColor.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(emoji, style: const TextStyle(fontSize: 12)),
-                        const SizedBox(width: 4),
-                        Text(
-                          label,
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: moodColor,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10.5,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: context.bgSurface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: thought.isPinned
+                    ? context.accentPrimary.withValues(alpha: 0.5)
+                    : moodColor.withValues(alpha: 0.25),
+                width: thought.isPinned ? 1.5 : 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (thought.isPinned ? context.accentPrimary : moodColor).withValues(alpha: 0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top meta row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: moodColor.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(icon, size: 12, color: moodColor),
+                          const SizedBox(width: 5),
+                          Text(
+                            label,
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: moodColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10.5,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
                   if (thought.isPinned) ...[
                     const SizedBox(width: 6),
                     Container(
@@ -381,8 +426,9 @@ class _ThoughtCard extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _JarvisMindReflectionCard extends ConsumerWidget {

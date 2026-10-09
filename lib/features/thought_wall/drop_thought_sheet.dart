@@ -44,12 +44,12 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
     'What is a skill or realization you developed the hard way?',
   ];
 
-  final List<Map<String, dynamic>> _moods = [
-    {'key': 'me_to_me', 'label': 'Me to Me', 'emoji': '🪞', 'color': Color(0xFF8338EC)},
-    {'key': 'thought', 'label': 'Raw Thought', 'emoji': '💭', 'color': Color(0xFF3A86FF)},
-    {'key': 'idea', 'label': 'Spark / Idea', 'emoji': '💡', 'color': Color(0xFFFFB703)},
-    {'key': 'win', 'label': 'Daily Win', 'emoji': '🏆', 'color': Color(0xFF5FA070)},
-    {'key': 'future', 'label': 'To Future Me', 'emoji': '🔮', 'color': Color(0xFFFB5607)},
+  final List<Map<String, dynamic>> _moods = const [
+    {'key': 'me_to_me', 'label': 'Me to Me', 'icon': Icons.psychology_alt_rounded, 'color': Color(0xFF6366F1)},
+    {'key': 'thought', 'label': 'Raw Thought', 'icon': Icons.insights_rounded, 'color': Color(0xFF0284C7)},
+    {'key': 'idea', 'label': 'Idea', 'icon': Icons.lightbulb_rounded, 'color': Color(0xFFD97706)},
+    {'key': 'win', 'label': 'Daily Win', 'icon': Icons.emoji_events_rounded, 'color': Color(0xFF16A34A)},
+    {'key': 'future', 'label': 'To Future Me', 'icon': Icons.schedule_send_rounded, 'color': Color(0xFFEA580C)},
   ];
 
   @override
@@ -94,7 +94,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✨ Pinned to your Thought Wall!'),
+          content: Text('Pinned to your Thought Wall'),
           duration: Duration(seconds: 2),
         ),
       );
@@ -141,13 +141,13 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8338EC).withValues(alpha: 0.14),
+                  color: context.accentPrimary.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF8338EC).withValues(alpha: 0.3),
+                    color: context.accentPrimary.withValues(alpha: 0.3),
                   ),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF8338EC), size: 20),
+                child: Icon(Icons.psychology_alt_rounded, color: context.accentPrimary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -200,7 +200,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               ),
               child: Row(
                 children: [
-                  const Text('🪄', style: TextStyle(fontSize: 14)),
+                  Icon(Icons.auto_awesome_rounded, size: 15, color: context.accentPrimary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -226,6 +226,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               children: _moods.map((m) {
                 final isSelected = _selectedMood == m['key'];
                 final color = m['color'] as Color;
+                final icon = m['icon'] as IconData;
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
@@ -234,16 +235,16 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                     label: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(m['emoji'] as String, style: const TextStyle(fontSize: 13)),
-                        const SizedBox(width: 5),
+                        Icon(icon, size: 14, color: isSelected ? color : context.textMuted),
+                        const SizedBox(width: 6),
                         Text(m['label'] as String),
                       ],
                     ),
                     backgroundColor: context.bgBase,
-                    selectedColor: color.withValues(alpha: 0.16),
+                    selectedColor: color.withValues(alpha: 0.14),
                     labelStyle: AscentTextStyles.labelMedium.copyWith(
                       color: isSelected ? color : context.textMuted,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     ),
                     side: BorderSide(
                       color: isSelected ? color : context.divider,

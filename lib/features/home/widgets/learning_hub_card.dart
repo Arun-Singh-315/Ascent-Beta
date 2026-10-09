@@ -39,11 +39,9 @@ class LearningHubCard extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                hasStarted ? course.title : 'Learning',
-                style: AscentTextStyles.homeHeadline.copyWith(
+                'Learning',
+                style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

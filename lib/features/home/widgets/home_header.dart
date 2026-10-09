@@ -114,6 +114,35 @@ class HomeHeader extends ConsumerWidget {
                     ),
                   ),
 
+                  // Thought Wall / Mind Space Quick Shortcut
+                  Material(
+                    color: Colors.transparent,
+                    child: Tooltip(
+                      message: 'Mind Space • Thought Wall',
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/thought-wall');
+                        },
+                        borderRadius: BorderRadius.circular(99),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: g.fill,
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: g.edge, width: 1.0),
+                          ),
+                          child: Icon(
+                            Icons.psychology_outlined,
+                            size: 16,
+                            color: g.inkSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(width: 8),
 
                   // Riya glass pill button
@@ -352,7 +381,6 @@ class HomeHeader extends ConsumerWidget {
                 ),
                 trailing: Switch(
                   value: isDark,
-                  activeTrackColor: g.clay,
                   onChanged: (val) {
                     HapticFeedback.lightImpact();
                     ref.read(themeModeProvider.notifier).setThemeMode(

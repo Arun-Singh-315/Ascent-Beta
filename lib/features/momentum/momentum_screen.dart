@@ -329,7 +329,7 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
           const SizedBox(height: 28),
 
           AscentButton.primary(
-            label: 'Begin Assessment & Start ⚡',
+            label: 'Begin Assessment & Start',
             onPressed: () {
               HapticFeedback.lightImpact();
               context.push('/momentum-onboarding');

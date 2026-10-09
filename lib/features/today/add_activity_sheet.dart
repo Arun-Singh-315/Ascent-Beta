@@ -602,7 +602,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       ),
                       Switch(
                         value: _hasReminder,
-                        activeTrackColor: context.accentPrimary,
                         onChanged: (val) async {
                           if (val) {
                             await NotificationService.instance.requestPermissions();

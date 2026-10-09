@@ -386,11 +386,11 @@ void main() {
       // Total count badge should show 7
       expect(find.text('7'), findsOneWidget);
 
-      // Overflow indicator should show "+6 more reminders inside • View all"
-      expect(find.text('+6 more reminders inside • View all'), findsOneWidget);
+      // Overflow indicator removed per feedback; tapping the card triggers navigation
+      expect(find.text('+6 more reminders inside • View all'), findsNothing);
 
-      // Tapping the overflow indicator triggers navigation to full reminders screen
-      await tester.tap(find.text('+6 more reminders inside • View all'));
+      // Tapping the reminder card triggers navigation to full reminders screen
+      await tester.tap(find.text('Reminder #0'));
       await tester.pumpAndSettle();
       expect(viewAllTriggered, isTrue);
     });

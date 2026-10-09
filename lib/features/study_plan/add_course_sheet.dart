@@ -379,7 +379,6 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                 Text('Bulk paste:', style: TextStyle(fontSize: 11, color: context.textMuted)),
                 Switch(
                   value: _useBulkLectureEntry,
-                  activeTrackColor: context.accentPrimary,
                   onChanged: (v) => setState(() => _useBulkLectureEntry = v),
                 ),
               ],

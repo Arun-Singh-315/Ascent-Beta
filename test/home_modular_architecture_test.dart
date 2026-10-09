@@ -149,7 +149,7 @@ void main() {
       expect(find.text('DAILY PROTOCOL'), findsOneWidget);
       expect(find.text('Hydration'), findsOneWidget);
       expect(find.text('Medicine'), findsOneWidget);
-      expect(find.text('Momentum 30-Day Protocol'), findsOneWidget);
+      expect(find.text('Momentum'), findsOneWidget);
       expect(find.text('Chai & Coffee Break'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());

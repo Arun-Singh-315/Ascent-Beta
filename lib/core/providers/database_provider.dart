@@ -386,6 +386,7 @@ class TodayActivityItem {
   final int? targetMinutes;
   final DateTime? plannedDate;
   final bool isOverdue;
+  final bool hasReminder;
   final String? notes;
 
   const TodayActivityItem({
@@ -402,6 +403,7 @@ class TodayActivityItem {
     this.targetMinutes,
     this.plannedDate,
     this.isOverdue = false,
+    this.hasReminder = false,
     this.notes,
   });
 
@@ -419,6 +421,7 @@ class TodayActivityItem {
     int? targetMinutes,
     DateTime? plannedDate,
     bool? isOverdue,
+    bool? hasReminder,
     String? notes,
   }) {
     return TodayActivityItem(
@@ -430,11 +433,12 @@ class TodayActivityItem {
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       linkedSessionId: linkedSessionId ?? this.linkedSessionId,
       categoryTag: categoryTag ?? this.categoryTag,
-      priority: priority ?? this.priority, 
+      priority: priority ?? this.priority,
       kind: kind ?? this.kind,
       targetMinutes: targetMinutes ?? this.targetMinutes,
       plannedDate: plannedDate ?? this.plannedDate,
       isOverdue: isOverdue ?? this.isOverdue,
+      hasReminder: hasReminder ?? this.hasReminder,
       notes: notes ?? this.notes,
     );
   }

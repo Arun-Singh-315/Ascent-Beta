@@ -268,6 +268,24 @@ class AscentTheme {
         ),
       ),
 
+      // ── Switch ──────────────────────────────────────────────────────────────
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accentPrimary;
+          }
+          return isDark ? const Color(0xFF94A3B8) : const Color(0xFFCBD5E1);
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return accentPrimary.withValues(alpha: 0.38);
+          }
+          return isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+        }),
+        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+
       // ── Divider ─────────────────────────────────────────────────────────────
       dividerTheme: DividerThemeData(
         color: divider,

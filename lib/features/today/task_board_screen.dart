@@ -305,6 +305,12 @@ class _TaskItemTile extends ConsumerWidget {
       actualCompletedDate: task.actualCompletedDate,
     );
 
+    final reminders = ref.watch(allRemindersProvider).value ?? [];
+    final hasReminder = reminders.any((r) =>
+        r.isActive &&
+        (r.linkedTaskId == task.id ||
+            (r.linkedTaskId == null && r.title.trim().toLowerCase() == task.title.trim().toLowerCase())));
+
     final completedSubTasks =
         subTasks.where((s) => s.actualCompletedDate != null).length;
 
@@ -480,6 +486,14 @@ class _TaskItemTile extends ConsumerWidget {
                                 ),
                               ),
                             ),
+                            if (hasReminder) ...[
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.alarm_rounded,
+                                size: 13,
+                                color: isDone ? context.textMuted : context.accentPrimary,
+                              ),
+                            ],
                             if (subTasks.isNotEmpty) ...[
                               const SizedBox(width: 8),
                               Container(

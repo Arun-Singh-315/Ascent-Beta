@@ -169,32 +169,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              // Quick +250 mL button
-                              SizedBox(
-                                width: 28,
-                                height: 28,
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () async {
-                                      HapticFeedback.mediumImpact();
-                                      await ref.read(databaseProvider).waterDao.addWater(250);
-                                    },
-                                    borderRadius: BorderRadius.circular(14),
-                                    child: Center(
-                                      child: Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: g.claySoft,
-                                        ),
-                                        child: Icon(Icons.add_rounded, size: 14, color: g.clay),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
                             ],
                           ),
                           const SizedBox(height: 6),
@@ -325,7 +300,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Momentum 30-Day Protocol',
+                        'Momentum',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -347,7 +322,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
-                    'Start ⚡',
+                    'Start',
                     style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                   ),
                 ),

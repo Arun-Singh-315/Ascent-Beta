@@ -446,9 +446,14 @@ final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
   final dismissedIds = ref.watch(dismissedTodayReminderIdsProvider);
   final reminders = remindersAsync.value ?? [];
 
+  final now = DateTime.now();
+  final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+
   final visible = reminders.where((r) {
     if (!r.isActive) return false;
     if (dismissedIds.contains(r.id)) return false;
+    // Reminders of that particular day only (including overdue today)
+    if (r.scheduledAt.isAfter(endOfToday)) return false;
     return true;
   }).toList();
 
@@ -464,6 +469,7 @@ final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
 final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) async* {
   final taskDao = ref.watch(taskDaoProvider);
   final sessionDao = ref.watch(timeSessionDaoProvider);
+  final reminderDao = ref.watch(reminderDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final learningHub = ref.watch(learningHubProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
@@ -474,8 +480,9 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   // Watch both tasks for today and sessions for today
   final tasksStream = taskDao.watchTasksByDate(startOfToday);
   final sessionsStream = sessionDao.watchSessionsForDate(startOfToday);
+  final remindersStream = reminderDao.watchAllReminders();
 
-  await for (final (tasks, sessions) in combineStreams(tasksStream, sessionsStream)) {
+  await for (final (tasks, sessions, reminders) in combineStreams3(tasksStream, sessionsStream, remindersStream)) {
     final List<TodayActivityItem> items = [];
     final Set<int> accountedSessionIds = {};
     bool lectureAccountedFor = false;
@@ -532,6 +539,11 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
           DateTime(task.plannedDate!.year, task.plannedDate!.month, task.plannedDate!.day)
               .isBefore(startOfToday);
 
+      final hasReminder = reminders.any((r) =>
+          r.isActive &&
+          (r.linkedTaskId == task.id ||
+              (r.linkedTaskId == null && r.title.trim().toLowerCase() == task.title.trim().toLowerCase())));
+
       items.add(TodayActivityItem(
         id: 'task_${task.id}',
         title: task.title,
@@ -546,6 +558,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         targetMinutes: targetMinutes,
         plannedDate: task.plannedDate,
         isOverdue: isOverdue,
+        hasReminder: hasReminder,
         notes: task.notes,
       ));
     }
@@ -772,6 +785,65 @@ Stream<(T1, T2)> combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
     onCancel: () async {
       await sub1?.cancel();
       await sub2?.cancel();
+    },
+  );
+
+  return controller.stream;
+}
+
+Stream<(T1, T2, T3)> combineStreams3<T1, T2, T3>(
+  Stream<T1> s1,
+  Stream<T2> s2,
+  Stream<T3> s3,
+) {
+  late StreamController<(T1, T2, T3)> controller;
+  T1? val1;
+  T2? val2;
+  T3? val3;
+  bool hasVal1 = false;
+  bool hasVal2 = false;
+  bool hasVal3 = false;
+  StreamSubscription<T1>? sub1;
+  StreamSubscription<T2>? sub2;
+  StreamSubscription<T3>? sub3;
+
+  controller = StreamController<(T1, T2, T3)>(
+    onListen: () {
+      sub1 = s1.listen(
+        (data) {
+          val1 = data;
+          hasVal1 = true;
+          if (hasVal2 && hasVal3) {
+            controller.add((val1 as T1, val2 as T2, val3 as T3));
+          }
+        },
+        onError: controller.addError,
+      );
+      sub2 = s2.listen(
+        (data) {
+          val2 = data;
+          hasVal2 = true;
+          if (hasVal1 && hasVal3) {
+            controller.add((val1 as T1, val2 as T2, val3 as T3));
+          }
+        },
+        onError: controller.addError,
+      );
+      sub3 = s3.listen(
+        (data) {
+          val3 = data;
+          hasVal3 = true;
+          if (hasVal1 && hasVal2) {
+            controller.add((val1 as T1, val2 as T2, val3 as T3));
+          }
+        },
+        onError: controller.addError,
+      );
+    },
+    onCancel: () async {
+      await sub1?.cancel();
+      await sub2?.cancel();
+      await sub3?.cancel();
     },
   );
 

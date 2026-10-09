@@ -172,14 +172,28 @@ class ActivityRowItem extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      activity.title,
-                      style: AscentTextStyles.homeHeadline.copyWith(
-                        color: isDone ? g.inkMuted : g.ink,
-                        decoration: isDone ? TextDecoration.lineThrough : null,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            activity.title,
+                            style: AscentTextStyles.homeHeadline.copyWith(
+                              color: isDone ? g.inkMuted : g.ink,
+                              decoration: isDone ? TextDecoration.lineThrough : null,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (activity.hasReminder) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.alarm_rounded,
+                            size: 13,
+                            color: isDone ? g.inkMuted : g.clay,
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 3),
                     Row(

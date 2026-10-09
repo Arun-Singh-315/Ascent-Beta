@@ -902,8 +902,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       Switch(
                         value: true,
-                        activeThumbColor: g.clay,
-                        activeTrackColor: g.claySoft,
                         onChanged: (val) async {
                           if (val) {
                             await NotificationService.instance.requestPermissions();
@@ -924,10 +922,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF00B4D8).withValues(alpha: 0.12),
+                              color: g.claySoft,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.bolt_rounded, color: Color(0xFF00B4D8), size: 20),
+                            child: Icon(Icons.bolt_rounded, color: g.clay, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -950,8 +948,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           Switch(
                             value: rawBoost,
-                            activeThumbColor: const Color(0xFF00B4D8),
-                            activeTrackColor: const Color(0xFF00B4D8).withValues(alpha: 0.2),
                             onChanged: (val) {
                               ref.read(rawBoostToneEnabledProvider.notifier).setEnabled(val);
                             },
@@ -971,10 +967,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF48CAE4).withValues(alpha: 0.12),
+                              color: g.claySoft,
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.alarm_on_rounded, color: Color(0xFF48CAE4), size: 20),
+                            child: Icon(Icons.alarm_on_rounded, color: g.clay, size: 20),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -997,8 +993,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           Switch(
                             value: followUp,
-                            activeThumbColor: const Color(0xFF48CAE4),
-                            activeTrackColor: const Color(0xFF48CAE4).withValues(alpha: 0.2),
                             onChanged: (val) {
                               ref.read(accountabilityFollowUpEnabledProvider.notifier).setEnabled(val);
                             },

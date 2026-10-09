@@ -436,8 +436,38 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           }
 
           final now = DateTime.now();
-          final upcoming = reminders.where((r) => r.scheduledAt.isAfter(now) && r.isActive).toList();
-          final past = reminders.where((r) => !r.scheduledAt.isAfter(now) || !r.isActive).toList();
+          final startOfToday = DateTime(now.year, now.month, now.day);
+          final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+          final startOfTomorrow = startOfToday.add(const Duration(days: 1));
+          final endOfTomorrow = endOfToday.add(const Duration(days: 1));
+          final endOfWeek = startOfToday.add(const Duration(days: 7));
+
+          final todayReminders = reminders.where((r) =>
+              r.isActive &&
+              r.scheduledAt.isAfter(startOfToday.subtract(const Duration(seconds: 1))) &&
+              r.scheduledAt.isBefore(startOfTomorrow)).toList()
+            ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+          final tomorrowReminders = reminders.where((r) =>
+              r.isActive &&
+              r.scheduledAt.isAfter(endOfToday) &&
+              r.scheduledAt.isBefore(endOfTomorrow.add(const Duration(milliseconds: 1)))).toList()
+            ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+          final thisWeekReminders = reminders.where((r) =>
+              r.isActive &&
+              r.scheduledAt.isAfter(endOfTomorrow) &&
+              r.scheduledAt.isBefore(endOfWeek)).toList()
+            ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+          final laterReminders = reminders.where((r) =>
+              r.isActive &&
+              r.scheduledAt.isAfter(endOfWeek.subtract(const Duration(milliseconds: 1)))).toList()
+            ..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
+          final pastReminders = reminders.where((r) =>
+              !r.isActive || r.scheduledAt.isBefore(startOfToday)).toList()
+            ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
           return ListView(
             padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 80),
@@ -487,34 +517,71 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ),
                 ),
               ],
-              if (upcoming.isNotEmpty) ...[
-                Text(
-                  'Upcoming (${upcoming.length})',
-                  style: AscentTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: g.clay,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...upcoming.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
-                const SizedBox(height: 20),
+              if (todayReminders.isNotEmpty) ...[
+                _buildSectionHeader('Today', todayReminders.length, g.clay, Icons.today_rounded),
+                ...todayReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                const SizedBox(height: 12),
               ],
-              if (past.isNotEmpty) ...[
-                Text(
-                  'Past or Completed (${past.length})',
-                  style: AscentTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: g.inkMuted,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ...past.map((rem) => _buildReminderTile(rem, isUpcoming: false)),
+              if (tomorrowReminders.isNotEmpty) ...[
+                _buildSectionHeader('Tomorrow', tomorrowReminders.length, g.inkSecondary, Icons.event_rounded),
+                ...tomorrowReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                const SizedBox(height: 12),
+              ],
+              if (thisWeekReminders.isNotEmpty) ...[
+                _buildSectionHeader('This Week', thisWeekReminders.length, g.inkSecondary, Icons.date_range_rounded),
+                ...thisWeekReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                const SizedBox(height: 12),
+              ],
+              if (laterReminders.isNotEmpty) ...[
+                _buildSectionHeader('Upcoming & Later', laterReminders.length, g.inkMuted, Icons.calendar_month_rounded),
+                ...laterReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                const SizedBox(height: 12),
+              ],
+              if (pastReminders.isNotEmpty) ...[
+                _buildSectionHeader('Past or Completed', pastReminders.length, g.inkMuted, Icons.history_rounded),
+                ...pastReminders.map((rem) => _buildReminderTile(rem, isUpcoming: false)),
               ],
             ],
           );
         },
         loading: () => Center(child: CircularProgressIndicator(color: g.clay)),
         error: (err, stack) => Center(child: Text('Error: $err', style: TextStyle(color: g.inkMuted))),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, int count, Color color, IconData icon) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: AscentTextStyles.labelLarge.copyWith(
+              fontWeight: FontWeight.bold,
+              color: g.ink,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

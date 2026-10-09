@@ -31,13 +31,13 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8338EC).withValues(alpha: 0.14),
+                  color: context.accentPrimary.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF8338EC).withValues(alpha: 0.3),
+                    color: context.accentPrimary.withValues(alpha: 0.3),
                   ),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF8338EC), size: 20),
+                child: Icon(Icons.psychology_alt_rounded, color: context.accentPrimary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -49,7 +49,7 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                       style: AscentTextStyles.labelSmall.copyWith(
                         letterSpacing: 1.1,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF8338EC),
+                        color: context.accentPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -73,12 +73,19 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Text(
-                    'Open Wall →',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: const Color(0xFF8338EC),
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Open Wall',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: context.accentPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      Icon(Icons.chevron_right_rounded, size: 14, color: context.accentPrimary),
+                    ],
                   ),
                 ),
               ),
@@ -105,7 +112,15 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        const Text('🪞', style: TextStyle(fontSize: 22)),
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: context.accentPrimary.withValues(alpha: 0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.psychology_alt_rounded, size: 18, color: context.accentPrimary),
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -142,7 +157,7 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: top.isPinned
-                        ? const Color(0xFF8338EC).withValues(alpha: 0.4)
+                        ? context.accentPrimary.withValues(alpha: 0.4)
                         : context.divider,
                   ),
                 ),
@@ -154,7 +169,7 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                         Text(
                           top.isPinned ? '📌 PINNED REFLECTION' : 'LATEST THOUGHT',
                           style: AscentTextStyles.labelSmall.copyWith(
-                            color: top.isPinned ? const Color(0xFF8338EC) : context.textMuted,
+                            color: top.isPinned ? context.accentPrimary : context.textMuted,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -194,10 +209,10 @@ class ThoughtWallHomeCard extends ConsumerWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.edit_note_rounded, size: 16),
-                  label: const Text('Drop a Thought ✨'),
+                  label: const Text('Drop a Thought'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF8338EC),
-                    side: BorderSide(color: const Color(0xFF8338EC).withValues(alpha: 0.4)),
+                    foregroundColor: context.accentPrimary,
+                    side: BorderSide(color: context.accentPrimary.withValues(alpha: 0.4)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
@@ -209,7 +224,7 @@ class ThoughtWallHomeCard extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               OutlinedButton.icon(
-                icon: const Text('🪄', style: TextStyle(fontSize: 13)),
+                icon: Icon(Icons.auto_awesome_rounded, size: 14, color: context.accentPrimary),
                 label: const Text('Prompt'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: context.textPrimary,
