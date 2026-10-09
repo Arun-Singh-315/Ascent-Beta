@@ -408,26 +408,25 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           children: [
-            // 1. Day Selector Strip (Horizontal 30-day slider)
+            // 1. Day Selector Strip (1..7 capsules + 31 inline matrix)
             _buildDaySelectorStrip(context, currentDayNumber),
 
             const SizedBox(height: 18),
 
-            // 2. Integrated Daily-Progress Hero Visual (Circle Ring + Day Headline)
-            _buildProgressHeroCard(context, doneCount, totalCount, progressFraction, currentDayNumber),
+            // 2. Unified Executive Today Progress & Next Action Card
+            _buildExecutiveTodayActionCard(
+              context,
+              doneCount: doneCount,
+              totalCount: totalCount,
+              progressFraction: progressFraction,
+              currentDayNumber: currentDayNumber,
+              nextPending: nextPending,
+              hasCommitments: commitments.isNotEmpty,
+            ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 20),
 
-            // 3. Prominent Next Action Card
-            if (nextPending != null) ...[
-              _buildProminentNextAction(context, nextPending),
-              const SizedBox(height: 20),
-            ] else if (commitments.isNotEmpty) ...[
-              _buildAllCompletedCard(context),
-              const SizedBox(height: 20),
-            ],
-
-            // 4. Chronological Activity Timeline
+            // 3. Chronological Activity Timeline
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -474,95 +473,57 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
     );
   }
 
-  // ── PROGRESS HERO CARD (Coherent Visual Treatment - Spec §5B) ────────────
-  Widget _buildProgressHeroCard(
-    BuildContext context,
-    int doneCount,
-    int totalCount,
-    double progressFraction,
-    int currentDayNumber,
-  ) {
-    return MomentumProgressHeroCard(
+  // ── UNIFIED EXECUTIVE TODAY + NEXT ACTION CARD ────────────────────────────
+  Widget _buildExecutiveTodayActionCard(
+    BuildContext context, {
+    required int doneCount,
+    required int totalCount,
+    required double progressFraction,
+    required int currentDayNumber,
+    required MomentumCommitment? nextPending,
+    required bool hasCommitments,
+  }) {
+    VoidCallback? onActionTap;
+    if (nextPending != null) {
+      if (nextPending.commitmentType == 'walk') {
+        onActionTap = () {
+          HapticFeedback.lightImpact();
+          context.push('/walk');
+        };
+      } else if (nextPending.commitmentType == 'gym') {
+        onActionTap = () async {
+          HapticFeedback.lightImpact();
+          await ref.read(timeTrackingProvider.notifier).switchToTask(
+                title: nextPending.title,
+                sourceType: 'gym',
+                autoStart: true,
+              );
+          if (context.mounted) {
+            context.push('/focus');
+          }
+        };
+      } else {
+        onActionTap = () async {
+          HapticFeedback.mediumImpact();
+          await ref.read(momentumServiceProvider).toggleCommitment(nextPending.id);
+        };
+      }
+    }
+
+    return MomentumExecutiveTodayActionCard(
       doneCount: doneCount,
       totalCount: totalCount,
       progressFraction: progressFraction,
       selectedDayNumber: _selectedDayNumber,
       currentDayNumber: currentDayNumber,
-    );
-  }
-
-
-  // ── PROMINENT NEXT ACTION (Spec §5C) ──────────────────────────────────────
-  Widget _buildProminentNextAction(BuildContext context, MomentumCommitment next) {
-    VoidCallback onActionTap;
-
-    if (next.commitmentType == 'walk') {
-      onActionTap = () {
-        HapticFeedback.lightImpact();
-        context.push('/walk');
-      };
-    } else if (next.commitmentType == 'gym') {
-      onActionTap = () async {
-        HapticFeedback.lightImpact();
-        await ref.read(timeTrackingProvider.notifier).switchToTask(
-              title: next.title,
-              sourceType: 'gym',
-              autoStart: true,
-            );
-        if (context.mounted) {
-          context.push('/focus');
-        }
-      };
-    } else {
-      onActionTap = () async {
-        HapticFeedback.mediumImpact();
-        await ref.read(momentumServiceProvider).toggleCommitment(next.id);
-      };
-    }
-
-    return MomentumExecutiveNextActionCard(
-      commitment: next,
+      nextCommitment: nextPending,
+      hasCommitments: hasCommitments,
       onActionTap: onActionTap,
-      onAdaptSession: (type) => _adaptSession(next.id, type),
+      onAdaptSession: nextPending != null ? (type) => _adaptSession(nextPending.id, type) : null,
     );
   }
 
-  Widget _buildAllCompletedCard(BuildContext context) {
-    final g = context.glass;
-    return AscentCard(
-      padding: const EdgeInsets.all(16),
-      color: g.sageSoft,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: g.sage.withValues(alpha: 0.18),
-            ),
-            child: Icon(Icons.check_rounded, color: g.sage, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Day $_selectedDayNumber Crushed! ⚡',
-                  style: TextStyle(color: g.ink, fontSize: 14, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'All planned commitments completed. Rest up tonight.',
-                  style: TextStyle(color: g.inkMuted, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Future<void> _adaptSession(int commitmentId, String type) async {
     await ref.read(momentumServiceProvider).adaptCommitment(
@@ -782,11 +743,12 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
 }
 
 // ── MOMENTUM DAY CAPSULE STRIP ─────────────────────────────────────────────
-class MomentumDayCapsuleStrip extends StatelessWidget {
+class MomentumDayCapsuleStrip extends StatefulWidget {
   final int selectedDayNumber;
   final int currentDayNumber;
   final Set<int> completedDayNumbers;
   final ValueChanged<int> onSelectDay;
+  final int totalDays;
 
   const MomentumDayCapsuleStrip({
     super.key,
@@ -794,83 +756,589 @@ class MomentumDayCapsuleStrip extends StatelessWidget {
     required this.currentDayNumber,
     this.completedDayNumbers = const {},
     required this.onSelectDay,
+    this.totalDays = 31,
   });
+
+  @override
+  State<MomentumDayCapsuleStrip> createState() => _MomentumDayCapsuleStripState();
+}
+
+class _MomentumDayCapsuleStripState extends State<MomentumDayCapsuleStrip> {
+  bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
 
-    return SizedBox(
-      height: 52,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 30,
-        itemBuilder: (ctx, index) {
-          final dayNum = index + 1;
-          final isSelected = dayNum == selectedDayNumber;
-          final isCurrent = dayNum == currentDayNumber;
-          final isCompleted = completedDayNumbers.contains(dayNum);
-
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onSelectDay(dayNum);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 52,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? g.clay
-                    : (isCurrent ? g.claySoft : g.fill),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isSelected
-                      ? g.clay
-                      : (isCurrent ? g.clay.withValues(alpha: 0.5) : g.edge),
-                  width: isSelected || isCurrent ? 1.4 : 0.8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Days 1..7 + More Trigger Row (Fits across screen without horizontal scrolling)
+        Row(
+          children: [
+            for (int dayNum = 1; dayNum <= 7; dayNum++) ...[
+              Expanded(
+                child: _buildDayCapsule(
+                  dayNum: dayNum,
+                  isSelected: dayNum == widget.selectedDayNumber,
+                  isCurrent: dayNum == widget.currentDayNumber,
+                  isCompleted: widget.completedDayNumbers.contains(dayNum),
+                  g: g,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: g.clay.withValues(alpha: 0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
-                        ),
-                      ]
-                    : null,
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'D$dayNum',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: isSelected ? Colors.white : (isCurrent ? g.clay : g.ink),
-                      letterSpacing: -0.2,
+              if (dayNum < 7) const SizedBox(width: 5),
+            ],
+            const SizedBox(width: 6),
+            _buildMoreButton(g),
+          ],
+        ),
+
+        // Inline 31-Day Matrix (Zero scrolling needed, directly open on screen)
+        if (_isExpanded) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: g.fill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: g.edge),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'ALL 31 DAYS',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: g.inkMuted,
+                      ),
                     ),
-                  ),
-                  if (isCompleted || isCurrent) ...[
-                    const SizedBox(height: 3),
-                    Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected
-                            ? Colors.white
-                            : (isCompleted ? g.sage : g.clay),
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        setState(() => _isExpanded = false);
+                      },
+                      child: Row(
+                        children: [
+                          Text('Close', style: TextStyle(fontSize: 11, color: g.clay, fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 2),
+                          Icon(Icons.keyboard_arrow_up_rounded, size: 16, color: g.clay),
+                        ],
                       ),
                     ),
                   ],
-                ],
+                ),
+                const SizedBox(height: 10),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    childAspectRatio: 1.15,
+                  ),
+                  itemCount: widget.totalDays,
+                  itemBuilder: (ctx, index) {
+                    final d = index + 1;
+                    final isSelected = d == widget.selectedDayNumber;
+                    final isCurrent = d == widget.currentDayNumber;
+                    final isCompleted = widget.completedDayNumbers.contains(d);
+
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        widget.onSelectDay(d);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? g.clay
+                              : (isCurrent ? g.claySoft : g.fill),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected
+                                ? g.clay
+                                : (isCurrent ? g.clay.withValues(alpha: 0.6) : g.edge),
+                            width: isSelected || isCurrent ? 1.4 : 0.8,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '$d',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                color: isSelected ? Colors.white : (isCurrent ? g.clay : g.ink),
+                              ),
+                            ),
+                            if (isCompleted || isCurrent) ...[
+                              const SizedBox(height: 2),
+                              Container(
+                                width: 3,
+                                height: 3,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isCompleted ? g.sage : g.clay),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDayCapsule({
+    required int dayNum,
+    required bool isSelected,
+    required bool isCurrent,
+    required bool isCompleted,
+    required AscentGlass g,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onSelectDay(dayNum);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 48,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? g.clay
+              : (isCurrent ? g.claySoft : g.fill),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? g.clay
+                : (isCurrent ? g.clay.withValues(alpha: 0.5) : g.edge),
+            width: isSelected || isCurrent ? 1.4 : 0.8,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: g.clay.withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$dayNum',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected ? Colors.white : (isCurrent ? g.clay : g.ink),
+                letterSpacing: -0.2,
               ),
             ),
-          );
-        },
+            if (isCompleted || isCurrent) ...[
+              const SizedBox(height: 3),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? Colors.white
+                      : (isCompleted ? g.sage : g.clay),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreButton(AscentGlass g) {
+    final isBeyond7 = widget.selectedDayNumber > 7;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        setState(() => _isExpanded = !_isExpanded);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: _isExpanded || isBeyond7 ? g.claySoft : g.fill,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _isExpanded || isBeyond7 ? g.clay.withValues(alpha: 0.6) : g.edge,
+            width: _isExpanded || isBeyond7 ? 1.4 : 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isBeyond7 ? '${widget.selectedDayNumber}' : 'More',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isBeyond7 || _isExpanded ? g.clay : g.inkMuted,
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: isBeyond7 || _isExpanded ? g.clay : g.inkMuted,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── MOMENTUM EXECUTIVE UNIFIED TODAY + NEXT ACTION CARD ───────────────────
+class MomentumExecutiveTodayActionCard extends StatelessWidget {
+  final int doneCount;
+  final int totalCount;
+  final double progressFraction;
+  final int selectedDayNumber;
+  final int currentDayNumber;
+  final MomentumCommitment? nextCommitment;
+  final bool hasCommitments;
+  final VoidCallback? onActionTap;
+  final void Function(String type)? onAdaptSession;
+
+  const MomentumExecutiveTodayActionCard({
+    super.key,
+    required this.doneCount,
+    required this.totalCount,
+    required this.progressFraction,
+    required this.selectedDayNumber,
+    required this.currentDayNumber,
+    this.nextCommitment,
+    this.hasCommitments = true,
+    this.onActionTap,
+    this.onAdaptSession,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final percent = (progressFraction * 100).round();
+
+    final next = nextCommitment;
+    IconData actionIcon = Icons.check_circle_outline_rounded;
+    Color actionTint = g.clay;
+    String actionBtnLabel = 'Done';
+
+    if (next != null) {
+      if (next.commitmentType == 'walk') {
+        actionIcon = Icons.directions_walk_rounded;
+        actionTint = g.sage;
+        actionBtnLabel = 'Start Walk';
+      } else if (next.commitmentType == 'gym') {
+        actionIcon = Icons.fitness_center_rounded;
+        actionTint = g.clay;
+        actionBtnLabel = 'Start Gym';
+      }
+    }
+
+    final timeStr = next?.scheduledTimeMinutes != null
+        ? '${(next!.scheduledTimeMinutes! ~/ 60).toString().padLeft(2, '0')}:${(next.scheduledTimeMinutes! % 60).toString().padLeft(2, '0')}'
+        : 'Up next';
+
+    final innerContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header Row: Tags + Straight Percentage Text
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: g.claySoft,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    selectedDayNumber == currentDayNumber ? 'TODAY' : 'DAY $selectedDayNumber',
+                    style: TextStyle(
+                      color: g.clay,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: g.fill,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: g.edge, width: 0.8),
+                  ),
+                  child: Text(
+                    '$doneCount of $totalCount completed',
+                    style: TextStyle(
+                      color: g.inkMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '$percent%',
+              style: TextStyle(
+                color: g.clay,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.3,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          percent == 100
+              ? 'Daily Target Locked In'
+              : (percent >= 50 ? 'Strong Steady Pace' : 'Morning Focus Phase'),
+          style: TextStyle(
+            color: g.ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          percent == 100
+              ? 'All targets completed for today. Great discipline.'
+              : 'Complete your planned activities to solidify daily momentum.',
+          style: TextStyle(color: g.inkMuted, fontSize: 12),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 12),
+
+        // Straight Progress Bar (No round ring, straight line)
+        ClipRRect(
+          borderRadius: BorderRadius.circular(3),
+          child: LinearProgressIndicator(
+            value: progressFraction,
+            minHeight: 6,
+            backgroundColor: g.edge.withValues(alpha: 0.5),
+            valueColor: AlwaysStoppedAnimation(g.clay),
+          ),
+        ),
+
+        // Bottom Portion: Next Action or All Completed
+        if (next != null) ...[
+          Container(
+            height: 1,
+            color: g.edge.withValues(alpha: 0.6),
+            margin: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: actionTint,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt_rounded, size: 12, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text(
+                      'NEXT ACTION • $timeStr',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              if (next.wasAdapted)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('Adapted', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: actionTint.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: actionTint.withValues(alpha: 0.25)),
+                ),
+                child: Icon(actionIcon, size: 22, color: actionTint),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      next.title,
+                      style: TextStyle(
+                        color: g.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (next.description != null && next.description!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        next.description!,
+                        style: TextStyle(color: g.inkMuted, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (onActionTap != null)
+                AscentButton.primary(
+                  label: actionBtnLabel,
+                  compact: true,
+                  onPressed: onActionTap,
+                ),
+            ],
+          ),
+          if ((next.commitmentType == 'gym' || next.commitmentType == 'walk') && onAdaptSession != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildAdaptiveChip('Short on time? (20m express)', () {
+                  onAdaptSession!('shorten');
+                }, g),
+                const SizedBox(width: 8),
+                _buildAdaptiveChip('Move to evening', () {
+                  onAdaptSession!('reschedule_evening');
+                }, g),
+              ],
+            ),
+          ],
+        ] else if (hasCommitments) ...[
+          Container(
+            height: 1,
+            color: g.edge.withValues(alpha: 0.6),
+            margin: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: g.sage.withValues(alpha: 0.18),
+                ),
+                child: Icon(Icons.check_rounded, color: g.sage, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Day $selectedDayNumber Crushed! ⚡',
+                      style: TextStyle(color: g.ink, fontSize: 14, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'All planned commitments completed. Rest up tonight.',
+                      style: TextStyle(color: g.inkMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+
+    // In dark: Ascent's signature glass theme (GlassSurface with blur and g.fill/g.edge)
+    // In day: AscentCard clean surface
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    if (isDark) {
+      return GlassSurface(
+        radius: 20,
+        padding: const EdgeInsets.all(18),
+        child: innerContent,
+      );
+    } else {
+      return AscentCard(
+        radius: 20,
+        padding: const EdgeInsets.all(18),
+        hasShadow: true,
+        child: innerContent,
+      );
+    }
+  }
+
+  static Widget _buildAdaptiveChip(String label, VoidCallback onTap, AscentGlass g) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: g.fill,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: g.edge),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: g.inkMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }

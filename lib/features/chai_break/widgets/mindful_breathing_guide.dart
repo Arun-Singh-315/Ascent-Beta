@@ -79,7 +79,9 @@ class MindfulBreathingGuide extends StatelessWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13.5,
               fontWeight: FontWeight.w600,
-              color: Colors.white70,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white70
+                  : const Color(0xFF1E293B),
               letterSpacing: 0.2,
             ),
           ),

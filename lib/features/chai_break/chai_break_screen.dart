@@ -59,6 +59,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
         ? const Color(0xFF10B981)
         : Color(state.selectedSoundscape.accentColorHex);
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: g.bg,
@@ -293,7 +294,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               style: GoogleFonts.jetBrainsMono(
                                 fontSize: 48,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: isDark ? Colors.white : g.ink,
                                 letterSpacing: -1,
                               ),
                             ),
@@ -302,7 +303,8 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               'remaining of ${state.totalDurationSeconds ~/ 60} minutes mindful break',
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12,
-                                color: Colors.white54,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.white54 : g.inkMuted,
                               ),
                             ),
                           ],
@@ -327,7 +329,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         children: [
                           IconButton(
                             iconSize: 22,
-                            icon: const Icon(Icons.replay_rounded, color: Colors.white60),
+                            icon: Icon(Icons.replay_rounded, color: isDark ? Colors.white60 : g.inkMuted),
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               notifier.setPresetMinutes(state.totalDurationSeconds ~/ 60);
@@ -346,10 +348,10 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                                 decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: 0.22),
+                                  color: accentColor.withValues(alpha: isDark ? 0.22 : 0.16),
                                   borderRadius: BorderRadius.circular(30),
                                   border: Border.all(
-                                    color: accentColor.withValues(alpha: 0.7),
+                                    color: accentColor.withValues(alpha: isDark ? 0.7 : 0.8),
                                     width: 1.2,
                                   ),
                                 ),
@@ -358,14 +360,14 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                   children: [
                                     Icon(
                                       state.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                      color: Colors.white,
+                                      color: isDark ? Colors.white : g.ink,
                                       size: 22,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       state.isRunning ? 'Pause' : 'Resume',
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
+                                        color: isDark ? Colors.white : g.ink,
                                         fontWeight: FontWeight.w700,
                                         fontSize: 14,
                                       ),
@@ -378,7 +380,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                           const SizedBox(width: 14),
                           IconButton(
                             iconSize: 22,
-                            icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white60),
+                            icon: Icon(Icons.check_circle_outline_rounded, color: isDark ? Colors.white60 : g.inkMuted),
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               Navigator.of(context).pop();
@@ -411,10 +413,10 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
                         ),
                       ),
                       child: Row(
@@ -430,14 +432,14 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                 style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12.5,
                                   fontStyle: FontStyle.italic,
-                                  color: Colors.white70,
+                                  color: isDark ? Colors.white70 : g.ink,
                                   height: 1.35,
                                 ),
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.edit_note_rounded, color: Colors.white54, size: 20),
+                            icon: Icon(Icons.edit_note_rounded, color: isDark ? Colors.white54 : g.inkMuted, size: 20),
                             onPressed: () => DropThoughtSheet.show(context),
                             tooltip: 'Drop a thought into Thought Wall',
                           ),
@@ -472,6 +474,9 @@ class _PresetChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final g = context.glass;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -481,13 +486,13 @@ class _PresetChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: isSelected
-                ? const Color(0xFFE28B57).withValues(alpha: 0.22)
-                : const Color(0xFF222832),
+                ? (isDark ? const Color(0xFFE28B57).withValues(alpha: 0.22) : g.claySoft)
+                : (isDark ? const Color(0xFF222832) : Colors.black.withValues(alpha: 0.04)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
                   ? const Color(0xFFE28B57)
-                  : Colors.white.withValues(alpha: 0.08),
+                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
               width: 1,
             ),
           ),
@@ -496,7 +501,9 @@ class _PresetChip extends StatelessWidget {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 12.5,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected ? const Color(0xFFE28B57) : Colors.white70,
+              color: isSelected
+                  ? const Color(0xFFE28B57)
+                  : (isDark ? Colors.white70 : g.ink),
             ),
           ),
         ),

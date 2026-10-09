@@ -40,6 +40,7 @@ void main() async {
       } else if (actionId == NotificationService.actionResume) {
         walkNotifier.resumeWalk();
       } else if (actionId == NotificationService.actionFinish) {
+        walkNotifier.finishWalk();
         ascentRouter.push('/walk');
       }
     } else if (payload == '/focus') {
@@ -50,6 +51,7 @@ void main() async {
         sessionNotifier.resumeSession();
       } else if (actionId == NotificationService.actionFinish) {
         sessionNotifier.completeSession();
+        ascentRouter.push('/focus');
       }
     } else if (payload == '/chai-break') {
       final chaiNotifier = container.read(chaiBreakProvider.notifier);
@@ -60,6 +62,7 @@ void main() async {
       } else if (actionId == NotificationService.actionFinish) {
         chaiNotifier.pause();
         NotificationService.instance.cancelOngoingChaiBreakNotification();
+        ascentRouter.push('/chai-break');
       }
     }
   });

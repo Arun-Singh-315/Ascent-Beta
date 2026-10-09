@@ -75,6 +75,28 @@ void main() {
       expect(lateRoutedPath, equals('/walk'));
     });
 
+    test('Buffered cold start action flushes immediately upon handler registration', () {
+      NotificationService.onNotificationAction = null;
+
+      const launchActionResponse = NotificationResponse(
+        notificationResponseType: NotificationResponseType.selectedNotificationAction,
+        actionId: 'action_pause',
+        payload: '/focus',
+      );
+
+      NotificationService.instance.handleNotificationResponse(launchActionResponse);
+
+      String? lateActionId;
+      String? latePayload;
+      NotificationService.setNotificationActionHandler((actionId, payload) {
+        lateActionId = actionId;
+        latePayload = payload;
+      });
+
+      expect(lateActionId, equals('action_pause'));
+      expect(latePayload, equals('/focus'));
+    });
+
     test('WalkTracking duration computation accounts for elapsed wall-clock and pauses correctly', () {
       final startedAt = DateTime(2026, 10, 9, 10, 0, 0);
       final now1 = DateTime(2026, 10, 9, 10, 15, 0); // 15 minutes later = 900s

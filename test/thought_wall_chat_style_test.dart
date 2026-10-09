@@ -81,10 +81,10 @@ void main() {
       expect(foundRightAligned, isTrue, reason: 'Odd thought should have left inset creating right-alignment');
     });
 
-    testWidgets('Thought card has black/dark border and transparent container styling', (tester) async {
+    testWidgets('Thought card uses glass theme in night/dark mode', (tester) async {
       final thought = Thought(
         id: 1,
-        content: 'Transparent reflection with black border.',
+        content: 'Night glass reflection.',
         mood: 'thought',
         isPinned: false,
         isArchived: false,
@@ -112,14 +112,58 @@ void main() {
       await tester.pumpAndSettle();
 
       final animatedContainers = tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
+      bool foundGlassCard = false;
+
+      for (final ac in animatedContainers) {
+        if (ac.decoration is BoxDecoration) {
+          final box = ac.decoration as BoxDecoration;
+          if (box.color == AscentGlass.dark.fill) {
+            foundGlassCard = true;
+          }
+        }
+      }
+
+      expect(foundGlassCard, isTrue, reason: 'Thought card container must use Ascent glass theme in night mode');
+    });
+
+    testWidgets('Thought card has black border and transparent styling in day/light mode', (tester) async {
+      final thought = Thought(
+        id: 1,
+        content: 'Day transparent reflection with black border.',
+        mood: 'thought',
+        isPinned: false,
+        isArchived: false,
+        isCompleted: false,
+        colorHex: '#6366F1',
+        createdAt: DateTime.now(),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: ThemeData.light().copyWith(
+              extensions: const [AscentGlass.light],
+            ),
+            home: Scaffold(
+              body: ThoughtCardBubble(
+                thought: thought,
+                index: 0,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final animatedContainers = tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
       bool foundBlackBorder = false;
 
       for (final ac in animatedContainers) {
         if (ac.decoration is BoxDecoration) {
           final box = ac.decoration as BoxDecoration;
-          if (box.border != null && box.border is Border) {
+          if (box.color == Colors.transparent && box.border != null && box.border is Border) {
             final border = box.border as Border;
-            // Border should be dark/black
             if (border.top.color.r < 0.15 && border.top.color.g < 0.15 && border.top.color.b < 0.15) {
               foundBlackBorder = true;
             }
@@ -127,7 +171,7 @@ void main() {
         }
       }
 
-      expect(foundBlackBorder, isTrue, reason: 'Thought card container must have crisp dark/black border');
+      expect(foundBlackBorder, isTrue, reason: 'Thought card container must have crisp black border in day mode');
     });
   });
 }

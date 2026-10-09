@@ -5,6 +5,12 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'boost_notification_copy.dart';
 
+/// Top-level background notification response callback required by flutter_local_notifications.
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) {
+  NotificationService.instance.handleNotificationResponse(notificationResponse);
+}
+
 /// Notification Service for Ascent.
 /// Provides modern, stylish notifications with rich typography, custom vibration,
 /// accent coloring, and raw brotherly momentum boosts (5-Minute Rule & Streak Guardian).
@@ -47,6 +53,8 @@ class NotificationService {
   static const String actionFinish = 'action_finish';
 
   static String? _pendingRoute;
+  static String? _pendingActionId;
+  static String? _pendingActionPayload;
   static void Function(String route)? onNotificationNavigate;
   static void Function(String actionId, String? payload)? onNotificationAction;
 
@@ -61,11 +69,23 @@ class NotificationService {
 
   static void setNotificationActionHandler(void Function(String actionId, String? payload) handler) {
     onNotificationAction = handler;
+    if (_pendingActionId != null) {
+      final actionId = _pendingActionId!;
+      final payload = _pendingActionPayload;
+      _pendingActionId = null;
+      _pendingActionPayload = null;
+      handler(actionId, payload);
+    }
   }
 
   void handleNotificationResponse(NotificationResponse response) {
     if (response.actionId != null && response.actionId!.isNotEmpty) {
-      onNotificationAction?.call(response.actionId!, response.payload);
+      if (onNotificationAction != null) {
+        onNotificationAction!(response.actionId!, response.payload);
+      } else {
+        _pendingActionId = response.actionId;
+        _pendingActionPayload = response.payload;
+      }
     } else if (response.payload != null && response.payload!.isNotEmpty) {
       if (onNotificationNavigate != null) {
         onNotificationNavigate!(response.payload!);
@@ -108,6 +128,7 @@ class NotificationService {
         onDidReceiveNotificationResponse: (NotificationResponse response) {
           handleNotificationResponse(response);
         },
+        onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
 
       // Create Android Notification Channels
@@ -921,7 +942,7 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: false,
+          showsUserInterface: true,
         ),
         const AndroidNotificationAction(
           actionFinish,
@@ -988,7 +1009,7 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: false,
+          showsUserInterface: true,
         ),
         const AndroidNotificationAction(
           actionFinish,
@@ -1051,7 +1072,7 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: false,
+          showsUserInterface: true,
         ),
         const AndroidNotificationAction(
           actionFinish,

@@ -560,10 +560,10 @@ class ThoughtCardBubble extends ConsumerWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? g.clay.withValues(alpha: 0.16)
+                      ? g.clay.withValues(alpha: 0.22)
                       : (context.isDark
-                          ? const Color(0xFF0F141C).withValues(alpha: 0.35)
-                          : Colors.white.withValues(alpha: 0.35)),
+                          ? g.fill
+                          : Colors.transparent),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(18),
                     topRight: const Radius.circular(18),
@@ -576,8 +576,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                         : (thought.isPinned
                             ? (context.isDark ? Colors.amber.shade400 : Colors.amber.shade700)
                             : (context.isDark
-                                ? Colors.black.withValues(alpha: 0.90)
-                                : Colors.black.withValues(alpha: 0.75))),
+                                ? g.edge
+                                : Colors.black.withValues(alpha: 0.85))),
                     width: isSelected ? 1.8 : 1.2,
                   ),
                   boxShadow: [
