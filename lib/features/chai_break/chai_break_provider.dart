@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/notifications/notification_service.dart';
 
 enum SoundscapePreset {
   tapriCafeRain(
@@ -28,6 +29,24 @@ enum SoundscapePreset {
     'Crackling wood embers & evening mountain breeze',
     0xFFF59E0B,
     'audio/campfire_warmth.wav',
+  ),
+  deepFocusDrone(
+    'Deep Focus Drone (432Hz)',
+    'Continuous theta waves & calming binaural drone for deep study',
+    0xFF0284C7,
+    'audio/deep_concentration_drone.wav',
+  ),
+  monsoonFlute(
+    'Monsoon Flute & Rain',
+    'Slow meditative bansuri notes with gentle mountain drizzle',
+    0xFF14B8A6,
+    'audio/slow_monsoon_flute.wav',
+  ),
+  midnightLibrary(
+    'Midnight Library',
+    'Soft nocturnal room tones, slow warm chords & peaceful study calm',
+    0xFF8B5CF6,
+    'audio/night_library_study.wav',
   ),
   silentZen(
     'Pure Silence',
@@ -146,11 +165,18 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       _timer?.cancel();
       _breathTimer?.cancel();
       _disposeAudioPlayer();
+      NotificationService.instance.cancelOngoingChaiBreakNotification();
     });
 
     _initAudioPlayer();
     _startTimer();
     _startBreathCycle();
+
+    NotificationService.instance.showOngoingChaiBreakNotification(
+      remainingSeconds: 600,
+      soundscapeTitle: SoundscapePreset.tapriCafeRain.title,
+      isPaused: false,
+    );
 
     return const ChaiBreakState();
   }
@@ -245,10 +271,20 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
 
   void _startTimer() {
     _timer?.cancel();
+    int tickCount = 0;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!state.isRunning) return;
       if (state.remainingSeconds > 0) {
-        state = state.copyWith(remainingSeconds: state.remainingSeconds - 1);
+        final remaining = state.remainingSeconds - 1;
+        state = state.copyWith(remainingSeconds: remaining);
+        tickCount++;
+        if (tickCount % 5 == 0 || remaining == 0) {
+          NotificationService.instance.showOngoingChaiBreakNotification(
+            remainingSeconds: remaining,
+            soundscapeTitle: state.selectedSoundscape.title,
+            isPaused: false,
+          );
+        }
       } else {
         pause();
       }
@@ -287,6 +323,11 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
     _startTimer();
     _startBreathCycle();
     _playCurrentSoundscape();
+    NotificationService.instance.showOngoingChaiBreakNotification(
+      remainingSeconds: seconds,
+      soundscapeTitle: state.selectedSoundscape.title,
+      isPaused: false,
+    );
   }
 
   void togglePlayPause() {
@@ -300,6 +341,11 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   void pause() {
     state = state.copyWith(isRunning: false);
     _playCurrentSoundscape();
+    NotificationService.instance.showOngoingChaiBreakNotification(
+      remainingSeconds: state.remainingSeconds,
+      soundscapeTitle: state.selectedSoundscape.title,
+      isPaused: true,
+    );
   }
 
   void resume() {
@@ -308,11 +354,21 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
     }
     state = state.copyWith(isRunning: true);
     _playCurrentSoundscape();
+    NotificationService.instance.showOngoingChaiBreakNotification(
+      remainingSeconds: state.remainingSeconds,
+      soundscapeTitle: state.selectedSoundscape.title,
+      isPaused: false,
+    );
   }
 
   void selectSoundscape(SoundscapePreset soundscape) {
     state = state.copyWith(selectedSoundscape: soundscape);
     _playCurrentSoundscape();
+    NotificationService.instance.showOngoingChaiBreakNotification(
+      remainingSeconds: state.remainingSeconds,
+      soundscapeTitle: soundscape.title,
+      isPaused: !state.isRunning,
+    );
   }
 
   void toggleBreathingGuide() {

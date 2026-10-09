@@ -494,28 +494,14 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
 
   // ── PROMINENT NEXT ACTION (Spec §5C) ──────────────────────────────────────
   Widget _buildProminentNextAction(BuildContext context, MomentumCommitment next) {
-    final g = context.glass;
-    final timeStr = next.scheduledTimeMinutes != null
-        ? '${(next.scheduledTimeMinutes! ~/ 60).toString().padLeft(2, '0')}:${(next.scheduledTimeMinutes! % 60).toString().padLeft(2, '0')}'
-        : 'Up next';
-
-    IconData actionIcon;
-    Color actionTint;
-    String actionBtnLabel;
     VoidCallback onActionTap;
 
     if (next.commitmentType == 'walk') {
-      actionIcon = Icons.directions_walk_rounded;
-      actionTint = g.sage;
-      actionBtnLabel = 'Start Walk';
       onActionTap = () {
         HapticFeedback.lightImpact();
         context.push('/walk');
       };
     } else if (next.commitmentType == 'gym') {
-      actionIcon = Icons.fitness_center_rounded;
-      actionTint = g.clay;
-      actionBtnLabel = 'Start Gym';
       onActionTap = () async {
         HapticFeedback.lightImpact();
         await ref.read(timeTrackingProvider.notifier).switchToTask(
@@ -528,119 +514,16 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
         }
       };
     } else {
-      actionIcon = Icons.check_circle_outline_rounded;
-      actionTint = g.clay;
-      actionBtnLabel = 'Done';
       onActionTap = () async {
         HapticFeedback.mediumImpact();
         await ref.read(momentumServiceProvider).toggleCommitment(next.id);
       };
     }
 
-    return AscentCard(
-      padding: const EdgeInsets.all(16),
-      color: g.claySoft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: g.clay,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bolt_rounded, size: 12, color: Colors.white),
-                    const SizedBox(width: 4),
-                    Text(
-                      'NEXT ACTION • $timeStr',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              if (next.wasAdapted)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Text('Adapted', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: actionTint.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: actionTint.withValues(alpha: 0.25)),
-                ),
-                child: Icon(actionIcon, size: 22, color: actionTint),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      next.title,
-                      style: TextStyle(
-                        color: g.ink,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (next.description != null && next.description!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        next.description!,
-                        style: TextStyle(color: g.inkMuted, fontSize: 12),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              AscentButton.primary(
-                label: actionBtnLabel,
-                compact: true,
-                onPressed: onActionTap,
-              ),
-            ],
-          ),
-          if (next.commitmentType == 'gym' || next.commitmentType == 'walk') ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _buildAdaptivePill('Short on time? (20m express)', () {
-                  _adaptSession(next.id, 'shorten');
-                }),
-                const SizedBox(width: 8),
-                _buildAdaptivePill('Move to evening', () {
-                  _adaptSession(next.id, 'reschedule_evening');
-                }),
-              ],
-            ),
-          ],
-        ],
-      ),
+    return MomentumExecutiveNextActionCard(
+      commitment: next,
+      onActionTap: onActionTap,
+      onAdaptSession: (type) => _adaptSession(next.id, type),
     );
   }
 
@@ -677,29 +560,6 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildAdaptivePill(String label, VoidCallback onTap) {
-    final g = context.glass;
-    return InkWell(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: g.fill,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: g.edge),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(color: g.clay, fontSize: 11, fontWeight: FontWeight.w600),
-        ),
       ),
     );
   }
@@ -761,61 +621,11 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
 
   // ── DAY SELECTOR STRIP ────────────────────────────────────────────────────
   Widget _buildDaySelectorStrip(BuildContext context, int currentDayNumber) {
-    final g = context.glass;
-
-    return SizedBox(
-      height: 60,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 30,
-        itemBuilder: (ctx, index) {
-          final dayNum = index + 1;
-          final isSelected = dayNum == _selectedDayNumber;
-          final isCurrent = dayNum == currentDayNumber;
-
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              setState(() => _selectedDayNumber = dayNum);
-            },
-            child: Container(
-              width: 50,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? g.clay : (isCurrent ? g.claySoft : g.fill),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected ? g.clay : (isCurrent ? g.clay.withValues(alpha: 0.5) : g.edge),
-                  width: isSelected || isCurrent ? 1.2 : 0.8,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'DAY',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white70 : g.inkMuted,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '$dayNum',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : g.ink,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+    return MomentumDayCapsuleStrip(
+      selectedDayNumber: _selectedDayNumber,
+      currentDayNumber: currentDayNumber,
+      completedDayNumbers: const {},
+      onSelectDay: (day) => setState(() => _selectedDayNumber = day),
     );
   }
 
@@ -967,6 +777,274 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
           ],
         );
       },
+    );
+  }
+}
+
+// ── MOMENTUM DAY CAPSULE STRIP ─────────────────────────────────────────────
+class MomentumDayCapsuleStrip extends StatelessWidget {
+  final int selectedDayNumber;
+  final int currentDayNumber;
+  final Set<int> completedDayNumbers;
+  final ValueChanged<int> onSelectDay;
+
+  const MomentumDayCapsuleStrip({
+    super.key,
+    required this.selectedDayNumber,
+    required this.currentDayNumber,
+    this.completedDayNumbers = const {},
+    required this.onSelectDay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+
+    return SizedBox(
+      height: 52,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: 30,
+        itemBuilder: (ctx, index) {
+          final dayNum = index + 1;
+          final isSelected = dayNum == selectedDayNumber;
+          final isCurrent = dayNum == currentDayNumber;
+          final isCompleted = completedDayNumbers.contains(dayNum);
+
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelectDay(dayNum);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 52,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? g.clay
+                    : (isCurrent ? g.claySoft : g.fill),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected
+                      ? g.clay
+                      : (isCurrent ? g.clay.withValues(alpha: 0.5) : g.edge),
+                  width: isSelected || isCurrent ? 1.4 : 0.8,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: g.clay.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'D$dayNum',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      color: isSelected ? Colors.white : (isCurrent ? g.clay : g.ink),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  if (isCompleted || isCurrent) ...[
+                    const SizedBox(height: 3),
+                    Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected
+                            ? Colors.white
+                            : (isCompleted ? g.sage : g.clay),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ── MOMENTUM EXECUTIVE NEXT ACTION CARD ──────────────────────────────────
+class MomentumExecutiveNextActionCard extends StatelessWidget {
+  final MomentumCommitment commitment;
+  final VoidCallback onActionTap;
+  final void Function(String type)? onAdaptSession;
+
+  const MomentumExecutiveNextActionCard({
+    super.key,
+    required this.commitment,
+    required this.onActionTap,
+    this.onAdaptSession,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final next = commitment;
+
+    IconData actionIcon;
+    Color actionTint;
+    String actionBtnLabel;
+
+    if (next.commitmentType == 'walk') {
+      actionIcon = Icons.directions_walk_rounded;
+      actionTint = g.sage;
+      actionBtnLabel = 'Start Walk';
+    } else if (next.commitmentType == 'gym') {
+      actionIcon = Icons.fitness_center_rounded;
+      actionTint = g.clay;
+      actionBtnLabel = 'Start Gym';
+    } else {
+      actionIcon = Icons.check_circle_outline_rounded;
+      actionTint = g.clay;
+      actionBtnLabel = 'Done';
+    }
+
+    final timeStr = next.scheduledTimeMinutes != null
+        ? '${(next.scheduledTimeMinutes! ~/ 60).toString().padLeft(2, '0')}:${(next.scheduledTimeMinutes! % 60).toString().padLeft(2, '0')}'
+        : 'Up next';
+
+    return AscentCard(
+      padding: const EdgeInsets.all(16),
+      color: g.fill,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: actionTint,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bolt_rounded, size: 12, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text(
+                      'NEXT ACTION • $timeStr',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              if (next.wasAdapted)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('Adapted', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: actionTint.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: actionTint.withValues(alpha: 0.25)),
+                ),
+                child: Icon(actionIcon, size: 22, color: actionTint),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      next.title,
+                      style: TextStyle(
+                        color: g.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (next.description != null && next.description!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        next.description!,
+                        style: TextStyle(color: g.inkMuted, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AscentButton.primary(
+                label: actionBtnLabel,
+                compact: true,
+                onPressed: onActionTap,
+              ),
+            ],
+          ),
+          if ((next.commitmentType == 'gym' || next.commitmentType == 'walk') && onAdaptSession != null) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildAdaptiveChip('Short on time? (20m express)', () {
+                  onAdaptSession!('shorten');
+                }, g),
+                const SizedBox(width: 8),
+                _buildAdaptiveChip('Move to evening', () {
+                  onAdaptSession!('reschedule_evening');
+                }, g),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static Widget _buildAdaptiveChip(String label, VoidCallback onTap, AscentGlass g) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: g.fill,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: g.edge),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: g.inkMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 }

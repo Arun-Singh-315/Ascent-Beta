@@ -11,7 +11,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/chai_break/chai_break_provider.dart';
 import 'package:ascent/features/chai_break/chai_break_screen.dart';
-import 'package:ascent/features/study_plan/lecture_focus_player_sheet.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -141,23 +140,15 @@ void main() {
 
       await tester.pump();
 
-      // Find the dock button Go to Learning
-      final resumeFinder = find.text('Go to Learning');
-      expect(resumeFinder, findsOneWidget);
+      // Verify the dock buttons Go to Learning and Go to Todo are completely removed per user instruction
+      expect(find.text('Go to Learning'), findsNothing);
+      expect(find.text('Go to Todo'), findsNothing);
 
-      // Tap the resume button
-      await tester.tap(resumeFinder);
-      await tester.pump();
-
-      // Verify that after resuming, learningHubProvider is playing AND starts from 120, not 0!
+      // Verify that when lecture is resumed, learningHubProvider preserves exact paused second 120, not 0
+      learningNotifier.play();
       final stateAfterResume = container.read(learningHubProvider);
       expect(stateAfterResume.isPlaying, true);
       expect(stateAfterResume.currentElapsedSeconds >= 120, true);
-
-      if (find.byType(LectureFocusPlayerSheet).evaluate().isNotEmpty) {
-        Navigator.of(tester.element(find.byType(LectureFocusPlayerSheet))).pop();
-        await tester.pumpAndSettle();
-      }
 
       // Cleanly unmount and dispose container
       await tester.pumpWidget(const SizedBox());

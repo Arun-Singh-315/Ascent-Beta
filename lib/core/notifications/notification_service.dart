@@ -36,9 +36,44 @@ class NotificationService {
   static const String channelMedicineId = 'ascent_medicine_reminders';
   static const String channelMedicineName = 'Medicine & Prescription Reminders';
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
-  static const String channelOngoingSessionName = 'Active Session & Background Audio';
+  static const String channelOngoingSessionName = 'Ongoing Timers & Sessions';
   static const int ongoingSessionNotificationId = 888800;
   static const int ongoingWalkNotificationId = 888801;
+  static const int ongoingChaiBreakNotificationId = 888802;
+
+  // Interactive Notification Actions
+  static const String actionPause = 'action_pause';
+  static const String actionResume = 'action_resume';
+  static const String actionFinish = 'action_finish';
+
+  static String? _pendingRoute;
+  static void Function(String route)? onNotificationNavigate;
+  static void Function(String actionId, String? payload)? onNotificationAction;
+
+  static void setNotificationNavigateHandler(void Function(String route) handler) {
+    onNotificationNavigate = handler;
+    if (_pendingRoute != null) {
+      final route = _pendingRoute!;
+      _pendingRoute = null;
+      handler(route);
+    }
+  }
+
+  static void setNotificationActionHandler(void Function(String actionId, String? payload) handler) {
+    onNotificationAction = handler;
+  }
+
+  void handleNotificationResponse(NotificationResponse response) {
+    if (response.actionId != null && response.actionId!.isNotEmpty) {
+      onNotificationAction?.call(response.actionId!, response.payload);
+    } else if (response.payload != null && response.payload!.isNotEmpty) {
+      if (onNotificationNavigate != null) {
+        onNotificationNavigate!(response.payload!);
+      } else {
+        _pendingRoute = response.payload;
+      }
+    }
+  }
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -71,7 +106,7 @@ class NotificationService {
       await _plugin.initialize(
         settings: initSettings,
         onDidReceiveNotificationResponse: (NotificationResponse response) {
-          // Handled via root navigator if payload is provided
+          handleNotificationResponse(response);
         },
       );
 
@@ -171,8 +206,15 @@ class NotificationService {
           ),
         );
       }
-
       _isInitialized = true;
+
+      // Check if application was launched from a notification tap (cold start)
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails != null &&
+          launchDetails.didNotificationLaunchApp &&
+          launchDetails.notificationResponse != null) {
+        handleNotificationResponse(launchDetails.notificationResponse!);
+      }
     } catch (e) {
       debugPrint('NotificationService initialization failed: $e');
     }
@@ -866,6 +908,7 @@ class NotificationService {
     required String body,
     String? subText,
     int? elapsedSeconds,
+    bool isPaused = false,
   }) async {
     if (!_isInitialized) await initialize();
     try {
@@ -874,21 +917,35 @@ class NotificationService {
           ? nowMillis - (elapsedSeconds * 1000)
           : nowMillis;
 
+      final actions = <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          isPaused ? actionResume : actionPause,
+          isPaused ? 'Resume ▶️' : 'Pause ⏸️',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionFinish,
+          'Complete 🏁',
+          showsUserInterface: true,
+        ),
+      ];
+
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
         channelOngoingSessionName,
         channelDescription: 'Ongoing background lecture playback and active focus session timers',
         importance: Importance.low,
         priority: Priority.low,
-        ongoing: true,
+        ongoing: !isPaused,
         autoCancel: false,
         onlyAlertOnce: true,
         showWhen: true,
-        usesChronometer: true,
+        usesChronometer: !isPaused,
         when: chronometerStart,
         color: const Color(0xFF00B4D8),
-        subText: subText ?? 'Ascent • Active Session',
+        subText: subText ?? (isPaused ? 'Session Paused' : 'Ascent • Active Session'),
         category: AndroidNotificationCategory.status,
+        actions: actions,
       );
       const darwinDetails = DarwinNotificationDetails(
         presentSound: false,
@@ -896,8 +953,9 @@ class NotificationService {
       );
       await _plugin.show(
         id: ongoingSessionNotificationId,
-        title: title,
+        title: isPaused ? '⏸️ $title' : title,
         body: body,
+        payload: '/focus',
         notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
       );
     } catch (e) {
@@ -926,6 +984,19 @@ class NotificationService {
       final nowMillis = DateTime.now().millisecondsSinceEpoch;
       final chronometerStart = nowMillis - (durationSeconds * 1000);
 
+      final actions = <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          isPaused ? actionResume : actionPause,
+          isPaused ? 'Resume ▶️' : 'Pause ⏸️',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionFinish,
+          'Finish 🏁',
+          showsUserInterface: true,
+        ),
+      ];
+
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
         channelOngoingSessionName,
@@ -941,6 +1012,7 @@ class NotificationService {
         color: const Color(0xFF2C6B45),
         subText: isPaused ? 'Walk Paused' : 'Walk Active • GPS Live',
         category: AndroidNotificationCategory.status,
+        actions: actions,
       );
       const darwinDetails = DarwinNotificationDetails(
         presentSound: false,
@@ -950,6 +1022,7 @@ class NotificationService {
         id: ongoingWalkNotificationId,
         title: isPaused ? 'Walking Paused ⏸️' : 'Walking in Progress 🚶',
         body: '${distanceKm.toStringAsFixed(2)} km • Pace: $pace /km',
+        payload: '/walk',
         notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
       );
     } catch (e) {
@@ -963,6 +1036,71 @@ class NotificationService {
       await _plugin.cancel(id: ongoingWalkNotificationId);
     } catch (e) {
       debugPrint('Failed to cancel ongoing walk notification: $e');
+    }
+  }
+
+  /// Shows or updates an ongoing notification for Chai & Coffee break countdown.
+  Future<void> showOngoingChaiBreakNotification({
+    required int remainingSeconds,
+    required String soundscapeTitle,
+    bool isPaused = false,
+  }) async {
+    if (!_isInitialized) await initialize();
+    try {
+      final actions = <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          isPaused ? actionResume : actionPause,
+          isPaused ? 'Resume ▶️' : 'Pause ⏸️',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionFinish,
+          'End Break ⏹️',
+          showsUserInterface: true,
+        ),
+      ];
+
+      final m = remainingSeconds ~/ 60;
+      final s = remainingSeconds % 60;
+      final timeStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+
+      final androidDetails = AndroidNotificationDetails(
+        channelOngoingSessionId,
+        channelOngoingSessionName,
+        channelDescription: 'Ongoing Chai & Coffee break countdown',
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: !isPaused,
+        autoCancel: false,
+        onlyAlertOnce: true,
+        showWhen: false,
+        color: const Color(0xFFE28B57),
+        subText: isPaused ? 'Break Paused' : 'Chai & Coffee Break',
+        category: AndroidNotificationCategory.status,
+        actions: actions,
+      );
+      const darwinDetails = DarwinNotificationDetails(
+        presentSound: false,
+        presentAlert: false,
+      );
+      await _plugin.show(
+        id: ongoingChaiBreakNotificationId,
+        title: isPaused ? '☕ Chai Break Paused' : '☕ Chai & Coffee Sanctuary',
+        body: '$soundscapeTitle • $timeStr remaining',
+        payload: '/chai-break',
+        notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
+      );
+    } catch (e) {
+      debugPrint('Failed to show ongoing chai break notification: $e');
+    }
+  }
+
+  /// Cancels the ongoing chai break notification.
+  Future<void> cancelOngoingChaiBreakNotification() async {
+    try {
+      await _plugin.cancel(id: ongoingChaiBreakNotificationId);
+    } catch (e) {
+      debugPrint('Failed to cancel ongoing chai break notification: $e');
     }
   }
 }

@@ -9,7 +9,6 @@ import '../thought_wall/drop_thought_sheet.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
 import 'widgets/brew_with_me_view.dart';
-import 'widgets/chai_break_resume_dock.dart';
 import 'widgets/mindful_breathing_guide.dart';
 import 'widgets/steaming_cup_painter.dart';
 
@@ -450,9 +449,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                   ],
                 ),
               ),
-
-              // Pinned Bottom Resume Dock
-              const ChaiBreakResumeDock(),
             ],
           ),
         ),

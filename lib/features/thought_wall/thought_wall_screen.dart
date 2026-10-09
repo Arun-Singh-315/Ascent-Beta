@@ -319,7 +319,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final thought = filtered[index];
-                    return _ThoughtCard(
+                    return ThoughtCardBubble(
                       thought: thought,
                       index: index,
                       isSelected: _selectedIds.contains(thought.id),
@@ -338,7 +338,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   }
 }
 
-class _ThoughtCard extends ConsumerWidget {
+class ThoughtCardBubble extends ConsumerWidget {
   final Thought thought;
   final int index;
   final bool isSelected;
@@ -346,7 +346,8 @@ class _ThoughtCard extends ConsumerWidget {
   final VoidCallback? onToggleSelect;
   final VoidCallback? onLongPress;
 
-  const _ThoughtCard({
+  const ThoughtCardBubble({
+    super.key,
     required this.thought,
     required this.index,
     this.isSelected = false,
@@ -425,7 +426,11 @@ class _ThoughtCard extends ConsumerWidget {
         );
       },
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.only(
+          bottom: 14,
+          left: (index % 2 == 1) ? 38.0 : 4.0,
+          right: (index % 2 == 0) ? 38.0 : 4.0,
+        ),
         child: Dismissible(
           key: ValueKey('thought_${thought.id}'),
           direction: isSelectionMode ? DismissDirection.none : DismissDirection.horizontal,
@@ -556,22 +561,29 @@ class _ThoughtCard extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? g.clay.withValues(alpha: 0.16)
-                      : (context.isDark ? const Color(0xFF131822).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85)),
-                  borderRadius: BorderRadius.circular(16),
+                      : (context.isDark
+                          ? const Color(0xFF0F141C).withValues(alpha: 0.35)
+                          : Colors.white.withValues(alpha: 0.35)),
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular((index % 2 == 0) ? 4 : 18),
+                    bottomRight: Radius.circular((index % 2 == 1) ? 4 : 18),
+                  ),
                   border: Border.all(
                     color: isSelected
                         ? g.clay
                         : (thought.isPinned
-                            ? g.clay.withValues(alpha: 0.6)
-                            : (thought.isCompleted
-                                ? g.edge
-                                : moodColor.withValues(alpha: 0.35))),
-                    width: isSelected ? 1.8 : (thought.isPinned ? 1.5 : 1.0),
+                            ? (context.isDark ? Colors.amber.shade400 : Colors.amber.shade700)
+                            : (context.isDark
+                                ? Colors.black.withValues(alpha: 0.90)
+                                : Colors.black.withValues(alpha: 0.75))),
+                    width: isSelected ? 1.8 : 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (isSelected ? g.clay : (thought.isPinned ? g.clay : moodColor)).withValues(alpha: isSelected ? 0.20 : 0.08),
-                      blurRadius: isSelected ? 12 : 8,
+                      color: Colors.black.withValues(alpha: context.isDark ? 0.30 : 0.06),
+                      blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
                   ],

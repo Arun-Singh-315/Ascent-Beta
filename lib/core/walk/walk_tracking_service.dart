@@ -10,6 +10,16 @@ import 'package:drift/drift.dart' as drift;
 import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
 import '../providers/database_provider.dart';
+import '../providers/settings_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const String _kActiveWalkIsActive = 'ascent_active_walk_is_active';
+const String _kActiveWalkStartTime = 'ascent_active_walk_start_time';
+const String _kActiveWalkIsPaused = 'ascent_active_walk_is_paused';
+const String _kActiveWalkPausedSeconds = 'ascent_active_walk_paused_seconds';
+const String _kActiveWalkPauseStartTime = 'ascent_active_walk_pause_start_time';
+const String _kActiveWalkDistanceMeters = 'ascent_active_walk_distance_meters';
+const String _kActiveWalkCalories = 'ascent_active_walk_calories';
 
 enum WalkTrackingStatus {
   idle,
@@ -126,13 +136,99 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
     return diff < 0 ? 0 : diff;
   }
 
+  SharedPreferences? _getPrefs() {
+    try {
+      return ref.read(sharedPreferencesProvider);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _persistWalkState() {
+    final prefs = _getPrefs();
+    if (prefs == null) return;
+    if (_walkStartTime != null) {
+      prefs.setBool(_kActiveWalkIsActive, true);
+      prefs.setInt(_kActiveWalkStartTime, _walkStartTime!.millisecondsSinceEpoch);
+      prefs.setBool(_kActiveWalkIsPaused, state.status == WalkTrackingStatus.paused);
+      prefs.setInt(_kActiveWalkPausedSeconds, _pausedSeconds);
+      if (_pauseStartTime != null) {
+        prefs.setInt(_kActiveWalkPauseStartTime, _pauseStartTime!.millisecondsSinceEpoch);
+      } else {
+        prefs.remove(_kActiveWalkPauseStartTime);
+      }
+      prefs.setDouble(_kActiveWalkDistanceMeters, state.distanceMeters);
+      prefs.setInt(_kActiveWalkCalories, state.calories);
+    }
+  }
+
+  void _clearPersistedWalk() {
+    final prefs = _getPrefs();
+    if (prefs == null) return;
+    prefs.remove(_kActiveWalkIsActive);
+    prefs.remove(_kActiveWalkStartTime);
+    prefs.remove(_kActiveWalkIsPaused);
+    prefs.remove(_kActiveWalkPausedSeconds);
+    prefs.remove(_kActiveWalkPauseStartTime);
+    prefs.remove(_kActiveWalkDistanceMeters);
+    prefs.remove(_kActiveWalkCalories);
+  }
+
   @override
   WalkTrackingState build() {
     ref.onDispose(() {
       _stopTimer();
       _positionSub?.cancel();
-      NotificationService.instance.cancelOngoingWalkNotification();
     });
+
+    final prefs = _getPrefs();
+    if (prefs != null && prefs.getBool(_kActiveWalkIsActive) == true) {
+      final startTimeMs = prefs.getInt(_kActiveWalkStartTime);
+      if (startTimeMs != null) {
+        _walkStartTime = DateTime.fromMillisecondsSinceEpoch(startTimeMs);
+        final isPaused = prefs.getBool(_kActiveWalkIsPaused) ?? false;
+        _pausedSeconds = prefs.getInt(_kActiveWalkPausedSeconds) ?? 0;
+        final pauseStartMs = prefs.getInt(_kActiveWalkPauseStartTime);
+
+        int currentPaused = _pausedSeconds;
+        if (isPaused && pauseStartMs != null) {
+          _pauseStartTime = DateTime.fromMillisecondsSinceEpoch(pauseStartMs);
+          currentPaused += DateTime.now().difference(_pauseStartTime!).inSeconds;
+        }
+
+        final dist = prefs.getDouble(_kActiveWalkDistanceMeters) ?? 0.0;
+        final cal = prefs.getInt(_kActiveWalkCalories) ?? 0;
+        final durationSec = computeActiveDurationSeconds(
+          startedAt: _walkStartTime!,
+          now: DateTime.now(),
+          pausedSeconds: currentPaused,
+        );
+
+        final initialStatus = isPaused ? WalkTrackingStatus.paused : WalkTrackingStatus.tracking;
+
+        if (!isPaused) {
+          Future.microtask(() {
+            _startTimer();
+            _subscribeGpsStream();
+          });
+        }
+
+        NotificationService.instance.showOngoingWalkNotification(
+          durationSeconds: durationSec,
+          distanceKm: dist / 1000.0,
+          pace: '--:--',
+          isPaused: isPaused,
+        );
+
+        return WalkTrackingState(
+          status: initialStatus,
+          durationSeconds: durationSec,
+          distanceMeters: dist,
+          calories: cal,
+        );
+      }
+    }
+
     return const WalkTrackingState();
   }
 
@@ -157,6 +253,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
 
         tickCount++;
         if (tickCount % 5 == 0) {
+          _persistWalkState();
           NotificationService.instance.showOngoingWalkNotification(
             durationSeconds: newDuration,
             distanceKm: state.distanceKm,
@@ -206,6 +303,8 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       calories: 0,
       routePoints: [],
     );
+
+    _persistWalkState();
 
     NotificationService.instance.showOngoingWalkNotification(
       durationSeconds: 0,
@@ -339,6 +438,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       _stopTimer();
       _pauseStartTime = DateTime.now();
       state = state.copyWith(status: WalkTrackingStatus.paused);
+      _persistWalkState();
       NotificationService.instance.showOngoingWalkNotification(
         durationSeconds: state.durationSeconds,
         distanceKm: state.distanceKm,
@@ -356,6 +456,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       }
       _startTimer();
       state = state.copyWith(status: WalkTrackingStatus.tracking);
+      _persistWalkState();
       NotificationService.instance.showOngoingWalkNotification(
         durationSeconds: state.durationSeconds,
         distanceKm: state.distanceKm,
@@ -368,6 +469,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
   Future<int?> finishWalk({String? notes}) async {
     _stopTimer();
     _positionSub?.cancel();
+    _clearPersistedWalk();
     NotificationService.instance.cancelOngoingWalkNotification();
 
     final walkDao = ref.read(walkDaoProvider);
@@ -404,6 +506,7 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
   void discardWalk() {
     _stopTimer();
     _positionSub?.cancel();
+    _clearPersistedWalk();
     NotificationService.instance.cancelOngoingWalkNotification();
     _walkStartTime = null;
     _pausedSeconds = 0;
