@@ -281,11 +281,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     final moodIcon = _getMoodIcon(activeMood);
 
     return Container(
-      padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
       decoration: BoxDecoration(
-        color: g.fill,
+        color: g.bg,
         border: Border(
-          top: BorderSide(color: g.edge, width: 1.0),
+          top: BorderSide(color: g.edge.withValues(alpha: 0.5), width: 0.8),
         ),
       ),
       child: SafeArea(
@@ -314,26 +314,26 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                 _buildMoodMenuItem('future', 'Future Me', Icons.schedule_send_rounded, const Color(0xFFEA580C)),
               ],
               child: Container(
-                height: 42,
-                width: 42,
+                height: 40,
+                width: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: moodColor.withValues(alpha: 0.14),
+                  color: moodColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
-                  border: Border.all(color: moodColor.withValues(alpha: 0.35)),
+                  border: Border.all(color: moodColor.withValues(alpha: 0.28)),
                 ),
-                child: Icon(moodIcon, size: 20, color: moodColor),
+                child: Icon(moodIcon, size: 19, color: moodColor),
               ),
             ),
             const SizedBox(width: 8),
-            // Text Input Box (WhatsApp style)
+            // Text Input Pill (Clean WhatsApp / Telegram single pill with zero inner borders)
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 120),
                 decoration: BoxDecoration(
                   color: context.bgSurface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: g.edge),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: g.edge.withValues(alpha: 0.6), width: 1.0),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -351,52 +351,55 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                         decoration: InputDecoration(
                           hintText: _getComposerHint(),
                           hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                            color: g.inkMuted.withValues(alpha: 0.6),
+                            color: g.inkMuted.withValues(alpha: 0.5),
                           ),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                           isDense: true,
+                          filled: false,
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
                         ),
                       ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.auto_awesome_rounded, size: 19, color: g.inkMuted),
-                      tooltip: 'Guided Reflection Prompts',
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        DropThoughtSheet.show(context);
-                      },
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4, bottom: 2),
+                      child: IconButton(
+                        icon: Icon(Icons.auto_awesome_rounded, size: 18, color: g.inkMuted),
+                        tooltip: 'Guided Reflection Prompts',
+                        splashRadius: 18,
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          DropThoughtSheet.show(context);
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            // Send Button
+            // Floating Send Button
             GestureDetector(
               onTap: _hasInputText ? _submitThought : null,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                height: 42,
-                width: 42,
+                duration: const Duration(milliseconds: 160),
+                height: 40,
+                width: 40,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: _hasInputText
-                      ? LinearGradient(
-                          colors: [g.clay, g.clay.withValues(alpha: 0.85)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: _hasInputText ? null : context.bgSurface,
+                  color: _hasInputText ? g.clay : g.fill,
                   border: Border.all(
                     color: _hasInputText ? g.clay : g.edge,
                   ),
                   boxShadow: _hasInputText
                       ? [
                           BoxShadow(
-                            color: g.clay.withValues(alpha: 0.3),
+                            color: g.clay.withValues(alpha: 0.35),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -405,8 +408,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                 ),
                 child: Icon(
                   Icons.send_rounded,
-                  size: 19,
-                  color: _hasInputText ? Colors.white : g.inkMuted.withValues(alpha: 0.4),
+                  size: 18,
+                  color: _hasInputText ? Colors.white : g.inkMuted.withValues(alpha: 0.35),
                 ),
               ),
             ),

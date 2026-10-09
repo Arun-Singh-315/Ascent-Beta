@@ -8,14 +8,22 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
   const LectureFocusPlayerSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => const LectureFocusPlayerSheet(),
-    );
+  static bool isSheetOpen = false;
+
+  static Future<void> show(BuildContext context) async {
+    if (isSheetOpen) return;
+    isSheetOpen = true;
+    try {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => const LectureFocusPlayerSheet(),
+      );
+    } finally {
+      isSheetOpen = false;
+    }
   }
 
   @override

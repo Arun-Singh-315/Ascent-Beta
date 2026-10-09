@@ -1,12 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
-import 'package:ascent/core/providers/database_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
