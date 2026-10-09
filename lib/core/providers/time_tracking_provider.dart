@@ -73,11 +73,11 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     final dao = ref.watch(timeSessionDaoProvider);
 
     _sessionSubscription?.cancel();
-    _sessionSubscription = dao.watchActiveSession().listen((session) async {
+    _sessionSubscription = dao.watchActiveFocusSession().listen((session) async {
       if (session == null) {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
-        NotificationService.instance.cancelOngoingSessionNotification();
+        NotificationService.instance.cancelOngoingFocusNotification();
         if (state.activeSession != null || state.isRunning || state.isPaused || state.elapsedSeconds != 0) {
           state = const TimeTrackingState();
         }
@@ -114,11 +114,23 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
           body: '${category?.name ?? "Deep Work"} • Ascent Focus',
           subText: 'Timer Active',
           elapsedSeconds: elapsed,
+          payload: '/focus',
         );
       } else {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
-        NotificationService.instance.cancelOngoingSessionNotification();
+        if (isPaused) {
+          NotificationService.instance.showOngoingSessionNotification(
+            title: 'Focus: ${session.label}',
+            body: '${category?.name ?? "Deep Work"} • Ascent Focus',
+            subText: 'Focus Paused',
+            elapsedSeconds: elapsed,
+            isPaused: true,
+            payload: '/focus',
+          );
+        } else {
+          NotificationService.instance.cancelOngoingFocusNotification();
+        }
       }
     });
 
@@ -126,7 +138,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       _sessionSubscription?.cancel();
       _ticker?.cancel();
       _heartbeatTimer?.cancel();
-      NotificationService.instance.cancelOngoingSessionNotification();
+      NotificationService.instance.cancelOngoingFocusNotification();
     });
 
     return const TimeTrackingState();

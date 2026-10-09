@@ -37,43 +37,49 @@ void main() async {
   });
 
   NotificationService.setNotificationActionHandler((actionId, payload) {
-    if (payload == '/walk') {
+    final effectivePayload = payload?.isNotEmpty == true ? payload : null;
+    if (effectivePayload == '/walk') {
       final walkNotifier = container.read(walkTrackingProvider.notifier);
       if (actionId == NotificationService.actionPause) {
         walkNotifier.pauseWalk();
       } else if (actionId == NotificationService.actionResume) {
         walkNotifier.resumeWalk();
-      } else if (actionId == NotificationService.actionFinish) {
-        walkNotifier.finishWalk();
       }
-    } else if (payload == '/focus') {
-      final sessionNotifier = container.read(timeTrackingProvider.notifier);
-      if (actionId == NotificationService.actionPause) {
-        sessionNotifier.pauseSession();
-      } else if (actionId == NotificationService.actionResume) {
-        sessionNotifier.resumeSession();
-      } else if (actionId == NotificationService.actionFinish) {
-        sessionNotifier.completeSession();
-      }
-    } else if (payload == '/learning') {
+    } else if (effectivePayload == '/learning') {
       final learningNotifier = container.read(learningHubProvider.notifier);
       if (actionId == NotificationService.actionPause) {
         learningNotifier.pause();
       } else if (actionId == NotificationService.actionResume) {
         learningNotifier.play();
-      } else if (actionId == NotificationService.actionFinish) {
-        learningNotifier.pause(updateNotification: false);
-        NotificationService.instance.cancelOngoingSessionNotification();
       }
-    } else if (payload == '/chai-break') {
+    } else if (effectivePayload == '/focus') {
+      final sessionNotifier = container.read(timeTrackingProvider.notifier);
+      if (actionId == NotificationService.actionPause) {
+        sessionNotifier.pauseSession();
+      } else if (actionId == NotificationService.actionResume) {
+        sessionNotifier.resumeSession();
+      }
+    } else if (effectivePayload == '/chai-break') {
       final chaiNotifier = container.read(chaiBreakProvider.notifier);
       if (actionId == NotificationService.actionPause) {
         chaiNotifier.pause();
       } else if (actionId == NotificationService.actionResume) {
         chaiNotifier.resume();
-      } else if (actionId == NotificationService.actionFinish) {
-        chaiNotifier.pause();
-        NotificationService.instance.cancelOngoingChaiBreakNotification();
+      }
+    } else {
+      // Robust fallback if payload was not preserved by OS
+      final learning = container.read(learningHubProvider);
+      if (learning.isPlaying) {
+        if (actionId == NotificationService.actionPause) container.read(learningHubProvider.notifier).pause();
+      } else if (learning.currentElapsedSeconds > 0) {
+        if (actionId == NotificationService.actionResume) container.read(learningHubProvider.notifier).play();
+      } else {
+        final focusState = container.read(timeTrackingProvider);
+        if (focusState.isRunning) {
+          if (actionId == NotificationService.actionPause) container.read(timeTrackingProvider.notifier).pauseSession();
+        } else if (focusState.isPaused) {
+          if (actionId == NotificationService.actionResume) container.read(timeTrackingProvider.notifier).resumeSession();
+        }
       }
     }
   });

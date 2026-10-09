@@ -93,6 +93,11 @@
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
             android:exported="false" />
 
+        <!-- Action receiver for notification action buttons (flutter_local_notifications) -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver"
+            android:exported="false" />
+
         <!-- Foreground service for continuous background GPS walk tracking -->
         <service
             android:name="com.baseflow.geolocator.GeolocatorLocationService"

@@ -434,7 +434,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         payload: '/learning',
       );
     } else {
-      NotificationService.instance.cancelOngoingSessionNotification();
+      NotificationService.instance.cancelOngoingLectureNotification();
     }
     state = state.copyWith(
       isPlaying: false,

@@ -57,14 +57,15 @@ class NotificationService {
   static const String channelMedicineName = 'Medicine & Prescription Reminders';
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
   static const String channelOngoingSessionName = 'Ongoing Timers & Sessions';
-  static const int ongoingSessionNotificationId = 888800;
+  static const int ongoingLectureNotificationId = 888800;
+  static const int ongoingSessionNotificationId = 888800; // backwards-compatible alias for ongoingLectureNotificationId
   static const int ongoingWalkNotificationId = 888801;
   static const int ongoingChaiBreakNotificationId = 888802;
+  static const int ongoingFocusNotificationId = 888803;
 
   // Interactive Notification Actions
   static const String actionPause = 'action_pause';
   static const String actionResume = 'action_resume';
-  static const String actionFinish = 'action_finish';
   static const String isolatePortName = 'ascent_notification_actions_port';
   static ReceivePort? _actionReceivePort;
 
@@ -982,12 +983,10 @@ class NotificationService {
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
           showsUserInterface: false,
         ),
-        const AndroidNotificationAction(
-          actionFinish,
-          'Complete 🏁',
-          showsUserInterface: false,
-        ),
       ];
+
+      final isLecture = payload == '/learning';
+      final notificationId = isLecture ? ongoingLectureNotificationId : ongoingFocusNotificationId;
 
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
@@ -1002,7 +1001,7 @@ class NotificationService {
         usesChronometer: !isPaused,
         when: chronometerStart,
         color: const Color(0xFF00B4D8),
-        subText: subText ?? (isPaused ? 'Session Paused' : 'Ascent • Active Session'),
+        subText: subText ?? (isPaused ? 'Session Paused' : (isLecture ? 'Ascent • Learning Hub' : 'Ascent • Active Focus')),
         category: AndroidNotificationCategory.status,
         actions: actions,
       );
@@ -1011,7 +1010,7 @@ class NotificationService {
         presentAlert: false,
       );
       await _plugin.show(
-        id: ongoingSessionNotificationId,
+        id: notificationId,
         title: isPaused ? '⏸️ $title' : title,
         body: body,
         payload: payload,
@@ -1022,12 +1021,31 @@ class NotificationService {
     }
   }
 
-  /// Cancels the ongoing session notification when lecture or timer stops.
+  /// Cancels ongoing session notification (cancels both lecture and focus by default).
   Future<void> cancelOngoingSessionNotification() async {
     try {
-      await _plugin.cancel(id: ongoingSessionNotificationId);
+      await _plugin.cancel(id: ongoingLectureNotificationId);
+      await _plugin.cancel(id: ongoingFocusNotificationId);
     } catch (e) {
       debugPrint('Failed to cancel ongoing session notification: $e');
+    }
+  }
+
+  /// Cancels focus session notification.
+  Future<void> cancelOngoingFocusNotification() async {
+    try {
+      await _plugin.cancel(id: ongoingFocusNotificationId);
+    } catch (e) {
+      debugPrint('Failed to cancel ongoing focus notification: $e');
+    }
+  }
+
+  /// Cancels ongoing lecture playback notification.
+  Future<void> cancelOngoingLectureNotification() async {
+    try {
+      await _plugin.cancel(id: ongoingLectureNotificationId);
+    } catch (e) {
+      debugPrint('Failed to cancel ongoing lecture notification: $e');
     }
   }
 
@@ -1047,11 +1065,6 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: false,
-        ),
-        const AndroidNotificationAction(
-          actionFinish,
-          'Finish 🏁',
           showsUserInterface: false,
         ),
       ];
@@ -1110,11 +1123,6 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: false,
-        ),
-        const AndroidNotificationAction(
-          actionFinish,
-          'End Break ⏹️',
           showsUserInterface: false,
         ),
       ];

@@ -100,6 +100,322 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     'archived': ('Archived', Icons.archive_outlined),
   };
 
+  final TextEditingController _inputController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+  String _composerMood = 'me_to_me';
+  bool _hasInputText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _inputController.addListener(_onInputChanged);
+  }
+
+  void _onInputChanged() {
+    final hasText = _inputController.text.trim().isNotEmpty;
+    if (_hasInputText != hasText) {
+      setState(() => _hasInputText = hasText);
+    }
+  }
+
+  @override
+  void dispose() {
+    _inputController.removeListener(_onInputChanged);
+    _inputController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Color _getMoodColor(String mood) {
+    switch (mood) {
+      case 'me_to_me':
+        return const Color(0xFF6366F1);
+      case 'idea':
+        return const Color(0xFFD97706);
+      case 'win':
+        return const Color(0xFF16A34A);
+      case 'future':
+        return const Color(0xFFEA580C);
+      case 'thought':
+      default:
+        return const Color(0xFF0284C7);
+    }
+  }
+
+  IconData _getMoodIcon(String mood) {
+    switch (mood) {
+      case 'me_to_me':
+        return Icons.psychology_alt_rounded;
+      case 'idea':
+        return Icons.lightbulb_rounded;
+      case 'win':
+        return Icons.emoji_events_rounded;
+      case 'future':
+        return Icons.schedule_send_rounded;
+      case 'thought':
+      default:
+        return Icons.insights_rounded;
+    }
+  }
+
+  String _getComposerHint() {
+    final effectiveMood = _activeFilter != 'all' && _activeFilter != 'pinned' && _activeFilter != 'archived'
+        ? _activeFilter
+        : _composerMood;
+    switch (effectiveMood) {
+      case 'me_to_me':
+        return 'Message to myself...';
+      case 'idea':
+        return 'Capture a spark or idea...';
+      case 'win':
+        return 'Celebrate a win today...';
+      case 'future':
+        return 'Note for my future self...';
+      case 'thought':
+      default:
+        return 'Raw unfiltered thought...';
+    }
+  }
+
+  PopupMenuItem<String> _buildMoodMenuItem(String key, String label, IconData icon, Color color) {
+    return PopupMenuItem<String>(
+      value: key,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 10),
+          Text(label, style: AscentTextStyles.bodyMedium),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitThought() async {
+    final text = _inputController.text.trim();
+    if (text.isEmpty) return;
+
+    HapticFeedback.mediumImpact();
+    _inputController.clear();
+
+    final mood = _activeFilter != 'all' && _activeFilter != 'pinned' && _activeFilter != 'archived'
+        ? _activeFilter
+        : _composerMood;
+
+    final moodColor = _getMoodColor(mood);
+    final colorHex = '#${moodColor.toARGB32().toRadixString(16)}';
+
+    await ref.read(thoughtDaoProvider).insertThought(
+      ThoughtTableCompanion.insert(
+        content: text,
+        mood: drift.Value(mood),
+        colorHex: drift.Value(colorHex),
+        isPinned: const drift.Value(false),
+      ),
+    );
+
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  Widget _buildSelectionBottomBar(BuildContext context, AscentGlass g, List<Thought> allThoughts) {
+    final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: g.fill,
+        border: Border(top: BorderSide(color: g.edge, width: 1.0)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.close_rounded, color: g.inkMuted),
+              onPressed: _exitSelectionMode,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${_selectedIds.length} Selected',
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: g.ink,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF25D366),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              icon: const Icon(Icons.share_rounded, size: 18),
+              label: const Text('Share to WhatsApp'),
+              onPressed: selectedList.isEmpty ? null : () => shareMultipleThoughts(selectedList),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWhatsAppComposer(BuildContext context, AscentGlass g) {
+    final activeMood = _activeFilter != 'all' && _activeFilter != 'pinned' && _activeFilter != 'archived'
+        ? _activeFilter
+        : _composerMood;
+    final moodColor = _getMoodColor(activeMood);
+    final moodIcon = _getMoodIcon(activeMood);
+
+    return Container(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 8, bottom: 8),
+      decoration: BoxDecoration(
+        color: g.fill,
+        border: Border(
+          top: BorderSide(color: g.edge, width: 1.0),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Category/Mood Picker
+            PopupMenuButton<String>(
+              tooltip: 'Category: $activeMood',
+              initialValue: activeMood,
+              onSelected: (val) {
+                HapticFeedback.lightImpact();
+                setState(() => _composerMood = val);
+              },
+              color: context.bgSurface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: g.edge),
+              ),
+              itemBuilder: (context) => [
+                _buildMoodMenuItem('me_to_me', 'Me to Me', Icons.psychology_alt_rounded, const Color(0xFF6366F1)),
+                _buildMoodMenuItem('thought', 'Raw Thought', Icons.insights_rounded, const Color(0xFF0284C7)),
+                _buildMoodMenuItem('idea', 'Spark / Idea', Icons.lightbulb_rounded, const Color(0xFFD97706)),
+                _buildMoodMenuItem('win', 'Daily Win', Icons.emoji_events_rounded, const Color(0xFF16A34A)),
+                _buildMoodMenuItem('future', 'Future Me', Icons.schedule_send_rounded, const Color(0xFFEA580C)),
+              ],
+              child: Container(
+                height: 42,
+                width: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: moodColor.withValues(alpha: 0.14),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: moodColor.withValues(alpha: 0.35)),
+                ),
+                child: Icon(moodIcon, size: 20, color: moodColor),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Text Input Box (WhatsApp style)
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 120),
+                decoration: BoxDecoration(
+                  color: context.bgSurface,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: g.edge),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _inputController,
+                        focusNode: _focusNode,
+                        minLines: 1,
+                        maxLines: 4,
+                        textCapitalization: TextCapitalization.sentences,
+                        keyboardType: TextInputType.multiline,
+                        style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
+                        cursorColor: g.clay,
+                        decoration: InputDecoration(
+                          hintText: _getComposerHint(),
+                          hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                            color: g.inkMuted.withValues(alpha: 0.6),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          isDense: true,
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.auto_awesome_rounded, size: 19, color: g.inkMuted),
+                      tooltip: 'Guided Reflection Prompts',
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        DropThoughtSheet.show(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Send Button
+            GestureDetector(
+              onTap: _hasInputText ? _submitThought : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                height: 42,
+                width: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: _hasInputText
+                      ? LinearGradient(
+                          colors: [g.clay, g.clay.withValues(alpha: 0.85)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  color: _hasInputText ? null : context.bgSurface,
+                  border: Border.all(
+                    color: _hasInputText ? g.clay : g.edge,
+                  ),
+                  boxShadow: _hasInputText
+                      ? [
+                          BoxShadow(
+                            color: g.clay.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Icon(
+                  Icons.send_rounded,
+                  size: 19,
+                  color: _hasInputText ? Colors.white : g.inkMuted.withValues(alpha: 0.4),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _toggleSelection(int id) {
     HapticFeedback.selectionClick();
     setState(() {
@@ -204,44 +520,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                 },
               ),
             ],
-      floatingActionButton: _isSelectionMode
-          ? (_selectedIds.isNotEmpty
-              ? FloatingActionButton.extended(
-                  backgroundColor: g.clay,
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  icon: const Icon(Icons.share_rounded, size: 20),
-                  label: Text(
-                    'Share ${_selectedIds.length} to WhatsApp',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  onPressed: () {
-                    final allThoughts = thoughtsAsync.value ?? [];
-                    final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
-                    shareMultipleThoughts(selectedList);
-                  },
-                )
-              : null)
-          : FloatingActionButton.extended(
-              backgroundColor: g.clay,
-              foregroundColor: Colors.white,
-              elevation: 2,
-              icon: const Icon(Icons.edit_note_rounded, size: 20),
-              label: Text(
-                'Drop a Thought',
-                style: AscentTextStyles.labelMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              onPressed: () {
-                HapticFeedback.lightImpact();
-                DropThoughtSheet.show(context);
-              },
-            ),
       body: Column(
         children: [
           // Filter Chips Row
@@ -315,7 +593,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 90),
+                  controller: _scrollController,
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final thought = filtered[index];
@@ -332,6 +611,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               },
             ),
           ),
+          // WhatsApp Messenger Composer or Selection Bar
+          _isSelectionMode
+              ? _buildSelectionBottomBar(context, g, thoughtsAsync.value ?? [])
+              : _buildWhatsAppComposer(context, g),
         ],
       ),
     );

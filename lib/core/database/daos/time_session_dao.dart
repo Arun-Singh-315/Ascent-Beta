@@ -59,9 +59,36 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         .watchSingleOrNull();
   }
 
+  /// Watch active focus sessions (excluding lectures to maintain strict module independence)
+  Stream<TimeSession?> watchActiveFocusSession() {
+    return (select(timeSessionTable)
+          ..where((s) => s.status.isIn(['running', 'paused']) & s.activityRefType.isNotValue('lecture'))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
+          ..limit(1))
+        .watchSingleOrNull();
+  }
+
   Future<TimeSession?> getActiveSession() {
     return (select(timeSessionTable)
           ..where((s) => s.status.isIn(['running', 'paused']))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Get active focus session (excluding lectures)
+  Future<TimeSession?> getActiveFocusSession() {
+    return (select(timeSessionTable)
+          ..where((s) => s.status.isIn(['running', 'paused']) & s.activityRefType.isNotValue('lecture'))
+          ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Get active lecture session
+  Future<TimeSession?> getActiveLectureSession() {
+    return (select(timeSessionTable)
+          ..where((s) => s.status.isIn(['running', 'paused']) & s.activityRefType.equals('lecture'))
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
