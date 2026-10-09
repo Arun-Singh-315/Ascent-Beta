@@ -19,6 +19,7 @@ class ThoughtWallHomeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
+    final todayCountAsync = ref.watch(todayThoughtsCountStreamProvider);
 
     return AscentCard(
       padding: const EdgeInsets.all(16),
@@ -45,13 +46,40 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'MIND SPACE • ME TO ME',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        letterSpacing: 1.1,
-                        fontWeight: FontWeight.w700,
-                        color: context.accentPrimary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'MIND SPACE',
+                          style: AscentTextStyles.labelSmall.copyWith(
+                            letterSpacing: 1.1,
+                            fontWeight: FontWeight.w700,
+                            color: context.accentPrimary,
+                          ),
+                        ),
+                        todayCountAsync.when(
+                          data: (count) {
+                            if (count <= 0) return const SizedBox.shrink();
+                            return Container(
+                              margin: const EdgeInsets.only(left: 6),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                              decoration: BoxDecoration(
+                                color: context.accentPrimary.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '$count today',
+                                style: AscentTextStyles.captionMedium.copyWith(
+                                  color: context.accentPrimary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            );
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, _) => const SizedBox.shrink(),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(

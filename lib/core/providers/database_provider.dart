@@ -225,6 +225,16 @@ final allThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
   return dao.watchAllThoughts();
 });
 
+final archivedThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
+  final dao = ref.watch(thoughtDaoProvider);
+  return dao.watchArchivedThoughts();
+});
+
+final todayThoughtsCountStreamProvider = StreamProvider<int>((ref) {
+  final dao = ref.watch(thoughtDaoProvider);
+  return dao.watchTodayThoughtsCount();
+});
+
 final recentThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
   final dao = ref.watch(thoughtDaoProvider);
   return dao.watchRecentThoughts(limit: 6);

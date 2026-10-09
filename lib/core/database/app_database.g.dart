@@ -11802,6 +11802,36 @@ class $ThoughtTableTable extends ThoughtTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _promptQuestionMeta = const VerificationMeta(
     'promptQuestion',
   );
@@ -11832,6 +11862,8 @@ class $ThoughtTableTable extends ThoughtTable
     mood,
     colorHex,
     isPinned,
+    isArchived,
+    isCompleted,
     promptQuestion,
     createdAt,
   ];
@@ -11874,6 +11906,21 @@ class $ThoughtTableTable extends ThoughtTable
       context.handle(
         _isPinnedMeta,
         isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
+          _isCompletedMeta,
+        ),
       );
     }
     if (data.containsKey('prompt_question')) {
@@ -11920,6 +11967,14 @@ class $ThoughtTableTable extends ThoughtTable
         DriftSqlType.bool,
         data['${effectivePrefix}is_pinned'],
       )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
       promptQuestion: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}prompt_question'],
@@ -11943,6 +11998,8 @@ class Thought extends DataClass implements Insertable<Thought> {
   final String mood;
   final String colorHex;
   final bool isPinned;
+  final bool isArchived;
+  final bool isCompleted;
   final String? promptQuestion;
   final DateTime createdAt;
   const Thought({
@@ -11951,6 +12008,8 @@ class Thought extends DataClass implements Insertable<Thought> {
     required this.mood,
     required this.colorHex,
     required this.isPinned,
+    required this.isArchived,
+    required this.isCompleted,
     this.promptQuestion,
     required this.createdAt,
   });
@@ -11962,6 +12021,8 @@ class Thought extends DataClass implements Insertable<Thought> {
     map['mood'] = Variable<String>(mood);
     map['color_hex'] = Variable<String>(colorHex);
     map['is_pinned'] = Variable<bool>(isPinned);
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['is_completed'] = Variable<bool>(isCompleted);
     if (!nullToAbsent || promptQuestion != null) {
       map['prompt_question'] = Variable<String>(promptQuestion);
     }
@@ -11976,6 +12037,8 @@ class Thought extends DataClass implements Insertable<Thought> {
       mood: Value(mood),
       colorHex: Value(colorHex),
       isPinned: Value(isPinned),
+      isArchived: Value(isArchived),
+      isCompleted: Value(isCompleted),
       promptQuestion: promptQuestion == null && nullToAbsent
           ? const Value.absent()
           : Value(promptQuestion),
@@ -11994,6 +12057,8 @@ class Thought extends DataClass implements Insertable<Thought> {
       mood: serializer.fromJson<String>(json['mood']),
       colorHex: serializer.fromJson<String>(json['colorHex']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
       promptQuestion: serializer.fromJson<String?>(json['promptQuestion']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -12007,6 +12072,8 @@ class Thought extends DataClass implements Insertable<Thought> {
       'mood': serializer.toJson<String>(mood),
       'colorHex': serializer.toJson<String>(colorHex),
       'isPinned': serializer.toJson<bool>(isPinned),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
       'promptQuestion': serializer.toJson<String?>(promptQuestion),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -12018,6 +12085,8 @@ class Thought extends DataClass implements Insertable<Thought> {
     String? mood,
     String? colorHex,
     bool? isPinned,
+    bool? isArchived,
+    bool? isCompleted,
     Value<String?> promptQuestion = const Value.absent(),
     DateTime? createdAt,
   }) => Thought(
@@ -12026,6 +12095,8 @@ class Thought extends DataClass implements Insertable<Thought> {
     mood: mood ?? this.mood,
     colorHex: colorHex ?? this.colorHex,
     isPinned: isPinned ?? this.isPinned,
+    isArchived: isArchived ?? this.isArchived,
+    isCompleted: isCompleted ?? this.isCompleted,
     promptQuestion: promptQuestion.present
         ? promptQuestion.value
         : this.promptQuestion,
@@ -12038,6 +12109,12 @@ class Thought extends DataClass implements Insertable<Thought> {
       mood: data.mood.present ? data.mood.value : this.mood,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
       isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
       promptQuestion: data.promptQuestion.present
           ? data.promptQuestion.value
           : this.promptQuestion,
@@ -12053,6 +12130,8 @@ class Thought extends DataClass implements Insertable<Thought> {
           ..write('mood: $mood, ')
           ..write('colorHex: $colorHex, ')
           ..write('isPinned: $isPinned, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('isCompleted: $isCompleted, ')
           ..write('promptQuestion: $promptQuestion, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -12066,6 +12145,8 @@ class Thought extends DataClass implements Insertable<Thought> {
     mood,
     colorHex,
     isPinned,
+    isArchived,
+    isCompleted,
     promptQuestion,
     createdAt,
   );
@@ -12078,6 +12159,8 @@ class Thought extends DataClass implements Insertable<Thought> {
           other.mood == this.mood &&
           other.colorHex == this.colorHex &&
           other.isPinned == this.isPinned &&
+          other.isArchived == this.isArchived &&
+          other.isCompleted == this.isCompleted &&
           other.promptQuestion == this.promptQuestion &&
           other.createdAt == this.createdAt);
 }
@@ -12088,6 +12171,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
   final Value<String> mood;
   final Value<String> colorHex;
   final Value<bool> isPinned;
+  final Value<bool> isArchived;
+  final Value<bool> isCompleted;
   final Value<String?> promptQuestion;
   final Value<DateTime> createdAt;
   const ThoughtTableCompanion({
@@ -12096,6 +12181,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     this.mood = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.isPinned = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.isCompleted = const Value.absent(),
     this.promptQuestion = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -12105,6 +12192,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     this.mood = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.isPinned = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.isCompleted = const Value.absent(),
     this.promptQuestion = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : content = Value(content);
@@ -12114,6 +12203,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     Expression<String>? mood,
     Expression<String>? colorHex,
     Expression<bool>? isPinned,
+    Expression<bool>? isArchived,
+    Expression<bool>? isCompleted,
     Expression<String>? promptQuestion,
     Expression<DateTime>? createdAt,
   }) {
@@ -12123,6 +12214,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
       if (mood != null) 'mood': mood,
       if (colorHex != null) 'color_hex': colorHex,
       if (isPinned != null) 'is_pinned': isPinned,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (isCompleted != null) 'is_completed': isCompleted,
       if (promptQuestion != null) 'prompt_question': promptQuestion,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -12134,6 +12227,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     Value<String>? mood,
     Value<String>? colorHex,
     Value<bool>? isPinned,
+    Value<bool>? isArchived,
+    Value<bool>? isCompleted,
     Value<String?>? promptQuestion,
     Value<DateTime>? createdAt,
   }) {
@@ -12143,6 +12238,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
       mood: mood ?? this.mood,
       colorHex: colorHex ?? this.colorHex,
       isPinned: isPinned ?? this.isPinned,
+      isArchived: isArchived ?? this.isArchived,
+      isCompleted: isCompleted ?? this.isCompleted,
       promptQuestion: promptQuestion ?? this.promptQuestion,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -12166,6 +12263,12 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     if (isPinned.present) {
       map['is_pinned'] = Variable<bool>(isPinned.value);
     }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
     if (promptQuestion.present) {
       map['prompt_question'] = Variable<String>(promptQuestion.value);
     }
@@ -12183,6 +12286,8 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
           ..write('mood: $mood, ')
           ..write('colorHex: $colorHex, ')
           ..write('isPinned: $isPinned, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('isCompleted: $isCompleted, ')
           ..write('promptQuestion: $promptQuestion, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -25335,6 +25440,8 @@ typedef $$ThoughtTableTableCreateCompanionBuilder =
       Value<String> mood,
       Value<String> colorHex,
       Value<bool> isPinned,
+      Value<bool> isArchived,
+      Value<bool> isCompleted,
       Value<String?> promptQuestion,
       Value<DateTime> createdAt,
     });
@@ -25345,6 +25452,8 @@ typedef $$ThoughtTableTableUpdateCompanionBuilder =
       Value<String> mood,
       Value<String> colorHex,
       Value<bool> isPinned,
+      Value<bool> isArchived,
+      Value<bool> isCompleted,
       Value<String?> promptQuestion,
       Value<DateTime> createdAt,
     });
@@ -25380,6 +25489,16 @@ class $$ThoughtTableTableFilterComposer
 
   ColumnFilters<bool> get isPinned => $composableBuilder(
     column: $table.isPinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25428,6 +25547,16 @@ class $$ThoughtTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get promptQuestion => $composableBuilder(
     column: $table.promptQuestion,
     builder: (column) => ColumnOrderings(column),
@@ -25462,6 +25591,16 @@ class $$ThoughtTableTableAnnotationComposer
 
   GeneratedColumn<bool> get isPinned =>
       $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get promptQuestion => $composableBuilder(
     column: $table.promptQuestion,
@@ -25505,6 +25644,8 @@ class $$ThoughtTableTableTableManager
                 Value<String> mood = const Value.absent(),
                 Value<String> colorHex = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
                 Value<String?> promptQuestion = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ThoughtTableCompanion(
@@ -25513,6 +25654,8 @@ class $$ThoughtTableTableTableManager
                 mood: mood,
                 colorHex: colorHex,
                 isPinned: isPinned,
+                isArchived: isArchived,
+                isCompleted: isCompleted,
                 promptQuestion: promptQuestion,
                 createdAt: createdAt,
               ),
@@ -25523,6 +25666,8 @@ class $$ThoughtTableTableTableManager
                 Value<String> mood = const Value.absent(),
                 Value<String> colorHex = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
                 Value<String?> promptQuestion = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ThoughtTableCompanion.insert(
@@ -25531,6 +25676,8 @@ class $$ThoughtTableTableTableManager
                 mood: mood,
                 colorHex: colorHex,
                 isPinned: isPinned,
+                isArchived: isArchived,
+                isCompleted: isCompleted,
                 promptQuestion: promptQuestion,
                 createdAt: createdAt,
               ),

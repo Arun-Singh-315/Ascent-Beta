@@ -6,25 +6,63 @@ part of '../app_database.dart';
 class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   ThoughtDao(super.db);
 
-  /// Watch all thoughts sorted by pinned first, then newest.
-  Stream<List<Thought>> watchAllThoughts() {
+  /// Watch active (non-archived) thoughts sorted by incomplete first, then pinned, then newest.
+  Stream<List<Thought>> watchActiveThoughts() {
     return (select(thoughtTable)
+          ..where((t) => t.isArchived.equals(false))
           ..orderBy([
+            (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
           ]))
         .watch();
   }
 
+  /// Watch archived thoughts sorted newest first.
+  Stream<List<Thought>> watchArchivedThoughts() {
+    return (select(thoughtTable)
+          ..where((t) => t.isArchived.equals(true))
+          ..orderBy([
+            (t) => OrderingTerm.desc(t.createdAt),
+          ]))
+        .watch();
+  }
+
+  /// Watch count of thoughts created today (active non-archived).
+  Stream<int> watchTodayThoughtsCount() {
+    final now = DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final countExp = thoughtTable.id.count();
+    final query = selectOnly(thoughtTable)
+      ..addColumns([countExp])
+      ..where(
+        thoughtTable.isArchived.equals(false) &
+        thoughtTable.createdAt.isBiggerOrEqualValue(dayStart) &
+        thoughtTable.createdAt.isSmallerThanValue(dayEnd),
+      );
+    return query.map((row) => row.read(countExp) ?? 0).watchSingle();
+  }
+
+  /// Watch all thoughts (legacy helper).
+  Stream<List<Thought>> watchAllThoughts() => watchActiveThoughts();
+
   /// Watch recent thoughts for Home screen preview.
   Stream<List<Thought>> watchRecentThoughts({int limit = 5}) {
     return (select(thoughtTable)
+          ..where((t) => t.isArchived.equals(false))
           ..orderBy([
+            (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
           ])
           ..limit(limit))
         .watch();
+  }
+
+  /// Get a single thought by ID.
+  Future<Thought?> getThoughtById(int id) {
+    return (select(thoughtTable)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Insert a new thought.
@@ -34,10 +72,40 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
 
   /// Toggle pinned state of a thought.
   Future<void> togglePin(int id) async {
-    final thought = await (select(thoughtTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+    final thought = await getThoughtById(id);
     if (thought != null) {
       await update(thoughtTable).replace(
         thought.copyWith(isPinned: !thought.isPinned),
+      );
+    }
+  }
+
+  /// Toggle completed state of a thought (double-tap action).
+  Future<void> toggleCompleted(int id) async {
+    final thought = await getThoughtById(id);
+    if (thought != null) {
+      await update(thoughtTable).replace(
+        thought.copyWith(isCompleted: !thought.isCompleted),
+      );
+    }
+  }
+
+  /// Archive a thought.
+  Future<void> archiveThought(int id) async {
+    final thought = await getThoughtById(id);
+    if (thought != null) {
+      await update(thoughtTable).replace(
+        thought.copyWith(isArchived: true),
+      );
+    }
+  }
+
+  /// Unarchive a thought.
+  Future<void> unarchiveThought(int id) async {
+    final thought = await getThoughtById(id);
+    if (thought != null) {
+      await update(thoughtTable).replace(
+        thought.copyWith(isArchived: false),
       );
     }
   }

@@ -37,9 +37,15 @@ class ActivityRowItem extends ConsumerWidget {
       direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
       onDismissed: (_) async {
         HapticFeedback.mediumImpact();
+        final taskDao = ref.read(taskDaoProvider);
+        Task? taskBackup;
+        if (activity.linkedTaskId != null) {
+          taskBackup = await taskDao.getTaskById(activity.linkedTaskId!);
+        }
         await deleteTodayActivity(ref, activity);
         if (context.mounted) {
           final isLecture = activity.sourceType == 'lecture';
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -47,7 +53,17 @@ class ActivityRowItem extends ConsumerWidget {
                     ? 'Removed from today\'s activities'
                     : 'Activity "${activity.title}" deleted',
               ),
-              duration: const Duration(seconds: 2),
+              action: taskBackup != null
+                  ? SnackBarAction(
+                      label: 'UNDO',
+                      textColor: context.accentPrimary,
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        await taskDao.insertTask(taskBackup!.toCompanion(true));
+                      },
+                    )
+                  : null,
+              duration: const Duration(seconds: 4),
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -146,6 +162,17 @@ class ActivityRowItem extends ConsumerWidget {
               child: InkWell(
                 onTap: () async {
                   HapticFeedback.lightImpact();
+                  if (isDone) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Completed activities are sealed and cannot be edited.'),
+                        duration: Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
                   if (isRunning || isPaused) {
                     context.push('/focus');
                     return;
@@ -185,14 +212,6 @@ class ActivityRowItem extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (activity.hasReminder) ...[
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.alarm_rounded,
-                            size: 13,
-                            color: isDone ? g.inkMuted : g.clay,
-                          ),
-                        ],
                       ],
                     ),
                     const SizedBox(height: 3),
@@ -250,6 +269,14 @@ class ActivityRowItem extends ConsumerWidget {
                               color: context.stateDanger,
                               fontWeight: FontWeight.w600,
                             ),
+                          ),
+                        ],
+                        if (activity.hasReminder) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.alarm_rounded,
+                            size: 12,
+                            color: isDone ? g.inkMuted : g.clay,
                           ),
                         ],
                       ],

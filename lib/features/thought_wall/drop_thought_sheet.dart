@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
@@ -52,14 +53,71 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
     {'key': 'future', 'label': 'To Future Me', 'icon': Icons.schedule_send_rounded, 'color': Color(0xFFEA580C)},
   ];
 
+  static const _kDraftContent = 'thought_wall_draft_content';
+  static const _kDraftMood = 'thought_wall_draft_mood';
+  static const _kDraftPrompt = 'thought_wall_draft_prompt';
+
+  bool _isDraftRestored = false;
+
   @override
   void initState() {
     super.initState();
     _activePrompt = widget.initialPrompt;
+    _contentController.addListener(_onTextChanged);
+    _loadDraft();
+  }
+
+  void _onTextChanged() {
+    _autoSaveDraft();
+  }
+
+  Future<void> _loadDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final draft = prefs.getString(_kDraftContent);
+      if (draft != null && draft.trim().isNotEmpty && _contentController.text.isEmpty) {
+        final savedMood = prefs.getString(_kDraftMood);
+        final savedPrompt = prefs.getString(_kDraftPrompt);
+        if (mounted) {
+          setState(() {
+            _contentController.text = draft;
+            if (savedMood != null) _selectedMood = savedMood;
+            if (savedPrompt != null && _activePrompt == null) _activePrompt = savedPrompt;
+            _isDraftRestored = true;
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _autoSaveDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final text = _contentController.text;
+      if (text.trim().isNotEmpty) {
+        await prefs.setString(_kDraftContent, text);
+        await prefs.setString(_kDraftMood, _selectedMood);
+        if (_activePrompt != null) {
+          await prefs.setString(_kDraftPrompt, _activePrompt!);
+        }
+      } else {
+        await _clearDraft();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _clearDraft() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kDraftContent);
+      await prefs.remove(_kDraftMood);
+      await prefs.remove(_kDraftPrompt);
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _contentController.removeListener(_onTextChanged);
     _contentController.dispose();
     super.dispose();
   }
@@ -70,6 +128,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       final rand = Random();
       _activePrompt = _prompts[rand.nextInt(_prompts.length)];
     });
+    _autoSaveDraft();
   }
 
   void _saveThought() async {
@@ -89,6 +148,8 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
         promptQuestion: drift.Value(_activePrompt),
       ),
     );
+
+    await _clearDraft();
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -260,7 +321,41 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
             ),
           ),
 
-          const SizedBox(height: 14),
+          if (_isDraftRestored) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: context.accentPrimary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.history_rounded, size: 13, color: context.accentPrimary),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Draft restored',
+                    style: AscentTextStyles.captionMedium.copyWith(color: context.accentPrimary, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () async {
+                      _contentController.clear();
+                      await _clearDraft();
+                      if (mounted) setState(() => _isDraftRestored = false);
+                    },
+                    child: Text(
+                      'Clear',
+                      style: AscentTextStyles.captionMedium.copyWith(color: context.textMuted, fontSize: 11, decoration: TextDecoration.underline),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 10),
 
           // Content TextField
           TextField(

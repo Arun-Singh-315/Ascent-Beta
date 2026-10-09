@@ -9,6 +9,7 @@ import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/time_tracking_provider.dart';
+import '../notifications/notification_service.dart';
 import '../streak/study_streak_provider.dart';
 import 'default_course_data.dart';
 import 'learning_hub_models.dart';
@@ -378,6 +379,12 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     // Sync active session in SQLite TimeSessionDao
     _syncStartSession(now);
 
+    NotificationService.instance.showOngoingSessionNotification(
+      title: 'Playing: ${state.activeLecture.title}',
+      body: '${state.course.title} • Ascent Study Player',
+      subText: 'Lecture Active',
+    );
+
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       final startedAt = state.playStartedAt;
@@ -415,6 +422,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _flushTimer?.cancel();
     _syncPauseSession();
     _persistCourses();
+    NotificationService.instance.cancelOngoingSessionNotification();
     state = state.copyWith(
       isPlaying: false,
       playStartedAt: null,

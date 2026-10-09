@@ -35,6 +35,9 @@ class NotificationService {
   static const String channelMomentumWindDownName = 'Momentum Evening Wind-Down';
   static const String channelMedicineId = 'ascent_medicine_reminders';
   static const String channelMedicineName = 'Medicine & Prescription Reminders';
+  static const String channelOngoingSessionId = 'ascent_ongoing_session';
+  static const String channelOngoingSessionName = 'Active Session & Background Audio';
+  static const int ongoingSessionNotificationId = 888800;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -153,6 +156,17 @@ class NotificationService {
             importance: Importance.max,
             playSound: true,
             enableVibration: true,
+          ),
+        );
+        await androidImpl.createNotificationChannel(
+          const AndroidNotificationChannel(
+            channelOngoingSessionId,
+            channelOngoingSessionName,
+            description: 'Ongoing background lecture playback and active focus session timers',
+            importance: Importance.low,
+            playSound: false,
+            enableVibration: false,
+            showBadge: false,
           ),
         );
       }
@@ -842,6 +856,52 @@ class NotificationService {
       await _plugin.cancelAll();
     } catch (e) {
       debugPrint('Failed to cancel all notifications: $e');
+    }
+  }
+
+  /// Shows or updates an ongoing notification for background lectures or active focus sessions.
+  Future<void> showOngoingSessionNotification({
+    required String title,
+    required String body,
+    String? subText,
+  }) async {
+    if (!_isInitialized) await initialize();
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        channelOngoingSessionId,
+        channelOngoingSessionName,
+        channelDescription: 'Ongoing background lecture playback and active focus session timers',
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: true,
+        autoCancel: false,
+        onlyAlertOnce: true,
+        showWhen: false,
+        color: const Color(0xFF00B4D8),
+        subText: subText ?? 'Ascent • Active Session',
+        category: AndroidNotificationCategory.status,
+      );
+      const darwinDetails = DarwinNotificationDetails(
+        presentSound: false,
+        presentAlert: false,
+      );
+      await _plugin.show(
+        id: ongoingSessionNotificationId,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
+      );
+    } catch (e) {
+      debugPrint('Failed to show ongoing session notification: $e');
+    }
+  }
+
+  /// Cancels the ongoing session notification when lecture or timer stops.
+  Future<void> cancelOngoingSessionNotification() async {
+    try {
+      await _plugin.cancel(id: ongoingSessionNotificationId);
+    } catch (e) {
+      debugPrint('Failed to cancel ongoing session notification: $e');
     }
   }
 }

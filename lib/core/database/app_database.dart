@@ -112,7 +112,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -191,6 +191,10 @@ class AppDatabase extends _$AppDatabase {
           if (from < 10) {
             await m.createTable(medicineTable);
             await m.createTable(medicineLogTable);
+          }
+          if (from < 11) {
+            await m.addColumn(thoughtTable, thoughtTable.isArchived);
+            await m.addColumn(thoughtTable, thoughtTable.isCompleted);
           }
         },
       );

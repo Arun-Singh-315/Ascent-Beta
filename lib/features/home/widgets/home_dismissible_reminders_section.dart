@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/database/app_database.dart';
+import '../../reminders/widgets/in_app_reminder_dialog.dart';
 
 class HomeDismissibleRemindersSection extends StatelessWidget {
   final List<Reminder> reminders;
@@ -266,7 +267,15 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
             child: InkWell(
               onTap: () {
                 HapticFeedback.lightImpact();
-                if (onViewAll != null) onViewAll!();
+                if (onViewAll != null) {
+                  onViewAll!();
+                } else {
+                  InAppReminderDialog.show(context, primaryReminder);
+                }
+              },
+              onLongPress: () {
+                HapticFeedback.mediumImpact();
+                InAppReminderDialog.show(context, primaryReminder);
               },
               borderRadius: BorderRadius.circular(16),
               child: Container(

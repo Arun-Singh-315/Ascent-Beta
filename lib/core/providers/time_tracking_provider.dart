@@ -78,6 +78,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       if (session == null) {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
+        NotificationService.instance.cancelOngoingSessionNotification();
         if (state.activeSession != null || state.isRunning || state.isPaused || state.elapsedSeconds != 0) {
           state = const TimeTrackingState();
         }
@@ -109,9 +110,15 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       if (isRunning) {
         _startTicker();
         _startHeartbeat();
+        NotificationService.instance.showOngoingSessionNotification(
+          title: 'Focus: ${session.label}',
+          body: '${category?.name ?? "Deep Work"} • Ascent Focus',
+          subText: 'Timer Active',
+        );
       } else {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
+        NotificationService.instance.cancelOngoingSessionNotification();
       }
     });
 
@@ -119,6 +126,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       _sessionSubscription?.cancel();
       _ticker?.cancel();
       _heartbeatTimer?.cancel();
+      NotificationService.instance.cancelOngoingSessionNotification();
     });
 
     return const TimeTrackingState();

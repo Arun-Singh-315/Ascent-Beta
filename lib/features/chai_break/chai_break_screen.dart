@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../thought_wall/drop_thought_sheet.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
+import 'widgets/brew_with_me_view.dart';
 import 'widgets/flow_resume_card.dart';
 import 'widgets/mindful_breathing_guide.dart';
 import 'widgets/steaming_cup_painter.dart';
@@ -21,6 +22,7 @@ class ChaiBreakScreen extends ConsumerStatefulWidget {
 class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   int _quoteIndex = 0;
   Timer? _quoteTimer;
+  bool _isBrewWithMe = false;
 
   static const _mindfulQuotes = [
     'Take a slow sip. Let your eyes wander away from the screen.',
@@ -129,157 +131,270 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   children: [
-                    // Duration Preset Pills
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _PresetChip(
-                          label: '5m Chai',
-                          minutes: 5,
-                          isSelected: state.totalDurationSeconds == 300,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            notifier.setPresetMinutes(5);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _PresetChip(
-                          label: '10m Coffee',
-                          minutes: 10,
-                          isSelected: state.totalDurationSeconds == 600,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            notifier.setPresetMinutes(10);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _PresetChip(
-                          label: '15m Reset',
-                          minutes: 15,
-                          isSelected: state.totalDurationSeconds == 900,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            notifier.setPresetMinutes(15);
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Center Animated Steaming Cup
-                    Center(
-                      child: SteamingCupWidget(
-                        isRunning: state.isRunning,
-                        accentColor: accentColor,
+                    // Mode Switcher (Mindful Pause vs Brew With Me)
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF161A22),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                       ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Big Countdown Timer
-                    Center(
-                      child: Column(
+                      child: Row(
                         children: [
-                          Text(
-                            state.formattedRemaining,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 48,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                              letterSpacing: -1,
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                if (_isBrewWithMe) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _isBrewWithMe = false);
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: !_isBrewWithMe
+                                      ? const Color(0xFFE28B57).withValues(alpha: 0.22)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: !_isBrewWithMe
+                                        ? const Color(0xFFE28B57)
+                                        : Colors.transparent,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.spa_rounded,
+                                      size: 16,
+                                      color: !_isBrewWithMe ? const Color(0xFFE28B57) : Colors.white60,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Mindful Pause',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12.5,
+                                        fontWeight: !_isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
+                                        color: !_isBrewWithMe ? Colors.white : Colors.white60,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'remaining of ${state.totalDurationSeconds ~/ 60} minutes mindful break',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: Colors.white54,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                if (!_isBrewWithMe) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _isBrewWithMe = true);
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: _isBrewWithMe
+                                      ? const Color(0xFFE28B57).withValues(alpha: 0.22)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _isBrewWithMe
+                                        ? const Color(0xFFE28B57)
+                                        : Colors.transparent,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.coffee_maker_rounded,
+                                      size: 16,
+                                      color: _isBrewWithMe ? const Color(0xFFE28B57) : Colors.white60,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Brew With Me',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12.5,
+                                        fontWeight: _isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
+                                        color: _isBrewWithMe ? Colors.white : Colors.white60,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 18),
 
-                    // Mindful Breathing Guide (if enabled)
-                    if (state.isBreathingGuideEnabled) ...[
-                      MindfulBreathingGuide(
-                        phase: state.breathPhase,
-                        isRunning: state.isRunning,
-                        accentColor: accentColor,
-                      ),
-                      const SizedBox(height: 18),
-                    ],
-
-                    // Play / Pause / Reset Controls
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          iconSize: 22,
-                          icon: const Icon(Icons.replay_rounded, color: Colors.white60),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            notifier.setPresetMinutes(state.totalDurationSeconds ~/ 60);
-                          },
-                          tooltip: 'Reset break timer',
-                        ),
-                        const SizedBox(width: 14),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
+                    if (_isBrewWithMe) ...[
+                      const BrewWithMeView(),
+                    ] else ...[
+                      // Duration Preset Pills
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _PresetChip(
+                            label: '5m Chai',
+                            minutes: 5,
+                            isSelected: state.totalDurationSeconds == 300,
                             onTap: () {
-                              HapticFeedback.mediumImpact();
-                              notifier.togglePlayPause();
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(5);
                             },
-                            borderRadius: BorderRadius.circular(30),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: accentColor.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(
-                                  color: accentColor.withValues(alpha: 0.7),
-                                  width: 1.2,
-                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          _PresetChip(
+                            label: '10m Coffee',
+                            minutes: 10,
+                            isSelected: state.totalDurationSeconds == 600,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(10);
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _PresetChip(
+                            label: '15m Reset',
+                            minutes: 15,
+                            isSelected: state.totalDurationSeconds == 900,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              notifier.setPresetMinutes(15);
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Center Animated Steaming Cup
+                      Center(
+                        child: SteamingCupWidget(
+                          isRunning: state.isRunning,
+                          accentColor: accentColor,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Big Countdown Timer
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              state.formattedRemaining,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 48,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: -1,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    state.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                    color: Colors.white,
-                                    size: 22,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'remaining of ${state.totalDurationSeconds ~/ 60} minutes mindful break',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                color: Colors.white54,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Mindful Breathing Guide (if enabled)
+                      if (state.isBreathingGuideEnabled) ...[
+                        MindfulBreathingGuide(
+                          phase: state.breathPhase,
+                          isRunning: state.isRunning,
+                          accentColor: accentColor,
+                        ),
+                        const SizedBox(height: 18),
+                      ],
+
+                      // Play / Pause / Reset Controls
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            iconSize: 22,
+                            icon: const Icon(Icons.replay_rounded, color: Colors.white60),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              notifier.setPresetMinutes(state.totalDurationSeconds ~/ 60);
+                            },
+                            tooltip: 'Reset break timer',
+                          ),
+                          const SizedBox(width: 14),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                notifier.togglePlayPause();
+                              },
+                              borderRadius: BorderRadius.circular(30),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: accentColor.withValues(alpha: 0.22),
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(
+                                    color: accentColor.withValues(alpha: 0.7),
+                                    width: 1.2,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    state.isRunning ? 'Pause' : 'Resume',
-                                    style: GoogleFonts.plusJakartaSans(
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      state.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
                                       color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
+                                      size: 22,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      state.isRunning ? 'Pause' : 'Resume',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 14),
-                        IconButton(
-                          iconSize: 22,
-                          icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white60),
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.of(context).pop();
-                          },
-                          tooltip: 'Finish break early',
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 14),
+                          IconButton(
+                            iconSize: 22,
+                            icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white60),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              Navigator.of(context).pop();
+                            },
+                            tooltip: 'Finish break early',
+                          ),
+                        ],
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 

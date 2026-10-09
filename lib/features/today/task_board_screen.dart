@@ -153,13 +153,6 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 90),
             children: [
-              // JARVIS Task Orchestrator & Priority Coach
-              _JarvisTaskCoachCard(
-                overdueCount: overdueTasks.length,
-                todayCount: todayTasks.length,
-                completedCount: completedTasks.length,
-              ),
-
               // Overdue Group
               if (overdueTasks.isNotEmpty) ...[
                 _SectionHeader(
@@ -432,9 +425,20 @@ class _TaskItemTile extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: AscentCard(
-          onTap: () {
-            AddActivitySheet.show(context, existingTask: task);
-          },
+          onTap: (isDone || isCompletedView)
+              ? () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Completed tasks are sealed and cannot be edited.'),
+                      duration: Duration(seconds: 2),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              : () {
+                  AddActivitySheet.show(context, existingTask: task);
+                },
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,14 +490,6 @@ class _TaskItemTile extends ConsumerWidget {
                                 ),
                               ),
                             ),
-                            if (hasReminder) ...[
-                              const SizedBox(width: 6),
-                              Icon(
-                                Icons.alarm_rounded,
-                                size: 13,
-                                color: isDone ? context.textMuted : context.accentPrimary,
-                              ),
-                            ],
                             if (subTasks.isNotEmpty) ...[
                               const SizedBox(width: 8),
                               Container(
@@ -560,6 +556,21 @@ class _TaskItemTile extends ConsumerWidget {
                                 Text(
                                   'High',
                                   style: TextStyle(fontSize: 11, color: context.stateDanger),
+                                ),
+                              ],
+                              if (hasReminder) ...[
+                                const SizedBox(width: 8),
+                                Icon(
+                                  Icons.alarm_rounded,
+                                  size: 13,
+                                  color: isDone ? context.textMuted : context.accentPrimary,
+                                ),
+                              ],
+                              if (isDone && task.actualCompletedDate != null) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '• Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}',
+                                  style: TextStyle(fontSize: 11, color: context.accentPrimary, fontWeight: FontWeight.w500),
                                 ),
                               ],
                             ],
@@ -684,108 +695,4 @@ class _TaskItemTile extends ConsumerWidget {
 
 // ---------------------------------------------------------------------------
 // Jarvis Task Coach Card
-// ---------------------------------------------------------------------------
 
-class _JarvisTaskCoachCard extends ConsumerWidget {
-  final int overdueCount;
-  final int todayCount;
-  final int completedCount;
-
-  const _JarvisTaskCoachCard({
-    required this.overdueCount,
-    required this.todayCount,
-    required this.completedCount,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final assistantName = ref.watch(assistantNameProvider);
-    String message;
-    if (overdueCount > 0) {
-      message = 'Attention: You have $overdueCount overdue items. Let\'s resolve them first to restore momentum.';
-    } else if (todayCount > 0) {
-      message = 'All systems nominal. You have $todayCount priority items today. Ready when you are.';
-    } else {
-      message = 'Your slate is completely clear for today. You can plan new milestones or rest.';
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: context.bgSurface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: const Color(0xFF0096C7).withValues(alpha: 0.3),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0096C7).withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 22,
-                height: 22,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0xFF48CAE4), Color(0xFF0077B6)],
-                  ),
-                ),
-                child: const Icon(Icons.blur_on_rounded, color: Colors.white, size: 14),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '${assistantName.toUpperCase()} TASK ORCHESTRATOR',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: const Color(0xFF00B4D8),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  fontSize: 10,
-                ),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: () => context.push('/ai-assistant'),
-                borderRadius: BorderRadius.circular(6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  child: Row(
-                    children: [
-                      Icon(Icons.auto_awesome_rounded, size: 12, color: context.accentPrimary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Plan with AI',
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: context.accentPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            style: AscentTextStyles.bodySmall.copyWith(
-              color: context.textPrimary,
-              height: 1.35,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

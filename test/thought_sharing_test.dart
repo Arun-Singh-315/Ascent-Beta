@@ -11,6 +11,8 @@ void main() {
         mood: 'calm',
         colorHex: '#0284C7',
         isPinned: false,
+        isArchived: false,
+        isCompleted: false,
         createdAt: DateTime(2026, 10, 9, 10, 0),
       );
 
@@ -28,6 +30,8 @@ void main() {
         colorHex: '#0284C7',
         promptQuestion: 'What went surprisingly well today?',
         isPinned: true,
+        isArchived: false,
+        isCompleted: false,
         createdAt: DateTime(2026, 10, 9, 10, 0),
       );
 

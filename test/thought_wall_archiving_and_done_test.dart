@@ -1,0 +1,121 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/native.dart';
+import 'package:drift/drift.dart' as drift;
+import 'package:ascent/core/database/app_database.dart';
+
+void main() {
+  late AppDatabase db;
+  late ThoughtDao dao;
+
+  setUp(() {
+    db = AppDatabase.forTesting(NativeDatabase.memory());
+    dao = ThoughtDao(db);
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
+
+  group('Thought Wall Archiving & Done Status Logic Tests', () {
+    test('Active thoughts stream excludes archived thoughts and sorts active before completed', () async {
+      final now = DateTime.now();
+
+      // 1. Insert an active incomplete thought
+      final id1 = await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Active thought 1',
+          createdAt: drift.Value(now.subtract(const Duration(minutes: 10))),
+        ),
+      );
+
+      // 2. Insert another active thought and mark it completed
+      final id2 = await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Completed thought 2',
+          createdAt: drift.Value(now.subtract(const Duration(minutes: 5))),
+        ),
+      );
+      await dao.toggleCompleted(id2);
+
+      // 3. Insert an archived thought
+      final id3 = await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Archived thought 3',
+          createdAt: drift.Value(now.subtract(const Duration(minutes: 2))),
+        ),
+      );
+      await dao.archiveThought(id3);
+
+      final active = await dao.watchActiveThoughts().first;
+      expect(active.length, 2);
+      expect(active.any((t) => t.id == id3), isFalse);
+
+      // Uncompleted thought must appear before completed thought
+      expect(active.first.id, id1);
+      expect(active.first.isCompleted, isFalse);
+      expect(active.last.id, id2);
+      expect(active.last.isCompleted, isTrue);
+
+      final archived = await dao.watchArchivedThoughts().first;
+      expect(archived.length, 1);
+      expect(archived.first.id, id3);
+      expect(archived.first.isArchived, isTrue);
+    });
+
+    test('watchTodayThoughtsCount counts only today non-archived thoughts', () async {
+      final now = DateTime.now();
+      final yesterday = now.subtract(const Duration(days: 1));
+
+      // Yesterday thought
+      await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Yesterday reflection',
+          createdAt: drift.Value(yesterday),
+        ),
+      );
+
+      // Today thought 1
+      await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Today reflection 1',
+          createdAt: drift.Value(now),
+        ),
+      );
+
+      // Today thought 2 (archived)
+      final idArchived = await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Today archived',
+          createdAt: drift.Value(now),
+        ),
+      );
+      await dao.archiveThought(idArchived);
+
+      // Today thought 3
+      await dao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Today reflection 2',
+          createdAt: drift.Value(now),
+        ),
+      );
+
+      final count = await dao.watchTodayThoughtsCount().first;
+      expect(count, 2);
+    });
+
+    test('Unarchiving restores thought to active stream', () async {
+      final id = await dao.insertThought(
+        const ThoughtTableCompanion(content: drift.Value('Temporary archive test')),
+      );
+
+      await dao.archiveThought(id);
+      var active = await dao.watchActiveThoughts().first;
+      expect(active.isEmpty, isTrue);
+
+      await dao.unarchiveThought(id);
+      active = await dao.watchActiveThoughts().first;
+      expect(active.length, 1);
+      expect(active.first.isArchived, isFalse);
+    });
+  });
+}

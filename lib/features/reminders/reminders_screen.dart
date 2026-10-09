@@ -394,16 +394,42 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
 
     if (confirmed == true) {
       final dao = ref.read(reminderDaoProvider);
-      await dao.deleteReminder(reminder.id);
-      await NotificationService.instance.cancel(reminder.id);
+      final deletedReminder = reminder;
+      await dao.deleteReminder(deletedReminder.id);
+      await NotificationService.instance.cancel(deletedReminder.id);
       ref.invalidate(allRemindersProvider);
       ref.invalidate(nextUpcomingReminderProvider);
 
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Reminder deleted'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text('Reminder "${deletedReminder.title}" deleted'),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'UNDO',
+              textColor: const Color(0xFF67E8F9),
+              onPressed: () async {
+                final restoredId = await dao.insertReminder(
+                  ReminderTableCompanion(
+                    title: drift.Value(deletedReminder.title),
+                    scheduledAt: drift.Value(deletedReminder.scheduledAt),
+                    isActive: drift.Value(deletedReminder.isActive),
+                    createdAt: drift.Value(deletedReminder.createdAt),
+                  ),
+                );
+                if (deletedReminder.isActive &&
+                    deletedReminder.scheduledAt.isAfter(DateTime.now())) {
+                  await NotificationService.instance.scheduleReminderNotification(
+                    id: restoredId,
+                    title: deletedReminder.title,
+                    scheduledAt: deletedReminder.scheduledAt,
+                  );
+                }
+                ref.invalidate(allRemindersProvider);
+                ref.invalidate(nextUpcomingReminderProvider);
+              },
+            ),
           ),
         );
       }
