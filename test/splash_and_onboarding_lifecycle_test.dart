@@ -12,6 +12,7 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/splash/splash_screen.dart';
 import 'package:ascent/features/auth/login_screen.dart';
 import 'package:ascent/features/onboarding/onboarding_shell.dart';
+import 'package:ascent/shared/widgets/ascent_logo.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +52,7 @@ void main() {
       // Verify emblem and titles
       expect(find.text('Ascent'), findsOneWidget);
       expect(find.text('Job Prep & Search Operating System'), findsOneWidget);
-      expect(find.byIcon(Icons.north_east_rounded), findsOneWidget);
+      expect(find.byType(AscentLogo), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 1500));
       await tester.pumpWidget(const SizedBox());

@@ -8,6 +8,7 @@ import '../../app/theme/color_tokens.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/ascent_logo.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -118,41 +119,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Emblem & Monogram
-                  Center(
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            context.accentPrimary.withValues(alpha: 0.9),
-                            context.accentSecondary.withValues(alpha: 0.7),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.accentPrimary.withValues(alpha: 0.25),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.terrain_rounded,
-                          size: 38,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+                  // Official Ascent Logo
+                  const Center(
+                    child: AscentLogo(size: 76),
                   ),
                   const SizedBox(height: 24),
 

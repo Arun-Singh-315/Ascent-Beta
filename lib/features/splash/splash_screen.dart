@@ -7,6 +7,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/database_provider.dart';
+import '../../shared/widgets/ascent_logo.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -20,7 +21,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final AnimationController _animController;
   late final Animation<double> _scaleAnimation;
   late final Animation<double> _fadeAnimation;
-  String _versionString = 'v1.0';
+  String _versionString = 'v1.0.2';
 
   @override
   void initState() {
@@ -114,7 +115,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Widget build(BuildContext context) {
     final textPrimary = context.textPrimary;
     final textMuted = context.textMuted;
-    final accentPrimary = context.accentPrimary;
     final divider = context.divider;
 
     return Scaffold(
@@ -134,32 +134,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Geometric Minimalist Logo Mark
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: context.bgSurface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: divider, width: 0.9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: context.isDark
-                          ? Colors.black.withValues(alpha: 0.4)
-                          : accentPrimary.withValues(alpha: 0.08),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.north_east_rounded,
-                    size: 42,
-                    color: accentPrimary,
-                  ),
-                ),
-              ),
+              // Official Ascent Logo Mark
+              const AscentLogo(size: 84),
               const SizedBox(height: 24),
 
               // Title

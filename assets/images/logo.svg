@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="30%" cy="25%" r="85%">
+      <stop offset="0%" stop-color="#3D2928" />
+      <stop offset="45%" stop-color="#1F1D2B" />
+      <stop offset="100%" stop-color="#0D1321" />
+    </radialGradient>
+  </defs>
+
+  <!-- Squircle container -->
+  <rect width="512" height="512" rx="120" fill="url(#bgGlow)" />
+
+  <!-- Outer Arc (Open at top ~11-1 o'clock) -->
+  <path d="M 380,168 A 152,152 0 1,1 168,131"
+        fill="none" stroke="#7E5657" stroke-width="20" stroke-linecap="round" />
+
+  <!-- Middle Arc (Open at ~2-4 o'clock) -->
+  <path d="M 324,331 A 102,102 0 1,1 338,196"
+        fill="none" stroke="#C47D71" stroke-width="20" stroke-linecap="round" />
+
+  <!-- Inner Arch (Horseshoe) -->
+  <path d="M 212,282 L 212,256 A 44,44 0 0,1 300,256 L 300,282"
+        fill="none" stroke="#E59987" stroke-width="20" stroke-linecap="round" />
+
+  <!-- Center Dot -->
+  <circle cx="256" cy="256" r="18" fill="#F1A18A" />
+</svg>

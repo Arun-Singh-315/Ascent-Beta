@@ -1,9 +1,12 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/core/momentum/momentum_service.dart';
+import 'package:ascent/shared/widgets/ascent_logo.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -193,6 +196,40 @@ void main() {
           expect(c.isCompleted, isFalse, reason: 'Future commitment ${c.title} should remain uncompleted');
         }
       }
+    });
+  });
+
+  group('Ascent Logo Brand Assets & Widget Tests', () {
+    test('All brand logo asset files exist and have non-zero size', () {
+      final logoPng = File('assets/images/logo.png');
+      final logoSvg = File('assets/images/logo.svg');
+      final appIcon = File('assets/icon/app_icon.png');
+      final appIconFg = File('assets/icon/app_icon_foreground.png');
+
+      expect(logoPng.existsSync(), isTrue);
+      expect(logoPng.lengthSync(), greaterThan(1000));
+
+      expect(logoSvg.existsSync(), isTrue);
+      expect(logoSvg.lengthSync(), greaterThan(100));
+
+      expect(appIcon.existsSync(), isTrue);
+      expect(appIcon.lengthSync(), greaterThan(1000));
+
+      expect(appIconFg.existsSync(), isTrue);
+      expect(appIconFg.lengthSync(), greaterThan(1000));
+    });
+
+    testWidgets('AscentLogo widget renders without errors with custom dimensions', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: AscentLogo(size: 80),
+          ),
+        ),
+      );
+
+      expect(find.byType(AscentLogo), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
     });
   });
 }

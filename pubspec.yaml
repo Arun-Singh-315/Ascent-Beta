@@ -2,7 +2,7 @@ name: ascent
 description: "Ascent - Job Prep Companion App. Your personal job-search operating system."
 publish_to: 'none'
 
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: '>=3.9.0 <4.0.0'
@@ -75,7 +75,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "#0D1321"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
   remove_alpha_ios: true
   min_sdk_android: 21
