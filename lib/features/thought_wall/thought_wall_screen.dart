@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
@@ -12,6 +13,29 @@ import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'drop_thought_sheet.dart';
+
+/// Formats thought content cleanly for WhatsApp, messages, and external sharing.
+String formatThoughtForShare(Thought thought) {
+  final buffer = StringBuffer();
+  if (thought.promptQuestion != null && thought.promptQuestion!.trim().isNotEmpty) {
+    buffer.writeln('💭 Prompt: ${thought.promptQuestion!.trim()}\n');
+  }
+  buffer.writeln('"${thought.content.trim()}"');
+  buffer.writeln('\n— Mind Space · Ascent');
+  return buffer.toString();
+}
+
+/// Triggers system share sheet to share thought directly to WhatsApp or any installed app.
+Future<void> shareThought(Thought thought) async {
+  HapticFeedback.lightImpact();
+  final text = formatThoughtForShare(thought);
+  await SharePlus.instance.share(
+    ShareParams(
+      text: text,
+      subject: 'Mind Space Reflection',
+    ),
+  );
+}
 
 /// Thought Wall / Mind Space Screen ("Me to Me")
 /// An aesthetic spatial wall for unfiltered self-talk, sparks of inspiration,
@@ -360,12 +384,22 @@ class _ThoughtCard extends ConsumerWidget {
                       fontSize: 11,
                     ),
                   ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: Icon(Icons.share_outlined, size: 16, color: context.textMuted),
+                    tooltip: 'Share via WhatsApp & apps',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => shareThought(thought),
+                  ),
                   PopupMenuButton<String>(
                     icon: Icon(Icons.more_horiz_rounded, size: 18, color: context.textMuted),
                     color: context.bgSurface,
                     padding: EdgeInsets.zero,
                     onSelected: (action) async {
-                      if (action == 'pin') {
+                      if (action == 'share') {
+                        await shareThought(thought);
+                      } else if (action == 'pin') {
                         HapticFeedback.lightImpact();
                         await ref.read(thoughtDaoProvider).togglePin(thought.id);
                       } else if (action == 'copy') {
@@ -382,6 +416,16 @@ class _ThoughtCard extends ConsumerWidget {
                       }
                     },
                     itemBuilder: (_) => [
+                      const PopupMenuItem(
+                        value: 'share',
+                        child: Row(
+                          children: [
+                            Icon(Icons.share_rounded, size: 16),
+                            SizedBox(width: 8),
+                            Text('Share (WhatsApp & apps)'),
+                          ],
+                        ),
+                      ),
                       PopupMenuItem(
                         value: 'pin',
                         child: Text(thought.isPinned ? 'Unpin' : 'Pin to top'),

@@ -9,6 +9,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_card.dart';
 import 'drop_thought_sheet.dart';
+import 'thought_wall_screen.dart';
 
 /// Aesthetic preview card on Home screen displaying the latest / pinned thought
 /// with 1-tap shortcut to drop thoughts or open the full Thought Wall.
@@ -181,6 +182,14 @@ class ThoughtWallHomeCard extends ConsumerWidget {
                             color: context.textMuted,
                             fontSize: 10,
                           ),
+                        ),
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: Icon(Icons.share_outlined, size: 14, color: context.textMuted),
+                          tooltip: 'Share via WhatsApp & apps',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                          onPressed: () => shareThought(top),
                         ),
                       ],
                     ),

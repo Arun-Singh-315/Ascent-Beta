@@ -294,7 +294,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
           // Submit Button
           AscentButton.primary(
-            label: _isPinned ? 'Pin to Wall (Pinned) ✨' : 'Pin to Thought Wall ✨',
+            label: _isPinned ? 'Pin to Wall (Pinned)' : 'Pin to Thought Wall',
             expanded: true,
             icon: Icons.push_pin_rounded,
             onPressed: _saveThought,
