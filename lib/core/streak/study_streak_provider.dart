@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../database/app_database.dart';
 import '../providers/database_provider.dart';
 import '../providers/settings_provider.dart';
 import 'study_streak_models.dart';
@@ -98,7 +96,7 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
   Timer? _midnightWatcher;
 
   String _dateKey(DateTime dt) {
-    return '${_kStudySecondsPrefix}${dt.year}_${dt.month.toString().padLeft(2, '0')}_${dt.day.toString().padLeft(2, '0')}';
+    return '$_kStudySecondsPrefix${dt.year}_${dt.month.toString().padLeft(2, '0')}_${dt.day.toString().padLeft(2, '0')}';
   }
 
   @override

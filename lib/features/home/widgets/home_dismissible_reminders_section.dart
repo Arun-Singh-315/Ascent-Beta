@@ -186,14 +186,31 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Swipe to dismiss',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: g.inkMuted.withValues(alpha: 0.7),
+                if (remainingCount > 0)
+                  InkWell(
+                    onTap: onViewAll,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      child: Text(
+                        '+$remainingCount more',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: g.clay,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    'Swipe to dismiss',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: g.inkMuted.withValues(alpha: 0.7),
+                    ),
                   ),
-                ),
                 if (onAddReminder != null) ...[
                   const SizedBox(width: 8),
                   InkWell(

@@ -82,7 +82,8 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        height: 36,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         decoration: BoxDecoration(
                           color: isStreakCardVisible ? g.claySoft : g.fill,
                           borderRadius: BorderRadius.circular(99),
@@ -96,48 +97,19 @@ class HomeHeader extends ConsumerWidget {
                           children: [
                             Icon(
                               Icons.local_fire_department_rounded,
-                              size: 14,
+                              size: 15,
                               color: g.clay,
                             ),
-                            const SizedBox(width: 3),
+                            const SizedBox(width: 4),
                             Text(
                               '$streak',
                               style: GoogleFonts.jetBrainsMono(
-                                fontSize: 11,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
                                 color: g.clay,
                               ),
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Thought Wall / Mind Space Quick Shortcut
-                  Material(
-                    color: Colors.transparent,
-                    child: Tooltip(
-                      message: 'Mind Space • Thought Wall',
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          context.push('/thought-wall');
-                        },
-                        borderRadius: BorderRadius.circular(99),
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: g.fill,
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(color: g.edge, width: 1.0),
-                          ),
-                          child: Icon(
-                            Icons.psychology_outlined,
-                            size: 16,
-                            color: g.inkSecondary,
-                          ),
                         ),
                       ),
                     ),
@@ -155,7 +127,7 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        height: 38,
+                        height: 36,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           color: g.fill,
@@ -183,7 +155,7 @@ class HomeHeader extends ConsumerWidget {
                               style: AscentTextStyles.homeSecondary.copyWith(
                                 color: g.ink,
                                 fontWeight: FontWeight.w600,
-                                fontSize: 12.5,
+                                fontSize: 12,
                               ),
                             ),
                           ],
@@ -204,8 +176,8 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        width: 38,
-                        height: 38,
+                        width: 36,
+                        height: 36,
                         decoration: BoxDecoration(
                           color: g.claySoft,
                           shape: BoxShape.circle,
@@ -217,7 +189,7 @@ class HomeHeader extends ConsumerWidget {
                             style: GoogleFonts.bricolageGrotesque(
                               color: g.ink,
                               fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                              fontSize: 15,
                             ),
                           ),
                         ),
@@ -248,37 +220,84 @@ class HomeHeader extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
           ),
 
-          if (role.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            InkWell(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.push('/settings');
-              },
-              borderRadius: BorderRadius.circular(6),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: g.claySoft,
+          const SizedBox(height: 6),
+
+          // ── ROLE MICRO-BADGE & LABELED MIND SPACE SHORTCUT ────────────
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (role.isNotEmpty)
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/settings');
+                  },
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: g.clay.withValues(alpha: 0.25),
-                    width: 0.8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: g.claySoft,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: g.clay.withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Text(
+                      role,
+                      style: GoogleFonts.jetBrainsMono(
+                        color: g.clay,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
-                child: Text(
-                  role,
-                  style: GoogleFonts.jetBrainsMono(
-                    color: g.clay,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
+
+              // Explicitly labeled Mind Space Shortcut
+              InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/thought-wall');
+                },
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                  decoration: BoxDecoration(
+                    color: g.fill,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: g.edge,
+                      width: 0.8,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.psychology_rounded,
+                        size: 13,
+                        color: g.inkSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Mind Space',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: g.inkSecondary,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );

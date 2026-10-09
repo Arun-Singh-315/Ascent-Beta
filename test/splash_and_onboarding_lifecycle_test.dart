@@ -9,7 +9,6 @@ import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:ascent/features/splash/splash_screen.dart';
 import 'package:ascent/features/auth/login_screen.dart';
 import 'package:ascent/features/onboarding/onboarding_shell.dart';
@@ -60,8 +59,6 @@ void main() {
     });
 
     testWidgets('SplashScreen navigates to /login when user is unauthenticated', (tester) async {
-      String? navigatedRoute;
-
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -71,7 +68,6 @@ void main() {
           child: MaterialApp(
             theme: AscentTheme.dark(),
             onGenerateRoute: (settings) {
-              navigatedRoute = settings.name;
               return MaterialPageRoute(builder: (_) => const SizedBox());
             },
             home: const SplashScreen(),

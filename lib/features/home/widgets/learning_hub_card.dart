@@ -80,168 +80,230 @@ class LearningHubCard extends ConsumerWidget {
 
         const SizedBox(height: 8),
 
-        // ── GLASS ROW CARD ────────────────────────────────────────────
+        // ── HERO GLASS SURFACE CARD ──────────────────────────────────
         GlassSurface(
           radius: 24,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── 1. PLAY / PAUSE DISC BUTTON (OR BOOK ICON) ──────────
-              SizedBox(
-                width: 42,
-                height: 42,
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      if (hasStarted) {
-                        ref.read(learningHubProvider.notifier).togglePlayPause();
-                      } else {
-                        context.push('/study-plan');
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(21),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: g.claySoft,
-                        shape: BoxShape.circle,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // ── 1. PROMINENT HERO PLAY / PAUSE BUTTON ───────────
+                  SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          if (hasStarted) {
+                            ref.read(learningHubProvider.notifier).togglePlayPause();
+                          } else {
+                            context.push('/study-plan');
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(24),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: g.clay,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: g.clay.withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Icon(
+                              hasStarted
+                                  ? (state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded)
+                                  : Icons.play_arrow_rounded,
+                              size: 26,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Center(
-                        child: Icon(
-                          hasStarted
-                              ? (state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded)
-                              : Icons.menu_book_rounded,
-                          size: 22,
+                    ),
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  // ── 2. LECTURE TITLE & HERO RESUME BADGE ────────────
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        if (hasStarted) {
+                          LectureFocusPlayerSheet.show(context);
+                        } else {
+                          context.push('/study-plan');
+                        }
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            hasStarted
+                                ? 'Lecture ${active.id}: ${active.title}'
+                                : 'Start learning',
+                            style: AscentTextStyles.homeHeadline.copyWith(
+                              color: g.ink,
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          if (hasStarted) ...[
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: g.claySoft,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Resume · ${(state.remainingSeconds / 60).ceil()} min left',
+                                    style: AscentTextStyles.captionMedium.copyWith(
+                                      color: g.clay,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    activeMod.title,
+                                    style: AscentTextStyles.homeSecondary.copyWith(
+                                      color: g.inkSecondary,
+                                      fontSize: 11.5,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            Text(
+                              'Spring Boot, System Design or DSA',
+                              style: AscentTextStyles.homeSecondary.copyWith(
+                                color: g.inkSecondary,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 6),
+
+                  // ── 3. ACTION CLUSTER: SYLLABUS & FULL PLAYER ───────
+                  if (hasStarted) ...[
+                    IconButton(
+                      tooltip: 'View Syllabus',
+                      icon: Icon(Icons.format_list_bulleted_rounded, size: 20, color: g.inkMuted),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (ctx) => StudyPlanScreen(courseId: course.id),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Open Player Sheet',
+                      icon: Icon(Icons.open_in_full_rounded, size: 17, color: g.inkMuted),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        LectureFocusPlayerSheet.show(context);
+                      },
+                    ),
+                  ] else ...[
+                    IconButton(
+                      tooltip: 'Explore Catalog',
+                      icon: Icon(Icons.chevron_right_rounded, size: 22, color: g.inkMuted),
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        context.push('/study-plan');
+                      },
+                    ),
+                  ],
+                ],
+              ),
+
+              if (hasStarted) ...[
+                const SizedBox(height: 14),
+
+                // ── 4. THICK HERO PROGRESS BAR ────────────────────────
+                SizedBox(
+                  height: 7,
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: g.track,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: state.progressFraction.clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
                           color: g.clay,
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: g.clay.withValues(alpha: 0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(width: 12),
+                const SizedBox(height: 6),
 
-              // ── 2. LECTURE TITLE & SUBTITLE INFO ────────────────────
-              Expanded(
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    if (hasStarted) {
-                      LectureFocusPlayerSheet.show(context);
-                    } else {
-                      context.push('/study-plan');
-                    }
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        hasStarted
-                            ? 'Lecture ${active.id}: ${active.title}'
-                            : 'Start learning',
-                        style: AscentTextStyles.homeHeadline.copyWith(
-                          color: g.ink,
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                // ── 5. TIME STATS LABELS ──────────────────────────────
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${state.formattedElapsed} elapsed',
+                      style: AscentTextStyles.captionMedium.copyWith(
+                        color: g.inkMuted,
+                        fontSize: 10.5,
                       ),
-                      const SizedBox(height: 2),
-                      if (hasStarted) ...[
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                '${activeMod.title} • ${state.formattedElapsed} / ${active.formattedDuration}',
-                                style: AscentTextStyles.homeSecondary.copyWith(
-                                  color: g.inkSecondary,
-                                  fontSize: 11.5,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            SizedBox(
-                              width: 40,
-                              height: 3,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: g.track,
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                                alignment: Alignment.centerLeft,
-                                child: FractionallySizedBox(
-                                  widthFactor: state.progressFraction.clamp(0.0, 1.0),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: g.inkSecondary,
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        Text(
-                          'Spring Boot, System Design or DSA',
-                          style: AscentTextStyles.homeSecondary.copyWith(
-                            color: g.inkSecondary,
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 6),
-
-              // ── 3. ACTION CLUSTER: SYLLABUS & FULL PLAYER ───────────
-              if (hasStarted) ...[
-                // Syllabus button
-                IconButton(
-                  tooltip: 'View Syllabus',
-                  icon: Icon(Icons.format_list_bulleted_rounded, size: 19, color: g.inkMuted),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (ctx) => StudyPlanScreen(courseId: course.id),
+                    ),
+                    Text(
+                      '${active.formattedDuration} total',
+                      style: AscentTextStyles.captionMedium.copyWith(
+                        color: g.inkMuted,
+                        fontSize: 10.5,
                       ),
-                    );
-                  },
-                ),
-                // Full Player button
-                IconButton(
-                  tooltip: 'Open Player Sheet',
-                  icon: Icon(Icons.open_in_full_rounded, size: 16, color: g.inkMuted),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    LectureFocusPlayerSheet.show(context);
-                  },
-                ),
-              ] else ...[
-                IconButton(
-                  tooltip: 'Explore Catalog',
-                  icon: Icon(Icons.chevron_right_rounded, size: 20, color: g.inkMuted),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/study-plan');
-                  },
+                    ),
+                  ],
                 ),
               ],
             ],

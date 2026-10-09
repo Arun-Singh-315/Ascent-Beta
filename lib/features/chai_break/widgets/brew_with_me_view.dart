@@ -177,7 +177,7 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: filteredRecipes.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final recipe = filteredRecipes[index];
               final isSelected = recipe.id == _selectedRecipe.id;
@@ -319,7 +319,7 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
 
           // Ingredients list scaled
           Text(
-            'PROPORTIONAL INGREDIENTS (${_selectedCups} ${_selectedCups == 1 ? 'CUP' : 'CUPS'})',
+            'PROPORTIONAL INGREDIENTS ($_selectedCups ${_selectedCups == 1 ? 'CUP' : 'CUPS'})',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 11,
               fontWeight: FontWeight.w700,

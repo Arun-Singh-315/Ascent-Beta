@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../app/theme/glass_theme.dart';
 import '../thought_wall/drop_thought_sheet.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
@@ -58,20 +59,13 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
     final accentColor = state.selectedSoundscape == SoundscapePreset.customSystemAudio
         ? const Color(0xFF10B981)
         : Color(state.selectedSoundscape.accentColorHex);
+    final g = context.glass;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF101318),
+      backgroundColor: g.bg,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(0xFF1A130D),
-              const Color(0xFF101318),
-              const Color(0xFF0C0E12),
-            ],
-          ),
+          color: g.bg,
         ),
         child: SafeArea(
           child: Column(
@@ -83,7 +77,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: g.ink, size: 20),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.of(context).pop();
@@ -92,7 +86,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.coffee_rounded, color: Color(0xFFE28B57), size: 18),
+                        Icon(Icons.coffee_rounded, color: g.clay, size: 18),
                         const SizedBox(width: 8),
                         Text(
                           'CHAI & COFFEE BREAK',
@@ -100,7 +94,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.1,
-                            color: Colors.white,
+                            color: g.ink,
                           ),
                         ),
                       ],
@@ -111,8 +105,8 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             ? Icons.spa_rounded
                             : Icons.spa_outlined,
                         color: state.isBreathingGuideEnabled
-                            ? const Color(0xFFE28B57)
-                            : Colors.white38,
+                            ? g.clay
+                            : g.inkMuted,
                         size: 22,
                       ),
                       onPressed: () {
@@ -135,9 +129,9 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     Container(
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF161A22),
+                        color: g.fill,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                        border: Border.all(color: g.edge),
                       ),
                       child: Row(
                         children: [
@@ -155,12 +149,12 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: !_isBrewWithMe
-                                      ? const Color(0xFFE28B57).withValues(alpha: 0.22)
+                                      ? g.claySoft
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: !_isBrewWithMe
-                                        ? const Color(0xFFE28B57)
+                                        ? g.clay
                                         : Colors.transparent,
                                     width: 1,
                                   ),
@@ -171,7 +165,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                     Icon(
                                       Icons.spa_rounded,
                                       size: 16,
-                                      color: !_isBrewWithMe ? const Color(0xFFE28B57) : Colors.white60,
+                                      color: !_isBrewWithMe ? g.clay : g.inkMuted,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -179,7 +173,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 12.5,
                                         fontWeight: !_isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
-                                        color: !_isBrewWithMe ? Colors.white : Colors.white60,
+                                        color: !_isBrewWithMe ? g.ink : g.inkMuted,
                                       ),
                                     ),
                                   ],
@@ -202,12 +196,12 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: _isBrewWithMe
-                                      ? const Color(0xFFE28B57).withValues(alpha: 0.22)
+                                      ? g.claySoft
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: _isBrewWithMe
-                                        ? const Color(0xFFE28B57)
+                                        ? g.clay
                                         : Colors.transparent,
                                     width: 1,
                                   ),
@@ -218,7 +212,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                     Icon(
                                       Icons.coffee_maker_rounded,
                                       size: 16,
-                                      color: _isBrewWithMe ? const Color(0xFFE28B57) : Colors.white60,
+                                      color: _isBrewWithMe ? g.clay : g.inkMuted,
                                     ),
                                     const SizedBox(width: 6),
                                     Text(
@@ -226,7 +220,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                       style: GoogleFonts.plusJakartaSans(
                                         fontSize: 12.5,
                                         fontWeight: _isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
-                                        color: _isBrewWithMe ? Colors.white : Colors.white60,
+                                        color: _isBrewWithMe ? g.ink : g.inkMuted,
                                       ),
                                     ),
                                   ],
@@ -238,7 +232,12 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
+
+                    // Smart Flow Resume Card (Prominently placed at the top so user never has to scroll!)
+                    const FlowResumeCard(),
+
+                    const SizedBox(height: 16),
 
                     if (_isBrewWithMe) ...[
                       const BrewWithMeView(),
@@ -453,9 +452,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     ),
 
                     const SizedBox(height: 20),
-
-                    // Smart Flow Resume Card (Guarantees resuming lecture at exact paused second!)
-                    const FlowResumeCard(),
 
                     const SizedBox(height: 28),
                   ],

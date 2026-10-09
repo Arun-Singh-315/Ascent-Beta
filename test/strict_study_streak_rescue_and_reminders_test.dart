@@ -8,14 +8,8 @@ import 'package:drift/drift.dart' as drift;
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:ascent/core/database/app_database.dart';
-import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
-import 'package:ascent/core/learning_hub/learning_hub_models.dart';
 import 'package:ascent/core/providers/database_provider.dart';
-import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/core/streak/study_streak_models.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
-import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
@@ -25,26 +19,10 @@ class FakeAuthNotifier extends AuthNotifier {
   AuthState build() => const AuthState(isAuthenticated: true, username: 'testuser');
 }
 
-final _testUserProfile = UserProfile(
-  id: 1,
-  name: 'Arun Singh',
-  targetRole: 'Software Engineer',
-  targetCompanies: '["Google"]',
-  weeklyHoursAvailable: 10,
-  preferredStudyWindow: 'morning',
-  skillSelfRatings: '{}',
-  createdAt: DateTime.now(),
-  updatedAt: DateTime.now(),
-  onboardingComplete: true,
-  interviewDate: null,
-  lastOpenedAt: null,
-);
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
-  late SharedPreferences prefs;
 
   setUpAll(() {
     drift.driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -52,7 +30,6 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
   });
 

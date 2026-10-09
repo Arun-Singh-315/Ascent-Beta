@@ -10,7 +10,6 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
-import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'drop_thought_sheet.dart';
@@ -26,6 +25,30 @@ String formatThoughtForShare(Thought thought) {
   return buffer.toString();
 }
 
+/// Formats multiple selected thoughts cleanly for WhatsApp and messaging apps.
+String formatMultipleThoughtsForShare(List<Thought> thoughts) {
+  if (thoughts.isEmpty) return '';
+  if (thoughts.length == 1) {
+    return formatThoughtForShare(thoughts.first);
+  }
+
+  final buffer = StringBuffer();
+  buffer.writeln('✦ MIND SPACE REFLECTIONS ✦');
+  buffer.writeln('Ascent · Notes to Myself\n');
+
+  for (int i = 0; i < thoughts.length; i++) {
+    final t = thoughts[i];
+    buffer.writeln('── [Note ${i + 1}/${thoughts.length}] ──');
+    if (t.promptQuestion != null && t.promptQuestion!.trim().isNotEmpty) {
+      buffer.writeln('💭 Prompt: ${t.promptQuestion!.trim()}');
+    }
+    buffer.writeln('"${t.content.trim()}"');
+    buffer.writeln();
+  }
+  buffer.writeln('— Shared from Mind Space · Ascent');
+  return buffer.toString().trim();
+}
+
 /// Triggers system share sheet to share thought directly to WhatsApp or any installed app.
 Future<void> shareThought(Thought thought) async {
   HapticFeedback.lightImpact();
@@ -34,6 +57,19 @@ Future<void> shareThought(Thought thought) async {
     ShareParams(
       text: text,
       subject: 'Mind Space Reflection',
+    ),
+  );
+}
+
+/// Triggers system share sheet to batch-share thoughts directly to WhatsApp or any installed app.
+Future<void> shareMultipleThoughts(List<Thought> thoughts) async {
+  if (thoughts.isEmpty) return;
+  HapticFeedback.lightImpact();
+  final text = formatMultipleThoughtsForShare(thoughts);
+  await SharePlus.instance.share(
+    ShareParams(
+      text: text,
+      subject: 'Mind Space Reflections (${thoughts.length} notes)',
     ),
   );
 }
@@ -50,6 +86,8 @@ class ThoughtWallScreen extends ConsumerStatefulWidget {
 
 class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   String _activeFilter = 'all';
+  bool _isSelectionMode = false;
+  final Set<int> _selectedIds = <int>{};
 
   final Map<String, (String, IconData)> _filterMeta = const {
     'all': ('All Thoughts', Icons.bubble_chart_rounded),
@@ -62,6 +100,50 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     'archived': ('Archived', Icons.archive_outlined),
   };
 
+  void _toggleSelection(int id) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _enterSelectionMode(int id) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isSelectionMode = true;
+      _selectedIds.add(id);
+    });
+  }
+
+  void _exitSelectionMode() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _isSelectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelectAll(List<Thought> thoughts) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      final allIds = thoughts.map((t) => t.id).toSet();
+      if (_selectedIds.length == allIds.length) {
+        _selectedIds.clear();
+        _isSelectionMode = false;
+      } else {
+        _selectedIds.addAll(allIds);
+        _isSelectionMode = true;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final thoughtsAsync = _activeFilter == 'archived'
@@ -71,36 +153,95 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     final g = context.glass;
 
     return AscentScaffold(
-      title: 'Thought Wall',
-      subtitle: 'Mind space • Me to Me talk',
+      title: _isSelectionMode ? '${_selectedIds.length} Selected' : 'Thought Wall',
+      subtitle: _isSelectionMode ? 'Select thoughts to share to WhatsApp' : 'Mind space • Me to Me talk',
       glow2: g.slate,
-      actions: [
-        IconButton(
-          icon: Icon(Icons.add_comment_rounded, color: g.clay),
-          tooltip: 'Drop a thought',
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            DropThoughtSheet.show(context);
-          },
-        ),
-      ],
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: g.clay,
-        foregroundColor: Colors.white,
-        elevation: 2,
-        icon: const Icon(Icons.edit_note_rounded, size: 20),
-        label: Text(
-          'Drop a Thought',
-          style: AscentTextStyles.labelMedium.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        onPressed: () {
-          HapticFeedback.lightImpact();
-          DropThoughtSheet.show(context);
-        },
-      ),
+      actions: _isSelectionMode
+          ? [
+              thoughtsAsync.maybeWhen(
+                data: (allThoughts) {
+                  final filtered = allThoughts.where((t) {
+                    if (_activeFilter == 'archived') return true;
+                    if (_activeFilter == 'all') return true;
+                    if (_activeFilter == 'pinned') return t.isPinned;
+                    return t.mood == _activeFilter;
+                  }).toList();
+                  final isAllSelected = filtered.isNotEmpty && _selectedIds.length >= filtered.length;
+
+                  return IconButton(
+                    icon: Icon(
+                      isAllSelected ? Icons.deselect_rounded : Icons.select_all_rounded,
+                      color: g.clay,
+                    ),
+                    tooltip: isAllSelected ? 'Deselect All' : 'Select All',
+                    onPressed: () => _toggleSelectAll(filtered),
+                  );
+                },
+                orElse: () => const SizedBox.shrink(),
+              ),
+              IconButton(
+                icon: Icon(Icons.share_rounded, color: g.clay),
+                tooltip: 'Share to WhatsApp',
+                onPressed: () {
+                  final allThoughts = thoughtsAsync.value ?? [];
+                  final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
+                  shareMultipleThoughts(selectedList);
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.close_rounded, color: g.inkMuted),
+                tooltip: 'Exit Selection',
+                onPressed: _exitSelectionMode,
+              ),
+            ]
+          : [
+              IconButton(
+                icon: Icon(Icons.add_comment_rounded, color: g.clay),
+                tooltip: 'Drop a thought',
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  DropThoughtSheet.show(context);
+                },
+              ),
+            ],
+      floatingActionButton: _isSelectionMode
+          ? (_selectedIds.isNotEmpty
+              ? FloatingActionButton.extended(
+                  backgroundColor: g.clay,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  icon: const Icon(Icons.share_rounded, size: 20),
+                  label: Text(
+                    'Share ${_selectedIds.length} to WhatsApp',
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () {
+                    final allThoughts = thoughtsAsync.value ?? [];
+                    final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
+                    shareMultipleThoughts(selectedList);
+                  },
+                )
+              : null)
+          : FloatingActionButton.extended(
+              backgroundColor: g.clay,
+              foregroundColor: Colors.white,
+              elevation: 2,
+              icon: const Icon(Icons.edit_note_rounded, size: 20),
+              label: Text(
+                'Drop a Thought',
+                style: AscentTextStyles.labelMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                DropThoughtSheet.show(context);
+              },
+            ),
       body: Column(
         children: [
           // Filter Chips Row
@@ -181,6 +322,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     return _ThoughtCard(
                       thought: thought,
                       index: index,
+                      isSelected: _selectedIds.contains(thought.id),
+                      isSelectionMode: _isSelectionMode,
+                      onToggleSelect: () => _toggleSelection(thought.id),
+                      onLongPress: () => _enterSelectionMode(thought.id),
                     );
                   },
                 );
@@ -196,10 +341,18 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 class _ThoughtCard extends ConsumerWidget {
   final Thought thought;
   final int index;
+  final bool isSelected;
+  final bool isSelectionMode;
+  final VoidCallback? onToggleSelect;
+  final VoidCallback? onLongPress;
 
   const _ThoughtCard({
     required this.thought,
     required this.index,
+    this.isSelected = false,
+    this.isSelectionMode = false,
+    this.onToggleSelect,
+    this.onLongPress,
   });
 
   IconData _moodIcon(String mood) {
@@ -256,6 +409,7 @@ class _ThoughtCard extends ConsumerWidget {
     final icon = _moodIcon(thought.mood);
     final label = _moodLabel(thought.mood);
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
+    final g = context.glass;
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -274,7 +428,7 @@ class _ThoughtCard extends ConsumerWidget {
         padding: const EdgeInsets.only(bottom: 12),
         child: Dismissible(
           key: ValueKey('thought_${thought.id}'),
-          direction: DismissDirection.horizontal,
+          direction: isSelectionMode ? DismissDirection.none : DismissDirection.horizontal,
           confirmDismiss: (direction) async {
             final thoughtDao = ref.read(thoughtDaoProvider);
             if (direction == DismissDirection.startToEnd) {
@@ -375,70 +529,89 @@ class _ThoughtCard extends ConsumerWidget {
               ],
             ),
           ),
-          child: GestureDetector(
-            onDoubleTap: () async {
-              HapticFeedback.mediumImpact();
-              await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(thought.isCompleted ? 'Thought marked active' : 'Thought marked done ✓'),
-                    duration: const Duration(seconds: 2),
-                    behavior: SnackBarBehavior.floating,
+          child: InkWell(
+            onTap: isSelectionMode ? onToggleSelect : null,
+            onLongPress: isSelectionMode ? onToggleSelect : onLongPress,
+            borderRadius: BorderRadius.circular(16),
+            child: GestureDetector(
+              onDoubleTap: isSelectionMode
+                  ? onToggleSelect
+                  : () async {
+                      HapticFeedback.mediumImpact();
+                      await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(thought.isCompleted ? 'Thought marked active' : 'Thought marked done ✓'),
+                            duration: const Duration(seconds: 2),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? g.clay.withValues(alpha: 0.16)
+                      : (context.isDark ? const Color(0xFF131822).withValues(alpha: 0.85) : Colors.white.withValues(alpha: 0.85)),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isSelected
+                        ? g.clay
+                        : (thought.isPinned
+                            ? g.clay.withValues(alpha: 0.6)
+                            : (thought.isCompleted
+                                ? g.edge
+                                : moodColor.withValues(alpha: 0.35))),
+                    width: isSelected ? 1.8 : (thought.isPinned ? 1.5 : 1.0),
                   ),
-                );
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.bgSurface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: thought.isPinned
-                      ? context.accentPrimary.withValues(alpha: 0.5)
-                      : (thought.isCompleted
-                          ? context.divider
-                          : moodColor.withValues(alpha: 0.25)),
-                  width: thought.isPinned ? 1.5 : 1.0,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isSelected ? g.clay : (thought.isPinned ? g.clay : moodColor)).withValues(alpha: isSelected ? 0.20 : 0.08),
+                      blurRadius: isSelected ? 12 : 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (thought.isPinned ? context.accentPrimary : moodColor).withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top meta row
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: moodColor.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(icon, size: 12, color: moodColor),
-                            const SizedBox(width: 5),
-                            Text(
-                              label,
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: moodColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10.5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top meta row
+                    Row(
+                      children: [
+                        if (isSelectionMode) ...[
+                          Icon(
+                            isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            size: 20,
+                            color: isSelected ? g.clay : g.inkMuted,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: moodColor.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(icon, size: 12, color: moodColor),
+                              const SizedBox(width: 5),
+                              Text(
+                                label,
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: moodColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10.5,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
                       if (thought.isCompleted) ...[
                         const SizedBox(width: 6),
                         Container(
@@ -638,7 +811,8 @@ class _ThoughtCard extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -164,24 +166,32 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: Border(
-          top: BorderSide(color: context.divider, width: 1.5),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        top: 20,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    final g = context.glass;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          decoration: BoxDecoration(
+            color: (context.isDark ? const Color(0xFF10141D) : const Color(0xFFF8FAFC)).withValues(alpha: 0.90),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(
+              top: BorderSide(color: g.edge.withValues(alpha: 0.6), width: 1.0),
+              left: BorderSide(color: g.edge.withValues(alpha: 0.3), width: 1.0),
+              right: BorderSide(color: g.edge.withValues(alpha: 0.3), width: 1.0),
+            ),
+          ),
+          padding: EdgeInsets.only(
+            top: 20,
+            left: 20,
+            right: 20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Drag handle
           Center(
             child: Container(
@@ -396,6 +406,8 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 }

@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
 import '../learning_hub/learning_hub_provider.dart';
-import '../learning_hub/learning_hub_models.dart';
 import '../streak/study_streak_provider.dart';
 import 'database_provider.dart';
 import 'settings_provider.dart';

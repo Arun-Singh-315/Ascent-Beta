@@ -17,7 +17,6 @@ import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/providers/settings_provider.dart';
 import 'add_activity_sheet.dart';
 
 class TaskBoardScreen extends ConsumerStatefulWidget {

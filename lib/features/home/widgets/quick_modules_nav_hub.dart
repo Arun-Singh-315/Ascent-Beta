@@ -61,14 +61,6 @@ class QuickModulesNavHub extends ConsumerWidget {
                 color: g.ink,
               ),
             ),
-            Text(
-              'DAILY PROTOCOL',
-              style: AscentTextStyles.homeCaption.copyWith(
-                color: g.inkMuted,
-                letterSpacing: 0.8,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ],
         ),
 
@@ -173,25 +165,68 @@ class QuickModulesNavHub extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          RichText(
-                            text: TextSpan(
-                              style: GoogleFonts.bricolageGrotesque(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: g.ink,
-                              ),
-                              children: [
-                                TextSpan(text: '$waterMl'),
-                                TextSpan(
-                                  text: ' of $waterGoal mL',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
-                                    color: g.inkMuted,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: GoogleFonts.bricolageGrotesque(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w600,
+                                      color: g.ink,
+                                    ),
+                                    children: [
+                                      TextSpan(text: '$waterMl'),
+                                      TextSpan(
+                                        text: ' of $waterGoal mL',
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w400,
+                                          color: g.inkMuted,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              // Instant 1-tap +250 mL Habit Button
+                              Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () async {
+                                    HapticFeedback.mediumImpact();
+                                    await ref.read(waterDaoProvider).addWater(250);
+                                  },
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: g.claySoft,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: g.clay.withValues(alpha: 0.5),
+                                        width: 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add_rounded, size: 12, color: g.clay),
+                                        Text(
+                                          '250',
+                                          style: GoogleFonts.jetBrainsMono(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                            color: g.clay,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           _NeutralProgressBar(progress: waterProgress),

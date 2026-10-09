@@ -391,7 +391,18 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
         final doneCount = commitments.where((c) => c.isCompleted).length;
         final totalCount = commitments.length;
         final progressFraction = totalCount > 0 ? (doneCount / totalCount).clamp(0.0, 1.0) : 0.0;
-        final nextPending = commitments.where((c) => !c.isCompleted).firstOrNull;
+        
+        MomentumCommitment? nextPending;
+        if (_selectedDayNumber == currentDayNumber) {
+          final now = DateTime.now();
+          final currentMinutes = now.hour * 60 + now.minute;
+          nextPending = commitments
+              .where((c) => !c.isCompleted && (c.scheduledTimeMinutes == null || c.scheduledTimeMinutes! >= currentMinutes))
+              .firstOrNull;
+          nextPending ??= commitments.where((c) => !c.isCompleted).firstOrNull;
+        } else {
+          nextPending = commitments.where((c) => !c.isCompleted).firstOrNull;
+        }
 
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

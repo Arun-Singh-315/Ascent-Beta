@@ -133,7 +133,7 @@ void main() {
       );
 
       await tester.pump();
-      expect(find.text('MIND SPACE • SELF-TALK'), findsOneWidget);
+      expect(find.text('Mind space'), findsOneWidget);
       expect(find.textContaining("What's on your mind?"), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -146,8 +146,8 @@ void main() {
       );
 
       await tester.pump();
-      expect(find.text('DAILY PROTOCOL'), findsOneWidget);
       expect(find.text('Hydration'), findsOneWidget);
+      expect(find.text('250'), findsOneWidget);
       expect(find.text('Medicine'), findsOneWidget);
       expect(find.text('Momentum'), findsOneWidget);
       expect(find.text('Chai & Coffee Break'), findsOneWidget);

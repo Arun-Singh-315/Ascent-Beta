@@ -116,9 +116,7 @@ class InAppReminderDialog extends ConsumerWidget {
       backgroundColor: const Color(0xFF161A22),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderStyle == BorderStyle.solid
-            ? BorderSide(color: const Color(0xFF00B4D8).withValues(alpha: 0.3), width: 1.2)
-            : BorderSide.none,
+        side: BorderSide(color: const Color(0xFF00B4D8).withValues(alpha: 0.3), width: 1.2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(22),

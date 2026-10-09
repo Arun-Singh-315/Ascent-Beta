@@ -71,7 +71,7 @@ class MomentumService {
     );
 
     // 3. Generate 30-day commitments
-    final commitments = MomentumPlanGenerator.generate30DayPlan(
+    final generatedCommitments = MomentumPlanGenerator.generate30DayPlan(
       challengeId: challengeId,
       startDate: startDate,
       targetWakeMinutes: targetWakeMinutes,
@@ -84,6 +84,25 @@ class MomentumService {
       fitnessExperience: fitnessExperience,
       physicalLimitations: physicalLimitations,
     );
+
+    final currentMinutes = now.hour * 60 + now.minute;
+
+    // Day 1 mid-day adaptation: if user starts challenge during the day,
+    // mark Day 1 commitments scheduled prior to current time as completed and adapted
+    // so they are not asked to complete 06:00 AM wake-up in the afternoon.
+    final commitments = generatedCommitments.map((c) {
+      if (c.dayNumber.value == 1 &&
+          c.scheduledTimeMinutes.value != null &&
+          c.scheduledTimeMinutes.value! < currentMinutes) {
+        return c.copyWith(
+          isCompleted: const Value(true),
+          completedAt: Value(now),
+          wasAdapted: const Value(true),
+          adaptationReason: const Value('Auto-completed: challenge started mid-day after scheduled time'),
+        );
+      }
+      return c;
+    }).toList();
 
     // 4. Batch persist to SQLite
     await _dao.batchInsertCommitments(commitments);

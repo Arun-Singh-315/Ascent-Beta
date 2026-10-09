@@ -52,18 +52,22 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
             final g = context.glass;
 
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: bottomInset + 24,
-              ),
-              child: SingleChildScrollView(
+            final maxHeight = MediaQuery.of(context).size.height * 0.88;
+
+            return ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: bottomInset + 16,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Pinned Drag Handle
                     Center(
                       child: Container(
                         width: 40,
@@ -75,6 +79,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    // Pinned Header Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -92,12 +98,19 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    // Medicine Name Input
-                    TextField(
-                      controller: nameController,
-                      autofocus: existing == null,
+                    // Scrollable Fields Body
+                    Flexible(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Medicine Name Input
+                            TextField(
+                              controller: nameController,
+                              autofocus: existing == null,
                       style: TextStyle(color: g.ink, fontSize: 14),
                       decoration: InputDecoration(
                         labelText: 'Medicine Name',
@@ -330,42 +343,54 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                    // Save Button
-                    AscentButton.primary(
-                      label: existing == null ? 'Save Prescription & Schedule' : 'Update Prescription',
-                      onPressed: () async {
-                        if (nameController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Please enter medicine name')),
-                          );
-                          return;
-                        }
+                    const SizedBox(height: 12),
 
-                        HapticFeedback.mediumImpact();
-                        Navigator.pop(sheetContext);
-
-                        final sortedTimes = selectedTimes.toList()..sort();
-                        await ref.read(medicineServiceProvider).addMedicine(
-                              name: nameController.text.trim(),
-                              dosage: dosageController.text.trim(),
-                              scheduledTimes: sortedTimes,
-                              durationDays: durationDays,
-                              startDate: startDate,
-                              instructions: instructions,
-                              type: type,
+                    // ALWAYS IN FRAME: Pinned Save Action Button
+                    Container(
+                      padding: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        border: Border(top: BorderSide(color: g.line)),
+                      ),
+                      child: AscentButton.primary(
+                        label: existing == null ? 'Save Prescription & Schedule' : 'Update Prescription',
+                        expanded: true,
+                        onPressed: () async {
+                          if (nameController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please enter medicine name')),
                             );
+                            return;
+                          }
 
-                        if (mounted && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('💊 Scheduled ${nameController.text} for $durationDays days with reminders & tasks!'),
-                              backgroundColor: g.clay,
-                            ),
-                          );
-                        }
-                      },
+                          HapticFeedback.mediumImpact();
+                          Navigator.pop(sheetContext);
+
+                          final sortedTimes = selectedTimes.toList()..sort();
+                          await ref.read(medicineServiceProvider).addMedicine(
+                                name: nameController.text.trim(),
+                                dosage: dosageController.text.trim(),
+                                scheduledTimes: sortedTimes,
+                                durationDays: durationDays,
+                                startDate: startDate,
+                                instructions: instructions,
+                                type: type,
+                              );
+
+                          if (mounted && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('💊 Scheduled ${nameController.text} for $durationDays days with reminders & tasks!'),
+                                backgroundColor: g.clay,
+                              ),
+                            );
+                          }
+                        },
+                      ),
                     ),
                   ],
                 ),

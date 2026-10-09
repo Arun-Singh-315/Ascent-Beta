@@ -12,7 +12,6 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/services/hydration_reminder_service.dart';
-import '../../core/streak/study_streak_models.dart';
 import '../../core/streak/study_streak_provider.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'widgets/activity_hub_card.dart';

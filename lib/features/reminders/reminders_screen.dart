@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
@@ -17,6 +18,7 @@ import '../../shared/widgets/empty_state.dart';
 
 enum _ReminderRepeatMode {
   none('One-time', 'Specific date only', Icons.event_rounded),
+  monthly('Monthly (SIP/Bills)', 'Same date every month for 12 months', Icons.event_repeat_rounded),
   daily7('7 Days', 'Every day for next week', Icons.date_range_rounded),
   daily30('Whole Month', 'Every day for next 30 days', Icons.calendar_month_rounded),
   weekdays('Weekdays', 'Mon to Fri for next 4 weeks', Icons.work_history_outlined);
@@ -36,6 +38,7 @@ class RemindersScreen extends ConsumerStatefulWidget {
 
 class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   bool _notificationsEnabled = true;
+  int _selectedTab = 0; // 0: Upcoming, 1: Completed
 
   @override
   void initState() {
@@ -288,6 +291,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           List<DateTime> datesToSchedule = [];
                           if (repeatMode == _ReminderRepeatMode.none) {
                             datesToSchedule.add(baseScheduled);
+                          } else if (repeatMode == _ReminderRepeatMode.monthly) {
+                            // Schedule on specific day of month across next 12 months for SIP, bills, rent
+                            for (int m = 0; m < 12; m++) {
+                              final year = baseScheduled.year + ((baseScheduled.month - 1 + m) ~/ 12);
+                              final month = ((baseScheduled.month - 1 + m) % 12) + 1;
+                              final maxDaysInMonth = DateTime(year, month + 1, 0).day;
+                              final day = baseScheduled.day <= maxDaysInMonth ? baseScheduled.day : maxDaysInMonth;
+                              datesToSchedule.add(DateTime(year, month, day, baseScheduled.hour, baseScheduled.minute));
+                            }
                           } else if (repeatMode == _ReminderRepeatMode.daily7) {
                             for (int i = 0; i < 7; i++) {
                               datesToSchedule.add(baseScheduled.add(Duration(days: i)));
@@ -543,29 +555,151 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ),
                 ),
               ],
-              if (todayReminders.isNotEmpty) ...[
-                _buildSectionHeader('Today', todayReminders.length, g.clay, Icons.today_rounded),
-                ...todayReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
-                const SizedBox(height: 12),
-              ],
-              if (tomorrowReminders.isNotEmpty) ...[
-                _buildSectionHeader('Tomorrow', tomorrowReminders.length, g.inkSecondary, Icons.event_rounded),
-                ...tomorrowReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
-                const SizedBox(height: 12),
-              ],
-              if (thisWeekReminders.isNotEmpty) ...[
-                _buildSectionHeader('This Week', thisWeekReminders.length, g.inkSecondary, Icons.date_range_rounded),
-                ...thisWeekReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
-                const SizedBox(height: 12),
-              ],
-              if (laterReminders.isNotEmpty) ...[
-                _buildSectionHeader('Upcoming & Later', laterReminders.length, g.inkMuted, Icons.calendar_month_rounded),
-                ...laterReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
-                const SizedBox(height: 12),
-              ],
-              if (pastReminders.isNotEmpty) ...[
-                _buildSectionHeader('Past or Completed', pastReminders.length, g.inkMuted, Icons.history_rounded),
-                ...pastReminders.map((rem) => _buildReminderTile(rem, isUpcoming: false)),
+
+              // ── SEGMENTED TOP TOGGLE: UPCOMING VS COMPLETED ─────────────
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: g.fill,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: g.edge),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _selectedTab = 0);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: _selectedTab == 0 ? g.claySoft : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _selectedTab == 0 ? g.clay : Colors.transparent,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Upcoming (${todayReminders.length + tomorrowReminders.length + thisWeekReminders.length + laterReminders.length})',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: _selectedTab == 0 ? FontWeight.w700 : FontWeight.w500,
+                              color: _selectedTab == 0 ? g.ink : g.inkMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _selectedTab = 1);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: _selectedTab == 1 ? g.claySoft : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _selectedTab == 1 ? g.clay : Colors.transparent,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Completed (${pastReminders.length})',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12.5,
+                              fontWeight: _selectedTab == 1 ? FontWeight.w700 : FontWeight.w500,
+                              color: _selectedTab == 1 ? g.ink : g.inkMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_selectedTab == 0) ...[
+                if (todayReminders.isNotEmpty) ...[
+                  _buildSectionHeader('Today', todayReminders.length, g.clay, Icons.today_rounded),
+                  ...todayReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                  const SizedBox(height: 12),
+                ],
+                if (tomorrowReminders.isNotEmpty) ...[
+                  _buildSectionHeader('Tomorrow', tomorrowReminders.length, g.inkSecondary, Icons.event_rounded),
+                  ...tomorrowReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                  const SizedBox(height: 12),
+                ],
+                if (thisWeekReminders.isNotEmpty) ...[
+                  _buildSectionHeader('This Week', thisWeekReminders.length, g.inkSecondary, Icons.date_range_rounded),
+                  ...thisWeekReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                  const SizedBox(height: 12),
+                ],
+                if (laterReminders.isNotEmpty) ...[
+                  _buildSectionHeader('Upcoming & Later', laterReminders.length, g.inkMuted, Icons.calendar_month_rounded),
+                  ...laterReminders.map((rem) => _buildReminderTile(rem, isUpcoming: true)),
+                  const SizedBox(height: 12),
+                ],
+                if (todayReminders.isEmpty && tomorrowReminders.isEmpty && thisWeekReminders.isEmpty && laterReminders.isEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.task_alt_rounded, size: 40, color: g.clay),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No upcoming reminders',
+                            style: AscentTextStyles.headlineMedium.copyWith(color: g.ink, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'All scheduled tasks done! Switch to Completed to view past items.',
+                            style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ] else ...[
+                // Tab 1: Completed Reminders displayed immediately at the top without scrolling
+                if (pastReminders.isNotEmpty) ...[
+                  _buildSectionHeader('Completed & Past', pastReminders.length, g.inkMuted, Icons.history_rounded),
+                  ...pastReminders.map((rem) => _buildReminderTile(rem, isUpcoming: false)),
+                ] else ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    child: Center(
+                      child: Column(
+                        children: [
+                          Icon(Icons.history_toggle_off_rounded, size: 40, color: g.inkMuted),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No completed reminders yet',
+                            style: AscentTextStyles.headlineMedium.copyWith(color: g.ink, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Completed reminders and passed deadlines will appear right here.',
+                            style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ],
           );

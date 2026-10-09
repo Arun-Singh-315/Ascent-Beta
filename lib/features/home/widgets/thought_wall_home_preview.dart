@@ -40,16 +40,6 @@ class ThoughtWallHomePreview extends ConsumerWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'MIND SPACE • SELF-TALK',
-                  style: AscentTextStyles.homeCaption.copyWith(
-                    color: g.inkMuted,
-                    letterSpacing: 0.8,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 8),
                 InkWell(
                   onTap: () {
                     HapticFeedback.lightImpact();
