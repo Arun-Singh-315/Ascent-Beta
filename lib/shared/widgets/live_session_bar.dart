@@ -29,13 +29,20 @@ Color parseHexColor(String? hex, {Color fallback = const Color(0xFF5FA070)}) {
 /// The persistent live session bar pinned in MainScaffold above the bottom navigation.
 /// Shows live ticking elapsed time, category color, controls, and opens the details sheet.
 class LiveSessionBar extends ConsumerWidget {
-  const LiveSessionBar({super.key});
+  final bool isHomeTab;
+
+  const LiveSessionBar({super.key, this.isHomeTab = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final trackingState = ref.watch(timeTrackingProvider);
     final learningState = ref.watch(learningHubProvider);
     final session = trackingState.activeSession;
+
+    // Suppress floating lecture bar on Home screen where Learning card is already prominently displayed
+    if (isHomeTab && session == null) {
+      return const SizedBox.shrink();
+    }
 
     // Check if learning hub lecture is active
     if (session == null &&

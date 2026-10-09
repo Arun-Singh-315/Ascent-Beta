@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
@@ -289,7 +290,10 @@ class ActivityRowItem extends ConsumerWidget {
             const SizedBox(width: 8),
 
             // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
-            if (activity.kind == ActivityKind.todo) ...[
+            if (isDone) ...[
+              // Completed activities are immutable and cannot be edited
+              const SizedBox(width: 8),
+            ] else if (activity.kind == ActivityKind.todo) ...[
               SizedBox(
                 width: 44,
                 height: 44,
@@ -378,6 +382,12 @@ class ActivityRowItem extends ConsumerWidget {
   }
 
   String _subtitleText(TodayActivityItem act) {
+    if (act.status == TodayActivityStatus.done) {
+      if (act.completedAt != null) {
+        return '✓ Done at ${DateFormat('h:mm a').format(act.completedAt!)}';
+      }
+      return '✓ Completed';
+    }
     if (act.kind == ActivityKind.todo) {
       final p = (act.priority != null && act.priority!.isNotEmpty)
           ? act.priority![0].toUpperCase() + act.priority!.substring(1)

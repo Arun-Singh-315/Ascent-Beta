@@ -154,19 +154,22 @@ class LearningHubCard extends ConsumerWidget {
                       if (hasStarted) ...[
                         Row(
                           children: [
-                            Text(
-                              '${activeMod.title} • ${state.formattedElapsed} / ${active.formattedDuration}',
-                              style: AscentTextStyles.homeSecondary.copyWith(
-                                color: g.inkSecondary,
-                                fontSize: 11.5,
+                            Flexible(
+                              child: Text(
+                                '${activeMod.title} • ${state.formattedElapsed} / ${active.formattedDuration}',
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.inkSecondary,
+                                  fontSize: 11.5,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(width: 6),
-                            Expanded(
+                            SizedBox(
+                              width: 40,
+                              height: 3,
                               child: Container(
-                                height: 3,
                                 decoration: BoxDecoration(
                                   color: g.track,
                                   borderRadius: BorderRadius.circular(3),

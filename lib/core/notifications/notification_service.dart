@@ -864,9 +864,15 @@ class NotificationService {
     required String title,
     required String body,
     String? subText,
+    int? elapsedSeconds,
   }) async {
     if (!_isInitialized) await initialize();
     try {
+      final nowMillis = DateTime.now().millisecondsSinceEpoch;
+      final chronometerStart = elapsedSeconds != null
+          ? nowMillis - (elapsedSeconds * 1000)
+          : nowMillis;
+
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
         channelOngoingSessionName,
@@ -876,7 +882,9 @@ class NotificationService {
         ongoing: true,
         autoCancel: false,
         onlyAlertOnce: true,
-        showWhen: false,
+        showWhen: true,
+        usesChronometer: true,
+        when: chronometerStart,
         color: const Color(0xFF00B4D8),
         subText: subText ?? 'Ascent • Active Session',
         category: AndroidNotificationCategory.status,

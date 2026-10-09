@@ -518,30 +518,32 @@ class _TaskItemTile extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
-                        if (task.plannedDate != null) ...[
+                        if (task.plannedDate != null || isDone) ...[
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(
-                                Icons.event_outlined,
-                                size: 13,
-                                color: status == TaskComputedStatus.lagging
-                                    ? context.stateDanger
-                                    : context.textMuted,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                DateFormat('MMM d').format(task.plannedDate!),
-                                style: TextStyle(
-                                  fontSize: 11,
+                              if (task.plannedDate != null) ...[
+                                Icon(
+                                  Icons.event_outlined,
+                                  size: 13,
                                   color: status == TaskComputedStatus.lagging
                                       ? context.stateDanger
                                       : context.textMuted,
-                                  fontWeight: status == TaskComputedStatus.lagging
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
                                 ),
-                              ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  DateFormat('MMM d').format(task.plannedDate!),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: status == TaskComputedStatus.lagging
+                                        ? context.stateDanger
+                                        : context.textMuted,
+                                    fontWeight: status == TaskComputedStatus.lagging
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
+                                ),
+                              ],
                               if (task.priority == 'high') ...[
                                 const SizedBox(width: 8),
                                 Container(
@@ -566,10 +568,12 @@ class _TaskItemTile extends ConsumerWidget {
                                   color: isDone ? context.textMuted : context.accentPrimary,
                                 ),
                               ],
-                              if (isDone && task.actualCompletedDate != null) ...[
-                                const SizedBox(width: 8),
+                              if (isDone) ...[
+                                if (task.plannedDate != null) const SizedBox(width: 8),
                                 Text(
-                                  '• Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}',
+                                  task.actualCompletedDate != null
+                                      ? '✓ Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}'
+                                      : '✓ Completed',
                                   style: TextStyle(fontSize: 11, color: context.accentPrimary, fontWeight: FontWeight.w500),
                                 ),
                               ],
@@ -579,7 +583,7 @@ class _TaskItemTile extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
+                  if (!isDone && task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
                     const SizedBox(width: 8),
                     InkWell(
                       onTap: () async {

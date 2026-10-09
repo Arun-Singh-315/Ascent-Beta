@@ -383,6 +383,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       title: 'Playing: ${state.activeLecture.title}',
       body: '${state.course.title} • Ascent Study Player',
       subText: 'Lecture Active',
+      elapsedSeconds: state.sessionBaseElapsed,
     );
 
     _ticker?.cancel();

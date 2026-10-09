@@ -155,6 +155,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               data: (thoughts) {
                 // Apply filter
                 final filtered = thoughts.where((t) {
+                  if (_activeFilter == 'archived') return true;
                   if (_activeFilter == 'all') return true;
                   if (_activeFilter == 'pinned') return t.isPinned;
                   return t.mood == _activeFilter;
@@ -289,7 +290,7 @@ class _ThoughtCard extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(thought.isArchived ? 'Thought unarchived' : 'Thought archived'),
-                    duration: const Duration(seconds: 4),
+                    duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
                     action: SnackBarAction(
                       label: 'UNDO',
@@ -316,7 +317,7 @@ class _ThoughtCard extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: const Text('Thought removed'),
-                    duration: const Duration(seconds: 4),
+                    duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
                     action: SnackBarAction(
                       label: 'UNDO',

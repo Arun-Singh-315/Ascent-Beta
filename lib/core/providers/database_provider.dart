@@ -398,6 +398,7 @@ class TodayActivityItem {
   final bool isOverdue;
   final bool hasReminder;
   final String? notes;
+  final DateTime? completedAt;
 
   const TodayActivityItem({
     required this.id,
@@ -415,6 +416,7 @@ class TodayActivityItem {
     this.isOverdue = false,
     this.hasReminder = false,
     this.notes,
+    this.completedAt,
   });
 
   TodayActivityItem copyWith({
@@ -433,6 +435,7 @@ class TodayActivityItem {
     bool? isOverdue,
     bool? hasReminder,
     String? notes,
+    DateTime? completedAt,
   }) {
     return TodayActivityItem(
       id: id ?? this.id,
@@ -450,6 +453,7 @@ class TodayActivityItem {
       isOverdue: isOverdue ?? this.isOverdue,
       hasReminder: hasReminder ?? this.hasReminder,
       notes: notes ?? this.notes,
+      completedAt: completedAt ?? this.completedAt,
     );
   }
 }

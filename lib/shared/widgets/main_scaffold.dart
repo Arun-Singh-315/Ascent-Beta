@@ -107,7 +107,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         bottomNavigationBar: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const LiveSessionBar(),
+            LiveSessionBar(isHomeTab: widget.shell.currentIndex == 0),
             _AscentBottomNav(
               currentIndex: widget.shell.currentIndex,
               onTap: (index) {

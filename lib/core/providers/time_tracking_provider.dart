@@ -114,6 +114,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
           title: 'Focus: ${session.label}',
           body: '${category?.name ?? "Deep Work"} • Ascent Focus',
           subText: 'Timer Active',
+          elapsedSeconds: elapsed,
         );
       } else {
         _ticker?.cancel();
@@ -479,7 +480,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
-  final learningHub = ref.watch(learningHubProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
 
   final today = DateTime.now();
@@ -493,7 +493,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   await for (final (tasks, sessions, reminders) in combineStreams3(tasksStream, sessionsStream, remindersStream)) {
     final List<TodayActivityItem> items = [];
     final Set<int> accountedSessionIds = {};
-    bool lectureAccountedFor = false;
 
     // 1. Process tasks planned for today
     for (final task in tasks) {
@@ -568,100 +567,46 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         isOverdue: isOverdue,
         hasReminder: hasReminder,
         notes: task.notes,
+        completedAt: task.actualCompletedDate,
       ));
     }
 
-    // 2. Process standalone sessions not already accounted for by today's tasks
+    // 2. Process standalone sessions (excluding lectures which are kept in Learning Hub)
     for (final session in sessions) {
-      if (accountedSessionIds.contains(session.id)) continue;
+      if (accountedSessionIds.contains(session.id) || session.activityRefType == 'lecture') {
+        continue;
+      }
 
-      final isLecture = session.activityRefType == 'lecture';
       int elapsed;
-      int? targetMinutes;
+      if (timeTracking.activeSession?.id == session.id) {
+        elapsed = timeTracking.elapsedSeconds;
+      } else {
+        elapsed = (session.durationSeconds > 0)
+            ? session.durationSeconds
+            : TimeSessionDao.computeActiveDurationSeconds(
+                session.startedAt,
+                session.endedAt ?? (session.status == 'running' ? DateTime.now() : session.startedAt),
+                session.pausedIntervals,
+              );
+      }
+
       TodayActivityStatus status;
-      bool isCurActiveLec = false;
-      Lecture? matchedLec;
-
-      if (isLecture) {
-        lectureAccountedFor = true;
-        isCurActiveLec = session.label.contains(learningHub.activeLecture.title);
-        if (isCurActiveLec) {
-          matchedLec = learningHub.activeLecture;
-          elapsed = learningHub.currentElapsedSeconds;
-          targetMinutes = (learningHub.activeLecture.durationSeconds > 0)
-              ? (learningHub.activeLecture.durationSeconds / 60).round()
-              : 5;
-          if (learningHub.isPlaying) {
-            status = TodayActivityStatus.inProgress;
-          } else if (learningHub.activeLecture.isCompleted) {
-            status = TodayActivityStatus.done;
-          } else if (learningHub.currentElapsedSeconds > 0) {
-            status = TodayActivityStatus.paused;
-          } else {
-            status = TodayActivityStatus.notStarted;
-          }
-        } else {
-          for (final mod in learningHub.course.modules) {
-            for (final lec in mod.lectures) {
-              if (session.label.contains(lec.title)) {
-                matchedLec = lec;
-                break;
-              }
-            }
-            if (matchedLec != null) break;
-          }
-          if (matchedLec != null) {
-            targetMinutes = (matchedLec.durationSeconds > 0)
-                ? (matchedLec.durationSeconds / 60).round()
-                : 5;
-            elapsed = matchedLec.isCompleted ? matchedLec.durationSeconds : matchedLec.elapsedSeconds;
-            status = matchedLec.isCompleted
-                ? TodayActivityStatus.done
-                : (elapsed > 0 ? TodayActivityStatus.paused : TodayActivityStatus.notStarted);
-          } else {
-            elapsed = (session.durationSeconds > 0) ? session.durationSeconds : 0;
-            targetMinutes = (session.durationSeconds > 0) ? (session.durationSeconds / 60).round() : 5;
-            status = session.status == 'completed' ? TodayActivityStatus.done : TodayActivityStatus.paused;
-          }
-        }
+      if (timeTracking.activeSession?.id == session.id && timeTracking.isRunning) {
+        status = TodayActivityStatus.inProgress;
+      } else if (session.status == 'paused' ||
+          (timeTracking.activeSession?.id == session.id && timeTracking.isPaused)) {
+        status = TodayActivityStatus.paused;
+      } else if (session.status == 'completed') {
+        status = TodayActivityStatus.done;
       } else {
-        if (timeTracking.activeSession?.id == session.id) {
-          elapsed = timeTracking.elapsedSeconds;
-        } else {
-          elapsed = (session.durationSeconds > 0)
-              ? session.durationSeconds
-              : TimeSessionDao.computeActiveDurationSeconds(
-                  session.startedAt,
-                  session.endedAt ?? (session.status == 'running' ? DateTime.now() : session.startedAt),
-                  session.pausedIntervals,
-                );
-        }
-
-        if (timeTracking.activeSession?.id == session.id && timeTracking.isRunning) {
-          status = TodayActivityStatus.inProgress;
-        } else if (session.status == 'paused' ||
-            (timeTracking.activeSession?.id == session.id && timeTracking.isPaused)) {
-          status = TodayActivityStatus.paused;
-        } else if (session.status == 'completed') {
-          status = TodayActivityStatus.done;
-        } else {
-          status = TodayActivityStatus.notStarted;
-        }
-        targetMinutes = (session.durationSeconds > 0) ? (session.durationSeconds / 60).round() : null;
+        status = TodayActivityStatus.notStarted;
       }
-
-      String itemId;
-      if (isLecture) {
-        final matchedId = matchedLec?.id ?? (isCurActiveLec ? learningHub.activeLecture.id : null);
-        itemId = matchedId != null ? 'lecture_$matchedId' : 'session_${session.id}';
-      } else {
-        itemId = 'session_${session.id}';
-      }
+      final targetMinutes = (session.durationSeconds > 0) ? (session.durationSeconds / 60).round() : null;
 
       String categoryTag = session.activityType == 'entertainment' ? 'Break' : 'Study';
 
       items.add(TodayActivityItem(
-        id: itemId,
+        id: 'session_${session.id}',
         title: session.label,
         sourceType: session.activityRefType,
         status: status,
@@ -673,51 +618,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         targetMinutes: targetMinutes,
         plannedDate: session.startedAt,
         isOverdue: false,
+        completedAt: session.status == 'completed' ? session.endedAt : null,
       ));
     }
 
-    // 2.5 If user has started learning in Learning Hub, guarantee active lecture is represented in Today
-    if (!lectureAccountedFor && learningHub.hasStartedLearning) {
-      final activeLec = learningHub.activeLecture;
-      final curCourse = learningHub.course;
-      final targetMins = (activeLec.durationSeconds > 0)
-          ? (activeLec.durationSeconds / 60).round()
-          : 5;
-
-      TodayActivityStatus status;
-      if (learningHub.isPlaying) {
-        status = TodayActivityStatus.inProgress;
-      } else if (activeLec.isCompleted) {
-        status = TodayActivityStatus.done;
-      } else if (learningHub.currentElapsedSeconds > 0) {
-        status = TodayActivityStatus.paused;
-      } else {
-        status = TodayActivityStatus.notStarted;
-      }
-
-      items.add(TodayActivityItem(
-        id: 'lecture_${activeLec.id}',
-        title: '${curCourse.title}: ${activeLec.title}',
-        sourceType: 'lecture',
-        status: status,
-        elapsedSecondsToday: learningHub.currentElapsedSeconds,
-        linkedTaskId: null,
-        linkedSessionId: null,
-        categoryTag: 'Study',
-        kind: ActivityKind.duration,
-        targetMinutes: targetMins,
-        plannedDate: DateTime.now(),
-        isOverdue: false,
-      ));
-    }
-
-    // 2.6 Guarantee all lectures from the active course completed today remain visible in Completed
+    // 2.6 Guarantee completed lectures from the course remain visible in Completed activities
+    final learningHub = ref.read(learningHubProvider);
     final curCourse = learningHub.course;
     for (final mod in curCourse.modules) {
       for (final lec in mod.lectures) {
-        if (lec.isCompleted &&
-            lec.lastPlayedAt != null &&
-            lec.lastPlayedAt!.isAfter(startOfToday)) {
+        if (lec.isCompleted) {
           final lecItemId = 'lecture_${lec.id}';
           if (!items.any((it) => it.id == lecItemId)) {
             final targetMins = (lec.durationSeconds > 0)
@@ -734,8 +644,9 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
               categoryTag: 'Study',
               kind: ActivityKind.duration,
               targetMinutes: targetMins,
-              plannedDate: lec.lastPlayedAt,
+              plannedDate: lec.lastPlayedAt ?? DateTime.now(),
               isOverdue: false,
+              completedAt: lec.lastPlayedAt ?? DateTime.now(),
             ));
           }
         }
