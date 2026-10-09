@@ -7,6 +7,7 @@ import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
 import 'core/providers/time_tracking_provider.dart';
+import 'core/learning_hub/learning_hub_provider.dart';
 import 'core/walk/walk_tracking_service.dart';
 import 'features/chai_break/chai_break_provider.dart';
 
@@ -28,7 +29,10 @@ void main() async {
 
   NotificationService.setNotificationNavigateHandler((route) {
     if (route.isNotEmpty) {
-      ascentRouter.push(route);
+      final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri.toString();
+      if (currentUri != route) {
+        ascentRouter.go(route);
+      }
     }
   });
 
@@ -41,7 +45,6 @@ void main() async {
         walkNotifier.resumeWalk();
       } else if (actionId == NotificationService.actionFinish) {
         walkNotifier.finishWalk();
-        ascentRouter.push('/walk');
       }
     } else if (payload == '/focus') {
       final sessionNotifier = container.read(timeTrackingProvider.notifier);
@@ -51,7 +54,16 @@ void main() async {
         sessionNotifier.resumeSession();
       } else if (actionId == NotificationService.actionFinish) {
         sessionNotifier.completeSession();
-        ascentRouter.push('/focus');
+      }
+    } else if (payload == '/learning') {
+      final learningNotifier = container.read(learningHubProvider.notifier);
+      if (actionId == NotificationService.actionPause) {
+        learningNotifier.pause();
+      } else if (actionId == NotificationService.actionResume) {
+        learningNotifier.play();
+      } else if (actionId == NotificationService.actionFinish) {
+        learningNotifier.pause(updateNotification: false);
+        NotificationService.instance.cancelOngoingSessionNotification();
       }
     } else if (payload == '/chai-break') {
       final chaiNotifier = container.read(chaiBreakProvider.notifier);
@@ -62,7 +74,6 @@ void main() async {
       } else if (actionId == NotificationService.actionFinish) {
         chaiNotifier.pause();
         NotificationService.instance.cancelOngoingChaiBreakNotification();
-        ascentRouter.push('/chai-break');
       }
     }
   });

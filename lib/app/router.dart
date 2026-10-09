@@ -13,6 +13,7 @@ import '../features/analytics/series_report_card_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/study_plan/course_catalog_screen.dart';
 import '../features/study_plan/study_plan_screen.dart';
+import '../features/study_plan/lecture_focus_player_screen.dart';
 import '../features/book_reader/kindle_book_reader_screen.dart';
 import '../features/dsa/dsa_screen.dart';
 import '../features/interview_prep/interview_prep_screen.dart';
@@ -63,6 +64,7 @@ class AscentRoutes {
   static const resumeVault = '/resume-vault';
   static const settings = '/settings';
   static const focus = '/focus';
+  static const learning = '/learning';
   static const reminders = '/reminders';
 }
 
@@ -204,6 +206,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.chaiBreak,
       builder: (context, state) => const ChaiBreakScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.learning,
+      builder: (context, state) => const LectureFocusPlayerScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

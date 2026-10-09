@@ -5,55 +5,76 @@ import 'package:ascent/core/walk/walk_tracking_service.dart';
 
 void main() {
   group('Timer Notification Deep Link and Action Tests', () {
-    test('Notification tap with payload invokes onNotificationNavigate callback', () {
+    test('Notification tap with payload invokes onNotificationNavigate callback for all 4 timer domains', () {
       String? routedPath;
       NotificationService.onNotificationNavigate = (path) {
         routedPath = path;
       };
 
-      const response = NotificationResponse(
+      // 1. Walk Timer
+      const walkResponse = NotificationResponse(
         notificationResponseType: NotificationResponseType.selectedNotification,
         payload: '/walk',
       );
-
-      NotificationService.instance.handleNotificationResponse(response);
+      NotificationService.instance.handleNotificationResponse(walkResponse);
       expect(routedPath, equals('/walk'));
 
+      // 2. Activity / Todo Focus Timer
       const focusResponse = NotificationResponse(
         notificationResponseType: NotificationResponseType.selectedNotification,
         payload: '/focus',
       );
-
       NotificationService.instance.handleNotificationResponse(focusResponse);
       expect(routedPath, equals('/focus'));
 
+      // 3. Learning Hub Lecture Timer
+      const learningResponse = NotificationResponse(
+        notificationResponseType: NotificationResponseType.selectedNotification,
+        payload: '/learning',
+      );
+      NotificationService.instance.handleNotificationResponse(learningResponse);
+      expect(routedPath, equals('/learning'));
+
+      // 4. Chai & Coffee Break Timer
       const chaiResponse = NotificationResponse(
         notificationResponseType: NotificationResponseType.selectedNotification,
         payload: '/chai-break',
       );
-
       NotificationService.instance.handleNotificationResponse(chaiResponse);
       expect(routedPath, equals('/chai-break'));
     });
 
-    test('Notification action tap triggers onNotificationAction callback', () {
+    test('Action button taps invoke onNotificationAction and NEVER trigger onNotificationNavigate', () {
       String? triggeredAction;
       String? triggeredPayload;
+      String? navigatedRoute;
 
       NotificationService.onNotificationAction = (actionId, payload) {
         triggeredAction = actionId;
         triggeredPayload = payload;
       };
+      NotificationService.onNotificationNavigate = (route) {
+        navigatedRoute = route;
+      };
 
       const actionResponse = NotificationResponse(
         notificationResponseType: NotificationResponseType.selectedNotificationAction,
         actionId: 'action_pause',
-        payload: '/walk',
+        payload: '/learning',
       );
 
       NotificationService.instance.handleNotificationResponse(actionResponse);
+
+      // Action must be dispatched
       expect(triggeredAction, equals('action_pause'));
-      expect(triggeredPayload, equals('/walk'));
+      expect(triggeredPayload, equals('/learning'));
+
+      // Navigation must NEVER be triggered by an action tap (prevents app foregrounding & flickering)
+      expect(navigatedRoute, isNull);
+    });
+
+    test('IsolateNameServer port name matches NotificationService.isolatePortName', () {
+      expect(NotificationService.isolatePortName, equals('ascent_notification_actions_port'));
     });
 
     test('Buffered cold start navigation flushes immediately upon handler registration', () {
@@ -61,7 +82,7 @@ void main() {
 
       const launchResponse = NotificationResponse(
         notificationResponseType: NotificationResponseType.selectedNotification,
-        payload: '/walk',
+        payload: '/learning',
       );
 
       // Notification arrives before router handler is mounted
@@ -72,7 +93,7 @@ void main() {
         lateRoutedPath = path;
       });
 
-      expect(lateRoutedPath, equals('/walk'));
+      expect(lateRoutedPath, equals('/learning'));
     });
 
     test('Buffered cold start action flushes immediately upon handler registration', () {

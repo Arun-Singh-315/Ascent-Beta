@@ -384,6 +384,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       body: '${state.course.title} • Ascent Study Player',
       subText: 'Lecture Active',
       elapsedSeconds: state.sessionBaseElapsed,
+      payload: '/learning',
     );
 
     _ticker?.cancel();
@@ -418,12 +419,23 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     });
   }
 
-  void pause() {
+  void pause({bool updateNotification = true}) {
     _ticker?.cancel();
     _flushTimer?.cancel();
     _syncPauseSession();
     _persistCourses();
-    NotificationService.instance.cancelOngoingSessionNotification();
+    if (updateNotification) {
+      NotificationService.instance.showOngoingSessionNotification(
+        title: 'Lecture: ${state.activeLecture.title}',
+        body: '${state.course.title} • Ascent Study Player',
+        subText: 'Lecture Paused',
+        elapsedSeconds: state.currentElapsedSeconds,
+        isPaused: true,
+        payload: '/learning',
+      );
+    } else {
+      NotificationService.instance.cancelOngoingSessionNotification();
+    }
     state = state.copyWith(
       isPlaying: false,
       playStartedAt: null,

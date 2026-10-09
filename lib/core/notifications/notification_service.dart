@@ -1,4 +1,6 @@
+import 'dart:isolate';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -8,7 +10,19 @@ import 'boost_notification_copy.dart';
 /// Top-level background notification response callback required by flutter_local_notifications.
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
-  NotificationService.instance.handleNotificationResponse(notificationResponse);
+  // If an action button was tapped in the background with showsUserInterface: false,
+  // relay it to the main running isolate via IsolateNameServer port so Riverpod notifiers
+  // execute silently in memory without opening the app or causing screen flicker.
+  final port = IsolateNameServer.lookupPortByName(NotificationService.isolatePortName);
+  if (port != null) {
+    port.send({
+      'actionId': notificationResponse.actionId,
+      'payload': notificationResponse.payload,
+    });
+  } else {
+    // If main isolate is unavailable (e.g. app terminated), handle via service instance
+    NotificationService.instance.handleNotificationResponse(notificationResponse);
+  }
 }
 
 /// Notification Service for Ascent.
@@ -51,6 +65,8 @@ class NotificationService {
   static const String actionPause = 'action_pause';
   static const String actionResume = 'action_resume';
   static const String actionFinish = 'action_finish';
+  static const String isolatePortName = 'ascent_notification_actions_port';
+  static ReceivePort? _actionReceivePort;
 
   static String? _pendingRoute;
   static String? _pendingActionId;
@@ -130,6 +146,27 @@ class NotificationService {
         },
         onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
+
+      // Register cross-isolate communication port so background actions dispatch silently
+      if (_actionReceivePort == null) {
+        _actionReceivePort = ReceivePort();
+        IsolateNameServer.removePortNameMapping(isolatePortName);
+        IsolateNameServer.registerPortWithName(_actionReceivePort!.sendPort, isolatePortName);
+        _actionReceivePort!.listen((dynamic message) {
+          if (message is Map) {
+            final actionId = message['actionId'] as String?;
+            final payload = message['payload'] as String?;
+            if (actionId != null && actionId.isNotEmpty) {
+              if (onNotificationAction != null) {
+                onNotificationAction!(actionId, payload);
+              } else {
+                _pendingActionId = actionId;
+                _pendingActionPayload = payload;
+              }
+            }
+          }
+        });
+      }
 
       // Create Android Notification Channels
       final androidImpl = _plugin.resolvePlatformSpecificImplementation<
@@ -930,6 +967,7 @@ class NotificationService {
     String? subText,
     int? elapsedSeconds,
     bool isPaused = false,
+    String payload = '/focus',
   }) async {
     if (!_isInitialized) await initialize();
     try {
@@ -942,12 +980,12 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
         const AndroidNotificationAction(
           actionFinish,
           'Complete 🏁',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
       ];
 
@@ -976,7 +1014,7 @@ class NotificationService {
         id: ongoingSessionNotificationId,
         title: isPaused ? '⏸️ $title' : title,
         body: body,
-        payload: '/focus',
+        payload: payload,
         notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
       );
     } catch (e) {
@@ -1009,12 +1047,12 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
         const AndroidNotificationAction(
           actionFinish,
           'Finish 🏁',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
       ];
 
@@ -1072,12 +1110,12 @@ class NotificationService {
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume ▶️' : 'Pause ⏸️',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
         const AndroidNotificationAction(
           actionFinish,
           'End Break ⏹️',
-          showsUserInterface: true,
+          showsUserInterface: false,
         ),
       ];
 
