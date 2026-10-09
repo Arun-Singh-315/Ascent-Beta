@@ -14,6 +14,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../core/services/hydration_reminder_service.dart';
 import '../../core/streak/study_streak_provider.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
+import '../reminders/widgets/in_app_reminder_dialog.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/home_atmosphere.dart';
@@ -39,6 +40,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _hasCheckedOverdueReminders = false;
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +49,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
       ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
+
+      if (!_hasCheckedOverdueReminders) {
+        _hasCheckedOverdueReminders = true;
+        _checkAndPromptOverdueReminder();
+      }
     });
+  }
+
+  Future<void> _checkAndPromptOverdueReminder() async {
+    try {
+      final overdueReminders = await ref.read(reminderDaoProvider).getOverdueActiveReminders();
+      if (overdueReminders.isNotEmpty && mounted) {
+        await InAppReminderDialog.show(context, overdueReminders.first);
+      }
+    } catch (_) {}
   }
 
   @override

@@ -718,12 +718,25 @@ class _ThoughtCard extends ConsumerWidget {
                                 const SnackBar(content: Text('Copied to clipboard!')),
                               );
                             }
+                          } else if (action == 'edit') {
+                            HapticFeedback.lightImpact();
+                            DropThoughtSheet.show(context, existingThought: thought);
                           } else if (action == 'delete') {
                             HapticFeedback.mediumImpact();
                             await ref.read(thoughtDaoProvider).deleteThought(thought.id);
                           }
                         },
                         itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 16),
+                                SizedBox(width: 8),
+                                Text('Edit thought'),
+                              ],
+                            ),
+                          ),
                           PopupMenuItem(
                             value: 'toggle_done',
                             child: Row(

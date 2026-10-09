@@ -98,8 +98,6 @@ void main() {
       expect(find.text('10m Coffee'), findsOneWidget);
       expect(find.text('15m Reset'), findsOneWidget);
 
-      expect(find.textContaining('FLOW MOMENTUM LOCKED IN'), findsOneWidget);
-
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 50));
     });
@@ -143,8 +141,8 @@ void main() {
 
       await tester.pump();
 
-      // Find the resume button showing the paused timestamp
-      final resumeFinder = find.textContaining('Resume Lecture at 02:00');
+      // Find the dock button Go to Learning
+      final resumeFinder = find.text('Go to Learning');
       expect(resumeFinder, findsOneWidget);
 
       // Tap the resume button

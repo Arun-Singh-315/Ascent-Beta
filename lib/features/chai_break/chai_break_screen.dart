@@ -9,7 +9,7 @@ import '../thought_wall/drop_thought_sheet.dart';
 import 'chai_break_provider.dart';
 import 'widgets/ambient_soundscape_bar.dart';
 import 'widgets/brew_with_me_view.dart';
-import 'widgets/flow_resume_card.dart';
+import 'widgets/chai_break_resume_dock.dart';
 import 'widgets/mindful_breathing_guide.dart';
 import 'widgets/steaming_cup_painter.dart';
 
@@ -234,11 +234,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
 
                     const SizedBox(height: 14),
 
-                    // Smart Flow Resume Card (Prominently placed at the top so user never has to scroll!)
-                    const FlowResumeCard(),
-
-                    const SizedBox(height: 16),
-
                     if (_isBrewWithMe) ...[
                       const BrewWithMeView(),
                     ] else ...[
@@ -451,12 +446,13 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
-
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 12),
                   ],
                 ),
               ),
+
+              // Pinned Bottom Resume Dock
+              const ChaiBreakResumeDock(),
             ],
           ),
         ),

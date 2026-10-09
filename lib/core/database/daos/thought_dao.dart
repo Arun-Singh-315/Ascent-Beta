@@ -110,6 +110,11 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     }
   }
 
+  /// Update an existing thought.
+  Future<bool> updateThought(ThoughtTableCompanion entry) {
+    return update(thoughtTable).replace(entry);
+  }
+
   /// Delete a thought.
   Future<int> deleteThought(int id) {
     return (delete(thoughtTable)..where((t) => t.id.equals(id))).go();

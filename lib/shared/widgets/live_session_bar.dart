@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:google_fonts/google_fonts.dart';
 
@@ -9,6 +10,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
+import '../../core/walk/walk_tracking_service.dart';
 import '../../features/study_plan/lecture_focus_player_sheet.dart';
 import 'ascent_button.dart';
 import 'chat_bubble_card.dart';
@@ -37,7 +39,140 @@ class LiveSessionBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final trackingState = ref.watch(timeTrackingProvider);
     final learningState = ref.watch(learningHubProvider);
+    final walkState = ref.watch(walkTrackingProvider);
     final session = trackingState.activeSession;
+
+    final isWalking = walkState.status == WalkTrackingStatus.tracking ||
+        walkState.status == WalkTrackingStatus.paused;
+
+    if (isWalking) {
+      final isPaused = walkState.status == WalkTrackingStatus.paused;
+      final accentColor = context.accentSecondary;
+
+      return Dismissible(
+        key: const ValueKey('floating_walk_session'),
+        direction: DismissDirection.horizontal,
+        onDismissed: (_) {
+          HapticFeedback.lightImpact();
+          ref.read(walkTrackingProvider.notifier).discardWalk();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: ChatBubbleCard(
+            tailPosition: BubbleTailPosition.bottomLeft,
+            isPulsing: !isPaused,
+            borderColor: accentColor.withValues(alpha: 0.5),
+            accentTint: accentColor,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            onTap: () {
+              HapticFeedback.lightImpact();
+              context.push('/walk');
+            },
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.directions_walk_rounded, color: accentColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: accentColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Outdoor Walk',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AscentTextStyles.labelMedium.copyWith(
+                                color: context.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            walkState.formattedDuration,
+                            style: AscentTextStyles.monoCode.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: !isPaused
+                                  ? context.accentPrimaryBright
+                                  : context.textMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${walkState.distanceKm.toStringAsFixed(2)} km',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: context.textMuted,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            !isPaused ? '• Tracking' : '• Paused',
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: !isPaused ? accentColor : context.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+                    color: context.textPrimary,
+                    size: 24,
+                  ),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    if (isPaused) {
+                      ref.read(walkTrackingProvider.notifier).resumeWalk();
+                    } else {
+                      ref.read(walkTrackingProvider.notifier).pauseWalk();
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.open_in_new_rounded,
+                    color: accentColor,
+                    size: 20,
+                  ),
+                  tooltip: 'Open Walk Screen',
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/walk');
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     // Suppress floating lecture bar on Home screen where Learning card is already prominently displayed
     if (isHomeTab && session == null) {
@@ -46,7 +181,7 @@ class LiveSessionBar extends ConsumerWidget {
 
     // Check if learning hub lecture is active
     if (session == null &&
-        (learningState.isPlaying || learningState.isLiveFocusActive) &&
+        learningState.isPlaying &&
         !learningState.isFloatingDismissed) {
       final activeLec = learningState.activeLecture;
       final curCourse = learningState.course;

@@ -38,6 +38,7 @@ class NotificationService {
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
   static const String channelOngoingSessionName = 'Active Session & Background Audio';
   static const int ongoingSessionNotificationId = 888800;
+  static const int ongoingWalkNotificationId = 888801;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -910,6 +911,58 @@ class NotificationService {
       await _plugin.cancel(id: ongoingSessionNotificationId);
     } catch (e) {
       debugPrint('Failed to cancel ongoing session notification: $e');
+    }
+  }
+
+  /// Shows or updates an ongoing notification for background outdoor walking or run session.
+  Future<void> showOngoingWalkNotification({
+    required int durationSeconds,
+    required double distanceKm,
+    required String pace,
+    bool isPaused = false,
+  }) async {
+    if (!_isInitialized) await initialize();
+    try {
+      final nowMillis = DateTime.now().millisecondsSinceEpoch;
+      final chronometerStart = nowMillis - (durationSeconds * 1000);
+
+      final androidDetails = AndroidNotificationDetails(
+        channelOngoingSessionId,
+        channelOngoingSessionName,
+        channelDescription: 'Ongoing walking and GPS activity tracker',
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: !isPaused,
+        autoCancel: false,
+        onlyAlertOnce: true,
+        showWhen: true,
+        usesChronometer: !isPaused,
+        when: chronometerStart,
+        color: const Color(0xFF2C6B45),
+        subText: isPaused ? 'Walk Paused' : 'Walk Active • GPS Live',
+        category: AndroidNotificationCategory.status,
+      );
+      const darwinDetails = DarwinNotificationDetails(
+        presentSound: false,
+        presentAlert: false,
+      );
+      await _plugin.show(
+        id: ongoingWalkNotificationId,
+        title: isPaused ? 'Walking Paused ⏸️' : 'Walking in Progress 🚶',
+        body: '${distanceKm.toStringAsFixed(2)} km • Pace: $pace /km',
+        notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
+      );
+    } catch (e) {
+      debugPrint('Failed to show ongoing walk notification: $e');
+    }
+  }
+
+  /// Cancels the ongoing walk notification.
+  Future<void> cancelOngoingWalkNotification() async {
+    try {
+      await _plugin.cancel(id: ongoingWalkNotificationId);
+    } catch (e) {
+      debugPrint('Failed to cancel ongoing walk notification: $e');
     }
   }
 }

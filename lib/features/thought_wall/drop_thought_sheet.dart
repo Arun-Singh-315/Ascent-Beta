@@ -13,18 +13,26 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 
-/// Interactive modal for dropping a thought, idea, or me-to-me self reflection.
+/// Interactive modal for dropping or editing a thought, idea, or me-to-me self reflection.
 class DropThoughtSheet extends ConsumerStatefulWidget {
   final String? initialPrompt;
+  final Thought? existingThought;
 
-  const DropThoughtSheet({super.key, this.initialPrompt});
+  const DropThoughtSheet({super.key, this.initialPrompt, this.existingThought});
 
-  static Future<void> show(BuildContext context, {String? initialPrompt}) {
+  static Future<void> show(
+    BuildContext context, {
+    String? initialPrompt,
+    Thought? existingThought,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => DropThoughtSheet(initialPrompt: initialPrompt),
+      builder: (_) => DropThoughtSheet(
+        initialPrompt: initialPrompt,
+        existingThought: existingThought,
+      ),
     );
   }
 
@@ -64,13 +72,22 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
   @override
   void initState() {
     super.initState();
-    _activePrompt = widget.initialPrompt;
+    if (widget.existingThought != null) {
+      _contentController.text = widget.existingThought!.content;
+      _selectedMood = widget.existingThought!.mood;
+      _isPinned = widget.existingThought!.isPinned;
+      _activePrompt = widget.existingThought!.promptQuestion;
+    } else {
+      _activePrompt = widget.initialPrompt;
+      _loadDraft();
+    }
     _contentController.addListener(_onTextChanged);
-    _loadDraft();
   }
 
   void _onTextChanged() {
-    _autoSaveDraft();
+    if (widget.existingThought == null) {
+      _autoSaveDraft();
+    }
   }
 
   Future<void> _loadDraft() async {
@@ -130,7 +147,9 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       final rand = Random();
       _activePrompt = _prompts[rand.nextInt(_prompts.length)];
     });
-    _autoSaveDraft();
+    if (widget.existingThought == null) {
+      _autoSaveDraft();
+    }
   }
 
   void _saveThought() async {
@@ -138,27 +157,40 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
     if (text.isEmpty) return;
 
     HapticFeedback.mediumImpact();
-    final moodInfo = _moods.firstWhere((m) => m['key'] == _selectedMood);
+    final moodInfo = _moods.firstWhere((m) => m['key'] == _selectedMood, orElse: () => _moods.first);
     final color = (moodInfo['color'] as Color).toARGB32().toRadixString(16);
 
-    await ref.read(thoughtDaoProvider).insertThought(
-      ThoughtTableCompanion.insert(
-        content: text,
-        mood: drift.Value(_selectedMood),
-        colorHex: drift.Value('#$color'),
-        isPinned: drift.Value(_isPinned),
-        promptQuestion: drift.Value(_activePrompt),
-      ),
-    );
-
-    await _clearDraft();
+    if (widget.existingThought != null) {
+      await ref.read(thoughtDaoProvider).updateThought(
+        widget.existingThought!.toCompanion(true).copyWith(
+          content: drift.Value(text),
+          mood: drift.Value(_selectedMood),
+          colorHex: drift.Value('#$color'),
+          isPinned: drift.Value(_isPinned),
+          promptQuestion: drift.Value(_activePrompt),
+        ),
+      );
+    } else {
+      await ref.read(thoughtDaoProvider).insertThought(
+        ThoughtTableCompanion.insert(
+          content: text,
+          mood: drift.Value(_selectedMood),
+          colorHex: drift.Value('#$color'),
+          isPinned: drift.Value(_isPinned),
+          promptQuestion: drift.Value(_activePrompt),
+        ),
+      );
+      await _clearDraft();
+    }
 
     if (mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Pinned to your Thought Wall'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(widget.existingThought != null
+              ? 'Updated reflection in Mind Space'
+              : 'Pinned to your Thought Wall'),
+          duration: const Duration(seconds: 2),
         ),
       );
     }
@@ -226,7 +258,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Drop on Thought Wall',
+                      widget.existingThought != null ? 'Edit Reflection' : 'Drop on Thought Wall',
                       style: AscentTextStyles.headlineMedium.copyWith(
                         color: context.textPrimary,
                         fontSize: 18,
@@ -234,7 +266,9 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                       ),
                     ),
                     Text(
-                      'Honest talk from you, to you.',
+                      widget.existingThought != null
+                          ? 'Refine your thoughts in Mind Space.'
+                          : 'Honest talk from you, to you.',
                       style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                     ),
                   ],
@@ -399,9 +433,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
           // Submit Button
           AscentButton.primary(
-            label: _isPinned ? 'Pin to Wall (Pinned)' : 'Pin to Thought Wall',
+            label: widget.existingThought != null
+                ? 'Save Changes'
+                : (_isPinned ? 'Pin to Wall (Pinned)' : 'Pin to Thought Wall'),
             expanded: true,
-            icon: Icons.push_pin_rounded,
+            icon: widget.existingThought != null ? Icons.check_rounded : Icons.push_pin_rounded,
             onPressed: _saveThought,
           ),
         ],

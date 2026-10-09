@@ -21,6 +21,15 @@ class ReminderDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  /// Get active reminders that are overdue (scheduledAt before now).
+  Future<List<Reminder>> getOverdueActiveReminders() {
+    final now = DateTime.now();
+    return (select(reminderTable)
+          ..where((r) => r.isActive.equals(true) & r.scheduledAt.isSmallerThanValue(now))
+          ..orderBy([(r) => OrderingTerm.asc(r.scheduledAt)]))
+        .get();
+  }
+
   /// Watch the single next upcoming active reminder.
   Stream<Reminder?> watchNextReminder() {
     final now = DateTime.now();

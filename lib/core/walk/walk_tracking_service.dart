@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../database/app_database.dart';
+import '../notifications/notification_service.dart';
 import '../providers/database_provider.dart';
 
 enum WalkTrackingStatus {
@@ -113,27 +114,56 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
   Timer? _timer;
   StreamSubscription<Position>? _positionSub;
   DateTime? _walkStartTime;
+  int _pausedSeconds = 0;
+  DateTime? _pauseStartTime;
+
+  static int computeActiveDurationSeconds({
+    required DateTime startedAt,
+    required DateTime now,
+    int pausedSeconds = 0,
+  }) {
+    final diff = now.difference(startedAt).inSeconds - pausedSeconds;
+    return diff < 0 ? 0 : diff;
+  }
 
   @override
   WalkTrackingState build() {
     ref.onDispose(() {
       _stopTimer();
       _positionSub?.cancel();
+      NotificationService.instance.cancelOngoingWalkNotification();
     });
     return const WalkTrackingState();
   }
 
   void _startTimer() {
     _timer?.cancel();
+    int tickCount = 0;
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.status == WalkTrackingStatus.tracking) {
-        final newDuration = state.durationSeconds + 1;
+        final newDuration = _walkStartTime != null
+            ? computeActiveDurationSeconds(
+                startedAt: _walkStartTime!,
+                now: DateTime.now(),
+                pausedSeconds: _pausedSeconds,
+              )
+            : state.durationSeconds + 1;
         // MET formula: calories approx = distanceKm * 65 kcal/km for standard walking
         final newCalories = (state.distanceKm * 65.0).round();
         state = state.copyWith(
           durationSeconds: newDuration,
           calories: newCalories,
         );
+
+        tickCount++;
+        if (tickCount % 5 == 0) {
+          NotificationService.instance.showOngoingWalkNotification(
+            durationSeconds: newDuration,
+            distanceKm: state.distanceKm,
+            pace: state.formattedPace,
+            isPaused: false,
+          );
+        }
       }
     });
   }
@@ -166,6 +196,8 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
     }
 
     _walkStartTime = DateTime.now();
+    _pausedSeconds = 0;
+    _pauseStartTime = null;
     state = state.copyWith(
       status: WalkTrackingStatus.tracking,
       gpsSignal: GpsSignalQuality.searching,
@@ -173,6 +205,13 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       distanceMeters: 0.0,
       calories: 0,
       routePoints: [],
+    );
+
+    NotificationService.instance.showOngoingWalkNotification(
+      durationSeconds: 0,
+      distanceKm: 0.0,
+      pace: '--:--',
+      isPaused: false,
     );
 
     _startTimer();
@@ -298,20 +337,38 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
   void pauseWalk() {
     if (state.status == WalkTrackingStatus.tracking) {
       _stopTimer();
+      _pauseStartTime = DateTime.now();
       state = state.copyWith(status: WalkTrackingStatus.paused);
+      NotificationService.instance.showOngoingWalkNotification(
+        durationSeconds: state.durationSeconds,
+        distanceKm: state.distanceKm,
+        pace: state.formattedPace,
+        isPaused: true,
+      );
     }
   }
 
   void resumeWalk() {
     if (state.status == WalkTrackingStatus.paused) {
+      if (_pauseStartTime != null) {
+        _pausedSeconds += DateTime.now().difference(_pauseStartTime!).inSeconds;
+        _pauseStartTime = null;
+      }
       _startTimer();
       state = state.copyWith(status: WalkTrackingStatus.tracking);
+      NotificationService.instance.showOngoingWalkNotification(
+        durationSeconds: state.durationSeconds,
+        distanceKm: state.distanceKm,
+        pace: state.formattedPace,
+        isPaused: false,
+      );
     }
   }
 
   Future<int?> finishWalk({String? notes}) async {
     _stopTimer();
     _positionSub?.cancel();
+    NotificationService.instance.cancelOngoingWalkNotification();
 
     final walkDao = ref.read(walkDaoProvider);
     final startTime = _walkStartTime ?? DateTime.now().subtract(Duration(seconds: state.durationSeconds));
@@ -337,6 +394,9 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
       ),
     );
 
+    _walkStartTime = null;
+    _pausedSeconds = 0;
+    _pauseStartTime = null;
     state = const WalkTrackingState();
     return walkId;
   }
@@ -344,6 +404,10 @@ class WalkTrackingNotifier extends Notifier<WalkTrackingState> {
   void discardWalk() {
     _stopTimer();
     _positionSub?.cancel();
+    NotificationService.instance.cancelOngoingWalkNotification();
+    _walkStartTime = null;
+    _pausedSeconds = 0;
+    _pauseStartTime = null;
     state = const WalkTrackingState();
   }
 

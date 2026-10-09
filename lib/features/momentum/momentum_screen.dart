@@ -8,6 +8,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/momentum/momentum_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -481,111 +482,15 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
     double progressFraction,
     int currentDayNumber,
   ) {
-    final g = context.glass;
-    final percent = (progressFraction * 100).round();
-
-    return GlassSurface(
-      radius: 20,
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          // Circular Progress Arc
-          SizedBox(
-            width: 72,
-            height: 72,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: progressFraction,
-                  strokeWidth: 6.5,
-                  backgroundColor: g.edge,
-                  valueColor: AlwaysStoppedAnimation(g.clay),
-                  strokeCap: StrokeCap.round,
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$percent%',
-                      style: TextStyle(
-                        color: g.ink,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      '$doneCount/$totalCount',
-                      style: TextStyle(
-                        color: g.inkMuted,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 18),
-
-          // Contextual Status Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: g.claySoft,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        _selectedDayNumber == currentDayNumber ? 'TODAY' : 'DAY $_selectedDayNumber',
-                        style: TextStyle(
-                          color: g.clay,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Phase 1 · Ramp',
-                      style: TextStyle(color: g.inkMuted, fontSize: 11, fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  percent == 100
-                      ? 'Daily Target Locked In'
-                      : (percent >= 50 ? 'Strong Steady Pace' : 'Morning Focus Phase'),
-                  style: TextStyle(
-                    color: g.ink,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  percent == 100
-                      ? 'All targets completed for today. Great discipline.'
-                      : 'Complete your planned activities to solidify daily momentum.',
-                  style: TextStyle(color: g.inkMuted, fontSize: 12),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return MomentumProgressHeroCard(
+      doneCount: doneCount,
+      totalCount: totalCount,
+      progressFraction: progressFraction,
+      selectedDayNumber: _selectedDayNumber,
+      currentDayNumber: currentDayNumber,
     );
   }
+
 
   // ── PROMINENT NEXT ACTION (Spec §5C) ──────────────────────────────────────
   Widget _buildProminentNextAction(BuildContext context, MomentumCommitment next) {
@@ -611,9 +516,16 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
       actionIcon = Icons.fitness_center_rounded;
       actionTint = g.clay;
       actionBtnLabel = 'Start Gym';
-      onActionTap = () {
+      onActionTap = () async {
         HapticFeedback.lightImpact();
-        context.push('/focus');
+        await ref.read(timeTrackingProvider.notifier).switchToTask(
+              title: next.title,
+              sourceType: 'gym',
+              autoStart: true,
+            );
+        if (context.mounted) {
+          context.push('/focus');
+        }
       };
     } else {
       actionIcon = Icons.check_circle_outline_rounded;
@@ -817,7 +729,7 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
         final isLast = index == commitments.length - 1;
         final isCurrent = c.id == nextPending?.id;
 
-        return _TimelineItem(
+        return TimelineItemCard(
           commitment: c,
           isFirst: isFirst,
           isLast: isLast,
@@ -826,13 +738,20 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
             HapticFeedback.lightImpact();
             await ref.read(momentumServiceProvider).toggleCommitment(c.id);
           },
-          onAction: () {
+          onAction: () async {
             if (c.commitmentType == 'walk') {
               HapticFeedback.lightImpact();
               context.push('/walk');
             } else if (c.commitmentType == 'gym') {
               HapticFeedback.lightImpact();
-              context.push('/focus');
+              await ref.read(timeTrackingProvider.notifier).switchToTask(
+                    title: c.title,
+                    sourceType: 'gym',
+                    autoStart: true,
+                  );
+              if (context.mounted) {
+                context.push('/focus');
+              }
             }
           },
         );
@@ -1052,8 +971,134 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen>
   }
 }
 
+// ── MOMENTUM PROGRESS HERO CARD ──────────────────────────────────────────
+class MomentumProgressHeroCard extends StatelessWidget {
+  final int doneCount;
+  final int totalCount;
+  final double progressFraction;
+  final int selectedDayNumber;
+  final int currentDayNumber;
+
+  const MomentumProgressHeroCard({
+    super.key,
+    required this.doneCount,
+    required this.totalCount,
+    required this.progressFraction,
+    required this.selectedDayNumber,
+    required this.currentDayNumber,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final percent = (progressFraction * 100).round();
+
+    return GlassSurface(
+      radius: 20,
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          // Circular Progress Arc with spacious dedicated percentage
+          SizedBox(
+            width: 76,
+            height: 76,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: progressFraction,
+                  strokeWidth: 6.5,
+                  backgroundColor: g.edge,
+                  valueColor: AlwaysStoppedAnimation(g.clay),
+                  strokeCap: StrokeCap.round,
+                ),
+                Text(
+                  '$percent%',
+                  style: TextStyle(
+                    color: g.ink,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 18),
+
+          // Contextual Status Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: g.claySoft,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        selectedDayNumber == currentDayNumber ? 'TODAY' : 'DAY $selectedDayNumber',
+                        style: TextStyle(
+                          color: g.clay,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: g.edge, width: 0.8),
+                      ),
+                      child: Text(
+                        '$doneCount of $totalCount completed',
+                        style: TextStyle(
+                          color: g.inkMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  percent == 100
+                      ? 'Daily Target Locked In'
+                      : (percent >= 50 ? 'Strong Steady Pace' : 'Morning Focus Phase'),
+                  style: TextStyle(
+                    color: g.ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  percent == 100
+                      ? 'All targets completed for today. Great discipline.'
+                      : 'Complete your planned activities to solidify daily momentum.',
+                  style: TextStyle(color: g.inkMuted, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── CONNECTED TIMELINE ITEM WIDGET (Spec §5D) ──────────────────────────────
-class _TimelineItem extends StatelessWidget {
+class TimelineItemCard extends StatelessWidget {
   final MomentumCommitment commitment;
   final bool isFirst;
   final bool isLast;
@@ -1061,7 +1106,8 @@ class _TimelineItem extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onAction;
 
-  const _TimelineItem({
+  const TimelineItemCard({
+    super.key,
     required this.commitment,
     required this.isFirst,
     required this.isLast,
@@ -1163,7 +1209,7 @@ class _TimelineItem extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 10),
               child: AscentCard(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                color: c.isCompleted ? g.fill.withValues(alpha: 0.45) : g.fill,
+                color: g.fill,
                 child: Row(
                   children: [
                     // Icon Squircle
@@ -1205,6 +1251,7 @@ class _TimelineItem extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                     fontSize: 13,
                                     decoration: c.isCompleted ? TextDecoration.lineThrough : null,
+                                    decorationColor: g.inkMuted,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -1216,7 +1263,12 @@ class _TimelineItem extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               c.description!,
-                              style: TextStyle(color: g.inkMuted, fontSize: 11),
+                              style: TextStyle(
+                                color: g.inkMuted,
+                                fontSize: 11,
+                                decoration: c.isCompleted ? TextDecoration.lineThrough : null,
+                                decorationColor: g.inkMuted,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
