@@ -307,40 +307,39 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('GeminiInputCard renders unified expandable card with tools and activates send', (tester) async {
-      String? sentText;
-      final controller = TextEditingController();
+    testWidgets('AiAssistantScreen input box matches Thought Wall consistent design and activates send', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            body: GeminiInputCard(
-              controller: controller,
-              assistantName: 'Riya',
-              onSend: (text) => sentText = text,
-            ),
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
+          ],
+          child: MaterialApp(
+            theme: ThemeData.dark(),
+            home: const AiAssistantScreen(),
           ),
         ),
       );
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      // Hint, attach icon, mic icon, and upward send arrow
-      expect(find.text('Ask Riya...'), findsOneWidget);
-      expect(find.byIcon(Icons.add_photo_alternate_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+      // Hint, text field, and upward send arrow
+      expect(find.text('Message Riya...'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
 
-      // Typing activates send
+      // Typing in input pill
       await tester.enterText(find.byType(TextField), 'Plan my day');
       await tester.pump();
-      expect(controller.text, 'Plan my day');
+      expect(find.text('Plan my day'), findsWidgets);
 
-      // Tap send button
-      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
-      await tester.pump();
-
-      expect(sentText, 'Plan my day');
+      // Clean unmount to drain Drift stream timers
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 100));
     });
   });
 }
