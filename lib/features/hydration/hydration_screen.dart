@@ -12,7 +12,6 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/animated_water_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import 'hydration_popup_dialog.dart';
 
 class HydrationScreen extends ConsumerStatefulWidget {
   const HydrationScreen({super.key});

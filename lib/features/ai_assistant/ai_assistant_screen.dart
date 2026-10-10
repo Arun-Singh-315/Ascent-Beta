@@ -31,11 +31,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   bool _hasInputText = false;
   final Set<int> _executedActionMessageIds = {};
 
-  List<String> get _quickPrompts => [
-    'Plan my day',
-    'Today\'s agenda',
-    'Medicines',
-  ];
 
   @override
   void initState() {

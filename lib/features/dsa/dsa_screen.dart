@@ -9,6 +9,7 @@ import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 
 class DsaScreen extends ConsumerStatefulWidget {
@@ -51,28 +52,21 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
   Widget build(BuildContext context) {
     final dsaDao = ref.watch(dsaDaoProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        title: Text(
-          'DSA Problem Tracker',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _filterNeedsRevisit ? Icons.bookmark_added_rounded : Icons.bookmark_border_rounded,
-              color: _filterNeedsRevisit ? context.accentSecondary : context.textPrimary,
-            ),
-            tooltip: 'Needs Revisit Filter',
-            onPressed: () {
-              setState(() => _filterNeedsRevisit = !_filterNeedsRevisit);
-            },
+    return AscentScaffold(
+      title: 'DSA Problem Tracker',
+      subtitle: 'LeetCode & algorithmic patterns',
+      actions: [
+        IconButton(
+          icon: Icon(
+            _filterNeedsRevisit ? Icons.bookmark_added_rounded : Icons.bookmark_border_rounded,
+            color: _filterNeedsRevisit ? context.accentSecondary : context.textPrimary,
           ),
-        ],
-      ),
+          tooltip: 'Needs Revisit Filter',
+          onPressed: () {
+            setState(() => _filterNeedsRevisit = !_filterNeedsRevisit);
+          },
+        ),
+      ],
       floatingActionButton: AscentButton.fab(
         icon: Icons.add_rounded,
         onPressed: () => _openAddProblemSheet(context),

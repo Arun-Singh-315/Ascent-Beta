@@ -686,7 +686,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         if (lecture.id == targetId) {
           return lecture.copyWith(
             elapsedSeconds: elapsed ?? lecture.elapsedSeconds,
-            isCompleted: isCompleted,
+            isCompleted: lecture.isCompleted || isCompleted,
             lastPlayedAt: DateTime.now(),
           );
         }

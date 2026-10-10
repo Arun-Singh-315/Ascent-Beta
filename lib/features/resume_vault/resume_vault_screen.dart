@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +17,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 
 class ResumeVaultScreen extends ConsumerStatefulWidget {
@@ -151,28 +151,17 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
     final resumeDao = ref.watch(resumeDaoProvider);
     final resumesStream = resumeDao.watchAllResumes();
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
-          onPressed: () => context.pop(),
+    return AscentScaffold(
+      title: 'Resume Vault',
+      subtitle: 'Version management & tailoring',
+      actions: [
+        IconButton(
+          icon: Icon(Icons.upload_file_rounded, color: context.accentPrimary, size: 26),
+          tooltip: 'Upload Version',
+          onPressed: () => _openUploadSheet(),
         ),
-        title: Text(
-          'Resume Vault',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.upload_file_rounded, color: context.accentPrimary, size: 26),
-            tooltip: 'Upload Version',
-            onPressed: () => _openUploadSheet(),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+        const SizedBox(width: 8),
+      ],
       body: StreamBuilder<List<Resume>>(
         stream: resumesStream,
         builder: (context, snapshot) {

@@ -154,7 +154,9 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: context.textPrimary,
+                    color: active.isCompleted ? context.textMuted : context.textPrimary,
+                    decoration: active.isCompleted ? TextDecoration.lineThrough : null,
+                    decorationColor: context.textMuted,
                     height: 1.25,
                   ),
                   textAlign: TextAlign.center,
@@ -327,16 +329,18 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     ),
-                    onPressed: () {
-                      notifier.markLectureCompleted(active.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Lecture ${active.id} completed! Progress saved.'),
-                          duration: const Duration(seconds: 2),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
+                    onPressed: active.isCompleted
+                        ? null
+                        : () {
+                            notifier.markLectureCompleted(active.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lecture ${active.id} completed! Progress saved.'),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
                     icon: Icon(
                       active.isCompleted ? Icons.check_circle_rounded : Icons.check_rounded,
                       color: active.isCompleted ? context.accentSecondary : context.textPrimary,
@@ -474,7 +478,9 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 12.5,
                                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                                    color: context.textPrimary,
+                                    color: lec.isCompleted ? context.textMuted : context.textPrimary,
+                                    decoration: lec.isCompleted ? TextDecoration.lineThrough : null,
+                                    decorationColor: context.textMuted,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,

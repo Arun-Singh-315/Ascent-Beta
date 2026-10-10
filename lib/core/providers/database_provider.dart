@@ -1,12 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
-import '../repository/local/local_application_repository.dart';
-import '../repository/local/local_consistency_repository.dart';
-import '../repository/local/local_dsa_repository.dart';
-import '../repository/local/local_task_repository.dart';
-import '../repository/local/local_user_profile_repository.dart';
-import '../repository/repository_interface.dart';
 import '../medicine/medicine_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -262,29 +256,6 @@ final allUpcomingInterviewsProvider = StreamProvider<List<UpcomingInterview>>((r
   return dao.watchUpcomingInterviews();
 });
 
-// ---------------------------------------------------------------------------
-// Repository providers (backed by local DAOs)
-// ---------------------------------------------------------------------------
-
-final userProfileRepositoryProvider = Provider<IUserProfileRepository>(
-  (ref) => LocalUserProfileRepository(ref.watch(userProfileDaoProvider)),
-);
-
-final taskRepositoryProvider = Provider<ITaskRepository>(
-  (ref) => LocalTaskRepository(ref.watch(taskDaoProvider)),
-);
-
-final applicationRepositoryProvider = Provider<IApplicationRepository>(
-  (ref) => LocalApplicationRepository(ref.watch(applicationDaoProvider)),
-);
-
-final consistencyRepositoryProvider = Provider<IConsistencyRepository>(
-  (ref) => LocalConsistencyRepository(ref.watch(consistencyDaoProvider)),
-);
-
-final dsaRepositoryProvider = Provider<IDsaRepository>(
-  (ref) => LocalDsaRepository(ref.watch(dsaDaoProvider)),
-);
 
 // ---------------------------------------------------------------------------
 // Reactive stream providers for screens (Home, Drawer, More, etc.)

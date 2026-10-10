@@ -10,7 +10,7 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/ai/ai_service.dart';
 import 'package:ascent/app/router.dart';
 import 'package:go_router/go_router.dart';
-import 'package:ascent/features/momentum/momentum_onboarding_screen.dart';
+import 'package:ascent/features/momentum/momentum_screen.dart';
 import 'package:ascent/features/medicine/medicine_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -174,7 +174,7 @@ void main() {
       expect(hasRoute(ascentRouter.configuration.routes, AscentRoutes.medicine), isTrue);
     });
 
-    testWidgets('MomentumOnboardingScreen renders without throwing GoException', (tester) async {
+    testWidgets('MomentumScreen renders without throwing GoException', (tester) async {
       SharedPreferences.setMockInitialValues({'onboarding_complete': true});
       final prefs = await SharedPreferences.getInstance();
 
@@ -185,13 +185,13 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(prefs),
           ],
           child: const MaterialApp(
-            home: MomentumOnboardingScreen(),
+            home: MomentumScreen(),
           ),
         ),
       );
       await tester.pumpAndSettle();
       expect(find.text('Momentum'), findsOneWidget);
-      expect(find.text('Personalized protocol assessment'), findsOneWidget);
+      expect(find.text('MOMENTUM 2.0'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));

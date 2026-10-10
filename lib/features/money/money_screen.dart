@@ -8,7 +8,6 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
-import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -350,67 +349,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 ),
               ),
 
-              const SizedBox(height: 14),
-
-              // ── JARVIS Financial Copilot Insight ─────────────────────────
-              AscentCard(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0096C7).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.blur_on_rounded, color: Color(0xFF00B4D8), size: 18),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                '${ref.watch(assistantNameProvider).toUpperCase()} FINANCIAL COPILOT',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: const Color(0xFF00B4D8),
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.0,
-                                  fontSize: 10,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                remainingBudget > 0
-                                    ? '₹${remainingBudget.toStringAsFixed(0)} room left'
-                                    : 'Budget exceeded',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: remainingBudget > 0 ? const Color(0xFF5FA070) : context.stateDanger,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            todaySpend > 0
-                                ? 'Today you\'ve spent ₹${todaySpend.toStringAsFixed(0)}. Monthly burn is ₹${monthSpend.toStringAsFixed(0)} of ₹${monthlyLimit.toStringAsFixed(0)}. Discretionary spending is pacing within targets.'
-                                : 'Zero spending recorded today. You are conserving capital effectively, keeping your monthly savings on course.',
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: context.textPrimary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
               const SizedBox(height: 16),
 
               // Quick Action Bar
@@ -425,7 +363,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                           Text('Today\'s Spend', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
                           const SizedBox(height: 4),
                           Text(
-                            '₹${(todaySpendAsync.value ?? 0.0).toStringAsFixed(0)}',
+                            '₹${todaySpend.toStringAsFixed(0)}',
                             style: AscentTextStyles.headlineMedium.copyWith(
                               color: context.textPrimary,
                               fontWeight: FontWeight.bold,

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
 import '../chai_break_provider.dart';
 
 class AmbientSoundscapeBar extends StatefulWidget {
@@ -72,9 +74,10 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
 
   void _showSoundscapeSelector(BuildContext context) {
     HapticFeedback.lightImpact();
+    final g = context.glass;
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF181C22),
+      backgroundColor: context.bgSurfaceElevated,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -93,13 +96,13 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                     Text(
                       'Choose Break Audio & Music',
                       style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
+                        color: context.textPrimary,
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                      icon: Icon(Icons.close_rounded, color: context.textMuted),
                       onPressed: () => Navigator.of(ctx).pop(),
                     ),
                   ],
@@ -109,7 +112,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                   'Select an offline atmospheric soundscape or open any song from your system',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
-                    color: Colors.white54,
+                    color: context.textMuted,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -152,7 +155,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                                 Text(
                                   'Play from System / Device',
                                   style: GoogleFonts.plusJakartaSans(
-                                    color: Colors.white,
+                                    color: context.textPrimary,
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -165,7 +168,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                                   style: GoogleFonts.plusJakartaSans(
                                     color: widget.customAudioName != null
                                         ? const Color(0xFF34D399)
-                                        : Colors.white60,
+                                        : context.textMuted,
                                     fontSize: 11.5,
                                     fontWeight: widget.customAudioName != null
                                         ? FontWeight.w600
@@ -217,8 +220,8 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                                 Navigator.of(ctx).pop();
                               },
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white70,
-                                side: const BorderSide(color: Colors.white24),
+                                foregroundColor: context.textMuted,
+                                side: BorderSide(color: context.divider),
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -240,7 +243,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.1,
-                    color: Colors.white54,
+                    color: context.textMuted,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -269,10 +272,10 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? accent.withValues(alpha: 0.16)
-                                : const Color(0xFF222832),
+                                : context.bgSurface,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isSelected ? accent : Colors.white.withValues(alpha: 0.08),
+                              color: isSelected ? accent : g.edge,
                               width: 1,
                             ),
                           ),
@@ -300,7 +303,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                                     Text(
                                       preset.title,
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white,
+                                        color: context.textPrimary,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -309,7 +312,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                                     Text(
                                       preset.description,
                                       style: GoogleFonts.plusJakartaSans(
-                                        color: Colors.white60,
+                                        color: context.textMuted,
                                         fontSize: 11.5,
                                       ),
                                     ),
@@ -352,7 +355,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E232B).withValues(alpha: 0.85),
+            color: context.glass.fill,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: accent.withValues(alpha: 0.45),
@@ -401,7 +404,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: context.textPrimary,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -414,7 +417,7 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                       subtitle,
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
-                        color: Colors.white60,
+                        color: context.textMuted,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -460,14 +463,14 @@ class _AmbientSoundscapeBarState extends State<AmbientSoundscapeBar>
                     padding: const EdgeInsets.all(4),
                     child: Icon(
                       widget.isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                      color: widget.isMuted ? Colors.white38 : accent,
+                      color: widget.isMuted ? context.textMuted : accent,
                       size: 19,
                     ),
                   ),
                 ),
               ],
               const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down_rounded, color: Colors.white54, size: 22),
+              Icon(Icons.arrow_drop_down_rounded, color: context.textMuted, size: 22),
             ],
           ),
         ),

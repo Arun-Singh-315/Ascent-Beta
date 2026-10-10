@@ -140,7 +140,7 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('QuickModulesNavHub renders Momentum progress, Medicine, Hydration and Chai Break', (tester) async {
+    testWidgets('QuickModulesNavHub renders Medicine, Hydration and Chai Break', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(const Scaffold(body: QuickModulesNavHub())),
       );
@@ -149,7 +149,6 @@ void main() {
       expect(find.text('Hydration'), findsOneWidget);
       expect(find.text('250'), findsOneWidget);
       expect(find.text('Medicine'), findsOneWidget);
-      expect(find.text('Momentum'), findsOneWidget);
       expect(find.text('Chai & Coffee Break'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());

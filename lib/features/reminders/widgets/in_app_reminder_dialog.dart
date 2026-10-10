@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/glass_theme.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../../../core/providers/database_provider.dart';
@@ -112,11 +114,14 @@ class InAppReminderDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    final infoColor = context.accentInfo;
+
     return Dialog(
-      backgroundColor: const Color(0xFF161A22),
+      backgroundColor: context.bgSurfaceElevated,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: const Color(0xFF00B4D8).withValues(alpha: 0.3), width: 1.2),
+        side: BorderSide(color: infoColor.withValues(alpha: 0.3), width: 1.2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(22),
@@ -129,12 +134,12 @@ class InAppReminderDialog extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00B4D8).withValues(alpha: 0.15),
+                    color: infoColor.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.alarm_on_rounded,
-                    color: Color(0xFF00B4D8),
+                    color: infoColor,
                     size: 24,
                   ),
                 ),
@@ -149,7 +154,7 @@ class InAppReminderDialog extends ConsumerWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 1.1,
-                          color: const Color(0xFF00B4D8),
+                          color: infoColor,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -157,14 +162,14 @@ class InAppReminderDialog extends ConsumerWidget {
                         'Time for your planned task',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          color: Colors.white54,
+                          color: context.textMuted,
                         ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white38, size: 20),
+                  icon: Icon(Icons.close_rounded, color: context.textMuted, size: 20),
                   onPressed: () => Navigator.of(context).pop(),
                   tooltip: 'Dismiss',
                 ),
@@ -176,16 +181,16 @@ class InAppReminderDialog extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
+                color: g.fill,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(color: g.edge),
               ),
               child: Text(
                 reminder.title,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: context.textPrimary,
                   height: 1.3,
                 ),
               ),
@@ -199,7 +204,7 @@ class InAppReminderDialog extends ConsumerWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.0,
-                color: Colors.white38,
+                color: context.textMuted,
               ),
             ),
             const SizedBox(height: 8),
@@ -210,8 +215,8 @@ class InAppReminderDialog extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => _snooze(context, ref, const Duration(minutes: 10)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white12),
+                      foregroundColor: context.textPrimary,
+                      side: BorderSide(color: context.divider),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -226,8 +231,8 @@ class InAppReminderDialog extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => _snooze(context, ref, const Duration(hours: 1)),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white12),
+                      foregroundColor: context.textPrimary,
+                      side: BorderSide(color: context.divider),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -242,8 +247,8 @@ class InAppReminderDialog extends ConsumerWidget {
                   child: OutlinedButton(
                     onPressed: () => _snoozeTomorrow(context, ref),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white12),
+                      foregroundColor: context.textPrimary,
+                      side: BorderSide(color: context.divider),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
@@ -266,7 +271,7 @@ class InAppReminderDialog extends ConsumerWidget {
                 style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF10B981),
+                backgroundColor: context.stateSuccess,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

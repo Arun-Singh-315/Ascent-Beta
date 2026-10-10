@@ -12,6 +12,7 @@ import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../today/add_activity_sheet.dart';
 import 'pipeline_screen.dart';
 
@@ -108,19 +109,17 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
       stream: appDao.watchApplicationById(widget.applicationId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-          return Scaffold(
-            backgroundColor: context.bgBase,
-            appBar: AppBar(backgroundColor: context.bgBase, elevation: 0),
-            body: const Center(child: CircularProgressIndicator()),
+          return const AscentScaffold(
+            title: 'Application Details',
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 
         final app = snapshot.data;
         if (app == null) {
-          return Scaffold(
-            backgroundColor: context.bgBase,
-            appBar: AppBar(backgroundColor: context.bgBase, elevation: 0),
-            body: const Center(child: Text('Application not found')),
+          return const AscentScaffold(
+            title: 'Application Details',
+            body: Center(child: Text('Application not found')),
           );
         }
 
@@ -129,39 +128,32 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
           _nextActionDate = app.nextActionDate;
         }
 
-        return Scaffold(
-          backgroundColor: context.bgBase,
-          appBar: AppBar(
-            backgroundColor: context.bgBase,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.pop(),
+        return AscentScaffold(
+          title: app.company,
+          subtitle: app.role,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit Application',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: context.bgSurface,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  ),
+                  builder: (ctx) => AddApplicationSheet(existing: app),
+                );
+              },
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                tooltip: 'Edit Application',
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: context.bgSurface,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                    ),
-                    builder: (ctx) => AddApplicationSheet(existing: app),
-                  );
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline_rounded),
-                color: context.stateDanger,
-                tooltip: 'Delete Application',
-                onPressed: () => _confirmDelete(context),
-              ),
-            ],
-          ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              color: context.stateDanger,
+              tooltip: 'Delete Application',
+              onPressed: () => _confirmDelete(context),
+            ),
+          ],
           body: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             children: [

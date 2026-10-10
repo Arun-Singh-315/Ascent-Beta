@@ -116,7 +116,7 @@ class MoreScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 2. Intelligence & Mind ────────────────────────────────────────
-          _GroupHeader(title: 'INTELLIGENCE & COPILOT', dotColor: g.clay),
+          _GroupHeader(title: 'INTELLIGENCE & ASSISTANT', dotColor: g.clay),
           AscentCard(
             padding: EdgeInsets.zero,
             child: Column(

@@ -173,5 +173,53 @@ void main() {
 
       expect(foundBlackBorder, isTrue, reason: 'Thought card container must have crisp black border in day mode');
     });
+
+    testWidgets('Thought card displays timestamp at the top header above thought content', (tester) async {
+      final testDate = DateTime(2026, 10, 11, 14, 30);
+      final thought = Thought(
+        id: 1,
+        content: 'Deep reflective insight on architecture.',
+        mood: 'idea',
+        isPinned: false,
+        isArchived: false,
+        isCompleted: false,
+        colorHex: '#6366F1',
+        createdAt: testDate,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: ThemeData.dark().copyWith(
+              extensions: const [AscentGlass.dark],
+            ),
+            home: Scaffold(
+              body: ThoughtCardBubble(
+                thought: thought,
+                index: 0,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final timeFinder = find.text('Oct 11 • 2:30 PM');
+      final contentFinder = find.text('Deep reflective insight on architecture.');
+
+      expect(timeFinder, findsOneWidget);
+      expect(contentFinder, findsOneWidget);
+
+      final timeTop = tester.getTopLeft(timeFinder).dy;
+      final contentTop = tester.getTopLeft(contentFinder).dy;
+
+      expect(
+        timeTop < contentTop,
+        isTrue,
+        reason: 'Timestamp ($timeTop) must be positioned above thought content ($contentTop) at the top of the card',
+      );
+    });
   });
 }
+

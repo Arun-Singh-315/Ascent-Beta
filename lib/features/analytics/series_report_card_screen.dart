@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:drift/drift.dart' as drift;
 
@@ -10,6 +9,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 
 class SeriesReportCardScreen extends ConsumerStatefulWidget {
@@ -107,20 +107,9 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
     final seriesDao = ref.watch(seriesDaoProvider);
     final taskDao = ref.watch(taskDaoProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Series Report Card',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-      ),
+    return AscentScaffold(
+      title: 'Series Report Card',
+      subtitle: 'Velocity breakdown & consistency metrics',
       body: FutureBuilder<Series?>(
         future: seriesDao.getSeriesById(widget.seriesId),
         builder: (context, seriesSnapshot) {

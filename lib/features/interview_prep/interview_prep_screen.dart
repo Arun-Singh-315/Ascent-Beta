@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
@@ -10,6 +9,7 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 
 class InterviewPrepScreen extends ConsumerStatefulWidget {
@@ -335,50 +335,33 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
         ? prepDao.watchQuestionsForApplication(_filterApplicationId!)
         : prepDao.watchAllQuestions();
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
+    return AscentScaffold(
+      title: 'Interview Prep',
+      subtitle: 'Technical rounds & question bank',
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: context.accentPrimary,
+        unselectedLabelColor: context.textMuted,
+        indicatorColor: context.accentPrimary,
+        tabs: const [
+          Tab(text: 'Upcoming Rounds'),
+          Tab(text: 'Question Bank'),
+        ],
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.add_rounded, color: context.accentPrimary, size: 28),
+          tooltip: _tabController.index == 0 ? 'Schedule Interview' : 'Add Question',
           onPressed: () {
-            if (context.canPop()) {
-              context.pop();
+            if (_tabController.index == 0) {
+              _openAddEditInterviewSheet();
             } else {
-              context.go('/home');
+              _openAddEditDialog();
             }
           },
         ),
-        title: Text(
-          'Interview Prep',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: context.accentPrimary,
-          unselectedLabelColor: context.textMuted,
-          indicatorColor: context.accentPrimary,
-          tabs: const [
-            Tab(text: 'Upcoming Rounds'),
-            Tab(text: 'Question Bank'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add_rounded, color: context.accentPrimary, size: 28),
-            tooltip: _tabController.index == 0 ? 'Schedule Interview' : 'Add Question',
-            onPressed: () {
-              if (_tabController.index == 0) {
-                _openAddEditInterviewSheet();
-              } else {
-                _openAddEditDialog();
-              }
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+        const SizedBox(width: 8),
+      ],
       body: TabBarView(
         controller: _tabController,
         children: [

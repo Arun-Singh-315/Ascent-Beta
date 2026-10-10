@@ -154,7 +154,9 @@ class LearningHubCard extends ConsumerWidget {
                                 ? 'Lecture ${active.id}: ${active.title}'
                                 : 'Start learning',
                             style: AscentTextStyles.homeHeadline.copyWith(
-                              color: g.ink,
+                              color: (hasStarted && active.isCompleted) ? g.inkMuted : g.ink,
+                              decoration: (hasStarted && active.isCompleted) ? TextDecoration.lineThrough : null,
+                              decorationColor: g.inkMuted,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w700,
                             ),

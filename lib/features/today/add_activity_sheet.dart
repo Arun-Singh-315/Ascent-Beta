@@ -11,6 +11,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
 
 class AddActivitySheet extends ConsumerStatefulWidget {
   final Task? existingTask;
@@ -722,18 +723,30 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           ),
                         );
                         if (confirm == true && mounted) {
+                          final taskBackup = widget.existingTask!;
                           final dummyItem = TodayActivityItem(
-                            id: 'task_${widget.existingTask!.id}',
-                            title: widget.existingTask!.title,
+                            id: 'task_${taskBackup.id}',
+                            title: taskBackup.title,
                             sourceType: 'task',
                             status: TodayActivityStatus.notStarted,
                             elapsedSecondsToday: 0,
-                            linkedTaskId: widget.existingTask!.id,
+                            linkedTaskId: taskBackup.id,
                             categoryTag: 'Task',
                             kind: ActivityKind.todo,
                           );
                           await deleteTodayActivity(ref, dummyItem);
                           nav.pop();
+                          if (context.mounted) {
+                            AscentSnackBar.undo(
+                              context,
+                              message: 'Activity "${taskBackup.title}" deleted',
+                              onUndo: () async {
+                                HapticFeedback.lightImpact();
+                                await ref.read(taskDaoProvider).insertTask(taskBackup.toCompanion(true));
+                                await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId(dummyItem.id);
+                              },
+                            );
+                          }
                         }
                       },
                       style: OutlinedButton.styleFrom(

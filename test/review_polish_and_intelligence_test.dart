@@ -5,20 +5,17 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
-import 'package:ascent/core/momentum/momentum_service.dart';
 import 'package:ascent/shared/widgets/ascent_logo.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late AppDatabase db;
-  late MomentumDao momentumDao;
   late WaterDao waterDao;
   late ReminderDao reminderDao;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    momentumDao = MomentumDao(db);
     waterDao = WaterDao(db);
     reminderDao = ReminderDao(db);
   });
@@ -168,36 +165,6 @@ void main() {
     });
   });
 
-  group('Momentum Time Intelligence & Day 1 Adaptation Tests', () {
-    test('Adapts past Day 1 commitments when challenge starts mid-day', () async {
-      final service = MomentumService(dao: momentumDao);
-
-      // Start challenge
-      final challengeId = await service.startChallenge(
-        currentWeightKg: 75.0,
-        targetWeightKg: 70.0,
-        targetWakeMinutes: 360, // 06:00 AM
-        baselineWakeMinutes: 480, // 08:00 AM
-      );
-
-      final commitments = await momentumDao.getAllCommitments(challengeId);
-      final day1Commitments = commitments.where((c) => c.dayNumber == 1).toList();
-
-      final now = DateTime.now();
-      final currentMinutes = now.hour * 60 + now.minute;
-
-      for (final c in day1Commitments) {
-        if (c.scheduledTimeMinutes != null && c.scheduledTimeMinutes! < currentMinutes) {
-          // Commitments before current time must be auto-completed and marked as adapted
-          expect(c.isCompleted, isTrue, reason: 'Commitment ${c.title} was scheduled in past and should be completed');
-          expect(c.wasAdapted, isTrue, reason: 'Commitment ${c.title} was scheduled in past and should be marked adapted');
-        } else if (c.scheduledTimeMinutes != null && c.scheduledTimeMinutes! > currentMinutes) {
-          // Future commitments today must NOT be auto-completed
-          expect(c.isCompleted, isFalse, reason: 'Future commitment ${c.title} should remain uncompleted');
-        }
-      }
-    });
-  });
 
   group('Ascent Logo Brand Assets & Widget Tests', () {
     test('All brand logo asset files exist and have non-zero size', () {

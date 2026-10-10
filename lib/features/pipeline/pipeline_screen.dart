@@ -12,6 +12,7 @@ import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'email_invite_parser_sheet.dart';
 
@@ -100,33 +101,26 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
   Widget build(BuildContext context) {
     final appDao = ref.watch(applicationDaoProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        title: Text(
-          'Application Pipeline',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+    return AscentScaffold(
+      title: 'Application Pipeline',
+      subtitle: 'Job hunt stages & interview tracker',
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.mark_email_read_outlined),
+          tooltip: 'Summarize Recruiter Email',
+          onPressed: () => _openEmailParserSheet(context),
         ),
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.mark_email_read_outlined),
-            tooltip: 'Summarize Recruiter Email',
-            onPressed: () => _openEmailParserSheet(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            tooltip: 'Search',
-            onPressed: () {
-              showSearch(
-                context: context,
-                delegate: _ApplicationSearchDelegate(ref),
-              );
-            },
-          ),
-        ],
-      ),
+        IconButton(
+          icon: const Icon(Icons.search_rounded),
+          tooltip: 'Search',
+          onPressed: () {
+            showSearch(
+              context: context,
+              delegate: _ApplicationSearchDelegate(ref),
+            );
+          },
+        ),
+      ],
       floatingActionButton: AscentButton.fab(
         icon: Icons.add_rounded,
         onPressed: () => _openAddApplicationSheet(context),

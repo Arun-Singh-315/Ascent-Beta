@@ -86,9 +86,9 @@ class ThoughtWallScreen extends ConsumerStatefulWidget {
 }
 
 class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
-  String _viewToggle = 'today'; // 'today', 'upcoming', 'history'
+  String _viewToggle = 'today'; // 'today', 'history'
   String _categoryFilter = 'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
-  String _activeFilter = 'all';
+  final String _activeFilter = 'all';
   bool _isSelectionMode = false;
   final Set<int> _selectedIds = <int>{};
 
@@ -551,9 +551,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                       if (_categoryFilter == 'archived') return t.isArchived;
                       if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
                       if (_viewToggle == 'today') {
-                        return !t.isArchived && t.mood != 'future' && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
-                      } else if (_viewToggle == 'upcoming') {
-                        return !t.isArchived && t.mood == 'future';
+                        return !t.isArchived && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
                       } else {
                         return t.isArchived || t.createdAt.isBefore(todayStart);
                       }
@@ -589,19 +587,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   onPressed: _exitSelectionMode,
                 ),
               ]
-            : [
-                IconButton(
-                  icon: Icon(Icons.add_comment_rounded, color: g.clay),
-                  tooltip: 'Drop a thought',
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    DropThoughtSheet.show(context);
-                  },
-                ),
-              ],
+            : null,
         body: Column(
           children: [
-            // Segmented 3-Way Toggle: Today | Upcoming | History
+            // Segmented 2-Way Toggle: Today | History & Archive
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               padding: const EdgeInsets.all(4),
@@ -613,7 +602,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               child: Row(
                 children: [
                   _buildViewSegment('today', "Today", Icons.today_rounded, g),
-                  _buildViewSegment('upcoming', "Upcoming", Icons.schedule_send_rounded, g),
                   _buildViewSegment('history', "History & Archive", Icons.history_rounded, g),
                 ],
               ),
@@ -626,9 +614,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               child: Row(
                 children: [
                   Text(
-                    _viewToggle == 'today'
-                        ? 'TODAY\'S REFLECTIONS'
-                        : (_viewToggle == 'upcoming' ? 'UPCOMING & FUTURE' : 'PAST & ARCHIVED'),
+                    _viewToggle == 'today' ? 'TODAY\'S REFLECTIONS' : 'PAST & ARCHIVED',
                     style: AscentTextStyles.labelSmall.copyWith(
                       color: context.textMuted,
                       letterSpacing: 1.0,
@@ -704,9 +690,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
 
                     if (_viewToggle == 'today') {
-                      return !t.isArchived && t.mood != 'future' && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
-                    } else if (_viewToggle == 'upcoming') {
-                      return !t.isArchived && t.mood == 'future';
+                      return !t.isArchived && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
                     } else {
                       return t.isArchived || t.createdAt.isBefore(todayStart);
                     }
@@ -718,9 +702,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                           ? 'No archived reflections'
                           : (_viewToggle == 'today'
                               ? 'No thoughts logged today'
-                              : (_viewToggle == 'upcoming'
-                                  ? 'No upcoming or future notes'
-                                  : 'No past or archived reflections')),
+                              : 'No past or archived reflections'),
                       subtitle: _categoryFilter == 'archived'
                           ? 'Reflections you archive from the wall will be safely stored here.'
                           : 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
@@ -1013,7 +995,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top meta row
+                    // Top meta header: mood on left, timestamp & action menu on right
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -1047,75 +1029,17 @@ class ThoughtCardBubble extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        if (thought.isCompleted) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: context.accentPrimary.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '✓ Done',
-                              style: TextStyle(
-                                color: context.accentPrimary,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (thought.isPinned) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: context.accentPrimary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.push_pin_rounded, size: 9, color: context.accentPrimary),
-                                const SizedBox(width: 2),
-                                Text(
-                                  'PINNED',
-                                  style: AscentTextStyles.labelSmall.copyWith(
-                                    color: context.accentPrimary,
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                        if (thought.isArchived) ...[
-                          const SizedBox(width: 5),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.archive_outlined, size: 9, color: Colors.amber),
-                                const SizedBox(width: 2),
-                                Text(
-                                  'ARCHIVED',
-                                  style: AscentTextStyles.labelSmall.copyWith(
-                                    color: Colors.amber,
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                         const Spacer(),
+                        // Top timestamp
+                        Text(
+                          timeStr,
+                          style: AscentTextStyles.labelSmall.copyWith(
+                            color: context.textMuted,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
                         // Right actions (quick unarchive & popup menu)
                         if (thought.isArchived) ...[
                           IconButton(
@@ -1213,7 +1137,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                               child: Row(
                                 children: [
                                   Icon(thought.isCompleted ? Icons.check_circle_outline_rounded : Icons.check_circle_rounded, size: 16),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Text(thought.isCompleted ? 'Mark as undone' : 'Mark as done'),
                                 ],
                               ),
@@ -1233,7 +1157,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                               child: Row(
                                 children: [
                                   Icon(thought.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, size: 16),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: 8),
                                   Text(thought.isArchived ? 'Unarchive' : 'Archive thought'),
                                 ],
                               ),
@@ -1265,14 +1189,111 @@ class ThoughtCardBubble extends ConsumerWidget {
                       ],
                     ),
 
-                    // Optional prompt question
+                    // Status badges row (if completed, pinned, or archived)
+                    if (thought.isCompleted || thought.isPinned || thought.isArchived) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        children: [
+                          if (thought.isCompleted)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: context.accentPrimary.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '✓ Done',
+                                style: TextStyle(
+                                  color: context.accentPrimary,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          if (thought.isPinned)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: context.accentPrimary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.push_pin_rounded, size: 9, color: context.accentPrimary),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    'PINNED',
+                                    style: AscentTextStyles.labelSmall.copyWith(
+                                      color: context.accentPrimary,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (thought.isArchived)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.amber.withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.archive_outlined, size: 9, color: Colors.amber),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    'ARCHIVED',
+                                    style: AscentTextStyles.labelSmall.copyWith(
+                                      color: Colors.amber,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+
+                    // Optional prompt question banner
                     if (thought.promptQuestion != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Q: ${thought.promptQuestion}',
-                        style: AscentTextStyles.bodySmall.copyWith(
-                          color: context.textMuted,
-                          fontStyle: FontStyle.italic,
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: moodColor.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border(
+                            left: BorderSide(
+                              color: moodColor.withValues(alpha: 0.5),
+                              width: 2.5,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.help_outline_rounded, size: 13, color: moodColor),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                thought.promptQuestion!,
+                                style: AscentTextStyles.bodySmall.copyWith(
+                                  color: context.textMuted,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 12,
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -1288,29 +1309,6 @@ class ThoughtCardBubble extends ConsumerWidget {
                         height: 1.45,
                         fontSize: 14.5,
                       ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // Bottom meta row: timestamp on left, share on right
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          timeStr,
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: context.textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.share_outlined, size: 16, color: context.textMuted),
-                          tooltip: 'Share via WhatsApp & apps',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                          onPressed: () => shareThought(thought),
-                        ),
-                      ],
                     ),
                   ],
               ),

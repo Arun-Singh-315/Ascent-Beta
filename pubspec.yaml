@@ -43,9 +43,6 @@ dependencies:
 
   # ── Animations ──────────────────────────────────────────────────────────────
   shimmer: ^4.0.0
-  flutter_confetti: ^0.9.2
-  motor: ^1.1.0
-  heroine: ^0.7.2
 
   # ── Utilities ───────────────────────────────────────────────────────────────
   shared_preferences: ^2.3.3

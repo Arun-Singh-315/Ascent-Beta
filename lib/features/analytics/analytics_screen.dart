@@ -12,6 +12,7 @@ import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
@@ -158,24 +159,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     final seriesDao = ref.watch(seriesDaoProvider);
     final profileDao = ref.watch(userProfileDaoProvider);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        title: Text(
-          'Analytics & Velocity',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+    return AscentScaffold(
+      title: 'Analytics & Velocity',
+      subtitle: 'Study cadence & career velocity',
+      actions: [
+        IconButton(
+          icon: Icon(Icons.playlist_add_rounded, color: context.accentPrimary, size: 26),
+          tooltip: 'New Series',
+          onPressed: () => _openCreateSeriesSheet(context),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.playlist_add_rounded, color: context.accentPrimary, size: 26),
-            tooltip: 'New Series',
-            onPressed: () => _openCreateSeriesSheet(context),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+        const SizedBox(width: 8),
+      ],
       body: StreamBuilder<List<ConsistencyLog>>(
         stream: consistencyDao.watchAllLogs(),
         builder: (context, logSnapshot) {

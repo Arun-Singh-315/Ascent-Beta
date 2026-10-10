@@ -10,7 +10,6 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
-import '../../core/providers/settings_provider.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
@@ -340,42 +339,6 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // JARVIS Live Coach Pill
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0096C7).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF0096C7).withValues(alpha: 0.25)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.blur_on_rounded, color: Color(0xFF00B4D8), size: 16),
-                            const SizedBox(width: 8),
-                            Builder(
-                              builder: (context) {
-                                final assistantName = ref.watch(assistantNameProvider);
-                                return Expanded(
-                                  child: Text(
-                                    walkState.status == WalkTrackingStatus.tracking
-                                        ? '$assistantName: Cadence steady • Pacing ${walkState.formattedPace}/km • ${(walkState.distanceMeters / 1000.0).toStringAsFixed(2)} km covered'
-                                        : (walkState.status == WalkTrackingStatus.paused
-                                            ? '$assistantName: Session paused. Catch your breath.'
-                                            : '$assistantName: Ready for outdoor activity. Target: ${(targetDistanceKm).toStringAsFixed(1)} km.'),
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: const Color(0xFF0096C7),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 11.5,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-
                       // Metric row: Distance, Time, Pace, Calories
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,

@@ -25,7 +25,6 @@ import '../features/reminders/reminders_screen.dart';
 import '../features/money/money_screen.dart';
 import '../features/walk/walk_screen.dart';
 import '../features/momentum/momentum_screen.dart';
-import '../features/momentum/momentum_onboarding_screen.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/medicine/medicine_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
@@ -170,12 +169,12 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.momentumOnboarding,
-      builder: (context, state) => const MomentumOnboardingScreen(),
+      builder: (context, state) => const MomentumScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.momentumOnboardingAlt,
-      builder: (context, state) => const MomentumOnboardingScreen(),
+      builder: (context, state) => const MomentumScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

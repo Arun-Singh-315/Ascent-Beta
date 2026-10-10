@@ -14,6 +14,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../today/add_activity_sheet.dart';
+import '../../../shared/widgets/ascent_snack_bar.dart';
 
 /// Redesigned task row matching Ascent Home Redesign:
 /// - 44dp hit area circular checkbox
@@ -32,6 +33,9 @@ class ActivityRowItem extends ConsumerWidget {
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
+    final isTimed = activity.kind == ActivityKind.duration ||
+        (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
+        activity.sourceType == 'lecture';
 
     return Dismissible(
       key: ValueKey(activity.id),
@@ -46,27 +50,18 @@ class ActivityRowItem extends ConsumerWidget {
         await deleteTodayActivity(ref, activity);
         if (context.mounted) {
           final isLecture = activity.sourceType == 'lecture';
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                isLecture
-                    ? 'Removed from today\'s activities'
-                    : 'Activity "${activity.title}" deleted',
-              ),
-              action: taskBackup != null
-                  ? SnackBarAction(
-                      label: 'UNDO',
-                      textColor: context.accentPrimary,
-                      onPressed: () async {
-                        HapticFeedback.lightImpact();
-                        await taskDao.insertTask(taskBackup!.toCompanion(true));
-                      },
-                    )
-                  : null,
-              duration: const Duration(seconds: 4),
-              behavior: SnackBarBehavior.floating,
-            ),
+          AscentSnackBar.undo(
+            context,
+            message: isLecture
+                ? 'Removed from today\'s activities'
+                : 'Activity "${activity.title}" deleted',
+            onUndo: () async {
+              HapticFeedback.lightImpact();
+              if (taskBackup != null) {
+                await taskDao.insertTask(taskBackup.toCompanion(true));
+              }
+              await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId(activity.id);
+            },
           );
         }
       },
@@ -111,16 +106,18 @@ class ActivityRowItem extends ConsumerWidget {
                   onTap: () async {
                     if (isDone) {
                       // Once completed, it cannot be undone or brought to active (one way only).
+                      AscentSnackBar.show(
+                        context,
+                        message: 'Completed items are finished and cannot be reopened.',
+                      );
                       return;
                     }
                     HapticFeedback.mediumImpact();
-                    if (activity.sourceType == 'lecture') {
-                      final lectureId = int.tryParse(activity.id.replaceFirst('lecture_', '')) ??
-                          ref.read(learningHubProvider).activeLectureId;
-                      ref.read(learningHubProvider.notifier).markLectureCompleted(
-                            lectureId,
-                            completed: true,
-                          );
+                    if (isTimed) {
+                      AscentSnackBar.show(
+                        context,
+                        message: 'Timed activities complete automatically when the focus timer ends.',
+                      );
                       return;
                     }
                     if (activity.linkedTaskId != null) {
@@ -149,7 +146,13 @@ class ActivityRowItem extends ConsumerWidget {
                               size: 16,
                               color: Colors.white,
                             )
-                          : null,
+                          : (isTimed
+                              ? Icon(
+                                  Icons.timer_outlined,
+                                  size: 13,
+                                  color: isRunning ? g.clay : g.inkMuted,
+                                )
+                              : null),
                     ),
                   ),
                 ),
@@ -504,13 +507,20 @@ class ActivityRowItem extends ConsumerWidget {
                         onPressed: () async {
                           HapticFeedback.mediumImpact();
                           Navigator.of(ctx).pop();
-                          if (activity.sourceType == 'lecture') {
-                            final lectureId = int.tryParse(activity.id.replaceFirst('lecture_', '')) ??
-                                ref.read(learningHubProvider).activeLectureId;
-                            ref.read(learningHubProvider.notifier).markLectureCompleted(
-                                  lectureId,
-                                  completed: true,
-                                );
+                          final isTimedItem = activity.kind == ActivityKind.duration ||
+                              (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
+                              activity.sourceType == 'lecture';
+                          if (isTimedItem) {
+                            if (activity.sourceType == 'lecture') {
+                              LectureFocusPlayerSheet.show(context);
+                            } else {
+                              await ref.read(timeTrackingProvider.notifier).switchToTask(
+                                    title: activity.title,
+                                    taskId: activity.linkedTaskId,
+                                    sourceType: activity.sourceType,
+                                    autoStart: true,
+                                  );
+                            }
                             return;
                           }
                           if (activity.linkedTaskId != null) {
@@ -526,7 +536,13 @@ class ActivityRowItem extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                         ),
-                        child: const Text('Mark Done'),
+                        child: Text(
+                          (activity.kind == ActivityKind.duration ||
+                                  (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
+                                  activity.sourceType == 'lecture')
+                              ? 'Start Focus'
+                              : 'Mark Done',
+                        ),
                       )
                     else
                       FilledButton(

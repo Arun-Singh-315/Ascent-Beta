@@ -498,7 +498,7 @@ class _TaskItemTile extends ConsumerWidget {
               context,
               message: 'Task deleted',
               onUndo: () async {
-                await taskDao.insertTask(
+                final newId = await taskDao.insertTask(
                   TaskTableCompanion.insert(
                     title: task.title,
                     notes: drift.Value(task.notes),
@@ -511,6 +511,8 @@ class _TaskItemTile extends ConsumerWidget {
                     estimatedMinutes: drift.Value(task.estimatedMinutes),
                   ),
                 );
+                await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId('task_${task.id}');
+                await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId('task_$newId');
               },
             );
           }
@@ -939,7 +941,4 @@ class _TaskItemTile extends ConsumerWidget {
     );
   }
 }
-
-// ---------------------------------------------------------------------------
-// Jarvis Task Coach Card
 

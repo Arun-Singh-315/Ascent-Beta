@@ -6,8 +6,10 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/streak/study_streak_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 
 class ConsistencyScreen extends ConsumerStatefulWidget {
   const ConsistencyScreen({super.key});
@@ -30,20 +32,16 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
   Widget build(BuildContext context) {
     final consistencyDao = ref.watch(consistencyDaoProvider);
     final taskDao = ref.watch(taskDaoProvider);
+    final studyStreak = ref.watch(studyStreakProvider);
+    final legacyStreak = ref.watch(currentStreakStreamProvider).value ?? 0;
+    final currentStreak = studyStreak.displayStreakDays > 0 ? studyStreak.displayStreakDays : legacyStreak;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        title: Text(
-          'Consistency Tracker',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
-        ),
-        backgroundColor: context.bgBase,
-        elevation: 0,
-      ),
+    return AscentScaffold(
+      title: 'Consistency Tracker',
+      subtitle: 'Daily habits & study streak',
       body: StreamBuilder<List<ConsistencyLog>>(
         stream: consistencyDao.watchAllLogs(),
         builder: (context, snapshot) {
@@ -53,14 +51,9 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
               DateTime(log.date.year, log.date.month, log.date.day): log
           };
 
-          return StreamBuilder<int>(
-            stream: consistencyDao.watchCurrentStreak(),
-            builder: (context, streakSnapshot) {
-              final currentStreak = streakSnapshot.data ?? 0;
-
-              return ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                children: [
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            children: [
                   // ── Streak Stats Cards ─────────────────────────────────
                   Row(
                     children: [
@@ -214,9 +207,7 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
                 ],
               );
             },
-          );
-        },
-      ),
+          ),
     );
   }
 }

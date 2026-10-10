@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
+import '../../shared/widgets/ascent_scaffold.dart';
 import 'add_course_sheet.dart';
 import 'lecture_focus_player_sheet.dart';
 import 'module_lecture_editor_sheets.dart';
@@ -56,61 +57,51 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen> with SingleTi
     final course = state.course;
     final activeLecture = state.activeLecture;
 
-    return Scaffold(
-      backgroundColor: context.bgBase,
-      appBar: AppBar(
-        backgroundColor: context.bgBase,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          color: context.textPrimary,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-        title: InkWell(
-          onTap: () => _showCourseSwitcher(context, state, notifier),
-          borderRadius: BorderRadius.circular(10),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Text(
-                    course.title,
-                    style: GoogleFonts.plusJakartaSans(
-                      color: context.textPrimary,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+    return AscentScaffold(
+      titleWidget: InkWell(
+        onTap: () => _showCourseSwitcher(context, state, notifier),
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  course.title,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: context.textPrimary,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w700,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  size: 20,
-                  color: context.accentSecondary,
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 20,
+                color: context.accentSecondary,
+              ),
+            ],
           ),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Add Course',
-            icon: const Icon(Icons.add_circle_outline_rounded),
-            color: context.accentSecondary,
-            onPressed: () => AddCourseSheet.show(context),
-          ),
-          IconButton(
-            tooltip: 'Switch Course',
-            icon: const Icon(Icons.swap_horiz_rounded),
-            color: context.textPrimary,
-            onPressed: () => _showCourseSwitcher(context, state, notifier),
-          ),
-        ],
       ),
+      actions: [
+        IconButton(
+          tooltip: 'Add Course',
+          icon: const Icon(Icons.add_circle_outline_rounded),
+          color: context.accentSecondary,
+          onPressed: () => AddCourseSheet.show(context),
+        ),
+        IconButton(
+          tooltip: 'Switch Course',
+          icon: const Icon(Icons.swap_horiz_rounded),
+          color: context.textPrimary,
+          onPressed: () => _showCourseSwitcher(context, state, notifier),
+        ),
+      ],
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -734,7 +725,9 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
-                                color: context.textPrimary,
+                                color: lec.isCompleted ? context.textMuted : context.textPrimary,
+                                decoration: lec.isCompleted ? TextDecoration.lineThrough : null,
+                                decorationColor: context.textMuted,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -929,7 +922,9 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                   style: GoogleFonts.plusJakartaSans(
                                     fontSize: 13,
                                     fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w600,
-                                    color: context.textPrimary,
+                                    color: lec.isCompleted ? context.textMuted : context.textPrimary,
+                                    decoration: lec.isCompleted ? TextDecoration.lineThrough : null,
+                                    decorationColor: context.textMuted,
                                     height: 1.25,
                                   ),
                                   maxLines: 2,
