@@ -182,19 +182,7 @@ class ActivityRowItem extends ConsumerWidget {
                     LectureFocusPlayerSheet.show(context);
                     return;
                   }
-                  Task? task;
-                  if (activity.linkedTaskId != null) {
-                    task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
-                  }
-                  if (context.mounted) {
-                    AddActivitySheet.show(
-                      context,
-                      existingTask: task,
-                      initialTitle: activity.title,
-                      initialKind: activity.kind,
-                      initialDurationMinutes: activity.targetMinutes,
-                    );
-                  }
+                  _showActivityDetailDialog(context, ref, activity);
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,4 +394,159 @@ class ActivityRowItem extends ConsumerWidget {
     }
     return 'Flexible focus';
   }
+
+  void _showActivityDetailDialog(BuildContext context, WidgetRef ref, TodayActivityItem activity) {
+    final g = context.glass;
+    final isDone = activity.status == TodayActivityStatus.done;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: ctx.bgSurfaceElevated,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: g.line, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: g.claySoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        activity.kind == ActivityKind.todo ? 'To-do' : 'Focus Activity',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: g.clay,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (!isDone && activity.kind == ActivityKind.todo)
+                      IconButton(
+                        tooltip: 'Edit activity',
+                        icon: Icon(Icons.edit_outlined, size: 20, color: g.inkMuted),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          Task? task;
+                          if (activity.linkedTaskId != null) {
+                            task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                          }
+                          if (context.mounted) {
+                            AddActivitySheet.show(
+                              context,
+                              existingTask: task,
+                              initialTitle: activity.title,
+                              initialKind: activity.kind,
+                              initialDurationMinutes: activity.targetMinutes,
+                            );
+                          }
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  activity.title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: g.ink,
+                    height: 1.35,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, size: 14, color: g.inkMuted),
+                    const SizedBox(width: 6),
+                    Text(
+                      _subtitleText(activity),
+                      style: GoogleFonts.inter(fontSize: 13, color: g.inkMuted),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: g.inkMuted,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!isDone)
+                      FilledButton(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          Navigator.of(ctx).pop();
+                          if (activity.sourceType == 'lecture') {
+                            final lectureId = int.tryParse(activity.id.replaceFirst('lecture_', '')) ??
+                                ref.read(learningHubProvider).activeLectureId;
+                            ref.read(learningHubProvider.notifier).markLectureCompleted(
+                                  lectureId,
+                                  completed: true,
+                                );
+                            return;
+                          }
+                          if (activity.linkedTaskId != null) {
+                            await ref.read(taskDaoProvider).toggleTaskCompletion(
+                                  activity.linkedTaskId!,
+                                  true,
+                                );
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: g.clay,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('Mark Done'),
+                      )
+                    else
+                      FilledButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: g.claySoft,
+                          foregroundColor: g.clay,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('Done'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
+

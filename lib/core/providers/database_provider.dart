@@ -218,6 +218,11 @@ final dailyWaterGoalStreamProvider = StreamProvider<int>((ref) {
   return dao.watchDailyWaterGoal();
 });
 
+final past7DaysHydrationStreamProvider = StreamProvider<List<DailyHydrationRecord>>((ref) {
+  final dao = ref.watch(waterDaoProvider);
+  return dao.watchPast7DaysHistory();
+});
+
 // ── Thought Wall & Mind Space Stream Providers ────────────────────────────────
 
 final allThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {

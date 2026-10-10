@@ -325,11 +325,16 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Active Task 1'), findsOneWidget);
-      expect(find.text('Completed Task 2'), findsOneWidget);
 
-      // Verify DismissDirection on Task item tiles
+      // Verify DismissDirection on active Task item tile
       final activeDismissible = tester.widget<Dismissible>(find.byKey(ValueKey('task_$activeId')));
       expect(activeDismissible.direction, equals(DismissDirection.horizontal));
+
+      // Switch to Completed tab to verify completed task
+      await tester.tap(find.text('Completed'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Completed Task 2'), findsOneWidget);
 
       final completedDismissible = tester.widget<Dismissible>(find.byKey(ValueKey('task_$completedId')));
       expect(completedDismissible.direction, equals(DismissDirection.none),

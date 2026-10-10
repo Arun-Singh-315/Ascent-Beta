@@ -73,7 +73,9 @@ class StudyStreakMeterCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        '${status.displayStreakDays} Day Streak',
+                        status.displayStreakDays == 0
+                            ? "Start streak today!"
+                            : '${status.displayStreakDays} Day Streak',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -114,6 +116,36 @@ class StudyStreakMeterCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // ── 0 Streak Boost Banner ──
+            if (status.displayStreakDays == 0 && !status.isRescueMode && !status.isTodaySecured) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: g.claySoft,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: g.clay.withValues(alpha: 0.25)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.rocket_launch_rounded, size: 16, color: g.clay),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        "Let's start the freaking streak from today! Complete study focus to lock day 1.",
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: g.clay,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
 
             // ── Mode-Specific Urgency / Rescue Banner ──
             if (status.isRescueMode && !status.isTodaySecured) ...[

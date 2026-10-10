@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
@@ -117,63 +118,122 @@ class ThoughtWallHomePreview extends ConsumerWidget {
           ),
         ),
 
-        // ── LATEST THOUGHT BUBBLE ─────────────────────────────────────
+        // ── THOUGHTS BUBBLE PREVIEW (ALTERNATING LEFT/RIGHT) ───────────
         recentThoughtsAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => const SizedBox.shrink(),
           data: (thoughts) {
-            final latestThought = thoughts.isNotEmpty ? thoughts.first : null;
-            final content = latestThought?.content ?? 'its me ;)';
-            final timeAgo = latestThought != null ? _formatTimeAgo(latestThought.createdAt) : 'JUST NOW';
+            if (thoughts.isEmpty) {
+              return const SizedBox.shrink();
+            }
 
-            return Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 320),
-                  child: GlassSurface(
-                    radius: 20,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                      bottomRight: Radius.circular(20),
-                      bottomLeft: Radius.circular(6),
+            final previewThoughts = thoughts.take(3).toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 12),
+                ...List.generate(previewThoughts.length, (index) {
+                  final thought = previewThoughts[index];
+                  final isEven = index % 2 == 0;
+                  final timeAgo = _formatTimeAgo(thought.createdAt);
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Align(
+                      alignment: isEven ? Alignment.centerLeft : Alignment.centerRight,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 300),
+                        child: GlassSurface(
+                          radius: 18,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(18),
+                            topRight: const Radius.circular(18),
+                            bottomLeft: Radius.circular(isEven ? 4 : 18),
+                            bottomRight: Radius.circular(isEven ? 18 : 4),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/thought-wall');
+                          },
+                          child: Column(
+                            crossAxisAlignment: isEven ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                thought.content,
+                                style: AscentTextStyles.homeHeadline.copyWith(
+                                  color: thought.isCompleted ? g.inkMuted : g.ink,
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w500,
+                                  decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (thought.isCompleted) ...[
+                                    Icon(Icons.check_circle_rounded, size: 12, color: g.clay),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    timeAgo,
+                                    style: AscentTextStyles.homeCaption.copyWith(
+                                      color: g.inkMuted,
+                                      fontSize: 10.5,
+                                      letterSpacing: 0.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  );
+                }),
+                const SizedBox(height: 4),
+                Center(
+                  child: InkWell(
                     onTap: () {
                       HapticFeedback.lightImpact();
                       context.push('/thought-wall');
                     },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          content,
-                          style: AscentTextStyles.homeHeadline.copyWith(
-                            color: g.ink,
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w500,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: g.line, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.bubble_chart_outlined, size: 15, color: g.clay),
+                          const SizedBox(width: 6),
+                          Text(
+                            'View all reflections (${thoughts.length})',
+                            style: GoogleFonts.inter(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: g.clay,
+                            ),
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          timeAgo,
-                          style: AscentTextStyles.homeCaption.copyWith(
-                            color: g.inkMuted,
-                            fontSize: 10.5,
-                            letterSpacing: 0.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                          const SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_rounded, size: 14, color: g.clay),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             );
           },
         ),

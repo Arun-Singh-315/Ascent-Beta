@@ -901,7 +901,7 @@ class NotificationService {
       }
     }
 
-    final title = '💊 Time for your Medicine: $medicineName';
+    final title = 'Time for your medicine: $medicineName';
     final body = 'Please take $dosage ($instructions). Health is your greatest momentum!';
 
     final details = _buildModernNotificationDetails(

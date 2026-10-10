@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
@@ -85,6 +86,8 @@ class ThoughtWallScreen extends ConsumerStatefulWidget {
 }
 
 class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
+  String _viewToggle = 'today'; // 'today', 'upcoming', 'history'
+  String _categoryFilter = 'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
   String _activeFilter = 'all';
   bool _isSelectionMode = false;
   final Set<int> _selectedIds = <int>{};
@@ -463,162 +466,284 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     });
   }
 
+  Widget _buildViewSegment(String key, String label, IconData icon, dynamic g) {
+    final isSelected = _viewToggle == key;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _viewToggle = key);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? g.clay : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : g.inkMuted,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? Colors.white : g.inkMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final thoughtsAsync = _activeFilter == 'archived'
-        ? ref.watch(archivedThoughtsStreamProvider)
-        : ref.watch(allThoughtsStreamProvider);
+    final activeAsync = ref.watch(allThoughtsStreamProvider);
+    final archivedAsync = ref.watch(archivedThoughtsStreamProvider);
 
     final g = context.glass;
 
-    return AscentScaffold(
-      title: _isSelectionMode ? '${_selectedIds.length} Selected' : 'Thought Wall',
-      subtitle: _isSelectionMode ? 'Select thoughts to share to WhatsApp' : 'Mind space • Me to Me talk',
-      glow2: g.slate,
-      actions: _isSelectionMode
-          ? [
-              thoughtsAsync.maybeWhen(
-                data: (allThoughts) {
-                  final filtered = allThoughts.where((t) {
-                    if (_activeFilter == 'archived') return true;
-                    if (_activeFilter == 'all') return true;
-                    if (_activeFilter == 'pinned') return t.isPinned;
-                    return t.mood == _activeFilter;
-                  }).toList();
-                  final isAllSelected = filtered.isNotEmpty && _selectedIds.length >= filtered.length;
-
-                  return IconButton(
-                    icon: Icon(
-                      isAllSelected ? Icons.deselect_rounded : Icons.select_all_rounded,
-                      color: g.clay,
-                    ),
-                    tooltip: isAllSelected ? 'Deselect All' : 'Select All',
-                    onPressed: () => _toggleSelectAll(filtered),
-                  );
-                },
-                orElse: () => const SizedBox.shrink(),
-              ),
-              IconButton(
-                icon: Icon(Icons.share_rounded, color: g.clay),
-                tooltip: 'Share to WhatsApp',
-                onPressed: () {
-                  final allThoughts = thoughtsAsync.value ?? [];
-                  final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
-                  shareMultipleThoughts(selectedList);
-                },
-              ),
-              IconButton(
-                icon: Icon(Icons.close_rounded, color: g.inkMuted),
-                tooltip: 'Exit Selection',
+    return PopScope(
+      canPop: !_isSelectionMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _isSelectionMode) {
+          _exitSelectionMode();
+        }
+      },
+      child: AscentScaffold(
+        title: _isSelectionMode ? '${_selectedIds.length} Selected' : 'Thought Wall',
+        subtitle: _isSelectionMode ? 'Select thoughts to share to WhatsApp' : 'Mind space • Me to Me talk',
+        glow2: g.slate,
+        leading: _isSelectionMode
+            ? IconButton(
+                icon: Icon(Icons.close_rounded, color: g.ink),
+                tooltip: 'Exit selection',
                 onPressed: _exitSelectionMode,
-              ),
-            ]
-          : [
-              IconButton(
-                icon: Icon(Icons.add_comment_rounded, color: g.clay),
-                tooltip: 'Drop a thought',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  DropThoughtSheet.show(context);
-                },
-              ),
-            ],
-      body: Column(
-        children: [
-          // Filter Chips Row
-          Container(
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children: _filterMeta.entries.map((entry) {
-                final isSelected = _activeFilter == entry.key;
-                final label = entry.value.$1;
-                final icon = entry.value.$2;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    selected: isSelected,
-                    showCheckmark: false,
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(icon, size: 14, color: isSelected ? context.accentPrimary : context.textMuted),
-                        const SizedBox(width: 5),
-                        Text(label),
-                      ],
-                    ),
-                    backgroundColor: context.bgSurface,
-                    selectedColor: context.accentPrimary.withValues(alpha: 0.15),
-                    labelStyle: AscentTextStyles.labelSmall.copyWith(
-                      color: isSelected ? context.accentPrimary : context.textMuted,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    ),
-                    side: BorderSide(
-                      color: isSelected ? context.accentPrimary : context.divider,
-                    ),
-                    onSelected: (_) {
-                      HapticFeedback.lightImpact();
-                      setState(() => _activeFilter = entry.key);
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
+              )
+            : null,
+        onBack: _isSelectionMode ? _exitSelectionMode : null,
+        actions: _isSelectionMode
+            ? [
+                activeAsync.maybeWhen(
+                  data: (activeList) {
+                    final archivedList = archivedAsync.value ?? [];
+                    final allThoughts = [...activeList, ...archivedList];
+                    final now = DateTime.now();
+                    final todayStart = DateTime(now.year, now.month, now.day);
+                    final filtered = allThoughts.where((t) {
+                      if (_categoryFilter == 'pinned' && !t.isPinned) return false;
+                      if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
+                      if (_viewToggle == 'today') {
+                        return !t.isArchived && t.mood != 'future' && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
+                      } else if (_viewToggle == 'upcoming') {
+                        return !t.isArchived && t.mood == 'future';
+                      } else {
+                        return t.isArchived || t.createdAt.isBefore(todayStart);
+                      }
+                    }).toList();
 
-          const SizedBox(height: 8),
+                    final isAllSelected = filtered.isNotEmpty && _selectedIds.length >= filtered.length;
 
-          // Main Wall Content
-          Expanded(
-            child: thoughtsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, _) => Center(child: Text('Error loading wall: $err')),
-              data: (thoughts) {
-                // Apply filter
-                final filtered = thoughts.where((t) {
-                  if (_activeFilter == 'archived') return true;
-                  if (_activeFilter == 'all') return true;
-                  if (_activeFilter == 'pinned') return t.isPinned;
-                  return t.mood == _activeFilter;
-                }).toList();
-
-                if (filtered.isEmpty) {
-                  return EmptyState(
-                    title: _activeFilter == 'all'
-                        ? 'Your Thought Wall is Empty'
-                        : 'No thoughts found for this filter',
-                    subtitle: 'Pin your first thought, raw idea, or honest self-talk.',
-                    icon: Icons.bubble_chart_rounded,
-                    actionLabel: 'Drop a Thought',
-                    onAction: () => DropThoughtSheet.show(context),
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final thought = filtered[index];
-                    return ThoughtCardBubble(
-                      thought: thought,
-                      index: index,
-                      isSelected: _selectedIds.contains(thought.id),
-                      isSelectionMode: _isSelectionMode,
-                      onToggleSelect: () => _toggleSelection(thought.id),
-                      onLongPress: () => _enterSelectionMode(thought.id),
+                    return IconButton(
+                      icon: Icon(
+                        isAllSelected ? Icons.deselect_rounded : Icons.select_all_rounded,
+                        color: g.clay,
+                      ),
+                      tooltip: isAllSelected ? 'Deselect All' : 'Select All',
+                      onPressed: () => _toggleSelectAll(filtered),
                     );
                   },
-                );
-              },
+                  orElse: () => const SizedBox.shrink(),
+                ),
+                IconButton(
+                  icon: Icon(Icons.share_rounded, color: g.clay),
+                  tooltip: 'Share to WhatsApp',
+                  onPressed: () {
+                    final activeList = activeAsync.value ?? [];
+                    final archivedList = archivedAsync.value ?? [];
+                    final allThoughts = [...activeList, ...archivedList];
+                    final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
+                    shareMultipleThoughts(selectedList);
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.close_rounded, color: g.inkMuted),
+                  tooltip: 'Exit Selection',
+                  onPressed: _exitSelectionMode,
+                ),
+              ]
+            : [
+                IconButton(
+                  icon: Icon(Icons.add_comment_rounded, color: g.clay),
+                  tooltip: 'Drop a thought',
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    DropThoughtSheet.show(context);
+                  },
+                ),
+              ],
+        body: Column(
+          children: [
+            // Segmented 3-Way Toggle: Today | Upcoming | History
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: context.bgSurface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+              ),
+              child: Row(
+                children: [
+                  _buildViewSegment('today', "Today", Icons.today_rounded, g),
+                  _buildViewSegment('upcoming', "Upcoming", Icons.schedule_send_rounded, g),
+                  _buildViewSegment('history', "History", Icons.history_rounded, g),
+                ],
+              ),
             ),
-          ),
-          // WhatsApp Messenger Composer or Selection Bar
-          _isSelectionMode
-              ? _buildSelectionBottomBar(context, g, thoughtsAsync.value ?? [])
-              : _buildWhatsAppComposer(context, g),
-        ],
+            const SizedBox(height: 6),
+
+            // Sub-bar: Category Selector & Title that fits directly on screen (NO horizontal swipe)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+              child: Row(
+                children: [
+                  Text(
+                    _viewToggle == 'today'
+                        ? 'TODAY\'S REFLECTIONS'
+                        : (_viewToggle == 'upcoming' ? 'UPCOMING & FUTURE' : 'PAST & ARCHIVED'),
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: context.textMuted,
+                      letterSpacing: 1.0,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  PopupMenuButton<String>(
+                    tooltip: 'Category filter',
+                    initialValue: _categoryFilter,
+                    onSelected: (val) {
+                      HapticFeedback.lightImpact();
+                      setState(() => _categoryFilter = val);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: context.bgSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: context.divider),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _filterMeta[_categoryFilter]?.$2 ?? Icons.filter_alt_outlined,
+                            size: 13,
+                            color: _categoryFilter != 'all' ? g.clay : context.textMuted,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            _categoryFilter == 'all' ? 'All Moods' : (_filterMeta[_categoryFilter]?.$1 ?? 'Filter'),
+                            style: AscentTextStyles.captionMedium.copyWith(
+                              color: _categoryFilter != 'all' ? g.clay : context.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: context.textMuted),
+                        ],
+                      ),
+                    ),
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(value: 'all', child: Text('All Moods')),
+                      const PopupMenuItem(value: 'me_to_me', child: Text('Me to Me')),
+                      const PopupMenuItem(value: 'thought', child: Text('Raw Thoughts')),
+                      const PopupMenuItem(value: 'idea', child: Text('Sparks / Ideas')),
+                      const PopupMenuItem(value: 'win', child: Text('Daily Wins')),
+                      const PopupMenuItem(value: 'pinned', child: Text('Pinned Only')),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            // Main Wall Content
+            Expanded(
+              child: activeAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, _) => Center(child: Text('Error loading wall: $err')),
+                data: (activeList) {
+                  final archivedList = archivedAsync.value ?? [];
+                  final allThoughts = [...activeList, ...archivedList];
+                  final now = DateTime.now();
+                  final todayStart = DateTime(now.year, now.month, now.day);
+
+                  final filtered = allThoughts.where((t) {
+                    if (_categoryFilter == 'pinned' && !t.isPinned) return false;
+                    if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
+
+                    if (_viewToggle == 'today') {
+                      return !t.isArchived && t.mood != 'future' && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
+                    } else if (_viewToggle == 'upcoming') {
+                      return !t.isArchived && t.mood == 'future';
+                    } else {
+                      return t.isArchived || t.createdAt.isBefore(todayStart);
+                    }
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return EmptyState(
+                      title: _viewToggle == 'today'
+                          ? 'No thoughts logged today'
+                          : (_viewToggle == 'upcoming'
+                              ? 'No upcoming or future notes'
+                              : 'No past or archived reflections'),
+                      subtitle: 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
+                      icon: Icons.bubble_chart_rounded,
+                      actionLabel: 'Drop a Thought',
+                      onAction: () => DropThoughtSheet.show(context),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final thought = filtered[index];
+                      return ThoughtCardBubble(
+                        thought: thought,
+                        index: index,
+                        isSelected: _selectedIds.contains(thought.id),
+                        isSelectionMode: _isSelectionMode,
+                        onToggleSelect: () => _toggleSelection(thought.id),
+                        onLongPress: () => _enterSelectionMode(thought.id),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            // WhatsApp Messenger Composer or Selection Bar
+            _isSelectionMode
+                ? _buildSelectionBottomBar(context, g, [...(activeAsync.value ?? []), ...(archivedAsync.value ?? [])])
+                : _buildWhatsAppComposer(context, g),
+          ],
+        ),
       ),
     );
   }
@@ -985,7 +1110,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                               TaskTableCompanion.insert(
                                 title: thought.content.trim(),
                                 plannedDate: drift.Value(DateTime.now()),
-                                notes: drift.Value(thought.promptQuestion != null ? 'From Thought Wall: ${thought.promptQuestion}' : null),
+                                notes: drift.Value('thought_id:${thought.id}${thought.promptQuestion != null ? ' • ${thought.promptQuestion}' : ''}'),
                               ),
                             );
                             if (context.mounted) {

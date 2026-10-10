@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
@@ -19,6 +21,8 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import 'package:go_router/go_router.dart';
 import 'add_activity_sheet.dart';
 
+enum _TaskBoardTab { today, others, completed }
+
 class TaskBoardScreen extends ConsumerStatefulWidget {
   const TaskBoardScreen({super.key});
 
@@ -28,6 +32,7 @@ class TaskBoardScreen extends ConsumerStatefulWidget {
 
 class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
   String _priorityFilter = 'All';
+  _TaskBoardTab _selectedTab = _TaskBoardTab.today;
 
   void _openAddTaskSheet(
     BuildContext context, {
@@ -149,84 +154,175 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
             );
           }
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(18, 8, 18, 90),
+          return Column(
             children: [
-              // Overdue Group
-              if (overdueTasks.isNotEmpty) ...[
-                _SectionHeader(
-                  title: 'Overdue',
-                  count: overdueTasks.length,
-                  color: context.stateDanger,
-                ),
-                const SizedBox(height: 8),
-                ...overdueTasks.map((t) => _TaskItemTile(
-                      task: t,
-                      subTasks: subTasksByParent[t.id] ?? [],
-                      onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                    )),
-                const SizedBox(height: 18),
-              ],
-
-              // Today Group
-              _SectionHeader(
-                title: 'Today',
-                count: todayTasks.length,
-                color: context.accentPrimary,
-              ),
-              const SizedBox(height: 8),
-              if (todayTasks.isEmpty)
-                AscentCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  color: context.bgSurfaceElevated,
-                  child: Text(
-                    'No tasks scheduled for today. Great time to catch up or relax!',
-                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: g.fill,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: g.line, width: 1),
                   ),
-                )
-              else
-                ...todayTasks.map((t) => _TaskItemTile(
-                      task: t,
-                      subTasks: subTasksByParent[t.id] ?? [],
-                      onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                    )),
-
-              const SizedBox(height: 18),
-
-              // Upcoming Group
-              if (upcomingTasks.isNotEmpty) ...[
-                _SectionHeader(
-                  title: 'Upcoming',
-                  count: upcomingTasks.length,
-                  color: context.accentInfo,
+                  child: Row(
+                    children: [
+                      _buildTabSegment('Today', _TaskBoardTab.today, todayTasks.length + overdueTasks.length, g),
+                      _buildTabSegment('Others', _TaskBoardTab.others, upcomingTasks.length, g),
+                      _buildTabSegment('Completed', _TaskBoardTab.completed, completedTasks.length, g),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 8),
-                ...upcomingTasks.map((t) => _TaskItemTile(
-                      task: t,
-                      subTasks: subTasksByParent[t.id] ?? [],
-                      onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                    )),
-                const SizedBox(height: 18),
-              ],
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 90),
+                  children: [
+                    if (_selectedTab == _TaskBoardTab.today) ...[
+                      // Overdue Group
+                      if (overdueTasks.isNotEmpty) ...[
+                        _SectionHeader(
+                          title: 'Overdue',
+                          count: overdueTasks.length,
+                          color: context.stateDanger,
+                        ),
+                        const SizedBox(height: 8),
+                        ...overdueTasks.map((t) => _TaskItemTile(
+                              task: t,
+                              subTasks: subTasksByParent[t.id] ?? [],
+                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
+                            )),
+                        const SizedBox(height: 18),
+                      ],
 
-              // Completed Group (Collapsed/subtle)
-              if (completedTasks.isNotEmpty) ...[
-                _SectionHeader(
-                  title: 'Completed Recently',
-                  count: completedTasks.length,
-                  color: context.textMuted,
+                      // Today Group
+                      _SectionHeader(
+                        title: 'Today',
+                        count: todayTasks.length,
+                        color: context.accentPrimary,
+                      ),
+                      const SizedBox(height: 8),
+                      if (todayTasks.isEmpty && overdueTasks.isEmpty)
+                        AscentCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          color: context.bgSurfaceElevated,
+                          child: Text(
+                            'No tasks scheduled for today. Great time to catch up or relax!',
+                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                          ),
+                        )
+                      else
+                        ...todayTasks.map((t) => _TaskItemTile(
+                              task: t,
+                              subTasks: subTasksByParent[t.id] ?? [],
+                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
+                            )),
+                    ] else if (_selectedTab == _TaskBoardTab.others) ...[
+                      // Upcoming Group
+                      _SectionHeader(
+                        title: 'Upcoming & Backlog',
+                        count: upcomingTasks.length,
+                        color: context.accentInfo,
+                      ),
+                      const SizedBox(height: 8),
+                      if (upcomingTasks.isEmpty)
+                        AscentCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          color: context.bgSurfaceElevated,
+                          child: Text(
+                            'No upcoming tasks in queue. Tap + to plan future tasks.',
+                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                          ),
+                        )
+                      else
+                        ...upcomingTasks.map((t) => _TaskItemTile(
+                              task: t,
+                              subTasks: subTasksByParent[t.id] ?? [],
+                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
+                            )),
+                    ] else ...[
+                      // Completed Group
+                      _SectionHeader(
+                        title: 'Completed',
+                        count: completedTasks.length,
+                        color: context.textMuted,
+                      ),
+                      const SizedBox(height: 8),
+                      if (completedTasks.isEmpty)
+                        AscentCard(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          color: context.bgSurfaceElevated,
+                          child: Text(
+                            'No completed tasks yet. Finish a task to see it here!',
+                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                          ),
+                        )
+                      else
+                        ...completedTasks.map((t) => _TaskItemTile(
+                              task: t,
+                              subTasks: subTasksByParent[t.id] ?? [],
+                              isCompletedView: true,
+                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
+                            )),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 8),
-                ...completedTasks.take(5).map((t) => _TaskItemTile(
-                      task: t,
-                      subTasks: subTasksByParent[t.id] ?? [],
-                      isCompletedView: true,
-                      onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                    )),
-              ],
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTabSegment(String label, _TaskBoardTab tab, int count, AscentGlass g) {
+    final isSelected = _selectedTab == tab;
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          setState(() => _selectedTab = tab);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: isSelected ? g.clay : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? Colors.white : g.inkMuted,
+                ),
+              ),
+              if (count > 0) ...[
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white.withValues(alpha: 0.25) : g.claySoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : g.clay,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -424,20 +520,10 @@ class _TaskItemTile extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: AscentCard(
-          onTap: (isDone || isCompletedView)
-              ? () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Completed tasks are sealed and cannot be edited.'),
-                      duration: Duration(seconds: 2),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              : () {
-                  AddActivitySheet.show(context, existingTask: task);
-                },
+          onTap: () {
+            HapticFeedback.lightImpact();
+            _showTaskDetailDialog(context, ref, task, subTasks);
+          },
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,6 +694,18 @@ class _TaskItemTile extends ConsumerWidget {
                       ),
                     ),
                   ],
+                  if (!isDone) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: 'Edit task',
+                      icon: Icon(Icons.edit_outlined, size: 18, color: context.textMuted),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        AddActivitySheet.show(context, existingTask: task);
+                      },
+                    ),
+                  ],
                 ],
               ),
               // §7: Sub-entries rendered as an indented checklist
@@ -692,6 +790,152 @@ class _TaskItemTile extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  void _showTaskDetailDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Task task,
+    List<Task> subTasks,
+  ) {
+    final isDone = task.actualCompletedDate != null;
+    final g = context.glass;
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: ctx.bgSurfaceElevated,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: g.line, width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: g.claySoft,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        task.priority.toUpperCase(),
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: g.clay,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (!isDone)
+                      IconButton(
+                        tooltip: 'Edit task',
+                        icon: Icon(Icons.edit_outlined, size: 20, color: g.inkMuted),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          AddActivitySheet.show(context, existingTask: task);
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  task.title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: g.ink,
+                    height: 1.35,
+                    decoration: isDone ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                if (task.notes != null && task.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    task.notes!,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: g.inkMuted,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                if (task.plannedDate != null) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Icon(Icons.calendar_today_rounded, size: 14, color: g.inkMuted),
+                      const SizedBox(width: 6),
+                      Text(
+                        DateFormat('EEEE, MMM d, y').format(task.plannedDate!),
+                        style: GoogleFonts.inter(fontSize: 13, color: g.inkMuted),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: TextButton.styleFrom(
+                        foregroundColor: g.inkMuted,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!isDone)
+                      FilledButton(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          Navigator.of(ctx).pop();
+                          await ref.read(taskDaoProvider).markComplete(task.id);
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: g.clay,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('Mark Done'),
+                      )
+                    else
+                      FilledButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: g.claySoft,
+                          foregroundColor: g.clay,
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: const Text('Done'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

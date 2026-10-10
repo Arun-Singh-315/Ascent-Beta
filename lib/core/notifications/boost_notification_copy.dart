@@ -84,14 +84,14 @@ class BoostNotificationCopy {
       case ReminderIntent.medicine:
         final medList = [
           NotificationMessage(
-            title: 'Time for your medicine: $taskTitle 💊',
+            title: 'Time for your medicine: $taskTitle',
             body: 'Hey, please take your $taskTitle now. Consistency with your health comes first.',
-            summary: '💊 Health Reminder',
+            summary: 'Health Reminder',
           ),
           NotificationMessage(
-            title: 'Health Dose: $taskTitle 🩺',
+            title: 'Health Dose: $taskTitle',
             body: 'Hey! Reminder to take $taskTitle. Stay on schedule and take care of yourself.',
-            summary: '💊 Medicine Check',
+            summary: 'Medicine Check',
           ),
         ];
         return medList[_random.nextInt(medList.length)];
@@ -156,9 +156,9 @@ class BoostNotificationCopy {
 
       case ReminderIntent.medicine:
         return NotificationMessage(
-          title: 'Health Check: $taskTitle 💊',
+          title: 'Health Check: $taskTitle',
           body: 'Hey bro, checking in — did you take your $taskTitle? Please take it now if you haven\'t yet.',
-          summary: '💊 Medicine Pending',
+          summary: 'Medicine Pending',
         );
 
       case ReminderIntent.communication:

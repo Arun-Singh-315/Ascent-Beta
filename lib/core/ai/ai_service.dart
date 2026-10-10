@@ -187,18 +187,17 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     // 12. Contextual Help & Guidance
     return const AiResponse(
-      text: "I am your local on-device AI life assistant. Here is what I can do for you:\n\n"
-          "• Manage Activities: \"Need to call Saurabh at 2\" or \"Study Java for 2 hours today\"\n"
-          "• Track Learning: \"Finished the first two lectures\" or \"I have 45 mins free\"\n"
-          "• Organize Day: \"Plan my day\" or \"Move my workout to the evening\"\n"
-          "• Log Finances: \"Spent ₹120 on lunch\" or \"₹45 chai\"\n"
-          "• Computer Science: \"Explain Dynamic Programming\" or \"What is QuickSort?\"\n\n"
-          "Everything runs 100% on your device, completely free and private.",
+      text: "I am your on-device life assistant. Here is what I can do for you:\n\n"
+          "• Plan your day and focus sessions\n"
+          "• Organize tasks and reminders\n"
+          "• Check your medicine schedule\n"
+          "• Log expenses and water intake\n"
+          "• Explain study topics and computer science concepts\n\n"
+          "Everything runs 100% on your device, private and fast.",
       clarifyingOptions: [
         'Plan my day',
-        'Need to call Saurabh at 2',
-        'Study Java for 2 hours today',
-        'Finished first two lectures',
+        'What are my medicines today?',
+        'What are my tasks today?',
       ],
     );
   }
@@ -734,15 +733,11 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (tasks.isEmpty) {
       return const AiResponse(
-        text: "You don't have any tasks scheduled for today! 🎉\n\n"
-            "Would you like me to add one for you? For example:\n"
-            "• \"Study Java for 2 hours today\"\n"
-            "• \"Need to call Saurabh at 2\"\n"
-            "• \"Complete Spring Boot tutorial\"",
+        text: "You don't have any tasks scheduled for today.\n\n"
+            "Tell me what you'd like to work on and I'll organize it for you.",
         clarifyingOptions: [
           'Plan my day',
-          'Need to call Saurabh at 2',
-          'Study Java for 2 hours today',
+          'What are my medicines today?',
         ],
       );
     }
@@ -755,29 +750,30 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     buffer.writeln();
 
     if (pending.isNotEmpty) {
-      buffer.writeln("📋 Pending (${pending.length}):");
+      buffer.writeln("Pending (${pending.length}):");
       for (final t in pending) {
         final prioTag = t.priority.isNotEmpty ? " [${t.priority.toUpperCase()}]" : "";
-        buffer.writeln("• ${t.title}$prioTag");
+        final cleanTitle = t.title.replaceAll('💊', '(medicine)');
+        buffer.writeln("• $cleanTitle$prioTag");
       }
     } else {
-      buffer.writeln("🎉 All today's tasks are completed! Outstanding job!");
+      buffer.writeln("All today's tasks are completed. Great consistency.");
     }
 
     if (completed.isNotEmpty) {
       buffer.writeln();
-      buffer.writeln("✅ Completed (${completed.length}):");
+      buffer.writeln("Completed (${completed.length}):");
       for (final t in completed) {
-        buffer.writeln("• ${t.title}");
+        final cleanTitle = t.title.replaceAll('💊', '(medicine)');
+        buffer.writeln("• $cleanTitle");
       }
     }
 
     return AiResponse(
       text: buffer.toString().trim(),
       clarifyingOptions: [
-        if (pending.isNotEmpty) 'Plan my day',
-        'Need to call Saurabh at 2',
-        'Study Java for 2 hours today',
+        'Plan my day',
+        'What are my medicines today?',
       ],
     );
   }
@@ -794,13 +790,13 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (reminders.isEmpty) {
       return const AiResponse(
-        text: "You don't have any upcoming reminders set right now! ⏰\n\n"
+        text: "You don't have any upcoming reminders set right now.\n\n"
             "You can ask me to set one anytime, like:\n"
-            "• \"Remind me to call Saurabh at 2 PM\"\n"
-            "• \"Remind me to drink water in 30 minutes\"",
+            "• \"Remind me to drink water in 30 minutes\"\n"
+            "• \"Remind me to review notes at 5 PM\"",
         clarifyingOptions: [
-          'What are my tasks today?',
           'Plan my day',
+          'What are my tasks today?',
         ],
       );
     }
@@ -810,14 +806,14 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     buffer.writeln();
     for (final r in reminders) {
       final timeStr = DateFormat('EEE, MMM d • h:mm a').format(r.scheduledAt);
-      buffer.writeln("⏰ ${r.title} — $timeStr");
+      buffer.writeln("• ${r.title} — $timeStr");
     }
 
     return AiResponse(
       text: buffer.toString().trim(),
       clarifyingOptions: [
-        'What are my tasks today?',
         'Plan my day',
+        'What are my tasks today?',
       ],
     );
   }
@@ -860,19 +856,19 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     if (logs.isEmpty) {
       if (meds.isEmpty) {
         return const AiResponse(
-          text: "You don't have any active prescriptions or medicines scheduled today! 💊\n\n"
+          text: "You don't have any active prescriptions or medicines scheduled today.\n\n"
               "You can add one in the Medicine tab or ask me to schedule one anytime.",
           clarifyingOptions: [
-            'What are my tasks today?',
             'Plan my day',
+            'What are my tasks today?',
           ],
         );
       } else {
         return AiResponse(
-          text: "You have ${meds.length} active prescription(s), but no doses are scheduled for today. 💊",
+          text: "You have ${meds.length} active prescription(s), but no doses are scheduled for today.",
           clarifyingOptions: [
-            'What are my tasks today?',
             'Plan my day',
+            'What are my tasks today?',
           ],
         );
       }
@@ -882,15 +878,15 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final taken = logs.where((l) => l.isTaken).length;
 
     final buffer = StringBuffer();
-    buffer.writeln("Here is your medicine schedule for today ($taken/$total doses completed): 💊\n");
+    buffer.writeln("Here is your medicine schedule for today ($taken of $total doses completed):\n");
 
     for (final log in logs) {
       final med = meds.where((m) => m.id == log.medicineId).firstOrNull;
-      final medName = med?.name ?? 'Prescription';
-      final medDosage = med?.dosage ?? '';
+      final medName = (med?.name ?? 'Prescription').replaceAll('💊', '').trim();
+      final medDosage = med?.dosage != null && med!.dosage.isNotEmpty ? " (${med.dosage})" : "";
       final timeStr = MedicineService.formatTimeSlot(log.timeSlot);
-      final status = log.isTaken ? "✅ Taken" : "⏳ Pending";
-      buffer.writeln("• $timeStr — $medName ($medDosage) [$status]");
+      final status = log.isTaken ? "Taken" : "Pending";
+      buffer.writeln("• $timeStr — $medName$medDosage (medicine) [$status]");
     }
 
     return AiResponse(
@@ -953,9 +949,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     // Critical Focus Areas
     if (waterMl < 1000) {
-      buffer.writeln("💧 **Hydration Alert:** You've only logged $waterMl / $waterGoal mL. Drink a glass of water now!");
+      buffer.writeln("**Hydration Alert:** You've only logged $waterMl / $waterGoal mL. Drink a glass of water now!");
     } else {
-      buffer.writeln("💧 **Hydration:** $waterMl / $waterGoal mL consumed — stay hydrated!");
+      buffer.writeln("**Hydration:** $waterMl / $waterGoal mL consumed — stay hydrated.");
     }
 
     final todayMedLogs = ref.read(todayMedicineLogsStreamProvider).value ?? [];
@@ -963,51 +959,51 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final takenMeds = todayMedLogs.where((l) => l.isTaken).length;
     if (totalMeds > 0) {
       if (takenMeds == totalMeds) {
-        buffer.writeln("💊 **Medication:** All $totalMeds doses taken today! Great consistency.");
+        buffer.writeln("**Medication:** All $totalMeds doses taken today. Great consistency.");
       } else {
-        buffer.writeln("💊 **Medication:** $takenMeds of $totalMeds doses taken today. Stay on track with your prescription!");
+        buffer.writeln("**Medication:** $takenMeds of $totalMeds doses taken today. Stay on track with your prescription.");
       }
     }
 
     if (isWalkActive) {
-      buffer.writeln("🚶 **Walk Tracker:** Active outdoor session running (${(walkState.distanceKm).toStringAsFixed(2)} km). Pace: ${walkState.formattedPace}/km.");
+      buffer.writeln("**Walk Tracker:** Active outdoor session running (${(walkState.distanceKm).toStringAsFixed(2)} km). Pace: ${walkState.formattedPace}/km.");
     } else if (todayDistanceMeters < 2500) {
-      buffer.writeln("🚶 **Physical Routine:** ${kmWalked}km walked today. Plan an evening walk to hit your 5.0km goal.");
+      buffer.writeln("**Physical Routine:** ${kmWalked}km walked today. Plan an evening walk to hit your 5.0km goal.");
     } else {
-      buffer.writeln("🚶 **Physical Routine:** Great job! ${kmWalked}km covered today.");
+      buffer.writeln("**Physical Routine:** Great job — ${kmWalked}km covered today.");
     }
 
     if (nextReminder != null) {
       final dueTime = DateFormat('h:mm a').format(nextReminder.scheduledAt);
-      buffer.writeln("🔔 **Upcoming Reminder:** \"${nextReminder.title}\" scheduled for $dueTime.");
+      buffer.writeln("**Upcoming Reminder:** \"${nextReminder.title}\" scheduled for $dueTime.");
     }
 
     buffer.writeln("");
     if (pending.isNotEmpty) {
-      buffer.writeln("🎯 **Priority Activities (${pending.length} pending today):**");
+      buffer.writeln("**Priority Activities (${pending.length} pending today):**");
       for (int i = 0; i < pending.take(3).length; i++) {
         final p = pending[i];
         final dur = p.estimatedMinutes != null && p.estimatedMinutes! > 0 ? " (${p.estimatedMinutes}m timer)" : "";
-        buffer.writeln("  ${i + 1}. ${p.title}$dur");
+        final cleanTitle = p.title.replaceAll('💊', '(medicine)');
+        buffer.writeln("  ${i + 1}. $cleanTitle$dur");
       }
     } else {
-      buffer.writeln("🎯 **Activities:** All today's activities are finished! Zero backlog.");
+      buffer.writeln("**Activities:** All today's activities are finished. Zero backlog.");
     }
 
     if (nextLecture != null) {
-      buffer.writeln("\n🎓 **Study Target:** Next in \"${course.title}\" is \"${nextLecture.title}\" (${(nextLecture.durationSeconds ~/ 60)}m).");
+      buffer.writeln("\n**Study Target:** Next in \"${course.title}\" is \"${nextLecture.title}\" (${(nextLecture.durationSeconds ~/ 60)}m).");
     }
 
-    buffer.writeln("\n💰 **Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
+    buffer.writeln("\n**Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
         "${budget != null && budget.monthlyLimit > 0 ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.");
 
     return AiResponse(
       text: buffer.toString(),
       clarifyingOptions: [
-        if (nextLecture != null) 'Start ${nextLecture.title}',
-        'Log 250ml water',
-        'Add a new activity',
-        'Check pending activities',
+        'Plan my day',
+        'What are my medicines today?',
+        'What are my tasks today?',
       ],
       proposedAction: AiProposedAction(
         type: AiActionType.dailyPlanSuggested,

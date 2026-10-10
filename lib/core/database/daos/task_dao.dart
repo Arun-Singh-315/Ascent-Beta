@@ -148,25 +148,58 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   }
 
   /// Marks a task as complete by setting [actualCompletedDate] and
-  /// [updatedAt] to the current time.
+  /// [updatedAt] to the current time, and cascades completion to linked thoughts.
   Future<void> markComplete(int id) async {
     final now = DateTime.now();
+    final task = await getTaskById(id);
     await (update(taskTable)..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(
         actualCompletedDate: Value(now),
         updatedAt: Value(now),
       ),
     );
+
+    // Sync to Thought Wall if this task was created from a thought or has matching content
+    if (task != null) {
+      final noteMatch = RegExp(r'thought_id:(\d+)').firstMatch(task.notes ?? '');
+      if (noteMatch != null) {
+        final thoughtId = int.tryParse(noteMatch.group(1)!);
+        if (thoughtId != null) {
+          try {
+            await db.thoughtDao.setCompleted(thoughtId, true);
+          } catch (_) {}
+        }
+      }
+      try {
+        await db.thoughtDao.setCompletedByContent(task.title.trim(), true);
+      } catch (_) {}
+    }
   }
 
-  /// Marks a task as incomplete (clears [actualCompletedDate]).
+  /// Marks a task as incomplete (clears [actualCompletedDate]) and syncs to linked thoughts.
   Future<void> markIncomplete(int id) async {
+    final task = await getTaskById(id);
     await (update(taskTable)..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(
         actualCompletedDate: const Value(null),
         updatedAt: Value(DateTime.now()),
       ),
     );
+
+    if (task != null) {
+      final noteMatch = RegExp(r'thought_id:(\d+)').firstMatch(task.notes ?? '');
+      if (noteMatch != null) {
+        final thoughtId = int.tryParse(noteMatch.group(1)!);
+        if (thoughtId != null) {
+          try {
+            await db.thoughtDao.setCompleted(thoughtId, false);
+          } catch (_) {}
+        }
+      }
+      try {
+        await db.thoughtDao.setCompletedByContent(task.title.trim(), false);
+      } catch (_) {}
+    }
   }
 
   /// Toggles the [revisitFlag] on a task.

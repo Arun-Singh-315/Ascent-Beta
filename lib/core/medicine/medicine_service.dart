@@ -55,7 +55,7 @@ class MedicineService {
         // a. Insert Task (Simple To-Do without estimated minutes per GEMINI.md Rule 9)
         final taskId = await db.taskDao.insertTask(
           TaskTableCompanion.insert(
-            title: '💊 $name ($dosage) — $timeLabel',
+            title: '$name (medicine) ($dosage) — $timeLabel',
             notes: Value('$instructions • Medicine prescription for ${DateFormat('EEE, MMM d').format(currentDay)}'),
             plannedDate: Value(currentDay),
             priority: const Value('high'),

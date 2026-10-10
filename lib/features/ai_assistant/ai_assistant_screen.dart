@@ -30,14 +30,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   List<String> get _quickPrompts => [
     'Plan my day',
-    'Need to call Saurabh at 2',
-    'Complete Java Spring Boot today',
-    'Study Java for 2 hours today',
-    'Finished first two lectures',
-    'Spent ₹120 on lunch',
-    'How am I doing today?',
-    'What are my medicines today?',
-    'Log 500ml water',
+    'Today\'s agenda',
+    'Medicines',
   ];
 
   @override
@@ -288,8 +282,27 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: Column(
-        children: [
+      body: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF0C1017)
+              : const Color(0xFFF8FAFC),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: Theme.of(context).brightness == Brightness.dark
+                ? [
+                    const Color(0xFF101724),
+                    const Color(0xFF0B0F17),
+                  ]
+                : [
+                    const Color(0xFFFFFFFF),
+                    const Color(0xFFF1F5F9),
+                  ],
+          ),
+        ),
+        child: Column(
+          children: [
           // Chat stream
           Expanded(
             child: StreamBuilder<List<AiChatMessage>>(
@@ -396,74 +409,115 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               ),
             ),
 
-          // Quick suggestion chips
-          SizedBox(
-            height: 38,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _quickPrompts.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (context, index) {
-                final prompt = _quickPrompts[index];
-                return ActionChip(
-                  label: Text(prompt, style: const TextStyle(fontSize: 11)),
-                  backgroundColor: context.bgSurface,
-                  side: BorderSide(color: context.divider),
-                  onPressed: () => _handleSubmitted(prompt),
-                );
-              },
+          // Quick suggestion chips (Fit on-screen, no horizontal scrolling)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildQuickChip('Plan my day', Icons.wb_sunny_outlined, () => _handleSubmitted('Plan my day'), context, accentColor),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildQuickChip('Today\'s agenda', Icons.checklist_rounded, () => _handleSubmitted('What are my tasks today?'), context, accentColor),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildQuickChip('Medicines', Icons.health_and_safety_outlined, () => _handleSubmitted('What are my medicines today?'), context, accentColor),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 6),
 
-          // Text input bar
+          // Text input bar (WhatsApp Style: pill input + equal height send button, brain inside input, no top divider line)
           SafeArea(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: context.bgSurface,
-                border: Border(top: BorderSide(color: context.divider)),
-              ),
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+              color: Colors.transparent,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Box 1: Rounded input pill with brain inside
                   Expanded(
-                    child: TextField(
-                      controller: _textController,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-                      decoration: InputDecoration(
-                        hintText: 'Message $name...',
-                        hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                        filled: true,
-                        fillColor: context.bgBase,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide(color: context.divider),
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFF1E2633)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? const Color(0xFF2E384D)
+                              : const Color(0xFFE2E8F0),
+                          width: 1.0,
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide(color: context.divider),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide(color: accentColor),
-                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05,
+                            ),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      onSubmitted: _handleSubmitted,
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 14, right: 8),
+                            child: Icon(
+                              Icons.psychology_rounded,
+                              size: 22,
+                              color: accentColor,
+                            ),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _textController,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: context.textPrimary,
+                                fontSize: 14,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Message $name...',
+                                hintStyle: GoogleFonts.plusJakartaSans(
+                                  color: context.textMuted,
+                                  fontSize: 13.5,
+                                ),
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                isDense: true,
+                              ),
+                              onSubmitted: _handleSubmitted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // Box 2: Circular send button (48dp height - equal to input capsule!)
                   GestureDetector(
                     onTap: () => _handleSubmitted(_textController.text),
                     child: Container(
-                      width: 38,
-                      height: 38,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: accentColor,
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: accentColor.withValues(alpha: 0.35),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.send_rounded, size: 17, color: Colors.white),
+                      child: const Icon(Icons.send_rounded, size: 20, color: Colors.white),
                     ),
                   ),
                 ],
@@ -471,6 +525,56 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             ),
           ),
         ],
+      ),
+    ),
+  );
+}
+
+  Widget _buildQuickChip(
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+    BuildContext context,
+    Color accentColor,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E2633) : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2E384D) : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 13, color: accentColor),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: context.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -507,20 +611,15 @@ class _TelegramMessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Telegram-style translucent styling:
-    // User bubble: soft translucent blue tint with 1px crisp border
-    // Bot bubble: translucent surface card with 1px subtle border
-    final userBubbleColor = isDark
-        ? const Color(0xFF1E3A5F).withValues(alpha: 0.35)
-        : const Color(0xFF3B82F6).withValues(alpha: 0.12);
-    final userBorderColor = isDark
-        ? const Color(0xFF60A5FA).withValues(alpha: 0.38)
-        : const Color(0xFF2563EB).withValues(alpha: 0.35);
+    final userBubbleColor = const Color(0xFF007AFF);
+    final userTextColor = Colors.white;
 
     final botBubbleColor = isDark
-        ? const Color(0xFF161B22).withValues(alpha: 0.7)
-        : Colors.white.withValues(alpha: 0.88);
-    final botBorderColor = context.divider.withValues(alpha: 0.8);
+        ? const Color(0xFF1E2633)
+        : Colors.white;
+    final botBorderColor = isDark
+        ? const Color(0xFF2C374A)
+        : const Color(0xFFE2E8F0);
 
     final timeString = "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
@@ -528,24 +627,34 @@ class _TelegramMessageBubble extends StatelessWidget {
       crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Main Message Container
+        // Main Message Container (Apple iMessage style shrink-wrapped bubble)
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: isUser ? userBubbleColor : botBubbleColor,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isUser ? 16 : 4),
-              bottomRight: Radius.circular(isUser ? 4 : 16),
+              topLeft: const Radius.circular(18),
+              topRight: const Radius.circular(18),
+              bottomLeft: Radius.circular(isUser ? 18 : 4),
+              bottomRight: Radius.circular(isUser ? 4 : 18),
             ),
-            border: Border.all(
-              color: isUser ? userBorderColor : botBorderColor,
-              width: 1.0,
-            ),
+            border: isUser
+                ? null
+                : Border.all(
+                    color: botBorderColor,
+                    width: 1.0,
+                  ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Assistant Header Tag
               if (!isUser) ...[
@@ -564,7 +673,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 5),
               ],
 
               // Message Body
@@ -572,36 +681,39 @@ class _TelegramMessageBubble extends StatelessWidget {
                 msg.message,
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
-                  fontWeight: FontWeight.w500,
-                  color: context.textPrimary,
-                  height: 1.45,
+                  fontWeight: FontWeight.w400,
+                  color: isUser ? userTextColor : context.textPrimary,
+                  height: 1.42,
                 ),
               ),
 
               const SizedBox(height: 4),
 
-              // Telegram-Style Micro Timestamp Row
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const Spacer(),
-                  Text(
-                    timeString,
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 9.5,
-                      color: context.textMuted.withValues(alpha: 0.8),
+              // Micro Timestamp Row (Shrink-wrapped, NO Spacer)
+              Align(
+                alignment: Alignment.bottomRight,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      timeString,
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9.5,
+                        color: isUser
+                            ? Colors.white.withValues(alpha: 0.75)
+                            : context.textMuted.withValues(alpha: 0.8),
+                      ),
                     ),
-                  ),
-                  if (isUser) ...[
-                    const SizedBox(width: 3),
-                    Icon(
-                      Icons.done_all_rounded,
-                      size: 11,
-                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB),
-                    ),
+                    if (isUser) ...[
+                      const SizedBox(width: 3),
+                      const Icon(
+                        Icons.done_all_rounded,
+                        size: 11,
+                        color: Colors.white,
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ],
           ),

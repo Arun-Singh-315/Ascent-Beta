@@ -72,15 +72,15 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0096C7).withValues(alpha: 0.14),
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF0096C7).withValues(alpha: 0.28),
+                    color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
                   ),
                 ),
                 child: const Icon(
                   Icons.water_drop_rounded,
-                  color: Color(0xFF0096C7),
+                  color: Color(0xFF06B6D4),
                   size: 20,
                 ),
               ),
@@ -96,7 +96,7 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                           style: AscentTextStyles.labelSmall.copyWith(
                             letterSpacing: 1.1,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF0096C7),
+                            color: const Color(0xFF06B6D4),
                           ),
                         ),
                         if (isGoalMet) ...[
@@ -154,17 +154,17 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0096C7).withValues(alpha: 0.12),
+                  color: const Color(0xFF06B6D4).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: const Color(0xFF0096C7).withValues(alpha: 0.2),
+                    color: const Color(0xFF06B6D4).withValues(alpha: 0.25),
                   ),
                 ),
                 child: Text(
                   '${(progress * 100).toInt()}%',
                   style: AscentTextStyles.monoCode.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF0096C7),
+                    color: const Color(0xFF06B6D4),
                     fontSize: 14,
                   ),
                 ),
@@ -342,16 +342,16 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF0096C7).withValues(alpha: 0.08),
+            color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFF0096C7).withValues(alpha: 0.25),
+              color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, size: 16, color: const Color(0xFF0096C7)),
+              Icon(widget.icon, size: 16, color: const Color(0xFF06B6D4)),
               const SizedBox(width: 6),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,8 +415,8 @@ class _FluidWavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF48CAE4).withValues(alpha: 0.35),
-          const Color(0xFF0096C7).withValues(alpha: 0.5),
+          const Color(0xFF67E8F9).withValues(alpha: 0.45),
+          const Color(0xFF06B6D4).withValues(alpha: 0.6),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(backPath, backPaint);
@@ -437,8 +437,8 @@ class _FluidWavePainter extends CustomPainter {
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF00B4D8).withValues(alpha: 0.85),
-          const Color(0xFF0077B6).withValues(alpha: 0.95),
+          const Color(0xFF22D3EE).withValues(alpha: 0.9),
+          const Color(0xFF0284C7).withValues(alpha: 0.95),
         ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(frontPath, frontPaint);

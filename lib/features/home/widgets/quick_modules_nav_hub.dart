@@ -239,7 +239,7 @@ class QuickModulesNavHub extends ConsumerWidget {
 
               Divider(height: 1, thickness: 1, color: g.line),
 
-              // ── 3. CHAI & COFFEE BREAK SANCTUARY FOOTER ──────────────
+              // ── 3. CHAI & COFFEE BREAK FOOTER ──────────────
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -251,40 +251,23 @@ class QuickModulesNavHub extends ConsumerWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
                           Icons.local_cafe_rounded,
                           size: 18,
                           color: g.coral,
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Chai & Coffee Break',
-                            style: AscentTextStyles.homeHeadline.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: g.ink,
-                            ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Chai & Coffee Break',
+                          style: AscentTextStyles.homeHeadline.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: g.ink,
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: g.claySoft,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'SANCTUARY',
-                            style: AscentTextStyles.homeCaption.copyWith(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: g.clay,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 18,

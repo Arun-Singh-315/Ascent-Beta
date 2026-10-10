@@ -96,4 +96,56 @@ class WaterDao extends DatabaseAccessor<AppDatabase> with _$WaterDaoMixin {
       );
     }
   }
+
+  /// Add water log for a specific date (useful for backfill and testing).
+  Future<int> addWaterForDate(int amountMl, DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    return into(waterLogTable).insert(
+      WaterLogTableCompanion.insert(
+        amountMl: amountMl,
+        timestamp: Value(date),
+        date: dateOnly,
+      ),
+    );
+  }
+
+  /// Get past 7 days hydration records (including today).
+  Future<List<DailyHydrationRecord>> getPast7DaysHistory() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final goal = await (select(waterGoalTable)..limit(1)).getSingleOrNull();
+    final goalMl = goal?.targetMl ?? 2500;
+
+    final records = <DailyHydrationRecord>[];
+    for (int i = 6; i >= 0; i--) {
+      final date = today.subtract(Duration(days: i));
+      final ml = await getWaterForDate(date);
+      records.add(DailyHydrationRecord(
+        date: date,
+        totalMl: ml,
+        goalMl: goalMl,
+      ));
+    }
+    return records;
+  }
+
+  /// Watch past 7 days hydration history stream.
+  Stream<List<DailyHydrationRecord>> watchPast7DaysHistory() {
+    return select(waterLogTable).watch().asyncMap((_) => getPast7DaysHistory());
+  }
+}
+
+class DailyHydrationRecord {
+  final DateTime date;
+  final int totalMl;
+  final int goalMl;
+
+  const DailyHydrationRecord({
+    required this.date,
+    required this.totalMl,
+    this.goalMl = 2500,
+  });
+
+  bool get isGoalMet => totalMl >= goalMl;
+  double get progress => goalMl > 0 ? (totalMl / goalMl).clamp(0.0, 1.5) : 0.0;
 }

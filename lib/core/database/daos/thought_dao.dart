@@ -90,6 +90,28 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     }
   }
 
+  /// Explicitly set completed state of a thought.
+  Future<void> setCompleted(int id, bool completed) async {
+    final thought = await getThoughtById(id);
+    if (thought != null && thought.isCompleted != completed) {
+      await update(thoughtTable).replace(
+        thought.copyWith(isCompleted: completed),
+      );
+    }
+  }
+
+  /// Explicitly set completed state on any thoughts matching the given text content.
+  Future<void> setCompletedByContent(String content, bool completed) async {
+    final trimmed = content.trim();
+    if (trimmed.isEmpty) return;
+    final matches = await (select(thoughtTable)..where((t) => t.content.equals(trimmed))).get();
+    for (final t in matches) {
+      if (t.isCompleted != completed) {
+        await update(thoughtTable).replace(t.copyWith(isCompleted: completed));
+      }
+    }
+  }
+
   /// Archive a thought.
   Future<void> archiveThought(int id) async {
     final thought = await getThoughtById(id);

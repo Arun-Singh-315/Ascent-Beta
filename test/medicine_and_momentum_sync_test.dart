@@ -61,7 +61,7 @@ void main() {
       final allTasks = await db.taskDao.watchAllTasks().first;
       expect(allTasks.length, 10);
       for (final task in allTasks) {
-        expect(task.title, contains('💊 Amoxicillin 500mg'));
+        expect(task.title, contains('Amoxicillin 500mg (medicine)'));
         expect(task.priority, 'high');
         expect(task.estimatedMinutes, isNull); // Rule 9: simple to-do, no timer
         expect(task.actualCompletedDate, isNull);

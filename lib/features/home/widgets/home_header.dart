@@ -102,7 +102,7 @@ class HomeHeader extends ConsumerWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '$streak',
+                              streak == 0 ? 'Start' : '$streak',
                               style: GoogleFonts.jetBrainsMono(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w700,
@@ -477,9 +477,12 @@ class HomeHeader extends ConsumerWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                '$streak Day${streak == 1 ? '' : 's'} Active',
+                streak > 0
+                    ? '$streak Day${streak == 1 ? '' : 's'} Active'
+                    : "Let's start the freaking streak from today!",
+                textAlign: TextAlign.center,
                 style: GoogleFonts.bricolageGrotesque(
-                  fontSize: 22,
+                  fontSize: streak > 0 ? 22 : 20,
                   fontWeight: FontWeight.w700,
                   color: ctx.textPrimary,
                 ),
@@ -488,7 +491,7 @@ class HomeHeader extends ConsumerWidget {
               Text(
                 streak > 0
                     ? 'Consistency is your edge. Complete any activity today to keep the flame alive.'
-                    : 'Start your streak today. Check off an activity to ignite the flame.',
+                    : 'Get your first day locked in today! Check off an activity to ignite the flame.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
                   fontSize: 13,

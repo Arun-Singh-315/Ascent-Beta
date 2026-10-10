@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/animated_water_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -104,6 +106,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
     final todayWaterAsync = ref.watch(todayWaterMlStreamProvider);
     final goalAsync = ref.watch(dailyWaterGoalStreamProvider);
     final logsAsync = ref.watch(todayWaterLogsStreamProvider);
+    final historyAsync = ref.watch(past7DaysHydrationStreamProvider);
 
     final currentMl = todayWaterAsync.value ?? 0;
     final targetMl = goalAsync.value ?? 2500;
@@ -116,14 +119,6 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
       subtitle: 'Daily fluid health & vitality',
       glow2: g.slateSoft,
       actions: [
-        IconButton(
-          tooltip: 'Trigger Hydration Pop-up Alert',
-          icon: Icon(Icons.water_drop_rounded, color: g.slate),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            HydrationPopupDialog.show(context);
-          },
-        ),
         IconButton(
           tooltip: 'Edit Daily Goal',
           icon: Icon(Icons.tune_rounded, color: g.clay),
@@ -159,7 +154,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     label: 'CONSUMED',
                     value: '$currentMl mL',
                     icon: Icons.water_drop_rounded,
-                    color: const Color(0xFF38BDF8),
+                    color: const Color(0xFF06B6D4),
                   ),
                   Container(
                     width: 1,
@@ -170,7 +165,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     label: 'TARGET',
                     value: '$targetMl mL',
                     icon: Icons.flag_rounded,
-                    color: const Color(0xFF60A5FA),
+                    color: const Color(0xFF0EA5E9),
                   ),
                   Container(
                     width: 1,
@@ -181,7 +176,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     label: 'COMPLETION',
                     value: '$percent%',
                     icon: Icons.check_circle_rounded,
-                    color: percent >= 100 ? const Color(0xFF34D399) : context.accentPrimary,
+                    color: percent >= 100 ? const Color(0xFF10B981) : const Color(0xFF06B6D4),
                   ),
                 ],
               ),
@@ -189,58 +184,11 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
 
             const SizedBox(height: 16),
 
-            // Interactive Pop-up Reminder Banner
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFF38BDF8).withValues(alpha: 0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.notifications_active_rounded, color: Color(0xFF38BDF8), size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Freeze-Screen Alert Active',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: context.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Test the full-screen blurred hydration popup anytime.',
-                          style: TextStyle(fontSize: 11, color: context.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF38BDF8),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    ),
-                    onPressed: () => HydrationPopupDialog.show(context),
-                    child: const Text('Try Pop-up', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                  ),
-                ],
-              ),
+            // 7-Day Hydration History & Trend Graph
+            historyAsync.when(
+              data: (history) => _HydrationHistorySection(history: history),
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => const SizedBox.shrink(),
             ),
 
             const SizedBox(height: 20),
@@ -428,3 +376,164 @@ class _StatItem extends StatelessWidget {
     );
   }
 }
+
+class _HydrationHistorySection extends StatelessWidget {
+  final List<DailyHydrationRecord> history;
+
+  const _HydrationHistorySection({required this.history});
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    if (history.isEmpty) return const SizedBox.shrink();
+
+    final totalVolume = history.fold<int>(0, (sum, r) => sum + r.totalMl);
+    final avgVolume = (totalVolume / history.length).round();
+    final daysMet = history.where((r) => r.isGoalMet).length;
+
+    final maxVal = history.fold<int>(2500, (max, r) => math.max(max, math.max(r.totalMl, r.goalMl)));
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: context.bgSurface.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: context.divider.withValues(alpha: 0.6),
+          width: 1.0,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.insights_rounded, size: 16, color: Color(0xFF06B6D4)),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '7-DAY HYDRATION TREND',
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: context.textPrimary,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: daysMet >= 4 ? const Color(0xFF10B981).withValues(alpha: 0.15) : g.claySoft,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$daysMet/7 Goals Met',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: daysMet >= 4 ? const Color(0xFF10B981) : g.clay,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // 7-day Bar Chart
+          SizedBox(
+            height: 130,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: history.map((record) {
+                final heightFactor = (record.totalMl / maxVal).clamp(0.06, 1.0);
+                final now = DateTime.now();
+                final isToday = record.date.day == now.day &&
+                    record.date.month == now.month &&
+                    record.date.year == now.year;
+                final dayLabel = DateFormat('E').format(record.date).substring(0, 1);
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      record.totalMl > 0 ? '${(record.totalMl / 1000).toStringAsFixed(1)}L' : '0',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w600,
+                        color: record.isGoalMet ? const Color(0xFF10B981) : context.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 26,
+                      height: (74 * heightFactor).toDouble(),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: record.isGoalMet
+                              ? [const Color(0xFF34D399), const Color(0xFF059669)]
+                              : (isToday
+                                  ? [const Color(0xFF22D3EE), const Color(0xFF0284C7)]
+                                  : [const Color(0xFF06B6D4).withValues(alpha: 0.7), const Color(0xFF0EA5E9).withValues(alpha: 0.4)]),
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: isToday
+                            ? Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isToday ? 'Today' : dayLabel,
+                      style: GoogleFonts.inter(
+                        fontSize: isToday ? 10.5 : 11,
+                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                        color: isToday ? const Color(0xFF06B6D4) : context.textMuted,
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Divider(color: context.divider.withValues(alpha: 0.5), height: 1),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '7-Day Average: $avgVolume mL / day',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: context.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                'Total: ${(totalVolume / 1000).toStringAsFixed(1)} L',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 12,
+                  color: const Color(0xFF06B6D4),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
