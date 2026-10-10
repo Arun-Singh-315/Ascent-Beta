@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
 import '../providers/database_provider.dart';
+import '../providers/settings_provider.dart';
 import '../learning_hub/learning_hub_provider.dart';
 import '../learning_hub/learning_hub_models.dart';
 import '../walk/walk_tracking_service.dart';
@@ -61,12 +62,16 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   @override
   Future<AiResponse> processUserPrompt(String prompt, WidgetRef ref) async {
     final lower = prompt.toLowerCase().trim();
+    String assistantName = 'Riya';
+    try {
+      assistantName = ref.read(assistantNameProvider);
+    } catch (_) {}
 
     // 1. Natural Language Expense Logging ("spent ₹150 on coffee", "₹45 chai and snacks")
     final expenseMatch = tryParseExpense(prompt);
     if (expenseMatch != null) {
       return AiResponse(
-        text: 'I parsed your expense of ₹${expenseMatch['amount']} for "${expenseMatch['title']}". Confirm below to save it to your financial records.',
+        text: 'Got it! 💸 Logged an expense of ₹${expenseMatch['amount']} for "${expenseMatch['title']}". Tap below to save it to your financial records! ✨',
         proposedAction: AiProposedAction(
           type: AiActionType.expenseLogged,
           title: 'Log Expense: ₹${expenseMatch['amount']}',
@@ -81,7 +86,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     if (waterMatch != null) {
       final ml = waterMatch['amountMl'] as int;
       return AiResponse(
-        text: 'Hydration recorded: $ml mL. Tap below to log it to your daily water target.',
+        text: 'Refreshing! 💧 Logged +$ml mL of water. Keep staying energized and hydrated! 🌊',
         proposedAction: AiProposedAction(
           type: AiActionType.waterLogged,
           title: 'Log Water: +$ml mL',
@@ -151,7 +156,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
           : '';
 
       return AiResponse(
-        text: 'I structured a new $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm below to save it to your Activity Hub.',
+        text: 'I\'ve organized that for you! 🎯 Added $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Tap below to save it to your Activity Hub! ✨',
         proposedAction: AiProposedAction(
           type: AiActionType.activityCreated,
           title: 'Add $kindStr: ${taskMatch['title']}',
@@ -186,15 +191,15 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     // 12. Contextual Help & Guidance
-    return const AiResponse(
-      text: "I am your on-device life assistant. Here is what I can do for you:\n\n"
-          "• Plan your day and focus sessions\n"
-          "• Organize tasks and reminders\n"
-          "• Check your medicine schedule\n"
-          "• Log expenses and water intake\n"
-          "• Explain study topics and computer science concepts\n\n"
-          "Everything runs 100% on your device, private and fast.",
-      clarifyingOptions: [
+    return AiResponse(
+      text: "Hi there! I'm $assistantName, your personal AI companion. 🌸 Here is what we can do together:\n\n"
+          "✨ Plan your day & deep focus blocks\n"
+          "🎯 Organize tasks, routines & reminders\n"
+          "💧 Track hydration & daily physical walks\n"
+          "📚 Master concepts & study lectures\n"
+          "💳 Log expenses and stay on budget\n\n"
+          "Everything runs 100% on your device, private and lightning-fast. What's on your mind? 🚀",
+      clarifyingOptions: const [
         'Plan my day',
         'What are my medicines today?',
         'What are my tasks today?',
@@ -465,7 +470,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (unfinishedLectures.isEmpty) {
       return AiResponse(
-        text: 'All lectures in "${activeCourse.title}" are already completed! Outstanding work.',
+        text: 'All lectures in "${activeCourse.title}" are already completed! 🎓 Outstanding achievement! 🌟',
       );
     }
 
@@ -473,7 +478,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final lectureIds = unfinishedLectures.map((l) => l.id).toList();
 
     return AiResponse(
-      text: 'Great work! I can mark ${unfinishedLectures.length} lecture(s) completed in "${activeCourse.title}": $titles. Tap below to confirm and update your course progress.',
+      text: 'Awesome consistency! 🚀 I can mark ${unfinishedLectures.length} lecture(s) completed in "${activeCourse.title}": $titles. Tap below to confirm and update your course progress! 📚',
       proposedAction: AiProposedAction(
         type: AiActionType.lectureMarkedComplete,
         title: 'Complete ${unfinishedLectures.length} Lecture(s)',
@@ -510,18 +515,18 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     final buffer = StringBuffer();
-    buffer.writeln("With **$availableMins minutes free**, here is your optimal focus recommendation:\n");
+    buffer.writeln("With **$availableMins minutes free**, here is your optimal focus game plan! 🎯\n");
 
     if (recommendedLecture != null) {
       final lecMins = (recommendedLecture.durationSeconds / 60).round();
       buffer.writeln("🎯 **Recommended Study Session:**");
       buffer.writeln("• **${recommendedLecture.title}** in *${activeCourse.title}*");
-      buffer.writeln("• Estimated: ~$lecMins mins. Fits perfectly into your time window!");
+      buffer.writeln("• Estimated: ~$lecMins mins. Fits smoothly into your window! ⏱️");
     } else {
-      buffer.writeln("🎯 **Study Status:** All lectures in ${activeCourse.title} are up to date!");
+      buffer.writeln("🎯 **Study Status:** All lectures in ${activeCourse.title} are up to date! 🌟");
     }
 
-    buffer.writeln("\n💡 **Action:** Tap below to start your study focus session or open your Activity Hub.");
+    buffer.writeln("\n💡 **Action:** Tap below to start your study focus session or open your Activity Hub. Let's do this! ✨");
 
     return AiResponse(
       text: buffer.toString(),
@@ -573,8 +578,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
       return AiResponse(
         text: workoutTask != null
-            ? 'I found "${workoutTask.title}". I can reschedule it to this evening at 6:00 PM.'
-            : 'I can schedule an evening workout session for you today at 6:00 PM.',
+            ? 'I found "${workoutTask.title}"! 🏃 I can reschedule it to this evening at 6:00 PM so you stay consistent. Tap below to confirm! ✨'
+            : 'I can schedule an evening workout session for you today at 6:00 PM! 🏃 Tap below to confirm! ✨',
         proposedAction: AiProposedAction(
           type: AiActionType.scheduleRearranged,
           title: 'Reschedule Workout: 6:00 PM',
@@ -593,7 +598,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       final newDate = DateTime(tomorrowMorning.year, tomorrowMorning.month, tomorrowMorning.day, 9, 0);
 
       return AiResponse(
-        text: 'Consistency means adapting! I found ${pending.length} pending items today. I can rollover your remaining study tasks to tomorrow morning starting at 9:00 AM.',
+        text: 'Consistency means adapting! 🌱 I found ${pending.length} pending items today. I can rollover your remaining study tasks to tomorrow morning starting at 9:00 AM. Let\'s keep the momentum going! 🚀',
         proposedAction: AiProposedAction(
           type: AiActionType.scheduleRearranged,
           title: 'Rollover Study Plan to Tomorrow',
@@ -615,7 +620,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final sleepTime = DateTime(now.year, now.month, now.day, 23, 0);
 
     return AiResponse(
-      text: 'Good sleep is essential for optimal learning and cognitive recovery. I can set a Sleep Schedule for 11:00 PM tonight with an 8-hour target and a wind-down reminder at 10:30 PM.',
+      text: 'Rest is the foundation of peak focus! 🌙 I can set a Sleep Schedule for 11:00 PM tonight with an 8-hour target and a soothing wind-down reminder at 10:30 PM. Sleep well! 💤',
       proposedAction: AiProposedAction(
         type: AiActionType.activityCreated,
         title: 'Schedule Sleep Routine (11:00 PM)',
@@ -647,7 +652,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final activityName = lower.contains('study') ? 'Study Session' : 'Workout';
 
     return AiResponse(
-      text: 'Sure! Do you want to add $activityName as a simple to-do, or track it with a timer? And roughly how long should I schedule for it?',
+      text: 'I\'d love to organize that! 🎯 Do you want to add $activityName as a simple to-do, or track it with a timer? And roughly how long should I schedule for it? ⏱️',
       clarifyingOptions: [
         'Track 30m $activityName',
         'Track 45m $activityName',
@@ -733,8 +738,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (tasks.isEmpty) {
       return const AiResponse(
-        text: "You don't have any tasks scheduled for today.\n\n"
-            "Tell me what you'd like to work on and I'll organize it for you.",
+        text: "Your slate is clean today! 🌟 You don't have any tasks scheduled.\n\n"
+            "Tell me what you'd like to work on and I'll organize it for you! ✨",
         clarifyingOptions: [
           'Plan my day',
           'What are my medicines today?',
@@ -746,23 +751,22 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final pending = tasks.where((t) => t.actualCompletedDate == null).toList();
 
     final buffer = StringBuffer();
-    buffer.writeln("Here is your task breakdown for today (${tasks.length} total):");
-    buffer.writeln();
+    buffer.writeln("Here is your task breakdown for today (${tasks.length} total): 📋\n");
 
     if (pending.isNotEmpty) {
-      buffer.writeln("Pending (${pending.length}):");
+      buffer.writeln("Pending (${pending.length}): ⏳");
       for (final t in pending) {
         final prioTag = t.priority.isNotEmpty ? " [${t.priority.toUpperCase()}]" : "";
         final cleanTitle = t.title.replaceAll('💊', '(medicine)');
         buffer.writeln("• $cleanTitle$prioTag");
       }
     } else {
-      buffer.writeln("All today's tasks are completed. Great consistency.");
+      buffer.writeln("Woohoo! 🎉 All today's tasks are completed! Incredible consistency! 🌟");
     }
 
     if (completed.isNotEmpty) {
       buffer.writeln();
-      buffer.writeln("Completed (${completed.length}):");
+      buffer.writeln("Completed (${completed.length}): ✅");
       for (final t in completed) {
         final cleanTitle = t.title.replaceAll('💊', '(medicine)');
         buffer.writeln("• $cleanTitle");
@@ -790,10 +794,10 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (reminders.isEmpty) {
       return const AiResponse(
-        text: "You don't have any upcoming reminders set right now.\n\n"
-            "You can ask me to set one anytime, like:\n"
+        text: "All clear! 🍃 You don't have any upcoming reminders set right now.\n\n"
+            "Tell me whenever you need a nudge, like:\n"
             "• \"Remind me to drink water in 30 minutes\"\n"
-            "• \"Remind me to review notes at 5 PM\"",
+            "• \"Remind me to review notes at 5 PM\" ⏰",
         clarifyingOptions: [
           'Plan my day',
           'What are my tasks today?',
@@ -802,8 +806,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     final buffer = StringBuffer();
-    buffer.writeln("Here are your upcoming reminders (${reminders.length}):");
-    buffer.writeln();
+    buffer.writeln("Here are your upcoming reminders (${reminders.length}): 🔔\n");
     for (final r in reminders) {
       final timeStr = DateFormat('EEE, MMM d • h:mm a').format(r.scheduledAt);
       buffer.writeln("• ${r.title} — $timeStr");
@@ -856,8 +859,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     if (logs.isEmpty) {
       if (meds.isEmpty) {
         return const AiResponse(
-          text: "You don't have any active prescriptions or medicines scheduled today.\n\n"
-              "You can add one in the Medicine tab or ask me to schedule one anytime.",
+          text: "You don't have any active prescriptions or medicines scheduled today. 🌿\n\n"
+              "You can add one in the Medicine tab or ask me to schedule one anytime! ✨",
           clarifyingOptions: [
             'Plan my day',
             'What are my tasks today?',
@@ -865,7 +868,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         );
       } else {
         return AiResponse(
-          text: "You have ${meds.length} active prescription(s), but no doses are scheduled for today.",
+          text: "You have ${meds.length} active prescription(s), but no doses are scheduled for today. 🌿 All good! ✨",
           clarifyingOptions: [
             'Plan my day',
             'What are my tasks today?',
@@ -878,7 +881,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final taken = logs.where((l) => l.isTaken).length;
 
     final buffer = StringBuffer();
-    buffer.writeln("Here is your medicine schedule for today ($taken of $total doses completed):\n");
+    buffer.writeln("Here is your medicine schedule for today ($taken of $total doses completed): 💊\n");
 
     for (final log in logs) {
       final med = meds.where((m) => m.id == log.medicineId).firstOrNull;
@@ -945,7 +948,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final nextReminder = ref.read(nextUpcomingReminderProvider).value;
 
     final buffer = StringBuffer();
-    buffer.writeln("Hi $userName! Here is your live situation & daily game plan:\n");
+    buffer.writeln("Hi $userName! ☀️ Here is your live situation & daily game plan to conquer today: 🚀\n");
 
     // Critical Focus Areas
     if (waterMl < 1000) {
@@ -1039,7 +1042,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final course = learningState.course;
 
     final buffer = StringBuffer();
-    buffer.writeln("📊 **Your Deterministic Life Insights:**\n");
+    buffer.writeln("📊 **Your Personal Growth Insights:** ✨\n");
     final pct = (course.progressFraction * 100).round();
     buffer.writeln("• **Course Progress:** $pct% completed in \"${course.title}\" (${course.completedLectures}/${course.totalLectures} lectures).");
     if (dsaSolved > 0) {

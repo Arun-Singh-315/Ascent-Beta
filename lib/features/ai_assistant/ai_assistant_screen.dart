@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -78,7 +79,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       final response = await engine.processUserPrompt(prompt, ref).timeout(
         const Duration(seconds: 5),
         onTimeout: () => const AiResponse(
-          text: "I processed your request and checked your synced data. What would you like to plan or work on next?",
+          text: "I checked your synced records! 🌟 What would you like to plan or work on next? ✨",
         ),
       );
 
@@ -120,7 +121,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(
           sender: 'assistant',
-          message: "I encountered a minor glitch structuring that request. Let's try again — tap an option below or type what you need.",
+          message: "Oops, hit a tiny snag structuring that! 💫 Let's give it another go — tap an option below or tell me what you need! ✨",
           actionPayloadJson: drift.Value(jsonEncode({
             'quickOptions': ['Plan my day', 'Log 250ml water', 'Check activities'],
           })),
@@ -226,46 +227,120 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = ref.watch(assistantNameProvider);
     final messagesStream = ref.watch(aiAssistantDaoProvider).watchRecentMessages();
     final accentColor = context.accentPrimary;
 
     return Scaffold(
-      backgroundColor: context.bgBase,
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: context.bgBase,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF090D18).withValues(alpha: 0.72)
+                    : Colors.white.withValues(alpha: 0.82),
+                border: Border(
+                  bottom: BorderSide(
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.06),
+                    width: 1.0,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: context.textPrimary),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, color: context.textPrimary, size: 19),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        titleSpacing: 0,
         title: Row(
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accentColor.withValues(alpha: 0.15),
-                border: Border.all(color: accentColor.withValues(alpha: 0.3)),
-              ),
-              child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 16),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        accentColor.withValues(alpha: 0.25),
+                        const Color(0xFF6366F1).withValues(alpha: 0.25),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(
+                      color: accentColor.withValues(alpha: 0.45),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 17),
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? const Color(0xFF090D18) : Colors.white,
+                        width: 1.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                          blurRadius: 4,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(width: 10),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name,
-                  style: GoogleFonts.plusJakartaSans(
-                    color: context.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: context.textPrimary,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Text('✨', style: TextStyle(fontSize: 12)),
+                  ],
                 ),
                 Text(
-                  'On-device · Private · Free',
-                  style: TextStyle(fontSize: 10, color: context.textMuted),
+                  'Intelligent · On-Device · Private',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    color: context.textMuted,
+                  ),
                 ),
               ],
             ),
@@ -273,262 +348,267 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.delete_sweep_outlined, color: context.textMuted, size: 20),
+            icon: Icon(Icons.delete_sweep_outlined, color: context.textMuted, size: 21),
             tooltip: 'Clear chat history',
             onPressed: () async {
+              HapticFeedback.lightImpact();
               await ref.read(aiAssistantDaoProvider).clearChatHistory();
             },
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).brightness == Brightness.dark
-              ? const Color(0xFF0C1017)
-              : const Color(0xFFF8FAFC),
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: Theme.of(context).brightness == Brightness.dark
-                ? [
-                    const Color(0xFF101724),
-                    const Color(0xFF0B0F17),
-                  ]
-                : [
-                    const Color(0xFFFFFFFF),
-                    const Color(0xFFF1F5F9),
-                  ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Breathtaking Night & Day Atmospheric Background
+          _AtmosphericChatBackground(
+            isDark: isDark,
+            accentColor: accentColor,
           ),
-        ),
-        child: Column(
-          children: [
-          // Chat stream
-          Expanded(
-            child: StreamBuilder<List<AiChatMessage>>(
-              stream: messagesStream,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text(
-                        'Connecting to memory...',
-                        style: TextStyle(color: context.textMuted, fontSize: 13),
-                      ),
-                    ),
-                  );
-                }
-
-                final messages = snapshot.data ?? [];
-
-                if (messages.isEmpty) {
-                  return _SoftChatWelcome(
-                    assistantName: name,
-                    onSelectPrompt: _handleSubmitted,
-                  );
-                }
-
-                return ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: messages.length + (_isLoading ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == messages.length) {
-                      return KeyedSubtree(
-                        key: const ValueKey('chat_loading_indicator'),
-                        child: _ThinkingBubble(name: name, accentColor: accentColor),
+          // Main Chat Interface
+          Column(
+            children: [
+              // Chat stream
+              Expanded(
+                child: StreamBuilder<List<AiChatMessage>>(
+                  stream: messagesStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            'Connecting to memory...',
+                            style: TextStyle(color: context.textMuted, fontSize: 13),
+                          ),
+                        ),
                       );
                     }
 
-                    final msg = messages[index];
-                    final isUser = msg.sender == 'user';
+                    final messages = snapshot.data ?? [];
 
-                    Map<String, dynamic>? actionData;
-                    List<String> messageQuickChips = [];
-                    if (msg.actionPayloadJson != null) {
-                      try {
-                        actionData = jsonDecode(msg.actionPayloadJson!);
-                        if (actionData?['quickOptions'] is List) {
-                          messageQuickChips = (actionData!['quickOptions'] as List)
-                              .map((e) => e.toString())
-                              .toList();
-                        }
-                      } catch (_) {}
+                    if (messages.isEmpty) {
+                      return _SoftChatWelcome(
+                        assistantName: name,
+                        onSelectPrompt: _handleSubmitted,
+                      );
                     }
 
-                    return KeyedSubtree(
-                      key: ValueKey('chat_item_${msg.id}'),
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Align(
-                          alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxWidth: MediaQuery.sizeOf(context).width * 0.84,
-                            ),
-                            child: _TelegramMessageBubble(
-                              msg: msg,
-                              isUser: isUser,
-                              assistantName: name,
-                              accentColor: accentColor,
-                              actionData: actionData,
-                              messageQuickChips: messageQuickChips,
-                              onSelectChip: _handleSubmitted,
-                              onOpenCourse: () => context.push('/study-plan'),
-                              onOpenHub: () => Navigator.of(context).pop(),
+                    return ListView.builder(
+                      controller: _scrollController,
+                      padding: EdgeInsets.fromLTRB(
+                        14,
+                        MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+                        14,
+                        12,
+                      ),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: messages.length + (_isLoading ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == messages.length) {
+                          return KeyedSubtree(
+                            key: const ValueKey('chat_loading_indicator'),
+                            child: _ThinkingBubble(name: name, accentColor: accentColor),
+                          );
+                        }
+
+                        final msg = messages[index];
+                        final isUser = msg.sender == 'user';
+
+                        Map<String, dynamic>? actionData;
+                        List<String> messageQuickChips = [];
+                        if (msg.actionPayloadJson != null) {
+                          try {
+                            actionData = jsonDecode(msg.actionPayloadJson!);
+                            if (actionData?['quickOptions'] is List) {
+                              messageQuickChips = (actionData!['quickOptions'] as List)
+                                  .map((e) => e.toString())
+                                  .toList();
+                            }
+                          } catch (_) {}
+                        }
+
+                        return KeyedSubtree(
+                          key: ValueKey('chat_item_${msg.id}'),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Align(
+                              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.sizeOf(context).width * 0.84,
+                                ),
+                                child: _TelegramMessageBubble(
+                                  msg: msg,
+                                  isUser: isUser,
+                                  assistantName: name,
+                                  accentColor: accentColor,
+                                  actionData: actionData,
+                                  messageQuickChips: messageQuickChips,
+                                  onSelectChip: _handleSubmitted,
+                                  onOpenCourse: () => context.push('/study-plan'),
+                                  onOpenHub: () => Navigator.of(context).pop(),
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
-                );
-              },
-            ),
-          ),
-
-          if (_isLoading)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  const SizedBox(width: 16),
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$name is thinking...',
-                    style: TextStyle(fontSize: 12, color: context.textMuted),
-                  ),
-                ],
+                ),
               ),
-            ),
 
-          // Quick suggestion chips (Fit on-screen, no horizontal scrolling)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildQuickChip('Plan my day', Icons.wb_sunny_outlined, () => _handleSubmitted('Plan my day'), context, accentColor),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildQuickChip('Today\'s agenda', Icons.checklist_rounded, () => _handleSubmitted('What are my tasks today?'), context, accentColor),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildQuickChip('Medicines', Icons.health_and_safety_outlined, () => _handleSubmitted('What are my medicines today?'), context, accentColor),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Text input bar (WhatsApp Style: pill input + equal height send button, brain inside input, no top divider line)
-          SafeArea(
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
-              color: Colors.transparent,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Box 1: Rounded input pill with brain inside
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFF1E2633)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? const Color(0xFF2E384D)
-                              : const Color(0xFFE2E8F0),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: Theme.of(context).brightness == Brightness.dark ? 0.25 : 0.05,
-                            ),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+              if (_isLoading)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 16),
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
                       ),
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 14, right: 8),
-                            child: Icon(
-                              Icons.psychology_rounded,
-                              size: 22,
-                              color: accentColor,
+                      const SizedBox(width: 8),
+                      Text(
+                        '$name is thinking...',
+                        style: TextStyle(fontSize: 12, color: context.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Quick suggestion chips (Fit on-screen, no horizontal scrolling)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildQuickChip('Plan my day', Icons.wb_sunny_rounded, () => _handleSubmitted('Plan my day'), context, accentColor),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildQuickChip('Today\'s agenda', Icons.checklist_rounded, () => _handleSubmitted('What are my tasks today?'), context, accentColor),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildQuickChip('Medicines', Icons.medication_rounded, () => _handleSubmitted('What are my medicines today?'), context, accentColor),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 6),
+
+              // Text input bar (WhatsApp Style: pill input + equal height send button, brain inside input, no top divider line)
+              SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                  color: Colors.transparent,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Box 1: Rounded input pill with brain inside
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? const Color(0xFF141D2D).withValues(alpha: 0.95)
+                                : Colors.white.withValues(alpha: 0.98),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF28384E)
+                                  : const Color(0xFFE2E8F0),
+                              width: 1.0,
                             ),
-                          ),
-                          Expanded(
-                            child: TextField(
-                              controller: _textController,
-                              style: GoogleFonts.plusJakartaSans(
-                                color: context.textPrimary,
-                                fontSize: 14,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Message $name...',
-                                hintStyle: GoogleFonts.plusJakartaSans(
-                                  color: context.textMuted,
-                                  fontSize: 13.5,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.25 : 0.05,
                                 ),
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                isDense: true,
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
-                              onSubmitted: _handleSubmitted,
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(left: 14, right: 8),
+                                child: Icon(
+                                  Icons.psychology_rounded,
+                                  size: 22,
+                                  color: accentColor,
+                                ),
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  controller: _textController,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    color: context.textPrimary,
+                                    fontSize: 14,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Message $name...',
+                                    hintStyle: GoogleFonts.plusJakartaSans(
+                                      color: context.textMuted,
+                                      fontSize: 13.5,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                    isDense: true,
+                                  ),
+                                  onSubmitted: _handleSubmitted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Box 2: Circular send button (48dp height - equal to input capsule!)
+                      GestureDetector(
+                        onTap: () => _handleSubmitted(_textController.text),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                accentColor,
+                                accentColor.withValues(alpha: 0.88),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: accentColor.withValues(alpha: 0.38),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: const Icon(Icons.arrow_upward_rounded, size: 21, color: Colors.white),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  // Box 2: Circular send button (48dp height - equal to input capsule!)
-                  GestureDetector(
-                    onTap: () => _handleSubmitted(_textController.text),
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: accentColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: accentColor.withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.send_rounded, size: 20, color: Colors.white),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildQuickChip(
     String label,
@@ -547,18 +627,30 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         },
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
+          padding: const EdgeInsets.symmetric(vertical: 7.5, horizontal: 8),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E2633) : Colors.white,
+            color: isDark
+                ? const Color(0xFF131C2D).withValues(alpha: 0.88)
+                : Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF2E384D) : const Color(0xFFE2E8F0),
+              color: isDark
+                  ? const Color(0xFF26354B)
+                  : const Color(0xFFE2E8F0),
+              width: 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 13, color: accentColor),
+              Icon(icon, size: 14, color: accentColor),
               const SizedBox(width: 5),
               Flexible(
                 child: Text(
@@ -611,14 +703,23 @@ class _TelegramMessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final userBubbleColor = const Color(0xFF007AFF);
-    final userTextColor = Colors.white;
+    final userGradient = isDark
+        ? const LinearGradient(
+            colors: [Color(0xFF0A84FF), Color(0xFF0066D6)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          )
+        : const LinearGradient(
+            colors: [Color(0xFF007AFF), Color(0xFF005EC4)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          );
 
     final botBubbleColor = isDark
-        ? const Color(0xFF1E2633)
-        : Colors.white;
+        ? const Color(0xFF131C2D).withValues(alpha: 0.90)
+        : Colors.white.withValues(alpha: 0.95);
     final botBorderColor = isDark
-        ? const Color(0xFF2C374A)
+        ? const Color(0xFF26354B)
         : const Color(0xFFE2E8F0);
 
     final timeString = "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
@@ -631,7 +732,8 @@ class _TelegramMessageBubble extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isUser ? userBubbleColor : botBubbleColor,
+            color: isUser ? null : botBubbleColor,
+            gradient: isUser ? userGradient : null,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
               topRight: const Radius.circular(18),
@@ -646,8 +748,10 @@ class _TelegramMessageBubble extends StatelessWidget {
                   ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
-                blurRadius: 6,
+                color: isUser
+                    ? const Color(0xFF0A84FF).withValues(alpha: isDark ? 0.32 : 0.20)
+                    : Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                blurRadius: isUser ? 10 : 8,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -682,8 +786,10 @@ class _TelegramMessageBubble extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w400,
-                  color: isUser ? userTextColor : context.textPrimary,
-                  height: 1.42,
+                  color: isUser
+                      ? Colors.white
+                      : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
+                  height: 1.45,
                 ),
               ),
 
@@ -725,7 +831,7 @@ class _TelegramMessageBubble extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.1),
+              color: const Color(0xFF10B981).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: const Color(0xFF10B981).withValues(alpha: 0.35),
@@ -824,11 +930,13 @@ class _TelegramMessageBubble extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
                     decoration: BoxDecoration(
-                      color: context.bgSurface.withValues(alpha: 0.8),
+                      color: isDark
+                          ? const Color(0xFF162133).withValues(alpha: 0.85)
+                          : Colors.white.withValues(alpha: 0.90),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: accentColor.withValues(alpha: 0.35),
-                        width: 1.0,
+                        color: accentColor.withValues(alpha: 0.4),
+                        width: 0.9,
                       ),
                     ),
                     child: Row(
@@ -872,6 +980,7 @@ class _ThinkingBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -881,7 +990,7 @@ class _ThinkingBubble extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.15),
+              color: accentColor.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.auto_awesome_rounded, color: accentColor, size: 14),
@@ -890,9 +999,21 @@ class _ThinkingBubble extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: context.bgSurface.withValues(alpha: 0.8),
+              color: isDark
+                  ? const Color(0xFF131C2D).withValues(alpha: 0.88)
+                  : Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: context.divider, width: 0.8),
+              border: Border.all(
+                color: isDark ? const Color(0xFF26354B) : const Color(0xFFE2E8F0),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -941,31 +1062,52 @@ class _SoftChatWelcome extends ConsumerWidget {
     final profile = ref.watch(userProfileStreamProvider).value;
     final userName = profile?.name.isNotEmpty == true ? profile!.name.split(' ').first : 'there';
     final accent = context.accentPrimary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final hour = DateTime.now().hour;
+    final greetingTime = hour < 12
+        ? 'Good morning'
+        : (hour < 17 ? 'Good afternoon' : 'Good evening');
+    final greetingEmoji = hour < 12
+        ? '☀️'
+        : (hour < 17 ? '🌤️' : '🌙');
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+          24,
+          24,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Soft glowing avatar
             Container(
-              width: 58,
-              height: 58,
+              width: 68,
+              height: 68,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: context.bgSurfaceElevated,
-                border: Border.all(color: context.divider, width: 1.2),
+                gradient: LinearGradient(
+                  colors: [
+                    accent.withValues(alpha: 0.25),
+                    const Color(0xFF6366F1).withValues(alpha: 0.25),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                border: Border.all(color: accent.withValues(alpha: 0.5), width: 1.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 18,
-                    offset: const Offset(0, 4),
+                    color: accent.withValues(alpha: isDark ? 0.35 : 0.18),
+                    blurRadius: 24,
+                    spreadRadius: 2,
                   ),
                 ],
               ),
               child: Center(
-                child: Icon(Icons.auto_awesome_rounded, color: accent, size: 26),
+                child: Icon(Icons.auto_awesome_rounded, color: accent, size: 28),
               ),
             ),
             const SizedBox(height: 14),
@@ -974,9 +1116,14 @@ class _SoftChatWelcome extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: context.bgSurfaceElevated,
+                color: isDark
+                    ? const Color(0xFF131C2D).withValues(alpha: 0.85)
+                    : Colors.white.withValues(alpha: 0.90),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.divider, width: 0.8),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF26354B) : const Color(0xFFE2E8F0),
+                  width: 0.8,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -991,7 +1138,7 @@ class _SoftChatWelcome extends ConsumerWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '$assistantName · Private & On-Device',
+                    '$assistantName · Always by your side',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -1004,17 +1151,23 @@ class _SoftChatWelcome extends ConsumerWidget {
             const SizedBox(height: 12),
 
             Text(
-              'Hi $userName 👋',
+              '$greetingTime, $userName $greetingEmoji',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: context.textPrimary,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              'How can I help you today?',
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+              'I\'m $assistantName, your personal AI companion. How can I help you today? ✨',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 13.5,
+                color: context.textMuted,
+                height: 1.4,
+              ),
             ),
 
             const SizedBox(height: 24),
@@ -1028,28 +1181,44 @@ class _SoftChatWelcome extends ConsumerWidget {
                 '⚡ Plan my day',
                 '💧 Log 250ml water',
                 '🎯 What are my tasks today?',
-                '💡 Explain Dynamic Programming',
                 '🏃 Check my walk status',
+                '🌿 Medicine schedule',
+                '💡 Explain Dynamic Programming',
               ].map((prompt) {
-                return InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    onSelectPrompt(prompt);
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-                    decoration: BoxDecoration(
-                      color: context.bgSurfaceElevated,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: context.divider, width: 1.0),
-                    ),
-                    child: Text(
-                      prompt,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: context.textPrimary,
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      onSelectPrompt(prompt);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9.5),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF131C2D).withValues(alpha: 0.85)
+                            : Colors.white.withValues(alpha: 0.90),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF26354B) : const Color(0xFFE2E8F0),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        prompt,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: context.textPrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -1061,4 +1230,231 @@ class _SoftChatWelcome extends ConsumerWidget {
       ),
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Atmospheric Night & Day Chat Background with Celestial Stardust
+// ---------------------------------------------------------------------------
+
+class _AtmosphericChatBackground extends StatelessWidget {
+  final bool isDark;
+  final Color accentColor;
+
+  const _AtmosphericChatBackground({
+    required this.isDark,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isDark) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Base cosmic midnight canvas
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF090D18),
+                  Color(0xFF0C1322),
+                  Color(0xFF060910),
+                ],
+              ),
+            ),
+          ),
+          // Ambient Indigo/Violet Aura (Top-Left)
+          Positioned(
+            top: -60,
+            left: -60,
+            width: 320,
+            height: 320,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF6366F1).withValues(alpha: 0.16),
+                    const Color(0xFF4F46E5).withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Ethereal Sky/Cyan Aurora (Top-Right)
+          Positioned(
+            top: 40,
+            right: -80,
+            width: 300,
+            height: 300,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF0EA5E9).withValues(alpha: 0.13),
+                    const Color(0xFF0284C7).withValues(alpha: 0.05),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Deep Nebula Rose/Purple Aurora (Bottom-Left)
+          Positioned(
+            bottom: 60,
+            left: -80,
+            width: 340,
+            height: 340,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFA855F7).withValues(alpha: 0.10),
+                    const Color(0xFF9333EA).withValues(alpha: 0.04),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.55, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Custom Celestial Shimmer Dust (Deterministic, zero CPU/GPU overhead)
+          const CustomPaint(
+            painter: _CelestialStardustPainter(isDark: true),
+          ),
+        ],
+      );
+    } else {
+      // Day Mode: Luminous Pearl & Morning Serenity
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Base serene porcelain & alabaster canvas
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFAFBFD),
+                  Color(0xFFF1F5F9),
+                  Color(0xFFEDF2F7),
+                ],
+              ),
+            ),
+          ),
+          // Morning Sky Mist Glow (Top-Left)
+          Positioned(
+            top: -60,
+            left: -50,
+            width: 320,
+            height: 320,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                    const Color(0xFF0284C7).withValues(alpha: 0.04),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Soft Lavender / Orchid Warmth (Top-Right)
+          Positioned(
+            top: 60,
+            right: -60,
+            width: 280,
+            height: 280,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFA78BFA).withValues(alpha: 0.09),
+                    const Color(0xFF8B5CF6).withValues(alpha: 0.03),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Morning Sunbeam Gold Sheen (Bottom-Right)
+          Positioned(
+            bottom: 40,
+            right: -40,
+            width: 300,
+            height: 300,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    const Color(0xFFFDE68A).withValues(alpha: 0.09),
+                    const Color(0xFFF59E0B).withValues(alpha: 0.03),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.6, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Custom Pearl Shimmer Dust (Deterministic)
+          const CustomPaint(
+            painter: _CelestialStardustPainter(isDark: false),
+          ),
+        ],
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Deterministic Micro Stardust & Pearl Shimmer Painter
+// ---------------------------------------------------------------------------
+
+class _CelestialStardustPainter extends CustomPainter {
+  final bool isDark;
+  const _CelestialStardustPainter({required this.isDark});
+
+  // Deterministic star coordinates so they never flicker or recompute randomly
+  static const _stars = [
+    Offset(0.12, 0.08), Offset(0.28, 0.14), Offset(0.45, 0.06), Offset(0.72, 0.11),
+    Offset(0.88, 0.09), Offset(0.18, 0.22), Offset(0.62, 0.25), Offset(0.82, 0.28),
+    Offset(0.08, 0.35), Offset(0.38, 0.38), Offset(0.76, 0.42), Offset(0.92, 0.46),
+    Offset(0.15, 0.52), Offset(0.52, 0.56), Offset(0.85, 0.60), Offset(0.22, 0.68),
+    Offset(0.68, 0.72), Offset(0.10, 0.80), Offset(0.40, 0.84), Offset(0.80, 0.88),
+    Offset(0.25, 0.92), Offset(0.60, 0.95), Offset(0.90, 0.78), Offset(0.33, 0.45),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < _stars.length; i++) {
+      final s = _stars[i];
+      final pos = Offset(s.dx * size.width, s.dy * size.height);
+      final radius = (i % 3 == 0) ? 1.4 : (i % 2 == 0 ? 1.0 : 0.7);
+      final alpha = isDark
+          ? ((i % 4 == 0) ? 0.38 : (i % 2 == 0 ? 0.22 : 0.14))
+          : ((i % 4 == 0) ? 0.16 : 0.08);
+
+      paint.color = (isDark ? Colors.white : const Color(0xFF6366F1)).withValues(alpha: alpha);
+      canvas.drawCircle(pos, radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CelestialStardustPainter oldDelegate) =>
+      oldDelegate.isDark != isDark;
 }
