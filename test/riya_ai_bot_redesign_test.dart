@@ -268,5 +268,43 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));
     });
+
+    testWidgets('AiAssistantScreen hides pinned bottom suggestion chips when conversation has messages', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Seed an existing message in conversation
+      await db.aiAssistantDao.insertMessage(
+        AiChatMessageTableCompanion.insert(
+          sender: 'assistant',
+          message: 'Here is your agenda.',
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            aiAssistantDaoProvider.overrideWithValue(db.aiAssistantDao),
+          ],
+          child: MaterialApp(
+            theme: ThemeData.dark(),
+            home: const AiAssistantScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Pinned chips ("Today's agenda", "Medicines") must NOT be rendered when messages exist
+      expect(find.text("Today's agenda"), findsNothing);
+      expect(find.text('Medicines'), findsNothing);
+
+      // Clean unmount to drain Drift stream timers
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
   });
 }

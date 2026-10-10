@@ -365,231 +365,234 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             accentColor: accentColor,
           ),
           // Main Chat Interface
-          Column(
-            children: [
-              // Chat stream
-              Expanded(
-                child: StreamBuilder<List<AiChatMessage>>(
-                  stream: messagesStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Text(
-                            'Connecting to memory...',
-                            style: TextStyle(color: context.textMuted, fontSize: 13),
-                          ),
-                        ),
-                      );
-                    }
-
-                    final messages = snapshot.data ?? [];
-
-                    if (messages.isEmpty) {
-                      return _SoftChatWelcome(
-                        assistantName: name,
-                        onSelectPrompt: _handleSubmitted,
-                      );
-                    }
-
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: EdgeInsets.fromLTRB(
-                        14,
-                        MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
-                        14,
-                        12,
-                      ),
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: messages.length + (_isLoading ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == messages.length) {
-                          return KeyedSubtree(
-                            key: const ValueKey('chat_loading_indicator'),
-                            child: _ThinkingBubble(name: name, accentColor: accentColor),
-                          );
-                        }
-
-                        final msg = messages[index];
-                        final isUser = msg.sender == 'user';
-
-                        Map<String, dynamic>? actionData;
-                        List<String> messageQuickChips = [];
-                        if (msg.actionPayloadJson != null) {
-                          try {
-                            actionData = jsonDecode(msg.actionPayloadJson!);
-                            if (actionData?['quickOptions'] is List) {
-                              messageQuickChips = (actionData!['quickOptions'] as List)
-                                  .map((e) => e.toString())
-                                  .toList();
-                            }
-                          } catch (_) {}
-                        }
-
-                        return KeyedSubtree(
-                          key: ValueKey('chat_item_${msg.id}'),
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Align(
-                              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                              child: ConstrainedBox(
-                                constraints: BoxConstraints(
-                                  maxWidth: MediaQuery.sizeOf(context).width * 0.84,
-                                ),
-                                child: _TelegramMessageBubble(
-                                  msg: msg,
-                                  isUser: isUser,
-                                  assistantName: name,
-                                  accentColor: accentColor,
-                                  actionData: actionData,
-                                  messageQuickChips: messageQuickChips,
-                                  onSelectChip: _handleSubmitted,
-                                  onOpenCourse: () => context.push('/study-plan'),
-                                  onOpenHub: () => Navigator.of(context).pop(),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              if (_isLoading)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$name is thinking...',
-                        style: TextStyle(fontSize: 12, color: context.textMuted),
-                      ),
-                    ],
+          StreamBuilder<List<AiChatMessage>>(
+            stream: messagesStream,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      'Connecting to memory...',
+                      style: TextStyle(color: context.textMuted, fontSize: 13),
+                    ),
                   ),
-                ),
+                );
+              }
 
-              // Quick suggestion chips (Fit on-screen, no horizontal scrolling)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _buildQuickChip('Plan my day', Icons.wb_sunny_rounded, () => _handleSubmitted('Plan my day'), context, accentColor),
+              final messages = snapshot.data ?? [];
+              final hasMessages = messages.isNotEmpty;
+
+              return Column(
+                children: [
+                  // Chat stream
+                  Expanded(
+                    child: messages.isEmpty
+                        ? _SoftChatWelcome(
+                            assistantName: name,
+                            onSelectPrompt: _handleSubmitted,
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: EdgeInsets.fromLTRB(
+                              14,
+                              MediaQuery.paddingOf(context).top + kToolbarHeight + 8,
+                              14,
+                              12,
+                            ),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: messages.length + (_isLoading ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == messages.length) {
+                                return KeyedSubtree(
+                                  key: const ValueKey('chat_loading_indicator'),
+                                  child: _ThinkingBubble(name: name, accentColor: accentColor),
+                                );
+                              }
+
+                              final msg = messages[index];
+                              final isUser = msg.sender == 'user';
+
+                              Map<String, dynamic>? actionData;
+                              List<String> messageQuickChips = [];
+                              if (msg.actionPayloadJson != null) {
+                                try {
+                                  actionData = jsonDecode(msg.actionPayloadJson!);
+                                  if (actionData?['quickOptions'] is List) {
+                                    messageQuickChips = (actionData!['quickOptions'] as List)
+                                        .map((e) => e.toString())
+                                        .toList();
+                                  }
+                                } catch (_) {}
+                              }
+
+                              return KeyedSubtree(
+                                key: ValueKey('chat_item_${msg.id}'),
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Align(
+                                    alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: MediaQuery.sizeOf(context).width * 0.84,
+                                      ),
+                                      child: _TelegramMessageBubble(
+                                        msg: msg,
+                                        isUser: isUser,
+                                        assistantName: name,
+                                        accentColor: accentColor,
+                                        actionData: actionData,
+                                        messageQuickChips: messageQuickChips,
+                                        onSelectChip: _handleSubmitted,
+                                        onOpenCourse: () => context.push('/study-plan'),
+                                        onOpenHub: () => Navigator.of(context).pop(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+
+                  if (_isLoading)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: accentColor),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$name is thinking...',
+                            style: TextStyle(fontSize: 12, color: context.textMuted),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildQuickChip('Today\'s agenda', Icons.checklist_rounded, () => _handleSubmitted('What are my tasks today?'), context, accentColor),
+
+                  // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
+                  if (!hasMessages) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildQuickChip('Plan my day', Icons.wb_sunny_rounded, () => _handleSubmitted('Plan my day'), context, accentColor),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildQuickChip('Today\'s agenda', Icons.checklist_rounded, () => _handleSubmitted('What are my tasks today?'), context, accentColor),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildQuickChip('Medicines', Icons.medication_rounded, () => _handleSubmitted('What are my medicines today?'), context, accentColor),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildQuickChip('Medicines', Icons.medication_rounded, () => _handleSubmitted('What are my medicines today?'), context, accentColor),
-                    ),
+                    const SizedBox(height: 10),
+                  ] else ...[
+                    const SizedBox(height: 4),
                   ],
-                ),
-              ),
-              const SizedBox(height: 12),
 
-              // Text input bar (WhatsApp Style: pill input + equal height send button, clean padding, multi-line auto expand)
-              SafeArea(
-                top: false,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-                  color: Colors.transparent,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      // Box 1: Rounded input pill
-                      Expanded(
-                        child: Container(
-                          constraints: const BoxConstraints(minHeight: 48),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? const Color(0xFF141D2D).withValues(alpha: 0.95)
-                                : Colors.white.withValues(alpha: 0.98),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: isDark
-                                  ? const Color(0xFF28384E)
-                                  : const Color(0xFFCBD5E1),
-                              width: 1.0,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: isDark ? 0.25 : 0.05,
+                  // Text input bar (WhatsApp Style: pill input + equal height send button, clean padding, multi-line auto expand)
+                  SafeArea(
+                    top: false,
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                      color: Colors.transparent,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          // Box 1: Rounded input pill
+                          Expanded(
+                            child: Container(
+                              constraints: const BoxConstraints(minHeight: 48),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? const Color(0xFF141D2D).withValues(alpha: 0.95)
+                                    : Colors.white.withValues(alpha: 0.98),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF28384E)
+                                      : const Color(0xFFCBD5E1),
+                                  width: 1.0,
                                 ),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: isDark ? 0.25 : 0.05,
+                                    ),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _textController,
-                            minLines: 1,
-                            maxLines: 5,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: context.textPrimary,
-                              fontSize: 14,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Message $name...',
-                              hintStyle: GoogleFonts.plusJakartaSans(
-                                color: context.textMuted,
-                                fontSize: 13.5,
+                              child: TextField(
+                                controller: _textController,
+                                minLines: 1,
+                                maxLines: 5,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: context.textPrimary,
+                                  fontSize: 14,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Message $name...',
+                                  hintStyle: GoogleFonts.plusJakartaSans(
+                                    color: context.textMuted,
+                                    fontSize: 13.5,
+                                  ),
+                                  border: InputBorder.none,
+                                  enabledBorder: InputBorder.none,
+                                  focusedBorder: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                                  isDense: true,
+                                ),
+                                onSubmitted: _handleSubmitted,
                               ),
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-                              isDense: true,
                             ),
-                            onSubmitted: _handleSubmitted,
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          // Box 2: Circular send button
+                          GestureDetector(
+                            onTap: () => _handleSubmitted(_textController.text),
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    accentColor,
+                                    accentColor.withValues(alpha: 0.88),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: accentColor.withValues(alpha: 0.38),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(Icons.arrow_upward_rounded, size: 21, color: Colors.white),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      // Box 2: Circular send button
-                      GestureDetector(
-                        onTap: () => _handleSubmitted(_textController.text),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                accentColor,
-                                accentColor.withValues(alpha: 0.88),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: accentColor.withValues(alpha: 0.38),
-                                blurRadius: 10,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.arrow_upward_rounded, size: 21, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ],
       ),
