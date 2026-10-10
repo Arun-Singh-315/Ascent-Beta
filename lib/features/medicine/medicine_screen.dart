@@ -384,7 +384,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                           if (mounted && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('💊 Scheduled ${nameController.text} for $durationDays days with reminders & tasks!'),
+                                content: Text('Scheduled ${nameController.text} for $durationDays days with reminders & tasks!'),
                                 backgroundColor: g.clay,
                               ),
                             );

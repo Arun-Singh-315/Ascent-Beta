@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../core/providers/database_provider.dart';
 
 /// Interactive Freeze-Screen Hydration Pop-up Dialog
@@ -45,14 +46,15 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
     if (!mounted) return;
     Navigator.of(context).pop();
 
+    final g = context.glass;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.water_drop_rounded, color: Color(0xFF38BDF8), size: 20),
+            Icon(Icons.water_drop_rounded, color: g.clay, size: 20),
             const SizedBox(width: 8),
             Text(
-              'Hydrated! Added +$ml mL to your daily log 💧',
+              'Hydrated! Added +$ml mL to your daily log',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ],
@@ -72,6 +74,8 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
     final targetMl = goalAsync.value ?? 2500;
     final percent = ((currentMl / targetMl) * 100).toInt();
 
+    final g = context.glass;
+
     return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
       child: Center(
@@ -87,12 +91,12 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                   color: context.bgSurface.withValues(alpha: context.isDark ? 0.85 : 0.95),
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: const Color(0xFF38BDF8).withValues(alpha: 0.35),
+                    color: g.line,
                     width: 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                      color: Colors.black.withValues(alpha: context.isDark ? 0.35 : 0.08),
                       blurRadius: 32,
                       offset: const Offset(0, 8),
                     ),
@@ -106,15 +110,15 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF38BDF8), Color(0xFF0284C7)],
+                        gradient: LinearGradient(
+                          colors: [g.clay, g.clay.withValues(alpha: 0.8)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF38BDF8).withValues(alpha: 0.4),
+                            color: g.clay.withValues(alpha: 0.35),
                             blurRadius: 18,
                             offset: const Offset(0, 6),
                           ),
@@ -132,7 +136,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
 
                     // Title
                     Text(
-                      'Hydration Alert! 💧',
+                      'Hydration Alert',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -177,7 +181,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                              color: g.claySoft,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
@@ -185,7 +189,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                               style: GoogleFonts.jetBrainsMono(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 11,
-                                color: const Color(0xFF38BDF8),
+                                color: g.clay,
                               ),
                             ),
                           ),
@@ -285,7 +289,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF38BDF8),
+                              backgroundColor: g.clay,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -307,12 +311,12 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                             _showCustomInput = true;
                           });
                         },
-                        icon: const Icon(Icons.tune_rounded, size: 14, color: Color(0xFF38BDF8)),
-                        label: const Text(
+                        icon: Icon(Icons.tune_rounded, size: 14, color: g.clay),
+                        label: Text(
                           'Custom Amount',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF38BDF8),
+                            color: g.clay,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -382,7 +386,7 @@ class _DrinkOptionButton extends StatelessWidget {
           ),
           child: Column(
             children: [
-              Icon(icon, size: 20, color: const Color(0xFF38BDF8)),
+              Icon(icon, size: 20, color: context.glass.clay),
               const SizedBox(height: 6),
               Text(
                 '+$amountMl mL',

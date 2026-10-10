@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import 'ascent_card.dart';
@@ -60,6 +61,9 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
     final progress = (currentMl / targetMl).clamp(0.0, 1.2);
     final isGoalMet = currentMl >= targetMl;
 
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return AscentCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -72,15 +76,15 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
+                  color: g.claySoft,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color(0xFF06B6D4).withValues(alpha: 0.35),
+                    color: g.clay.withValues(alpha: 0.35),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.water_drop_rounded,
-                  color: Color(0xFF06B6D4),
+                  color: g.clay,
                   size: 20,
                 ),
               ),
@@ -96,7 +100,7 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                           style: AscentTextStyles.labelSmall.copyWith(
                             letterSpacing: 1.1,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF06B6D4),
+                            color: g.clay,
                           ),
                         ),
                         if (isGoalMet) ...[
@@ -104,13 +108,13 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF38664D).withValues(alpha: 0.2),
+                              color: const Color(0xFF10B981).withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'GOAL REACHED! 🎉',
+                              'GOAL REACHED',
                               style: AscentTextStyles.labelSmall.copyWith(
-                                color: const Color(0xFF5FA070),
+                                color: const Color(0xFF10B981),
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -154,17 +158,17 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF06B6D4).withValues(alpha: 0.12),
+                  color: g.claySoft,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: const Color(0xFF06B6D4).withValues(alpha: 0.25),
+                    color: g.clay.withValues(alpha: 0.30),
                   ),
                 ),
                 child: Text(
                   '${(progress * 100).toInt()}%',
                   style: AscentTextStyles.monoCode.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: const Color(0xFF06B6D4),
+                    color: g.clay,
                     fontSize: 14,
                   ),
                 ),
@@ -181,8 +185,8 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
               height: 54,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: context.bgBase,
-                border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.5),
+                border: Border.all(color: g.line.withValues(alpha: 0.7)),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Stack(
@@ -201,6 +205,9 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                             painter: _FluidWavePainter(
                               fillLevel: animatedFill,
                               wavePhase: _waveController.value * 2 * math.pi,
+                              waveColorFront: g.clay,
+                              waveColorBack: g.claySoft,
+                              isDark: isDark,
                             ),
                           );
                         },
@@ -328,6 +335,8 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -342,16 +351,16 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF06B6D4).withValues(alpha: 0.1),
+            color: g.claySoft.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFF06B6D4).withValues(alpha: 0.3),
+              color: g.line,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, size: 16, color: const Color(0xFF06B6D4)),
+              Icon(widget.icon, size: 16, color: g.clay),
               const SizedBox(width: 6),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,10 +394,16 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
 class _FluidWavePainter extends CustomPainter {
   final double fillLevel; // 0.0 to 1.0+
   final double wavePhase;
+  final Color waveColorFront;
+  final Color waveColorBack;
+  final bool isDark;
 
   _FluidWavePainter({
     required this.fillLevel,
     required this.wavePhase,
+    required this.waveColorFront,
+    required this.waveColorBack,
+    required this.isDark,
   });
 
   @override
@@ -414,14 +429,19 @@ class _FluidWavePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF67E8F9).withValues(alpha: 0.45),
-          const Color(0xFF06B6D4).withValues(alpha: 0.6),
-        ],
+        colors: isDark
+            ? [
+                waveColorBack.withValues(alpha: 0.25),
+                waveColorFront.withValues(alpha: 0.38),
+              ]
+            : [
+                waveColorBack.withValues(alpha: 0.35),
+                waveColorFront.withValues(alpha: 0.48),
+              ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(backPath, backPaint);
 
-    // Primary wave (foreground crisp water)
+    // Primary wave (foreground crisp liquid)
     final frontPath = Path();
     frontPath.moveTo(0, size.height);
     frontPath.lineTo(0, baseHeight);
@@ -436,16 +456,25 @@ class _FluidWavePainter extends CustomPainter {
       ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF22D3EE).withValues(alpha: 0.9),
-          const Color(0xFF0284C7).withValues(alpha: 0.95),
-        ],
+        colors: isDark
+            ? [
+                waveColorFront.withValues(alpha: 0.65),
+                waveColorBack.withValues(alpha: 0.85),
+              ]
+            : [
+                waveColorFront.withValues(alpha: 0.75),
+                waveColorFront.withValues(alpha: 0.95),
+              ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
     canvas.drawPath(frontPath, frontPaint);
   }
 
   @override
   bool shouldRepaint(covariant _FluidWavePainter oldDelegate) {
-    return oldDelegate.fillLevel != fillLevel || oldDelegate.wavePhase != wavePhase;
+    return oldDelegate.fillLevel != fillLevel ||
+        oldDelegate.wavePhase != wavePhase ||
+        oldDelegate.waveColorFront != waveColorFront ||
+        oldDelegate.waveColorBack != waveColorBack ||
+        oldDelegate.isDark != isDark;
   }
 }

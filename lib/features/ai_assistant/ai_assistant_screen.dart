@@ -79,7 +79,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       final response = await engine.processUserPrompt(prompt, ref).timeout(
         const Duration(seconds: 5),
         onTimeout: () => const AiResponse(
-          text: "I checked your synced records! 🌟 What would you like to plan or work on next? ✨",
+          text: "I checked your synced records! What would you like to plan or work on next?",
         ),
       );
 
@@ -121,7 +121,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(
           sender: 'assistant',
-          message: "Oops, hit a tiny snag structuring that! 💫 Let's give it another go — tap an option below or tell me what you need! ✨",
+          message: "Oops, hit a tiny snag structuring that. Let's give it another go — tap an option below or tell me what you need.",
           actionPayloadJson: drift.Value(jsonEncode({
             'quickOptions': ['Plan my day', 'Log 250ml water', 'Check activities'],
           })),
@@ -330,8 +330,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         letterSpacing: -0.2,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    const Text('✨', style: TextStyle(fontSize: 12)),
                   ],
                 ),
                 Text(
@@ -499,21 +497,21 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 12),
 
-              // Text input bar (WhatsApp Style: pill input + equal height send button, brain inside input, no top divider line)
+              // Text input bar (WhatsApp Style: pill input + equal height send button, clean padding, multi-line auto expand)
               SafeArea(
                 top: false,
                 child: Container(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
                   color: Colors.transparent,
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // Box 1: Rounded input pill with brain inside
+                      // Box 1: Rounded input pill
                       Expanded(
                         child: Container(
-                          height: 48,
+                          constraints: const BoxConstraints(minHeight: 48),
                           decoration: BoxDecoration(
                             color: isDark
                                 ? const Color(0xFF141D2D).withValues(alpha: 0.95)
@@ -522,7 +520,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             border: Border.all(
                               color: isDark
                                   ? const Color(0xFF28384E)
-                                  : const Color(0xFFE2E8F0),
+                                  : const Color(0xFFCBD5E1),
                               width: 1.0,
                             ),
                             boxShadow: [
@@ -535,44 +533,32 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                               ),
                             ],
                           ),
-                          child: Row(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(left: 14, right: 8),
-                                child: Icon(
-                                  Icons.psychology_rounded,
-                                  size: 22,
-                                  color: accentColor,
-                                ),
+                          child: TextField(
+                            controller: _textController,
+                            minLines: 1,
+                            maxLines: 5,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: context.textPrimary,
+                              fontSize: 14,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Message $name...',
+                              hintStyle: GoogleFonts.plusJakartaSans(
+                                color: context.textMuted,
+                                fontSize: 13.5,
                               ),
-                              Expanded(
-                                child: TextField(
-                                  controller: _textController,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: context.textPrimary,
-                                    fontSize: 14,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Message $name...',
-                                    hintStyle: GoogleFonts.plusJakartaSans(
-                                      color: context.textMuted,
-                                      fontSize: 13.5,
-                                    ),
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                                    isDense: true,
-                                  ),
-                                  onSubmitted: _handleSubmitted,
-                                ),
-                              ),
-                            ],
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+                              isDense: true,
+                            ),
+                            onSubmitted: _handleSubmitted,
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // Box 2: Circular send button (48dp height - equal to input capsule!)
+                      // Box 2: Circular send button
                       GestureDetector(
                         onTap: () => _handleSubmitted(_textController.text),
                         child: Container(
@@ -703,17 +689,12 @@ class _TelegramMessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final userGradient = isDark
-        ? const LinearGradient(
-            colors: [Color(0xFF0A84FF), Color(0xFF0066D6)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          )
-        : const LinearGradient(
-            colors: [Color(0xFF007AFF), Color(0xFF005EC4)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          );
+    final userBgColor = isDark
+        ? const Color(0xFF1E293B).withValues(alpha: 0.60)
+        : Colors.transparent;
+    final userBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.16)
+        : const Color(0xFF1E293B);
 
     final botBubbleColor = isDark
         ? const Color(0xFF131C2D).withValues(alpha: 0.90)
@@ -728,30 +709,27 @@ class _TelegramMessageBubble extends StatelessWidget {
       crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Main Message Container (Apple iMessage style shrink-wrapped bubble)
+        // Main Message Container (User: Transparent/Glass • Riya: Translucent Card)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isUser ? null : botBubbleColor,
-            gradient: isUser ? userGradient : null,
+            color: isUser ? userBgColor : botBubbleColor,
             borderRadius: BorderRadius.only(
               topLeft: const Radius.circular(18),
               topRight: const Radius.circular(18),
               bottomLeft: Radius.circular(isUser ? 18 : 4),
               bottomRight: Radius.circular(isUser ? 4 : 18),
             ),
-            border: isUser
-                ? null
-                : Border.all(
-                    color: botBorderColor,
-                    width: 1.0,
-                  ),
+            border: Border.all(
+              color: isUser ? userBorderColor : botBorderColor,
+              width: 1.0,
+            ),
             boxShadow: [
               BoxShadow(
                 color: isUser
-                    ? const Color(0xFF0A84FF).withValues(alpha: isDark ? 0.32 : 0.20)
+                    ? (isDark ? Colors.black.withValues(alpha: 0.22) : Colors.transparent)
                     : Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-                blurRadius: isUser ? 10 : 8,
+                blurRadius: isUser ? (isDark ? 8 : 0) : 8,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -787,7 +765,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                   fontSize: 13.5,
                   fontWeight: FontWeight.w400,
                   color: isUser
-                      ? Colors.white
+                      ? (isDark ? Colors.white : const Color(0xFF0F172A))
                       : (isDark ? const Color(0xFFF1F5F9) : const Color(0xFF1E293B)),
                   height: 1.45,
                 ),
@@ -806,16 +784,16 @@ class _TelegramMessageBubble extends StatelessWidget {
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9.5,
                         color: isUser
-                            ? Colors.white.withValues(alpha: 0.75)
+                            ? (isDark ? Colors.white.withValues(alpha: 0.65) : const Color(0xFF64748B))
                             : context.textMuted.withValues(alpha: 0.8),
                       ),
                     ),
                     if (isUser) ...[
                       const SizedBox(width: 3),
-                      const Icon(
+                      Icon(
                         Icons.done_all_rounded,
                         size: 11,
-                        color: Colors.white,
+                        color: isDark ? Colors.white.withValues(alpha: 0.75) : const Color(0xFF64748B),
                       ),
                     ],
                   ],
@@ -1068,9 +1046,6 @@ class _SoftChatWelcome extends ConsumerWidget {
     final greetingTime = hour < 12
         ? 'Good morning'
         : (hour < 17 ? 'Good afternoon' : 'Good evening');
-    final greetingEmoji = hour < 12
-        ? '☀️'
-        : (hour < 17 ? '🌤️' : '🌙');
 
     return Center(
       child: SingleChildScrollView(
@@ -1151,7 +1126,7 @@ class _SoftChatWelcome extends ConsumerWidget {
             const SizedBox(height: 12),
 
             Text(
-              '$greetingTime, $userName $greetingEmoji',
+              '$greetingTime, $userName',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -1161,7 +1136,7 @@ class _SoftChatWelcome extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'I\'m $assistantName, your personal AI companion. How can I help you today? ✨',
+              'I\'m $assistantName, your personal assistant. How can I help you today?',
               textAlign: TextAlign.center,
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13.5,
@@ -1178,12 +1153,12 @@ class _SoftChatWelcome extends ConsumerWidget {
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
-                '⚡ Plan my day',
-                '💧 Log 250ml water',
-                '🎯 What are my tasks today?',
-                '🏃 Check my walk status',
-                '🌿 Medicine schedule',
-                '💡 Explain Dynamic Programming',
+                'Plan my day',
+                'Log 250ml water',
+                'What are my tasks today?',
+                'Check my walk status',
+                'Medicine schedule',
+                'Explain Dynamic Programming',
               ].map((prompt) {
                 return Material(
                   color: Colors.transparent,
@@ -1434,8 +1409,8 @@ class _CelestialStardustPainter extends CustomPainter {
     Offset(0.88, 0.09), Offset(0.18, 0.22), Offset(0.62, 0.25), Offset(0.82, 0.28),
     Offset(0.08, 0.35), Offset(0.38, 0.38), Offset(0.76, 0.42), Offset(0.92, 0.46),
     Offset(0.15, 0.52), Offset(0.52, 0.56), Offset(0.85, 0.60), Offset(0.22, 0.68),
-    Offset(0.68, 0.72), Offset(0.10, 0.80), Offset(0.40, 0.84), Offset(0.80, 0.88),
-    Offset(0.25, 0.92), Offset(0.60, 0.95), Offset(0.90, 0.78), Offset(0.33, 0.45),
+    Offset(0.68, 0.72), Offset(0.10, 0.76), Offset(0.40, 0.78), Offset(0.80, 0.75),
+    Offset(0.25, 0.62), Offset(0.55, 0.48), Offset(0.90, 0.65), Offset(0.33, 0.45),
   ];
 
   @override

@@ -154,7 +154,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     label: 'CONSUMED',
                     value: '$currentMl mL',
                     icon: Icons.water_drop_rounded,
-                    color: const Color(0xFF06B6D4),
+                    color: g.clay,
                   ),
                   Container(
                     width: 1,
@@ -165,7 +165,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     label: 'TARGET',
                     value: '$targetMl mL',
                     icon: Icons.flag_rounded,
-                    color: const Color(0xFF0EA5E9),
+                    color: context.accentPrimary,
                   ),
                   Container(
                     width: 1,
@@ -176,7 +176,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                     label: 'COMPLETION',
                     value: '$percent%',
                     icon: Icons.check_circle_rounded,
-                    color: percent >= 100 ? const Color(0xFF10B981) : const Color(0xFF06B6D4),
+                    color: percent >= 100 ? const Color(0xFF10B981) : g.clay,
                   ),
                 ],
               ),
@@ -283,13 +283,13 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF38BDF8).withValues(alpha: 0.12),
+                              color: g.claySoft,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.local_drink_rounded,
                               size: 18,
-                              color: Color(0xFF38BDF8),
+                              color: g.clay,
                             ),
                           ),
                           const SizedBox(width: 14),
@@ -414,10 +414,10 @@ class _HydrationHistorySection extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF06B6D4).withValues(alpha: 0.15),
+                      color: g.claySoft,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.insights_rounded, size: 16, color: Color(0xFF06B6D4)),
+                    child: Icon(Icons.insights_rounded, size: 16, color: g.clay),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -484,12 +484,12 @@ class _HydrationHistorySection extends StatelessWidget {
                           colors: record.isGoalMet
                               ? [const Color(0xFF34D399), const Color(0xFF059669)]
                               : (isToday
-                                  ? [const Color(0xFF22D3EE), const Color(0xFF0284C7)]
-                                  : [const Color(0xFF06B6D4).withValues(alpha: 0.7), const Color(0xFF0EA5E9).withValues(alpha: 0.4)]),
+                                  ? [g.clay, g.clay.withValues(alpha: 0.8)]
+                                  : [g.clay.withValues(alpha: 0.45), g.claySoft.withValues(alpha: 0.3)]),
                         ),
                         borderRadius: BorderRadius.circular(8),
                         border: isToday
-                            ? Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.5)
+                            ? Border.all(color: g.clay, width: 1.5)
                             : null,
                       ),
                     ),
@@ -499,7 +499,7 @@ class _HydrationHistorySection extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: isToday ? 10.5 : 11,
                         fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                        color: isToday ? const Color(0xFF06B6D4) : context.textMuted,
+                        color: isToday ? g.clay : context.textMuted,
                       ),
                     ),
                   ],
@@ -525,7 +525,7 @@ class _HydrationHistorySection extends StatelessWidget {
                 'Total: ${(totalVolume / 1000).toStringAsFixed(1)} L',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 12,
-                  color: const Color(0xFF06B6D4),
+                  color: g.clay,
                   fontWeight: FontWeight.w700,
                 ),
               ),

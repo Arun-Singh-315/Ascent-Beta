@@ -1,7 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:ascent/core/database/app_database.dart';
+import 'package:ascent/core/providers/database_provider.dart';
+import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 
 void main() {
   late AppDatabase db;
@@ -116,6 +120,54 @@ void main() {
       active = await dao.watchActiveThoughts().first;
       expect(active.length, 1);
       expect(active.first.isArchived, isFalse);
+    });
+  });
+
+  group('Thought Wall Archive UI Integration Tests', () {
+    testWidgets('ThoughtWallScreen displays "History & Archive" segment and archived badge', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Seed an archived thought
+      final id = await dao.insertThought(
+        const ThoughtTableCompanion(
+          content: drift.Value('Deep personal reflection'),
+          mood: drift.Value('me_to_me'),
+        ),
+      );
+      await dao.archiveThought(id);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            thoughtDaoProvider.overrideWithValue(dao),
+          ],
+          child: const MaterialApp(
+            home: ThoughtWallScreen(),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // 1. Check segment header has "History & Archive"
+      expect(find.text('History & Archive'), findsOneWidget);
+
+      // 2. Switch to "History & Archive" tab
+      await tester.tap(find.text('History & Archive'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // 3. Verify archived card is visible with ARCHIVED badge and 1-tap unarchive button
+      expect(find.text('Deep personal reflection'), findsOneWidget);
+      expect(find.text('ARCHIVED'), findsOneWidget);
+      expect(find.byTooltip('Unarchive thought'), findsOneWidget);
+
+      // Clean unmount
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(milliseconds: 100));
     });
   });
 }

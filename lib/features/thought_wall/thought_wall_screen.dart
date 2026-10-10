@@ -489,16 +489,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
             children: [
               Icon(
                 icon,
-                size: 14,
+                size: 13,
                 color: isSelected ? Colors.white : g.inkMuted,
               ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                  color: isSelected ? Colors.white : g.inkMuted,
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected ? Colors.white : g.inkMuted,
+                  ),
                 ),
               ),
             ],
@@ -544,6 +548,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     final todayStart = DateTime(now.year, now.month, now.day);
                     final filtered = allThoughts.where((t) {
                       if (_categoryFilter == 'pinned' && !t.isPinned) return false;
+                      if (_categoryFilter == 'archived') return t.isArchived;
                       if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
                       if (_viewToggle == 'today') {
                         return !t.isArchived && t.mood != 'future' && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
@@ -609,7 +614,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                 children: [
                   _buildViewSegment('today', "Today", Icons.today_rounded, g),
                   _buildViewSegment('upcoming', "Upcoming", Icons.schedule_send_rounded, g),
-                  _buildViewSegment('history', "History", Icons.history_rounded, g),
+                  _buildViewSegment('history', "History & Archive", Icons.history_rounded, g),
                 ],
               ),
             ),
@@ -673,6 +678,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                       const PopupMenuItem(value: 'idea', child: Text('Sparks / Ideas')),
                       const PopupMenuItem(value: 'win', child: Text('Daily Wins')),
                       const PopupMenuItem(value: 'pinned', child: Text('Pinned Only')),
+                      const PopupMenuItem(value: 'archived', child: Text('Archived Only')),
                     ],
                   ),
                 ],
@@ -694,6 +700,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
                   final filtered = allThoughts.where((t) {
                     if (_categoryFilter == 'pinned' && !t.isPinned) return false;
+                    if (_categoryFilter == 'archived') return t.isArchived;
                     if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
 
                     if (_viewToggle == 'today') {
@@ -707,13 +714,17 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
                   if (filtered.isEmpty) {
                     return EmptyState(
-                      title: _viewToggle == 'today'
-                          ? 'No thoughts logged today'
-                          : (_viewToggle == 'upcoming'
-                              ? 'No upcoming or future notes'
-                              : 'No past or archived reflections'),
-                      subtitle: 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
-                      icon: Icons.bubble_chart_rounded,
+                      title: _categoryFilter == 'archived'
+                          ? 'No archived reflections'
+                          : (_viewToggle == 'today'
+                              ? 'No thoughts logged today'
+                              : (_viewToggle == 'upcoming'
+                                  ? 'No upcoming or future notes'
+                                  : 'No past or archived reflections')),
+                      subtitle: _categoryFilter == 'archived'
+                          ? 'Reflections you archive from the wall will be safely stored here.'
+                          : 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
+                      icon: _categoryFilter == 'archived' ? Icons.archive_outlined : Icons.bubble_chart_rounded,
                       actionLabel: 'Drop a Thought',
                       onAction: () => DropThoughtSheet.show(context),
                     );
@@ -1004,244 +1015,304 @@ class ThoughtCardBubble extends ConsumerWidget {
                   children: [
                     // Top meta row
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         if (isSelectionMode) ...[
                           Icon(
                             isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
-                            size: 20,
+                            size: 18,
                             color: isSelected ? g.clay : g.inkMuted,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                         ],
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                           decoration: BoxDecoration(
                             color: moodColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(7),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(icon, size: 12, color: moodColor),
-                              const SizedBox(width: 5),
+                              Icon(icon, size: 11, color: moodColor),
+                              const SizedBox(width: 4),
                               Text(
                                 label,
                                 style: AscentTextStyles.labelSmall.copyWith(
                                   color: moodColor,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 10.5,
+                                  fontSize: 10,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      if (thought.isCompleted) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: context.accentPrimary.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '✓ Done',
-                            style: TextStyle(
-                              color: context.accentPrimary,
-                              fontSize: 9.5,
-                              fontWeight: FontWeight.bold,
+                        if (thought.isCompleted) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: context.accentPrimary.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                          ),
-                        ),
-                      ],
-                      if (thought.isPinned) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: context.accentPrimary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(Icons.push_pin_rounded, size: 10, color: context.accentPrimary),
-                              const SizedBox(width: 3),
-                              Text(
-                                'PINNED',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: context.accentPrimary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            child: Text(
+                              '✓ Done',
+                              style: TextStyle(
+                                color: context.accentPrimary,
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                      const Spacer(),
-                      Text(
-                        timeStr,
-                        style: AscentTextStyles.labelSmall.copyWith(
-                          color: context.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: Icon(Icons.share_outlined, size: 16, color: context.textMuted),
-                        tooltip: 'Share via WhatsApp & apps',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        onPressed: () => shareThought(thought),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: Icon(Icons.more_horiz_rounded, size: 18, color: context.textMuted),
-                        color: context.bgSurface,
-                        padding: EdgeInsets.zero,
-                        onSelected: (action) async {
-                          if (action == 'share') {
-                            await shareThought(thought);
-                          } else if (action == 'toggle_done') {
-                            HapticFeedback.lightImpact();
-                            await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
-                          } else if (action == 'convert_task') {
-                            HapticFeedback.mediumImpact();
-                            final taskDao = ref.read(taskDaoProvider);
-                            await taskDao.insertTask(
-                              TaskTableCompanion.insert(
-                                title: thought.content.trim(),
-                                plannedDate: drift.Value(DateTime.now()),
-                                notes: drift.Value('thought_id:${thought.id}${thought.promptQuestion != null ? ' • ${thought.promptQuestion}' : ''}'),
-                              ),
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Added to Today tasks!'),
-                                  duration: Duration(seconds: 2),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          } else if (action == 'archive') {
-                            HapticFeedback.lightImpact();
-                            final dao = ref.read(thoughtDaoProvider);
-                            if (thought.isArchived) {
-                              await dao.unarchiveThought(thought.id);
-                            } else {
-                              await dao.archiveThought(thought.id);
-                            }
-                          } else if (action == 'pin') {
-                            HapticFeedback.lightImpact();
-                            await ref.read(thoughtDaoProvider).togglePin(thought.id);
-                          } else if (action == 'copy') {
-                            HapticFeedback.lightImpact();
-                            await Clipboard.setData(ClipboardData(text: thought.content));
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Copied to clipboard!')),
-                              );
-                            }
-                          } else if (action == 'edit') {
-                            HapticFeedback.lightImpact();
-                            DropThoughtSheet.show(context, existingThought: thought);
-                          } else if (action == 'delete') {
-                            HapticFeedback.mediumImpact();
-                            await ref.read(thoughtDaoProvider).deleteThought(thought.id);
-                          }
-                        },
-                        itemBuilder: (_) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined, size: 16),
-                                SizedBox(width: 8),
-                                Text('Edit thought'),
-                              ],
                             ),
-                          ),
-                          PopupMenuItem(
-                            value: 'toggle_done',
-                            child: Row(
-                              children: [
-                                Icon(thought.isCompleted ? Icons.check_circle_outline_rounded : Icons.check_circle_rounded, size: 16),
-                                const SizedBox(width: 8),
-                                Text(thought.isCompleted ? 'Mark as undone' : 'Mark as done'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'convert_task',
-                            child: Row(
-                              children: [
-                                Icon(Icons.add_task_rounded, size: 16),
-                                SizedBox(width: 8),
-                                Text('Convert to Today Task'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'archive',
-                            child: Row(
-                              children: [
-                                Icon(thought.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, size: 16),
-                                const SizedBox(width: 8),
-                                Text(thought.isArchived ? 'Unarchive' : 'Archive thought'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'share',
-                            child: Row(
-                              children: [
-                                Icon(Icons.share_rounded, size: 16),
-                                SizedBox(width: 8),
-                                Text('Share (WhatsApp & apps)'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'pin',
-                            child: Text(thought.isPinned ? 'Unpin' : 'Pin to top'),
-                          ),
-                          const PopupMenuItem(
-                            value: 'copy',
-                            child: Text('Copy text'),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Delete thought', style: TextStyle(color: Colors.redAccent)),
                           ),
                         ],
+                        if (thought.isPinned) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: context.accentPrimary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.push_pin_rounded, size: 9, color: context.accentPrimary),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'PINNED',
+                                  style: AscentTextStyles.labelSmall.copyWith(
+                                    color: context.accentPrimary,
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (thought.isArchived) ...[
+                          const SizedBox(width: 5),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.archive_outlined, size: 9, color: Colors.amber),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'ARCHIVED',
+                                  style: AscentTextStyles.labelSmall.copyWith(
+                                    color: Colors.amber,
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        // Right actions (quick unarchive & popup menu)
+                        if (thought.isArchived) ...[
+                          IconButton(
+                            icon: const Icon(Icons.unarchive_outlined, size: 16, color: Colors.amber),
+                            tooltip: 'Unarchive thought',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            onPressed: () async {
+                              HapticFeedback.lightImpact();
+                              await ref.read(thoughtDaoProvider).unarchiveThought(thought.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Thought restored to wall'),
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                          const SizedBox(width: 2),
+                        ],
+                        PopupMenuButton<String>(
+                          icon: Icon(Icons.more_horiz_rounded, size: 18, color: context.textMuted),
+                          color: context.bgSurface,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          onSelected: (action) async {
+                            if (action == 'share') {
+                              await shareThought(thought);
+                            } else if (action == 'toggle_done') {
+                              HapticFeedback.lightImpact();
+                              await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
+                            } else if (action == 'convert_task') {
+                              HapticFeedback.mediumImpact();
+                              final taskDao = ref.read(taskDaoProvider);
+                              await taskDao.insertTask(
+                                TaskTableCompanion.insert(
+                                  title: thought.content.trim(),
+                                  plannedDate: drift.Value(DateTime.now()),
+                                  notes: drift.Value('thought_id:${thought.id}${thought.promptQuestion != null ? ' • ${thought.promptQuestion}' : ''}'),
+                                ),
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Added to Today tasks!'),
+                                    duration: Duration(seconds: 2),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            } else if (action == 'archive') {
+                              HapticFeedback.lightImpact();
+                              final dao = ref.read(thoughtDaoProvider);
+                              if (thought.isArchived) {
+                                await dao.unarchiveThought(thought.id);
+                              } else {
+                                await dao.archiveThought(thought.id);
+                              }
+                            } else if (action == 'pin') {
+                              HapticFeedback.lightImpact();
+                              await ref.read(thoughtDaoProvider).togglePin(thought.id);
+                            } else if (action == 'copy') {
+                              HapticFeedback.lightImpact();
+                              await Clipboard.setData(ClipboardData(text: thought.content));
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Copied to clipboard!')),
+                                );
+                              }
+                            } else if (action == 'edit') {
+                              HapticFeedback.lightImpact();
+                              DropThoughtSheet.show(context, existingThought: thought);
+                            } else if (action == 'delete') {
+                              HapticFeedback.mediumImpact();
+                              await ref.read(thoughtDaoProvider).deleteThought(thought.id);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 16),
+                                  SizedBox(width: 8),
+                                  Text('Edit thought'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'toggle_done',
+                              child: Row(
+                                children: [
+                                  Icon(thought.isCompleted ? Icons.check_circle_outline_rounded : Icons.check_circle_rounded, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(thought.isCompleted ? 'Mark as undone' : 'Mark as done'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'convert_task',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.add_task_rounded, size: 16),
+                                  SizedBox(width: 8),
+                                  Text('Convert to Today Task'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'archive',
+                              child: Row(
+                                children: [
+                                  Icon(thought.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(thought.isArchived ? 'Unarchive' : 'Archive thought'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'share',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.share_rounded, size: 16),
+                                  SizedBox(width: 8),
+                                  Text('Share (WhatsApp & apps)'),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'pin',
+                              child: Text(thought.isPinned ? 'Unpin' : 'Pin to top'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'copy',
+                              child: Text('Copy text'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete thought', style: TextStyle(color: Colors.redAccent)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    // Optional prompt question
+                    if (thought.promptQuestion != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Q: ${thought.promptQuestion}',
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: context.textMuted,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ],
-                  ),
 
-                  // Optional prompt question
-                  if (thought.promptQuestion != null) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
+
+                    // Content
                     Text(
-                      'Q: ${thought.promptQuestion}',
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: context.textMuted,
-                        fontStyle: FontStyle.italic,
+                      thought.content,
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: thought.isCompleted ? context.textMuted : context.textPrimary,
+                        decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
+                        height: 1.45,
+                        fontSize: 14.5,
                       ),
                     ),
-                  ],
 
-                  const SizedBox(height: 10),
+                    const SizedBox(height: 10),
 
-                  // Content
-                  Text(
-                    thought.content,
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      color: thought.isCompleted ? context.textMuted : context.textPrimary,
-                      decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
-                      height: 1.45,
-                      fontSize: 14.5,
+                    // Bottom meta row: timestamp on left, share on right
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          timeStr,
+                          style: AscentTextStyles.labelSmall.copyWith(
+                            color: context.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.share_outlined, size: 16, color: context.textMuted),
+                          tooltip: 'Share via WhatsApp & apps',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          onPressed: () => shareThought(thought),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
               ),
             ),
           ),
