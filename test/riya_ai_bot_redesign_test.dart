@@ -306,5 +306,41 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));
     });
+
+    testWidgets('GeminiInputCard renders unified expandable card with tools and activates send', (tester) async {
+      String? sentText;
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.dark(),
+          home: Scaffold(
+            body: GeminiInputCard(
+              controller: controller,
+              assistantName: 'Riya',
+              onSend: (text) => sentText = text,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Hint, attach icon, mic icon, and upward send arrow
+      expect(find.text('Ask Riya...'), findsOneWidget);
+      expect(find.byIcon(Icons.add_photo_alternate_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
+
+      // Typing activates send
+      await tester.enterText(find.byType(TextField), 'Plan my day');
+      await tester.pump();
+      expect(controller.text, 'Plan my day');
+
+      // Tap send button
+      await tester.tap(find.byIcon(Icons.arrow_upward_rounded));
+      await tester.pump();
+
+      expect(sentText, 'Plan my day');
+    });
   });
 }

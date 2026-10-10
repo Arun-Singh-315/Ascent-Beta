@@ -500,95 +500,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     const SizedBox(height: 4),
                   ],
 
-                  // Text input bar (WhatsApp Style: pill input + equal height send button, clean padding, multi-line auto expand)
-                  SafeArea(
-                    top: false,
-                    child: Container(
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-                      color: Colors.transparent,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          // Box 1: Rounded input pill
-                          Expanded(
-                            child: Container(
-                              constraints: const BoxConstraints(minHeight: 48),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? const Color(0xFF141D2D).withValues(alpha: 0.95)
-                                    : Colors.white.withValues(alpha: 0.98),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: isDark
-                                      ? const Color(0xFF28384E)
-                                      : const Color(0xFFCBD5E1),
-                                  width: 1.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(
-                                      alpha: isDark ? 0.25 : 0.05,
-                                    ),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: TextField(
-                                controller: _textController,
-                                minLines: 1,
-                                maxLines: 5,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: context.textPrimary,
-                                  fontSize: 14,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Message $name...',
-                                  hintStyle: GoogleFonts.plusJakartaSans(
-                                    color: context.textMuted,
-                                    fontSize: 13.5,
-                                  ),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-                                  isDense: true,
-                                ),
-                                onSubmitted: _handleSubmitted,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Box 2: Circular send button
-                          GestureDetector(
-                            onTap: () => _handleSubmitted(_textController.text),
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    accentColor,
-                                    accentColor.withValues(alpha: 0.88),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: accentColor.withValues(alpha: 0.38),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(Icons.arrow_upward_rounded, size: 21, color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  // Unified Google Gemini-style input card
+                  GeminiInputCard(
+                    controller: _textController,
+                    onSend: _handleSubmitted,
+                    assistantName: name,
+                    isDark: isDark,
+                    accentColor: accentColor,
+                    isLoading: _isLoading,
                   ),
                 ],
               );
@@ -652,6 +571,252 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Google Gemini-Style Mobile Input Card
+// ---------------------------------------------------------------------------
+
+class GeminiInputCard extends StatefulWidget {
+  final Function(String) onSend;
+  final TextEditingController? controller;
+  final String assistantName;
+  final bool isDark;
+  final Color? accentColor;
+  final bool isLoading;
+
+  const GeminiInputCard({
+    super.key,
+    required this.onSend,
+    this.controller,
+    this.assistantName = 'Riya',
+    this.isDark = true,
+    this.accentColor,
+    this.isLoading = false,
+  });
+
+  @override
+  State<GeminiInputCard> createState() => _GeminiInputCardState();
+}
+
+typedef GeminiInputBox = GeminiInputCard;
+
+class _GeminiInputCardState extends State<GeminiInputCard> {
+  late final TextEditingController _controller;
+  bool _ownsController = false;
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+      _ownsController = false;
+    } else {
+      _controller = TextEditingController();
+      _ownsController = true;
+    }
+    _hasText = _controller.text.trim().isNotEmpty;
+    _controller.addListener(_onTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant GeminiInputCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      if (!_ownsController) {
+        oldWidget.controller?.removeListener(_onTextChanged);
+      }
+      if (widget.controller != null) {
+        _controller = widget.controller!;
+        _ownsController = false;
+      } else {
+        _controller = TextEditingController();
+        _ownsController = true;
+      }
+      _hasText = _controller.text.trim().isNotEmpty;
+      _controller.addListener(_onTextChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onTextChanged);
+    if (_ownsController) {
+      _controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onTextChanged() {
+    final has = _controller.text.trim().isNotEmpty;
+    if (has != _hasText) {
+      setState(() => _hasText = has);
+    }
+  }
+
+  void _handleSend() {
+    if (_hasText && !widget.isLoading) {
+      final text = _controller.text.trim();
+      widget.onSend(text);
+      if (_ownsController) {
+        _controller.clear();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+
+    // Google Gemini surface #1E1F22 in dark mode, crisp card in light mode
+    final cardBg = isDark ? const Color(0xFF1E1F22) : Colors.white;
+
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : Colors.black.withValues(alpha: 0.08);
+
+    final actionIconColor = isDark
+        ? Colors.white.withValues(alpha: 0.70)
+        : Colors.black.withValues(alpha: 0.60);
+
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: borderColor,
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 12, 12, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Multiline Expandable Input (1 to 5 lines)
+              TextField(
+                controller: _controller,
+                minLines: 1,
+                maxLines: 5,
+                style: GoogleFonts.plusJakartaSans(
+                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 16,
+                  height: 1.35,
+                ),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  hintText: 'Ask ${widget.assistantName}...',
+                  hintStyle: GoogleFonts.plusJakartaSans(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.45)
+                        : Colors.black.withValues(alpha: 0.45),
+                    fontSize: 16,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+                onSubmitted: (_) => _handleSend(),
+              ),
+              const SizedBox(height: 10),
+
+              // Bottom Tools & Action Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Left Tool (Attach / Add)
+                  IconButton(
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    color: actionIconColor,
+                    iconSize: 22,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    splashRadius: 20,
+                    tooltip: 'Attach media',
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Attachments coming soon to ${widget.assistantName}!'),
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // Right Actions (Mic + Send Circle)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.mic_none_rounded),
+                        color: actionIconColor,
+                        iconSize: 22,
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        splashRadius: 20,
+                        tooltip: 'Voice input',
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Voice input coming soon to ${widget.assistantName}!'),
+                              behavior: SnackBarBehavior.floating,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: _hasText ? _handleSend : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _hasText
+                                ? (isDark ? Colors.white : (widget.accentColor ?? Colors.black87))
+                                : (isDark
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.black.withValues(alpha: 0.08)),
+                          ),
+                          child: Icon(
+                            Icons.arrow_upward_rounded,
+                            size: 19,
+                            color: _hasText
+                                ? (isDark ? Colors.black : Colors.white)
+                                : (isDark ? Colors.white38 : Colors.black38),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
