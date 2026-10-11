@@ -427,11 +427,27 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
 
                             return InkWell(
                               onTap: () async {
+                                if (isDone) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Completed tasks stay sealed.'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Timed activities complete after their focus target is reached.'),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 final now = DateTime.now();
                                 await ref.read(taskDaoProvider).updateTask(
                                   TaskTableCompanion(
                                     id: drift.Value(task.id),
-                                    actualCompletedDate: drift.Value(isDone ? null : now),
+                                    actualCompletedDate: drift.Value(now),
                                   ),
                                 );
                               },

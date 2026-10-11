@@ -268,6 +268,7 @@ class AscentTheme {
         ),
       ),
 
+
       // ── Switch ──────────────────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {

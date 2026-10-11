@@ -308,23 +308,29 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     }
   }
 
-  Future<void> completeSession() async {
+  Future<bool> completeSession() async {
     final session = state.activeSession;
-    if (session == null) return;
+    if (session == null) return false;
     _heartbeatTimer?.cancel();
     final dao = ref.read(timeSessionDaoProvider);
     await dao.completeSession(session.id);
 
-    // If linked to a task, mark task completed in Drift as well
+    var linkedTaskCompleted = false;
     if (session.linkedTaskId != null) {
       try {
         final taskDao = ref.read(taskDaoProvider);
-        await taskDao.markComplete(session.linkedTaskId!);
+        final task = await taskDao.getTaskById(session.linkedTaskId!);
+        if (task != null && task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+          linkedTaskCompleted = await taskDao.completeTimedTaskAfterFocus(task.id);
+        } else {
+          linkedTaskCompleted = await taskDao.markComplete(session.linkedTaskId!);
+        }
       } catch (_) {}
     }
 
     ref.invalidate(todayFocusTaskProvider);
     ref.invalidate(homeQuickStatsProvider);
+    return linkedTaskCompleted;
   }
 
   Future<void> abandonSession() async {

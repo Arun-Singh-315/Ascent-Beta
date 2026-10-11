@@ -9,14 +9,11 @@ import 'package:drift/drift.dart' as drift;
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
-import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
-import '../../core/auth/auth_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import '../../shared/widgets/ascent_logo.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -38,9 +35,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   // Collapsible section visibility states to keep UI calm & decluttered
   bool _expandCareerGoals = false;
   bool _expandGpsTelemetry = false;
-  bool _expandNotificationTests = false;
   bool _expandDataStorage = false;
-  bool _expandAccountSystem = false;
 
   @override
   void dispose() {
@@ -458,82 +453,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  void _confirmSignOut() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        final g = ctx.glass;
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: g.bg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: g.edge, width: 1.2)),
-          ),
-          child: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: g.claySoft,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: g.clay.withValues(alpha: 0.3)),
-                  ),
-                  child: Icon(Icons.logout_rounded, color: g.clay, size: 24),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Sign Out of Ascent?',
-                  style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'You will need to sign in with your credentials again. Your local data will remain completely intact.',
-                  textAlign: TextAlign.center,
-                  style: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    Expanded(
-                      child: AscentButton.outlined(
-                        label: 'Cancel',
-                        compact: true,
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: AscentButton.primary(
-                        label: 'Sign Out',
-                        compact: true,
-                        onPressed: () async {
-                          Navigator.pop(ctx);
-                          HapticFeedback.mediumImpact();
-                          await ref.read(authProvider.notifier).logout();
-                          if (mounted) {
-                            context.go('/login');
-                          }
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   void _showGpsBatteryGuide(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -865,148 +784,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 20),
 
-            // ── Section 3: Daily Focus & Notifications (Always Visible) ──────
-            _SectionHeader(title: 'Daily Focus & Notifications', dotColor: g.sage),
-            AscentCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // 1. Daily Check-in & Streak Guardian
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: g.claySoft,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(Icons.notifications_active_outlined, color: g.clay, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Daily Momentum & Streak Guardian',
-                              style: AscentTextStyles.labelMedium.copyWith(
-                                color: g.ink,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Text(
-                              '2:30 PM mid-day push & 8:30 PM streak protection',
-                              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Switch(
-                        value: true,
-                        onChanged: (val) async {
-                          if (val) {
-                            await NotificationService.instance.requestPermissions();
-                            await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  _Divider(color: g.line),
-
-                  // 2. Raw Brotherly Boost Tone (5-Min Rule)
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final rawBoost = ref.watch(rawBoostToneEnabledProvider);
-                      return Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: g.claySoft,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(Icons.bolt_rounded, color: g.clay, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Raw Boost Tone (5-Min Rule)',
-                                  style: AscentTextStyles.labelMedium.copyWith(
-                                    color: g.ink,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  'Brotherly prompts: "Yo bro, just 5 mins, start clock"',
-                                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: rawBoost,
-                            onChanged: (val) {
-                              ref.read(rawBoostToneEnabledProvider.notifier).setEnabled(val);
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  _Divider(color: g.line),
-
-                  // 3. Accountability Follow-up Nudges
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final followUp = ref.watch(accountabilityFollowUpEnabledProvider);
-                      return Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: g.claySoft,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(Icons.alarm_on_rounded, color: g.clay, size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Accountability Follow-Up Nudges',
-                                  style: AscentTextStyles.labelMedium.copyWith(
-                                    color: g.ink,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  'Nudges you 20 mins later if not yet checked in',
-                                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Switch(
-                            value: followUp,
-                            onChanged: (val) {
-                              ref.read(accountabilityFollowUpEnabledProvider.notifier).setEnabled(val);
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
             _SectionHeader(title: 'Advanced Options & Tools', dotColor: g.inkMuted),
 
@@ -1194,85 +971,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 12),
 
-            // ── Collapsible 3: Notification Diagnostics ──────────────────────
-            _CollapsibleSettingsCard(
-              icon: Icons.bug_report_outlined,
-              iconTint: const Color(0xFF00B4D8),
-              title: 'Notification Diagnostics & Tests',
-              subtitle: 'Verify status bar alerts & push channels',
-              isExpanded: _expandNotificationTests,
-              onToggle: () => setState(() => _expandNotificationTests = !_expandNotificationTests),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Instant System Bar Test',
-                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Send instant notifications to verify lock-screen badges, sounds, and permissions.',
-                    style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AscentButton.primary(
-                          label: 'Send Raw Boost',
-                          icon: Icons.bolt_rounded,
-                          compact: true,
-                          onPressed: () async {
-                            final sent = await NotificationService.instance.sendTestBoostNotification();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    sent
-                                        ? '🔥 Raw boost notification fired to status bar!'
-                                        : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AscentButton.ghost(
-                          label: 'Standard Test',
-                          icon: Icons.send_rounded,
-                          compact: true,
-                          onPressed: () async {
-                            final sent = await NotificationService.instance.showInstantNotification(
-                              id: 101,
-                              title: 'Ascent — Daily Focus',
-                              body: 'Ready to take 1 small step today? Check your focus task.',
-                            );
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    sent
-                                        ? 'Test notification sent to status bar!'
-                                        : '⚠️ Notifications disabled. Please grant notification permission in system settings.',
-                                  ),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
             // ── Collapsible 4: Data & Storage ────────────────────────────────
             _CollapsibleSettingsCard(
               icon: Icons.inventory_2_outlined,
@@ -1361,112 +1059,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 12),
 
-            // ── Collapsible 5: Account & System Info ─────────────────────────
-            _CollapsibleSettingsCard(
-              icon: Icons.shield_outlined,
-              iconTint: g.inkMuted,
-              title: 'Account & System Info',
-              subtitle: 'Active session, security lock & version details',
-              isExpanded: _expandAccountSystem,
-              onToggle: () => setState(() => _expandAccountSystem = !_expandAccountSystem),
-              child: Column(
-                children: [
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final auth = ref.watch(authProvider);
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: g.claySoft,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Icon(Icons.person_rounded, color: g.clay, size: 20),
-                        ),
-                        title: Text(
-                          'Active Account',
-                          style: AscentTextStyles.labelMedium.copyWith(
-                            color: g.ink,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Signed in as @${auth.username}',
-                          style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: g.claySoft,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Verified',
-                            style: TextStyle(
-                              color: g.clay,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  _Divider(color: g.line),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: g.coralSoft,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.logout_rounded, color: g.coral, size: 20),
-                    ),
-                    title: Text(
-                      'Sign Out',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.coral,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Lock session and return to login screen',
-                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                    ),
-                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
-                    onTap: _confirmSignOut,
-                  ),
-                  _Divider(color: g.line),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        const AscentLogo(size: 38, borderRadius: 10),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ascent Beta · v1.0.2',
-                              style: AscentTextStyles.labelLarge.copyWith(
-                                color: g.ink,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              'Zero anxiety, continuous momentum. 100% on-device SQLite.',
-                              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted, fontSize: 11),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 40),
           ],
         ),

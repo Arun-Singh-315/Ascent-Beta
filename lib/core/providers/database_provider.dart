@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
+import '../services/promise_service.dart';
 import '../medicine/medicine_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -14,6 +15,10 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   ref.onDispose(db.close);
   return db;
 });
+
+final promiseServiceProvider = Provider<PromiseService>(
+  (ref) => PromiseService(ref.watch(databaseProvider)),
+);
 
 // ---------------------------------------------------------------------------
 // DAO providers
@@ -99,6 +104,10 @@ final momentumDaoProvider = Provider<MomentumDao>(
   (ref) => MomentumDao(ref.watch(databaseProvider)),
 );
 
+final challengeDaoProvider = Provider<ChallengeDao>(
+  (ref) => ChallengeDao(ref.watch(databaseProvider)),
+);
+
 final medicineDaoProvider = Provider<MedicineDao>(
   (ref) => MedicineDao(ref.watch(databaseProvider)),
 );
@@ -119,23 +128,27 @@ final allMedicinesStreamProvider = StreamProvider<List<Medicine>>((ref) {
   return dao.watchAllMedicines();
 });
 
-final todayMedicineLogsStreamProvider = StreamProvider<List<MedicineLog>>((ref) {
+final todayMedicineLogsStreamProvider = StreamProvider<List<MedicineLog>>((
+  ref,
+) {
   final dao = ref.watch(medicineDaoProvider);
   return dao.watchTodayMedicineLogs();
 });
 
 // ── Momentum Reactive Stream Providers ─────────────────────────────────────────
 
-final activeMomentumChallengeStreamProvider = StreamProvider<MomentumChallenge?>((ref) {
-  final dao = ref.watch(momentumDaoProvider);
-  return dao.watchActiveChallenge();
-});
+final activeMomentumChallengeStreamProvider =
+    StreamProvider<MomentumChallenge?>((ref) {
+      final dao = ref.watch(momentumDaoProvider);
+      return dao.watchActiveChallenge();
+    });
 
-final todayMomentumCommitmentsStreamProvider = StreamProvider<List<MomentumCommitment>>((ref) {
-  final dao = ref.watch(momentumDaoProvider);
-  final now = DateTime.now();
-  return dao.watchCommitmentsForDate(now);
-});
+final todayMomentumCommitmentsStreamProvider =
+    StreamProvider<List<MomentumCommitment>>((ref) {
+      final dao = ref.watch(momentumDaoProvider);
+      final now = DateTime.now();
+      return dao.watchCommitmentsForDate(now);
+    });
 
 // ── Finance Reactive Stream Providers ─────────────────────────────────────────
 
@@ -161,10 +174,11 @@ final overallBudgetStreamProvider = StreamProvider<FinanceBudget?>((ref) {
   return dao.watchOverallBudget();
 });
 
-final recentTransactionsStreamProvider = StreamProvider<List<FinanceTransaction>>((ref) {
-  final dao = ref.watch(financeDaoProvider);
-  return dao.watchRecentTransactions(limit: 25);
-});
+final recentTransactionsStreamProvider =
+    StreamProvider<List<FinanceTransaction>>((ref) {
+      final dao = ref.watch(financeDaoProvider);
+      return dao.watchRecentTransactions(limit: 25);
+    });
 
 final savingsGoalsStreamProvider = StreamProvider<List<SavingsGoal>>((ref) {
   final dao = ref.watch(financeDaoProvider);
@@ -193,8 +207,6 @@ final activityGoalStreamProvider = StreamProvider<DailyActivityGoal>((ref) {
   return dao.watchActivityGoal();
 });
 
-
-
 // ── Water Hydration Stream Providers ──────────────────────────────────────────
 
 final todayWaterMlStreamProvider = StreamProvider<int>((ref) {
@@ -212,10 +224,11 @@ final dailyWaterGoalStreamProvider = StreamProvider<int>((ref) {
   return dao.watchDailyWaterGoal();
 });
 
-final past7DaysHydrationStreamProvider = StreamProvider<List<DailyHydrationRecord>>((ref) {
-  final dao = ref.watch(waterDaoProvider);
-  return dao.watchPast7DaysHistory();
-});
+final past7DaysHydrationStreamProvider =
+    StreamProvider<List<DailyHydrationRecord>>((ref) {
+      final dao = ref.watch(waterDaoProvider);
+      return dao.watchPast7DaysHistory();
+    });
 
 // ── Thought Wall & Mind Space Stream Providers ────────────────────────────────
 
@@ -251,11 +264,12 @@ final allRemindersProvider = StreamProvider<List<Reminder>>((ref) {
   return dao.watchAllReminders();
 });
 
-final allUpcomingInterviewsProvider = StreamProvider<List<UpcomingInterview>>((ref) {
+final allUpcomingInterviewsProvider = StreamProvider<List<UpcomingInterview>>((
+  ref,
+) {
   final dao = ref.watch(upcomingInterviewDaoProvider);
   return dao.watchUpcomingInterviews();
 });
-
 
 // ---------------------------------------------------------------------------
 // Reactive stream providers for screens (Home, Drawer, More, etc.)
@@ -289,7 +303,9 @@ final todayFocusTaskProvider = FutureProvider<Task?>((ref) async {
   if (overdue.isNotEmpty) return overdue.first;
 
   final todayTasks = await dao.watchTasksByDate(DateTime.now()).first;
-  final pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
+  final pending = todayTasks
+      .where((t) => t.actualCompletedDate == null)
+      .toList();
   if (pending.isNotEmpty) return pending.first;
 
   return null;
@@ -312,12 +328,21 @@ final homeQuickStatsProvider = FutureProvider<HomeQuickStats>((ref) async {
 
   final dsaCount = await dsaDao.getSolvedCountThisWeek();
   final allApps = await appDao.watchAllApplications().first;
-  final activeApps = allApps.where((a) => a.currentStage != 'rejected' && a.currentStage != 'offer').length;
+  final activeApps = allApps
+      .where((a) => a.currentStage != 'rejected' && a.currentStage != 'offer')
+      .length;
 
   // Compute real hours this week from time sessions
   final now = DateTime.now();
-  final weekStart = DateTime(now.year, now.month, now.day).subtract(Duration(days: now.weekday - 1));
-  final sessions = await sessionDao.getSessionsBetween(weekStart, now.add(const Duration(days: 1)));
+  final weekStart = DateTime(
+    now.year,
+    now.month,
+    now.day,
+  ).subtract(Duration(days: now.weekday - 1));
+  final sessions = await sessionDao.getSessionsBetween(
+    weekStart,
+    now.add(const Duration(days: 1)),
+  );
   int totalSeconds = 0;
   for (final s in sessions) {
     if (s.activityType.toLowerCase() == 'entertainment') continue;
@@ -345,18 +370,9 @@ final nextUpcomingInterviewProvider = StreamProvider<UpcomingInterview?>((ref) {
 // Unified Today Activities Model (§2.2, §5.3)
 // ---------------------------------------------------------------------------
 
-enum TodayActivityStatus {
-  notStarted,
-  inProgress,
-  paused,
-  done,
-}
+enum TodayActivityStatus { notStarted, inProgress, paused, done }
 
-enum ActivityKind {
-  todo,
-  duration,
-  flexible,
-}
+enum ActivityKind { todo, duration, flexible }
 
 class TodayActivityItem {
   final String id;
@@ -433,5 +449,3 @@ class TodayActivityItem {
     );
   }
 }
-
-

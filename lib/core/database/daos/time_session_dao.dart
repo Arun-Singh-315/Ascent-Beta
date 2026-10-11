@@ -1,6 +1,13 @@
 part of '../app_database.dart';
 
-@DriftAccessor(tables: [TimeSessionTable, SessionCategoryTable, ConsistencyLogTable, TaskTable])
+@DriftAccessor(
+  tables: [
+    TimeSessionTable,
+    SessionCategoryTable,
+    ConsistencyLogTable,
+    TaskTable,
+  ],
+)
 class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     with _$TimeSessionDaoMixin {
   TimeSessionDao(super.db);
@@ -16,13 +23,15 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<SessionCategory?> getCategoryById(int id) {
-    return (select(sessionCategoryTable)..where((c) => c.id.equals(id)))
-        .getSingleOrNull();
+    return (select(
+      sessionCategoryTable,
+    )..where((c) => c.id.equals(id))).getSingleOrNull();
   }
 
   Future<SessionCategory?> getCategoryByName(String name) {
-    return (select(sessionCategoryTable)..where((c) => c.name.equals(name)))
-        .getSingleOrNull();
+    return (select(
+      sessionCategoryTable,
+    )..where((c) => c.name.equals(name))).getSingleOrNull();
   }
 
   Future<int> insertCategory(SessionCategoryTableCompanion category) {
@@ -62,7 +71,11 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   /// Watch active focus sessions (excluding lectures to maintain strict module independence)
   Stream<TimeSession?> watchActiveFocusSession() {
     return (select(timeSessionTable)
-          ..where((s) => s.status.isIn(['running', 'paused']) & s.activityRefType.isNotValue('lecture'))
+          ..where(
+            (s) =>
+                s.status.isIn(['running', 'paused']) &
+                s.activityRefType.isNotValue('lecture'),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .watchSingleOrNull();
@@ -79,7 +92,11 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   /// Get active focus session (excluding lectures)
   Future<TimeSession?> getActiveFocusSession() {
     return (select(timeSessionTable)
-          ..where((s) => s.status.isIn(['running', 'paused']) & s.activityRefType.isNotValue('lecture'))
+          ..where(
+            (s) =>
+                s.status.isIn(['running', 'paused']) &
+                s.activityRefType.isNotValue('lecture'),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
@@ -88,7 +105,11 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   /// Get active lecture session
   Future<TimeSession?> getActiveLectureSession() {
     return (select(timeSessionTable)
-          ..where((s) => s.status.isIn(['running', 'paused']) & s.activityRefType.equals('lecture'))
+          ..where(
+            (s) =>
+                s.status.isIn(['running', 'paused']) &
+                s.activityRefType.equals('lecture'),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
@@ -100,7 +121,11 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(timeSessionTable)
-          ..where((s) => s.startedAt.isBiggerOrEqualValue(start) & s.startedAt.isSmallerThanValue(end))
+          ..where(
+            (s) =>
+                s.startedAt.isBiggerOrEqualValue(start) &
+                s.startedAt.isSmallerThanValue(end),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
         .watch();
   }
@@ -109,23 +134,53 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(timeSessionTable)
-          ..where((s) => s.startedAt.isBiggerOrEqualValue(start) & s.startedAt.isSmallerThanValue(end))
+          ..where(
+            (s) =>
+                s.startedAt.isBiggerOrEqualValue(start) &
+                s.startedAt.isSmallerThanValue(end),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)]))
         .get();
   }
 
   Stream<List<TimeSession>> watchSessionsBetween(DateTime start, DateTime end) {
     return (select(timeSessionTable)
-          ..where((s) => s.startedAt.isBiggerOrEqualValue(start) & s.startedAt.isSmallerThanValue(end))
+          ..where(
+            (s) =>
+                s.startedAt.isBiggerOrEqualValue(start) &
+                s.startedAt.isSmallerThanValue(end),
+          )
           ..orderBy([(s) => OrderingTerm.asc(s.startedAt)]))
         .watch();
   }
 
   Future<List<TimeSession>> getSessionsBetween(DateTime start, DateTime end) {
     return (select(timeSessionTable)
-          ..where((s) => s.startedAt.isBiggerOrEqualValue(start) & s.startedAt.isSmallerThanValue(end))
+          ..where(
+            (s) =>
+                s.startedAt.isBiggerOrEqualValue(start) &
+                s.startedAt.isSmallerThanValue(end),
+          )
           ..orderBy([(s) => OrderingTerm.asc(s.startedAt)]))
         .get();
+  }
+
+  /// Watches completed Focus records for the one Activity selected by a Challenge.
+  Stream<List<TimeSession>> watchCompletedSessionsForTask(
+    int taskId,
+    DateTime start,
+    DateTime end,
+  ) {
+    return (select(timeSessionTable)
+          ..where(
+            (session) =>
+                session.linkedTaskId.equals(taskId) &
+                session.status.equals('completed') &
+                session.startedAt.isBiggerOrEqualValue(start) &
+                session.startedAt.isSmallerThanValue(end),
+          )
+          ..orderBy([(session) => OrderingTerm.asc(session.startedAt)]))
+        .watch();
   }
 
   // ── Mutations ──────────────────────────────────────────────────────────────
@@ -155,7 +210,9 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> pauseSession(int id) async {
-    final session = await (select(timeSessionTable)..where((s) => s.id.equals(id))).getSingleOrNull();
+    final session = await (select(
+      timeSessionTable,
+    )..where((s) => s.id.equals(id))).getSingleOrNull();
     if (session == null || session.status != 'running') return;
 
     final now = DateTime.now();
@@ -185,7 +242,9 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<void> resumeSession(int id) async {
-    final session = await (select(timeSessionTable)..where((s) => s.id.equals(id))).getSingleOrNull();
+    final session = await (select(
+      timeSessionTable,
+    )..where((s) => s.id.equals(id))).getSingleOrNull();
     if (session == null || session.status != 'paused') return;
 
     final now = DateTime.now();
@@ -224,10 +283,12 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     return (select(timeSessionTable)
-          ..where((s) =>
-              s.linkedTaskId.equals(taskId) &
-              s.status.isIn(['running', 'paused']) &
-              s.startedAt.isBiggerOrEqualValue(startOfToday))
+          ..where(
+            (s) =>
+                s.linkedTaskId.equals(taskId) &
+                s.status.isIn(['running', 'paused']) &
+                s.startedAt.isBiggerOrEqualValue(startOfToday),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
@@ -238,24 +299,30 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     return (select(timeSessionTable)
-          ..where((s) =>
-              s.linkedTaskId.equals(taskId) &
-              s.status.equals('paused') &
-              s.startedAt.isBiggerOrEqualValue(startOfToday))
+          ..where(
+            (s) =>
+                s.linkedTaskId.equals(taskId) &
+                s.status.equals('paused') &
+                s.startedAt.isBiggerOrEqualValue(startOfToday),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
   }
 
   /// Finds a running or paused session from today with a given label.
-  Future<TimeSession?> getTodayActiveOrPausedSessionByLabel(String label) async {
+  Future<TimeSession?> getTodayActiveOrPausedSessionByLabel(
+    String label,
+  ) async {
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     return (select(timeSessionTable)
-          ..where((s) =>
-              s.label.equals(label) &
-              s.status.isIn(['running', 'paused']) &
-              s.startedAt.isBiggerOrEqualValue(startOfToday))
+          ..where(
+            (s) =>
+                s.label.equals(label) &
+                s.status.isIn(['running', 'paused']) &
+                s.startedAt.isBiggerOrEqualValue(startOfToday),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
@@ -266,17 +333,21 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     final now = DateTime.now();
     final startOfToday = DateTime(now.year, now.month, now.day);
     return (select(timeSessionTable)
-          ..where((s) =>
-              s.label.equals(label) &
-              s.status.equals('paused') &
-              s.startedAt.isBiggerOrEqualValue(startOfToday))
+          ..where(
+            (s) =>
+                s.label.equals(label) &
+                s.status.equals('paused') &
+                s.startedAt.isBiggerOrEqualValue(startOfToday),
+          )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
         .getSingleOrNull();
   }
 
   Future<void> completeSession(int id, {DateTime? endedAt}) async {
-    final session = await (select(timeSessionTable)..where((s) => s.id.equals(id))).getSingleOrNull();
+    final session = await (select(
+      timeSessionTable,
+    )..where((s) => s.id.equals(id))).getSingleOrNull();
     if (session == null) return;
 
     final end = endedAt ?? DateTime.now();
@@ -313,7 +384,9 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
 
     // 1. If linked to a task, update task's actualMinutes
     if (session.linkedTaskId != null) {
-      final task = await (select(taskTable)..where((t) => t.id.equals(session.linkedTaskId!))).getSingleOrNull();
+      final task = await (select(
+        taskTable,
+      )..where((t) => t.id.equals(session.linkedTaskId!))).getSingleOrNull();
       if (task != null) {
         final previous = task.actualMinutes ?? 0;
         await (update(taskTable)..where((t) => t.id.equals(task.id))).write(
@@ -327,14 +400,18 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
 
     // 2. If session category is Study, automatically write to consistency_logs
     final category = await getCategoryById(session.categoryId);
-    final isStudy = category?.name.toLowerCase() == 'study' || session.activityType.toLowerCase() == 'study';
+    final isStudy =
+        category?.name.toLowerCase() == 'study' ||
+        session.activityType.toLowerCase() == 'study';
     if (isStudy) {
       // Recompute total study hours for today
       final todaySessions = await getSessionsForDate(session.startedAt);
       double totalStudyHours = 0.0;
       for (final s in todaySessions) {
         final sCategory = await getCategoryById(s.categoryId);
-        final sIsStudy = sCategory?.name.toLowerCase() == 'study' || s.activityType.toLowerCase() == 'study';
+        final sIsStudy =
+            sCategory?.name.toLowerCase() == 'study' ||
+            s.activityType.toLowerCase() == 'study';
         if (sIsStudy && s.status == 'completed') {
           final sDuration = computeActiveDurationSeconds(
             s.startedAt,
@@ -376,12 +453,14 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
   ) {
     int total = endedAt.difference(startedAt).inSeconds;
     try {
-      final List<dynamic> intervals = jsonDecode(pausedIntervalsJson) as List<dynamic>;
+      final List<dynamic> intervals =
+          jsonDecode(pausedIntervalsJson) as List<dynamic>;
       int pausedTotal = 0;
       for (final item in intervals) {
         if (item is Map) {
           final pAt = DateTime.tryParse(item['pausedAt']?.toString() ?? '');
-          final rAt = DateTime.tryParse(item['resumedAt']?.toString() ?? '') ?? endedAt;
+          final rAt =
+              DateTime.tryParse(item['resumedAt']?.toString() ?? '') ?? endedAt;
           if (pAt != null) {
             pausedTotal += rAt.difference(pAt).inSeconds;
           }

@@ -191,7 +191,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.text('Momentum'), findsOneWidget);
-      expect(find.text('MOMENTUM 2.0'), findsOneWidget);
+      expect(find.text('Coming soon.'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));

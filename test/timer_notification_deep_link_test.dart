@@ -44,6 +44,22 @@ void main() {
       expect(routedPath, equals('/chai-break'));
     });
 
+    test('Reminder and hydration notification payloads resolve to their screens', () {
+      expect(NotificationService.destinationForPayload(NotificationService.remindersDestination), '/reminders');
+      expect(NotificationService.destinationForPayload('/hydration'), '/hydration');
+      expect(NotificationService.destinationForPayload('/medicine'), '/medicine');
+      expect(NotificationService.destinationForPayload('/not-a-real-route'), '/home');
+
+      String? routedPath;
+      NotificationService.onNotificationNavigate = (path) => routedPath = path;
+      const response = NotificationResponse(
+        notificationResponseType: NotificationResponseType.selectedNotification,
+        payload: '/reminders',
+      );
+      NotificationService.instance.handleNotificationResponse(response);
+      expect(routedPath, '/reminders');
+    });
+
     test('Action button taps invoke onNotificationAction and NEVER trigger onNotificationNavigate', () {
       String? triggeredAction;
       String? triggeredPayload;

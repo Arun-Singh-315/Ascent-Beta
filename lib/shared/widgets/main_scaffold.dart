@@ -6,7 +6,6 @@ import '../../app/theme/glass_theme.dart';
 import 'package:flutter/services.dart';
 
 import 'ascent_drawer.dart';
-import 'live_session_bar.dart';
 
 /// The persistent shell wrapping the bottom navigation bar.
 /// Each tab maintains its own independent navigation stack via
@@ -20,7 +19,6 @@ class MainScaffold extends StatefulWidget {
     _TabItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
     _TabItem(icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded, label: 'Reminders'),
     _TabItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet_rounded, label: 'Money'),
-    _TabItem(icon: Icons.bolt_outlined, activeIcon: Icons.bolt_rounded, label: 'Momentum'),
     _TabItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view_rounded, label: 'More'),
   ];
 
@@ -104,11 +102,7 @@ class _MainScaffoldState extends State<MainScaffold> {
         key: _scaffoldKey,
         drawer: const AscentDrawer(),
         body: widget.shell,
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LiveSessionBar(isHomeTab: widget.shell.currentIndex == 0),
-            _AscentBottomNav(
+        bottomNavigationBar: _AscentBottomNav(
               currentIndex: widget.shell.currentIndex,
               onTap: (index) {
                 HapticFeedback.selectionClick();
@@ -119,8 +113,6 @@ class _MainScaffoldState extends State<MainScaffold> {
               },
               tabs: MainScaffold._tabs,
             ),
-          ],
-        ),
       ),
     );
   }

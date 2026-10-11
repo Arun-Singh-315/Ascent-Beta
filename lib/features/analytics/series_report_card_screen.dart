@@ -309,10 +309,24 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               onChanged: (val) async {
+                                if (isDone) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Completed tasks stay sealed.'),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Timed activities complete after their focus target is reached.'),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 if (val == true) {
                                   await taskDao.markComplete(task.id);
-                                } else {
-                                  await taskDao.markIncomplete(task.id);
                                 }
                               },
                             ),

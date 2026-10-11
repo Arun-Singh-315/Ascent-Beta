@@ -1,228 +1,450 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
-import '../../app/theme/dimension_tokens.dart';
+import '../../core/database/app_database.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import '../../shared/widgets/ascent_card.dart';
-import '../../shared/widgets/ascent_button.dart';
-import '../../shared/widgets/ascent_snack_bar.dart';
+import '../challenge/challenge_providers.dart';
+import '../challenge/domain/challenge_pace_engine.dart';
+import '../challenge/integration/challenge_proof_sync.dart';
+import '../challenge/presentation/challenge_create_sheet.dart';
 
-/// Refined Momentum screen (Tab 3) for Ascent Pre-Release.
-///
-/// Replaces the legacy 30-day protocol with a sleek, unified Coming Soon
-/// overview for Momentum 2.0 (Atomic Habits, Adaptive Streaks & Routine Engine).
 class MomentumScreen extends ConsumerWidget {
-  const MomentumScreen({super.key});
+  const MomentumScreen({super.key, this.linkedPromise});
+
+  final Thought? linkedPromise;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
-
+    ref.watch(challengeProofSyncProvider);
+    final active = ref.watch(activeChallengeProvider);
     return AscentScaffold(
-      title: 'Momentum',
-      subtitle: 'Habits • Routines • Peak State',
-      glow1: g.clay,
-      glow2: g.slate,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AscentSpacing.lg,
-          vertical: AscentSpacing.md,
+      title: 'Challenge Partner',
+      subtitle: 'A clear plan, measured by real progress',
+      body: active.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => _MessageCard(
+          title: 'Challenge could not load',
+          body:
+              'Your saved challenge is safe. Return to this screen to try again.',
+          action: TextButton.icon(
+            onPressed: () => ref.invalidate(activeChallengeProvider),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Retry'),
+          ),
         ),
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── HERO CARD ──────────────────────────────────────────────────
-            AscentCard.glass(
-              padding: const EdgeInsets.all(AscentSpacing.xl),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: g.claySoft,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: g.clay.withValues(alpha: 0.3),
-                            width: 1.2,
-                          ),
+        data: (challenge) => challenge == null
+            ? _EmptyChallenge(
+                linkedPromise: linkedPromise,
+                onCreate: () => ChallengeCreateSheet.show(
+                  context,
+                  linkedPromise: linkedPromise,
+                ),
+              )
+            : ref
+                  .watch(challengeProofsProvider(challenge.id))
+                  .when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, _) => _MessageCard(
+                      title: 'Progress could not load',
+                      body:
+                          'Your challenge is still saved. Try refreshing the screen.',
+                      action: TextButton.icon(
+                        onPressed: () => ref.invalidate(
+                          challengeProofsProvider(challenge.id),
                         ),
-                        child: Icon(
-                          Icons.bolt_rounded,
-                          color: g.clay,
-                          size: 26,
-                        ),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Retry'),
                       ),
-                      const SizedBox(width: AscentSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AscentSpacing.sm,
-                                vertical: AscentSpacing.xxs,
-                              ),
-                              decoration: BoxDecoration(
-                                color: g.claySoft,
-                                borderRadius: BorderRadius.circular(AscentRadii.smVal),
-                              ),
-                              child: Text(
-                                'MOMENTUM 2.0',
-                                style: GoogleFonts.jetBrainsMono(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: g.clay,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: AscentSpacing.xs),
-                            Text(
-                              'Architecting Peak Flow',
-                              style: AscentTextStyles.homeHeadline.copyWith(
-                                color: g.ink,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AscentSpacing.lg),
-                  Text(
-                    'We are rebuilding Momentum from the ground up into a science-backed habit and routine operating system tailored for deep work and physical vitality.',
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      color: g.inkSecondary,
-                      height: 1.45,
+                    ),
+                    data: (proofs) => _ChallengeDetail(
+                      challenge: challenge,
+                      proofs: proofs,
+                      onDelete: () => _confirmDelete(context, ref, challenge),
+                      onArchive: () => _archive(context, ref, challenge),
                     ),
                   ),
-                  const SizedBox(height: AscentSpacing.lg),
-                  AscentButton.primary(
-                    label: 'Notify Me On Release',
-                    icon: Icons.notifications_active_outlined,
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      AscentSnackBar.success(
-                        context,
-                        message: 'You\'re on the list! Momentum 2.0 notification enabled.',
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: AscentSpacing.xl),
-
-            // ── PILLARS HEADER ─────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AscentSpacing.xs),
-              child: Text(
-                'WHAT IS COMING',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: context.textMuted,
-                  letterSpacing: 1.1,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: AscentSpacing.md),
-
-            // ── PILLAR 1: ATOMIC HABITS ────────────────────────────────────
-            _buildFeaturePillar(
-              context: context,
-              icon: Icons.check_circle_outline_rounded,
-              title: 'Atomic Habit Stacking',
-              description: 'Link micro-habits to daily anchors with friction-free one-tap tracking and visual streaks.',
-            ),
-
-            const SizedBox(height: AscentSpacing.md),
-
-            // ── PILLAR 2: ADAPTIVE STREAK GUARDIAN ─────────────────────────
-            _buildFeaturePillar(
-              context: context,
-              icon: Icons.shield_outlined,
-              title: 'Adaptive Streak Guardian',
-              description: 'Flexible streak preservation that forgives rest days, travel, and emergencies without killing your progress.',
-            ),
-
-            const SizedBox(height: AscentSpacing.md),
-
-            // ── PILLAR 3: TIME-BOXED ROUTINES ──────────────────────────────
-            _buildFeaturePillar(
-              context: context,
-              icon: Icons.timelapse_rounded,
-              title: 'Morning & Evening Rituals',
-              description: 'Guided sequential routine players that walk you through your start-of-day and shutdown checklists.',
-            ),
-
-            const SizedBox(height: AscentSpacing.xxl),
-          ],
-        ),
       ),
     );
   }
 
-  Widget _buildFeaturePillar({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String description,
-  }) {
-    final g = context.glass;
-
-    return AscentCard.glass(
-      padding: const EdgeInsets.all(AscentSpacing.lg),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: g.claySoft,
-              borderRadius: BorderRadius.circular(AscentRadii.mdVal),
-              border: Border.all(color: g.line, width: 1),
-            ),
-            child: Icon(icon, size: 20, color: g.clay),
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    Challenge challenge,
+  ) async {
+    final delete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this challenge?'),
+        content: const Text(
+          'Its Challenge progress and links will be removed. Learning, Focus, Todo, and Promise data will stay unchanged.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep'),
           ),
-          const SizedBox(width: AscentSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: g.ink,
-                  ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (delete == true) {
+      await ref.read(challengeServiceProvider).delete(challenge.id);
+    }
+  }
+
+  Future<void> _archive(
+    BuildContext context,
+    WidgetRef ref,
+    Challenge challenge,
+  ) async {
+    await ref.read(challengeServiceProvider).archive(challenge.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Challenge moved to history.')),
+      );
+    }
+  }
+}
+
+class _EmptyChallenge extends StatelessWidget {
+  const _EmptyChallenge({required this.onCreate, this.linkedPromise});
+
+  final VoidCallback onCreate;
+  final Thought? linkedPromise;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: g.fill,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: g.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: g.clay.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: AscentSpacing.xs),
-                Text(
-                  description,
-                  style: AscentTextStyles.captionMedium.copyWith(
-                    color: g.inkSecondary,
-                    height: 1.35,
-                  ),
+                child: Icon(Icons.flag_rounded, size: 27, color: g.clay),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                linkedPromise == null
+                    ? 'Make a promise measurable'
+                    : 'Track your Promise',
+                style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Choose a course or a timed Todo. Challenge progress updates from completed lectures and Focus sessions, never from a manual checkmark.',
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: g.inkMuted,
+                  height: 1.45,
                 ),
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.add_rounded),
+                label: Text(
+                  linkedPromise == null
+                      ? 'Create challenge'
+                      : 'Build a progress plan',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _MessageCard(
+          title: 'Works with Ascent',
+          body:
+              'Learning Hub provides lecture completions. Activity Hub and Focus provide timed sessions. Challenge reads both and keeps their original records untouched.',
+        ),
+      ],
+    );
+  }
+}
+
+class _ChallengeDetail extends StatelessWidget {
+  const _ChallengeDetail({
+    required this.challenge,
+    required this.proofs,
+    required this.onDelete,
+    required this.onArchive,
+  });
+
+  final Challenge challenge;
+  final List<ChallengeProofEvent> proofs;
+  final VoidCallback onDelete;
+  final VoidCallback onArchive;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = progressForChallenge(challenge, proofs);
+    final g = context.glass;
+    final statusColor = switch (progress.status) {
+      ChallengePaceStatus.ahead ||
+      ChallengePaceStatus.onTrack ||
+      ChallengePaceStatus.complete => const Color(0xFF4E9B6B),
+      ChallengePaceStatus.atRisk => const Color(0xFFD99A37),
+      ChallengePaceStatus.failed => const Color(0xFFCA5C54),
+    };
+    final totalDays =
+        parseChallengeDay(
+          challenge.endDay,
+        ).difference(parseChallengeDay(challenge.startDay)).inDays +
+        1;
+    final elapsedDays = (totalDays - progress.daysLeft).clamp(1, totalDays);
+    final label = switch (progress.status) {
+      ChallengePaceStatus.ahead => 'Ahead',
+      ChallengePaceStatus.onTrack => 'On track',
+      ChallengePaceStatus.atRisk => 'At risk',
+      ChallengePaceStatus.failed => 'Deadline passed',
+      ChallengePaceStatus.complete => 'Target reached',
+    };
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                challenge.title,
+                style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
+              ),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (action) =>
+                  action == 'archive' ? onArchive() : onDelete(),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'archive', child: Text('Move to history')),
+                PopupMenuItem(value: 'delete', child: Text('Delete challenge')),
               ],
             ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        Text(
+          '${challenge.type == 'learning' ? 'Learning Hub' : 'Activity Hub'} · Day $elapsedDays of $totalDays',
+          style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+        ),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: g.fill,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: g.line),
           ),
+          child: Column(
+            children: [
+              SizedBox(
+                width: 168,
+                height: 168,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox.expand(
+                      child: CircularProgressIndicator(
+                        value: progress.percent / 100,
+                        strokeWidth: 12,
+                        backgroundColor: g.line,
+                        valueColor: AlwaysStoppedAnimation(statusColor),
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${progress.percent}%',
+                          style: AscentTextStyles.displayLarge.copyWith(
+                            color: g.ink,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          'complete',
+                          style: AscentTextStyles.captionMedium.copyWith(
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.13),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  label,
+                  style: AscentTextStyles.labelMedium.copyWith(
+                    color: statusColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Pace estimate: ${progress.chance}%',
+                style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: _MetricCard(
+                label: 'Needed each day',
+                value: '${progress.requiredPerDay.ceil()} min',
+                g: g,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _MetricCard(
+                label: 'Verified days',
+                value: '${progress.verifiedDays}',
+                g: g,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _MessageCard(
+          title:
+              '${progress.completedAmount.floor()} / ${challenge.targetTotal.ceil()} min verified',
+          body: challenge.type == 'learning'
+              ? 'Completed lectures from the linked course count once, using Learning Hub records.'
+              : 'Completed Focus sessions linked to the selected Todo count once. The Todo checkbox does not add minutes.',
+        ),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: challenge.type == 'learning'
+              ? () => context.push('/learning')
+              : () => context.push('/today'),
+          icon: Icon(
+            challenge.type == 'learning'
+                ? Icons.school_outlined
+                : Icons.play_arrow_rounded,
+          ),
+          label: Text(
+            challenge.type == 'learning'
+                ? 'Open Learning Hub'
+                : 'Open linked activity',
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextButton(onPressed: onDelete, child: const Text('Delete challenge')),
+      ],
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.g,
+  });
+
+  final String label;
+  final String value;
+  final AscentGlass g;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: g.fill,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: g.line),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AscentTextStyles.captionMedium.copyWith(color: g.inkMuted),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: AscentTextStyles.headlineMedium.copyWith(
+            color: g.ink,
+            fontSize: 18,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _MessageCard extends StatelessWidget {
+  const _MessageCard({required this.title, required this.body, this.action});
+
+  final String title;
+  final String body;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: g.fill,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: g.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AscentTextStyles.labelLarge.copyWith(
+              color: g.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            body,
+            style: AscentTextStyles.bodySmall.copyWith(
+              color: g.inkMuted,
+              height: 1.4,
+            ),
+          ),
+          if (action != null) ...[const SizedBox(height: 10), action!],
         ],
       ),
     );

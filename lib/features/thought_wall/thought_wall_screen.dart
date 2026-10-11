@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,7 +19,8 @@ import 'drop_thought_sheet.dart';
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
   final buffer = StringBuffer();
-  if (thought.promptQuestion != null && thought.promptQuestion!.trim().isNotEmpty) {
+  if (thought.promptQuestion != null &&
+      thought.promptQuestion!.trim().isNotEmpty) {
     buffer.writeln('💭 Prompt: ${thought.promptQuestion!.trim()}\n');
   }
   buffer.writeln('"${thought.content.trim()}"');
@@ -55,10 +57,7 @@ Future<void> shareThought(Thought thought) async {
   HapticFeedback.lightImpact();
   final text = formatThoughtForShare(thought);
   await SharePlus.instance.share(
-    ShareParams(
-      text: text,
-      subject: 'Mind Space Reflection',
-    ),
+    ShareParams(text: text, subject: 'Mind Space Reflection'),
   );
 }
 
@@ -87,7 +86,8 @@ class ThoughtWallScreen extends ConsumerStatefulWidget {
 
 class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   String _viewToggle = 'today'; // 'today', 'history'
-  String _categoryFilter = 'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
+  String _categoryFilter =
+      'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
   final String _activeFilter = 'all';
   bool _isSelectionMode = false;
   final Set<int> _selectedIds = <int>{};
@@ -99,15 +99,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     'idea': ('Sparks', Icons.lightbulb_rounded),
     'win': ('Wins', Icons.emoji_events_rounded),
     'future': ('Future Me', Icons.schedule_send_rounded),
+    'promise': ('Promises', Icons.handshake_rounded),
     'pinned': ('Pinned', Icons.push_pin_rounded),
     'archived': ('Archived', Icons.archive_outlined),
   };
 
   final TextEditingController _inputController = TextEditingController();
+  final TextEditingController _promiseDaysController = TextEditingController(
+    text: '30',
+  );
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   String _composerMood = 'me_to_me';
   bool _hasInputText = false;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -126,6 +131,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   void dispose() {
     _inputController.removeListener(_onInputChanged);
     _inputController.dispose();
+    _promiseDaysController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -141,6 +147,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         return const Color(0xFF16A34A);
       case 'future':
         return const Color(0xFFEA580C);
+      case 'promise':
+        return const Color(0xFF7C3AED);
       case 'thought':
       default:
         return const Color(0xFF0284C7);
@@ -157,6 +165,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         return Icons.emoji_events_rounded;
       case 'future':
         return Icons.schedule_send_rounded;
+      case 'promise':
+        return Icons.handshake_rounded;
       case 'thought':
       default:
         return Icons.insights_rounded;
@@ -164,7 +174,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   }
 
   String _getComposerHint() {
-    final effectiveMood = _activeFilter != 'all' && _activeFilter != 'pinned' && _activeFilter != 'archived'
+    final effectiveMood =
+        _activeFilter != 'all' &&
+            _activeFilter != 'pinned' &&
+            _activeFilter != 'archived'
         ? _activeFilter
         : _composerMood;
     switch (effectiveMood) {
@@ -176,13 +189,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         return 'Celebrate a win today...';
       case 'future':
         return 'Note for my future self...';
+      case 'promise':
+        return 'Write a promise you want to keep...';
       case 'thought':
       default:
         return 'Raw unfiltered thought...';
     }
   }
 
-  PopupMenuItem<String> _buildMoodMenuItem(String key, String label, IconData icon, Color color) {
+  PopupMenuItem<String> _buildMoodMenuItem(
+    String key,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
     return PopupMenuItem<String>(
       value: key,
       child: Row(
@@ -204,38 +224,91 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
   Future<void> _submitThought() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isSubmitting) return;
 
     HapticFeedback.mediumImpact();
-    _inputController.clear();
 
-    final mood = _activeFilter != 'all' && _activeFilter != 'pinned' && _activeFilter != 'archived'
+    final mood =
+        _activeFilter != 'all' &&
+            _activeFilter != 'pinned' &&
+            _activeFilter != 'archived'
         ? _activeFilter
         : _composerMood;
 
     final moodColor = _getMoodColor(mood);
     final colorHex = '#${moodColor.toARGB32().toRadixString(16)}';
 
-    await ref.read(thoughtDaoProvider).insertThought(
-      ThoughtTableCompanion.insert(
-        content: text,
-        mood: drift.Value(mood),
-        colorHex: drift.Value(colorHex),
-        isPinned: const drift.Value(false),
-      ),
-    );
-
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
+    final validityDays = int.tryParse(_promiseDaysController.text.trim());
+    if (mood == 'promise' &&
+        (validityDays == null || validityDays < 1 || validityDays > 365)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Promise duration must be between 1 and 365 days.'),
+        ),
       );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      if (mood == 'promise') {
+        await ref
+            .read(promiseServiceProvider)
+            .create(content: text, validityDays: validityDays!);
+      } else {
+        await ref
+            .read(thoughtDaoProvider)
+            .insertThought(
+              ThoughtTableCompanion.insert(
+                content: text,
+                mood: drift.Value(mood),
+                colorHex: drift.Value(colorHex),
+                isPinned: const drift.Value(false),
+              ),
+            );
+      }
+      _inputController.clear();
+      if (mood == 'promise') {
+        _promiseDaysController.text = '30';
+      }
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            mood == 'promise'
+                ? 'Promise added to Today with $validityDays daily reminders.'
+                : 'Added to your Thought Wall.',
+          ),
+        ),
+      );
+
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save. Please try again.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
-  Widget _buildSelectionBottomBar(BuildContext context, AscentGlass g, List<Thought> allThoughts) {
-    final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
+  Widget _buildSelectionBottomBar(
+    BuildContext context,
+    AscentGlass g,
+    List<Thought> allThoughts,
+  ) {
+    final selectedList = allThoughts
+        .where((t) => _selectedIds.contains(t.id))
+        .toList();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
@@ -263,12 +336,19 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF25D366),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
               ),
               icon: const Icon(Icons.share_rounded, size: 18),
               label: const Text('Share to WhatsApp'),
-              onPressed: selectedList.isEmpty ? null : () => shareMultipleThoughts(selectedList),
+              onPressed: selectedList.isEmpty
+                  ? null
+                  : () => shareMultipleThoughts(selectedList),
             ),
           ],
         ),
@@ -277,7 +357,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   }
 
   Widget _buildWhatsAppComposer(BuildContext context, AscentGlass g) {
-    final activeMood = _activeFilter != 'all' && _activeFilter != 'pinned' && _activeFilter != 'archived'
+    final activeMood =
+        _activeFilter != 'all' &&
+            _activeFilter != 'pinned' &&
+            _activeFilter != 'archived'
         ? _activeFilter
         : _composerMood;
     final moodColor = _getMoodColor(activeMood);
@@ -293,128 +376,265 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Category/Mood Picker
-            PopupMenuButton<String>(
-              tooltip: 'Category: $activeMood',
-              initialValue: activeMood,
-              onSelected: (val) {
-                HapticFeedback.lightImpact();
-                setState(() => _composerMood = val);
-              },
-              color: context.bgSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: g.edge),
-              ),
-              itemBuilder: (context) => [
-                _buildMoodMenuItem('me_to_me', 'Me to Me', Icons.psychology_alt_rounded, const Color(0xFF6366F1)),
-                _buildMoodMenuItem('thought', 'Raw Thought', Icons.insights_rounded, const Color(0xFF0284C7)),
-                _buildMoodMenuItem('idea', 'Spark / Idea', Icons.lightbulb_rounded, const Color(0xFFD97706)),
-                _buildMoodMenuItem('win', 'Daily Win', Icons.emoji_events_rounded, const Color(0xFF16A34A)),
-                _buildMoodMenuItem('future', 'Future Me', Icons.schedule_send_rounded, const Color(0xFFEA580C)),
-              ],
-              child: Container(
-                height: 40,
-                width: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: moodColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: moodColor.withValues(alpha: 0.28)),
-                ),
-                child: Icon(moodIcon, size: 19, color: moodColor),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Text Input Pill (Clean WhatsApp / Telegram single pill with zero inner borders)
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 120),
-                decoration: BoxDecoration(
-                  color: context.bgSurface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: g.edge.withValues(alpha: 0.6), width: 1.0),
-                ),
+            if (activeMood == 'promise')
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 7),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Expanded(
+                    Icon(
+                      Icons.notifications_active_outlined,
+                      size: 16,
+                      color: moodColor,
+                    ),
+                    const SizedBox(width: 7),
+                    Text(
+                      'Remind me daily for',
+                      style: AscentTextStyles.captionMedium.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 62,
                       child: TextField(
-                        controller: _inputController,
-                        focusNode: _focusNode,
-                        minLines: 1,
-                        maxLines: 4,
-                        textCapitalization: TextCapitalization.sentences,
-                        keyboardType: TextInputType.multiline,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
-                        cursorColor: g.clay,
+                        controller: _promiseDaysController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(3),
+                        ],
+                        textAlign: TextAlign.center,
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: g.ink,
+                          fontWeight: FontWeight.w700,
+                        ),
                         decoration: InputDecoration(
-                          hintText: _getComposerHint(),
-                          hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                            color: g.inkMuted.withValues(alpha: 0.5),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          suffixText: 'd',
                           isDense: true,
-                          filled: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 7,
+                          ),
+                          filled: true,
+                          fillColor: context.bgSurface,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(9),
+                          ),
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4, bottom: 2),
-                      child: IconButton(
-                        icon: Icon(Icons.auto_awesome_rounded, size: 18, color: g.inkMuted),
-                        tooltip: 'Guided Reflection Prompts',
-                        splashRadius: 18,
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          DropThoughtSheet.show(context);
-                        },
+                    const Spacer(),
+                    Text(
+                      '1–365 days',
+                      style: AscentTextStyles.captionMedium.copyWith(
+                        color: g.inkMuted,
+                        fontSize: 10,
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            // Floating Send Button
-            GestureDetector(
-              onTap: _hasInputText ? _submitThought : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                height: 40,
-                width: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _hasInputText ? g.clay : g.fill,
-                  border: Border.all(
-                    color: _hasInputText ? g.clay : g.edge,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Category/Mood Picker
+                PopupMenuButton<String>(
+                  tooltip: 'Category: $activeMood',
+                  initialValue: activeMood,
+                  onSelected: (val) {
+                    HapticFeedback.lightImpact();
+                    setState(() => _composerMood = val);
+                  },
+                  color: context.bgSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: g.edge),
                   ),
-                  boxShadow: _hasInputText
-                      ? [
-                          BoxShadow(
-                            color: g.clay.withValues(alpha: 0.35),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                  itemBuilder: (context) => [
+                    _buildMoodMenuItem(
+                      'me_to_me',
+                      'Me to Me',
+                      Icons.psychology_alt_rounded,
+                      const Color(0xFF6366F1),
+                    ),
+                    _buildMoodMenuItem(
+                      'thought',
+                      'Raw Thought',
+                      Icons.insights_rounded,
+                      const Color(0xFF0284C7),
+                    ),
+                    _buildMoodMenuItem(
+                      'idea',
+                      'Spark / Idea',
+                      Icons.lightbulb_rounded,
+                      const Color(0xFFD97706),
+                    ),
+                    _buildMoodMenuItem(
+                      'win',
+                      'Daily Win',
+                      Icons.emoji_events_rounded,
+                      const Color(0xFF16A34A),
+                    ),
+                    _buildMoodMenuItem(
+                      'future',
+                      'Future Me',
+                      Icons.schedule_send_rounded,
+                      const Color(0xFFEA580C),
+                    ),
+                    _buildMoodMenuItem(
+                      'promise',
+                      'Promise',
+                      Icons.handshake_rounded,
+                      const Color(0xFF7C3AED),
+                    ),
+                  ],
+                  child: Container(
+                    height: 40,
+                    width: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: moodColor.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: moodColor.withValues(alpha: 0.28),
+                      ),
+                    ),
+                    child: Icon(moodIcon, size: 19, color: moodColor),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Text Input Pill (Clean WhatsApp / Telegram single pill with zero inner borders)
+                Expanded(
+                  child: Container(
+                    constraints: const BoxConstraints(maxHeight: 120),
+                    decoration: BoxDecoration(
+                      color: context.bgSurface,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: g.edge.withValues(alpha: 0.6),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _inputController,
+                            focusNode: _focusNode,
+                            minLines: 1,
+                            maxLines: 4,
+                            textCapitalization: TextCapitalization.sentences,
+                            keyboardType: TextInputType.multiline,
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: g.ink,
+                            ),
+                            cursorColor: g.clay,
+                            decoration: InputDecoration(
+                              hintText: _getComposerHint(),
+                              hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                                color: g.inkMuted.withValues(alpha: 0.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                              isDense: true,
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                            ),
                           ),
-                        ]
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4, bottom: 2),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.auto_awesome_rounded,
+                              size: 18,
+                              color: g.inkMuted,
+                            ),
+                            tooltip: 'Guided Reflection Prompts',
+                            splashRadius: 18,
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              DropThoughtSheet.show(context);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Floating Send Button
+                GestureDetector(
+                  onTap: _hasInputText && !_isSubmitting
+                      ? _submitThought
                       : null,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    height: 42,
+                    width: activeMood == 'promise' ? 118 : 42,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _hasInputText ? g.clay : g.fill,
+                      border: Border.all(
+                        color: _hasInputText ? g.clay : g.edge,
+                      ),
+                      boxShadow: _hasInputText
+                          ? [
+                              BoxShadow(
+                                color: g.clay.withValues(alpha: 0.35),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: activeMood == 'promise'
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.handshake_rounded,
+                                size: 17,
+                                color: _hasInputText
+                                    ? Colors.white
+                                    : g.inkMuted,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Add Promise',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: _hasInputText
+                                      ? Colors.white
+                                      : g.inkMuted,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          )
+                        : Icon(
+                            _isSubmitting
+                                ? Icons.hourglass_top_rounded
+                                : Icons.send_rounded,
+                            size: 18,
+                            color: _hasInputText
+                                ? Colors.white
+                                : g.inkMuted.withValues(alpha: 0.35),
+                          ),
+                  ),
                 ),
-                child: Icon(
-                  Icons.send_rounded,
-                  size: 18,
-                  color: _hasInputText ? Colors.white : g.inkMuted.withValues(alpha: 0.35),
-                ),
-              ),
+              ],
             ),
           ],
         ),
@@ -527,8 +747,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         }
       },
       child: AscentScaffold(
-        title: _isSelectionMode ? '${_selectedIds.length} Selected' : 'Thought Wall',
-        subtitle: _isSelectionMode ? 'Select thoughts to share to WhatsApp' : 'Mind space • Me to Me talk',
+        title: _isSelectionMode
+            ? '${_selectedIds.length} Selected'
+            : 'Thought Wall',
+        subtitle: _isSelectionMode
+            ? 'Select thoughts to share to WhatsApp'
+            : 'Mind space • Me to Me talk',
         glow2: g.slate,
         leading: _isSelectionMode
             ? IconButton(
@@ -547,21 +771,34 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     final now = DateTime.now();
                     final todayStart = DateTime(now.year, now.month, now.day);
                     final filtered = allThoughts.where((t) {
-                      if (_categoryFilter == 'pinned' && !t.isPinned) return false;
+                      if (_categoryFilter == 'pinned' && !t.isPinned) {
+                        return false;
+                      }
                       if (_categoryFilter == 'archived') return t.isArchived;
-                      if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
+                      if (_categoryFilter != 'all' &&
+                          _categoryFilter != 'pinned' &&
+                          t.mood != _categoryFilter) {
+                        return false;
+                      }
                       if (_viewToggle == 'today') {
-                        return !t.isArchived && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
+                        return !t.isArchived &&
+                            t.createdAt.isAfter(
+                              todayStart.subtract(const Duration(seconds: 1)),
+                            );
                       } else {
                         return t.isArchived || t.createdAt.isBefore(todayStart);
                       }
                     }).toList();
 
-                    final isAllSelected = filtered.isNotEmpty && _selectedIds.length >= filtered.length;
+                    final isAllSelected =
+                        filtered.isNotEmpty &&
+                        _selectedIds.length >= filtered.length;
 
                     return IconButton(
                       icon: Icon(
-                        isAllSelected ? Icons.deselect_rounded : Icons.select_all_rounded,
+                        isAllSelected
+                            ? Icons.deselect_rounded
+                            : Icons.select_all_rounded,
                         color: g.clay,
                       ),
                       tooltip: isAllSelected ? 'Deselect All' : 'Select All',
@@ -577,7 +814,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     final activeList = activeAsync.value ?? [];
                     final archivedList = archivedAsync.value ?? [];
                     final allThoughts = [...activeList, ...archivedList];
-                    final selectedList = allThoughts.where((t) => _selectedIds.contains(t.id)).toList();
+                    final selectedList = allThoughts
+                        .where((t) => _selectedIds.contains(t.id))
+                        .toList();
                     shareMultipleThoughts(selectedList);
                   },
                 ),
@@ -587,7 +826,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   onPressed: _exitSelectionMode,
                 ),
               ]
-            : null,
+            : [
+                TextButton.icon(
+                  icon: const Icon(Icons.handshake_rounded, size: 17),
+                  label: const Text('Add Promise'),
+                  onPressed: () =>
+                      DropThoughtSheet.show(context, initialMood: 'promise'),
+                ),
+              ],
         body: Column(
           children: [
             // Segmented 2-Way Toggle: Today | History & Archive
@@ -597,12 +843,19 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               decoration: BoxDecoration(
                 color: context.bgSurface,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+                border: Border.all(
+                  color: context.divider.withValues(alpha: 0.8),
+                ),
               ),
               child: Row(
                 children: [
                   _buildViewSegment('today', "Today", Icons.today_rounded, g),
-                  _buildViewSegment('history', "History & Archive", Icons.history_rounded, g),
+                  _buildViewSegment(
+                    'history',
+                    "History & Archive",
+                    Icons.history_rounded,
+                    g,
+                  ),
                 ],
               ),
             ),
@@ -614,7 +867,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               child: Row(
                 children: [
                   Text(
-                    _viewToggle == 'today' ? 'TODAY\'S REFLECTIONS' : 'PAST & ARCHIVED',
+                    _viewToggle == 'today'
+                        ? 'TODAY\'S REFLECTIONS'
+                        : 'PAST & ARCHIVED',
                     style: AscentTextStyles.labelSmall.copyWith(
                       color: context.textMuted,
                       letterSpacing: 1.0,
@@ -630,7 +885,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                       setState(() => _categoryFilter = val);
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: context.bgSurface,
                         borderRadius: BorderRadius.circular(10),
@@ -640,31 +898,68 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            _filterMeta[_categoryFilter]?.$2 ?? Icons.filter_alt_outlined,
+                            _filterMeta[_categoryFilter]?.$2 ??
+                                Icons.filter_alt_outlined,
                             size: 13,
-                            color: _categoryFilter != 'all' ? g.clay : context.textMuted,
+                            color: _categoryFilter != 'all'
+                                ? g.clay
+                                : context.textMuted,
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            _categoryFilter == 'all' ? 'All Moods' : (_filterMeta[_categoryFilter]?.$1 ?? 'Filter'),
+                            _categoryFilter == 'all'
+                                ? 'All Moods'
+                                : (_filterMeta[_categoryFilter]?.$1 ??
+                                      'Filter'),
                             style: AscentTextStyles.captionMedium.copyWith(
-                              color: _categoryFilter != 'all' ? g.clay : context.textPrimary,
+                              color: _categoryFilter != 'all'
+                                  ? g.clay
+                                  : context.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: context.textMuted),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            size: 14,
+                            color: context.textMuted,
+                          ),
                         ],
                       ),
                     ),
                     itemBuilder: (ctx) => [
-                      const PopupMenuItem(value: 'all', child: Text('All Moods')),
-                      const PopupMenuItem(value: 'me_to_me', child: Text('Me to Me')),
-                      const PopupMenuItem(value: 'thought', child: Text('Raw Thoughts')),
-                      const PopupMenuItem(value: 'idea', child: Text('Sparks / Ideas')),
-                      const PopupMenuItem(value: 'win', child: Text('Daily Wins')),
-                      const PopupMenuItem(value: 'pinned', child: Text('Pinned Only')),
-                      const PopupMenuItem(value: 'archived', child: Text('Archived Only')),
+                      const PopupMenuItem(
+                        value: 'all',
+                        child: Text('All Moods'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'me_to_me',
+                        child: Text('Me to Me'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'thought',
+                        child: Text('Raw Thoughts'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'idea',
+                        child: Text('Sparks / Ideas'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'win',
+                        child: Text('Daily Wins'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'promise',
+                        child: Text('Promises'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'pinned',
+                        child: Text('Pinned Only'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'archived',
+                        child: Text('Archived Only'),
+                      ),
                     ],
                   ),
                 ],
@@ -677,7 +972,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
             Expanded(
               child: activeAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (err, _) => Center(child: Text('Error loading wall: $err')),
+                error: (err, _) =>
+                    Center(child: Text('Error loading wall: $err')),
                 data: (activeList) {
                   final archivedList = archivedAsync.value ?? [];
                   final allThoughts = [...activeList, ...archivedList];
@@ -685,12 +981,21 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   final todayStart = DateTime(now.year, now.month, now.day);
 
                   final filtered = allThoughts.where((t) {
-                    if (_categoryFilter == 'pinned' && !t.isPinned) return false;
+                    if (_categoryFilter == 'pinned' && !t.isPinned) {
+                      return false;
+                    }
                     if (_categoryFilter == 'archived') return t.isArchived;
-                    if (_categoryFilter != 'all' && _categoryFilter != 'pinned' && t.mood != _categoryFilter) return false;
+                    if (_categoryFilter != 'all' &&
+                        _categoryFilter != 'pinned' &&
+                        t.mood != _categoryFilter) {
+                      return false;
+                    }
 
                     if (_viewToggle == 'today') {
-                      return !t.isArchived && t.createdAt.isAfter(todayStart.subtract(const Duration(seconds: 1)));
+                      return !t.isArchived &&
+                          t.createdAt.isAfter(
+                            todayStart.subtract(const Duration(seconds: 1)),
+                          );
                     } else {
                       return t.isArchived || t.createdAt.isBefore(todayStart);
                     }
@@ -701,12 +1006,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                       title: _categoryFilter == 'archived'
                           ? 'No archived reflections'
                           : (_viewToggle == 'today'
-                              ? 'No thoughts logged today'
-                              : 'No past or archived reflections'),
+                                ? 'No thoughts logged today'
+                                : 'No past or archived reflections'),
                       subtitle: _categoryFilter == 'archived'
                           ? 'Reflections you archive from the wall will be safely stored here.'
                           : 'Drop an unfiltered reflection, spark of idea, or note to yourself.',
-                      icon: _categoryFilter == 'archived' ? Icons.archive_outlined : Icons.bubble_chart_rounded,
+                      icon: _categoryFilter == 'archived'
+                          ? Icons.archive_outlined
+                          : Icons.bubble_chart_rounded,
                       actionLabel: 'Drop a Thought',
                       onAction: () => DropThoughtSheet.show(context),
                     );
@@ -714,7 +1021,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 16),
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      top: 8,
+                      bottom: 16,
+                    ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final thought = filtered[index];
@@ -733,7 +1045,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
             ),
             // WhatsApp Messenger Composer or Selection Bar
             _isSelectionMode
-                ? _buildSelectionBottomBar(context, g, [...(activeAsync.value ?? []), ...(archivedAsync.value ?? [])])
+                ? _buildSelectionBottomBar(context, g, [
+                    ...(activeAsync.value ?? []),
+                    ...(archivedAsync.value ?? []),
+                  ])
                 : _buildWhatsAppComposer(context, g),
           ],
         ),
@@ -770,6 +1085,8 @@ class ThoughtCardBubble extends ConsumerWidget {
         return Icons.emoji_events_rounded;
       case 'future':
         return Icons.schedule_send_rounded;
+      case 'promise':
+        return Icons.handshake_rounded;
       case 'thought':
       default:
         return Icons.insights_rounded;
@@ -786,6 +1103,8 @@ class ThoughtCardBubble extends ConsumerWidget {
         return 'Daily Win';
       case 'future':
         return 'Future Self';
+      case 'promise':
+        return 'Promise';
       case 'thought':
       default:
         return 'Raw Thought';
@@ -802,6 +1121,8 @@ class ThoughtCardBubble extends ConsumerWidget {
         return const Color(0xFF16A34A); // Sage Green
       case 'future':
         return const Color(0xFFEA580C); // Terracotta
+      case 'promise':
+        return const Color(0xFF7C3AED);
       case 'thought':
       default:
         return const Color(0xFF0284C7); // Sky Deep
@@ -837,7 +1158,9 @@ class ThoughtCardBubble extends ConsumerWidget {
         ),
         child: Dismissible(
           key: ValueKey('thought_${thought.id}'),
-          direction: isSelectionMode ? DismissDirection.none : DismissDirection.horizontal,
+          direction: isSelectionMode
+              ? DismissDirection.none
+              : DismissDirection.horizontal,
           confirmDismiss: (direction) async {
             final thoughtDao = ref.read(thoughtDaoProvider);
             if (direction == DismissDirection.startToEnd) {
@@ -852,7 +1175,11 @@ class ThoughtCardBubble extends ConsumerWidget {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(thought.isArchived ? 'Thought unarchived' : 'Thought archived'),
+                    content: Text(
+                      thought.isArchived
+                          ? 'Thought unarchived'
+                          : 'Thought archived',
+                    ),
                     duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
                     action: SnackBarAction(
@@ -886,7 +1213,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                       label: 'UNDO',
                       textColor: context.accentPrimary,
                       onPressed: () async {
-                        await thoughtDao.insertThought(backup.toCompanion(true));
+                        await thoughtDao.insertThought(
+                          backup.toCompanion(true),
+                        );
                       },
                     ),
                   ),
@@ -906,14 +1235,19 @@ class ThoughtCardBubble extends ConsumerWidget {
             child: Row(
               children: [
                 Icon(
-                  thought.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                  thought.isArchived
+                      ? Icons.unarchive_outlined
+                      : Icons.archive_outlined,
                   color: Colors.amber,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   thought.isArchived ? 'Unarchive' : 'Archive',
-                  style: const TextStyle(color: Colors.amber, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: Colors.amber,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -924,17 +1258,26 @@ class ThoughtCardBubble extends ConsumerWidget {
             decoration: BoxDecoration(
               color: Colors.redAccent.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.4)),
+              border: Border.all(
+                color: Colors.redAccent.withValues(alpha: 0.4),
+              ),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'Delete',
-                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 SizedBox(width: 8),
-                Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                Icon(
+                  Icons.delete_outline_rounded,
+                  color: Colors.redAccent,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -945,14 +1288,22 @@ class ThoughtCardBubble extends ConsumerWidget {
             child: GestureDetector(
               onDoubleTap: isSelectionMode
                   ? onToggleSelect
+                  : thought.mood == 'promise'
+                  ? null
                   : () async {
                       HapticFeedback.mediumImpact();
-                      await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .toggleCompleted(thought.id);
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(thought.isCompleted ? 'Thought marked active' : 'Thought marked done ✓'),
+                            content: Text(
+                              thought.isCompleted
+                                  ? 'Thought marked active'
+                                  : 'Thought marked done ✓',
+                            ),
                             duration: const Duration(seconds: 2),
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -965,9 +1316,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? g.clay.withValues(alpha: 0.22)
-                      : (context.isDark
-                          ? g.fill
-                          : Colors.transparent),
+                      : (context.isDark ? g.fill : Colors.transparent),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(18),
                     topRight: const Radius.circular(18),
@@ -978,15 +1327,19 @@ class ThoughtCardBubble extends ConsumerWidget {
                     color: isSelected
                         ? g.clay
                         : (thought.isPinned
-                            ? (context.isDark ? Colors.amber.shade400 : Colors.amber.shade700)
-                            : (context.isDark
-                                ? g.edge
-                                : Colors.black.withValues(alpha: 0.85))),
+                              ? (context.isDark
+                                    ? Colors.amber.shade400
+                                    : Colors.amber.shade700)
+                              : (context.isDark
+                                    ? g.edge
+                                    : Colors.black.withValues(alpha: 0.85))),
                     width: isSelected ? 1.8 : 1.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDark ? 0.30 : 0.06),
+                      color: Colors.black.withValues(
+                        alpha: context.isDark ? 0.30 : 0.06,
+                      ),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -1001,14 +1354,19 @@ class ThoughtCardBubble extends ConsumerWidget {
                       children: [
                         if (isSelectionMode) ...[
                           Icon(
-                            isSelected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                            isSelected
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
                             size: 18,
                             color: isSelected ? g.clay : g.inkMuted,
                           ),
                           const SizedBox(width: 6),
                         ],
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: moodColor.withValues(alpha: 0.14),
                             borderRadius: BorderRadius.circular(7),
@@ -1043,15 +1401,26 @@ class ThoughtCardBubble extends ConsumerWidget {
                         // Right actions (quick unarchive & popup menu)
                         if (thought.isArchived) ...[
                           IconButton(
-                            icon: const Icon(Icons.unarchive_outlined, size: 16, color: Colors.amber),
+                            icon: const Icon(
+                              Icons.unarchive_outlined,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
                             tooltip: 'Unarchive thought',
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            constraints: const BoxConstraints(
+                              minWidth: 26,
+                              minHeight: 26,
+                            ),
                             onPressed: () async {
                               HapticFeedback.lightImpact();
-                              await ref.read(thoughtDaoProvider).unarchiveThought(thought.id);
+                              await ref
+                                  .read(thoughtDaoProvider)
+                                  .unarchiveThought(thought.id);
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(
+                                  context,
+                                ).hideCurrentSnackBar();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Thought restored to wall'),
@@ -1065,16 +1434,25 @@ class ThoughtCardBubble extends ConsumerWidget {
                           const SizedBox(width: 2),
                         ],
                         PopupMenuButton<String>(
-                          icon: Icon(Icons.more_horiz_rounded, size: 18, color: context.textMuted),
+                          icon: Icon(
+                            Icons.more_horiz_rounded,
+                            size: 18,
+                            color: context.textMuted,
+                          ),
                           color: context.bgSurface,
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          constraints: const BoxConstraints(
+                            minWidth: 26,
+                            minHeight: 26,
+                          ),
                           onSelected: (action) async {
                             if (action == 'share') {
                               await shareThought(thought);
                             } else if (action == 'toggle_done') {
                               HapticFeedback.lightImpact();
-                              await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
+                              await ref
+                                  .read(thoughtDaoProvider)
+                                  .toggleCompleted(thought.id);
                             } else if (action == 'convert_task') {
                               HapticFeedback.mediumImpact();
                               final taskDao = ref.read(taskDaoProvider);
@@ -1082,7 +1460,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 TaskTableCompanion.insert(
                                   title: thought.content.trim(),
                                   plannedDate: drift.Value(DateTime.now()),
-                                  notes: drift.Value('thought_id:${thought.id}${thought.promptQuestion != null ? ' • ${thought.promptQuestion}' : ''}'),
+                                  notes: drift.Value(
+                                    'thought_id:${thought.id}${thought.promptQuestion != null ? ' • ${thought.promptQuestion}' : ''}',
+                                  ),
                                 ),
                               );
                               if (context.mounted) {
@@ -1104,21 +1484,36 @@ class ThoughtCardBubble extends ConsumerWidget {
                               }
                             } else if (action == 'pin') {
                               HapticFeedback.lightImpact();
-                              await ref.read(thoughtDaoProvider).togglePin(thought.id);
+                              await ref
+                                  .read(thoughtDaoProvider)
+                                  .togglePin(thought.id);
                             } else if (action == 'copy') {
                               HapticFeedback.lightImpact();
-                              await Clipboard.setData(ClipboardData(text: thought.content));
+                              await Clipboard.setData(
+                                ClipboardData(text: thought.content),
+                              );
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Copied to clipboard!')),
+                                  const SnackBar(
+                                    content: Text('Copied to clipboard!'),
+                                  ),
                                 );
                               }
                             } else if (action == 'edit') {
                               HapticFeedback.lightImpact();
-                              DropThoughtSheet.show(context, existingThought: thought);
+                              DropThoughtSheet.show(
+                                context,
+                                existingThought: thought,
+                              );
+                            } else if (action == 'open_todo') {
+                              context.push('/today');
+                            } else if (action == 'track_challenge') {
+                              context.push('/momentum', extra: thought);
                             } else if (action == 'delete') {
                               HapticFeedback.mediumImpact();
-                              await ref.read(thoughtDaoProvider).deleteThought(thought.id);
+                              await ref
+                                  .read(thoughtDaoProvider)
+                                  .deleteThought(thought.id);
                             }
                           },
                           itemBuilder: (_) => [
@@ -1132,33 +1527,75 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                            PopupMenuItem(
-                              value: 'toggle_done',
-                              child: Row(
-                                children: [
-                                  Icon(thought.isCompleted ? Icons.check_circle_outline_rounded : Icons.check_circle_rounded, size: 16),
-                                  SizedBox(width: 8),
-                                  Text(thought.isCompleted ? 'Mark as undone' : 'Mark as done'),
-                                ],
+                            if (thought.mood != 'promise')
+                              PopupMenuItem(
+                                value: 'toggle_done',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      thought.isCompleted
+                                          ? Icons.check_circle_outline_rounded
+                                          : Icons.check_circle_rounded,
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      thought.isCompleted
+                                          ? 'Mark as undone'
+                                          : 'Mark as done',
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              const PopupMenuItem(
+                                value: 'open_todo',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.open_in_new_rounded, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('View linked Todo'),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'convert_task',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.add_task_rounded, size: 16),
-                                  SizedBox(width: 8),
-                                  Text('Convert to Today Task'),
-                                ],
+                            if (thought.mood == 'promise')
+                              const PopupMenuItem(
+                                value: 'track_challenge',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.flag_outlined, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Track with Challenge'),
+                                  ],
+                                ),
                               ),
-                            ),
+                            if (thought.mood != 'promise')
+                              const PopupMenuItem(
+                                value: 'convert_task',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.add_task_rounded, size: 16),
+                                    SizedBox(width: 8),
+                                    Text('Convert to Today Task'),
+                                  ],
+                                ),
+                              ),
                             PopupMenuItem(
                               value: 'archive',
                               child: Row(
                                 children: [
-                                  Icon(thought.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, size: 16),
+                                  Icon(
+                                    thought.isArchived
+                                        ? Icons.unarchive_outlined
+                                        : Icons.archive_outlined,
+                                    size: 16,
+                                  ),
                                   SizedBox(width: 8),
-                                  Text(thought.isArchived ? 'Unarchive' : 'Archive thought'),
+                                  Text(
+                                    thought.isArchived
+                                        ? 'Unarchive'
+                                        : 'Archive thought',
+                                  ),
                                 ],
                               ),
                             ),
@@ -1174,7 +1611,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                             ),
                             PopupMenuItem(
                               value: 'pin',
-                              child: Text(thought.isPinned ? 'Unpin' : 'Pin to top'),
+                              child: Text(
+                                thought.isPinned ? 'Unpin' : 'Pin to top',
+                              ),
                             ),
                             const PopupMenuItem(
                               value: 'copy',
@@ -1182,7 +1621,10 @@ class ThoughtCardBubble extends ConsumerWidget {
                             ),
                             const PopupMenuItem(
                               value: 'delete',
-                              child: Text('Delete thought', style: TextStyle(color: Colors.redAccent)),
+                              child: Text(
+                                'Delete thought',
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
                             ),
                           ],
                         ),
@@ -1190,7 +1632,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                     ),
 
                     // Status badges row (if completed, pinned, or archived)
-                    if (thought.isCompleted || thought.isPinned || thought.isArchived) ...[
+                    if (thought.isCompleted ||
+                        thought.isPinned ||
+                        thought.isArchived) ...[
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 5,
@@ -1198,9 +1642,14 @@ class ThoughtCardBubble extends ConsumerWidget {
                         children: [
                           if (thought.isCompleted)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(alpha: 0.14),
+                                color: context.accentPrimary.withValues(
+                                  alpha: 0.14,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -1214,15 +1663,24 @@ class ThoughtCardBubble extends ConsumerWidget {
                             ),
                           if (thought.isPinned)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(alpha: 0.12),
+                                color: context.accentPrimary.withValues(
+                                  alpha: 0.12,
+                                ),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.push_pin_rounded, size: 9, color: context.accentPrimary),
+                                  Icon(
+                                    Icons.push_pin_rounded,
+                                    size: 9,
+                                    color: context.accentPrimary,
+                                  ),
                                   const SizedBox(width: 2),
                                   Text(
                                     'PINNED',
@@ -1237,7 +1695,10 @@ class ThoughtCardBubble extends ConsumerWidget {
                             ),
                           if (thought.isArchived)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 5,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.amber.withValues(alpha: 0.16),
                                 borderRadius: BorderRadius.circular(6),
@@ -1245,7 +1706,11 @@ class ThoughtCardBubble extends ConsumerWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.archive_outlined, size: 9, color: Colors.amber),
+                                  const Icon(
+                                    Icons.archive_outlined,
+                                    size: 9,
+                                    color: Colors.amber,
+                                  ),
                                   const SizedBox(width: 2),
                                   Text(
                                     'ARCHIVED',
@@ -1266,7 +1731,10 @@ class ThoughtCardBubble extends ConsumerWidget {
                     if (thought.promptQuestion != null) ...[
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: moodColor.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
@@ -1280,7 +1748,11 @@ class ThoughtCardBubble extends ConsumerWidget {
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.help_outline_rounded, size: 13, color: moodColor),
+                            Icon(
+                              Icons.help_outline_rounded,
+                              size: 13,
+                              color: moodColor,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -1304,21 +1776,23 @@ class ThoughtCardBubble extends ConsumerWidget {
                     Text(
                       thought.content,
                       style: AscentTextStyles.bodyMedium.copyWith(
-                        color: thought.isCompleted ? context.textMuted : context.textPrimary,
-                        decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
+                        color: thought.isCompleted
+                            ? context.textMuted
+                            : context.textPrimary,
+                        decoration: thought.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                         height: 1.45,
                         fontSize: 14.5,
                       ),
                     ),
                   ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
-
-

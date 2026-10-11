@@ -387,6 +387,7 @@ class _TaskItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDone = task.actualCompletedDate != null;
+    final isTimeBound = task.estimatedMinutes != null && task.estimatedMinutes! > 0;
 
     final status = SeriesEngine.computeTaskStatus(
       plannedDate: task.plannedDate,
@@ -406,7 +407,7 @@ class _TaskItemTile extends ConsumerWidget {
       key: ValueKey('task_${task.id}'),
       direction: (isCompletedView || isDone)
           ? DismissDirection.none
-          : DismissDirection.horizontal,
+          : (isTimeBound ? DismissDirection.endToStart : DismissDirection.horizontal),
       // Swipe Right: Complete
       background: Container(
         alignment: Alignment.centerLeft,
@@ -431,11 +432,13 @@ class _TaskItemTile extends ConsumerWidget {
         final taskDao = ref.read(taskDaoProvider);
 
         if (direction == DismissDirection.startToEnd) {
-          await taskDao.markComplete(task.id);
+          final completed = await taskDao.markComplete(task.id);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Task marked complete!'),
+              SnackBar(
+                content: Text(completed
+                    ? 'Task marked complete!'
+                    : 'Timed activities complete after their focus target is reached.'),
                 duration: Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -538,6 +541,14 @@ class _TaskItemTile extends ConsumerWidget {
                     onTap: () async {
                       if (isDone) {
                         // Once completed, it cannot be undone or brought back to active (one way only).
+                        return;
+                      }
+                      if (isTimeBound) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Timed activities complete after their focus target is reached.'),
+                          ),
+                        );
                         return;
                       }
                       final taskDao = ref.read(taskDaoProvider);
@@ -725,12 +736,20 @@ class _TaskItemTile extends ConsumerWidget {
                           onTap: () async {
                             final dao = ref.read(taskDaoProvider);
                             if (isSubDone) {
-                              await dao.updateTask(TaskTableCompanion(
-                                id: drift.Value(sub.id),
-                                actualCompletedDate: const drift.Value(null),
-                              ));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Completed tasks stay sealed.'),
+                                ),
+                              );
                             } else {
-                              await dao.markComplete(sub.id);
+                              final completed = await dao.markComplete(sub.id);
+                              if (!completed && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Timed activities complete after their focus target is reached.'),
+                                  ),
+                                );
+                              }
                             }
                           },
                           borderRadius: BorderRadius.circular(6),
@@ -909,8 +928,16 @@ class _TaskItemTile extends ConsumerWidget {
                       FilledButton(
                         onPressed: () async {
                           HapticFeedback.mediumImpact();
-                          Navigator.of(ctx).pop();
-                          await ref.read(taskDaoProvider).markComplete(task.id);
+                          final completed = await ref.read(taskDaoProvider).markComplete(task.id);
+                          if (completed) {
+                            if (ctx.mounted) Navigator.of(ctx).pop();
+                          } else if (ctx.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Timed activities complete after their focus target is reached.'),
+                              ),
+                            );
+                          }
                         },
                         style: FilledButton.styleFrom(
                           backgroundColor: g.clay,

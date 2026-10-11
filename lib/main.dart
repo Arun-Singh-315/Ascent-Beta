@@ -10,14 +10,12 @@ import 'core/providers/time_tracking_provider.dart';
 import 'core/learning_hub/learning_hub_provider.dart';
 import 'core/walk/walk_tracking_service.dart';
 import 'features/chai_break/chai_break_provider.dart';
-import 'features/study_plan/lecture_focus_player_sheet.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await NotificationService.instance.initialize();
   NotificationService.instance.requestPermissions();
-  await NotificationService.instance.scheduleDailyMomentumGuardianNudges();
 
   final prefs = await SharedPreferences.getInstance();
   await touchLastOpened(prefs);
@@ -29,18 +27,10 @@ void main() async {
   );
 
   NotificationService.setNotificationNavigateHandler((route) {
-    if (route.isNotEmpty) {
-      if (route == '/learning' || route == AscentRoutes.learning) {
-        final ctx = rootNavigatorKey.currentContext;
-        if (ctx != null) {
-          LectureFocusPlayerSheet.show(ctx);
-          return;
-        }
-      }
-      final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri.toString();
-      if (currentUri != route) {
-        ascentRouter.go(route);
-      }
+    final destination = NotificationService.destinationForPayload(route);
+    final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri.toString();
+    if (currentUri != destination) {
+      ascentRouter.go(destination);
     }
   });
 

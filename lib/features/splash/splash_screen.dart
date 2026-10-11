@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
-import '../../core/auth/auth_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_logo.dart';
@@ -62,7 +61,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _checkSessionAndNavigate() async {
     final startTime = DateTime.now();
 
-    final isAuth = ref.read(authProvider).isAuthenticated;
 
     bool hasValidProfile = false;
     try {
@@ -96,9 +94,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final router = GoRouter.maybeOf(context);
     if (router == null) return;
 
-    if (!isAuth) {
-      router.go('/login');
-    } else if (hasValidProfile) {
+    if (hasValidProfile) {
       router.go('/home');
     } else {
       router.go('/onboarding');

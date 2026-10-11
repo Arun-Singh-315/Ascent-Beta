@@ -62,6 +62,22 @@ class NotificationService {
   static const int ongoingWalkNotificationId = 888801;
   static const int ongoingChaiBreakNotificationId = 888802;
   static const int ongoingFocusNotificationId = 888803;
+  static const String remindersDestination = '/reminders';
+
+  /// Keep notification payloads within destinations registered by the app.
+  /// Unknown or stale payloads safely return users to Home.
+  static String destinationForPayload(String? payload) {
+    const destinations = {
+      '/home', '/reminders', '/money', '/focus', '/learning', '/medicine',
+      '/walk', '/chai-break', '/hydration', '/thought-wall', '/pipeline',
+      '/analytics', '/settings', '/study-plan', '/dsa', '/interview-prep',
+      '/consistency', '/resume-vault', '/momentum', '/more',
+    };
+    if (payload != null && destinations.contains(payload)) return payload;
+    if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) return payload;
+    if (payload != null && RegExp(r'^/analytics/series/\d+$').hasMatch(payload)) return payload;
+    return '/home';
+  }
 
   // Interactive Notification Actions
   static const String actionPause = 'action_pause';
@@ -433,7 +449,7 @@ class NotificationService {
         title: title,
         body: body,
         notificationDetails: notificationDetails,
-        payload: payload,
+        payload: payload ?? '/home',
       );
       return true;
     } catch (e) {
@@ -494,6 +510,7 @@ class NotificationService {
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
+        payload: '/home',
       );
     } catch (e) {
       debugPrint('Failed to schedule daily reminder: $e');
@@ -545,6 +562,7 @@ class NotificationService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
+        payload: '/home',
       );
     } catch (e) {
       debugPrint('Failed to schedule daily boost $id: $e');
@@ -621,6 +639,7 @@ class NotificationService {
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: remindersDestination,
       );
       debugPrint('Successfully scheduled exact reminder id=$id at $scheduledTz');
     } catch (exactErr) {
@@ -633,6 +652,7 @@ class NotificationService {
           scheduledDate: scheduledTz,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: remindersDestination,
         );
         debugPrint('Successfully scheduled inexact reminder fallback id=$id at $scheduledTz');
       } catch (e) {
@@ -661,6 +681,7 @@ class NotificationService {
           scheduledDate: followUpTz,
           notificationDetails: followUpDetails,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          payload: remindersDestination,
         );
         debugPrint('Scheduled exact accountability follow-up nudge id=${id + followUpIdOffset} at $followUpTz');
       } catch (exactErr) {
@@ -673,6 +694,7 @@ class NotificationService {
             scheduledDate: followUpTz,
             notificationDetails: followUpDetails,
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            payload: remindersDestination,
           );
           debugPrint('Scheduled inexact follow-up fallback id=${id + followUpIdOffset} at $followUpTz');
         } catch (e) {
@@ -746,6 +768,7 @@ class NotificationService {
         scheduledDate: scheduledTz,
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: '/momentum',
       );
       debugPrint('Scheduled exact Momentum wake alarm id=$id at $scheduledTz');
     } catch (e) {
@@ -758,6 +781,7 @@ class NotificationService {
           scheduledDate: scheduledTz,
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: '/momentum',
         );
       } catch (err) {
         debugPrint('Failed to schedule Momentum wake alarm fallback: $err');
@@ -804,6 +828,7 @@ class NotificationService {
         scheduledDate: scheduledTz,
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: '/momentum',
       );
       debugPrint('Scheduled exact Momentum commitment id=$id at $scheduledTz');
     } catch (e) {
@@ -816,6 +841,7 @@ class NotificationService {
           scheduledDate: scheduledTz,
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: '/momentum',
         );
       } catch (err) {
         debugPrint('Failed to schedule Momentum commitment fallback: $err');
@@ -861,6 +887,7 @@ class NotificationService {
         scheduledDate: scheduledTz,
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        payload: '/momentum',
       );
       debugPrint('Scheduled exact Momentum wind-down id=$id at $scheduledTz');
     } catch (e) {
@@ -872,6 +899,7 @@ class NotificationService {
           scheduledDate: scheduledTz,
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          payload: '/momentum',
         );
       } catch (err) {
         debugPrint('Failed to schedule Momentum wind-down fallback: $err');

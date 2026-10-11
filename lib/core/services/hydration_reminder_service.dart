@@ -55,6 +55,7 @@ class HydrationReminderService {
       id: 204,
       title: '💧 Drink Water Reminder',
       body: 'Hey! Didn\'t show up yet? Take a quick sip and keep your focus laser-sharp!',
+      payload: '/hydration',
     );
   }
 }

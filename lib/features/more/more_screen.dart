@@ -141,20 +141,12 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 22),
 
-          // ── 3. Life & Momentum ───────────────────────────────────────────
-          _GroupHeader(title: 'LIFE & MOMENTUM', dotColor: g.coral),
+          // ── 3. Life & Activity ───────────────────────────────────────────
+          _GroupHeader(title: 'LIFE & ACTIVITY', dotColor: g.coral),
           AscentCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _MoreListTile(
-                  icon: Icons.local_fire_department_rounded,
-                  iconTint: g.coral,
-                  title: 'Momentum',
-                  subtitle: 'Personalized protocol, milestone timeline & streak engine',
-                  route: '/momentum',
-                ),
-                _TileDivider(),
                 _MoreListTile(
                   icon: Icons.directions_walk_rounded,
                   iconTint: g.sage,

@@ -87,11 +87,10 @@ class MedicineDao extends DatabaseAccessor<AppDatabase> with _$MedicineDaoMixin 
     // Sync with linked TaskTable if present
     final log = await (select(medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();
     if (log != null && log.linkedTaskId != null) {
-      if (taken) {
-        await db.taskDao.markComplete(log.linkedTaskId!);
-      } else {
-        await db.taskDao.markIncomplete(log.linkedTaskId!);
-      }
+      await db.taskDao.syncCompletionFromMedicineDose(
+        log.linkedTaskId!,
+        completed: taken,
+      );
     }
   }
 

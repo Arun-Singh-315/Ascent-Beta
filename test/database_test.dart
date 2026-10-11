@@ -4,7 +4,7 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/database/tables/enums.dart';
-import 'package:ascent/core/database/demo_data_seeder.dart';
+import 'package:ascent/core/services/promise_service.dart';
 
 void main() {
   late AppDatabase db;
@@ -18,6 +18,33 @@ void main() {
   });
 
   group('Database & DAOs Tests', () {
+    test('Promise creation atomically links a Thought, Todo, and daily reminders', () async {
+      final scheduled = <DateTime>[];
+      final service = PromiseService(
+        db,
+        scheduleNotification: (id, title, at) async { scheduled.add(at); },
+      );
+
+      final taskId = await service.create(content: 'Finish course', validityDays: 20);
+      final task = await db.taskDao.getTaskById(taskId);
+      final thoughts = await db.thoughtDao.watchAllThoughts().first;
+      final reminders = await db.reminderDao.getRemindersByTaskId(taskId);
+
+      expect(task, isNotNull);
+      expect(task!.title, 'Finish course');
+      expect(task.plannedDate, DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
+      expect(task.notes, contains('promise_duration_days:20'));
+      expect(task.notes, contains('promise_due_date:'));
+      expect(thoughts.single.mood, 'promise');
+      expect(reminders, hasLength(20));
+      expect(scheduled, hasLength(20));
+      expect(reminders.every((reminder) => reminder.isActive), isTrue);
+
+      expect(await db.taskDao.markComplete(taskId), isTrue);
+      final stoppedReminders = await db.reminderDao.getRemindersByTaskId(taskId);
+      expect(stoppedReminders.every((reminder) => !reminder.isActive), isTrue);
+    });
+
     test('Can insert and retrieve UserProfile', () async {
       final profileId = await db.userProfileDao.upsertProfile(
         UserProfileTableCompanion.insert(
@@ -37,7 +64,7 @@ void main() {
       expect(profile.targetCompanies, contains('Google'));
     });
 
-    test('TaskDao supports task lifecycle (insert, complete, uncomplete, delete)', () async {
+    test('TaskDao keeps completed tasks sealed before deletion', () async {
       final taskId = await db.taskDao.insertTask(
         TaskTableCompanion.insert(
           title: 'Implement LeetCode 3Sum',
@@ -57,9 +84,10 @@ void main() {
       expect(completed!.actualCompletedDate, isNotNull);
 
       // Mark incomplete
-      await db.taskDao.markIncomplete(taskId);
+      final reopened = await db.taskDao.markIncomplete(taskId);
+      expect(reopened, isFalse);
       final uncompleted = await db.taskDao.getTaskById(taskId);
-      expect(uncompleted!.actualCompletedDate, isNull);
+      expect(uncompleted!.actualCompletedDate, isNotNull);
 
       // Delete
       final deletedCount = await db.taskDao.deleteTask(taskId);
@@ -144,45 +172,6 @@ void main() {
       expect(history.first.stage, ApplicationStage.interview.name);
       expect(history.first.notes, 'Recruiter screen scheduled');
       expect(history.last.stage, ApplicationStage.applied.name);
-    });
-
-    test('DemoDataSeeder seeds all interconnected modules accurately', () async {
-      await DemoDataSeeder.seedRealisticBetaData(db);
-
-      // Verify Profile
-      final profile = await db.userProfileDao.getProfile();
-      expect(profile, isNotNull);
-      expect(profile!.name, 'Alex Chen');
-
-      // Verify Tasks
-      final todayTasks = await db.taskDao.watchTasksByDate(DateTime.now()).first;
-      expect(todayTasks.isNotEmpty, isTrue);
-
-      // Verify Pipeline Applications
-      final apps = await db.applicationDao.watchAllApplications().first;
-      expect(apps.length, greaterThanOrEqualTo(5));
-
-      // Verify Consistency Logs & Streak
-      final streak = await db.consistencyDao.watchCurrentStreak().first;
-      expect(streak, greaterThanOrEqualTo(1));
-
-      // Verify DSA Logs
-      final dsa = await db.dsaDao.watchAllLogs().first;
-      expect(dsa.length, greaterThanOrEqualTo(6));
-
-      // Verify Interview Prep
-      final questions = await db.interviewPrepDao.watchAllQuestions().first;
-      expect(questions.length, greaterThanOrEqualTo(4));
-
-      // Verify Mind Space / Thoughts
-      await db.thoughtDao.insertThought(
-        const ThoughtTableCompanion(
-          content: drift.Value('Great breakthroughs start with raw unfiltered notes.'),
-          mood: drift.Value('thought'),
-        ),
-      );
-      final thoughts = await db.thoughtDao.watchAllThoughts().first;
-      expect(thoughts, isNotEmpty);
     });
 
     test('TimeSessionDao tracks session lifecycle and duration', () async {

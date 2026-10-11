@@ -699,12 +699,6 @@ class _StepDone extends StatelessWidget {
                   title: 'Job Pipeline',
                   subtitle: 'Manage applications from wishlist to offer',
                 ),
-                Divider(color: context.divider, height: 16),
-                _FeatureRow(
-                  icon: Icons.bolt_outlined,
-                  title: 'Daily Momentum',
-                  subtitle: 'Continuous consistency and streak analytics',
-                ),
               ],
             ),
           ),

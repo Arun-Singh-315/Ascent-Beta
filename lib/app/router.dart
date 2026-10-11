@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/splash_screen.dart';
-import '../features/auth/login_screen.dart';
 
 import '../features/onboarding/onboarding_shell.dart';
 import '../features/home/home_screen.dart';
@@ -25,6 +24,7 @@ import '../features/reminders/reminders_screen.dart';
 import '../features/money/money_screen.dart';
 import '../features/walk/walk_screen.dart';
 import '../features/momentum/momentum_screen.dart';
+import '../core/database/app_database.dart';
 import '../features/ai_assistant/ai_assistant_screen.dart';
 import '../features/medicine/medicine_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
@@ -36,7 +36,6 @@ import '../shared/widgets/main_scaffold.dart';
 
 class AscentRoutes {
   static const splash = '/';
-  static const login = '/login';
   static const onboarding = '/onboarding';
   static const home = '/home';
   static const bookReader = '/book-reader';
@@ -87,12 +86,6 @@ final ascentRouter = GoRouter(
       builder: (context, state) => const SplashScreen(),
     ),
 
-    // ── Login (no shell — full screen) ───────────────────────────────────────
-    GoRoute(
-      path: AscentRoutes.login,
-      builder: (context, state) => const LoginScreen(),
-    ),
-
     // ── Onboarding (no shell — full screen flow) ──────────────────────────
     GoRoute(
       path: AscentRoutes.onboarding,
@@ -108,9 +101,8 @@ final ascentRouter = GoRouter(
           routes: [
             GoRoute(
               path: AscentRoutes.home,
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: HomeScreen(),
-              ),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: HomeScreen()),
             ),
           ],
         ),
@@ -120,9 +112,8 @@ final ascentRouter = GoRouter(
           routes: [
             GoRoute(
               path: AscentRoutes.reminders,
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: RemindersScreen(),
-              ),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: RemindersScreen()),
             ),
           ],
         ),
@@ -132,33 +123,19 @@ final ascentRouter = GoRouter(
           routes: [
             GoRoute(
               path: AscentRoutes.money,
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: MoneyScreen(),
-              ),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: MoneyScreen()),
             ),
           ],
         ),
 
-        // Tab 3: Momentum & Fitness Engine
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AscentRoutes.momentum,
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: MomentumScreen(),
-              ),
-            ),
-          ],
-        ),
-
-        // Tab 4: More (Hub & tools)
+        // Tab 3: More (Hub & tools)
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: AscentRoutes.more,
-              pageBuilder: (context, state) => const NoTransitionPage(
-                child: MoreScreen(),
-              ),
+              pageBuilder: (context, state) =>
+                  const NoTransitionPage(child: MoreScreen()),
             ),
           ],
         ),
@@ -166,6 +143,13 @@ final ascentRouter = GoRouter(
     ),
 
     // ── Parent destinations (pushed over the shell) ───────────────────────
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.momentum,
+      builder: (context, state) => MomentumScreen(
+        linkedPromise: state.extra is Thought ? state.extra as Thought : null,
+      ),
+    ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.momentumOnboarding,
@@ -249,9 +233,8 @@ final ascentRouter = GoRouter(
         GoRoute(
           path: 'course/:id',
           parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) => StudyPlanScreen(
-            courseId: state.pathParameters['id'],
-          ),
+          builder: (context, state) =>
+              StudyPlanScreen(courseId: state.pathParameters['id']),
         ),
       ],
     ),
@@ -271,7 +254,9 @@ final ascentRouter = GoRouter(
       builder: (context, state) {
         final applicationId = state.uri.queryParameters['applicationId'];
         return InterviewPrepScreen(
-          linkedApplicationId: applicationId != null ? int.parse(applicationId) : null,
+          linkedApplicationId: applicationId != null
+              ? int.parse(applicationId)
+              : null,
         );
       },
     ),

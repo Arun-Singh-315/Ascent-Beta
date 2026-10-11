@@ -34,9 +34,7 @@ class ThoughtWallHomePreview extends ConsumerWidget {
           children: [
             Text(
               'Mind space',
-              style: AscentTextStyles.homeTitle.copyWith(
-                color: g.ink,
-              ),
+              style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
@@ -48,7 +46,10 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                   },
                   borderRadius: BorderRadius.circular(6),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -141,7 +142,9 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Align(
-                      alignment: isEven ? Alignment.centerLeft : Alignment.centerRight,
+                      alignment: isEven
+                          ? Alignment.centerLeft
+                          : Alignment.centerRight,
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 300),
                         child: GlassSurface(
@@ -152,22 +155,66 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                             bottomLeft: Radius.circular(isEven ? 4 : 18),
                             bottomRight: Radius.circular(isEven ? 18 : 4),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                           onTap: () {
                             HapticFeedback.lightImpact();
                             context.push('/thought-wall');
                           },
                           child: Column(
-                            crossAxisAlignment: isEven ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+                            crossAxisAlignment: isEven
+                                ? CrossAxisAlignment.start
+                                : CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              if (thought.mood == 'promise') ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF7C3AED,
+                                    ).withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.handshake_rounded,
+                                        size: 12,
+                                        color: Color(0xFF7C3AED),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'PROMISE',
+                                        style: AscentTextStyles.homeCaption
+                                            .copyWith(
+                                              color: const Color(0xFF7C3AED),
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                              ],
                               Text(
                                 thought.content,
                                 style: AscentTextStyles.homeHeadline.copyWith(
-                                  color: thought.isCompleted ? g.inkMuted : g.ink,
+                                  color: thought.isCompleted
+                                      ? g.inkMuted
+                                      : g.ink,
                                   fontSize: 14.5,
                                   fontWeight: FontWeight.w500,
-                                  decoration: thought.isCompleted ? TextDecoration.lineThrough : null,
+                                  decoration: thought.isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -177,17 +224,22 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (thought.isCompleted) ...[
-                                    Icon(Icons.check_circle_rounded, size: 12, color: g.clay),
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 12,
+                                      color: g.clay,
+                                    ),
                                     const SizedBox(width: 4),
                                   ],
                                   Text(
                                     timeAgo,
-                                    style: AscentTextStyles.homeCaption.copyWith(
-                                      color: g.inkMuted,
-                                      fontSize: 10.5,
-                                      letterSpacing: 0.5,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AscentTextStyles.homeCaption
+                                        .copyWith(
+                                          color: g.inkMuted,
+                                          fontSize: 10.5,
+                                          letterSpacing: 0.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                   ),
                                 ],
                               ),
@@ -207,7 +259,10 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: g.fill,
                         borderRadius: BorderRadius.circular(16),
@@ -216,7 +271,11 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.bubble_chart_outlined, size: 15, color: g.clay),
+                          Icon(
+                            Icons.bubble_chart_outlined,
+                            size: 15,
+                            color: g.clay,
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'View all reflections (${thoughts.length})',
@@ -227,7 +286,11 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_rounded, size: 14, color: g.clay),
+                          Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 14,
+                            color: g.clay,
+                          ),
                         ],
                       ),
                     ),

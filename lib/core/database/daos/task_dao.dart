@@ -10,11 +10,10 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
 
   /// Stream of all tasks ordered by plannedDate asc, then createdAt asc.
   Stream<List<Task>> watchAllTasks() =>
-      (select(taskTable)
-            ..orderBy([
-              (t) => OrderingTerm.asc(t.plannedDate),
-              (t) => OrderingTerm.asc(t.createdAt),
-            ]))
+      (select(taskTable)..orderBy([
+            (t) => OrderingTerm.asc(t.plannedDate),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
           .watch();
 
   /// Stream of tasks for today.
@@ -98,6 +97,13 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Future<Task?> getTaskById(int id) =>
       (select(taskTable)..where((t) => t.id.equals(id))).getSingleOrNull();
 
+  /// Returns the Todo created for a Thought Wall Promise, if it still exists.
+  Future<Task?> getTaskLinkedToThought(int thoughtId) =>
+      (select(taskTable)
+            ..where((t) => t.notes.like('%thought_id:$thoughtId •%'))
+            ..limit(1))
+          .getSingleOrNull();
+
   /// Returns the task with the highest [seriesItemIndex] in [seriesId].
   /// Useful when auto-generating the next item in a series.
   Future<Task?> getLastSeriesItem(int seriesId) =>
@@ -141,17 +147,68 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   /// Updates the task identified by [companion.id].
   /// Returns true if exactly one row was affected.
   Future<bool> updateTask(TaskTableCompanion companion) async {
-    final rowsAffected = await (update(taskTable)
-          ..where((t) => t.id.equals(companion.id.value)))
-        .write(companion);
+    // Completion is a domain transition, not an ordinary field edit. Keep timed
+    // tasks from being completed by partial-update callers that bypass the DAO.
+    if (companion.actualCompletedDate.present) {
+      if (!companion.id.present) return false;
+      final task = await getTaskById(companion.id.value);
+      if (task == null) return false;
+      if (companion.actualCompletedDate.value == null) {
+        if (task.actualCompletedDate != null) return false;
+      } else {
+        final effectiveEstimatedMinutes = companion.estimatedMinutes.present
+            ? companion.estimatedMinutes.value
+            : task.estimatedMinutes;
+        if (effectiveEstimatedMinutes != null &&
+            effectiveEstimatedMinutes > 0) {
+          return false;
+        }
+      }
+    }
+    final rowsAffected = await (update(
+      taskTable,
+    )..where((t) => t.id.equals(companion.id.value))).write(companion);
     return rowsAffected == 1;
   }
 
+  bool _isTimeBound(Task task) =>
+      task.estimatedMinutes != null && task.estimatedMinutes! > 0;
+
   /// Marks a task as complete by setting [actualCompletedDate] and
   /// [updatedAt] to the current time, and cascades completion to linked thoughts.
-  Future<void> markComplete(int id) async {
-    final now = DateTime.now();
+  Future<bool> markComplete(int id) async {
     final task = await getTaskById(id);
+    if (task == null || _isTimeBound(task)) return false;
+    await _writeCompletedTask(task);
+    return true;
+  }
+
+  /// Completes a timed task only when its required focus duration has elapsed.
+  Future<bool> completeTimedTaskAfterFocus(int id) async {
+    final task = await getTaskById(id);
+    final targetMinutes = task?.estimatedMinutes;
+    if (task == null || targetMinutes == null || targetMinutes <= 0) {
+      return false;
+    }
+    final completedSessions =
+        await (db.select(db.timeSessionTable)..where(
+              (session) =>
+                  session.linkedTaskId.equals(id) &
+                  session.status.equals('completed'),
+            ))
+            .get();
+    final loggedSeconds = completedSessions.fold<int>(
+      0,
+      (total, session) => total + session.durationSeconds,
+    );
+    if (loggedSeconds < targetMinutes * 60) return false;
+    await _writeCompletedTask(task);
+    return true;
+  }
+
+  Future<void> _writeCompletedTask(Task task) async {
+    final id = task.id;
+    final now = DateTime.now();
     await (update(taskTable)..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(
         actualCompletedDate: Value(now),
@@ -160,25 +217,65 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     );
 
     // Sync to Thought Wall if this task was created from a thought or has matching content
-    if (task != null) {
-      final noteMatch = RegExp(r'thought_id:(\d+)').firstMatch(task.notes ?? '');
-      if (noteMatch != null) {
-        final thoughtId = int.tryParse(noteMatch.group(1)!);
-        if (thoughtId != null) {
-          try {
-            await db.thoughtDao.setCompleted(thoughtId, true);
-          } catch (_) {}
-        }
+    final noteMatch = RegExp(r'thought_id:(\d+)').firstMatch(task.notes ?? '');
+    if (noteMatch != null) {
+      final thoughtId = int.tryParse(noteMatch.group(1)!);
+      if (thoughtId != null) {
+        try {
+          await db.thoughtDao.setCompleted(thoughtId, true);
+        } catch (_) {}
       }
-      try {
-        await db.thoughtDao.setCompletedByContent(task.title.trim(), true);
-      } catch (_) {}
+    }
+    try {
+      await db.thoughtDao.setCompletedByContent(task.title.trim(), true);
+    } catch (_) {}
+
+    // Completing a task ends its linked reminder schedule, including promise
+    // reminders, so a fulfilled commitment cannot keep generating alerts.
+    final reminders = await db.reminderDao.getRemindersByTaskId(id);
+    if (reminders.isNotEmpty) {
+      await (db.update(db.reminderTable)
+            ..where((r) => r.linkedTaskId.equals(id)))
+          .write(const ReminderTableCompanion(isActive: Value(false)));
+      for (final reminder in reminders) {
+        await NotificationService.instance.cancel(reminder.id);
+      }
     }
   }
 
-  /// Marks a task as incomplete (clears [actualCompletedDate]) and syncs to linked thoughts.
-  Future<void> markIncomplete(int id) async {
+  /// Completed tasks stay sealed; use the explicit medicine-dose sync method
+  /// for the linked medical task lifecycle.
+  Future<bool> markIncomplete(int id) async {
     final task = await getTaskById(id);
+    if (task == null || task.actualCompletedDate != null) return false;
+    await _writeIncompleteTask(task);
+    return true;
+  }
+
+  /// Synchronizes a task from its linked medicine dose.
+  Future<bool> syncCompletionFromMedicineDose(
+    int id, {
+    required bool completed,
+  }) async {
+    final linkedDose = await (db.select(
+      db.medicineLogTable,
+    )..where((dose) => dose.linkedTaskId.equals(id))).getSingleOrNull();
+    final task = await getTaskById(id);
+    if (linkedDose == null || task == null || linkedDose.isTaken != completed) {
+      return false;
+    }
+
+    if (completed) {
+      if (_isTimeBound(task)) return false;
+      await _writeCompletedTask(task);
+    } else {
+      await _writeIncompleteTask(task);
+    }
+    return true;
+  }
+
+  Future<void> _writeIncompleteTask(Task task) async {
+    final id = task.id;
     await (update(taskTable)..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(
         actualCompletedDate: const Value(null),
@@ -186,20 +283,18 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       ),
     );
 
-    if (task != null) {
-      final noteMatch = RegExp(r'thought_id:(\d+)').firstMatch(task.notes ?? '');
-      if (noteMatch != null) {
-        final thoughtId = int.tryParse(noteMatch.group(1)!);
-        if (thoughtId != null) {
-          try {
-            await db.thoughtDao.setCompleted(thoughtId, false);
-          } catch (_) {}
-        }
+    final noteMatch = RegExp(r'thought_id:(\d+)').firstMatch(task.notes ?? '');
+    if (noteMatch != null) {
+      final thoughtId = int.tryParse(noteMatch.group(1)!);
+      if (thoughtId != null) {
+        try {
+          await db.thoughtDao.setCompleted(thoughtId, false);
+        } catch (_) {}
       }
-      try {
-        await db.thoughtDao.setCompletedByContent(task.title.trim(), false);
-      } catch (_) {}
     }
+    try {
+      await db.thoughtDao.setCompletedByContent(task.title.trim(), false);
+    } catch (_) {}
   }
 
   /// Toggles the [revisitFlag] on a task.

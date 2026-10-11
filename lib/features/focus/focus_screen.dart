@@ -14,6 +14,7 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/live_session_bar.dart';
 import '../today/add_activity_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -108,12 +109,25 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     );
 
     if (confirm == true && mounted) {
-      await ref.read(timeTrackingProvider.notifier).completeSession();
+      final tracking = ref.read(timeTrackingProvider);
+      final linkedTask = tracking.activeSession?.linkedTaskId == null
+          ? null
+          : await ref.read(taskDaoProvider).getTaskById(
+                tracking.activeSession!.linkedTaskId!,
+              );
+      final taskCompleted = await ref.read(timeTrackingProvider.notifier).completeSession();
       ref.invalidate(todayFocusTaskProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Session completed for "$taskTitle" ($totalTime)'),
+            content: Text(
+              linkedTask != null &&
+                      linkedTask.estimatedMinutes != null &&
+                      linkedTask.estimatedMinutes! > 0 &&
+                      !taskCompleted
+                  ? 'Session saved ($totalTime). Keep focusing until "$taskTitle" reaches its ${linkedTask.estimatedMinutes}-minute target.'
+                  : 'Session completed for "$taskTitle" ($totalTime)',
+            ),
             backgroundColor: context.accentPrimary,
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
@@ -423,13 +437,20 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                               onToggleDone: () async {
                                 final taskDao = ref.read(taskDaoProvider);
                                 if (isDone) {
-                                  await taskDao.markIncomplete(task.id);
-                                } else {
-                                  await taskDao.markComplete(task.id);
-                                  if (isActive) {
-                                    await ref.read(timeTrackingProvider.notifier).completeSession();
-                                  }
+                                  AscentSnackBar.show(
+                                    context,
+                                    message: 'Completed tasks cannot be reopened.',
+                                  );
+                                  return;
                                 }
+                                if (!isTodoOnly) {
+                                  AscentSnackBar.show(
+                                    context,
+                                    message: 'Timed activities complete after their focus target is reached.',
+                                  );
+                                  return;
+                                }
+                                await taskDao.markComplete(task.id);
                                 ref.invalidate(todayFocusTaskProvider);
                               },
                             ),
