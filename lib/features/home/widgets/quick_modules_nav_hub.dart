@@ -8,9 +8,12 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../challenge/challenge_providers.dart';
+import '../../challenge/domain/challenge_pace_engine.dart';
 
 /// Level 2 · Secondary: Life & Health Hub
 /// Clean, balanced layout:
+/// - Challenge banner (full-width, top of card).
 /// - Medicine prescription tracker with daily dose compliance.
 /// - Hydration with instant +250mL action.
 /// - Chai & Coffee Break sanctuary footer.
@@ -31,6 +34,25 @@ class QuickModulesNavHub extends ConsumerWidget {
     final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
     final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
     final waterProgress = waterGoal > 0 ? (waterMl / waterGoal).clamp(0.0, 1.0) : 0.0;
+
+    // Challenge watchers
+    final challengeAsync = ref.watch(activeChallengeProvider);
+    final challenge = challengeAsync.value;
+    final proofsAsync = challenge == null
+        ? null
+        : ref.watch(challengeProofsProvider(challenge.id));
+    final proofs = proofsAsync?.value ?? const [];
+    final progress = challenge == null ? null : progressForChallenge(challenge, proofs);
+
+    final challengeStatusColor = switch (progress?.status) {
+      ChallengePaceStatus.ahead ||
+      ChallengePaceStatus.onTrack ||
+      ChallengePaceStatus.complete =>
+        const Color(0xFF4E9B6B),
+      ChallengePaceStatus.atRisk => const Color(0xFFD99A37),
+      ChallengePaceStatus.failed => const Color(0xFFCA5C54),
+      null => g.clay,
+    };
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,6 +80,110 @@ class QuickModulesNavHub extends ConsumerWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
+              // ── 0. CHALLENGE BANNER (FULL-WIDTH, TOP) ────────────────
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/momentum');
+                  },
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: g.line, width: 1.0),
+                      ),
+                    ),
+                    child: challenge == null
+                        ? Row(
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: g.claySoft,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.flag_outlined,
+                                  size: 16,
+                                  color: g.clay,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Set a Challenge — track real progress',
+                                  style: AscentTextStyles.homeSecondary.copyWith(
+                                    color: g.inkMuted,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 30,
+                                    height: 30,
+                                    decoration: BoxDecoration(
+                                      color: challengeStatusColor.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Icon(
+                                      Icons.bolt_rounded,
+                                      size: 16,
+                                      color: challengeStatusColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      challenge.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AscentTextStyles.homeSecondary.copyWith(
+                                        color: g.ink,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${progress?.percent ?? 0}%',
+                                    style: GoogleFonts.jetBrainsMono(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: challengeStatusColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
+                                ],
+                              ),
+                              const SizedBox(height: 7),
+                              // Slim progress bar — clean, no labels
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: LinearProgressIndicator(
+                                  value: (progress?.percent ?? 0) / 100,
+                                  minHeight: 3,
+                                  backgroundColor: g.track,
+                                  valueColor: AlwaysStoppedAnimation(challengeStatusColor),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+
               // ── 1. TWO-COLUMN GRID (MEDICINE + HYDRATION) ────────────
               Row(
                 children: [
@@ -69,7 +195,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                         context.push('/medicine');
                       },
                       borderRight: true,
-                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(24)),
+                      borderRadius: BorderRadius.zero,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -126,7 +252,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                         context.push('/hydration');
                       },
                       borderRight: false,
-                      borderRadius: const BorderRadius.only(topRight: Radius.circular(24)),
+                      borderRadius: BorderRadius.zero,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

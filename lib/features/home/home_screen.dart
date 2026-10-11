@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/glass_theme.dart';
-import '../../core/auth/auth_provider.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
@@ -26,6 +25,7 @@ import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/welcome_back_banner.dart';
+import '../challenge/integration/challenge_proof_sync.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
 /// - Clean intentional surface levels.
@@ -48,7 +48,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
-      ref.read(hydrationReminderServiceProvider).checkAndPromptHydration(context);
+      ref
+          .read(hydrationReminderServiceProvider)
+          .checkAndPromptHydration(context);
 
       if (!_hasCheckedOverdueReminders) {
         _hasCheckedOverdueReminders = true;
@@ -59,7 +61,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _checkAndPromptOverdueReminder() async {
     try {
-      final overdueReminders = await ref.read(reminderDaoProvider).getOverdueActiveReminders();
+      final overdueReminders = await ref
+          .read(reminderDaoProvider)
+          .getOverdueActiveReminders();
       if (overdueReminders.isNotEmpty && mounted) {
         await InAppReminderDialog.show(context, overdueReminders.first);
       }
@@ -70,32 +74,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final g = context.glass;
 
-    // ── Blockage Guard 1: Authentication Required ──
-    final isAuth = ref.watch(authProvider).isAuthenticated;
-    if (!isAuth) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final router = GoRouter.maybeOf(context);
-        if (router != null) {
-          router.go('/login');
-        }
-      });
-      return Scaffold(
-        backgroundColor: g.bg,
-        body: const Center(
-          child: CircularProgressIndicator(key: ValueKey('blockage_auth_indicator')),
-        ),
-      );
-    }
-
     final profileAsync = ref.watch(userProfileStreamProvider);
     final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
     final studyStreak = ref.watch(studyStreakProvider);
     final isStreakCardVisible = ref.watch(studyStreakCardVisibleProvider);
     final visibleReminders = ref.watch(homeVisibleRemindersProvider);
+    ref.watch(challengeProofSyncProvider);
 
     // Listen for celebratory streak unlocked event
-    ref.listen<StudyStreakStatus?>(streakCelebrationEventProvider, (prev, next) {
+    ref.listen<StudyStreakStatus?>(streakCelebrationEventProvider, (
+      prev,
+      next,
+    ) {
       if (next != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
@@ -119,7 +109,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             data: (profile) {
               // ── Blockage Guard 2: Compulsory Profile & Onboarding Completion ──
-              final isValidProfile = profile != null &&
+              final isValidProfile =
+                  profile != null &&
                   profile.onboardingComplete &&
                   profile.name.trim().isNotEmpty &&
                   profile.name.trim().toLowerCase() != 'learner' &&
@@ -134,7 +125,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }
                 });
                 return const Center(
-                  child: CircularProgressIndicator(key: ValueKey('blockage_profile_indicator')),
+                  child: CircularProgressIndicator(
+                    key: ValueKey('blockage_profile_indicator'),
+                  ),
                 );
               }
 
@@ -156,7 +149,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 color: g.clay,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 96),
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    top: 16,
+                    bottom: 96,
+                  ),
                   children: [
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
@@ -183,7 +181,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   status: studyStreak,
                                   onTap: () {
                                     HapticFeedback.lightImpact();
-                                    ref.read(studyStreakCardVisibleProvider.notifier).toggle();
+                                    ref
+                                        .read(
+                                          studyStreakCardVisibleProvider
+                                              .notifier,
+                                        )
+                                        .toggle();
                                   },
                                 ),
                               ],
@@ -199,13 +202,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onAddReminder: () => context.push('/reminders'),
                       onViewAll: () => context.push('/reminders'),
                       onDismissReminder: (reminder) async {
-                        await ref.read(dismissedTodayReminderIdsProvider.notifier).dismissReminderId(reminder.id);
+                        await ref
+                            .read(dismissedTodayReminderIdsProvider.notifier)
+                            .dismissReminderId(reminder.id);
                       },
                       onCompleteReminder: (reminder) async {
                         try {
                           final dao = ref.read(reminderDaoProvider);
-                          await dao.updateReminder(reminder.toCompanion(true).copyWith(isActive: const drift.Value(false)));
-                          await NotificationService.instance.cancel(reminder.id);
+                          await dao.updateReminder(
+                            reminder
+                                .toCompanion(true)
+                                .copyWith(isActive: const drift.Value(false)),
+                          );
+                          await NotificationService.instance.cancel(
+                            reminder.id,
+                          );
                           ref.invalidate(allRemindersProvider);
                         } catch (_) {}
                       },
