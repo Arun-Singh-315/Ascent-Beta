@@ -123,10 +123,9 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
     });
 
     try {
-      await ref.read(promiseServiceProvider).create(
-            content: text,
-            validityDays: validityDays,
-          );
+      await ref
+          .read(promiseServiceProvider)
+          .create(content: text, validityDays: validityDays);
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -162,10 +161,11 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
-                color: (context.isDark
-                        ? const Color(0xFF10141D)
-                        : const Color(0xFFF8FAFC))
-                    .withValues(alpha: 0.95),
+                color:
+                    (context.isDark
+                            ? const Color(0xFF1D1610)
+                            : const Color(0xFFF8FAFC))
+                        .withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
                   color: g.edge.withValues(alpha: 0.35),
@@ -184,15 +184,19 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7C3AED).withValues(alpha: 0.14),
+                          color: const Color(
+                            0xFFB46824,
+                          ).withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFFB46824,
+                            ).withValues(alpha: 0.3),
                           ),
                         ),
                         child: const Icon(
                           Icons.handshake_rounded,
-                          color: Color(0xFF7C3AED),
+                          color: Color(0xFFB46824),
                           size: 22,
                         ),
                       ),
@@ -221,10 +225,17 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                       ),
                       // Close
                       IconButton(
-                        icon: Icon(Icons.close_rounded, color: g.inkMuted, size: 20),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: g.inkMuted,
+                          size: 20,
+                        ),
                         onPressed: () => Navigator.of(context).pop(),
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        constraints: const BoxConstraints(
+                          minWidth: 32,
+                          minHeight: 32,
+                        ),
                       ),
                     ],
                   ),
@@ -259,7 +270,7 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(14),
                         borderSide: const BorderSide(
-                          color: Color(0xFF7C3AED),
+                          color: Color(0xFFB46824),
                           width: 1.5,
                         ),
                       ),
@@ -306,7 +317,8 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                             _StepButton(
                               icon: Icons.remove_rounded,
                               onTap: () {
-                                final v = int.tryParse(_daysController.text) ?? 30;
+                                final v =
+                                    int.tryParse(_daysController.text) ?? 30;
                                 if (v > 1) {
                                   _daysController.text = '${v - 1}';
                                 }
@@ -329,12 +341,13 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
                                   suffix: Text(
                                     'd',
-                                    style: AscentTextStyles.captionMedium.copyWith(
-                                      color: context.textMuted,
-                                    ),
+                                    style: AscentTextStyles.captionMedium
+                                        .copyWith(color: context.textMuted),
                                   ),
                                 ),
                               ),
@@ -342,7 +355,8 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                             _StepButton(
                               icon: Icons.add_rounded,
                               onTap: () {
-                                final v = int.tryParse(_daysController.text) ?? 30;
+                                final v =
+                                    int.tryParse(_daysController.text) ?? 30;
                                 if (v < 365) {
                                   _daysController.text = '${v + 1}';
                                 }
@@ -389,7 +403,7 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                         child: FilledButton.icon(
                           onPressed: _isSaving ? null : _save,
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF7C3AED),
+                            backgroundColor: const Color(0xFFB46824),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -450,7 +464,7 @@ class _StepButton extends StatelessWidget {
 class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
   final _contentController = TextEditingController();
   final _promiseDaysController = TextEditingController(text: '30');
-  String _selectedMood = 'me_to_me';
+  String _selectedMood = 'thought';
   bool _isPinned = false;
   bool _isSaving = false;
   String? _saveError;
@@ -467,34 +481,16 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
   final List<Map<String, dynamic>> _moods = const [
     {
-      'key': 'me_to_me',
-      'label': 'Me to Me',
-      'icon': Icons.psychology_alt_rounded,
-      'color': Color(0xFF6366F1),
-    },
-    {
       'key': 'thought',
-      'label': 'Raw Thought',
-      'icon': Icons.insights_rounded,
-      'color': Color(0xFF0284C7),
+      'label': 'Note',
+      'icon': Icons.edit_note_rounded,
+      'color': Color(0xFF6E8565),
     },
     {
-      'key': 'idea',
-      'label': 'Idea',
-      'icon': Icons.lightbulb_rounded,
-      'color': Color(0xFFD97706),
-    },
-    {
-      'key': 'win',
-      'label': 'Daily Win',
-      'icon': Icons.emoji_events_rounded,
-      'color': Color(0xFF16A34A),
-    },
-    {
-      'key': 'future',
-      'label': 'To Future Me',
-      'icon': Icons.schedule_send_rounded,
-      'color': Color(0xFFEA580C),
+      'key': 'promise',
+      'label': 'Promise',
+      'icon': Icons.handshake_outlined,
+      'color': Color(0xFFB46824),
     },
   ];
 
@@ -504,23 +500,14 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
   bool _isDraftRestored = false;
 
-  List<Map<String, dynamic>> get _availableMoods {
-    if (widget.existingThought?.mood == 'promise') {
-      // Promise edits stay in their own flow (this sheet shouldn't be reached,
-      // but guard just in case).
-      return _moods;
-    }
-    return _moods;
-  }
-
   @override
   void initState() {
     super.initState();
     if (widget.existingThought != null) {
       _contentController.text = widget.existingThought!.content;
       _selectedMood = widget.existingThought!.mood == 'promise'
-          ? 'me_to_me'
-          : widget.existingThought!.mood;
+          ? 'promise'
+          : 'thought';
       _isPinned = widget.existingThought!.isPinned;
       _activePrompt = widget.existingThought!.promptQuestion;
     } else {
@@ -553,7 +540,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
           setState(() {
             _contentController.text = draft;
             if (savedMood != null && widget.initialMood == null) {
-              _selectedMood = savedMood;
+              _selectedMood = 'thought';
             }
             if (savedPrompt != null && _activePrompt == null) {
               _activePrompt = savedPrompt;
@@ -626,6 +613,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
     try {
       if (widget.existingThought != null) {
+        if (widget.existingThought!.mood == 'promise') {
+          await ref
+              .read(promiseServiceProvider)
+              .update(thoughtId: widget.existingThought!.id, content: text);
+        }
         await ref
             .read(thoughtDaoProvider)
             .updateThought(
@@ -687,10 +679,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
         child: Container(
           decoration: BoxDecoration(
-            color: (context.isDark
-                    ? const Color(0xFF10141D)
-                    : const Color(0xFFF8FAFC))
-                .withValues(alpha: 0.90),
+            color:
+                (context.isDark
+                        ? const Color(0xFF1D1610)
+                        : const Color(0xFFF8FAFC))
+                    .withValues(alpha: 0.90),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(
               color: g.edge.withValues(alpha: 0.4),
@@ -734,7 +727,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                       ),
                     ),
                     child: Icon(
-                      Icons.psychology_alt_rounded,
+                      Icons.edit_note_rounded,
                       color: context.accentPrimary,
                       size: 20,
                     ),
@@ -832,117 +825,17 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
               const SizedBox(height: 12),
 
-              // Mood / Tag Selector
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: _availableMoods.map((m) {
-                    final isSelected = _selectedMood == m['key'];
-                    final color = m['color'] as Color;
-                    final icon = m['icon'] as IconData;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        selected: isSelected,
-                        showCheckmark: false,
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              icon,
-                              size: 14,
-                              color: isSelected ? color : context.textMuted,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(m['label'] as String),
-                          ],
-                        ),
-                        backgroundColor: context.bgBase,
-                        selectedColor: color.withValues(alpha: 0.14),
-                        labelStyle: AscentTextStyles.labelMedium.copyWith(
-                          color: isSelected ? color : context.textMuted,
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
-                        side: BorderSide(
-                          color: isSelected ? color : context.divider,
-                          width: isSelected ? 1.5 : 1,
-                        ),
-                        onSelected: (val) {
-                          HapticFeedback.lightImpact();
-                          setState(
-                            () => _selectedMood = m['key'] as String,
-                          );
-                        },
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-
-              if (_isDraftRestored) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: context.accentPrimary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.history_rounded,
-                        size: 13,
-                        color: context.accentPrimary,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'Draft restored',
-                        style: AscentTextStyles.captionMedium.copyWith(
-                          color: context.accentPrimary,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      InkWell(
-                        onTap: () async {
-                          _contentController.clear();
-                          await _clearDraft();
-                          if (mounted) setState(() => _isDraftRestored = false);
-                        },
-                        child: Text(
-                          'Clear',
-                          style: AscentTextStyles.captionMedium.copyWith(
-                            color: context.textMuted,
-                            fontSize: 11,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 10),
-
-              if (_saveError != null) ...[
-                Text(
-                  _saveError!,
-                  style: AscentTextStyles.bodySmall.copyWith(
-                    color: Colors.redAccent,
-                  ),
-                ),
-                const SizedBox(height: 8),
-              ],
-
               // Content TextField
+              if (_isDraftRestored)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 8),
+                  child: Text('Draft restored'),
+                ),
+              if (_saveError != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(_saveError!),
+                ),
               TextField(
                 controller: _contentController,
                 autofocus: true,

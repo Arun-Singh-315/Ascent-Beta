@@ -1,3 +1,5 @@
+import '../../shared/widgets/thought_presentation.dart';
+import '../../shared/widgets/message_composer.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +16,9 @@ import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../shared/widgets/undo_snackbar.dart';
 import 'drop_thought_sheet.dart';
+import 'thought_action_ui.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
@@ -88,29 +92,19 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   String _viewToggle = 'today'; // 'today', 'history'
   String _categoryFilter =
       'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
-  final String _activeFilter = 'all';
   bool _isSelectionMode = false;
   final Set<int> _selectedIds = <int>{};
 
   final Map<String, (String, IconData)> _filterMeta = const {
     'all': ('All Thoughts', Icons.bubble_chart_rounded),
-    'me_to_me': ('Me to Me', Icons.psychology_alt_rounded),
-    'thought': ('Raw Thoughts', Icons.insights_rounded),
-    'idea': ('Sparks', Icons.lightbulb_rounded),
-    'win': ('Wins', Icons.emoji_events_rounded),
-    'future': ('Future Me', Icons.schedule_send_rounded),
     'promise': ('Promises', Icons.handshake_rounded),
     'pinned': ('Pinned', Icons.push_pin_rounded),
     'archived': ('Archived', Icons.archive_outlined),
   };
 
   final TextEditingController _inputController = TextEditingController();
-  final TextEditingController _promiseDaysController = TextEditingController(
-    text: '30',
-  );
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
-  String _composerMood = 'me_to_me';
   bool _hasInputText = false;
   bool _isSubmitting = false;
 
@@ -131,7 +125,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   void dispose() {
     _inputController.removeListener(_onInputChanged);
     _inputController.dispose();
-    _promiseDaysController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -140,7 +133,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   Color _getMoodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return const Color(0xFF6366F1);
+        return const Color(0xFF8B6A4F);
       case 'idea':
         return const Color(0xFFD97706);
       case 'win':
@@ -148,78 +141,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       case 'future':
         return const Color(0xFFEA580C);
       case 'promise':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFFB46824);
       case 'thought':
       default:
-        return const Color(0xFF0284C7);
+        return const Color(0xFF6E8565);
     }
-  }
-
-  IconData _getMoodIcon(String mood) {
-    switch (mood) {
-      case 'me_to_me':
-        return Icons.psychology_alt_rounded;
-      case 'idea':
-        return Icons.lightbulb_rounded;
-      case 'win':
-        return Icons.emoji_events_rounded;
-      case 'future':
-        return Icons.schedule_send_rounded;
-      case 'promise':
-        return Icons.handshake_rounded;
-      case 'thought':
-      default:
-        return Icons.insights_rounded;
-    }
-  }
-
-  String _getComposerHint() {
-    final effectiveMood =
-        _activeFilter != 'all' &&
-            _activeFilter != 'pinned' &&
-            _activeFilter != 'archived'
-        ? _activeFilter
-        : _composerMood;
-    switch (effectiveMood) {
-      case 'me_to_me':
-        return 'Message to myself...';
-      case 'idea':
-        return 'Capture a spark or idea...';
-      case 'win':
-        return 'Celebrate a win today...';
-      case 'future':
-        return 'Note for my future self...';
-      case 'promise':
-        return 'Write a promise you want to keep...';
-      case 'thought':
-      default:
-        return 'Raw unfiltered thought...';
-    }
-  }
-
-  PopupMenuItem<String> _buildMoodMenuItem(
-    String key,
-    String label,
-    IconData icon,
-    Color color,
-  ) {
-    return PopupMenuItem<String>(
-      value: key,
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 16, color: color),
-          ),
-          const SizedBox(width: 10),
-          Text(label, style: AscentTextStyles.bodyMedium),
-        ],
-      ),
-    );
   }
 
   Future<void> _submitThought() async {
@@ -228,59 +154,25 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
     HapticFeedback.mediumImpact();
 
-    final mood =
-        _activeFilter != 'all' &&
-            _activeFilter != 'pinned' &&
-            _activeFilter != 'archived'
-        ? _activeFilter
-        : _composerMood;
-
+    const mood = 'thought';
     final moodColor = _getMoodColor(mood);
     final colorHex = '#${moodColor.toARGB32().toRadixString(16)}';
-
-    final validityDays = int.tryParse(_promiseDaysController.text.trim());
-    if (mood == 'promise' &&
-        (validityDays == null || validityDays < 1 || validityDays > 365)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Promise duration must be between 1 and 365 days.'),
-        ),
-      );
-      return;
-    }
-
     setState(() => _isSubmitting = true);
     try {
-      if (mood == 'promise') {
-        await ref
-            .read(promiseServiceProvider)
-            .create(content: text, validityDays: validityDays!);
-      } else {
-        await ref
-            .read(thoughtDaoProvider)
-            .insertThought(
-              ThoughtTableCompanion.insert(
-                content: text,
-                mood: drift.Value(mood),
-                colorHex: drift.Value(colorHex),
-                isPinned: const drift.Value(false),
-              ),
-            );
-      }
-      _inputController.clear();
-      if (mood == 'promise') {
-        _promiseDaysController.text = '30';
-      }
+      await ref
+          .read(thoughtDaoProvider)
+          .insertThought(
+            ThoughtTableCompanion.insert(
+              content: text,
+              mood: const drift.Value(mood),
+              colorHex: drift.Value(colorHex),
+            ),
+          );
+      if (_inputController.text.trim() == text) _inputController.clear();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            mood == 'promise'
-                ? 'Promise added to Today with $validityDays daily reminders.'
-                : 'Added to your Thought Wall.',
-          ),
-        ),
+        SnackBar(persist: false, content: Text('Added to your Thought Wall.')),
       );
 
       if (_scrollController.hasClients) {
@@ -332,20 +224,31 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               ),
             ),
             const Spacer(),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF25D366),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
+            PopupMenuButton<String>(
+              tooltip: 'Actions for selected notes',
+              enabled: selectedList.isNotEmpty,
+              onSelected: (action) => applyThoughtAction(
+                context,
+                ref.read(databaseProvider),
+                selectedList,
+                action,
               ),
-              icon: const Icon(Icons.share_rounded, size: 18),
-              label: const Text('Share to WhatsApp'),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'todo', child: Text('Add to Todo')),
+                PopupMenuItem(
+                  value: 'reminder',
+                  child: Text('Remind each note'),
+                ),
+                PopupMenuItem(
+                  value: 'list_reminder',
+                  child: Text('Remind as one list'),
+                ),
+              ],
+              icon: Icon(Icons.playlist_add_rounded, color: g.clay),
+            ),
+            IconButton(
+              tooltip: 'Share selected notes',
+              icon: Icon(Icons.share_rounded, color: g.clay),
               onPressed: selectedList.isEmpty
                   ? null
                   : () => shareMultipleThoughts(selectedList),
@@ -357,286 +260,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   }
 
   Widget _buildWhatsAppComposer(BuildContext context, AscentGlass g) {
-    final activeMood =
-        _activeFilter != 'all' &&
-            _activeFilter != 'pinned' &&
-            _activeFilter != 'archived'
-        ? _activeFilter
-        : _composerMood;
-    final moodColor = _getMoodColor(activeMood);
-    final moodIcon = _getMoodIcon(activeMood);
-
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
       decoration: BoxDecoration(
         color: g.bg,
-        border: Border(
-          top: BorderSide(color: g.edge.withValues(alpha: 0.5), width: 0.8),
-        ),
+        border: Border(top: BorderSide(color: g.edge)),
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (activeMood == 'promise')
-              Padding(
-                padding: const EdgeInsets.fromLTRB(4, 0, 4, 7),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.notifications_active_outlined,
-                      size: 16,
-                      color: moodColor,
-                    ),
-                    const SizedBox(width: 7),
-                    Text(
-                      'Remind me daily for',
-                      style: AscentTextStyles.captionMedium.copyWith(
-                        color: g.inkMuted,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 62,
-                      child: TextField(
-                        controller: _promiseDaysController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(3),
-                        ],
-                        textAlign: TextAlign.center,
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: g.ink,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        decoration: InputDecoration(
-                          suffixText: 'd',
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 7,
-                          ),
-                          filled: true,
-                          fillColor: context.bgSurface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(9),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '1–365 days',
-                      style: AscentTextStyles.captionMedium.copyWith(
-                        color: g.inkMuted,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                // Category/Mood Picker
-                PopupMenuButton<String>(
-                  tooltip: 'Category: $activeMood',
-                  initialValue: activeMood,
-                  onSelected: (val) {
-                    HapticFeedback.lightImpact();
-                    setState(() => _composerMood = val);
-                  },
-                  color: context.bgSurface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(color: g.edge),
-                  ),
-                  itemBuilder: (context) => [
-                    _buildMoodMenuItem(
-                      'me_to_me',
-                      'Me to Me',
-                      Icons.psychology_alt_rounded,
-                      const Color(0xFF6366F1),
-                    ),
-                    _buildMoodMenuItem(
-                      'thought',
-                      'Raw Thought',
-                      Icons.insights_rounded,
-                      const Color(0xFF0284C7),
-                    ),
-                    _buildMoodMenuItem(
-                      'idea',
-                      'Spark / Idea',
-                      Icons.lightbulb_rounded,
-                      const Color(0xFFD97706),
-                    ),
-                    _buildMoodMenuItem(
-                      'win',
-                      'Daily Win',
-                      Icons.emoji_events_rounded,
-                      const Color(0xFF16A34A),
-                    ),
-                    _buildMoodMenuItem(
-                      'future',
-                      'Future Me',
-                      Icons.schedule_send_rounded,
-                      const Color(0xFFEA580C),
-                    ),
-                    _buildMoodMenuItem(
-                      'promise',
-                      'Promise',
-                      Icons.handshake_rounded,
-                      const Color(0xFF7C3AED),
-                    ),
-                  ],
-                  child: Container(
-                    height: 40,
-                    width: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: moodColor.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: moodColor.withValues(alpha: 0.28),
-                      ),
-                    ),
-                    child: Icon(moodIcon, size: 19, color: moodColor),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Text Input Pill (Clean WhatsApp / Telegram single pill with zero inner borders)
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(maxHeight: 120),
-                    decoration: BoxDecoration(
-                      color: context.bgSurface,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: g.edge.withValues(alpha: 0.6),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _inputController,
-                            focusNode: _focusNode,
-                            minLines: 1,
-                            maxLines: 4,
-                            textCapitalization: TextCapitalization.sentences,
-                            keyboardType: TextInputType.multiline,
-                            style: AscentTextStyles.bodyMedium.copyWith(
-                              color: g.ink,
-                            ),
-                            cursorColor: g.clay,
-                            decoration: InputDecoration(
-                              hintText: _getComposerHint(),
-                              hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                                color: g.inkMuted.withValues(alpha: 0.5),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              isDense: true,
-                              filled: false,
-                              border: InputBorder.none,
-                              enabledBorder: InputBorder.none,
-                              focusedBorder: InputBorder.none,
-                              errorBorder: InputBorder.none,
-                              focusedErrorBorder: InputBorder.none,
-                              disabledBorder: InputBorder.none,
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 4, bottom: 2),
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.auto_awesome_rounded,
-                              size: 18,
-                              color: g.inkMuted,
-                            ),
-                            tooltip: 'Guided Reflection Prompts',
-                            splashRadius: 18,
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              DropThoughtSheet.show(context);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Floating Send Button
-                GestureDetector(
-                  onTap: _hasInputText && !_isSubmitting
-                      ? _submitThought
-                      : null,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    height: 42,
-                    width: activeMood == 'promise' ? 118 : 42,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _hasInputText ? g.clay : g.fill,
-                      border: Border.all(
-                        color: _hasInputText ? g.clay : g.edge,
-                      ),
-                      boxShadow: _hasInputText
-                          ? [
-                              BoxShadow(
-                                color: g.clay.withValues(alpha: 0.35),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: activeMood == 'promise'
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.handshake_rounded,
-                                size: 17,
-                                color: _hasInputText
-                                    ? Colors.white
-                                    : g.inkMuted,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Add Promise',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: _hasInputText
-                                      ? Colors.white
-                                      : g.inkMuted,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Icon(
-                            _isSubmitting
-                                ? Icons.hourglass_top_rounded
-                                : Icons.send_rounded,
-                            size: 18,
-                            color: _hasInputText
-                                ? Colors.white
-                                : g.inkMuted.withValues(alpha: 0.35),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        child: MessageComposer(
+          controller: _inputController,
+          focusNode: _focusNode,
+          hint: 'Write a thought...',
+          busy: _isSubmitting,
+          onSend: (_) => _submitThought(),
         ),
       ),
     );
@@ -751,9 +388,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
             ? '${_selectedIds.length} Selected'
             : 'Thought Wall',
         subtitle: _isSelectionMode
-            ? 'Select thoughts to share to WhatsApp'
-            : 'Mind space • Me to Me talk',
-        glow2: g.slate,
+            ? 'Select notes for sharing, Todo or reminders'
+            : 'Mind space · Notes to myself',
+        glow2: g.glow2,
         leading: _isSelectionMode
             ? IconButton(
                 icon: Icon(Icons.close_rounded, color: g.ink),
@@ -908,7 +545,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                           const SizedBox(width: 5),
                           Text(
                             _categoryFilter == 'all'
-                                ? 'All Moods'
+                                ? 'All notes'
                                 : (_filterMeta[_categoryFilter]?.$1 ??
                                       'Filter'),
                             style: AscentTextStyles.captionMedium.copyWith(
@@ -930,23 +567,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     itemBuilder: (ctx) => [
                       const PopupMenuItem(
                         value: 'all',
-                        child: Text('All Moods'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'me_to_me',
-                        child: Text('Me to Me'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'thought',
-                        child: Text('Raw Thoughts'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'idea',
-                        child: Text('Sparks / Ideas'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'win',
-                        child: Text('Daily Wins'),
+                        child: Text('All notes'),
                       ),
                       const PopupMenuItem(
                         value: 'promise',
@@ -1075,46 +696,10 @@ class ThoughtCardBubble extends ConsumerWidget {
     this.onLongPress,
   });
 
-  IconData _moodIcon(String mood) {
-    switch (mood) {
-      case 'me_to_me':
-        return Icons.psychology_alt_rounded;
-      case 'idea':
-        return Icons.lightbulb_rounded;
-      case 'win':
-        return Icons.emoji_events_rounded;
-      case 'future':
-        return Icons.schedule_send_rounded;
-      case 'promise':
-        return Icons.handshake_rounded;
-      case 'thought':
-      default:
-        return Icons.insights_rounded;
-    }
-  }
-
-  String _moodLabel(String mood) {
-    switch (mood) {
-      case 'me_to_me':
-        return 'Me to Me';
-      case 'idea':
-        return 'Idea';
-      case 'win':
-        return 'Daily Win';
-      case 'future':
-        return 'Future Self';
-      case 'promise':
-        return 'Promise';
-      case 'thought':
-      default:
-        return 'Raw Thought';
-    }
-  }
-
   Color _moodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return const Color(0xFF6366F1); // Refined Indigo
+        return const Color(0xFF8B6A4F); // Refined Indigo
       case 'idea':
         return const Color(0xFFD97706); // Warm Amber
       case 'win':
@@ -1122,18 +707,16 @@ class ThoughtCardBubble extends ConsumerWidget {
       case 'future':
         return const Color(0xFFEA580C); // Terracotta
       case 'promise':
-        return const Color(0xFF7C3AED);
+        return const Color(0xFFB46824);
       case 'thought':
       default:
-        return const Color(0xFF0284C7); // Sky Deep
+        return const Color(0xFF6E8565); // Sky Deep
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final moodColor = _moodColor(thought.mood);
-    final icon = _moodIcon(thought.mood);
-    final label = _moodLabel(thought.mood);
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
     final g = context.glass;
 
@@ -1175,6 +758,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
+                    persist: false,
                     content: Text(
                       thought.isArchived
                           ? 'Thought unarchived'
@@ -1206,6 +790,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
+                    persist: false,
                     content: const Text('Thought removed'),
                     duration: const Duration(seconds: 3),
                     behavior: SnackBarBehavior.floating,
@@ -1299,6 +884,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                         ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
+                            persist: false,
                             content: Text(
                               thought.isCompleted
                                   ? 'Thought marked active'
@@ -1348,7 +934,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top meta header: mood on left, timestamp & action menu on right
+                    // Date left; Promise and secondary menu remain in the top header.
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -1362,43 +948,35 @@ class ThoughtCardBubble extends ConsumerWidget {
                           ),
                           const SizedBox(width: 6),
                         ],
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
+                        Expanded(
+                          child: Text(
+                            timeStr,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: g.inkMuted,
+                              fontSize: 10.5,
+                            ),
                           ),
-                          decoration: BoxDecoration(
-                            color: moodColor.withValues(alpha: 0.14),
-                            borderRadius: BorderRadius.circular(7),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(icon, size: 11, color: moodColor),
-                              const SizedBox(width: 4),
-                              Text(
-                                label,
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: moodColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10,
-                                ),
+                        ),
+                        if (thought.mood == 'promise')
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: g.clay.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                            child: Text(
+                              'Promise',
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: g.clay,
+                                fontSize: 10,
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        // Top timestamp
-                        Text(
-                          timeStr,
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: context.textMuted,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        // Right actions (quick unarchive & popup menu)
                         if (thought.isArchived) ...[
                           IconButton(
                             icon: const Icon(
@@ -1409,8 +987,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                             tooltip: 'Unarchive thought',
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
-                              minWidth: 26,
-                              minHeight: 26,
+                              minWidth: 48,
+                              minHeight: 48,
                             ),
                             onPressed: () async {
                               HapticFeedback.lightImpact();
@@ -1423,6 +1001,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 ).hideCurrentSnackBar();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
+                                    persist: false,
                                     content: Text('Thought restored to wall'),
                                     duration: Duration(seconds: 2),
                                     behavior: SnackBarBehavior.floating,
@@ -1442,8 +1021,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                           color: context.bgSurface,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(
-                            minWidth: 26,
-                            minHeight: 26,
+                            minWidth: 48,
+                            minHeight: 48,
                           ),
                           onSelected: (action) async {
                             if (action == 'share') {
@@ -1454,26 +1033,19 @@ class ThoughtCardBubble extends ConsumerWidget {
                                   .read(thoughtDaoProvider)
                                   .toggleCompleted(thought.id);
                             } else if (action == 'convert_task') {
-                              HapticFeedback.mediumImpact();
-                              final taskDao = ref.read(taskDaoProvider);
-                              await taskDao.insertTask(
-                                TaskTableCompanion.insert(
-                                  title: thought.content.trim(),
-                                  plannedDate: drift.Value(DateTime.now()),
-                                  notes: drift.Value(
-                                    'thought_id:${thought.id}${thought.promptQuestion != null ? ' • ${thought.promptQuestion}' : ''}',
-                                  ),
-                                ),
+                              await applyThoughtAction(
+                                context,
+                                ref.read(databaseProvider),
+                                [thought],
+                                'todo',
                               );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Added to Today tasks!'),
-                                    duration: Duration(seconds: 2),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
+                            } else if (action == 'reminder') {
+                              await applyThoughtAction(
+                                context,
+                                ref.read(databaseProvider),
+                                [thought],
+                                'reminder',
+                              );
                             } else if (action == 'archive') {
                               HapticFeedback.lightImpact();
                               final dao = ref.read(thoughtDaoProvider);
@@ -1481,6 +1053,21 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 await dao.unarchiveThought(thought.id);
                               } else {
                                 await dao.archiveThought(thought.id);
+                              }
+                              if (context.mounted) {
+                                showUndoSnackbar(
+                                  context,
+                                  message: thought.isArchived
+                                      ? 'Thought restored'
+                                      : 'Thought archived',
+                                  onUndo: () {
+                                    if (thought.isArchived) {
+                                      dao.archiveThought(thought.id);
+                                    } else {
+                                      dao.unarchiveThought(thought.id);
+                                    }
+                                  },
+                                );
                               }
                             } else if (action == 'pin') {
                               HapticFeedback.lightImpact();
@@ -1495,6 +1082,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
+                                    persist: false,
                                     content: Text('Copied to clipboard!'),
                                   ),
                                 );
@@ -1511,19 +1099,30 @@ class ThoughtCardBubble extends ConsumerWidget {
                               context.push('/momentum', extra: thought);
                             } else if (action == 'delete') {
                               HapticFeedback.mediumImpact();
-                              await ref
-                                  .read(thoughtDaoProvider)
-                                  .deleteThought(thought.id);
+                              final dao = ref.read(thoughtDaoProvider);
+                              await dao.deleteThought(thought.id);
+                              if (context.mounted) {
+                                showUndoSnackbar(
+                                  context,
+                                  message: 'Thought removed',
+                                  onUndo: () => dao.insertThought(
+                                    thought.toCompanion(true),
+                                  ),
+                                );
+                              }
                             }
                           },
                           itemBuilder: (_) => [
                             const PopupMenuItem(
-                              value: 'edit',
+                              value: 'reminder',
                               child: Row(
                                 children: [
-                                  Icon(Icons.edit_outlined, size: 16),
+                                  Icon(
+                                    Icons.notifications_active_outlined,
+                                    size: 16,
+                                  ),
                                   SizedBox(width: 8),
-                                  Text('Edit thought'),
+                                  Text('Set reminder'),
                                 ],
                               ),
                             ),
@@ -1614,10 +1213,6 @@ class ThoughtCardBubble extends ConsumerWidget {
                               child: Text(
                                 thought.isPinned ? 'Unpin' : 'Pin to top',
                               ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'copy',
-                              child: Text('Copy text'),
                             ),
                             const PopupMenuItem(
                               value: 'delete',
@@ -1774,8 +1369,9 @@ class ThoughtCardBubble extends ConsumerWidget {
 
                     // Content
                     Text(
-                      thought.content,
-                      style: AscentTextStyles.bodyMedium.copyWith(
+                      quotedThought(thought.content),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w600,
                         color: thought.isCompleted
                             ? context.textMuted
                             : context.textPrimary,
@@ -1783,9 +1379,44 @@ class ThoughtCardBubble extends ConsumerWidget {
                             ? TextDecoration.lineThrough
                             : null,
                         height: 1.45,
-                        fontSize: 14.5,
+                        fontSize: 14,
                       ),
                     ),
+                    if (!isSelectionMode)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!isSelectionMode)
+                              IconButton(
+                                tooltip: 'Edit thought',
+                                icon: Icon(
+                                  Icons.edit_outlined,
+                                  size: 17,
+                                  color: g.inkMuted,
+                                ),
+                                onPressed: () => DropThoughtSheet.show(
+                                  context,
+                                  existingThought: thought,
+                                ),
+                              ),
+                            if (!isSelectionMode)
+                              IconButton(
+                                tooltip: 'Copy text',
+                                icon: Icon(
+                                  Icons.copy_outlined,
+                                  size: 17,
+                                  color: g.inkMuted,
+                                ),
+                                onPressed: () => Clipboard.setData(
+                                  ClipboardData(text: thought.content),
+                                ),
+                              ),
+                            // Right actions (quick unarchive & popup menu)
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),

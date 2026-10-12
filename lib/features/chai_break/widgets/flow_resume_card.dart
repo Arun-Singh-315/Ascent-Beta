@@ -36,7 +36,7 @@ class FlowResumeCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E232B).withValues(alpha: 0.95),
+        color: const Color(0xFF2B241E).withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: accentOrange.withValues(alpha: 0.4),
@@ -115,7 +115,7 @@ class FlowResumeCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF262D38),
+                color: const Color(0xFF382E26),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.08),
@@ -216,7 +216,7 @@ class FlowResumeCard extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF262D38),
+                color: const Color(0xFF382E26),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.08),

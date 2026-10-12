@@ -31,6 +31,7 @@ import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
+import '../shared/widgets/feature_guide.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
 
@@ -168,7 +169,8 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.aiAssistant,
-      builder: (context, state) => const AiAssistantScreen(),
+      builder: (context, state) =>
+          const FeatureGuideHost(feature: 'Riya', child: AiAssistantScreen()),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -188,7 +190,10 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.chaiBreak,
-      builder: (context, state) => const ChaiBreakScreen(),
+      builder: (context, state) => const FeatureGuideHost(
+        feature: 'Chai & Coffee',
+        child: ChaiBreakScreen(),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

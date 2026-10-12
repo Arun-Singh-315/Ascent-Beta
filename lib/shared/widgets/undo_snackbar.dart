@@ -27,6 +27,7 @@ void showUndoSnackbar(
   messenger.showSnackBar(
     SnackBar(
       duration: duration,
+      persist: false,
       content: Text(
         message,
         style: AscentTextStyles.bodyMedium.copyWith(color: Colors.white),

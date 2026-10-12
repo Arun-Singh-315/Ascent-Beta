@@ -33,8 +33,8 @@ class AscentColors {
   /// Composed cedar tone for active countdown and focus markers.
   static const Color accentSecondaryBright = Color(0xFF9E5C47);
 
-  /// Soft slate blue — informational accent.
-  static const Color accentInfo = Color(0xFF4F739D);
+  /// Warm caramel — informational accent.
+  static const Color accentInfo = Color(0xFF9D734F);
 
   /// Restrained rose-crimson — destructive / error state (calm in day mode).
   static const Color stateDanger = Color(0xFFBA433C);
@@ -49,13 +49,13 @@ class AscentColors {
   static const Color stateWarning = Color(0xFFB46824);
 
   /// Deep near-black graphite text.
-  static const Color textPrimary = Color(0xFF16191D);
+  static const Color textPrimary = Color(0xFF1D1916);
 
   /// Refined secondary text.
-  static const Color textSecondary = Color(0xFF525963);
+  static const Color textSecondary = Color(0xFF635A52);
 
   /// Muted / placeholder text.
-  static const Color textMuted = Color(0xFF868E99);
+  static const Color textMuted = Color(0xFF74695F);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
@@ -64,18 +64,18 @@ class AscentColors {
   static const Color divider = Color(0xFFE5E8ED);
 
   /// Shadow tint for soft diffuse elevation.
-  static const Color shadow = Color(0xFF16191D);
+  static const Color shadow = Color(0xFF1D1916);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 
   /// Deep obsidian graphite — page background.
-  static const Color bgBaseDark = Color(0xFF0F1216);
+  static const Color bgBaseDark = Color(0xFF16120F);
 
   /// Matte dark charcoal surface — cards, sheets, inputs.
-  static const Color bgSurfaceDark = Color(0xFF181C22);
+  static const Color bgSurfaceDark = Color(0xFF221D18);
 
   /// Elevated dark surface for nested items and chips.
-  static const Color bgSurfaceElevatedDark = Color(0xFF222832);
+  static const Color bgSurfaceElevatedDark = Color(0xFF322922);
 
   /// Soft luminous sage — primary accent.
   static const Color accentPrimaryDark = Color(0xFF63BA8B);
@@ -86,8 +86,8 @@ class AscentColors {
   static const Color accentSecondaryDark = Color(0xFFE88168);
   static const Color accentSecondaryBrightDark = Color(0xFFF2957E);
 
-  /// Muted slate blue — info accent.
-  static const Color accentInfoDark = Color(0xFF7FA7D6);
+  /// Soft sand — informational accent.
+  static const Color accentInfoDark = Color(0xFFC1A17C);
 
   /// Soft coral red — danger.
   static const Color stateDangerDark = Color(0xFFE26D66);
@@ -103,13 +103,13 @@ class AscentColors {
   static const Color textSecondaryDark = Color(0xFFA2ACB8);
 
   /// Muted text in dark mode.
-  static const Color textMutedDark = Color(0xFF757E8C);
+  static const Color textMutedDark = Color(0xFF8C8075);
 
   /// Text on primary in dark mode.
   static const Color textOnPrimaryDark = Color(0xFF0D1812);
 
   /// Subtle dark divider line.
-  static const Color dividerDark = Color(0xFF262D37);
+  static const Color dividerDark = Color(0xFF372E26);
 
   /// Shadow in dark mode.
   static const Color shadowDark = Color(0xFF000000);

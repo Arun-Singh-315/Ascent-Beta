@@ -655,7 +655,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
               Expanded(
                 child: _ScorecardTile(
                   icon: Icons.hourglass_top_rounded,
-                  iconColor: const Color(0xFF38BDF8),
+                  iconColor: const Color(0xFFF89238),
                   label: 'Deep Focus',
                   value: _formatFocusDuration(_yesterdayFocusSeconds),
                   subtext: _yesterdayFocusSeconds > 0 ? 'Study logged' : 'Rest day',
@@ -669,7 +669,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
               Expanded(
                 child: _ScorecardTile(
                   icon: Icons.directions_walk_rounded,
-                  iconColor: const Color(0xFFA855F7),
+                  iconColor: const Color(0xFFF7A155),
                   label: 'Movement',
                   value: '$walkKm km',
                   subtext: walkSteps > 0 ? '~$walkSteps steps' : 'No walks logged',
@@ -679,7 +679,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
               Expanded(
                 child: _ScorecardTile(
                   icon: Icons.water_drop_rounded,
-                  iconColor: const Color(0xFF0EA5E9),
+                  iconColor: const Color(0xFFE9740E),
                   label: 'Hydration',
                   value: '$_yesterdayWaterMl mL',
                   subtext: 'Goal: $_waterGoalMl mL',
@@ -781,7 +781,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
             Expanded(
               child: Row(
                 children: [
-                  const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFF38BDF8)),
+                  const Icon(Icons.water_drop_rounded, size: 16, color: Color(0xFFF89238)),
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
@@ -801,7 +801,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
             Text(
               _selectedWaterMl > 0 ? 'Adds +$_selectedWaterMl mL' : 'Not logging',
               style: AscentTextStyles.caption.copyWith(
-                color: _selectedWaterMl > 0 ? const Color(0xFF38BDF8) : context.textMuted,
+                color: _selectedWaterMl > 0 ? const Color(0xFFF89238) : context.textMuted,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -826,12 +826,12 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? const Color(0xFF0284C7).withValues(alpha: 0.18)
+                          ? const Color(0xFF6E8565).withValues(alpha: 0.18)
                           : context.bgSurfaceElevated,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: isSelected
-                            ? const Color(0xFF38BDF8)
+                            ? const Color(0xFFF89238)
                             : context.divider,
                         width: isSelected ? 1.4 : 1.0,
                       ),
@@ -841,7 +841,7 @@ class _NewDayFreezeDialogState extends ConsumerState<_NewDayFreezeDialog> {
                         Text(
                           opt['label'] as String,
                           style: GoogleFonts.plusJakartaSans(
-                            color: isSelected ? const Color(0xFF38BDF8) : context.textPrimary,
+                            color: isSelected ? const Color(0xFFF89238) : context.textPrimary,
                             fontSize: 12,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                           ),

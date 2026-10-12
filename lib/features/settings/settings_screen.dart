@@ -183,7 +183,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Your local SQLite database is serialized and ready to export:',
+                  'This export includes selected records, not a complete backup. Restore currently imports the profile only:',
                   style: AscentTextStyles.bodyMedium.copyWith(color: context.glass.inkMuted),
                 ),
                 const SizedBox(height: 12),
@@ -344,7 +344,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             _profileLoaded = false;
                           });
                           scaffold.showSnackBar(
-                            const SnackBar(content: Text('Backup data restored successfully!')),
+                            const SnackBar(content: Text('Profile restored. Other exported records were not imported.')),
                           );
                         } catch (e) {
                           scaffold.showSnackBar(

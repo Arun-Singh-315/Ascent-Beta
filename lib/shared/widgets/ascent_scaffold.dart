@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import 'ascent_atmosphere.dart';
+import 'feature_guide.dart';
 
 /// The unified Liquid Glass page scaffold for Ascent.
 ///
@@ -60,13 +61,31 @@ class AscentScaffold extends StatelessWidget {
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,
       bottomNavigationBar: bottomNavigationBar,
-      appBar: (title != null || titleWidget != null || leading != null || (actions != null && actions!.isNotEmpty))
+      appBar:
+          (title != null ||
+              titleWidget != null ||
+              leading != null ||
+              (actions != null && actions!.isNotEmpty))
           ? AscentAppBar(
               title: title,
               titleWidget: titleWidget,
               subtitle: subtitle,
               leading: leading,
-              actions: actions,
+              actions: [
+                ...?actions,
+                if (title == 'Settings')
+                  IconButton(
+                    tooltip: 'Replay guided tour',
+                    icon: const Icon(Icons.tour_outlined),
+                    onPressed: () => showAscentTour(context),
+                  ),
+                if (guideFor(title) != null)
+                  IconButton(
+                    tooltip: 'How this works',
+                    icon: const Icon(Icons.help_outline_rounded),
+                    onPressed: () => showFeatureGuide(context, title!),
+                  ),
+              ],
               showBackButton: showBackButton,
               onBack: onBack,
               bottom: bottom,
@@ -78,7 +97,7 @@ class AscentScaffold extends StatelessWidget {
         child: AscentAtmosphereBackground(
           glow1: glow1,
           glow2: glow2,
-          child: body,
+          child: FeatureGuideHost(feature: title, child: body),
         ),
       ),
     );
@@ -110,9 +129,8 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0.0),
-      );
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0));
 
   @override
   Widget build(BuildContext context) {
@@ -160,10 +178,7 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: leadingWidget,
       leadingWidth: 54,
       title: headerTitle,
-      actions: [
-        ...?actions,
-        const SizedBox(width: 8),
-      ],
+      actions: [...?actions, const SizedBox(width: 8)],
       bottom: bottom,
       centerTitle: false,
     );
@@ -203,11 +218,7 @@ class _LiquidBackButton extends StatelessWidget {
               }
             },
             child: Center(
-              child: Icon(
-                Icons.arrow_back_rounded,
-                size: 18,
-                color: g.ink,
-              ),
+              child: Icon(Icons.arrow_back_rounded, size: 18, color: g.ink),
             ),
           ),
         ),

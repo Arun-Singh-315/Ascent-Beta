@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/feature_guide.dart';
 import '../../today/add_activity_sheet.dart';
 
 /// Lightweight, dismissible Day-1 Quick Start Guide.
@@ -23,7 +24,7 @@ class DayOneTutorialCard extends ConsumerStatefulWidget {
 class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
   bool _dismissed = false;
 
-  static const String _prefKey = 'ascent_day_one_tutorial_dismissed';
+  static const String _prefKey = 'ascent_day_one_tutorial_v2_dismissed';
 
   @override
   void initState() {
@@ -64,11 +65,17 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 3.5,
+                  ),
                   decoration: BoxDecoration(
                     color: g.claySoft,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: g.clay.withValues(alpha: 0.3), width: 0.8),
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.3),
+                      width: 0.8,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -98,6 +105,14 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
             ),
             const SizedBox(height: 12),
 
+            TextButton.icon(
+              onPressed: () => showAscentTour(context),
+              icon: const Icon(Icons.touch_app_outlined),
+              label: const Text(
+                'Start guided tour · try features step by step',
+              ),
+            ),
+
             // Greeting
             Text(
               'Welcome, $displayName! Here\'s how Ascent works:',
@@ -115,7 +130,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               icon: Icons.check_circle_outline_rounded,
               iconColor: g.sage,
               title: 'To-Dos vs. Timed Focus',
-              description: 'Quick tasks have checkboxes. Long study sessions have dedicated focus clocks.',
+              description:
+                  'Quick tasks have checkboxes. Long study sessions have dedicated focus clocks.',
               g: g,
             ),
             const SizedBox(height: 10),
@@ -124,7 +140,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               icon: Icons.chat_bubble_outline_rounded,
               iconColor: g.clay,
               title: 'Riya AI Gateway',
-              description: 'Tap the glowing Riya button above to plan your day or ask anything naturally.',
+              description:
+                  'Tap the glowing Riya button above to plan your day or ask anything naturally.',
               g: g,
             ),
             const SizedBox(height: 10),
@@ -133,7 +150,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               icon: Icons.school_outlined,
               iconColor: g.slate,
               title: 'Learning Hub & Consistency',
-              description: 'Track your structured course syllabus and build an uninterrupted daily streak.',
+              description:
+                  'Track your structured course syllabus and build an uninterrupted daily streak.',
               g: g,
             ),
             const SizedBox(height: 16),
@@ -147,7 +165,9 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                       backgroundColor: g.clay,
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       minimumSize: const Size(64, 40),
                     ),
@@ -157,7 +177,10 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                     },
                     child: const Text(
                       'Add First Activity 🚀',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -165,13 +188,24 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: g.edge),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     foregroundColor: g.ink,
                     minimumSize: const Size(64, 40),
                   ),
                   onPressed: _dismissTutorial,
-                  child: const Text('Got it! 👍', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    'Got it! 👍',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),

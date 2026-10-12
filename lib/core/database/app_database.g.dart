@@ -11191,6 +11191,392 @@ class AiChatMessageTableCompanion extends UpdateCompanion<AiChatMessage> {
   }
 }
 
+class $AiCommandTableTable extends AiCommandTable
+    with TableInfo<$AiCommandTableTable, AiCommandReceipt> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AiCommandTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _capabilityMeta = const VerificationMeta(
+    'capability',
+  );
+  @override
+  late final GeneratedColumn<String> capability = GeneratedColumn<String>(
+    'capability',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _argumentsJsonMeta = const VerificationMeta(
+    'argumentsJson',
+  );
+  @override
+  late final GeneratedColumn<String> argumentsJson = GeneratedColumn<String>(
+    'arguments_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _resultJsonMeta = const VerificationMeta(
+    'resultJson',
+  );
+  @override
+  late final GeneratedColumn<String> resultJson = GeneratedColumn<String>(
+    'result_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    requestId,
+    capability,
+    argumentsJson,
+    resultJson,
+    completedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'ai_command_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AiCommandReceipt> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('capability')) {
+      context.handle(
+        _capabilityMeta,
+        capability.isAcceptableOrUnknown(data['capability']!, _capabilityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_capabilityMeta);
+    }
+    if (data.containsKey('arguments_json')) {
+      context.handle(
+        _argumentsJsonMeta,
+        argumentsJson.isAcceptableOrUnknown(
+          data['arguments_json']!,
+          _argumentsJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_argumentsJsonMeta);
+    }
+    if (data.containsKey('result_json')) {
+      context.handle(
+        _resultJsonMeta,
+        resultJson.isAcceptableOrUnknown(data['result_json']!, _resultJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_resultJsonMeta);
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {requestId};
+  @override
+  AiCommandReceipt map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AiCommandReceipt(
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      capability: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}capability'],
+      )!,
+      argumentsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}arguments_json'],
+      )!,
+      resultJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}result_json'],
+      )!,
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AiCommandTableTable createAlias(String alias) {
+    return $AiCommandTableTable(attachedDatabase, alias);
+  }
+}
+
+class AiCommandReceipt extends DataClass
+    implements Insertable<AiCommandReceipt> {
+  final String requestId;
+  final String capability;
+  final String argumentsJson;
+  final String resultJson;
+  final DateTime completedAt;
+  const AiCommandReceipt({
+    required this.requestId,
+    required this.capability,
+    required this.argumentsJson,
+    required this.resultJson,
+    required this.completedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['request_id'] = Variable<String>(requestId);
+    map['capability'] = Variable<String>(capability);
+    map['arguments_json'] = Variable<String>(argumentsJson);
+    map['result_json'] = Variable<String>(resultJson);
+    map['completed_at'] = Variable<DateTime>(completedAt);
+    return map;
+  }
+
+  AiCommandTableCompanion toCompanion(bool nullToAbsent) {
+    return AiCommandTableCompanion(
+      requestId: Value(requestId),
+      capability: Value(capability),
+      argumentsJson: Value(argumentsJson),
+      resultJson: Value(resultJson),
+      completedAt: Value(completedAt),
+    );
+  }
+
+  factory AiCommandReceipt.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AiCommandReceipt(
+      requestId: serializer.fromJson<String>(json['requestId']),
+      capability: serializer.fromJson<String>(json['capability']),
+      argumentsJson: serializer.fromJson<String>(json['argumentsJson']),
+      resultJson: serializer.fromJson<String>(json['resultJson']),
+      completedAt: serializer.fromJson<DateTime>(json['completedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'requestId': serializer.toJson<String>(requestId),
+      'capability': serializer.toJson<String>(capability),
+      'argumentsJson': serializer.toJson<String>(argumentsJson),
+      'resultJson': serializer.toJson<String>(resultJson),
+      'completedAt': serializer.toJson<DateTime>(completedAt),
+    };
+  }
+
+  AiCommandReceipt copyWith({
+    String? requestId,
+    String? capability,
+    String? argumentsJson,
+    String? resultJson,
+    DateTime? completedAt,
+  }) => AiCommandReceipt(
+    requestId: requestId ?? this.requestId,
+    capability: capability ?? this.capability,
+    argumentsJson: argumentsJson ?? this.argumentsJson,
+    resultJson: resultJson ?? this.resultJson,
+    completedAt: completedAt ?? this.completedAt,
+  );
+  AiCommandReceipt copyWithCompanion(AiCommandTableCompanion data) {
+    return AiCommandReceipt(
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      capability: data.capability.present
+          ? data.capability.value
+          : this.capability,
+      argumentsJson: data.argumentsJson.present
+          ? data.argumentsJson.value
+          : this.argumentsJson,
+      resultJson: data.resultJson.present
+          ? data.resultJson.value
+          : this.resultJson,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiCommandReceipt(')
+          ..write('requestId: $requestId, ')
+          ..write('capability: $capability, ')
+          ..write('argumentsJson: $argumentsJson, ')
+          ..write('resultJson: $resultJson, ')
+          ..write('completedAt: $completedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    requestId,
+    capability,
+    argumentsJson,
+    resultJson,
+    completedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AiCommandReceipt &&
+          other.requestId == this.requestId &&
+          other.capability == this.capability &&
+          other.argumentsJson == this.argumentsJson &&
+          other.resultJson == this.resultJson &&
+          other.completedAt == this.completedAt);
+}
+
+class AiCommandTableCompanion extends UpdateCompanion<AiCommandReceipt> {
+  final Value<String> requestId;
+  final Value<String> capability;
+  final Value<String> argumentsJson;
+  final Value<String> resultJson;
+  final Value<DateTime> completedAt;
+  final Value<int> rowid;
+  const AiCommandTableCompanion({
+    this.requestId = const Value.absent(),
+    this.capability = const Value.absent(),
+    this.argumentsJson = const Value.absent(),
+    this.resultJson = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AiCommandTableCompanion.insert({
+    required String requestId,
+    required String capability,
+    required String argumentsJson,
+    required String resultJson,
+    this.completedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : requestId = Value(requestId),
+       capability = Value(capability),
+       argumentsJson = Value(argumentsJson),
+       resultJson = Value(resultJson);
+  static Insertable<AiCommandReceipt> custom({
+    Expression<String>? requestId,
+    Expression<String>? capability,
+    Expression<String>? argumentsJson,
+    Expression<String>? resultJson,
+    Expression<DateTime>? completedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (requestId != null) 'request_id': requestId,
+      if (capability != null) 'capability': capability,
+      if (argumentsJson != null) 'arguments_json': argumentsJson,
+      if (resultJson != null) 'result_json': resultJson,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AiCommandTableCompanion copyWith({
+    Value<String>? requestId,
+    Value<String>? capability,
+    Value<String>? argumentsJson,
+    Value<String>? resultJson,
+    Value<DateTime>? completedAt,
+    Value<int>? rowid,
+  }) {
+    return AiCommandTableCompanion(
+      requestId: requestId ?? this.requestId,
+      capability: capability ?? this.capability,
+      argumentsJson: argumentsJson ?? this.argumentsJson,
+      resultJson: resultJson ?? this.resultJson,
+      completedAt: completedAt ?? this.completedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (capability.present) {
+      map['capability'] = Variable<String>(capability.value);
+    }
+    if (argumentsJson.present) {
+      map['arguments_json'] = Variable<String>(argumentsJson.value);
+    }
+    if (resultJson.present) {
+      map['result_json'] = Variable<String>(resultJson.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AiCommandTableCompanion(')
+          ..write('requestId: $requestId, ')
+          ..write('capability: $capability, ')
+          ..write('argumentsJson: $argumentsJson, ')
+          ..write('resultJson: $resultJson, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $WaterLogTableTable extends WaterLogTable
     with TableInfo<$WaterLogTableTable, WaterLog> {
   @override
@@ -18709,6 +19095,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $DailyActivityGoalTableTable(this);
   late final $AiChatMessageTableTable aiChatMessageTable =
       $AiChatMessageTableTable(this);
+  late final $AiCommandTableTable aiCommandTable = $AiCommandTableTable(this);
   late final $WaterLogTableTable waterLogTable = $WaterLogTableTable(this);
   late final $WaterGoalTableTable waterGoalTable = $WaterGoalTableTable(this);
   late final $ThoughtTableTable thoughtTable = $ThoughtTableTable(this);
@@ -18792,6 +19179,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     walkSessionTable,
     dailyActivityGoalTable,
     aiChatMessageTable,
+    aiCommandTable,
     waterLogTable,
     waterGoalTable,
     thoughtTable,
@@ -26938,6 +27326,229 @@ typedef $$AiChatMessageTableTableProcessedTableManager =
       AiChatMessage,
       PrefetchHooks Function()
     >;
+typedef $$AiCommandTableTableCreateCompanionBuilder =
+    AiCommandTableCompanion Function({
+      required String requestId,
+      required String capability,
+      required String argumentsJson,
+      required String resultJson,
+      Value<DateTime> completedAt,
+      Value<int> rowid,
+    });
+typedef $$AiCommandTableTableUpdateCompanionBuilder =
+    AiCommandTableCompanion Function({
+      Value<String> requestId,
+      Value<String> capability,
+      Value<String> argumentsJson,
+      Value<String> resultJson,
+      Value<DateTime> completedAt,
+      Value<int> rowid,
+    });
+
+class $$AiCommandTableTableFilterComposer
+    extends Composer<_$AppDatabase, $AiCommandTableTable> {
+  $$AiCommandTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get capability => $composableBuilder(
+    column: $table.capability,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get argumentsJson => $composableBuilder(
+    column: $table.argumentsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resultJson => $composableBuilder(
+    column: $table.resultJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AiCommandTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $AiCommandTableTable> {
+  $$AiCommandTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get capability => $composableBuilder(
+    column: $table.capability,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get argumentsJson => $composableBuilder(
+    column: $table.argumentsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get resultJson => $composableBuilder(
+    column: $table.resultJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AiCommandTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AiCommandTableTable> {
+  $$AiCommandTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get requestId =>
+      $composableBuilder(column: $table.requestId, builder: (column) => column);
+
+  GeneratedColumn<String> get capability => $composableBuilder(
+    column: $table.capability,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get argumentsJson => $composableBuilder(
+    column: $table.argumentsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get resultJson => $composableBuilder(
+    column: $table.resultJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$AiCommandTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AiCommandTableTable,
+          AiCommandReceipt,
+          $$AiCommandTableTableFilterComposer,
+          $$AiCommandTableTableOrderingComposer,
+          $$AiCommandTableTableAnnotationComposer,
+          $$AiCommandTableTableCreateCompanionBuilder,
+          $$AiCommandTableTableUpdateCompanionBuilder,
+          (
+            AiCommandReceipt,
+            BaseReferences<
+              _$AppDatabase,
+              $AiCommandTableTable,
+              AiCommandReceipt
+            >,
+          ),
+          AiCommandReceipt,
+          PrefetchHooks Function()
+        > {
+  $$AiCommandTableTableTableManager(
+    _$AppDatabase db,
+    $AiCommandTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AiCommandTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AiCommandTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AiCommandTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> requestId = const Value.absent(),
+                Value<String> capability = const Value.absent(),
+                Value<String> argumentsJson = const Value.absent(),
+                Value<String> resultJson = const Value.absent(),
+                Value<DateTime> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiCommandTableCompanion(
+                requestId: requestId,
+                capability: capability,
+                argumentsJson: argumentsJson,
+                resultJson: resultJson,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String requestId,
+                required String capability,
+                required String argumentsJson,
+                required String resultJson,
+                Value<DateTime> completedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AiCommandTableCompanion.insert(
+                requestId: requestId,
+                capability: capability,
+                argumentsJson: argumentsJson,
+                resultJson: resultJson,
+                completedAt: completedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$AiCommandTableTable, AiCommandReceipt>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $AiCommandTableTable,
+                    AiCommandReceipt
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AiCommandTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AiCommandTableTable,
+      AiCommandReceipt,
+      $$AiCommandTableTableFilterComposer,
+      $$AiCommandTableTableOrderingComposer,
+      $$AiCommandTableTableAnnotationComposer,
+      $$AiCommandTableTableCreateCompanionBuilder,
+      $$AiCommandTableTableUpdateCompanionBuilder,
+      (
+        AiCommandReceipt,
+        BaseReferences<_$AppDatabase, $AiCommandTableTable, AiCommandReceipt>,
+      ),
+      AiCommandReceipt,
+      PrefetchHooks Function()
+    >;
 typedef $$WaterLogTableTableCreateCompanionBuilder =
     WaterLogTableCompanion Function({
       Value<int> id,
@@ -32044,6 +32655,8 @@ class $AppDatabaseManager {
       );
   $$AiChatMessageTableTableTableManager get aiChatMessageTable =>
       $$AiChatMessageTableTableTableManager(_db, _db.aiChatMessageTable);
+  $$AiCommandTableTableTableManager get aiCommandTable =>
+      $$AiCommandTableTableTableManager(_db, _db.aiCommandTable);
   $$WaterLogTableTableTableManager get waterLogTable =>
       $$WaterLogTableTableTableManager(_db, _db.waterLogTable);
   $$WaterGoalTableTableTableManager get waterGoalTable =>

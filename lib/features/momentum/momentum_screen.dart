@@ -11,18 +11,37 @@ import '../challenge/domain/challenge_pace_engine.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 import '../challenge/presentation/challenge_create_sheet.dart';
 
-class MomentumScreen extends ConsumerWidget {
+class MomentumScreen extends ConsumerStatefulWidget {
   const MomentumScreen({super.key, this.linkedPromise});
 
   final Thought? linkedPromise;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MomentumScreen> createState() => _MomentumScreenState();
+}
+
+class _MomentumScreenState extends ConsumerState<MomentumScreen> {
+  int? _detailId;
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(challengeProofSyncProvider);
-    final active = ref.watch(activeChallengeProvider);
+    final active = ref.watch(allChallengesProvider);
+    final viewingDetail = active.value?.any((c) => c.id == _detailId) ?? false;
     return AscentScaffold(
       title: 'Challenge Partner',
       subtitle: 'A clear plan, measured by real progress',
+      actions: [
+        if (viewingDetail)
+          IconButton(
+            tooltip: 'Add challenge',
+            icon: const Icon(Icons.add_rounded),
+            onPressed: () => ChallengeCreateSheet.show(
+              context,
+              linkedPromise: widget.linkedPromise,
+            ),
+          ),
+      ],
       body: active.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => _MessageCard(
@@ -30,43 +49,99 @@ class MomentumScreen extends ConsumerWidget {
           body:
               'Your saved challenge is safe. Return to this screen to try again.',
           action: TextButton.icon(
-            onPressed: () => ref.invalidate(activeChallengeProvider),
+            onPressed: () => ref.invalidate(allChallengesProvider),
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Retry'),
           ),
         ),
-        data: (challenge) => challenge == null
-            ? _EmptyChallenge(
-                linkedPromise: linkedPromise,
+        data: (challenges) {
+          Challenge? challenge;
+          for (final item in challenges) {
+            if (item.id == _detailId) challenge = item;
+          }
+          if (challenge == null) {
+            if (challenges.isEmpty) {
+              return _EmptyChallenge(
+                linkedPromise: widget.linkedPromise,
                 onCreate: () => ChallengeCreateSheet.show(
                   context,
-                  linkedPromise: linkedPromise,
+                  linkedPromise: widget.linkedPromise,
                 ),
-              )
-            : ref
-                  .watch(challengeProofsProvider(challenge.id))
-                  .when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, _) => _MessageCard(
-                      title: 'Progress could not load',
-                      body:
-                          'Your challenge is still saved. Try refreshing the screen.',
-                      action: TextButton.icon(
-                        onPressed: () => ref.invalidate(
-                          challengeProofsProvider(challenge.id),
+              );
+            }
+            final home = ref.watch(activeChallengeProvider).value;
+            return ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  'Choose a challenge',
+                  style: AscentTextStyles.headlineMedium,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Tap to see its status. Use the home icon to choose your Home preview.',
+                ),
+                const SizedBox(height: 16),
+                for (final item in challenges)
+                  _ChallengePickerCard(
+                    challenge: item,
+                    isHome: home?.id == item.id,
+                    onOpen: () => setState(() => _detailId = item.id),
+                    onHome: () => ref
+                        .read(homeChallengeIdProvider.notifier)
+                        .select(item.id),
+                  ),
+                FilledButton.icon(
+                  onPressed: () => ChallengeCreateSheet.show(
+                    context,
+                    linkedPromise: widget.linkedPromise,
+                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add another challenge'),
+                ),
+              ],
+            );
+          }
+          final selected = challenge;
+          return Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _detailId = null),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('All challenges'),
+                ),
+              ),
+              Expanded(
+                child: ref
+                    .watch(challengeProofsProvider(challenge.id))
+                    .when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, _) => _MessageCard(
+                        title: 'Progress could not load',
+                        body:
+                            'Your challenge is still saved. Try refreshing the screen.',
+                        action: TextButton.icon(
+                          onPressed: () => ref.invalidate(
+                            challengeProofsProvider(selected.id),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
                         ),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Retry'),
+                      ),
+                      data: (proofs) => _ChallengeDetail(
+                        challenge: selected,
+                        proofs: proofs,
+                        onDelete: () => _confirmDelete(context, ref, selected),
+                        onArchive: () => _archive(context, ref, selected),
                       ),
                     ),
-                    data: (proofs) => _ChallengeDetail(
-                      challenge: challenge,
-                      proofs: proofs,
-                      onDelete: () => _confirmDelete(context, ref, challenge),
-                      onArchive: () => _archive(context, ref, challenge),
-                    ),
-                  ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -111,6 +186,50 @@ class MomentumScreen extends ConsumerWidget {
         const SnackBar(content: Text('Challenge moved to history.')),
       );
     }
+  }
+}
+
+class _ChallengePickerCard extends ConsumerWidget {
+  const _ChallengePickerCard({
+    required this.challenge,
+    required this.isHome,
+    required this.onOpen,
+    required this.onHome,
+  });
+  final Challenge challenge;
+  final bool isHome;
+  final VoidCallback onOpen;
+  final VoidCallback onHome;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final proofs = ref.watch(challengeProofsProvider(challenge.id));
+    final progress = proofs.value == null
+        ? null
+        : progressForChallenge(challenge, proofs.value!);
+    final g = context.glass;
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        onTap: onOpen,
+        leading: Icon(Icons.flag_outlined, color: g.clay),
+        title: Text(challenge.title),
+        subtitle: Text(
+          '${challenge.status == 'archived' ? 'History' : 'Active'} · ${progress == null ? 'Loading progress' : '${progress.percent}% complete · ${progress.daysLeft} days left'}',
+        ),
+        trailing: challenge.status == 'active'
+            ? IconButton(
+                tooltip: isHome ? 'Shown on Home' : 'Show on Home',
+                onPressed: onHome,
+                icon: Icon(
+                  isHome ? Icons.home_rounded : Icons.home_outlined,
+                  color: g.clay,
+                ),
+              )
+            : const Icon(Icons.chevron_right_rounded),
+      ),
+    );
   }
 }
 

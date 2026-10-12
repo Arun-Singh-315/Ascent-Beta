@@ -784,7 +784,7 @@ class _WalkFitnessHud extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [const Color(0xFF090D16), const Color(0xFF0F172A)]
+              ? [const Color(0xFF160F09), const Color(0xFF2A1C0F)]
               : [const Color(0xFFF8FAFC), const Color(0xFFEFF6FF)],
         ),
       ),
@@ -800,7 +800,7 @@ class _WalkFitnessHud extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isTracking
                       ? (isStationary
-                          ? const Color(0xFF0284C7).withValues(alpha: 0.15)
+                          ? const Color(0xFF6E8565).withValues(alpha: 0.15)
                           : const Color(0xFF10B981).withValues(alpha: 0.15))
                       : (isPaused
                           ? Colors.amber.withValues(alpha: 0.15)
@@ -809,7 +809,7 @@ class _WalkFitnessHud extends StatelessWidget {
                   border: Border.all(
                     color: isTracking
                         ? (isStationary
-                            ? const Color(0xFF0284C7).withValues(alpha: 0.4)
+                            ? const Color(0xFF6E8565).withValues(alpha: 0.4)
                             : const Color(0xFF10B981).withValues(alpha: 0.5))
                         : (isPaused
                             ? Colors.amber.withValues(alpha: 0.4)
@@ -826,7 +826,7 @@ class _WalkFitnessHud extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isTracking
-                            ? (isStationary ? const Color(0xFF38BDF8) : const Color(0xFF22C55E))
+                            ? (isStationary ? const Color(0xFFF89238) : const Color(0xFF22C55E))
                             : (isPaused ? Colors.amber : context.textMuted),
                       ),
                     ),
@@ -842,7 +842,7 @@ class _WalkFitnessHud extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                         letterSpacing: 0.6,
                         color: isTracking
-                            ? (isStationary ? const Color(0xFF38BDF8) : const Color(0xFF22C55E))
+                            ? (isStationary ? const Color(0xFFF89238) : const Color(0xFF22C55E))
                             : (isPaused ? Colors.amber : context.textSecondary),
                       ),
                     ),
@@ -865,7 +865,7 @@ class _WalkFitnessHud extends StatelessWidget {
                           trackColor: isDark
                               ? Colors.white.withValues(alpha: 0.08)
                               : Colors.black.withValues(alpha: 0.08),
-                          progressColor: isStationary ? const Color(0xFF38BDF8) : accent,
+                          progressColor: isStationary ? const Color(0xFFF89238) : accent,
                         ),
                       ),
                       Column(

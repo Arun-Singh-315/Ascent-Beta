@@ -272,12 +272,12 @@ class _PrimaryButton extends StatelessWidget {
     final bg = isEnabled
         ? (isDark
             ? context.bgSurfaceElevated.withValues(alpha: 0.92)
-            : const Color(0xFF1E293B).withValues(alpha: 0.94))
+            : const Color(0xFF3B2C1E).withValues(alpha: 0.94))
         : context.bgSurfaceElevated.withValues(alpha: 0.4);
     final fg = isDark ? context.textPrimary : Colors.white;
     final borderColor = isDark
         ? context.textPrimary.withValues(alpha: 0.25)
-        : const Color(0xFF0F172A).withValues(alpha: 0.7);
+        : const Color(0xFF2A1C0F).withValues(alpha: 0.7);
     final height = compact ? 34.0 : 42.0;
     final radius = compact ? 8.0 : 10.0;
 

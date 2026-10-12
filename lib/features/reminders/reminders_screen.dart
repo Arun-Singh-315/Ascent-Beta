@@ -420,7 +420,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: 'UNDO',
-              textColor: const Color(0xFF67E8F9),
+              textColor: const Color(0xFFF9AB67),
               onPressed: () async {
                 final restoredId = await dao.insertReminder(
                   ReminderTableCompanion(

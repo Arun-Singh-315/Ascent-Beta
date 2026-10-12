@@ -1,8 +1,6 @@
 part of '../app_database.dart';
 
-@DriftAccessor(tables: [
-  ThoughtTable,
-])
+@DriftAccessor(tables: [ThoughtTable])
 class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   ThoughtDao(super.db);
 
@@ -22,9 +20,7 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Stream<List<Thought>> watchArchivedThoughts() {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(true))
-          ..orderBy([
-            (t) => OrderingTerm.desc(t.createdAt),
-          ]))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
 
@@ -38,8 +34,8 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
       ..addColumns([countExp])
       ..where(
         thoughtTable.isArchived.equals(false) &
-        thoughtTable.createdAt.isBiggerOrEqualValue(dayStart) &
-        thoughtTable.createdAt.isSmallerThanValue(dayEnd),
+            thoughtTable.createdAt.isBiggerOrEqualValue(dayStart) &
+            thoughtTable.createdAt.isSmallerThanValue(dayEnd),
       );
     return query.map((row) => row.read(countExp) ?? 0).watchSingle();
   }
@@ -52,9 +48,8 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false))
           ..orderBy([
-            (t) => OrderingTerm.asc(t.isCompleted),
-            (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
           ])
           ..limit(limit))
         .watch();
@@ -62,7 +57,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
 
   /// Get a single thought by ID.
   Future<Thought?> getThoughtById(int id) {
-    return (select(thoughtTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return (select(
+      thoughtTable,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Insert a new thought.
@@ -74,9 +71,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> togglePin(int id) async {
     final thought = await getThoughtById(id);
     if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isPinned: !thought.isPinned),
-      );
+      await update(
+        thoughtTable,
+      ).replace(thought.copyWith(isPinned: !thought.isPinned));
     }
   }
 
@@ -84,9 +81,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> toggleCompleted(int id) async {
     final thought = await getThoughtById(id);
     if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isCompleted: !thought.isCompleted),
-      );
+      await update(
+        thoughtTable,
+      ).replace(thought.copyWith(isCompleted: !thought.isCompleted));
     }
   }
 
@@ -94,9 +91,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> setCompleted(int id, bool completed) async {
     final thought = await getThoughtById(id);
     if (thought != null && thought.isCompleted != completed) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isCompleted: completed),
-      );
+      await update(
+        thoughtTable,
+      ).replace(thought.copyWith(isCompleted: completed));
     }
   }
 
@@ -104,7 +101,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> setCompletedByContent(String content, bool completed) async {
     final trimmed = content.trim();
     if (trimmed.isEmpty) return;
-    final matches = await (select(thoughtTable)..where((t) => t.content.equals(trimmed))).get();
+    final matches = await (select(
+      thoughtTable,
+    )..where((t) => t.content.equals(trimmed))).get();
     for (final t in matches) {
       if (t.isCompleted != completed) {
         await update(thoughtTable).replace(t.copyWith(isCompleted: completed));
@@ -116,9 +115,7 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> archiveThought(int id) async {
     final thought = await getThoughtById(id);
     if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isArchived: true),
-      );
+      await update(thoughtTable).replace(thought.copyWith(isArchived: true));
     }
   }
 
@@ -126,9 +123,7 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> unarchiveThought(int id) async {
     final thought = await getThoughtById(id);
     if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isArchived: false),
-      );
+      await update(thoughtTable).replace(thought.copyWith(isArchived: false));
     }
   }
 

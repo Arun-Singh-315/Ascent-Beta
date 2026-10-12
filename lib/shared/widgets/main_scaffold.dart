@@ -79,7 +79,7 @@ class _MainScaffoldState extends State<MainScaffold> {
               ),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.95),
+              backgroundColor: const Color(0xFF2D251E).withValues(alpha: 0.95),
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),

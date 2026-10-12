@@ -12,6 +12,17 @@ class ChallengeDao extends DatabaseAccessor<AppDatabase>
     with _$ChallengeDaoMixin {
   ChallengeDao(super.db);
 
+  Stream<List<Challenge>> watchChallenges() =>
+      (select(challengeTable)
+            ..orderBy([(row) => OrderingTerm.desc(row.createdAt)]))
+          .watch();
+
+  Stream<List<Challenge>> watchActiveChallenges() =>
+      (select(challengeTable)
+            ..where((row) => row.status.equals('active'))
+            ..orderBy([(row) => OrderingTerm.desc(row.createdAt)]))
+          .watch();
+
   Stream<Challenge?> watchActiveChallenge() =>
       (select(challengeTable)
             ..where((row) => row.status.equals('active'))

@@ -100,7 +100,11 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   /// Returns the Todo created for a Thought Wall Promise, if it still exists.
   Future<Task?> getTaskLinkedToThought(int thoughtId) =>
       (select(taskTable)
-            ..where((t) => t.notes.like('%thought_id:$thoughtId •%'))
+            ..where(
+              (t) =>
+                  t.notes.equals('thought_id:$thoughtId') |
+                  t.notes.like('%thought_id:$thoughtId •%'),
+            )
             ..limit(1))
           .getSingleOrNull();
 

@@ -131,7 +131,7 @@ class MoreScreen extends ConsumerWidget {
                 _TileDivider(),
                 _MoreListTile(
                   icon: Icons.bubble_chart_rounded,
-                  iconTint: const Color(0xFF8338EC),
+                  iconTint: const Color(0xFFEC8C38),
                   title: 'Thought Wall • Mind Space',
                   subtitle: 'Unfiltered self-talk, sparks, daily wins & reflections',
                   route: '/thought-wall',
@@ -199,7 +199,7 @@ class MoreScreen extends ConsumerWidget {
                 _TileDivider(),
                 _MoreListTile(
                   icon: Icons.psychology_outlined,
-                  iconTint: const Color(0xFF6C5CE7),
+                  iconTint: const Color(0xFFE79D5C),
                   title: 'Interview Prep Bank',
                   subtitle: 'Question logs, company notes & behavioral rounds',
                   route: '/interview-prep',

@@ -315,7 +315,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
             hintText: 'e.g., Spring Boot Masterclass, Java Fundamentals, DSA',
             hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -327,7 +327,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           decoration: InputDecoration(
             hintText: 'e.g., Backend Engineering, Algorithms, Mobile',
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -339,7 +339,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           decoration: InputDecoration(
             hintText: 'e.g., Engineering Digest, Kunal Kushwaha, Self-Study',
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -352,7 +352,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           decoration: InputDecoration(
             hintText: 'Key topics, syllabus, or learning goals...',
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -391,7 +391,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+            color: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: context.divider.withValues(alpha: 0.8)),
           ),

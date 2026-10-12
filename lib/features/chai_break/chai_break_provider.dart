@@ -15,13 +15,13 @@ enum SoundscapePreset {
   acousticLofi(
     'Acoustic Lo-Fi',
     'Warm Rhodes piano & mellow cafe ambience',
-    0xFF8338EC,
+    0xFFEC8C38,
     'audio/acoustic_lofi.wav',
   ),
   zenRiverChimes(
     'Zen River & Chimes',
     'Gentle flowing stream & singing bowl chimes',
-    0xFF38BDF8,
+    0xFFF89238,
     'audio/zen_river.wav',
   ),
   campfireWarmth(
@@ -33,7 +33,7 @@ enum SoundscapePreset {
   deepFocusDrone(
     'Deep Focus Drone (432Hz)',
     'Continuous theta waves & calming binaural drone for deep study',
-    0xFF0284C7,
+    0xFF6E8565,
     'audio/deep_concentration_drone.wav',
   ),
   monsoonFlute(
@@ -45,13 +45,13 @@ enum SoundscapePreset {
   midnightLibrary(
     'Midnight Library',
     'Soft nocturnal room tones, slow warm chords & peaceful study calm',
-    0xFF8B5CF6,
+    0xFFF6A45C,
     'audio/night_library_study.wav',
   ),
   silentZen(
     'Pure Silence',
     'Zero audio, deep silent breath',
-    0xFF94A3B8,
+    0xFFB8A594,
     '',
   ),
   customSystemAudio(

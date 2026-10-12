@@ -275,13 +275,13 @@ class AscentTheme {
           if (states.contains(WidgetState.selected)) {
             return accentPrimary;
           }
-          return isDark ? const Color(0xFF94A3B8) : const Color(0xFFCBD5E1);
+          return isDark ? const Color(0xFFB8A594) : const Color(0xFFCBD5E1);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return accentPrimary.withValues(alpha: 0.38);
           }
-          return isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+          return isDark ? const Color(0xFF3B2C1E) : const Color(0xFFE2E8F0);
         }),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -296,7 +296,7 @@ class AscentTheme {
 
       // ── Snack bar ────────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark ? const Color(0xFF1E222D) : const Color(0xFF1B1E2B),
+        backgroundColor: isDark ? const Color(0xFF2D251E) : const Color(0xFF2B221B),
         contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
           color: const Color(0xFFF1F5F9),
           fontWeight: FontWeight.w500,

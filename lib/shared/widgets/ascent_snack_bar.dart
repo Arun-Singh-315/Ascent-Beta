@@ -39,7 +39,9 @@ class AscentSnackBar {
               child: Text(
                 message,
                 style: AscentTextStyles.bodyMedium.copyWith(
-                  color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFFEFF2F6),
+                  color: isDark
+                      ? const Color(0xFFF1F5F9)
+                      : const Color(0xFFEFF2F6),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -57,8 +59,9 @@ class AscentSnackBar {
               )
             : null,
         duration: duration,
+        persist: false,
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.96),
+        backgroundColor: const Color(0xFF2D251E).withValues(alpha: 0.96),
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
@@ -102,7 +105,11 @@ class AscentSnackBar {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: context.stateDanger),
+            Icon(
+              Icons.error_outline_rounded,
+              size: 18,
+              color: context.stateDanger,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -116,6 +123,7 @@ class AscentSnackBar {
           ],
         ),
         duration: duration,
+        persist: false,
         behavior: SnackBarBehavior.floating,
         backgroundColor: const Color(0xFF261919).withValues(alpha: 0.96),
         elevation: 6,
@@ -150,7 +158,11 @@ class AscentSnackBar {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.white70),
+            const Icon(
+              Icons.delete_outline_rounded,
+              size: 18,
+              color: Colors.white70,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -172,8 +184,9 @@ class AscentSnackBar {
           },
         ),
         duration: duration,
+        persist: false,
         behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.96),
+        backgroundColor: const Color(0xFF2D251E).withValues(alpha: 0.96),
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),

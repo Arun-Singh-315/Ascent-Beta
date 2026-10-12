@@ -185,7 +185,7 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
               height: 54,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.5),
+                color: isDark ? const Color(0xFF2A1C0F).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.5),
                 border: Border.all(color: g.line.withValues(alpha: 0.7)),
                 borderRadius: BorderRadius.circular(14),
               ),

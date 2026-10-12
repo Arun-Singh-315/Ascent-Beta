@@ -337,7 +337,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     hintText: 'e.g., Buy groceries, Exercise, Study Java, Meditate',
                     hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+                    fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -469,7 +469,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         hintText: 'Enter duration in minutes (e.g. 120)',
                         hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+                        fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
@@ -546,7 +546,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+                    color: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: context.divider.withValues(alpha: 0.6)),
                   ),
@@ -678,7 +678,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           hintText: 'Add notes or description (optional)',
                           hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
+                          fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),

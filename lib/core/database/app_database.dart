@@ -22,6 +22,7 @@ import 'tables/user_profile_table.dart';
 import 'tables/finance_tables.dart';
 import 'tables/walk_tables.dart';
 import 'tables/ai_chat_tables.dart';
+import 'tables/ai_command_table.dart';
 import 'tables/water_tables.dart';
 import 'tables/thought_tables.dart';
 import 'tables/course_table.dart';
@@ -77,6 +78,7 @@ part 'daos/medicine_dao.dart';
     WalkSessionTable,
     DailyActivityGoalTable,
     AiChatMessageTable,
+    AiCommandTable,
     WaterLogTable,
     WaterGoalTable,
     ThoughtTable,
@@ -120,7 +122,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -203,6 +205,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 11) {
         await m.addColumn(thoughtTable, thoughtTable.isArchived);
         await m.addColumn(thoughtTable, thoughtTable.isCompleted);
+      }
+      if (from < 13) {
+        await m.createTable(aiCommandTable);
       }
       if (from < 12) {
         await m.createTable(challengeTable);

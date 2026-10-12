@@ -1,12 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import 'domain/challenge_pace_engine.dart';
 import 'domain/challenge_service.dart';
 
-final activeChallengeProvider = StreamProvider<Challenge?>((ref) {
-  return ref.watch(challengeDaoProvider).watchActiveChallenge();
+final allChallengesProvider = StreamProvider<List<Challenge>>((ref) {
+  return ref.watch(challengeDaoProvider).watchChallenges();
+});
+
+final homeChallengeIdProvider = AsyncNotifierProvider<HomeChallengeId, int?>(
+  HomeChallengeId.new,
+);
+
+class HomeChallengeId extends AsyncNotifier<int?> {
+  @override
+  Future<int?> build() async =>
+      (await SharedPreferences.getInstance()).getInt('home_challenge_id');
+
+  Future<void> select(int id) async {
+    await (await SharedPreferences.getInstance()).setInt(
+      'home_challenge_id',
+      id,
+    );
+    state = AsyncData(id);
+  }
+}
+
+final activeChallengeProvider = Provider<AsyncValue<Challenge?>>((ref) {
+  final selected = ref.watch(homeChallengeIdProvider).value;
+  return ref.watch(allChallengesProvider).whenData((challenges) {
+    final active = challenges.where((c) => c.status == 'active').toList();
+    for (final challenge in active) {
+      if (challenge.id == selected) return challenge;
+    }
+    return active.isEmpty ? null : active.first;
+  });
 });
 
 final challengeLinksProvider = StreamProvider.family<List<ChallengeLink>, int>((

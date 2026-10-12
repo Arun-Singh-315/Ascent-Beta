@@ -206,7 +206,7 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1F26),
+        color: const Color(0xFF26201A),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFE28B57).withValues(alpha: 0.25),
@@ -563,7 +563,7 @@ class _CategoryButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? const Color(0xFFE28B57).withValues(alpha: 0.22)
-              : const Color(0xFF1A1F26),
+              : const Color(0xFF26201A),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? const Color(0xFFE28B57) : Colors.white.withValues(alpha: 0.08),
@@ -616,7 +616,7 @@ class _RecipeCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? const Color(0xFFE28B57).withValues(alpha: 0.18)
-              : const Color(0xFF181C22),
+              : const Color(0xFF221D18),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? const Color(0xFFE28B57) : Colors.white.withValues(alpha: 0.08),

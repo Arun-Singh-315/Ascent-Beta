@@ -262,10 +262,10 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
+                    color: const Color(0xFFB46824).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: const Color(0xFF7C3AED).withValues(alpha: 0.24),
+                      color: const Color(0xFFB46824).withValues(alpha: 0.24),
                     ),
                   ),
                   child: Row(
@@ -273,7 +273,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                     children: [
                       const Icon(
                         Icons.handshake_rounded,
-                        color: Color(0xFF7C3AED),
+                        color: Color(0xFFB46824),
                         size: 18,
                       ),
                       const SizedBox(width: 8),

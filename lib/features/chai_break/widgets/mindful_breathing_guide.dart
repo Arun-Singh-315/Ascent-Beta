@@ -81,7 +81,7 @@ class MindfulBreathingGuide extends StatelessWidget {
               fontWeight: FontWeight.w600,
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white70
-                  : const Color(0xFF1E293B),
+                  : const Color(0xFF3B2C1E),
               letterSpacing: 0.2,
             ),
           ),

@@ -1,3 +1,4 @@
+import 'support/returning_user_guides.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
@@ -32,7 +33,7 @@ void main() {
     test(
       'LearningHubNotifier sticky completion: once completed, cannot be reverted',
       () async {
-        SharedPreferences.setMockInitialValues({});
+        SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
         final prefs = await SharedPreferences.getInstance();
         final container = ProviderContainer(
           overrides: [
@@ -374,7 +375,7 @@ void main() {
     testWidgets('MomentumScreen offers the lightweight challenge entry state', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
         ProviderScope(

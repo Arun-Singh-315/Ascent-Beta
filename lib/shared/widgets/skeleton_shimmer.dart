@@ -93,10 +93,10 @@ class SkeletonShimmer extends StatelessWidget {
     final isDark = context.isDark;
 
     final baseColor = isDark
-        ? const Color(0xFF252D37)
+        ? const Color(0xFF372D25)
         : const Color(0xFFEFEDE9);
     final highlightColor = isDark
-        ? const Color(0xFF2E3745)
+        ? const Color(0xFF45392E)
         : const Color(0xFFFBF9F6);
 
     return Shimmer.fromColors(

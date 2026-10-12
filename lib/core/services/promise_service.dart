@@ -52,7 +52,7 @@ class PromiseService {
         ThoughtTableCompanion.insert(
           content: text,
           mood: const drift.Value('promise'),
-          colorHex: const drift.Value('#7C3AED'),
+          colorHex: const drift.Value('#B46824'),
           promptQuestion: drift.Value(promptQuestion),
         ),
       );

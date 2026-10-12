@@ -197,32 +197,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 16),
 
                     // ── HOME DISMISSIBLE REMINDERS (SWIPE TO REMOVE / ACTION) ──
-                    HomeDismissibleRemindersSection(
-                      reminders: visibleReminders,
-                      onAddReminder: () => context.push('/reminders'),
-                      onViewAll: () => context.push('/reminders'),
-                      onDismissReminder: (reminder) async {
-                        await ref
-                            .read(dismissedTodayReminderIdsProvider.notifier)
-                            .dismissReminderId(reminder.id);
-                      },
-                      onCompleteReminder: (reminder) async {
-                        try {
-                          final dao = ref.read(reminderDaoProvider);
-                          await dao.updateReminder(
-                            reminder
-                                .toCompanion(true)
-                                .copyWith(isActive: const drift.Value(false)),
-                          );
-                          await NotificationService.instance.cancel(
-                            reminder.id,
-                          );
-                          ref.invalidate(allRemindersProvider);
-                        } catch (_) {}
-                      },
-                    ),
+                    if (visibleReminders.isNotEmpty)
+                      HomeDismissibleRemindersSection(
+                        reminders: visibleReminders,
+                        onAddReminder: () => context.push('/reminders'),
+                        onViewAll: () => context.push('/reminders'),
+                        onDismissReminder: (reminder) async {
+                          await ref
+                              .read(dismissedTodayReminderIdsProvider.notifier)
+                              .dismissReminderId(reminder.id);
+                        },
+                        onCompleteReminder: (reminder) async {
+                          try {
+                            final dao = ref.read(reminderDaoProvider);
+                            await dao.updateReminder(
+                              reminder
+                                  .toCompanion(true)
+                                  .copyWith(isActive: const drift.Value(false)),
+                            );
+                            await NotificationService.instance.cancel(
+                              reminder.id,
+                            );
+                            ref.invalidate(allRemindersProvider);
+                          } catch (_) {}
+                        },
+                      ),
 
-                    const SizedBox(height: 16),
+                    if (visibleReminders.isNotEmpty) const SizedBox(height: 16),
 
                     // ── LEVEL 1: TODAY EXECUTION (PRIMARY) ───────────────
                     const ActivityHubCard(),

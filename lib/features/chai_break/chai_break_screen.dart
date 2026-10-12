@@ -55,49 +55,57 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(chaiBreakProvider);
     final notifier = ref.read(chaiBreakProvider.notifier);
-    final accentColor = state.selectedSoundscape == SoundscapePreset.customSystemAudio
-        ? const Color(0xFF10B981)
-        : Color(state.selectedSoundscape.accentColorHex);
+    const accentColor = Color(0xFF6B3A1C);
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: g.bg,
       body: Container(
-        decoration: BoxDecoration(
-          color: g.bg,
-        ),
+        decoration: BoxDecoration(color: g.bg),
         child: SafeArea(
           child: Column(
             children: [
               // Top Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: g.ink, size: 20),
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: g.ink,
+                        size: 20,
+                      ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.of(context).pop();
                       },
                       tooltip: 'Back',
                     ),
-                    Row(
-                      children: [
-                        Icon(Icons.coffee_rounded, color: g.clay, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'CHAI & COFFEE BREAK',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
-                            color: g.ink,
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.coffee_rounded, color: g.clay, size: 18),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Chai & Coffee',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                                color: g.ink,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     IconButton(
                       icon: Icon(
@@ -123,7 +131,10 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
               Expanded(
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
                   children: [
                     // Mode Switcher (Mindful Pause vs Brew With Me)
                     Container(
@@ -145,7 +156,12 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: !_isBrewWithMe
@@ -165,15 +181,23 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                     Icon(
                                       Icons.spa_rounded,
                                       size: 16,
-                                      color: !_isBrewWithMe ? g.clay : g.inkMuted,
+                                      color: !_isBrewWithMe
+                                          ? g.clay
+                                          : g.inkMuted,
                                     ),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      'Mindful Pause',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12.5,
-                                        fontWeight: !_isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
-                                        color: !_isBrewWithMe ? g.ink : g.inkMuted,
+                                    Flexible(
+                                      child: Text(
+                                        'Mindful Pause',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: !_isBrewWithMe
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: !_isBrewWithMe
+                                              ? g.ink
+                                              : g.inkMuted,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -192,7 +216,12 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               },
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: _isBrewWithMe
@@ -212,15 +241,23 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                     Icon(
                                       Icons.coffee_maker_rounded,
                                       size: 16,
-                                      color: _isBrewWithMe ? g.clay : g.inkMuted,
+                                      color: _isBrewWithMe
+                                          ? g.clay
+                                          : g.inkMuted,
                                     ),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      'Brew With Me',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12.5,
-                                        fontWeight: _isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
-                                        color: _isBrewWithMe ? g.ink : g.inkMuted,
+                                    Flexible(
+                                      child: Text(
+                                        'Brew With Me',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 14,
+                                          fontWeight: _isBrewWithMe
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                          color: _isBrewWithMe
+                                              ? g.ink
+                                              : g.inkMuted,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -232,14 +269,27 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
+                    Text(
+                      _isBrewWithMe
+                          ? 'Follow a gentle guide while you make your drink.'
+                          : 'Choose a short pause, breathe and enjoy your drink.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        color: g.inkMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     if (_isBrewWithMe) ...[
                       const BrewWithMeView(),
                     ] else ...[
-                      // Duration Preset Pills
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      // Duration presets wrap comfortably at larger text sizes.
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           _PresetChip(
                             label: '5m Chai',
@@ -250,7 +300,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               notifier.setPresetMinutes(5);
                             },
                           ),
-                          const SizedBox(width: 8),
                           _PresetChip(
                             label: '10m Coffee',
                             minutes: 10,
@@ -260,7 +309,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               notifier.setPresetMinutes(10);
                             },
                           ),
-                          const SizedBox(width: 8),
                           _PresetChip(
                             label: '15m Reset',
                             minutes: 15,
@@ -329,10 +377,15 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         children: [
                           IconButton(
                             iconSize: 22,
-                            icon: Icon(Icons.replay_rounded, color: isDark ? Colors.white60 : g.inkMuted),
+                            icon: Icon(
+                              Icons.replay_rounded,
+                              color: isDark ? Colors.white60 : g.inkMuted,
+                            ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
-                              notifier.setPresetMinutes(state.totalDurationSeconds ~/ 60);
+                              notifier.setPresetMinutes(
+                                state.totalDurationSeconds ~/ 60,
+                              );
                             },
                             tooltip: 'Reset break timer',
                           ),
@@ -346,12 +399,19 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               },
                               borderRadius: BorderRadius.circular(30),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: isDark ? 0.22 : 0.16),
+                                  color: accentColor.withValues(
+                                    alpha: isDark ? 0.22 : 0.16,
+                                  ),
                                   borderRadius: BorderRadius.circular(30),
                                   border: Border.all(
-                                    color: accentColor.withValues(alpha: isDark ? 0.7 : 0.8),
+                                    color: accentColor.withValues(
+                                      alpha: isDark ? 0.7 : 0.8,
+                                    ),
                                     width: 1.2,
                                   ),
                                 ),
@@ -359,7 +419,9 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      state.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                      state.isRunning
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
                                       color: isDark ? Colors.white : g.ink,
                                       size: 22,
                                     ),
@@ -380,7 +442,10 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                           const SizedBox(width: 14),
                           IconButton(
                             iconSize: 22,
-                            icon: Icon(Icons.check_circle_outline_rounded, color: isDark ? Colors.white60 : g.inkMuted),
+                            icon: Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: isDark ? Colors.white60 : g.inkMuted,
+                            ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               Navigator.of(context).pop();
@@ -411,17 +476,28 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
 
                     // Mindful Quote / Reflection
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.04)
+                            : Colors.black.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.08)
+                              : Colors.black.withValues(alpha: 0.08),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.format_quote_rounded, color: Color(0xFFE28B57), size: 18),
+                          const Icon(
+                            Icons.format_quote_rounded,
+                            color: Color(0xFFE28B57),
+                            size: 18,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: AnimatedSwitcher(
@@ -430,7 +506,7 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                 _mindfulQuotes[_quoteIndex],
                                 key: ValueKey(_quoteIndex),
                                 style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12.5,
+                                  fontSize: 14,
                                   fontStyle: FontStyle.italic,
                                   color: isDark ? Colors.white70 : g.ink,
                                   height: 1.35,
@@ -439,7 +515,11 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.edit_note_rounded, color: isDark ? Colors.white54 : g.inkMuted, size: 20),
+                            icon: Icon(
+                              Icons.edit_note_rounded,
+                              color: isDark ? Colors.white54 : g.inkMuted,
+                              size: 20,
+                            ),
                             onPressed: () => DropThoughtSheet.show(context),
                             tooltip: 'Drop a thought into Thought Wall',
                           ),
@@ -483,26 +563,33 @@ class _PresetChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? const Color(0xFFE28B57).withValues(alpha: 0.22) : g.claySoft)
-                : (isDark ? const Color(0xFF222832) : Colors.black.withValues(alpha: 0.04)),
+                ? (isDark
+                      ? const Color(0xFFE28B57).withValues(alpha: 0.22)
+                      : g.claySoft)
+                : (isDark
+                      ? const Color(0xFF322922)
+                      : Colors.black.withValues(alpha: 0.04)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected
                   ? const Color(0xFFE28B57)
-                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
+                  : (isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.08)),
               width: 1,
             ),
           ),
           child: Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
+              fontSize: 14,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected
-                  ? const Color(0xFFE28B57)
+                  ? (isDark ? const Color(0xFFE28B57) : g.clay)
                   : (isDark ? Colors.white70 : g.ink),
             ),
           ),

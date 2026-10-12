@@ -9,7 +9,6 @@ import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
 
@@ -36,12 +35,15 @@ class HomeHeader extends ConsumerWidget {
     final g = context.glass;
     final isDark = context.isDark;
     final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
-    final role = profile?.targetRole.isNotEmpty == true ? profile!.targetRole : 'Software Engineer';
-    final dateStr = DateFormat('EEE, d MMM').format(DateTime.now()).toUpperCase();
+    final role = profile?.targetRole.isNotEmpty == true
+        ? profile!.targetRole
+        : 'Software Engineer';
+    final dateStr = DateFormat(
+      'EEE, d MMM',
+    ).format(DateTime.now()).toUpperCase();
     final studyStreak = ref.watch(studyStreakProvider);
     final isStreakCardVisible = ref.watch(studyStreakCardVisibleProvider);
-    final legacyStreak = ref.watch(currentStreakStreamProvider).value ?? 0;
-    final streak = studyStreak.displayStreakDays > 0 ? studyStreak.displayStreakDays : legacyStreak;
+    final streak = studyStreak.displayStreakDays;
     final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
@@ -74,7 +76,9 @@ class HomeHeader extends ConsumerWidget {
                     child: InkWell(
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        ref.read(studyStreakCardVisibleProvider.notifier).toggle();
+                        ref
+                            .read(studyStreakCardVisibleProvider.notifier)
+                            .toggle();
                       },
                       onLongPress: () {
                         HapticFeedback.mediumImpact();
@@ -135,7 +139,9 @@ class HomeHeader extends ConsumerWidget {
                           border: Border.all(color: g.edge, width: 1.0),
                           boxShadow: [
                             BoxShadow(
-                              color: g.shadow.withValues(alpha: isDark ? 0.3 : 0.05),
+                              color: g.shadow.withValues(
+                                alpha: isDark ? 0.3 : 0.05,
+                              ),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -185,7 +191,9 @@ class HomeHeader extends ConsumerWidget {
                         ),
                         child: Center(
                           child: Text(
-                            name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                            name.isNotEmpty
+                                ? name.substring(0, 1).toUpperCase()
+                                : 'A',
                             style: GoogleFonts.bricolageGrotesque(
                               color: g.ink,
                               fontWeight: FontWeight.w700,
@@ -206,16 +214,12 @@ class HomeHeader extends ConsumerWidget {
           // ── GREETING & DISPLAY NAME ───────────────────────────────────
           Text(
             _greeting(),
-            style: AscentTextStyles.homeBody.copyWith(
-              color: g.inkSecondary,
-            ),
+            style: AscentTextStyles.homeBody.copyWith(color: g.inkSecondary),
           ),
           const SizedBox(height: 2),
           Text(
             name,
-            style: AscentTextStyles.homeDisplay.copyWith(
-              color: g.ink,
-            ),
+            style: AscentTextStyles.homeDisplay.copyWith(color: g.ink),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -236,7 +240,10 @@ class HomeHeader extends ConsumerWidget {
                   },
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2.5,
+                    ),
                     decoration: BoxDecoration(
                       color: g.claySoft,
                       borderRadius: BorderRadius.circular(6),
@@ -266,14 +273,14 @@ class HomeHeader extends ConsumerWidget {
                 },
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2.5,
+                  ),
                   decoration: BoxDecoration(
                     color: g.fill,
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: g.edge,
-                      width: 0.8,
-                    ),
+                    border: Border.all(color: g.edge, width: 0.8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -349,7 +356,9 @@ class HomeHeader extends ConsumerWidget {
                     ),
                     child: Center(
                       child: Text(
-                        name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'A',
+                        name.isNotEmpty
+                            ? name.substring(0, 1).toUpperCase()
+                            : 'A',
                         style: GoogleFonts.bricolageGrotesque(
                           color: g.ink,
                           fontWeight: FontWeight.w700,
@@ -402,9 +411,9 @@ class HomeHeader extends ConsumerWidget {
                   value: isDark,
                   onChanged: (val) {
                     HapticFeedback.lightImpact();
-                    ref.read(themeModeProvider.notifier).setThemeMode(
-                          val ? ThemeMode.dark : ThemeMode.light,
-                        );
+                    ref
+                        .read(themeModeProvider.notifier)
+                        .setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
                   },
                 ),
               ),
@@ -479,7 +488,7 @@ class HomeHeader extends ConsumerWidget {
               Text(
                 streak > 0
                     ? '$streak Day${streak == 1 ? '' : 's'} Active'
-                    : "Let's start the freaking streak from today!",
+                    : 'Start your first study day',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.bricolageGrotesque(
                   fontSize: streak > 0 ? 22 : 20,
@@ -490,8 +499,8 @@ class HomeHeader extends ConsumerWidget {
               const SizedBox(height: 6),
               Text(
                 streak > 0
-                    ? 'Consistency is your edge. Complete any activity today to keep the flame alive.'
-                    : 'Get your first day locked in today! Check off an activity to ignite the flame.',
+                    ? 'Your study time builds this streak. Check Home for today’s progress.'
+                    : 'Complete 120 minutes of study to begin. Quick Todos do not count as study time.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.dmSans(
                   fontSize: 13,

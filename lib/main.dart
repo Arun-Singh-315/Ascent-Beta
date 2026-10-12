@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
@@ -13,6 +14,7 @@ import 'features/chai_break/chai_break_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   await NotificationService.instance.initialize();
   NotificationService.instance.requestPermissions();
@@ -21,14 +23,13 @@ void main() async {
   await touchLastOpened(prefs);
 
   final container = ProviderContainer(
-    overrides: [
-      sharedPreferencesProvider.overrideWithValue(prefs),
-    ],
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
   );
 
   NotificationService.setNotificationNavigateHandler((route) {
     final destination = NotificationService.destinationForPayload(route);
-    final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri.toString();
+    final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri
+        .toString();
     if (currentUri != destination) {
       ascentRouter.go(destination);
     }
@@ -68,15 +69,23 @@ void main() async {
       // Robust fallback if payload was not preserved by OS
       final learning = container.read(learningHubProvider);
       if (learning.isPlaying) {
-        if (actionId == NotificationService.actionPause) container.read(learningHubProvider.notifier).pause();
+        if (actionId == NotificationService.actionPause) {
+          container.read(learningHubProvider.notifier).pause();
+        }
       } else if (learning.currentElapsedSeconds > 0) {
-        if (actionId == NotificationService.actionResume) container.read(learningHubProvider.notifier).play();
+        if (actionId == NotificationService.actionResume) {
+          container.read(learningHubProvider.notifier).play();
+        }
       } else {
         final focusState = container.read(timeTrackingProvider);
         if (focusState.isRunning) {
-          if (actionId == NotificationService.actionPause) container.read(timeTrackingProvider.notifier).pauseSession();
+          if (actionId == NotificationService.actionPause) {
+            container.read(timeTrackingProvider.notifier).pauseSession();
+          }
         } else if (focusState.isPaused) {
-          if (actionId == NotificationService.actionResume) container.read(timeTrackingProvider.notifier).resumeSession();
+          if (actionId == NotificationService.actionResume) {
+            container.read(timeTrackingProvider.notifier).resumeSession();
+          }
         }
       }
     }
@@ -92,9 +101,6 @@ void main() async {
   ]);
 
   runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const AscentApp(),
-    ),
+    UncontrolledProviderScope(container: container, child: const AscentApp()),
   );
 }
