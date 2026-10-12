@@ -17,21 +17,11 @@ import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 
-import 'package:ascent/core/auth/auth_provider.dart';
-
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
   TimeTrackingState build() {
     return const TimeTrackingState();
   }
-}
-
-class FakeAuthNotifier extends AuthNotifier {
-  final bool _isAuth;
-  FakeAuthNotifier([this._isAuth = true]);
-
-  @override
-  AuthState build() => AuthState(isAuthenticated: _isAuth, username: 'arn');
 }
 
 final _testUserProfile = UserProfile(
@@ -79,13 +69,11 @@ void main() {
     List<TodayActivityItem>? customActivities,
     UserProfile? customProfile,
     bool hasProfile = true,
-    bool isAuthenticated = true,
   }) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
-        authProvider.overrideWith(() => FakeAuthNotifier(isAuthenticated)),
         timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1000)),
@@ -324,7 +312,6 @@ void main() {
               overrides: [
                 databaseProvider.overrideWithValue(db),
                 sharedPreferencesProvider.overrideWithValue(prefs),
-                authProvider.overrideWith(() => FakeAuthNotifier()),
                 timeTrackingProvider.overrideWith(
                   () => FakeTimeTrackingNotifier(),
                 ),
@@ -411,12 +398,10 @@ void main() {
     testWidgets(
       'Home remains a local profile screen without a fake account-login guard',
       (tester) async {
-        await tester.pumpWidget(
-          buildTestableWidget(const HomeScreen(), isAuthenticated: false),
-        );
+        await tester.pumpWidget(buildTestableWidget(const HomeScreen()));
         await tester.pump();
 
-        // Local profile access is not guarded by the unused fake credential provider.
+        // Local profile access does not require account credentials.
         expect(find.text('Learner'), findsNothing);
         expect(
           find.byKey(const ValueKey('blockage_auth_indicator')),

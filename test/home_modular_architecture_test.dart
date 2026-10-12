@@ -15,7 +15,6 @@ import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/challenge/challenge_providers.dart';
 
-import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:drift/drift.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -23,11 +22,6 @@ class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   TimeTrackingState build() {
     return const TimeTrackingState();
   }
-}
-
-class FakeAuthNotifier extends AuthNotifier {
-  @override
-  AuthState build() => const AuthState(isAuthenticated: true, username: 'arn');
 }
 
 final _modularTestProfile = UserProfile(
@@ -81,7 +75,6 @@ void main() {
         databaseProvider.overrideWithValue(db),
         allChallengesProvider.overrideWith((ref) => Stream.value([])),
         sharedPreferencesProvider.overrideWithValue(prefs),
-        authProvider.overrideWith(() => FakeAuthNotifier()),
         timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1500)),

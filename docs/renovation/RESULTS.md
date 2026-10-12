@@ -12,7 +12,7 @@ The approved renovation adds a local, typed Riya action registry with confirmati
 
 This is a completed implementation of the approved local scope, **not a claim that every screen has passed physical-device, accessibility or performance certification**. Onboarding, account security, comprehensive backup, universal search and additional assistant operations remain proposals. The user approved the scoped Riya architecture and warm historical theme restoration. The APK was initially prepared for later installation. After the user connected the phone and authorized installation, ADB installed version 1.0.6 (7) successfully on 12 October 2026; package metadata and a live app process confirmed the installed version and launch.
 
-The preimplementation deliverables A–F are in [AUDIT.md](AUDIT.md), including the screen inventory, concrete UX audit, original 16-point baseline, feature connections, capability matrix and prioritized roadmap. [SOURCE_INVENTORY.md](SOURCE_INVENTORY.md) lists feature/shared classes and DAO operations. The historical audit records what existed before these edits.
+The preimplementation deliverables A–F are in [AUDIT.md](AUDIT.md), including the screen inventory, concrete UX audit, original 16-point baseline, feature connections, capability matrix and prioritized roadmap. The generated source appendix was removed during later cleanup; current references are indexed in [../README.md](../README.md). The historical audit records what existed before these edits.
 
 ## Exact 16-point feedback status
 
@@ -37,7 +37,7 @@ The preimplementation deliverables A–F are in [AUDIT.md](AUDIT.md), including 
 | 15 | Thought readability and font | **Implemented.** Plus Jakarta Sans matches reminder content; less crowded header; quotes, multiline/emoji and larger controls; offline fonts included. | Real-font component renders, text/layout and stored-content regression checks. Comprehensive screen-reader testing pending. |
 | 16 | Conversational tone | **Implemented.** Brief greetings, thanks, light humor and useful limitations; proposals do not announce success; unavailable reads do not pretend records are empty. | Deterministic response and integration tests. This remains a local rules-based assistant. |
 
-The original 12 reflections, matching reminder font and multi-challenge request are tracked in [../../FEEDBACK_CHECKLIST.md](../../FEEDBACK_CHECKLIST.md). That file's 1.0.5 installation evidence belongs to the previous release. Multiple challenges have independent linked evidence, a status chooser, archive/history behavior and a persistent Home selection; two real Focus records exercise independent tracking in `reflections_feedback_test.dart`.
+The original reflections, matching reminder font and multi-challenge request were completed in the earlier 1.0.5 iteration; its superseded checklist was removed during later cleanup. Multiple challenges have independent linked evidence, a status chooser, archive/history behavior and a persistent Home selection; two real Focus records exercise independent tracking in `reflections_feedback_test.dart`.
 
 ## Screen and component changes, files and evidence
 

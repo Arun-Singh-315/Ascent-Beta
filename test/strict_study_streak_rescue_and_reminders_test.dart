@@ -6,19 +6,12 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
 
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_dismissible_reminders_section.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
-
-class FakeAuthNotifier extends AuthNotifier {
-  @override
-  AuthState build() =>
-      const AuthState(isAuthenticated: true, username: 'testuser');
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
