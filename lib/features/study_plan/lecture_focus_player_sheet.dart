@@ -31,7 +31,7 @@ class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
 }
 
 class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerSheet> {
-  bool _switcherExpanded = true;
+  bool _switcherExpanded = false;
 
   @override
   Widget build(BuildContext context) {

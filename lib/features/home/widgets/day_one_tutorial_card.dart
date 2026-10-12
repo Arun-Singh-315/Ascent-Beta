@@ -46,7 +46,6 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
 
     final g = context.glass;
     final firstName = widget.userName.trim().split(' ').first;
-    final displayName = firstName.isNotEmpty ? firstName : 'Friend';
 
     return Padding(
       padding: const EdgeInsets.only(top: 14),
@@ -115,7 +114,9 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
 
             // Greeting
             Text(
-              'Welcome, $displayName! Here\'s how Ascent works:',
+              firstName.isEmpty
+                  ? 'Welcome to your space! Here\'s how Ascent works:'
+                  : 'Welcome, $firstName! Here\'s how Ascent works:',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 15.5,
                 fontWeight: FontWeight.w700,

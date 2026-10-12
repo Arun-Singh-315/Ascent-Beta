@@ -218,6 +218,16 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
   }
 
   /// Adds strictly verified study seconds (e.g. from Lecture player tick or active Study session).
+  int? _lastCreditedSecond;
+
+  /// Concurrent Study Focus and Learning credit one real second, once.
+  void creditActiveSecond(DateTime at) {
+    final epoch = at.millisecondsSinceEpoch ~/ 1000;
+    if (_lastCreditedSecond == epoch) return;
+    _lastCreditedSecond = epoch;
+    addStudySeconds(1);
+  }
+
   void addStudySeconds(int deltaSeconds) {
     if (deltaSeconds <= 0) return;
 

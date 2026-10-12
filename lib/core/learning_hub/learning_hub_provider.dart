@@ -62,7 +62,8 @@ class LearningHubState {
         }
       }
     }
-    if (curCourse.modules.isNotEmpty && curCourse.modules.first.lectures.isNotEmpty) {
+    if (curCourse.modules.isNotEmpty &&
+        curCourse.modules.first.lectures.isNotEmpty) {
       return curCourse.modules.first.lectures.first;
     }
     return const Lecture(
@@ -101,7 +102,10 @@ class LearningHubState {
 
   double get progressFraction {
     if (activeLecture.durationSeconds <= 0) return 0.0;
-    return (currentElapsedSeconds / activeLecture.durationSeconds).clamp(0.0, 1.0);
+    return (currentElapsedSeconds / activeLecture.durationSeconds).clamp(
+      0.0,
+      1.0,
+    );
   }
 
   int get progressPercent => (progressFraction * 100).round();
@@ -135,7 +139,8 @@ class LearningHubState {
       activeCourseId: activeCourseId ?? this.activeCourseId,
       activeLectureId: activeLectureId ?? this.activeLectureId,
       isPlaying: isPlaying ?? this.isPlaying,
-      currentElapsedSeconds: currentElapsedSeconds ?? this.currentElapsedSeconds,
+      currentElapsedSeconds:
+          currentElapsedSeconds ?? this.currentElapsedSeconds,
       isLiveFocusActive: isLiveFocusActive ?? this.isLiveFocusActive,
       isFloatingDismissed: isFloatingDismissed ?? this.isFloatingDismissed,
       playStartedAt: playStartedAt ?? this.playStartedAt,
@@ -157,7 +162,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       final curCourse = state.course;
       final sessionLabel = '${curCourse.title}: ${activeLec.title}';
 
-      final existing = await sessionDao.getTodayActiveOrPausedSessionByLabel(sessionLabel);
+      final existing = await sessionDao.getTodayActiveOrPausedSessionByLabel(
+        sessionLabel,
+      );
       if (existing != null) {
         _activeSessionId = existing.id;
         if (existing.status == 'paused') {
@@ -173,7 +180,10 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         );
       }
       if (_activeSessionId != null) {
-        await sessionDao.heartbeat(_activeSessionId!, state.currentElapsedSeconds);
+        await sessionDao.heartbeat(
+          _activeSessionId!,
+          state.currentElapsedSeconds,
+        );
       }
     } catch (_) {}
   }
@@ -209,17 +219,22 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   LearningHubState build() {
     final prefs = ref.watch(sharedPreferencesProvider);
     final initialCourses = _loadStoredCourses(prefs);
-    final activeCourseId = prefs.getString(_kActiveCourseIdKey) ??
-        (initialCourses.isNotEmpty ? initialCourses.first.id : 'spring_boot_mastery');
+    final activeCourseId =
+        prefs.getString(_kActiveCourseIdKey) ??
+        (initialCourses.isNotEmpty
+            ? initialCourses.first.id
+            : 'spring_boot_mastery');
 
     Course activeCourse = initialCourses.firstWhere(
       (c) => c.id == activeCourseId,
       orElse: () => initialCourses.first,
     );
 
-    final activeLectureId = prefs.getInt(_kActiveLectureIdKey) ??
+    final activeLectureId =
+        prefs.getInt(_kActiveLectureIdKey) ??
         prefs.getInt(_kLegacyActiveLectureIdKey) ??
-        (activeCourse.modules.isNotEmpty && activeCourse.modules.first.lectures.isNotEmpty
+        (activeCourse.modules.isNotEmpty &&
+                activeCourse.modules.first.lectures.isNotEmpty
             ? activeCourse.modules.first.lectures.first.id
             : 1);
 
@@ -240,10 +255,13 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       }
     }
 
-    final hasStarted = prefs.getBool(_kHasStartedLearningKey) ??
-        initialCourses.any((c) =>
-            c.completedLectures > 0 ||
-            c.modules.any((m) => m.lectures.any((l) => l.elapsedSeconds > 0)));
+    final hasStarted =
+        prefs.getBool(_kHasStartedLearningKey) ??
+        initialCourses.any(
+          (c) =>
+              c.completedLectures > 0 ||
+              c.modules.any((m) => m.lectures.any((l) => l.elapsedSeconds > 0)),
+        );
 
     ref.onDispose(() {
       _ticker?.cancel();
@@ -265,7 +283,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     if (rawJson != null) {
       try {
         final List<dynamic> list = jsonDecode(rawJson);
-        final courses = list.map((item) => Course.fromJson(item as Map<String, dynamic>)).toList();
+        final courses = list
+            .map((item) => Course.fromJson(item as Map<String, dynamic>))
+            .toList();
         if (courses.isNotEmpty) {
           final javaCourse = buildCompleteJava2026Course();
           if (!courses.any((c) => c.id == javaCourse.id)) {
@@ -291,7 +311,8 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
             final key = lecture.id.toString();
             if (data.containsKey(key)) {
               final item = data[key] as Map<String, dynamic>;
-              final elapsed = (item['elapsed'] as num?)?.toInt() ?? lecture.elapsedSeconds;
+              final elapsed =
+                  (item['elapsed'] as num?)?.toInt() ?? lecture.elapsedSeconds;
               final completed = item['completed'] == true;
               return lecture.copyWith(
                 elapsedSeconds: elapsed,
@@ -341,7 +362,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
               targetCompletionDate: drift.Value(c.targetCompletionDate),
               daysLeft: drift.Value(c.daysLeft),
               targetMinutesPerDay: drift.Value(c.targetMinutesPerDay),
-              modulesJson: jsonEncode(c.modules.map((m) => m.toJson()).toList()),
+              modulesJson: jsonEncode(
+                c.modules.map((m) => m.toJson()).toList(),
+              ),
               updatedAt: drift.Value(DateTime.now()),
             ),
           );
@@ -380,11 +403,12 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _syncStartSession(now);
 
     NotificationService.instance.showOngoingSessionNotification(
-      title: 'Playing: ${state.activeLecture.title}',
-      body: '${state.course.title} • Ascent Study Player',
+      title: state.activeLecture.title,
+      body: state.course.title,
       subText: 'Lecture Active',
       elapsedSeconds: state.sessionBaseElapsed,
       payload: '/learning',
+      totalSeconds: state.activeLecture.durationSeconds,
     );
 
     _ticker?.cancel();
@@ -397,11 +421,13 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       final newElapsed = state.sessionBaseElapsed + diff;
 
       // Increment active study watch seconds for strict study streak
-      ref.read(studyStreakProvider.notifier).addStudySeconds(1);
+      ref.read(studyStreakProvider.notifier).creditActiveSecond(DateTime.now());
 
       // Periodic 5s heartbeat to SQLite time session
       if (diff > 0 && diff % 5 == 0 && _activeSessionId != null) {
-        ref.read(timeSessionDaoProvider).heartbeat(_activeSessionId!, newElapsed);
+        ref
+            .read(timeSessionDaoProvider)
+            .heartbeat(_activeSessionId!, newElapsed);
       }
 
       if (active.durationSeconds > 0 && newElapsed >= active.durationSeconds) {
@@ -426,12 +452,13 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _persistCourses();
     if (updateNotification) {
       NotificationService.instance.showOngoingSessionNotification(
-        title: 'Lecture: ${state.activeLecture.title}',
-        body: '${state.course.title} • Ascent Study Player',
+        title: state.activeLecture.title,
+        body: state.course.title,
         subText: 'Lecture Paused',
         elapsedSeconds: state.currentElapsedSeconds,
         isPaused: true,
         payload: '/learning',
+        totalSeconds: state.activeLecture.durationSeconds,
       );
     } else {
       NotificationService.instance.cancelOngoingLectureNotification();
@@ -454,7 +481,10 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   void seekBy(int offsetSeconds) {
     final active = state.activeLecture;
     final maxDur = active.durationSeconds > 0 ? active.durationSeconds : 3600;
-    final target = (state.currentElapsedSeconds + offsetSeconds).clamp(0, maxDur);
+    final target = (state.currentElapsedSeconds + offsetSeconds).clamp(
+      0,
+      maxDur,
+    );
 
     final now = DateTime.now();
     state = state.copyWith(
@@ -464,12 +494,23 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     );
     _updateCurrentLectureInCourse(target, active.isCompleted);
     _persistCourses();
+    NotificationService.instance.showOngoingSessionNotification(
+      title: state.activeLecture.title,
+      body: state.course.title,
+      elapsedSeconds: state.currentElapsedSeconds,
+      isPaused: !state.isPlaying,
+      payload: '/learning',
+      totalSeconds: state.activeLecture.durationSeconds,
+    );
   }
 
   void seekTo(double fraction) {
     final active = state.activeLecture;
     if (active.durationSeconds <= 0) return;
-    final target = (active.durationSeconds * fraction).round().clamp(0, active.durationSeconds);
+    final target = (active.durationSeconds * fraction).round().clamp(
+      0,
+      active.durationSeconds,
+    );
 
     final now = DateTime.now();
     state = state.copyWith(
@@ -479,11 +520,21 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     );
     _updateCurrentLectureInCourse(target, active.isCompleted);
     _persistCourses();
+    NotificationService.instance.showOngoingSessionNotification(
+      title: state.activeLecture.title,
+      body: state.course.title,
+      elapsedSeconds: state.currentElapsedSeconds,
+      isPaused: !state.isPlaying,
+      payload: '/learning',
+      totalSeconds: state.activeLecture.durationSeconds,
+    );
   }
 
   void _unDismissLecture(int lectureId) {
     try {
-      ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId('lecture_$lectureId');
+      ref
+          .read(dismissedTodayActivityIdsProvider.notifier)
+          .unDismissActivityId('lecture_$lectureId');
     } catch (_) {}
   }
 
@@ -537,7 +588,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
     if (markValue && lectureId == state.activeLectureId) {
       // Advance to next lecture if available
-      final allLectures = state.course.modules.expand((m) => m.lectures).toList();
+      final allLectures = state.course.modules
+          .expand((m) => m.lectures)
+          .toList();
       final currentIndex = allLectures.indexWhere((l) => l.id == lectureId);
       if (currentIndex != -1 && currentIndex + 1 < allLectures.length) {
         final nextLec = allLectures[currentIndex + 1];
@@ -547,7 +600,6 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       }
     }
   }
-
 
   void switchCourse(String courseId) {
     if (courseId == state.activeCourseId) return;
@@ -570,7 +622,8 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     final nextUnfinished = target.nextLecture;
     if (nextUnfinished != null) {
       active = nextUnfinished;
-    } else if (target.modules.isNotEmpty && target.modules.first.lectures.isNotEmpty) {
+    } else if (target.modules.isNotEmpty &&
+        target.modules.first.lectures.isNotEmpty) {
       active = target.modules.first.lectures.first;
     }
 
@@ -597,7 +650,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   void updateCourse(Course course) {
-    final updated = state.courses.map((c) => c.id == course.id ? course : c).toList();
+    final updated = state.courses
+        .map((c) => c.id == course.id ? course : c)
+        .toList();
     state = state.copyWith(courses: updated);
     _persistCourses();
   }
@@ -605,7 +660,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   void deleteCourse(String courseId) {
     if (state.courses.length <= 1) return; // Keep at least one course
     final updated = state.courses.where((c) => c.id != courseId).toList();
-    final nextCourseId = courseId == state.activeCourseId ? updated.first.id : state.activeCourseId;
+    final nextCourseId = courseId == state.activeCourseId
+        ? updated.first.id
+        : state.activeCourseId;
     state = state.copyWith(courses: updated);
     _persistCourses();
     if (courseId == state.activeCourseId) {
@@ -622,14 +679,18 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
   void updateModule(String courseId, CourseModule module) {
     final course = state.courses.firstWhere((c) => c.id == courseId);
-    final updatedModules = course.modules.map((m) => m.id == module.id ? module : m).toList();
+    final updatedModules = course.modules
+        .map((m) => m.id == module.id ? module : m)
+        .toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
     updateCourse(updatedCourse);
   }
 
   void deleteModule(String courseId, int moduleId) {
     final course = state.courses.firstWhere((c) => c.id == courseId);
-    final updatedModules = course.modules.where((m) => m.id != moduleId).toList();
+    final updatedModules = course.modules
+        .where((m) => m.id != moduleId)
+        .toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
     updateCourse(updatedCourse);
   }
@@ -650,7 +711,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = course.modules.map((m) {
       if (m.id == lecture.moduleId) {
-        final updatedLectures = m.lectures.map((l) => l.id == lecture.id ? lecture : l).toList();
+        final updatedLectures = m.lectures
+            .map((l) => l.id == lecture.id ? lecture : l)
+            .toList();
         return m.copyWith(lectures: updatedLectures);
       }
       return m;
@@ -662,7 +725,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   void deleteLecture(String courseId, int lectureId) {
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = course.modules.map((m) {
-      final updatedLectures = m.lectures.where((l) => l.id != lectureId).toList();
+      final updatedLectures = m.lectures
+          .where((l) => l.id != lectureId)
+          .toList();
       return m.copyWith(lectures: updatedLectures);
     }).toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
@@ -677,7 +742,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     state = state.copyWith(isFloatingDismissed: false);
   }
 
-  void _updateCurrentLectureInCourse(int? elapsed, bool isCompleted, {int? targetLectureId}) {
+  void _updateCurrentLectureInCourse(
+    int? elapsed,
+    bool isCompleted, {
+    int? targetLectureId,
+  }) {
     final targetId = targetLectureId ?? state.activeLectureId;
     final activeC = state.course;
 
@@ -703,11 +772,14 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     }).toList();
 
     final updatedCourse = activeC.copyWith(modules: updatedModules);
-    final updatedCourses = state.courses.map((c) => c.id == updatedCourse.id ? updatedCourse : c).toList();
+    final updatedCourses = state.courses
+        .map((c) => c.id == updatedCourse.id ? updatedCourse : c)
+        .toList();
     state = state.copyWith(courses: updatedCourses);
   }
 }
 
-final learningHubProvider = NotifierProvider<LearningHubNotifier, LearningHubState>(
-  LearningHubNotifier.new,
-);
+final learningHubProvider =
+    NotifierProvider<LearningHubNotifier, LearningHubState>(
+      LearningHubNotifier.new,
+    );

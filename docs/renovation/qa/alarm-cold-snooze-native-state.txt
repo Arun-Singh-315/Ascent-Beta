@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <string name="alarm_3">{&quot;id&quot;:3,&quot;title&quot;:&quot;QA alarm: call the accountant&quot;,&quot;at&quot;:1791789035441}</string>
+    <string name="ringing">[]</string>
+    <string name="events">[{&quot;id&quot;:3,&quot;action&quot;:&quot;snooze&quot;,&quot;at&quot;:1791789035441,&quot;token&quot;:&quot;fcacce4f-3f9c-4e5d-afc1-bf5abc1cfd2a&quot;}]</string>
+</map>

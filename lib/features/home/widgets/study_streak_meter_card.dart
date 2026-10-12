@@ -1,3 +1,4 @@
+import '../../../core/streak/streak_explanation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -43,7 +44,10 @@ class StudyStreakMeterCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Top Row: Streak Flame + Stats ──
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -95,27 +99,8 @@ class StudyStreakMeterCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Spacer(),
                 Text(
                   'Longest: ${status.longestStreakDays}d',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: g.inkMuted,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 3,
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: g.inkMuted,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Base: ${status.shortestStreakDays}d',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
@@ -312,6 +297,53 @@ class StudyStreakMeterCard extends StatelessWidget {
                       : (status.isRescueMode
                             ? Colors.amber
                             : (status.isUrgent ? Colors.redAccent : g.clay)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Only active Study Focus and Learning time counts.',
+              style: TextStyle(color: g.inkMuted, fontSize: 12),
+            ),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                foregroundColor: g.clay,
+              ),
+              icon: const Icon(Icons.info_outline, size: 17),
+              label: const Text('How your streak works'),
+              onPressed: () => showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                builder: (ctx) => DraggableScrollableSheet(
+                  expand: false,
+                  initialChildSize: 0.7,
+                  minChildSize: 0.4,
+                  maxChildSize: 0.95,
+                  builder: (ctx, controller) => ListView(
+                    controller: controller,
+                    padding: const EdgeInsets.all(24),
+                    children: [
+                      const Text(
+                        'How your streak works',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        streakExplanation(status),
+                        style: const TextStyle(height: 1.6),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Got it'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

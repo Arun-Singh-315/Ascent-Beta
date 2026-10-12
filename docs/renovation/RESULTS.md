@@ -1,5 +1,9 @@
 # Ascent · Mind Space renovation results
 
+Latest follow-up: [Learning and notification flow · 1.0.8 (9)](LEARNING_ALERTS_RESULTS.md).
+
+Follow-up quality upgrade: [1.0.7 (8) implementation and verification](QUALITY_UPGRADE.md). That follow-up supersedes this historical report’s onboarding and backup limitations.
+
 12 October 2026 · Flutter/Riverpod/Drift retained · Android release 1.0.6 (7).
 
 ## Outcome and scope

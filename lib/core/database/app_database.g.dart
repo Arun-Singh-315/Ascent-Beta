@@ -8057,6 +8057,21 @@ class $ReminderTableTable extends ReminderTable
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _alarmEnabledMeta = const VerificationMeta(
+    'alarmEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> alarmEnabled = GeneratedColumn<bool>(
+    'alarm_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("alarm_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
   );
@@ -8090,6 +8105,7 @@ class $ReminderTableTable extends ReminderTable
     title,
     linkedTaskId,
     scheduledAt,
+    alarmEnabled,
     isActive,
     createdAt,
   ];
@@ -8136,6 +8152,15 @@ class $ReminderTableTable extends ReminderTable
     } else if (isInserting) {
       context.missing(_scheduledAtMeta);
     }
+    if (data.containsKey('alarm_enabled')) {
+      context.handle(
+        _alarmEnabledMeta,
+        alarmEnabled.isAcceptableOrUnknown(
+          data['alarm_enabled']!,
+          _alarmEnabledMeta,
+        ),
+      );
+    }
     if (data.containsKey('is_active')) {
       context.handle(
         _isActiveMeta,
@@ -8173,6 +8198,10 @@ class $ReminderTableTable extends ReminderTable
         DriftSqlType.dateTime,
         data['${effectivePrefix}scheduled_at'],
       )!,
+      alarmEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}alarm_enabled'],
+      )!,
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -8203,6 +8232,8 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   final DateTime scheduledAt;
 
   /// Whether notification is active.
+  /// Explicit opt-in; existing and new reminders remain quiet by default.
+  final bool alarmEnabled;
   final bool isActive;
   final DateTime createdAt;
   const Reminder({
@@ -8210,6 +8241,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     required this.title,
     this.linkedTaskId,
     required this.scheduledAt,
+    required this.alarmEnabled,
     required this.isActive,
     required this.createdAt,
   });
@@ -8222,6 +8254,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       map['linked_task_id'] = Variable<int>(linkedTaskId);
     }
     map['scheduled_at'] = Variable<DateTime>(scheduledAt);
+    map['alarm_enabled'] = Variable<bool>(alarmEnabled);
     map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -8235,6 +8268,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           ? const Value.absent()
           : Value(linkedTaskId),
       scheduledAt: Value(scheduledAt),
+      alarmEnabled: Value(alarmEnabled),
       isActive: Value(isActive),
       createdAt: Value(createdAt),
     );
@@ -8250,6 +8284,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       title: serializer.fromJson<String>(json['title']),
       linkedTaskId: serializer.fromJson<int?>(json['linkedTaskId']),
       scheduledAt: serializer.fromJson<DateTime>(json['scheduledAt']),
+      alarmEnabled: serializer.fromJson<bool>(json['alarmEnabled']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -8262,6 +8297,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       'title': serializer.toJson<String>(title),
       'linkedTaskId': serializer.toJson<int?>(linkedTaskId),
       'scheduledAt': serializer.toJson<DateTime>(scheduledAt),
+      'alarmEnabled': serializer.toJson<bool>(alarmEnabled),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -8272,6 +8308,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     String? title,
     Value<int?> linkedTaskId = const Value.absent(),
     DateTime? scheduledAt,
+    bool? alarmEnabled,
     bool? isActive,
     DateTime? createdAt,
   }) => Reminder(
@@ -8279,6 +8316,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     title: title ?? this.title,
     linkedTaskId: linkedTaskId.present ? linkedTaskId.value : this.linkedTaskId,
     scheduledAt: scheduledAt ?? this.scheduledAt,
+    alarmEnabled: alarmEnabled ?? this.alarmEnabled,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -8292,6 +8330,9 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       scheduledAt: data.scheduledAt.present
           ? data.scheduledAt.value
           : this.scheduledAt,
+      alarmEnabled: data.alarmEnabled.present
+          ? data.alarmEnabled.value
+          : this.alarmEnabled,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -8304,6 +8345,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           ..write('title: $title, ')
           ..write('linkedTaskId: $linkedTaskId, ')
           ..write('scheduledAt: $scheduledAt, ')
+          ..write('alarmEnabled: $alarmEnabled, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -8311,8 +8353,15 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, title, linkedTaskId, scheduledAt, isActive, createdAt);
+  int get hashCode => Object.hash(
+    id,
+    title,
+    linkedTaskId,
+    scheduledAt,
+    alarmEnabled,
+    isActive,
+    createdAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -8321,6 +8370,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           other.title == this.title &&
           other.linkedTaskId == this.linkedTaskId &&
           other.scheduledAt == this.scheduledAt &&
+          other.alarmEnabled == this.alarmEnabled &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
 }
@@ -8330,6 +8380,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
   final Value<String> title;
   final Value<int?> linkedTaskId;
   final Value<DateTime> scheduledAt;
+  final Value<bool> alarmEnabled;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
   const ReminderTableCompanion({
@@ -8337,6 +8388,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     this.title = const Value.absent(),
     this.linkedTaskId = const Value.absent(),
     this.scheduledAt = const Value.absent(),
+    this.alarmEnabled = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -8345,6 +8397,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     required String title,
     this.linkedTaskId = const Value.absent(),
     required DateTime scheduledAt,
+    this.alarmEnabled = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title),
@@ -8354,6 +8407,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     Expression<String>? title,
     Expression<int>? linkedTaskId,
     Expression<DateTime>? scheduledAt,
+    Expression<bool>? alarmEnabled,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
   }) {
@@ -8362,6 +8416,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
       if (title != null) 'title': title,
       if (linkedTaskId != null) 'linked_task_id': linkedTaskId,
       if (scheduledAt != null) 'scheduled_at': scheduledAt,
+      if (alarmEnabled != null) 'alarm_enabled': alarmEnabled,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -8372,6 +8427,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     Value<String>? title,
     Value<int?>? linkedTaskId,
     Value<DateTime>? scheduledAt,
+    Value<bool>? alarmEnabled,
     Value<bool>? isActive,
     Value<DateTime>? createdAt,
   }) {
@@ -8380,6 +8436,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
       title: title ?? this.title,
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       scheduledAt: scheduledAt ?? this.scheduledAt,
+      alarmEnabled: alarmEnabled ?? this.alarmEnabled,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -8400,6 +8457,9 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     if (scheduledAt.present) {
       map['scheduled_at'] = Variable<DateTime>(scheduledAt.value);
     }
+    if (alarmEnabled.present) {
+      map['alarm_enabled'] = Variable<bool>(alarmEnabled.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -8416,6 +8476,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
           ..write('title: $title, ')
           ..write('linkedTaskId: $linkedTaskId, ')
           ..write('scheduledAt: $scheduledAt, ')
+          ..write('alarmEnabled: $alarmEnabled, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -11571,6 +11632,229 @@ class AiCommandTableCompanion extends UpdateCompanion<AiCommandReceipt> {
           ..write('argumentsJson: $argumentsJson, ')
           ..write('resultJson: $resultJson, ')
           ..write('completedAt: $completedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BackupRestoreTableTable extends BackupRestoreTable
+    with TableInfo<$BackupRestoreTableTable, BackupRestoreTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BackupRestoreTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _preferencesJsonMeta = const VerificationMeta(
+    'preferencesJson',
+  );
+  @override
+  late final GeneratedColumn<String> preferencesJson = GeneratedColumn<String>(
+    'preferences_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, preferencesJson];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'backup_restore_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BackupRestoreTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('preferences_json')) {
+      context.handle(
+        _preferencesJsonMeta,
+        preferencesJson.isAcceptableOrUnknown(
+          data['preferences_json']!,
+          _preferencesJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_preferencesJsonMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BackupRestoreTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BackupRestoreTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      preferencesJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preferences_json'],
+      )!,
+    );
+  }
+
+  @override
+  $BackupRestoreTableTable createAlias(String alias) {
+    return $BackupRestoreTableTable(attachedDatabase, alias);
+  }
+}
+
+class BackupRestoreTableData extends DataClass
+    implements Insertable<BackupRestoreTableData> {
+  final String id;
+  final String preferencesJson;
+  const BackupRestoreTableData({
+    required this.id,
+    required this.preferencesJson,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['preferences_json'] = Variable<String>(preferencesJson);
+    return map;
+  }
+
+  BackupRestoreTableCompanion toCompanion(bool nullToAbsent) {
+    return BackupRestoreTableCompanion(
+      id: Value(id),
+      preferencesJson: Value(preferencesJson),
+    );
+  }
+
+  factory BackupRestoreTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BackupRestoreTableData(
+      id: serializer.fromJson<String>(json['id']),
+      preferencesJson: serializer.fromJson<String>(json['preferencesJson']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'preferencesJson': serializer.toJson<String>(preferencesJson),
+    };
+  }
+
+  BackupRestoreTableData copyWith({String? id, String? preferencesJson}) =>
+      BackupRestoreTableData(
+        id: id ?? this.id,
+        preferencesJson: preferencesJson ?? this.preferencesJson,
+      );
+  BackupRestoreTableData copyWithCompanion(BackupRestoreTableCompanion data) {
+    return BackupRestoreTableData(
+      id: data.id.present ? data.id.value : this.id,
+      preferencesJson: data.preferencesJson.present
+          ? data.preferencesJson.value
+          : this.preferencesJson,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BackupRestoreTableData(')
+          ..write('id: $id, ')
+          ..write('preferencesJson: $preferencesJson')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, preferencesJson);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BackupRestoreTableData &&
+          other.id == this.id &&
+          other.preferencesJson == this.preferencesJson);
+}
+
+class BackupRestoreTableCompanion
+    extends UpdateCompanion<BackupRestoreTableData> {
+  final Value<String> id;
+  final Value<String> preferencesJson;
+  final Value<int> rowid;
+  const BackupRestoreTableCompanion({
+    this.id = const Value.absent(),
+    this.preferencesJson = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BackupRestoreTableCompanion.insert({
+    required String id,
+    required String preferencesJson,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       preferencesJson = Value(preferencesJson);
+  static Insertable<BackupRestoreTableData> custom({
+    Expression<String>? id,
+    Expression<String>? preferencesJson,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (preferencesJson != null) 'preferences_json': preferencesJson,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BackupRestoreTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? preferencesJson,
+    Value<int>? rowid,
+  }) {
+    return BackupRestoreTableCompanion(
+      id: id ?? this.id,
+      preferencesJson: preferencesJson ?? this.preferencesJson,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (preferencesJson.present) {
+      map['preferences_json'] = Variable<String>(preferencesJson.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BackupRestoreTableCompanion(')
+          ..write('id: $id, ')
+          ..write('preferencesJson: $preferencesJson, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -19096,6 +19380,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AiChatMessageTableTable aiChatMessageTable =
       $AiChatMessageTableTable(this);
   late final $AiCommandTableTable aiCommandTable = $AiCommandTableTable(this);
+  late final $BackupRestoreTableTable backupRestoreTable =
+      $BackupRestoreTableTable(this);
   late final $WaterLogTableTable waterLogTable = $WaterLogTableTable(this);
   late final $WaterGoalTableTable waterGoalTable = $WaterGoalTableTable(this);
   late final $ThoughtTableTable thoughtTable = $ThoughtTableTable(this);
@@ -19180,6 +19466,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     dailyActivityGoalTable,
     aiChatMessageTable,
     aiCommandTable,
+    backupRestoreTable,
     waterLogTable,
     waterGoalTable,
     thoughtTable,
@@ -25358,6 +25645,7 @@ typedef $$ReminderTableTableCreateCompanionBuilder =
       required String title,
       Value<int?> linkedTaskId,
       required DateTime scheduledAt,
+      Value<bool> alarmEnabled,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
@@ -25367,6 +25655,7 @@ typedef $$ReminderTableTableUpdateCompanionBuilder =
       Value<String> title,
       Value<int?> linkedTaskId,
       Value<DateTime> scheduledAt,
+      Value<bool> alarmEnabled,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
@@ -25438,6 +25727,11 @@ class $$ReminderTableTableFilterComposer
 
   ColumnFilters<DateTime> get scheduledAt => $composableBuilder(
     column: $table.scheduledAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get alarmEnabled => $composableBuilder(
+    column: $table.alarmEnabled,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25524,6 +25818,11 @@ class $$ReminderTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get alarmEnabled => $composableBuilder(
+    column: $table.alarmEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnOrderings(column),
@@ -25575,6 +25874,11 @@ class $$ReminderTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get scheduledAt => $composableBuilder(
     column: $table.scheduledAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get alarmEnabled => $composableBuilder(
+    column: $table.alarmEnabled,
     builder: (column) => column,
   );
 
@@ -25665,6 +25969,7 @@ class $$ReminderTableTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<int?> linkedTaskId = const Value.absent(),
                 Value<DateTime> scheduledAt = const Value.absent(),
+                Value<bool> alarmEnabled = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ReminderTableCompanion(
@@ -25672,6 +25977,7 @@ class $$ReminderTableTableTableManager
                 title: title,
                 linkedTaskId: linkedTaskId,
                 scheduledAt: scheduledAt,
+                alarmEnabled: alarmEnabled,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
@@ -25681,6 +25987,7 @@ class $$ReminderTableTableTableManager
                 required String title,
                 Value<int?> linkedTaskId = const Value.absent(),
                 required DateTime scheduledAt,
+                Value<bool> alarmEnabled = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ReminderTableCompanion.insert(
@@ -25688,6 +25995,7 @@ class $$ReminderTableTableTableManager
                 title: title,
                 linkedTaskId: linkedTaskId,
                 scheduledAt: scheduledAt,
+                alarmEnabled: alarmEnabled,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
@@ -27547,6 +27855,175 @@ typedef $$AiCommandTableTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $AiCommandTableTable, AiCommandReceipt>,
       ),
       AiCommandReceipt,
+      PrefetchHooks Function()
+    >;
+typedef $$BackupRestoreTableTableCreateCompanionBuilder =
+    BackupRestoreTableCompanion Function({
+      required String id,
+      required String preferencesJson,
+      Value<int> rowid,
+    });
+typedef $$BackupRestoreTableTableUpdateCompanionBuilder =
+    BackupRestoreTableCompanion Function({
+      Value<String> id,
+      Value<String> preferencesJson,
+      Value<int> rowid,
+    });
+
+class $$BackupRestoreTableTableFilterComposer
+    extends Composer<_$AppDatabase, $BackupRestoreTableTable> {
+  $$BackupRestoreTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get preferencesJson => $composableBuilder(
+    column: $table.preferencesJson,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$BackupRestoreTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $BackupRestoreTableTable> {
+  $$BackupRestoreTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get preferencesJson => $composableBuilder(
+    column: $table.preferencesJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$BackupRestoreTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BackupRestoreTableTable> {
+  $$BackupRestoreTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get preferencesJson => $composableBuilder(
+    column: $table.preferencesJson,
+    builder: (column) => column,
+  );
+}
+
+class $$BackupRestoreTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BackupRestoreTableTable,
+          BackupRestoreTableData,
+          $$BackupRestoreTableTableFilterComposer,
+          $$BackupRestoreTableTableOrderingComposer,
+          $$BackupRestoreTableTableAnnotationComposer,
+          $$BackupRestoreTableTableCreateCompanionBuilder,
+          $$BackupRestoreTableTableUpdateCompanionBuilder,
+          (
+            BackupRestoreTableData,
+            BaseReferences<
+              _$AppDatabase,
+              $BackupRestoreTableTable,
+              BackupRestoreTableData
+            >,
+          ),
+          BackupRestoreTableData,
+          PrefetchHooks Function()
+        > {
+  $$BackupRestoreTableTableTableManager(
+    _$AppDatabase db,
+    $BackupRestoreTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BackupRestoreTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BackupRestoreTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BackupRestoreTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> preferencesJson = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BackupRestoreTableCompanion(
+                id: id,
+                preferencesJson: preferencesJson,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String preferencesJson,
+                Value<int> rowid = const Value.absent(),
+              }) => BackupRestoreTableCompanion.insert(
+                id: id,
+                preferencesJson: preferencesJson,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$BackupRestoreTableTable, BackupRestoreTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $BackupRestoreTableTable,
+                    BackupRestoreTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$BackupRestoreTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BackupRestoreTableTable,
+      BackupRestoreTableData,
+      $$BackupRestoreTableTableFilterComposer,
+      $$BackupRestoreTableTableOrderingComposer,
+      $$BackupRestoreTableTableAnnotationComposer,
+      $$BackupRestoreTableTableCreateCompanionBuilder,
+      $$BackupRestoreTableTableUpdateCompanionBuilder,
+      (
+        BackupRestoreTableData,
+        BaseReferences<
+          _$AppDatabase,
+          $BackupRestoreTableTable,
+          BackupRestoreTableData
+        >,
+      ),
+      BackupRestoreTableData,
       PrefetchHooks Function()
     >;
 typedef $$WaterLogTableTableCreateCompanionBuilder =
@@ -32657,6 +33134,8 @@ class $AppDatabaseManager {
       $$AiChatMessageTableTableTableManager(_db, _db.aiChatMessageTable);
   $$AiCommandTableTableTableManager get aiCommandTable =>
       $$AiCommandTableTableTableManager(_db, _db.aiCommandTable);
+  $$BackupRestoreTableTableTableManager get backupRestoreTable =>
+      $$BackupRestoreTableTableTableManager(_db, _db.backupRestoreTable);
   $$WaterLogTableTableTableManager get waterLogTable =>
       $$WaterLogTableTableTableManager(_db, _db.waterLogTable);
   $$WaterGoalTableTableTableManager get waterGoalTable =>

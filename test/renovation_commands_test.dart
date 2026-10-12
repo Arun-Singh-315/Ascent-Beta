@@ -425,6 +425,8 @@ void main() {
       await stored.close();
       final old = sqlite.sqlite3.open(file.path);
       old.execute('DROP TABLE ai_command_table');
+      old.execute('DROP TABLE backup_restore_state');
+      old.execute('ALTER TABLE reminders DROP COLUMN alarm_enabled');
       old.execute('PRAGMA user_version = 12');
       old.close();
       stored = AppDatabase.forTesting(NativeDatabase(file));

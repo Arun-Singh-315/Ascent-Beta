@@ -23,6 +23,7 @@ import 'tables/finance_tables.dart';
 import 'tables/walk_tables.dart';
 import 'tables/ai_chat_tables.dart';
 import 'tables/ai_command_table.dart';
+import 'tables/backup_restore_table.dart';
 import 'tables/water_tables.dart';
 import 'tables/thought_tables.dart';
 import 'tables/course_table.dart';
@@ -79,6 +80,7 @@ part 'daos/medicine_dao.dart';
     DailyActivityGoalTable,
     AiChatMessageTable,
     AiCommandTable,
+    BackupRestoreTable,
     WaterLogTable,
     WaterGoalTable,
     ThoughtTable,
@@ -122,7 +124,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -145,6 +147,10 @@ class AppDatabase extends _$AppDatabase {
       );
     },
     onUpgrade: (m, from, to) async {
+      if (from < 15) await m.addColumn(reminderTable, reminderTable.alarmEnabled);
+      if (from < 14) {
+        await m.createTable(backupRestoreTable);
+      }
       if (from < 2) {
         await m.addColumn(taskTable, taskTable.parentTaskId);
         await m.addColumn(taskTable, taskTable.linkedApplicationId);

@@ -63,9 +63,6 @@ class Course {
         if (!lecture.isCompleted) return lecture;
       }
     }
-    if (modules.isNotEmpty && modules.first.lectures.isNotEmpty) {
-      return modules.first.lectures.first;
-    }
     return null;
   }
 

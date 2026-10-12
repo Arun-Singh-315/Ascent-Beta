@@ -40,6 +40,7 @@ class InAppReminderDialog extends ConsumerWidget {
       id: reminder.id,
       title: reminder.title,
       scheduledAt: newScheduled,
+      alarmEnabled: reminder.alarmEnabled,
     );
 
     ref.invalidate(allRemindersProvider);
@@ -71,6 +72,7 @@ class InAppReminderDialog extends ConsumerWidget {
       id: reminder.id,
       title: reminder.title,
       scheduledAt: tomorrow9am,
+      alarmEnabled: reminder.alarmEnabled,
     );
 
     ref.invalidate(allRemindersProvider);

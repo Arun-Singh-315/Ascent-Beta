@@ -152,8 +152,8 @@ void main() {
     });
   });
 
-  group('Compulsory Onboarding Questions Enforcement Tests', () {
-    testWidgets('Onboarding step 0 requires name >= 2 chars and role before continuing', (tester) async {
+  group('Optional Career Onboarding Tests', () {
+    testWidgets('Onboarding offers Quick Start and allows a name without career details', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -171,15 +171,16 @@ void main() {
 
       // Verify prompt text
       expect(find.text('Your Name'), findsOneWidget);
-      expect(find.text('Target Role'), findsOneWidget);
-      expect(find.text('Enter your name to continue'), findsOneWidget);
+      expect(find.text('Target Role (optional)'), findsOneWidget);
+      expect(find.text('Start now'), findsOneWidget);
+      expect(find.text('Enter your name'), findsOneWidget);
 
       // Enter name
       await tester.enterText(find.byType(TextField).first, 'Arun');
       await tester.pump();
 
       // Now asks for target role
-      expect(find.text('Enter or select your target role'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
 
       // Tap role suggestion "Full Stack Engineer"
       await tester.tap(find.text('Full Stack Engineer'));

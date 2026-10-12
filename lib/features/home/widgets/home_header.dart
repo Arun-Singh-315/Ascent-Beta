@@ -34,10 +34,12 @@ class HomeHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final isDark = context.isDark;
-    final name = profile?.name.isNotEmpty == true ? profile!.name : 'Learner';
+    final name = profile?.name.isNotEmpty == true
+        ? profile!.name
+        : 'Your space';
     final role = profile?.targetRole.isNotEmpty == true
         ? profile!.targetRole
-        : 'Software Engineer';
+        : 'Your daily companion';
     final dateStr = DateFormat(
       'EEE, d MMM',
     ).format(DateTime.now()).toUpperCase();

@@ -1,0 +1,4 @@
+  * ServiceRecord{b653ce3 u0 com.arun.ascent.debug/com.arun.ascent.AlarmRingingService c:com.arun.ascent.debug}
+    intent={cmp=com.arun.ascent.debug/com.arun.ascent.AlarmRingingService}
+    infoAllowStartForeground=[callingPackage: com.arun.ascent.debug; callingUid: 10898; uidState: RCVR; uidBFSL: n/a; intent: Intent { xflg=0x4 cmp=com.arun.ascent.debug/com.arun.ascent.AlarmRingingService }; code:ALARM_MANAGER_ALARM_CLOCK; tempAllowListReason:<56637ae fire/u0,reasonCode:ALARM_MANAGER_ALARM_CLOCK,duration:10000,callingUid:10898>; allowWiu:-1; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+    isForeground=true foregroundId=1000002 types=0x00000002 foregroundNoti=Notification(channel=ascent_ringing_alarms_v1 shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=ONGOING_EVENT|NO_CLEAR|FOREGROUND_SERVICE|HIGH_PRIORITY color=0xffa95235 category=alarm actions=2 vis=PRIVATE)

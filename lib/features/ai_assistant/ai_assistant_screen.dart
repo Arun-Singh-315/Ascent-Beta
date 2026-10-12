@@ -192,6 +192,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                             id: id,
                             title: reminder.title,
                             scheduledAt: reminder.scheduledAt,
+                            alarmEnabled: reminder.alarmEnabled,
                             scheduleFollowUp: false,
                           );
                   alertsScheduled = alertsScheduled && scheduled;

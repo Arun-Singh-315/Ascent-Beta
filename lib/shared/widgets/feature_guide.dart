@@ -8,15 +8,15 @@ const featureGuides = <String, String>{
   'Challenge Partner':
       'Create · Add independent challenges.\nChoose · Tap a card for status; its home icon selects the preview.\nProgress · Linked study and Focus update active challenges.',
   'Reminders & Alerts':
-      'Create · Use + and choose a date and time.\nEdit · Tap a saved reminder.\nAlerts · Enable notifications for device reminders.',
+      'Create · Set a title, date and time. Normal notifications are the default.\nAlarm · Turn on Ring as an alarm for looping sound, Snooze and Done. Enable Android alarm access for popups.\nManage · Missed reminders stay Overdue. Snooze moves the time; Done completes the reminder, while tasks keep their own status.',
   'Focus Timer':
-      'Start · Choose a task and begin Focus.\nPause · Pause when stepping away; finish to save time.\nProgress · Saved sessions update linked tasks and challenges.',
+      'Start · Choose a timed task or a free Focus session. Study-category time counts toward the study streak; entertainment does not.\nControl · Pause when stepping away. Notification controls stay synchronized; tap the player card to return here.\nFinish · Save your session. Timed tasks complete only when their target is reached.',
   'Activity Hub':
       'Plan · Add a Todo or timed activity.\nComplete · Check Todos; use Focus for timed work.\nReturn · Add a reminder when useful.',
   'Today':
       'Plan · Add a Todo or timed activity.\nComplete · Check Todos; use Focus for timed work.\nEdit · Open an activity for its actions.',
   'Learning Hub':
-      'Create · Add a course, modules and lectures.\nStudy · Open a lecture to begin.\nTrack · Completions update linked challenges.',
+      'Next step · Start or resume from the top card. Search and filter courses to find what you need.\nSyllabus · Open a course for modules, lectures, editing and notes. The player tracks your study time.\nGoals · Course pace is a plan; the study streak needs 120 active study minutes before local midnight. Paused time and manual completion checks do not count.',
   'Hydration Tracker':
       'Goal · Set your daily water target.\nLog · Use the drink buttons.\nReview · Check your recent water history.',
   'Walking & Activity':

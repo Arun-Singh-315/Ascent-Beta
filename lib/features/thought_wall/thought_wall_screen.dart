@@ -1,3 +1,5 @@
+import '../../core/services/note_draft_binding.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/thought_presentation.dart';
 import '../../shared/widgets/message_composer.dart';
 import 'package:drift/drift.dart' as drift;
@@ -103,6 +105,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   };
 
   final TextEditingController _inputController = TextEditingController();
+  NoteDraftBinding? _draft;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   bool _hasInputText = false;
@@ -111,6 +114,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   @override
   void initState() {
     super.initState();
+    try {
+      _draft = NoteDraftBinding(
+        _inputController,
+        ref.read(sharedPreferencesProvider),
+        'wall',
+      );
+    } catch (_) {}
+    _hasInputText = _inputController.text.trim().isNotEmpty;
     _inputController.addListener(_onInputChanged);
   }
 
@@ -123,6 +134,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
   @override
   void dispose() {
+    _draft?.dispose();
     _inputController.removeListener(_onInputChanged);
     _inputController.dispose();
     _focusNode.dispose();

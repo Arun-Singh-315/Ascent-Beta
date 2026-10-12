@@ -9,6 +9,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 
 /// Level 3 · Supporting: Mind Space
@@ -29,9 +31,11 @@ class _ThoughtWallHomePreviewState
   final _controller = TextEditingController();
   bool _saving = false;
   final _focusNode = FocusNode();
+  NoteDraftBinding? _draft;
 
   @override
   void dispose() {
+    _draft?.dispose();
     _focusNode.dispose();
     _controller.dispose();
     super.dispose();
@@ -40,6 +44,15 @@ class _ThoughtWallHomePreviewState
   @override
   void initState() {
     super.initState();
+    try {
+      _draft = NoteDraftBinding(
+        _controller,
+        ref.read(sharedPreferencesProvider),
+        'home',
+      );
+    } catch (_) {
+      // An optional preference provider may be absent in isolated widget tests.
+    }
     _focusNode.addListener(_refresh);
     _controller.addListener(_refresh);
   }

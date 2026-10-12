@@ -298,6 +298,7 @@ void main() {
 
         final reminders = [
           Reminder(
+            alarmEnabled: false,
             id: 101,
             title: 'Review System Design Chapter 3',
             scheduledAt: DateTime.now().add(const Duration(hours: 2)),
@@ -369,6 +370,7 @@ void main() {
         final sevenReminders = List.generate(
           7,
           (i) => Reminder(
+            alarmEnabled: false,
             id: i + 1,
             title: 'Reminder #$i',
             scheduledAt: DateTime.now().add(Duration(minutes: (i + 1) * 15)),

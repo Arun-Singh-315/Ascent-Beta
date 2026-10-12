@@ -1,0 +1,15 @@
+3:    NotificationRecord(0x058dfb18: pkg=com.arun.ascent.debug user=UserHandle{0} id=810007 tag=null importance=5 key=0|com.arun.ascent.debug|810007|null|10891: Notification(channel=ascent_boost_nudges shortcut=null contentView=null vibrate=null sound=null defaults=0 flags=SHOW_LIGHTS|AUTO_CANCEL color=0xffd86500 category=reminder vis=PRIVATE))
+4-      uid=10891 userId=0
+5-      opPkg=com.arun.ascent.debug
+6-      icon=Icon(typ=RESOURCE pkg=com.arun.ascent.debug id=0x7f070077)
+7-      flags=SHOW_LIGHTS|AUTO_CANCEL
+8-      originalFlags=SHOW_LIGHTS|AUTO_CANCEL
+9-      pri=2
+10-      key=0|com.arun.ascent.debug|810007|null|10891
+11-      seen=true
+12-      groupKey=0|com.arun.ascent.debug|810007|null|10891
+13-      notification=
+14-            fullscreenIntent=null
+15-            contentIntent=PendingIntent{4cd5ceb: PendingIntentRecord{2d0688a com.arun.ascent.debug startActivity (allowlist: 12aeb8c:+30s0ms/0/NOTIFICATION_SERVICE/NotificationManagerService)}}
+16-            deleteIntent=null
+17-            number=0

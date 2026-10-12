@@ -48,6 +48,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
+      final preferences = ref.read(sharedPreferencesProvider);
+      final notice = preferences.getString('ascent_restore_notice_v1');
+      if (notice != null) {
+        preferences.remove('ascent_restore_notice_v1');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
+        );
+      }
       ref
           .read(hydrationReminderServiceProvider)
           .checkAndPromptHydration(context);
@@ -64,8 +72,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final overdueReminders = await ref
           .read(reminderDaoProvider)
           .getOverdueActiveReminders();
-      if (overdueReminders.isNotEmpty && mounted) {
-        await InAppReminderDialog.show(context, overdueReminders.first);
+      final quietReminders = overdueReminders.where((r) => !r.alarmEnabled).toList();
+      if (quietReminders.isNotEmpty && mounted) {
+        await InAppReminderDialog.show(context, quietReminders.first);
       }
     } catch (_) {}
   }
@@ -108,13 +117,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             data: (profile) {
-              // ── Blockage Guard 2: Compulsory Profile & Onboarding Completion ──
-              final isValidProfile =
-                  profile != null &&
-                  profile.onboardingComplete &&
-                  profile.name.trim().isNotEmpty &&
-                  profile.name.trim().toLowerCase() != 'learner' &&
-                  profile.targetRole.trim().isNotEmpty;
+              final isValidProfile = canEnterWorkspace(
+                profile,
+                ref.read(sharedPreferencesProvider),
+              );
 
               if (!isValidProfile) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -160,7 +166,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     HomeHeader(profile: profile),
 
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
-                    DayOneTutorialCard(userName: profile.name),
+                    DayOneTutorialCard(userName: profile?.name ?? ''),
 
                     // Return-user cold start welcome banner (>3 days absent)
                     if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[

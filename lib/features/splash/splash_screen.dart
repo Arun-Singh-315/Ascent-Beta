@@ -1,3 +1,4 @@
+import '../../core/notifications/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,18 +62,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _checkSessionAndNavigate() async {
     final startTime = DateTime.now();
 
-
     bool hasValidProfile = false;
     try {
       final profileDao = ref.read(userProfileDaoProvider);
       final profile = await profileDao.getProfile();
-      if (profile != null &&
-          profile.onboardingComplete &&
-          profile.name.trim().isNotEmpty &&
-          profile.name.trim().toLowerCase() != 'learner' &&
-          profile.targetRole.trim().isNotEmpty) {
-        hasValidProfile = true;
-      }
+      hasValidProfile = canEnterWorkspace(
+        profile,
+        ref.read(sharedPreferencesProvider),
+      );
     } catch (_) {
       hasValidProfile = false;
     }
@@ -95,7 +92,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (router == null) return;
 
     if (hasValidProfile) {
-      router.go('/home');
+      router.go(NotificationService.consumePendingDestination() ?? '/home');
     } else {
       router.go('/onboarding');
     }
@@ -159,7 +156,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
               // Subtle version badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: context.bgSurfaceElevated,
                   borderRadius: BorderRadius.circular(20),

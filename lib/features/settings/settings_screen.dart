@@ -130,239 +130,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _exportData() async {
-    final db = ref.read(databaseProvider);
-    try {
-      final profile = await db.userProfileDao.getProfile();
-      final tasks = await db.taskDao.watchAllTasks().first;
-      final apps = await db.applicationDao.watchAllApplications().first;
-      final consistency = await db.consistencyDao.watchAllLogs().first;
-      final dsa = await db.dsaDao.watchAllLogs().first;
-      final questions = await db.interviewPrepDao.watchAllQuestions().first;
-      final resumes = await db.resumeDao.watchAllResumes().first;
-
-      final dump = {
-        'version': '1.0.0',
-        'exportedAt': DateTime.now().toIso8601String(),
-        'profile': profile != null
-            ? {
-                'name': profile.name,
-                'targetRole': profile.targetRole,
-                'targetCompanies': profile.targetCompanies,
-                'weeklyHoursAvailable': profile.weeklyHoursAvailable,
-                'preferredStudyWindow': profile.preferredStudyWindow,
-                'interviewDate': profile.interviewDate?.toIso8601String(),
-              }
-            : null,
-        'tasks': tasks.map((t) => {'title': t.title, 'priority': t.priority, 'plannedDate': t.plannedDate?.toIso8601String(), 'notes': t.notes}).toList(),
-        'applications': apps.map((a) => {'company': a.company, 'role': a.role, 'currentStage': a.currentStage, 'salary': a.salary, 'jobUrl': a.jobUrl, 'notes': a.notes}).toList(),
-        'consistency': consistency.map((c) => {'date': c.date.toIso8601String(), 'present': c.present, 'note': c.note, 'hours': c.hoursStudied}).toList(),
-        'dsa': dsa.map((d) => {'problemName': d.problemName, 'topic': d.topic, 'difficulty': d.difficulty, 'dateSolved': d.dateSolved.toIso8601String(), 'revisitFlag': d.revisitFlag}).toList(),
-        'questions': questions.map((q) => {'question': q.questionAsked, 'category': q.category, 'company': q.company, 'outcome': q.outcome, 'notes': q.answerNotes}).toList(),
-        'resumes': resumes.map((r) => {'versionLabel': r.versionLabel, 'tailoredForCompany': r.tailoredForCompany, 'notes': r.notes}).toList(),
-      };
-
-      final jsonStr = const JsonEncoder.withIndent('  ').convert(dump);
-
-      if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: context.glass.bg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: context.glass.edge),
-          ),
-          title: Text(
-            'Export Ascent Backup',
-            style: AscentTextStyles.displaySmall.copyWith(color: context.glass.ink),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'This export includes selected records, not a complete backup. Restore currently imports the profile only:',
-                  style: AscentTextStyles.bodyMedium.copyWith(color: context.glass.inkMuted),
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.glass.fill,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.glass.edge),
-                  ),
-                  child: Text(
-                    jsonStr,
-                    style: AscentTextStyles.monoCode.copyWith(
-                      color: context.glass.ink,
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Close', style: TextStyle(color: context.glass.inkMuted)),
-            ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.copy_rounded, size: 16),
-              label: const Text('Copy JSON'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.glass.clay,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: jsonStr));
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Backup JSON copied to clipboard')),
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Export failed: $e')),
-        );
-      }
-    }
-  }
-
-  void _importData() {
-    final textController = TextEditingController();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final g = ctx.glass;
-        final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-        return Container(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
-          decoration: BoxDecoration(
-            color: g.bg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: g.edge, width: 1.2)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: g.edge,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Restore Backup (JSON)',
-                style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Paste previously exported Ascent backup JSON below to restore:',
-                style: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: textController,
-                maxLines: 5,
-                style: AscentTextStyles.monoCode.copyWith(fontSize: 12, color: g.ink),
-                decoration: InputDecoration(
-                  hintText: '{\n  "version": "1.0.0",\n  "profile": { ... }\n}',
-                  hintStyle: AscentTextStyles.monoCode.copyWith(fontSize: 12, color: g.inkMuted),
-                  filled: true,
-                  fillColor: g.fill,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: g.edge),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: g.edge),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: AscentButton.outlined(
-                      label: 'Cancel',
-                      compact: true,
-                      onPressed: () => Navigator.pop(ctx),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AscentButton.primary(
-                      label: 'Restore',
-                      compact: true,
-                      onPressed: () async {
-                        final nav = Navigator.of(ctx);
-                        final scaffold = ScaffoldMessenger.of(context);
-                        final raw = textController.text.trim();
-                        if (raw.isEmpty) return;
-                        try {
-                          final data = jsonDecode(raw) as Map<String, dynamic>;
-                          final db = ref.read(databaseProvider);
-
-                          if (data['profile'] != null) {
-                            final p = data['profile'] as Map<String, dynamic>;
-                            await db.userProfileDao.upsertProfile(
-                              UserProfileTableCompanion(
-                                id: const drift.Value(1),
-                                name: drift.Value(p['name'] ?? 'User'),
-                                targetRole: drift.Value(p['targetRole'] ?? 'Software Engineer'),
-                                targetCompanies: drift.Value(p['targetCompanies'] is String ? p['targetCompanies'] : jsonEncode(p['targetCompanies'] ?? [])),
-                                weeklyHoursAvailable: drift.Value(p['weeklyHoursAvailable'] ?? 10),
-                                preferredStudyWindow: drift.Value(p['preferredStudyWindow'] ?? 'morning'),
-                                interviewDate: drift.Value(p['interviewDate'] != null ? DateTime.parse(p['interviewDate']) : null),
-                                onboardingComplete: const drift.Value(true),
-                                updatedAt: drift.Value(DateTime.now()),
-                              ),
-                            );
-                          }
-
-                          nav.pop();
-                          setState(() {
-                            _profileLoaded = false;
-                          });
-                          scaffold.showSnackBar(
-                            const SnackBar(content: Text('Profile restored. Other exported records were not imported.')),
-                          );
-                        } catch (e) {
-                          scaffold.showSnackBar(
-                            SnackBar(content: Text('Failed to restore backup: $e')),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _confirmResetData() {
     showModalBottomSheet(
       context: context,
@@ -377,7 +144,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           decoration: BoxDecoration(
             color: g.bg,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: g.coral.withValues(alpha: 0.3), width: 1.5)),
+            border: Border(
+              top: BorderSide(
+                color: g.coral.withValues(alpha: 0.3),
+                width: 1.5,
+              ),
+            ),
           ),
           child: SafeArea(
             child: Column(
@@ -391,7 +163,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     shape: BoxShape.circle,
                     border: Border.all(color: g.coral.withValues(alpha: 0.3)),
                   ),
-                  child: Icon(Icons.warning_amber_rounded, color: g.coral, size: 28),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    color: g.coral,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -402,7 +178,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 Text(
                   'This will wipe all tasks, applications, consistency history, and reset your onboarding flow. This action cannot be undone.',
                   textAlign: TextAlign.center,
-                  style: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                  style: AscentTextStyles.bodyMedium.copyWith(
+                    color: g.inkMuted,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 Row(
@@ -424,18 +202,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           final prefs = ref.read(sharedPreferencesProvider);
                           await prefs.clear();
                           final db = ref.read(databaseProvider);
-                          await db.customStatement('DELETE FROM insight_dismissals;');
-                          await db.customStatement('DELETE FROM interview_prep;');
+                          await db.customStatement(
+                            'DELETE FROM insight_dismissals;',
+                          );
+                          await db.customStatement(
+                            'DELETE FROM interview_prep;',
+                          );
                           await db.customStatement('DELETE FROM resumes;');
-                          await db.customStatement('DELETE FROM application_status_history;');
+                          await db.customStatement(
+                            'DELETE FROM application_status_history;',
+                          );
                           await db.customStatement('DELETE FROM applications;');
                           await db.customStatement('DELETE FROM tasks;');
                           await db.customStatement('DELETE FROM series;');
                           await db.customStatement('DELETE FROM study_phases;');
                           await db.customStatement('DELETE FROM dsa_logs;');
-                          await db.customStatement('DELETE FROM time_sessions;');
-                          await db.customStatement('DELETE FROM consistency_logs;');
-                          await db.customStatement('DELETE FROM user_profiles;');
+                          await db.customStatement(
+                            'DELETE FROM time_sessions;',
+                          );
+                          await db.customStatement(
+                            'DELETE FROM consistency_logs;',
+                          );
+                          await db.customStatement(
+                            'DELETE FROM user_profiles;',
+                          );
 
                           if (mounted) {
                             context.go('/onboarding');
@@ -491,7 +281,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: g.sage.withValues(alpha: 0.3)),
                     ),
-                    child: Icon(Icons.battery_saver_rounded, color: g.sage, size: 22),
+                    child: Icon(
+                      Icons.battery_saver_rounded,
+                      color: g.sage,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -508,7 +302,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         Text(
                           'Prevent Android from killing GPS when locked',
-                          style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: g.inkMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -519,19 +315,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _guideStep(
                 number: '1',
                 title: 'Open Android App Settings',
-                description: 'Long press Ascent icon on home screen > App info (or go to Phone Settings > Apps > Ascent).',
+                description:
+                    'Long press Ascent icon on home screen > App info (or go to Phone Settings > Apps > Ascent).',
               ),
               const SizedBox(height: 12),
               _guideStep(
                 number: '2',
                 title: 'Set Battery to "Unrestricted"',
-                description: 'Under Battery or App Battery Usage, change setting to "Unrestricted" for uninterrupted route GPS.',
+                description:
+                    'Under Battery or App Battery Usage, change setting to "Unrestricted" for uninterrupted route GPS.',
               ),
               const SizedBox(height: 12),
               _guideStep(
                 number: '3',
                 title: 'Allow Location While Using App',
-                description: 'Ascent runs a foreground walking service with real-time route polyline & step tracking.',
+                description:
+                    'Ascent runs a foreground walking service with real-time route polyline & step tracking.',
               ),
               const SizedBox(height: 18),
               AscentButton.primary(
@@ -547,7 +346,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _guideStep({required String number, required String title, required String description}) {
+  Widget _guideStep({
+    required String number,
+    required String title,
+    required String description,
+  }) {
     final g = context.glass;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -557,7 +360,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           backgroundColor: g.sageSoft,
           child: Text(
             number,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: g.sage),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: g.sage,
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -631,7 +438,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           children: [
             // ── Section 1: Target Profile & Identity (Always Visible) ────────
-            _SectionHeader(title: 'Target Profile & Identity', dotColor: g.clay),
+            _SectionHeader(
+              title: 'Target Profile & Identity',
+              dotColor: g.clay,
+            ),
             AscentCard(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -639,7 +449,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text(
                     'Your Name',
-                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   TextField(
@@ -647,10 +460,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
                     decoration: InputDecoration(
                       hintText: 'e.g. Alex Hunter',
-                      hintStyle: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                      hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                        color: g.inkMuted,
+                      ),
                       filled: true,
                       fillColor: g.fill,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: g.edge),
@@ -669,7 +487,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   Text(
                     'Target Role',
-                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   TextField(
@@ -677,10 +498,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
                     decoration: InputDecoration(
                       hintText: 'e.g. Senior Software Engineer',
-                      hintStyle: AscentTextStyles.bodyMedium.copyWith(color: g.inkMuted),
+                      hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                        color: g.inkMuted,
+                      ),
                       filled: true,
                       fillColor: g.fill,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: g.edge),
@@ -704,14 +530,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'AI Copilot Name',
-                        style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: g.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Personalize the identity of your on-device planner copilot.',
-                    style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                    style: AscentTextStyles.bodySmall.copyWith(
+                      color: g.inkMuted,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Consumer(
@@ -737,11 +568,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text(
                         'Display Mode',
-                        style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w700),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: g.ink,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                       Text(
-                        themeMode == ThemeMode.dark ? 'Night Mode' : (themeMode == ThemeMode.light ? 'Day Mode' : 'System Auto'),
-                        style: AscentTextStyles.captionMedium.copyWith(color: g.clay, fontWeight: FontWeight.w600),
+                        themeMode == ThemeMode.dark
+                            ? 'Night Mode'
+                            : (themeMode == ThemeMode.light
+                                  ? 'Day Mode'
+                                  : 'System Auto'),
+                        style: AscentTextStyles.captionMedium.copyWith(
+                          color: g.clay,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ],
                   ),
@@ -754,7 +595,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         isSelected: themeMode == ThemeMode.light,
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.light);
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(ThemeMode.light);
                         },
                       ),
                       const SizedBox(width: 8),
@@ -764,7 +607,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         isSelected: themeMode == ThemeMode.dark,
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.dark);
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(ThemeMode.dark);
                         },
                       ),
                       const SizedBox(width: 8),
@@ -774,7 +619,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         isSelected: themeMode == ThemeMode.system,
                         onTap: () {
                           HapticFeedback.lightImpact();
-                          ref.read(themeModeProvider.notifier).setThemeMode(ThemeMode.system);
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(ThemeMode.system);
                         },
                       ),
                     ],
@@ -785,7 +632,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
-            _SectionHeader(title: 'Advanced Options & Tools', dotColor: g.inkMuted),
+            _SectionHeader(
+              title: 'Advanced Options & Tools',
+              dotColor: g.inkMuted,
+            ),
 
             // ── Collapsible 1: Career Goals & Target Companies ──────────────
             _CollapsibleSettingsCard(
@@ -794,7 +644,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Career Milestones & Companies',
               subtitle: 'Weekly study budget, deadline & target companies',
               isExpanded: _expandCareerGoals,
-              onToggle: () => setState(() => _expandCareerGoals = !_expandCareerGoals),
+              onToggle: () =>
+                  setState(() => _expandCareerGoals = !_expandCareerGoals),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -803,7 +654,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text(
                         'Weekly Study Budget',
-                        style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: g.ink,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       Text(
                         '$_weeklyHours hrs / wk',
@@ -821,7 +675,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     divisions: 7,
                     activeColor: g.clay,
                     inactiveColor: g.edge,
-                    onChanged: (val) => setState(() => _weeklyHours = val.round()),
+                    onChanged: (val) =>
+                        setState(() => _weeklyHours = val.round()),
                   ),
                   const SizedBox(height: 12),
 
@@ -834,13 +689,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           Text(
                             'Target Interview Date',
-                            style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                            style: AscentTextStyles.labelMedium.copyWith(
+                              color: g.ink,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           Text(
                             _interviewDate != null
                                 ? DateFormat.yMMMd().format(_interviewDate!)
                                 : 'No deadline set',
-                            style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: g.inkMuted,
+                            ),
                           ),
                         ],
                       ),
@@ -850,9 +710,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         onPressed: () async {
                           final picked = await showDatePicker(
                             context: context,
-                            initialDate: _interviewDate ?? DateTime.now().add(const Duration(days: 30)),
+                            initialDate:
+                                _interviewDate ??
+                                DateTime.now().add(const Duration(days: 30)),
                             firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365 * 2),
+                            ),
                           );
                           if (picked != null) {
                             setState(() => _interviewDate = picked);
@@ -866,7 +730,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // Target Companies
                   Text(
                     'Target Companies',
-                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -874,13 +741,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       Expanded(
                         child: TextField(
                           controller: _companyInputController,
-                          style: AscentTextStyles.bodySmall.copyWith(color: g.ink),
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: g.ink,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Add company (e.g. Stripe)',
-                            hintStyle: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                            hintStyle: AscentTextStyles.bodySmall.copyWith(
+                              color: g.inkMuted,
+                            ),
                             filled: true,
                             fillColor: g.fill,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(color: g.edge),
@@ -892,7 +766,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                           onSubmitted: (val) {
                             final text = val.trim();
-                            if (text.isNotEmpty && !_targetCompanies.contains(text)) {
+                            if (text.isNotEmpty &&
+                                !_targetCompanies.contains(text)) {
                               setState(() {
                                 _targetCompanies.add(text);
                                 _companyInputController.clear();
@@ -903,10 +778,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: Icon(Icons.add_circle_outline_rounded, color: g.clay),
+                        icon: Icon(
+                          Icons.add_circle_outline_rounded,
+                          color: g.clay,
+                        ),
                         onPressed: () {
                           final text = _companyInputController.text.trim();
-                          if (text.isNotEmpty && !_targetCompanies.contains(text)) {
+                          if (text.isNotEmpty &&
+                              !_targetCompanies.contains(text)) {
                             setState(() {
                               _targetCompanies.add(text);
                               _companyInputController.clear();
@@ -924,11 +803,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: _targetCompanies.map((c) {
                         return Chip(
                           label: Text(c),
-                          labelStyle: AscentTextStyles.labelSmall.copyWith(color: g.ink),
+                          labelStyle: AscentTextStyles.labelSmall.copyWith(
+                            color: g.ink,
+                          ),
                           backgroundColor: g.fill,
                           side: BorderSide(color: g.edge),
-                          deleteIcon: Icon(Icons.close_rounded, size: 14, color: g.inkMuted),
-                          onDeleted: () => setState(() => _targetCompanies.remove(c)),
+                          deleteIcon: Icon(
+                            Icons.close_rounded,
+                            size: 14,
+                            color: g.inkMuted,
+                          ),
+                          onDeleted: () =>
+                              setState(() => _targetCompanies.remove(c)),
                         );
                       }).toList(),
                     ),
@@ -945,18 +831,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Walk & GPS Telemetry',
               subtitle: 'Background GPS & battery optimization setup',
               isExpanded: _expandGpsTelemetry,
-              onToggle: () => setState(() => _expandGpsTelemetry = !_expandGpsTelemetry),
+              onToggle: () =>
+                  setState(() => _expandGpsTelemetry = !_expandGpsTelemetry),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Background Walk Tracking',
-                    style: AscentTextStyles.labelMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Allows Ascent to record accurate GPS routes, steps, and distance while your device is locked in your pocket.',
-                    style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted, height: 1.35),
+                    style: AscentTextStyles.bodySmall.copyWith(
+                      color: g.inkMuted,
+                      height: 1.35,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   AscentButton.outlined(
@@ -978,7 +871,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Data & Storage Management',
               subtitle: 'JSON backup export, database restore & wipe',
               isExpanded: _expandDataStorage,
-              onToggle: () => setState(() => _expandDataStorage = !_expandDataStorage),
+              onToggle: () =>
+                  setState(() => _expandDataStorage = !_expandDataStorage),
               child: Column(
                 children: [
                   ListTile(
@@ -989,46 +883,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         color: g.slateSoft,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.download_rounded, color: g.slate, size: 20),
+                      child: Icon(
+                        Icons.download_rounded,
+                        color: g.slate,
+                        size: 20,
+                      ),
                     ),
                     title: Text(
-                      'Export Backup (JSON)',
+                      'Save or restore a backup',
                       style: AscentTextStyles.labelMedium.copyWith(
                         color: g.ink,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
-                      'Export full SQLite snapshot for data portability',
-                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                    ),
-                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
-                    onTap: _exportData,
-                  ),
-                  _Divider(color: g.line),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: g.sageSoft,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.upload_rounded, color: g.sage, size: 20),
-                    ),
-                    title: Text(
-                      'Restore Backup (JSON)',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.ink,
-                        fontWeight: FontWeight.w600,
+                      'Records, settings and resume files',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
                       ),
                     ),
-                    subtitle: Text(
-                      'Restore tasks, logs, and settings from JSON',
-                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: g.inkMuted,
                     ),
-                    trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
-                    onTap: _importData,
+                    onTap: () => context.push('/backup'),
                   ),
                   _Divider(color: g.line),
                   ListTile(
@@ -1039,7 +918,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         color: g.coralSoft,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.delete_forever_rounded, color: g.coral, size: 20),
+                      child: Icon(
+                        Icons.delete_forever_rounded,
+                        color: g.coral,
+                        size: 20,
+                      ),
                     ),
                     title: Text(
                       'Reset All Data',
@@ -1050,7 +933,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     subtitle: Text(
                       'Wipe local database and restart onboarding',
-                      style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                      ),
                     ),
                     onTap: _confirmResetData,
                   ),
@@ -1083,10 +968,7 @@ class _SectionHeader extends StatelessWidget {
           Container(
             width: 5,
             height: 5,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: dotColor,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: dotColor),
           ),
           const SizedBox(width: 8),
           Text(
@@ -1111,11 +993,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(
-      height: 20,
-      thickness: 0.8,
-      color: color,
-    );
+    return Divider(height: 20, thickness: 0.8, color: color);
   }
 }
 
@@ -1155,7 +1033,10 @@ class _CollapsibleSettingsCard extends StatelessWidget {
               },
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -1164,7 +1045,9 @@ class _CollapsibleSettingsCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: iconTint.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: iconTint.withValues(alpha: 0.2)),
+                        border: Border.all(
+                          color: iconTint.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Icon(icon, color: iconTint, size: 18),
                     ),
@@ -1196,12 +1079,17 @@ class _CollapsibleSettingsCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: isExpanded ? g.claySoft : g.fill,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isExpanded ? g.clay.withValues(alpha: 0.3) : g.edge,
+                          color: isExpanded
+                              ? g.clay.withValues(alpha: 0.3)
+                              : g.edge,
                           width: 0.8,
                         ),
                       ),
@@ -1218,7 +1106,9 @@ class _CollapsibleSettingsCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Icon(
-                            isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                            isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
                             size: 16,
                             color: isExpanded ? g.clay : g.inkMuted,
                           ),
@@ -1232,10 +1122,7 @@ class _CollapsibleSettingsCard extends StatelessWidget {
           ),
           if (isExpanded) ...[
             Divider(height: 1, thickness: 0.8, color: g.line),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: child,
-            ),
+            Padding(padding: const EdgeInsets.all(16), child: child),
           ],
         ],
       ),
@@ -1269,9 +1156,7 @@ class _ThemeOption extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected ? g.clay : g.fill,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected ? g.clay : g.edge,
-            ),
+            border: Border.all(color: isSelected ? g.clay : g.edge),
           ),
           child: Column(
             children: [
@@ -1302,7 +1187,8 @@ class _AssistantNameEditor extends ConsumerStatefulWidget {
   const _AssistantNameEditor({required this.currentName});
 
   @override
-  ConsumerState<_AssistantNameEditor> createState() => _AssistantNameEditorState();
+  ConsumerState<_AssistantNameEditor> createState() =>
+      _AssistantNameEditorState();
 }
 
 class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
@@ -1345,11 +1231,18 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                   if (!_isEditing) setState(() => _isEditing = true);
                 },
                 decoration: InputDecoration(
-                  prefixIcon: Icon(Icons.psychology_outlined, size: 20, color: g.clay),
+                  prefixIcon: Icon(
+                    Icons.psychology_outlined,
+                    size: 20,
+                    color: g.clay,
+                  ),
                   hintText: 'e.g. Riya',
                   filled: true,
                   fillColor: g.fill,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: g.edge),
@@ -1363,7 +1256,10 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                     borderSide: BorderSide(color: g.clay),
                   ),
                 ),
-                style: AscentTextStyles.bodyMedium.copyWith(color: g.ink, fontWeight: FontWeight.w600),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: g.ink,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             const SizedBox(width: 8),

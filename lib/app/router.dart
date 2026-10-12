@@ -1,3 +1,4 @@
+import '../features/backup/workspace_backup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/splash_screen.dart';
@@ -279,6 +280,10 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.resumeVault,
       builder: (context, state) => const ResumeVaultScreen(),
+    ),
+    GoRoute(
+      path: '/backup',
+      builder: (context, state) => const WorkspaceBackupScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

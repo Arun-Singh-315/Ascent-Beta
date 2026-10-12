@@ -34,3 +34,7 @@ The next release is 1.0.6 (7). The full renovation suite passes 261 tests and Fl
 ### Installation follow-up · 12 October 2026
 
 Version 1.0.6 (7) installed successfully after the phone was connected. Package metadata and cold launch were verified; the app is running at the notification permission prompt over onboarding. The user’s permission and profile choices were left untouched. See [device installation evidence](docs/renovation/qa/device-installation.txt).
+
+## Quality follow-up · 1.0.7 (8)
+
+The requested 8–9 quality pass adds optional career setup/Quick Start, durable Home and Thought Wall drafts, a complete versioned workspace backup with resumable settings recovery, and reminder alert retry. See [implementation, verification and remaining limits](docs/renovation/QUALITY_UPGRADE.md). The historical checklist above is retained.
