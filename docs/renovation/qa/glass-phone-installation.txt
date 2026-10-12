@@ -1,0 +1,12 @@
+Performing Streamed Install
+Success
+    versionCode=10 minSdk=24 targetSdk=36
+    versionName=1.0.9
+Starting: Intent { cmp=com.arun.ascent/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: com.arun.ascent/.MainActivity
+TotalTime: 3052
+WaitTime: 3607
+Complete
+package:com.arun.ascent

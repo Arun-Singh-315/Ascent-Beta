@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../shared/widgets/glass_surface.dart';
 import '../../../core/database/app_database.dart';
 
 /// Compact, read-only preview. Editing lives on the Reminders screen.
@@ -29,13 +30,9 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
       child: InkWell(
         onTap: onViewAll,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
+        child: GlassSurface(
+          radius: 18,
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: g.fill,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: g.edge),
-          ),
           child: Row(
             children: [
               Icon(

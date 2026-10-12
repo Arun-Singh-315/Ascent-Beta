@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../shared/widgets/message_composer.dart';
+import '../../shared/widgets/glass_surface.dart';
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
@@ -249,8 +251,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         if (mounted) {
           if (_textController.text.isEmpty) _textController.text = prompt;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
+            AscentSnackBar.build(
+              context,
+              content: const Text(
                 'Chat could not be saved. Your message is still here.',
               ),
             ),
@@ -370,7 +373,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     width: 10,
                     height: 10,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
+                      color: context.glass.sage,
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: isDark ? const Color(0xFF181009) : Colors.white,
@@ -389,32 +392,40 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               ],
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      name,
-                      style: GoogleFonts.plusJakartaSans(
-                        color: context.textPrimary,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.2,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: context.textPrimary,
+                            fontSize: 16.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Intelligent · On-Device · Private',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w500,
-                    color: context.textMuted,
+                    ],
                   ),
-                ),
-              ],
+                  Text(
+                    'Intelligent · On-Device · Private',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w500,
+                      color: context.textMuted,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -746,20 +757,6 @@ class _TelegramMessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final userBgColor = isDark
-        ? const Color(0xFF3B2C1E).withValues(alpha: 0.60)
-        : Colors.transparent;
-    final userBorderColor = isDark
-        ? Colors.white.withValues(alpha: 0.16)
-        : const Color(0xFF3B2C1E);
-
-    final botBubbleColor = isDark
-        ? const Color(0xFF2D1F13).withValues(alpha: 0.90)
-        : Colors.white.withValues(alpha: 0.95);
-    final botBorderColor = isDark
-        ? const Color(0xFF4B3726)
-        : const Color(0xFFE2E8F0);
-
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
@@ -769,32 +766,14 @@ class _TelegramMessageBubble extends StatelessWidget {
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Main Message Container (User: Transparent/Glass • Riya: Translucent Card)
-        Container(
+        GlassSurface(
+          key: ValueKey('chat-glass-${msg.id}'),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: isUser ? userBgColor : botBubbleColor,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(isUser ? 18 : 4),
-              bottomRight: Radius.circular(isUser ? 4 : 18),
-            ),
-            border: Border.all(
-              color: isUser ? userBorderColor : botBorderColor,
-              width: 1.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isUser
-                    ? (isDark
-                          ? Colors.black.withValues(alpha: 0.22)
-                          : Colors.transparent)
-                    : Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-                blurRadius: isUser ? (isDark ? 8 : 0) : 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isUser ? 18 : 6),
+            bottomRight: Radius.circular(isUser ? 6 : 18),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,11 +809,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w400,
-                  color: isUser
-                      ? (isDark ? Colors.white : const Color(0xFF2A1C0F))
-                      : (isDark
-                            ? const Color(0xFFF1F5F9)
-                            : const Color(0xFF3B2C1E)),
+                  color: context.glass.ink,
                   height: 1.45,
                 ),
               ),
@@ -851,11 +826,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                       timeString,
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9.5,
-                        color: isUser
-                            ? (isDark
-                                  ? Colors.white.withValues(alpha: 0.65)
-                                  : const Color(0xFF8B7664))
-                            : context.textMuted.withValues(alpha: 0.8),
+                        color: context.glass.inkMuted,
                       ),
                     ),
                     if (isUser) ...[
@@ -863,9 +834,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                       Icon(
                         Icons.done_all_rounded,
                         size: 11,
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.75)
-                            : const Color(0xFF8B7664),
+                        color: context.glass.inkMuted,
                       ),
                     ],
                   ],
@@ -882,16 +851,9 @@ class _TelegramMessageBubble extends StatelessWidget {
             actionData!['executionStatus'] == 'verified' &&
             actionData!['title'] != null) ...[
           const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF10B981).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFF10B981).withValues(alpha: 0.35),
-                width: 1.0,
-              ),
-            ),
+          GlassSurface(
+            radius: 14,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -900,7 +862,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                       ? Icons.check_circle_rounded
                       : Icons.info_outline_rounded,
                   size: 15,
-                  color: Color(0xFF10B981),
+                  color: context.glass.sage,
                 ),
                 const SizedBox(width: 7),
                 Flexible(
@@ -959,14 +921,14 @@ class _TelegramMessageBubble extends StatelessWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF10B981),
+                            color: context.glass.sage,
                           ),
                         ),
                         const SizedBox(width: 2),
-                        const Icon(
+                        Icon(
                           Icons.arrow_forward_ios_rounded,
                           size: 9,
-                          color: Color(0xFF10B981),
+                          color: context.glass.sage,
                         ),
                       ],
                     ),
@@ -1216,9 +1178,9 @@ class _SoftChatWelcome extends ConsumerWidget {
                   Container(
                     width: 6,
                     height: 6,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF10B981),
+                      color: context.glass.sage,
                     ),
                   ),
                   const SizedBox(width: 6),

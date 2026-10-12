@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../../shared/widgets/ascent_dialog.dart';
+import '../../shared/widgets/ascent_button.dart';
 import 'package:flutter/material.dart';
 import '../database/app_database.dart';
 import 'reminder_alarm_bridge.dart';
@@ -90,9 +92,10 @@ class _RingingDialogState extends State<_RingingDialog> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: false,
-    child: AlertDialog(
-      title: const Text('Reminder alarm'),
-      content: SingleChildScrollView(
+    child: AscentDialog(
+      title: 'Reminder alarm',
+      icon: Icons.alarm_rounded,
+      contentWidget: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -107,13 +110,18 @@ class _RingingDialogState extends State<_RingingDialog> {
         ),
       ),
       actions: [
-        TextButton(
+        AscentButton.outlined(
+          expanded: true,
+          label: 'Snooze 10 min',
+          icon: Icons.snooze_rounded,
           onPressed: _busy ? null : () => act('snooze'),
-          child: const Text('Snooze 10 min'),
         ),
-        FilledButton(
+        const SizedBox(height: 10),
+        AscentButton.primary(
+          expanded: true,
+          label: 'Done',
+          icon: Icons.check_rounded,
           onPressed: _busy ? null : () => act('done'),
-          child: const Text('Done'),
         ),
       ],
     ),

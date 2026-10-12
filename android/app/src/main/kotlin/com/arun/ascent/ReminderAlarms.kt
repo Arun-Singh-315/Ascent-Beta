@@ -3,6 +3,11 @@ package com.arun.ascent
 import android.app.*
 import android.content.*
 import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
+import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.media.*
 import android.os.*
 import android.provider.Settings
@@ -189,13 +194,91 @@ class ReminderAlarmActivity : Activity() {
     private fun render() {
         val row = AlarmStore.alarm(this, alarmId) ?: run { finish(); return }
         val scale = resources.displayMetrics.density
-        val pad = (28 * scale).toInt()
-        val layout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; setPadding(pad,pad,pad,pad); setBackgroundColor(Color.rgb(249, 246, 239)) }
-        fun label(value: String, size: Float) { layout.addView(TextView(this).apply { text = value; textSize = size; setTextColor(Color.rgb(48, 39, 32)); gravity = Gravity.CENTER; setPadding(0,pad/2,0,pad/2) }) }
-        label("REMINDER ALARM", 16f); label(row.getString("title"), 26f); label("Snooze or Done stops the ringing", 15f)
-        fun button(value: String, action: String) { layout.addView(Button(this).apply { text = value; isAllCaps = false; backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(169,82,53)); setTextColor(Color.WHITE); setOnClickListener { if (AlarmStore.act(this@ReminderAlarmActivity, alarmId, action)) finish() else Toast.makeText(this@ReminderAlarmActivity, "Could not finish. Check alarm access and retry.", Toast.LENGTH_LONG).show() } }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = pad/2 }) }
-        button("Snooze 10 minutes", "snooze"); button("Done", "done")
-        layout.addView(Button(this).apply { text = "Open Reminders"; isAllCaps = false; backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(169,82,53)); setTextColor(Color.WHITE); setOnClickListener { startActivity(Intent(this@ReminderAlarmActivity, MainActivity::class.java).putExtra("ascent_route", "/reminders").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)); finish() } })
+        fun dp(value: Int) = (value * scale).toInt()
+        val mode = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
+            .getString("flutter.ascent_theme_mode", "system")
+        val dark = mode == "dark" || (mode != "light" &&
+            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES)
+        val ink = Color.parseColor(if (dark) "#ECEAF2" else "#2B221B")
+        val muted = Color.parseColor(if (dark) "#B4B7C6" else "#74695F")
+        val clay = Color.parseColor(if (dark) "#E6A088" else "#A4523A")
+        val edge = Color.parseColor(if (dark) "#26FFFFFF" else "#182B221B")
+        val font = runCatching { Typeface.createFromAsset(assets,
+            "flutter_assets/assets/fonts/PlusJakartaSans-Regular.ttf") }.getOrDefault(Typeface.DEFAULT)
+        fun surface(fill: Int, radius: Int = 24) = GradientDrawable().apply {
+            setColor(fill); cornerRadius = dp(radius).toFloat(); setStroke(dp(1), edge)
+        }
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            setPadding(dp(24), dp(48), dp(24), dp(48))
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(
+                Color.parseColor(if (dark) "#16110D" else "#F4F3F8"),
+                Color.parseColor(if (dark) "#32231D" else "#F0DFD5"),
+                Color.parseColor(if (dark) "#16110D" else "#F4F3F8")))
+        }
+        // Own atmospheric background allows translucent surfaces without exposing lock-screen content.
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; setPadding(dp(24), dp(24), dp(24), dp(24))
+            background = surface(Color.parseColor(if (dark) "#14FFFFFF" else "#AAFFFFFF"))
+        }
+        layout.addView(card, LinearLayout.LayoutParams(-1, -2))
+        fun label(value: String, size: Float, color: Int = ink) {
+            card.addView(TextView(this).apply {
+                text = value; textSize = size; setTextColor(color); typeface = font
+                gravity = Gravity.CENTER; setPadding(0, dp(8), 0, dp(8))
+            })
+        }
+        label("REMINDER ALARM", 12f, clay)
+        label(java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault()).format(java.util.Date()), 38f)
+        label(row.getString("title"), 24f)
+        label("Snooze or Done stops the ringing", 14f, muted)
+        fun button(value: String, primary: Boolean, action: () -> Unit) {
+            card.addView(Button(this).apply {
+                text = value; textSize = 15f; typeface = font; isAllCaps = false
+                minHeight = dp(54); minimumHeight = dp(54)
+                setPadding(dp(16), dp(12), dp(16), dp(12))
+                setTextColor(if (primary) (if (dark) Color.parseColor("#16110D") else Color.WHITE) else ink)
+                background = RippleDrawable(ColorStateList.valueOf(edge),
+                    surface(if (primary) clay else Color.parseColor(if (dark) "#12FFFFFF" else "#80FFFFFF"), 16), null)
+                setOnClickListener { performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP); action() }
+            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+        }
+        fun act(action: String) {
+            if (AlarmStore.act(this@ReminderAlarmActivity, alarmId, action)) finish()
+            else Toast.makeText(this@ReminderAlarmActivity, "Could not finish. Check alarm access and retry.", Toast.LENGTH_LONG).show()
+        }
+        button("Done", true) { act("done") }
+        button("Snooze 10 minutes", false) { act("snooze") }
+        card.addView(TextView(this).apply {
+            text = "Open Reminders"; textSize = 14f; typeface = font; setTextColor(clay)
+            gravity = Gravity.CENTER; minHeight = dp(48); setPadding(dp(8), dp(16), dp(8), 0)
+            isFocusable = true; isClickable = true
+            setOnClickListener {
+                startActivity(Intent(this@ReminderAlarmActivity, MainActivity::class.java)
+                    .putExtra("ascent_route", "/reminders")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP))
+                finish()
+            }
+        })
         setContentView(ScrollView(this).apply { isFillViewport = true; addView(layout) })
+        layout.setOnApplyWindowInsetsListener { view, insets ->
+            @Suppress("DEPRECATION")
+            view.setPadding(dp(24) + insets.systemWindowInsetLeft, dp(32) + insets.systemWindowInsetTop,
+                dp(24) + insets.systemWindowInsetRight, dp(32) + insets.systemWindowInsetBottom)
+            insets
+        }
+        layout.requestApplyInsets()
+        if (Build.VERSION.SDK_INT >= 30) {
+            val mask = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(if (dark) 0 else mask, mask)
+        } else {
+            @Suppress("DEPRECATION")
+            val mask = android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
+                (if (Build.VERSION.SDK_INT >= 26) android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR else 0)
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = if (dark) window.decorView.systemUiVisibility and mask.inv()
+                else window.decorView.systemUiVisibility or mask
+        }
     }
 }

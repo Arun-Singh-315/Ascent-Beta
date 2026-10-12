@@ -3,6 +3,8 @@
 > **Your personal job-search operating system.**  
 > A calm, local-first, empathetic mobile application designed to turn job preparation and interview hunting into a structured, stress-free engineering practice.
 
+Next update planning: [Your Home, Connected Projects](docs/NEXT_UPDATE_PLAN.md) — Home customization first, followed by connections between existing tools.
+
 ---
 
 ## 📖 Complete V1 Specifications & Design System Handoff

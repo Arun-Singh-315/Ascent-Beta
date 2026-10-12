@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../core/providers/settings_provider.dart';
@@ -16,6 +17,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 
@@ -81,14 +83,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           );
       if (result.complete) await prefs.remove('ascent_restore_alert_sync_v1');
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(result.message)));
+        ScaffoldMessenger.of(context).showSnackBar(
+          AscentSnackBar.build(context, content: Text(result.message)),
+        );
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text('Could not verify reminder alerts. Please retry.'),
           ),
         );
@@ -191,7 +194,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                               DateFormat('EEE, MMM d').format(scheduledDate),
                             ),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: context.glass.fill,
+                              side: BorderSide(color: context.glass.edge),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -227,7 +232,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                             icon: const Icon(Icons.access_time, size: 16),
                             label: Text(scheduledTime.format(context)),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              backgroundColor: context.glass.fill,
+                              side: BorderSide(color: context.glass.edge),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -283,7 +290,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                   mode.icon,
                                   size: 14,
                                   color: isSelected
-                                      ? Colors.white
+                                      ? context.glass.clay
                                       : context.textPrimary,
                                 ),
                                 const SizedBox(width: 6),
@@ -356,17 +363,30 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       ),
                     ],
                     const SizedBox(height: 24),
-                    SwitchListTile.adaptive(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Ring as an alarm'),
-                      subtitle: const Text(
-                        'Optional. Rings until Snooze or Done. Off uses a normal notification.',
+                    GlassSurface(
+                      radius: 18,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 6,
                       ),
-                      value: alarmEnabled,
-                      onChanged: saving
-                          ? null
-                          : (value) =>
-                                setSheetState(() => alarmEnabled = value),
+                      child: SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Ring as an alarm'),
+                        secondary: Icon(
+                          alarmEnabled
+                              ? Icons.alarm_rounded
+                              : Icons.notifications_none_rounded,
+                          color: context.glass.clay,
+                        ),
+                        subtitle: const Text(
+                          'Optional. Rings until Snooze or Done. Off uses a normal notification.',
+                        ),
+                        value: alarmEnabled,
+                        onChanged: saving
+                            ? null
+                            : (value) =>
+                                  setSheetState(() => alarmEnabled = value),
+                      ),
                     ),
                     if (alarmEnabled) ...[
                       const Text(
@@ -562,7 +582,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                 if (context.mounted) {
                                   Navigator.of(context).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
+                                    AscentSnackBar.build(
+                                      context,
                                       content: Text(
                                         failedAlerts > 0
                                             ? 'Saved. $failedAlerts alerts need notification or alarm access. Enable access and tap Sync reminder alerts.'
@@ -611,7 +632,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       await NotificationService.instance.cancel(row.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text('Reminder completed'),
             duration: Duration(seconds: 2),
           ),
@@ -620,7 +642,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text('Could not finish the reminder. Please retry.'),
           ),
         );
@@ -651,7 +674,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text(
               scheduled
                   ? 'Snoozed for 10 minutes'
@@ -664,7 +688,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text(
               'Could not snooze. Check saved reminder time and retry.',
             ),
@@ -705,7 +730,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text('Reminder "${deletedReminder.title}" deleted'),
             duration: const Duration(seconds: 4),
             action: SnackBarAction(

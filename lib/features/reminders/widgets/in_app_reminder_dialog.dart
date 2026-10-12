@@ -1,3 +1,4 @@
+import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
+import '../../../shared/widgets/glass_surface.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/notifications/notification_service.dart';
@@ -13,10 +15,7 @@ import '../../../core/providers/database_provider.dart';
 class InAppReminderDialog extends ConsumerWidget {
   final Reminder reminder;
 
-  const InAppReminderDialog({
-    super.key,
-    required this.reminder,
-  });
+  const InAppReminderDialog({super.key, required this.reminder});
 
   static Future<void> show(BuildContext context, Reminder reminder) {
     return showDialog(
@@ -26,15 +25,19 @@ class InAppReminderDialog extends ConsumerWidget {
     );
   }
 
-  Future<void> _snooze(BuildContext context, WidgetRef ref, Duration duration) async {
+  Future<void> _snooze(
+    BuildContext context,
+    WidgetRef ref,
+    Duration duration,
+  ) async {
     HapticFeedback.lightImpact();
     final newScheduled = DateTime.now().add(duration);
     final dao = ref.read(reminderDaoProvider);
 
     await dao.updateReminder(
-      reminder.toCompanion(true).copyWith(
-        scheduledAt: drift.Value(newScheduled),
-      ),
+      reminder
+          .toCompanion(true)
+          .copyWith(scheduledAt: drift.Value(newScheduled)),
     );
     await NotificationService.instance.scheduleReminderNotification(
       id: reminder.id,
@@ -49,8 +52,11 @@ class InAppReminderDialog extends ConsumerWidget {
     if (context.mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Snoozed for ${duration.inMinutes >= 60 ? "${duration.inHours}h" : "${duration.inMinutes}m"}'),
+        AscentSnackBar.build(
+          context,
+          content: Text(
+            'Snoozed for ${duration.inMinutes >= 60 ? "${duration.inHours}h" : "${duration.inMinutes}m"}',
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -64,9 +70,9 @@ class InAppReminderDialog extends ConsumerWidget {
     final dao = ref.read(reminderDaoProvider);
 
     await dao.updateReminder(
-      reminder.toCompanion(true).copyWith(
-        scheduledAt: drift.Value(tomorrow9am),
-      ),
+      reminder
+          .toCompanion(true)
+          .copyWith(scheduledAt: drift.Value(tomorrow9am)),
     );
     await NotificationService.instance.scheduleReminderNotification(
       id: reminder.id,
@@ -81,7 +87,8 @@ class InAppReminderDialog extends ConsumerWidget {
     if (context.mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        AscentSnackBar.build(
+          context,
           content: Text('Snoozed until tomorrow 9:00 AM'),
           duration: Duration(seconds: 2),
         ),
@@ -94,9 +101,7 @@ class InAppReminderDialog extends ConsumerWidget {
     final dao = ref.read(reminderDaoProvider);
 
     await dao.updateReminder(
-      reminder.toCompanion(true).copyWith(
-        isActive: const drift.Value(false),
-      ),
+      reminder.toCompanion(true).copyWith(isActive: const drift.Value(false)),
     );
     await NotificationService.instance.cancel(reminder.id);
 
@@ -106,7 +111,8 @@ class InAppReminderDialog extends ConsumerWidget {
     if (context.mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        AscentSnackBar.build(
+          context,
           content: Text('Reminder marked as completed!'),
           duration: Duration(seconds: 2),
         ),
@@ -120,166 +126,204 @@ class InAppReminderDialog extends ConsumerWidget {
     final infoColor = context.accentInfo;
 
     return Dialog(
-      backgroundColor: context.bgSurfaceElevated,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
         side: BorderSide(color: infoColor.withValues(alpha: 0.3), width: 1.2),
       ),
-      child: Padding(
+      child: GlassSurface(
+        radius: 24,
         padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: infoColor.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: infoColor.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.alarm_on_rounded,
+                      color: infoColor,
+                      size: 24,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.alarm_on_rounded,
-                    color: infoColor,
-                    size: 24,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'REMINDER DUE',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.1,
+                            color: infoColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Time for your planned task',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: context.textMuted,
+                      size: 20,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: 'Dismiss',
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 18),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: g.fill,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: g.edge),
+                ),
+                child: Text(
+                  reminder.title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                    height: 1.3,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'REMINDER DUE',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.1,
-                          color: infoColor,
+              ),
+
+              const SizedBox(height: 20),
+
+              Text(
+                'SNOOZE OPTIONS',
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.0,
+                  color: context.textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          _snooze(context, ref, const Duration(minutes: 10)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.textPrimary,
+                        backgroundColor: g.fill,
+                        minimumSize: const Size(48, 48),
+                        side: BorderSide(color: g.edge),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Time for your planned task',
+                      child: Text(
+                        '+10m',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 12,
-                          color: context.textMuted,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.close_rounded, color: context.textMuted, size: 20),
-                  onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Dismiss',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 18),
-
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: g.fill,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: g.edge),
-              ),
-              child: Text(
-                reminder.title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: context.textPrimary,
-                  height: 1.3,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Text(
-              'SNOOZE OPTIONS',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
-                color: context.textMuted,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _snooze(context, ref, const Duration(minutes: 10)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.textPrimary,
-                      side: BorderSide(color: context.divider),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(
-                      '+10m',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _snooze(context, ref, const Duration(hours: 1)),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.textPrimary,
-                      side: BorderSide(color: context.divider),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(
-                      '+1h',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _snoozeTomorrow(context, ref),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: context.textPrimary,
-                      side: BorderSide(color: context.divider),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    child: Text(
-                      'Tomorrow',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () =>
+                          _snooze(context, ref, const Duration(hours: 1)),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.textPrimary,
+                        backgroundColor: g.fill,
+                        minimumSize: const Size(48, 48),
+                        side: BorderSide(color: g.edge),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        '+1h',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => _snoozeTomorrow(context, ref),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.textPrimary,
+                        backgroundColor: g.fill,
+                        minimumSize: const Size(48, 48),
+                        side: BorderSide(color: g.edge),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Tomorrow',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              ElevatedButton.icon(
+                onPressed: () => _markDone(context, ref),
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: Text(
+                  'Mark as Done',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            ElevatedButton.icon(
-              onPressed: () => _markDone(context, ref),
-              icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
-              label: Text(
-                'Mark as Done',
-                style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: g.clay,
+                  elevation: 0,
+                  minimumSize: const Size(48, 48),
+                  foregroundColor: context.isDark ? g.bg : Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: context.stateSuccess,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

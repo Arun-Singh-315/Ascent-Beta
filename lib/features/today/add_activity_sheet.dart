@@ -251,9 +251,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
     if (mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        AscentSnackBar.build(context,
           content: Text(widget.existingTask != null ? 'Activity updated' : 'Activity added to hub'),
-          behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
         ),
       );
