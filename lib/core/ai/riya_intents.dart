@@ -1,6 +1,7 @@
 import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_workspace_intents.dart';
+import 'riya_conversation_prompt.dart';
 
 class RiyaResolution {
   const RiyaResolution({this.command, this.message, this.options = const []});
@@ -13,7 +14,8 @@ class RiyaResolution {
 /// never interpreted as an instruction. Resolved edits are still reviewed.
 class RiyaIntentResolver {
   RiyaIntentResolver(this.db, {DateTime Function()? clock})
-    : clock = clock ?? DateTime.now, _revision = db.workspaceRevision;
+    : clock = clock ?? DateTime.now,
+      _revision = db.workspaceRevision;
   final AppDatabase db;
   final DateTime Function() clock;
   String? _reminderTitle;
@@ -24,6 +26,10 @@ class RiyaIntentResolver {
   late final _workspace = RiyaWorkspaceIntents(db, clock);
 
   void rememberResult(RiyaResult result) {
+    if (result.learningCourseId != null) {
+      _workspace.rememberLearning(result);
+      return;
+    }
     if (result.entityType != null && result.entityId != null) {
       _workspace.remember(result.entityType!, result.entityId!);
     }
@@ -35,6 +41,7 @@ class RiyaIntentResolver {
       _workspace.cancel();
       _revision = db.workspaceRevision;
     }
+    prompt = riyaConversationPrompt(prompt);
     final lower = prompt.trim().toLowerCase();
     final now = clock();
     if (lower == 'cancel' || lower == 'never mind') {

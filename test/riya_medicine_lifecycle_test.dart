@@ -19,6 +19,73 @@ void main() {
   Future<RiyaResult> run(RiyaCommand command, String request) =>
       executor.execute(command, requestId: request, approved: true);
   test(
+    'Conversational medicine reads and edits keep supplied values and require confirmation',
+    () async {
+      final create = (await resolver.resolve(
+        'Riya, please add medicine My AM Schedule dosage User Dose form tablet at 8 AM and 8 PM for 2 days',
+      ))!.command!;
+      expect(create.arguments['name'], 'My AM Schedule');
+      expect(create.arguments['times'], ['08:00', '20:00']);
+      final saved = await run(create, 'conversation-create');
+      expect(
+        (await resolver.resolve('meri medicines dikhao'))!.command!.id,
+        'medicine.list',
+      );
+      final read = (await resolver.resolve(
+        'medicine My AM Schedule dikhao',
+      ))!.command!;
+      resolver.rememberResult(await run(read, 'conversation-read'));
+      expect((await resolver.resolve('isko edit karo'))!.command, isNull);
+      final edit = (await resolver.resolve('times to 12 AM, 12 PM'))!.command!;
+      expect(edit.arguments['id'], saved.entityId);
+      expect(edit.arguments['times'], ['00:00', '12:00']);
+      await expectLater(
+        executor.execute(edit, requestId: 'unconfirmed-edit'),
+        throwsStateError,
+      );
+      await run(edit, 'confirmed-edit');
+      expect((await resolver.resolve('times to 8'))!.command, isNull);
+      await resolver.resolve('rehne do');
+      expect(
+        (await resolver.resolve('times to 8 AM'))?.command?.id,
+        isNot('medicine.edit'),
+      );
+    },
+  );
+  test(
+    'Duplicate medicine names ask for a number and cannot reuse a previous selection',
+    () async {
+      final command = const RiyaCommand('medicine.create', {
+        'name': 'Duplicate',
+        'dosage': 'User dose',
+        'form': 'tablet',
+        'times': ['08:00'],
+        'days': 1,
+      });
+      resolver.rememberResult(await run(command, 'duplicate-one'));
+      await run(command, 'duplicate-two');
+      final ambiguous = (await resolver.resolve('pause medicine Duplicate'))!;
+      expect(ambiguous.command, isNull);
+      expect(ambiguous.message, contains('Several schedules'));
+      expect(
+        (await resolver.resolve('name to Wrong record'))?.command?.id,
+        isNot('medicine.edit'),
+      );
+    },
+  );
+  test(
+    'Hinglish dose scope stays on the chosen day and yields to a newer domain',
+    () async {
+      final doses = (await resolver.resolve('kal ki doses dikhao'))!.command!;
+      expect(DateTime.parse(doses.arguments['day']), DateTime(2027, 2, 1));
+      await resolver.resolve('show courses');
+      expect(
+        (await resolver.resolve('tomorrow'))?.command?.id,
+        isNot('medicine.doses'),
+      );
+    },
+  );
+  test(
     'Natural schedule commands require supplied dosage and confirm/replay atomically',
     () async {
       expect(

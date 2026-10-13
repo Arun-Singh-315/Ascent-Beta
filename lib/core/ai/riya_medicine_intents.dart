@@ -1,8 +1,10 @@
+import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_intents.dart';
 
 class RiyaMedicineIntents {
-  RiyaMedicineIntents(this.clock);
+  RiyaMedicineIntents(this.db, this.clock);
+  final AppDatabase db;
   final DateTime Function() clock;
   int? _selected;
   String? _list, _day;
@@ -17,10 +19,18 @@ class RiyaMedicineIntents {
     _offset = 0;
   }
 
-  RiyaResolution? resolve(String prompt) {
-    final text = prompt.trim(), lower = text.toLowerCase();
+  Future<RiyaResolution?> resolve(String prompt) async {
+    var text = prompt.trim();
+    final lower = text.toLowerCase();
+    final renameSelected = RegExp(
+      r'^rename that to (.+)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (renameSelected != null && _selected != null) {
+      text = 'edit that name to ${renameSelected.group(1)}';
+    }
     final list = RegExp(
-      r'^(?:(?:show|list) (?:my )?)?medicines(?: (all))?$',
+      r'^(?:(?:show|list) (?:my )?)?(?:medicine|medicines|medications|medicine schedules)(?: (all))?$',
     ).firstMatch(lower);
     if (list != null) {
       _list = 'medicine.list';
@@ -56,6 +66,26 @@ class RiyaMedicineIntents {
       return _page();
     }
     _list = null;
+    if (lower == 'read selected medicine' && _selected != null) {
+      return RiyaResolution(
+        command: RiyaCommand('medicine.read', {'id': _selected}),
+      );
+    }
+    if (lower == 'edit that' && _selected != null) return _editHelp();
+    final choose = RegExp(
+      r'^edit medicine (.+)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (choose != null &&
+        !RegExp(
+          r' (?:name|dosage|times|days|start date|instructions|form) to ',
+          caseSensitive: false,
+        ).hasMatch(text)) {
+      final target = await _target(choose.group(1)!);
+      if (target.command == null) return target;
+      _selected = target.command!.arguments['id'];
+      return _editHelp();
+    }
     final dose = RegExp(
       r'^(?:mark )?dose #(\d+) (?:as )?(taken|pending)$',
     ).firstMatch(lower);
@@ -68,10 +98,12 @@ class RiyaMedicineIntents {
       );
     }
     final target = RegExp(
-      r'^(read|show|delete|remove|pause|resume) medicine #(\d+)$',
+      r'^(read|show|delete|remove|pause|resume) medicine (.+)$',
     ).firstMatch(lower);
     if (target != null) {
       final verb = target.group(1)!;
+      final found = await _target(target.group(2)!);
+      if (found.command == null) return found;
       return RiyaResolution(
         command: RiyaCommand(
           {'delete', 'remove'}.contains(verb)
@@ -80,18 +112,33 @@ class RiyaMedicineIntents {
               ? 'medicine.edit'
               : 'medicine.read',
           {
-            'id': int.parse(target.group(2)!),
+            'id': found.command!.arguments['id'],
             if ({'pause', 'resume'}.contains(verb)) 'active': verb == 'resume',
           },
         ),
       );
     }
-    final edit = RegExp(
-      r'^(?:edit|change|update) (?:medicine #(\d+)|that) (name|dosage|times|days|start date|instructions|form) to (.+)$',
+    final rename = RegExp(
+      r'^rename medicine (.+?) to (.+)$',
       caseSensitive: false,
     ).firstMatch(text);
+    final editText = rename == null
+        ? text
+        : 'edit medicine ${rename.group(1)} name to ${rename.group(2)}';
+    final edit = RegExp(
+      r'^(?:(?:edit|change|update) (medicine .+?|that) )?(name|dosage|times|days|start date|instructions|form) to (.+)$',
+      caseSensitive: false,
+    ).firstMatch(editText);
     if (edit != null) {
-      final id = edit.group(1) == null ? _selected : int.parse(edit.group(1)!);
+      var id = _selected;
+      if (edit.group(1)?.toLowerCase().startsWith('medicine ') == true) {
+        final target = await _target(edit.group(1)!.substring(9));
+        if (target.command == null) return target;
+        id = target.command!.arguments['id'];
+      } else if (id == null &&
+          (edit.group(1) == null || edit.group(1)!.toLowerCase() == 'that')) {
+        return null; // A field-only follow-up may belong to Learning.
+      }
       if (id == null) {
         return const RiyaResolution(
           message: 'Read a medicine schedule first, or include its number.',
@@ -99,12 +146,16 @@ class RiyaMedicineIntents {
       }
       final field = edit.group(2)!.toLowerCase(), value = edit.group(3)!.trim();
       final Object? parsed = field == 'times'
-          ? value.split(',').map((t) => t.trim()).toList()
+          ? _times(value)
           : field == 'days'
           ? int.tryParse(value)
           : value;
       if (parsed == null) {
-        return const RiyaResolution(message: 'Use a whole number of days.');
+        return RiyaResolution(
+          message: field == 'times'
+              ? 'Use explicit times such as 08:00 or 8 AM, separated by commas.'
+              : 'Use a whole number of days.',
+        );
       }
       return RiyaResolution(
         command: RiyaCommand('medicine.edit', {
@@ -114,16 +165,23 @@ class RiyaMedicineIntents {
       );
     }
     final create = RegExp(
-      r'^(?:add|create|schedule) medicine (.+?) dosage (.+?) form (tablet|capsule|syrup|drops|injection) at ([\d:, ]+) for (\d+) days(?: from (\d{4}-\d{2}-\d{2}))?(?: instructions (.+))?$',
+      r'^(?:add|create|schedule) medicine (.+?) dosage (.+?) form (tablet|capsule|syrup|drops|injection) at (.+?) for (\d+) days(?: from (\d{4}-\d{2}-\d{2}))?(?: instructions (.+))?$',
       caseSensitive: false,
     ).firstMatch(text);
     if (create != null) {
+      final times = _times(create.group(4)!);
+      if (times == null) {
+        return const RiyaResolution(
+          message:
+              'Use explicit times such as 08:00 or 8 AM, separated by commas.',
+        );
+      }
       return RiyaResolution(
         command: RiyaCommand('medicine.create', {
           'name': create.group(1)!.trim(),
           'dosage': create.group(2)!.trim(),
           'form': create.group(3)!.toLowerCase(),
-          'times': create.group(4)!.split(',').map((t) => t.trim()).toList(),
+          'times': times,
           'days': int.parse(create.group(5)!),
           if (create.group(6) != null) 'startDate': create.group(6),
           if (create.group(7) != null) 'instructions': create.group(7)!.trim(),
@@ -137,6 +195,62 @@ class RiyaMedicineIntents {
       );
     }
     return null;
+  }
+
+  RiyaResolution _editHelp() => const RiyaResolution(
+    message:
+        'Which schedule field should change? For example, “name to New name” or “times to 8 AM, 8 PM”.',
+    options: ['Read selected medicine', 'Cancel'],
+  );
+
+  Future<RiyaResolution> _target(String reference) async {
+    final query = reference.trim();
+    final number = RegExp(r'^#?(\d+)$').firstMatch(query);
+    final medicine = number == null
+        ? null
+        : await db.medicineDao.getMedicineById(int.parse(number.group(1)!));
+    final rows = number == null
+        ? (await db.medicineDao.watchAllMedicines().first)
+              .where((m) => m.name.toLowerCase() == query.toLowerCase())
+              .toList()
+        : [?medicine];
+    if (rows.length != 1) {
+      _selected = null;
+      return RiyaResolution(
+        message: rows.isEmpty
+            ? 'That medicine schedule was not found. Show medicines to choose its name or number.'
+            : 'Several schedules have that name. Include a number:\n${rows.take(3).map((m) => '#${m.id} ${m.name} · ${m.dosage}').join('\n')}',
+      );
+    }
+    return RiyaResolution(
+      command: RiyaCommand('medicine.read', {'id': rows.single.id}),
+    );
+  }
+
+  List<String>? _times(String value) {
+    final result = <String>[];
+    for (final part in value.split(
+      RegExp(r',|\s+and\s+', caseSensitive: false),
+    )) {
+      final text = part.trim();
+      if (RegExp(r'^(?:[01]\d|2[0-3]):[0-5]\d$').hasMatch(text)) {
+        result.add(text);
+        continue;
+      }
+      final match = RegExp(
+        r'^(\d{1,2})(?::([0-5]\d))?\s*(am|pm)$',
+        caseSensitive: false,
+      ).firstMatch(text);
+      if (match == null) return null;
+      final hour = int.parse(match.group(1)!);
+      if (hour < 1 || hour > 12) return null;
+      final converted =
+          hour % 12 + (match.group(3)!.toLowerCase() == 'pm' ? 12 : 0);
+      result.add(
+        '${converted.toString().padLeft(2, '0')}:${match.group(2) ?? '00'}',
+      );
+    }
+    return result;
   }
 
   RiyaResolution _page() => RiyaResolution(

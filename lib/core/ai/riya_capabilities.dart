@@ -257,10 +257,15 @@ class RiyaResult {
     this.cancelReminderIds = const [],
     this.entityType,
     this.entityId,
+    this.learningCourseId,
+    this.learningModuleId,
+    this.learningLectureId,
   });
   final String message, route;
   final String? entityType;
   final int? entityId;
+  final String? learningCourseId;
+  final int? learningModuleId, learningLectureId;
   final List<int> reminderIds, cancelReminderIds;
   final List<String> options;
   final bool replayed;
@@ -272,6 +277,9 @@ class RiyaResult {
     'options': options,
     'entityType': entityType,
     'entityId': entityId,
+    'learningCourseId': learningCourseId,
+    'learningModuleId': learningModuleId,
+    'learningLectureId': learningLectureId,
     'alertEffectsPending':
         reminderIds.isNotEmpty || cancelReminderIds.isNotEmpty,
   };
@@ -286,6 +294,9 @@ class RiyaResult {
     options: (json['options'] as List? ?? []).cast<String>(),
     entityType: json['entityType'] as String?,
     entityId: json['entityId'] as int?,
+    learningCourseId: json['learningCourseId'] as String?,
+    learningModuleId: json['learningModuleId'] as int?,
+    learningLectureId: json['learningLectureId'] as int?,
     replayed: replayed,
   );
 }

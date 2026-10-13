@@ -232,6 +232,7 @@ class RiyaLearningActions {
       return RiyaResult(
         'Course saved: ${a['title']} ($id). Add a module when ready.',
         '/learning',
+        learningCourseId: id,
       );
     }
     final course = _course(a['courseId']);
@@ -242,6 +243,7 @@ class RiyaLearningActions {
         return RiyaResult(
           'Modules · ${course.title}:\n${rows.isEmpty ? 'No modules yet.' : rows.take(3).map((m) => '#${m.id} ${m.title}: ${m.completedCount}/${m.lectures.length} completed').join('\n')}',
           '/learning',
+          learningCourseId: course.id,
           options: [if (rows.length > 3) 'More modules in course ${course.id}'],
         );
       case 'learning.lectures':
@@ -250,6 +252,8 @@ class RiyaLearningActions {
         return RiyaResult(
           'Lectures · ${course.title} / ${module.title}:\n${rows.isEmpty ? 'No lectures yet.' : rows.take(3).map((l) => '#${l.id} ${l.title}: ${l.isCompleted ? 'completed' : '${l.studyProgressPercent}% study time'}').join('\n')}',
           '/learning',
+          learningCourseId: course.id,
+          learningModuleId: module.id,
           options: [
             if (rows.length > 3)
               'More lectures in module ${module.id} in course ${course.id}',
@@ -289,7 +293,11 @@ class RiyaLearningActions {
             targetMinutesPerDay: a['dailyMinutes'],
           ),
         );
-        return RiyaResult('Course ${course.id} updated.', '/learning');
+        return RiyaResult(
+          'Course ${course.id} updated.',
+          '/learning',
+          learningCourseId: course.id,
+        );
       case 'learning.course.delete':
         if (read().courses.length <= 1) {
           throw StateError(
@@ -318,7 +326,12 @@ class RiyaLearningActions {
             originRequestId: request,
           ),
         );
-        return RiyaResult('Module #$id saved in ${course.title}.', '/learning');
+        return RiyaResult(
+          'Module #$id saved in ${course.title}.',
+          '/learning',
+          learningCourseId: course.id,
+          learningModuleId: id,
+        );
       case 'learning.module.edit':
         final module = _module(course, a['moduleId']);
         if (a.keys.every((k) => k == 'courseId' || k == 'moduleId')) {
@@ -331,6 +344,8 @@ class RiyaLearningActions {
         return RiyaResult(
           'Module #${module.id} updated in ${course.title}.',
           '/learning',
+          learningCourseId: course.id,
+          learningModuleId: module.id,
         );
       case 'learning.module.delete':
         final module = _module(course, a['moduleId']);
@@ -357,6 +372,8 @@ class RiyaLearningActions {
         return RiyaResult(
           'Lecture #${lecture.id} saved in ${course.title}. Study time governs completion.',
           '/learning',
+          learningCourseId: course.id,
+          learningLectureId: lecture.id,
         );
       case 'learning.lecture.edit':
         final lecture = _lecture(course, a['lectureId']);
@@ -376,6 +393,8 @@ class RiyaLearningActions {
         return RiyaResult(
           'Lecture #${lecture.id} updated. Existing study evidence and completion are preserved.',
           '/learning',
+          learningCourseId: course.id,
+          learningLectureId: lecture.id,
         );
       case 'learning.lecture.delete':
         final lecture = _lecture(course, a['lectureId']);
@@ -394,6 +413,8 @@ class RiyaLearningActions {
         return RiyaResult(
           'Selected ${lecture.title} in ${course.title}${a['play'] == true ? ' and started study time' : ''}.',
           '/learning',
+          learningCourseId: course.id,
+          learningLectureId: lecture.id,
         );
       default:
         throw UnsupportedError('Unsupported Learning command');

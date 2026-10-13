@@ -93,6 +93,96 @@ void main() {
   );
 
   test(
+    'Lecture follow-ups retain course identity through saved receipts and require confirmation',
+    () async {
+      final selected = await run('learning.select', {
+        'courseId': 'b',
+        'lectureId': 1,
+        'play': false,
+      }, 'select-b');
+      resolver.rememberResult(RiyaResult.fromJson(selected.toJson()));
+      expect((await resolver.resolve('isko edit karo'))!.command, isNull);
+      final edit = (await resolver.resolve(
+        'Please edit that title to New AM title',
+      ))!.command!;
+      expect(edit.arguments, {
+        'courseId': 'b',
+        'lectureId': 1,
+        'title': 'New AM title',
+      });
+      await expectLater(
+        executor.execute(edit, requestId: 'no-confirmation'),
+        throwsStateError,
+      );
+      final result = await executor.execute(
+        edit,
+        requestId: 'followup-edit',
+        approved: true,
+      );
+      resolver.rememberResult(result);
+      final duration = (await resolver.resolve(
+        'duration to 20 minutes',
+      ))!.command!;
+      expect(duration.arguments['durationSeconds'], 1200);
+      expect(duration.arguments['courseId'], 'b');
+      expect(
+        container
+            .read(learningHubProvider)
+            .courses
+            .firstWhere((c) => c.id == 'a')
+            .modules
+            .single
+            .lectures
+            .single
+            .title,
+        'Original',
+      );
+      await resolver.resolve('Show reminders');
+      expect(
+        (await resolver.resolve('title to Stale'))?.command?.id,
+        isNot('learning.lecture.edit'),
+      );
+    },
+  );
+  test(
+    'Conversational course/module framing preserves names and asks for lecture scope',
+    () async {
+      final created = (await resolver.resolve(
+        'course Please AM Basics banao',
+      ))!.command!;
+      expect(created.arguments['title'], 'Please AM Basics');
+      final saved = await executor.execute(
+        created,
+        requestId: 'hinglish-course',
+        approved: true,
+      );
+      resolver.rememberResult(saved);
+      final rename = (await resolver.resolve(
+        'rename that to New Course',
+      ))!.command!;
+      expect(rename.id, 'learning.course.edit');
+      expect(rename.arguments['courseId'], saved.learningCourseId);
+      final modules = (await resolver.resolve(
+        'course a ke modules dikhao',
+      ))!.command!;
+      resolver.rememberResult(
+        await executor.execute(modules, requestId: 'read-modules'),
+      );
+      expect(
+        (await resolver.resolve(
+          'name to Alpha',
+        ))!.command!.arguments['courseId'],
+        'a',
+      );
+      expect((await resolver.resolve('play lecture #1'))!.command, isNull);
+      await resolver.resolve('cancel karo');
+      expect(
+        (await resolver.resolve('rename that to Stale'))?.command?.id,
+        isNot('learning.course.edit'),
+      );
+    },
+  );
+  test(
     'Course/module/lecture creation, scoped reads and edit/delete share the catalog without fabricated progress',
     () async {
       await run('learning.course.create', {'title': 'Networks'}, 'course');

@@ -17,7 +17,7 @@ class RiyaWorkspaceIntents {
   late final _learning = RiyaLearningIntents(db);
   late final _sessions = RiyaSessionIntents(clock);
   late final _money = RiyaMoneyIntents(clock);
-  late final _medicine = RiyaMedicineIntents(clock);
+  late final _medicine = RiyaMedicineIntents(db, clock);
   String? _listDomain, _listScope;
   int _offset = 0;
   String? _from, _to;
@@ -32,7 +32,17 @@ class RiyaWorkspaceIntents {
   Map<String, dynamic>? _pendingConversion;
   DateTime? _conversionDay;
 
+  void rememberLearning(RiyaResult result) {
+    _medicine.cancel();
+    _money.cancel();
+    _life.cancel();
+    _selectedType = null;
+    _selectedId = null;
+    _learning.remember(result);
+  }
+
   void remember(String type, int id) {
+    _learning.clearSelection();
     if (type == 'medicine') {
       _medicine.remember(id);
       _money.clearSelection();
@@ -90,8 +100,29 @@ class RiyaWorkspaceIntents {
 
   Future<RiyaResolution?> resolve(String prompt) async {
     final lower = prompt.trim().toLowerCase();
-    final medicine = _medicine.resolve(prompt);
+    // An explicitly selected Learning record owns its generic edit follow-up.
+    // Other domain resolvers may otherwise claim a shared field such as title.
+    if (_learning.hasSelection &&
+        RegExp(
+          r'^(?:edit that$|rename that to |(?:edit|change|update) that (?:name|title|duration|policy) to |(?:name|title|duration|policy) to )',
+        ).hasMatch(lower)) {
+      final followup = await _learning.resolve(prompt);
+      if (followup != null) {
+        _medicine.cancel();
+        _money.cancel();
+        _sessions.cancel();
+        _life.cancel();
+        newCommand();
+        _listDomain = null;
+        _listScope = null;
+        _selectedType = null;
+        _selectedId = null;
+        return followup;
+      }
+    }
+    final medicine = await _medicine.resolve(prompt);
     if (medicine != null) {
+      _learning.cancel();
       _money.cancel();
       _sessions.cancel();
       newCommand();
@@ -105,6 +136,7 @@ class RiyaWorkspaceIntents {
     _medicine.clearSelection();
     final money = _money.resolve(prompt);
     if (money != null) {
+      _learning.cancel();
       _sessions.cancel();
       newCommand();
       _listDomain = null;
@@ -118,6 +150,7 @@ class RiyaWorkspaceIntents {
     _money.clearSelection();
     final session = _sessions.resolve(prompt);
     if (session != null) {
+      _learning.cancel();
       newCommand();
       _listDomain = null;
       _listScope = null;
@@ -141,6 +174,7 @@ class RiyaWorkspaceIntents {
       _selectedId = null;
       return learning;
     }
+    _learning.clearSelection();
     final life = _life.resolve(prompt);
     if (life != null) {
       newCommand();

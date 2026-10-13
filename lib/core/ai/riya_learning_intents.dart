@@ -6,9 +6,85 @@ class RiyaLearningIntents {
   RiyaLearningIntents(this.db);
   final AppDatabase db;
   final _offsets = <String, int>{};
-  void cancel() => _offsets.clear();
+  String? _courseId;
+  int? _moduleId, _lectureId;
+  bool get hasSelection => _courseId != null;
+  void remember(RiyaResult result) {
+    _courseId = result.learningCourseId;
+    _moduleId = result.learningModuleId;
+    _lectureId = result.learningLectureId;
+  }
+
+  void clearSelection() {
+    _courseId = null;
+    _moduleId = null;
+    _lectureId = null;
+  }
+
+  void cancel() {
+    _offsets.clear();
+    clearSelection();
+  }
+
   Future<RiyaResolution?> resolve(String prompt) async {
-    final text = prompt.trim();
+    var text = prompt.trim();
+    final lower = text.toLowerCase();
+    if (lower == 'edit that' && _courseId != null) {
+      return RiyaResolution(
+        message: _lectureId != null
+            ? 'What should change? Use “title to New title”, “duration to 20 minutes” or “policy to 50%”.'
+            : 'What should it be called? Use “name to New title”.',
+        options: const ['Cancel'],
+      );
+    }
+    final followup = RegExp(
+      r'^(?:(?:edit|change|update) that )?(name|title|duration|policy) to (.+)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    final rename = RegExp(
+      r'^rename that to (.+)$',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if ((followup != null || rename != null) && _courseId != null) {
+      final field = followup?.group(1)?.toLowerCase() ?? 'title';
+      final value = followup?.group(2) ?? rename!.group(1)!;
+      if (_lectureId != null) {
+        text =
+            'edit lecture #$_lectureId in course $_courseId ${field == 'name' ? 'title' : field} to $value';
+      } else if (field == 'name' || field == 'title') {
+        text = _moduleId == null
+            ? 'rename course $_courseId to $value'
+            : 'rename module #$_moduleId in course $_courseId to $value';
+      } else {
+        return const RiyaResolution(
+          message:
+              'Select a lecture first before changing its duration or policy.',
+        );
+      }
+    }
+    if (RegExp(
+      r'^(?:select|play|show) lecture #?\d+$',
+      caseSensitive: false,
+    ).hasMatch(text)) {
+      return const RiyaResolution(
+        message:
+            'Which course contains that lecture? Include “in course” and its name or ID.',
+      );
+    }
+    final list = RegExp(
+      r'^(?:show|list) (?:my )?(?:courses|learning progress)$',
+      caseSensitive: false,
+    );
+    if (list.hasMatch(text)) {
+      clearSelection();
+      return const RiyaResolution(command: RiyaCommand('learning.list', {}));
+    }
+    if (lower == 'pause learning' || lower == 'pause lecture') {
+      return const RiyaResolution(command: RiyaCommand('learning.pause', {}));
+    }
+    if (lower == 'resume learning' || lower == 'resume lecture') {
+      return const RiyaResolution(command: RiyaCommand('learning.resume', {}));
+    }
     final create = RegExp(
       r'^(?:create|add|banao) (?:a )?course (.+)$',
       caseSensitive: false,
@@ -175,15 +251,38 @@ class RiyaLearningIntents {
       );
     }
     final editLecture = RegExp(
-      r'^edit lecture #(\d+) in course (.+?) (title|duration|policy) to (.+)$',
+      r'^(?:edit|change|update) lecture #(\d+) in course (.+?) (title|duration|policy) to (.+)$',
       caseSensitive: false,
     ).firstMatch(text);
     if (editLecture != null) {
       final field = editLecture.group(3)!.toLowerCase();
       final value = editLecture.group(4)!.trim();
-      final number = int.tryParse(
-        value.replaceAll(RegExp(r'\s*(?:seconds|%)$'), ''),
-      );
+      final amount = RegExp(
+        r'^(\d+)\s*(seconds?|secs?|minutes?|mins?|%)?$',
+        caseSensitive: false,
+      ).firstMatch(value);
+      final number = amount == null
+          ? null
+          : int.parse(amount.group(1)!) *
+                (field == 'duration' &&
+                        RegExp(
+                          r'^(?:minutes?|mins?)$',
+                          caseSensitive: false,
+                        ).hasMatch(amount.group(2) ?? '')
+                    ? 60
+                    : 1);
+      if (field == 'policy' &&
+          amount?.group(2) != null &&
+          amount!.group(2) != '%') {
+        return const RiyaResolution(
+          message: 'Use a completion policy of 50 or 100%.',
+        );
+      }
+      if (field == 'duration' && amount?.group(2) == '%') {
+        return const RiyaResolution(
+          message: 'Use a duration in minutes or seconds.',
+        );
+      }
       if (field != 'title' && number == null) {
         return const RiyaResolution(
           message:
