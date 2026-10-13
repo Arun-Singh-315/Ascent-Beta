@@ -11,6 +11,7 @@ class _DeletedThoughtLinks {
 class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   ThoughtDao(super.db);
   final _recentlyDeleted = <int, _DeletedThoughtLinks>{};
+  void clearDeletionUndo() => _recentlyDeleted.clear();
 
   /// Watch active (non-archived) thoughts sorted by pinned first, then newest with stable ID ties.
   Stream<List<Thought>> watchActiveThoughts() {
@@ -155,9 +156,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Future<void> restoreDeletedThought(Thought thought) => db.transaction(
     () async {
       if (await getThoughtById(thought.id) != null) return;
-      await into(thoughtTable).insert(thought.toCompanion(true));
       final links = _recentlyDeleted[thought.id];
       if (links == null) return;
+      await into(thoughtTable).insert(thought.toCompanion(true));
       for (final task in links.tasks) {
         final current = await db.taskDao.getTaskById(task.id);
         if (current != null && current.linkedThoughtId == null) {

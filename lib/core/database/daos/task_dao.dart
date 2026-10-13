@@ -1,8 +1,18 @@
 part of '../app_database.dart';
 
+class _DeletedTaskTree {
+  _DeletedTaskTree(this.tasks, this.reminders, this.links, this.sessions);
+  final List<Task> tasks;
+  final List<Reminder> reminders;
+  final List<ThoughtReminderLink> links;
+  final List<TimeSession> sessions;
+}
+
 @DriftAccessor(tables: [TaskTable])
 class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   TaskDao(super.db);
+  final _deletedTrees = <int, _DeletedTaskTree>{};
+  void clearDeletionUndo() => _deletedTrees.clear();
 
   // ---------------------------------------------------------------------------
   // Watch helpers
@@ -408,6 +418,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Future<List<int>> deleteTaskWithDependents(int id) =>
       db.transaction(() async {
         final cancelled = <int>[];
+        final captured = _DeletedTaskTree([], [], [], []);
         final visiting = <int>{};
         Future<void> remove(int current) async {
           if (!visiting.add(current)) {
@@ -415,6 +426,8 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
               'A cyclic task relationship needs repair before deletion',
             );
           }
+          final task = await getTaskById(current);
+          if (task == null) return;
           final children = await (select(
             taskTable,
           )..where((t) => t.parentTaskId.equals(current))).get();
@@ -422,6 +435,20 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
             await remove(child.id);
           }
           final reminders = await db.reminderDao.getRemindersByTaskId(current);
+          captured.tasks.add(task);
+          captured.reminders.addAll(reminders);
+          for (final reminder in reminders) {
+            captured.links.addAll(
+              await (db.select(
+                db.thoughtReminderLinkTable,
+              )..where((l) => l.reminderId.equals(reminder.id))).get(),
+            );
+          }
+          captured.sessions.addAll(
+            await (db.select(
+              db.timeSessionTable,
+            )..where((s) => s.linkedTaskId.equals(current))).get(),
+          );
           cancelled.addAll(reminders.map((r) => r.id));
           await db.reminderDao.deleteRemindersByTaskId(current);
           await (db.delete(
@@ -431,6 +458,111 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         }
 
         await remove(id);
+        if (captured.tasks.isNotEmpty) {
+          _deletedTrees[id] = captured;
+          if (_deletedTrees.length > 20) {
+            _deletedTrees.remove(_deletedTrees.keys.first);
+          }
+        }
         return cancelled;
       });
+  Future<bool> restoreDeletedTask(int id) => db.transaction(() async {
+    final snapshot = _deletedTrees[id];
+    if (snapshot == null) return false;
+    for (final task in snapshot.tasks) {
+      if (await getTaskById(task.id) != null) return false;
+    }
+    for (final reminder in snapshot.reminders) {
+      if (await db.reminderDao.getReminderById(reminder.id) != null) {
+        return false;
+      }
+    }
+    for (final session in snapshot.sessions) {
+      if (await (db.select(
+            db.timeSessionTable,
+          )..where((s) => s.id.equals(session.id))).getSingleOrNull() !=
+          null) {
+        return false;
+      }
+    }
+    final ids = snapshot.tasks.map((t) => t.id).toSet();
+    for (final task in snapshot.tasks.reversed) {
+      final sourceExists =
+          task.linkedThoughtId == null ||
+          await db.thoughtDao.getThoughtById(task.linkedThoughtId!) != null &&
+              await getTaskLinkedToThought(task.linkedThoughtId!) == null;
+      final parentExists =
+          task.parentTaskId == null ||
+          ids.contains(task.parentTaskId) ||
+          await getTaskById(task.parentTaskId!) != null;
+      await into(taskTable).insert(
+        task
+            .toCompanion(true)
+            .copyWith(
+              linkedThoughtId: sourceExists
+                  ? Value(task.linkedThoughtId)
+                  : const Value(null),
+              parentTaskId: parentExists
+                  ? Value(task.parentTaskId)
+                  : const Value(null),
+            ),
+      );
+    }
+    for (final reminder in snapshot.reminders) {
+      final task = reminder.linkedTaskId == null
+          ? null
+          : await getTaskById(reminder.linkedTaskId!);
+      await db
+          .into(db.reminderTable)
+          .insert(
+            reminder
+                .toCompanion(true)
+                .copyWith(
+                  isActive: Value(
+                    reminder.isActive && task?.actualCompletedDate == null,
+                  ),
+                  alertSyncPending: const Value(true),
+                ),
+          );
+    }
+    for (final link in snapshot.links) {
+      if (await db.thoughtDao.getThoughtById(link.thoughtId) != null) {
+        await db
+            .into(db.thoughtReminderLinkTable)
+            .insert(link.toCompanion(true));
+      }
+    }
+    for (final session in snapshot.sessions) {
+      var restored = session.toCompanion(true);
+      if (session.status == 'running') {
+        final intervals = jsonDecode(session.pausedIntervals) as List;
+        var pausedSeconds = 0;
+        for (final interval in intervals) {
+          final start = DateTime.tryParse(
+            interval['pausedAt']?.toString() ?? '',
+          );
+          final end = DateTime.tryParse(
+            interval['resumedAt']?.toString() ?? '',
+          );
+          if (start != null && end != null && end.isAfter(start)) {
+            pausedSeconds += end.difference(start).inSeconds;
+          }
+        }
+        final boundary = session.startedAt.add(
+          Duration(seconds: session.durationSeconds + pausedSeconds),
+        );
+        intervals.add({
+          'pausedAt': boundary.toIso8601String(),
+          'resumedAt': null,
+        });
+        restored = restored.copyWith(
+          status: const Value('paused'),
+          pausedIntervals: Value(jsonEncode(intervals)),
+        );
+      }
+      await db.into(db.timeSessionTable).insert(restored);
+    }
+    _deletedTrees.remove(id);
+    return true;
+  });
 }

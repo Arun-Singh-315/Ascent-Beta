@@ -12,6 +12,7 @@ import '../../shared/widgets/message_composer.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../core/ai/riya_learning_actions.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
 import '../../core/ai/riya_intents.dart';
@@ -140,6 +141,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         final executor = RiyaExecutor(
           db,
           external: _workspaceCommand,
+          expectedWorkspaceRevision: db.workspaceRevision,
           verifyExternal: _verifyWorkspaceCommand,
         );
         executor.validate(command);
@@ -295,6 +297,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       return RiyaResult('Home visibility verified.', '/home');
     }
     final notifier = ref.read(learningHubProvider.notifier);
+    if (riyaLearningCapabilities.any((c) => c.id == command.id)) {
+      return RiyaLearningActions(
+        notifier,
+        () => ref.read(learningHubProvider),
+        DateTime.now,
+        db: ref.read(databaseProvider),
+      ).verify(command);
+    }
     await notifier.ready;
     final state = ref.read(learningHubProvider);
     if (command.id == 'learning.complete') {
@@ -345,6 +355,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       );
     }
     final notifier = ref.read(learningHubProvider.notifier);
+    if (riyaLearningCapabilities.any((c) => c.id == command.id)) {
+      return RiyaLearningActions(
+        notifier,
+        () => ref.read(learningHubProvider),
+        DateTime.now,
+        db: ref.read(databaseProvider),
+      ).run(command);
+    }
     await notifier.ready;
     final state = ref.read(learningHubProvider);
     switch (command.id) {

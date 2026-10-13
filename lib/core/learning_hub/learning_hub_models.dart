@@ -1,3 +1,5 @@
+const _unchangedCourseValue = Object();
+
 class Course {
   final String id;
   final String title;
@@ -85,8 +87,8 @@ class Course {
     String? description,
     String? author,
     String? category,
-    String? sourceUrl,
-    DateTime? targetCompletionDate,
+    Object? sourceUrl = _unchangedCourseValue,
+    Object? targetCompletionDate = _unchangedCourseValue,
     int? daysLeft,
     int? targetMinutesPerDay,
     List<CourseModule>? modules,
@@ -98,8 +100,13 @@ class Course {
       description: description ?? this.description,
       author: author ?? this.author,
       category: category ?? this.category,
-      sourceUrl: sourceUrl ?? this.sourceUrl,
-      targetCompletionDate: targetCompletionDate ?? this.targetCompletionDate,
+      sourceUrl: identical(sourceUrl, _unchangedCourseValue)
+          ? this.sourceUrl
+          : sourceUrl as String?,
+      targetCompletionDate:
+          identical(targetCompletionDate, _unchangedCourseValue)
+          ? this.targetCompletionDate
+          : targetCompletionDate as DateTime?,
       daysLeft: daysLeft ?? this.daysLeft,
       targetMinutesPerDay: targetMinutesPerDay ?? this.targetMinutesPerDay,
       modules: modules ?? this.modules,
@@ -156,6 +163,7 @@ class CourseModule {
   final String description;
   final double durationHours;
   final List<Lecture> lectures;
+  final String? originRequestId;
 
   const CourseModule({
     required this.id,
@@ -163,6 +171,7 @@ class CourseModule {
     this.description = '',
     this.durationHours = 1.0,
     required this.lectures,
+    this.originRequestId,
   });
 
   int get totalDurationSeconds =>
@@ -196,6 +205,7 @@ class CourseModule {
     String? description,
     double? durationHours,
     List<Lecture>? lectures,
+    String? originRequestId,
   }) {
     return CourseModule(
       id: id ?? this.id,
@@ -203,6 +213,7 @@ class CourseModule {
       description: description ?? this.description,
       durationHours: durationHours ?? this.durationHours,
       lectures: lectures ?? this.lectures,
+      originRequestId: originRequestId ?? this.originRequestId,
     );
   }
 
@@ -213,11 +224,13 @@ class CourseModule {
       'description': description,
       'durationHours': durationHours,
       'lectures': lectures.map((l) => l.toJson()).toList(),
+      'originRequestId': originRequestId,
     };
   }
 
   factory CourseModule.fromJson(Map<String, dynamic> json) {
     return CourseModule(
+      originRequestId: json['originRequestId'] as String?,
       id: (json['id'] as num?)?.toInt() ?? 1,
       title: json['title']?.toString() ?? 'Module',
       description: json['description']?.toString() ?? '',

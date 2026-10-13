@@ -122,6 +122,18 @@ part 'daos/medicine_dao.dart';
   ],
 )
 class AppDatabase extends _$AppDatabase {
+  int workspaceRevision = 0;
+  void markWorkspaceReplaced() {
+    workspaceRevision++;
+    clearDeletionUndo();
+  }
+
+  void clearDeletionUndo() {
+    taskDao.clearDeletionUndo();
+    thoughtDao.clearDeletionUndo();
+    reminderDao.clearDeletionUndo();
+  }
+
   AppDatabase() : super(_openConnection());
   AppDatabase.forTesting(super.e);
 

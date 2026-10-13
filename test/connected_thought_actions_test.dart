@@ -20,6 +20,35 @@ void main() {
   });
   tearDown(() async => db.close());
   test(
+    'Grouping cannot make a linked checklist parent its own child',
+    () async {
+      final first = await note('Parent note'),
+          second = await note('Child note');
+      final converted = await actions.convert([
+        first,
+        second,
+      ], mode: ThoughtConversionMode.todo);
+      await (db.update(
+        db.taskTable,
+      )..where((t) => t.id.equals(converted.taskIds.last))).write(
+        TaskTableCompanion(parentTaskId: drift.Value(converted.taskIds.first)),
+      );
+      await expectLater(
+        actions.convert(
+          [first, second],
+          mode: ThoughtConversionMode.todo,
+          grouped: true,
+        ),
+        throwsStateError,
+      );
+      expect(
+        (await db.taskDao.getTaskById(converted.taskIds.first))!.parentTaskId,
+        isNull,
+      );
+    },
+  );
+
+  test(
     'Both is atomic, links actual sources and repeated execution reuses records',
     () async {
       final notes = [await note('Same words'), await note('Same words')];

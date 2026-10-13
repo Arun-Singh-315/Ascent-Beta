@@ -83,6 +83,11 @@ class LearningCatalog {
   }
 
   Future<void> _replace(List<Course> courses) async {
+    if ((await db.select(db.backupRestoreTable).get()).isNotEmpty) {
+      throw StateError(
+        'Workspace settings recovery must finish before changing Learning',
+      );
+    }
     final ids = courses.map((c) => c.id).toSet();
     if (ids.length != courses.length) {
       throw ArgumentError('Course IDs must be unique');

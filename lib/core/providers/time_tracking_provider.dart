@@ -99,11 +99,13 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       final isRunning = session.status == 'running';
       final isPaused = session.status == 'paused';
 
-      final elapsed = TimeSessionDao.computeActiveDurationSeconds(
-        session.startedAt,
-        DateTime.now(),
-        session.pausedIntervals,
-      );
+      final elapsed = isPaused
+          ? session.durationSeconds
+          : TimeSessionDao.computeActiveDurationSeconds(
+              session.startedAt,
+              DateTime.now(),
+              session.pausedIntervals,
+            );
 
       state = state.copyWith(
         activeSession: session,
@@ -242,6 +244,36 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     int? categoryId,
     bool autoStart = true,
   }) async {
+    if (taskId != null) {
+      final task = await ref.read(taskDaoProvider).getTaskById(taskId);
+      if (task?.learningCourseId != null && task?.learningLectureId != null) {
+        final learning = ref.read(learningHubProvider.notifier);
+        await learning.ready;
+        final state = ref.read(learningHubProvider);
+        if (!state.courses.any(
+          (c) =>
+              c.id == task!.learningCourseId &&
+              c.modules.any(
+                (m) => m.lectures.any((l) => l.id == task.learningLectureId),
+              ),
+        )) {
+          throw StateError(
+            'This linked lecture no longer exists. Open Learning to review it',
+          );
+        }
+        if (this.state.isRunning && this.state.activeSession != null) {
+          await ref
+              .read(timeSessionDaoProvider)
+              .pauseSession(this.state.activeSession!.id);
+        }
+        if (state.activeCourseId != task!.learningCourseId) {
+          learning.switchCourse(task.learningCourseId!);
+        }
+        learning.selectLecture(task.learningLectureId!, autoPlay: autoStart);
+        await learning.settled;
+        return;
+      }
+    }
     final dao = ref.read(timeSessionDaoProvider);
 
     // 1. If current session is running, pause it and flush elapsed duration immediately

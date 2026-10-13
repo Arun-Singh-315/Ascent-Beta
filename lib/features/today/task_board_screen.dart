@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
@@ -20,6 +19,8 @@ import '../../shared/widgets/undo_snackbar.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import 'package:go_router/go_router.dart';
 import 'add_activity_sheet.dart';
+import '../../core/learning_hub/learning_hub_provider.dart';
+import '../study_plan/lecture_focus_player_sheet.dart';
 
 enum _TaskBoardTab { today, others, completed }
 
@@ -449,6 +450,59 @@ class _TaskItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (task.learningCourseId != null && task.learningLectureId != null) {
+      final hub = ref.watch(learningHubProvider);
+      final course = hub.courses
+          .where((c) => c.id == task.learningCourseId)
+          .firstOrNull;
+      final lecture = course?.modules
+          .expand((m) => m.lectures)
+          .where((l) => l.id == task.learningLectureId)
+          .firstOrNull;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: AscentCard(
+          onTap: lecture == null
+              ? null
+              : () async {
+                  HapticFeedback.selectionClick();
+                  final notifier = ref.read(learningHubProvider.notifier);
+                  await notifier.ready;
+                  if (ref.read(learningHubProvider).activeCourseId !=
+                      course!.id) {
+                    notifier.switchCourse(course.id);
+                  }
+                  notifier.selectLecture(lecture.id, autoPlay: false);
+                  if (context.mounted) LectureFocusPlayerSheet.show(context);
+                },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                lecture?.title ?? task.title,
+                style: AscentTextStyles.homeHeadline.copyWith(
+                  color: context.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                lecture == null
+                    ? 'Linked lecture unavailable. Open Learning to review.'
+                    : 'Lecture · ${course!.title} · ${lecture.isCompleted ? 'Completed' : '${lecture.studyProgressPercent}% study time · ${lecture.completionThresholdPercent}% required'}',
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textSecondary,
+                ),
+              ),
+              if (lecture != null)
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text('Open lecture'),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
     final isDone = task.actualCompletedDate != null;
     final isTimeBound =
         task.estimatedMinutes != null && task.estimatedMinutes! > 0;
@@ -580,31 +634,44 @@ class _TaskItemTile extends ConsumerWidget {
 
           if (confirmed != true) return false;
 
+          final visibility = ref.read(
+            dismissedTodayActivityIdsProvider.notifier,
+          );
           await deleteTaskAndCleanCascade(ref, task.id, taskTitle: task.title);
           if (context.mounted) {
             showUndoSnackbar(
               context,
               message: 'Task deleted',
               onUndo: () async {
-                final newId = await taskDao.insertTask(
-                  TaskTableCompanion.insert(
-                    title: task.title,
-                    notes: drift.Value(task.notes),
-                    plannedDate: drift.Value(task.plannedDate),
-                    priority: drift.Value(task.priority),
-                    seriesId: drift.Value(task.seriesId),
-                    linkedPhaseId: drift.Value(task.linkedPhaseId),
-                    parentTaskId: drift.Value(task.parentTaskId),
-                    linkedApplicationId: drift.Value(task.linkedApplicationId),
-                    estimatedMinutes: drift.Value(task.estimatedMinutes),
-                  ),
-                );
-                await ref
-                    .read(dismissedTodayActivityIdsProvider.notifier)
-                    .unDismissActivityId('task_${task.id}');
-                await ref
-                    .read(dismissedTodayActivityIdsProvider.notifier)
-                    .unDismissActivityId('task_$newId');
+                bool restored = false;
+                try {
+                  restored = await taskDao.restoreDeletedTask(task.id);
+                  if (!restored) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'This undo is no longer available. Newer records were kept.',
+                          ),
+                        ),
+                      );
+                    }
+                    return;
+                  }
+                  await visibility.unDismissActivityId('task_${task.id}');
+                } catch (_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          restored
+                              ? 'Task restored. Its visibility could not be refreshed.'
+                              : 'Could not restore the task.',
+                        ),
+                      ),
+                    );
+                  }
+                }
               },
             );
           }
@@ -864,6 +931,10 @@ class _TaskItemTile extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 ...subTasks.map((sub) {
+                  if (sub.learningCourseId != null &&
+                      sub.learningLectureId != null) {
+                    return _TaskItemTile(task: sub, onAddSubTask: () {});
+                  }
                   final isSubDone = sub.actualCompletedDate != null;
                   return Padding(
                     padding: const EdgeInsets.only(left: 36, top: 4, bottom: 4),

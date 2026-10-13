@@ -3,6 +3,8 @@ import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_intents.dart';
 import 'riya_life_intents.dart';
+import 'riya_learning_intents.dart';
+import 'riya_session_reads.dart';
 
 /// Generic verbs + real entities, rather than a phrase for every test case.
 class RiyaWorkspaceIntents {
@@ -10,6 +12,8 @@ class RiyaWorkspaceIntents {
   final AppDatabase db;
   final DateTime Function() clock;
   late final _life = RiyaLifeIntents(clock);
+  late final _learning = RiyaLearningIntents(db);
+  late final _sessions = RiyaSessionIntents(clock);
   String? _listDomain, _listScope;
   int _offset = 0;
   String? _from, _to;
@@ -38,6 +42,8 @@ class RiyaWorkspaceIntents {
 
   void cancel() {
     _life.cancel();
+    _learning.cancel();
+    _sessions.cancel();
     _pendingIdCommand = null;
     _pendingIdType = null;
     _choices = {};
@@ -61,9 +67,37 @@ class RiyaWorkspaceIntents {
 
   Future<RiyaResolution?> resolve(String prompt) async {
     final lower = prompt.trim().toLowerCase();
+    final session = _sessions.resolve(prompt);
+    if (session != null) {
+      newCommand();
+      _listDomain = null;
+      _listScope = null;
+      _offset = 0;
+      _life.clearSelection();
+      _selectedType = null;
+      _selectedId = null;
+      return session;
+    }
+    // A different request ends the history follow-up context. Bare dates must
+    // belong to the most recent list or pending action.
+    _sessions.cancel();
+    final learning = await _learning.resolve(prompt);
+    if (learning != null) {
+      newCommand();
+      _listDomain = null;
+      _listScope = null;
+      _offset = 0;
+      _life.clearSelection();
+      _selectedType = null;
+      _selectedId = null;
+      return learning;
+    }
     final life = _life.resolve(prompt);
     if (life != null) {
       newCommand();
+      _listDomain = null;
+      _listScope = null;
+      _offset = 0;
       _selectedType = null;
       _selectedId = null;
       return life;

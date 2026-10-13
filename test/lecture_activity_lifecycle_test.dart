@@ -56,9 +56,45 @@ void main() {
   });
 
   tearDown(() async {
+    await container.read(learningHubProvider.notifier).settled;
     container.dispose();
     await db.close();
   });
+
+  test(
+    'A converted task opens its scoped lecture instead of a generic timer',
+    () async {
+      final state = container.read(learningHubProvider);
+      final lecture = state.activeLecture;
+      final task = await db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Converted study activity',
+          learningCourseId: drift.Value(state.activeCourseId),
+          learningLectureId: drift.Value(lecture.id),
+        ),
+      );
+      await container
+          .read(timeTrackingProvider.notifier)
+          .switchToTask(
+            title: 'Converted study activity',
+            taskId: task,
+            autoStart: false,
+          );
+      expect(
+        container.read(learningHubProvider).activeCourseId,
+        state.activeCourseId,
+      );
+      expect(container.read(learningHubProvider).activeLectureId, lecture.id);
+      expect(container.read(learningHubProvider).isPlaying, false);
+      expect(await db.select(db.timeSessionTable).get(), isEmpty);
+      expect(await db.taskDao.markComplete(task), false);
+      db.markWorkspaceReplaced();
+      await expectLater(
+        container.read(learningHubProvider.notifier).ready,
+        throwsStateError,
+      );
+    },
+  );
 
   group('Lecture Activity Lifecycle & Dismissal Guarantee Tests', () {
     test(

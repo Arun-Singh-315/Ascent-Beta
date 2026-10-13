@@ -96,6 +96,11 @@ class ThoughtActions {
           }
           parentId = parents.isEmpty ? null : parents.single;
           if (parentId != null) {
+            if (existing.values.any((task) => task.id == parentId)) {
+              throw StateError(
+                'These actions include their own checklist parent. Choose its children or use Individual items.',
+              );
+            }
             final children = await (db.select(
               db.taskTable,
             )..where((t) => t.parentTaskId.equals(parentId!))).get();

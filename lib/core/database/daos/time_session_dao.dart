@@ -358,7 +358,7 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     final session = await (select(
       timeSessionTable,
     )..where((s) => s.id.equals(id))).getSingleOrNull();
-    if (session == null) return;
+    if (session == null || session.status == 'completed') return;
 
     final end = endedAt ?? DateTime.now();
 
@@ -374,11 +374,13 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     }
 
     // Calculate active duration in minutes and hours
-    final durationSeconds = computeActiveDurationSeconds(
-      session.startedAt,
-      end,
-      jsonEncode(intervals),
-    );
+    final durationSeconds = session.learningCourseId != null
+        ? session.durationSeconds
+        : computeActiveDurationSeconds(
+            session.startedAt,
+            end,
+            jsonEncode(intervals),
+          );
     final activeMinutes = (durationSeconds / 60).round();
 
     await (update(timeSessionTable)..where((s) => s.id.equals(id))).write(
@@ -423,11 +425,7 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
             sCategory?.name.toLowerCase() == 'study' ||
             s.activityType.toLowerCase() == 'study';
         if (sIsStudy && s.status == 'completed') {
-          final sDuration = computeActiveDurationSeconds(
-            s.startedAt,
-            s.endedAt ?? end,
-            s.pausedIntervals,
-          );
+          final sDuration = s.durationSeconds;
           totalStudyHours += (sDuration / 3600.0);
         }
       }

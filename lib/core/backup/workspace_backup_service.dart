@@ -199,12 +199,21 @@ class WorkspaceBackupService {
         db.schemaVersion == 16 &&
         payload['tables'] is Map) {
       final tables = payload['tables'] as Map;
-      if (tables.containsKey('thought_reminder_links') || tables.containsKey('thought_merge_sources')) { throw const FormatException('Legacy schema contains newer relationships'); }
+      if (tables.containsKey('thought_reminder_links') ||
+          tables.containsKey('thought_merge_sources')) {
+        throw const FormatException(
+          'Legacy schema contains newer relationships',
+        );
+      }
       if (tables['tasks'] is! List || tables['time_sessions'] is! List) {
         throw const FormatException('Incomplete legacy backup');
       }
       for (final row in tables['tasks'] as List) {
-        if (row is Map) { row['linked_thought_id'] = null; row['learning_course_id'] = null; row['learning_lecture_id'] = null; }
+        if (row is Map) {
+          row['linked_thought_id'] = null;
+          row['learning_course_id'] = null;
+          row['learning_lecture_id'] = null;
+        }
       }
       for (final row in tables['time_sessions'] as List) {
         if (row is Map) {
@@ -443,6 +452,7 @@ class WorkspaceBackupService {
       await imported.delete(recursive: true);
       rethrow;
     }
+    db.markWorkspaceReplaced();
     db.markTablesUpdated(db.allTables.toSet());
     try {
       await recoverPreferences();

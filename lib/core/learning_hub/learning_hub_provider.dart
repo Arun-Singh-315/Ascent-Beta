@@ -203,7 +203,17 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   Future<void> _saveQueue = Future.value();
   Future<void> _catalogReady = Future.value();
   bool _catalogLoading = true;
-  Future<void> get ready => _catalogReady;
+  int _catalogRevision = 0;
+  Future<void> get ready async {
+    await _catalogReady;
+    if (!ref.mounted ||
+        ref.read(databaseProvider).workspaceRevision != _catalogRevision) {
+      throw StateError(
+        'The workspace changed. Reopen Learning before continuing',
+      );
+    }
+  }
+
   Future<void> get settled async {
     await _saveQueue;
     while (_sessionWrites.isNotEmpty) {
@@ -219,7 +229,14 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     final ready = _catalogReady;
     final next = _saveQueue.then((_) async {
       await ready;
-      if (!ref.mounted) return;
+      if (!ref.mounted) {
+        throw StateError('The learning workspace changed before saving');
+      }
+      if (ref.read(databaseProvider).workspaceRevision != _catalogRevision) {
+        throw StateError(
+          'The workspace was replaced. Restart or reopen Learning before saving',
+        );
+      }
       await save(json);
     });
     _saveQueue = next.catchError((Object error) {});
@@ -227,7 +244,10 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   void _creditEngagement() {
-    if (!state.isPlaying || _lastCreditMicros == null || _completionPending) {
+    if (!state.isPlaying ||
+        _lastCreditMicros == null ||
+        _completionPending ||
+        ref.read(databaseProvider).workspaceRevision != _catalogRevision) {
       return;
     }
     final now = ref.read(learningElapsedClockProvider)();
@@ -255,11 +275,18 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     final epoch = ++_sessionEpoch;
     final dao = ref.read(timeSessionDaoProvider);
     final database = ref.read(databaseProvider);
+    final revision = _catalogRevision;
+    if (database.workspaceRevision != revision) return;
     final lecture = state.activeLecture;
     final course = state.course;
     try {
       final today = DateTime(now.year, now.month, now.day);
       final session = await database.transaction(() async {
+        if (database.workspaceRevision != revision ||
+            (await database.select(database.backupRestoreTable).get())
+                .isNotEmpty) {
+          throw StateError('The workspace changed before starting the session');
+        }
         final existing =
             await (database.select(database.timeSessionTable)
                   ..where(
@@ -289,6 +316,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
           database.timeSessionTable,
         )..where((s) => s.id.equals(id))).getSingle());
       });
+      if (!ref.mounted || database.workspaceRevision != revision) return;
       final id = session.id;
       final baseline = _sessionBaselines.putIfAbsent(
         id,
@@ -303,6 +331,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
           state.activeCourseId != course.id ||
           state.activeLectureId != lecture.id) {
         await database.transaction(() async {
+          if (database.workspaceRevision != revision ||
+              (await database.select(database.backupRestoreTable).get())
+                  .isNotEmpty) {
+            return;
+          }
           if (ref.mounted &&
               state.isPlaying &&
               state.activeCourseId == course.id &&
@@ -334,8 +367,15 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       _activeSessionId = id;
       _sessionStudyStart = baseline.$1;
       _sessionLoggedBase = baseline.$2;
-      await dao.resumeSession(id);
-      await dao.heartbeat(id, _sessionSeconds);
+      await database.transaction(() async {
+        if (database.workspaceRevision != revision ||
+            (await database.select(database.backupRestoreTable).get())
+                .isNotEmpty) {
+          return;
+        }
+        await dao.resumeSession(id);
+        await dao.heartbeat(id, _sessionSeconds);
+      });
     } catch (error) {
       debugPrint('Learning session sync failed: $error');
     }
@@ -348,10 +388,19 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     final seconds = _sessionSeconds;
     _activeSessionId = null;
     final dao = ref.read(timeSessionDaoProvider);
+    final database = ref.read(databaseProvider);
+    final revision = _catalogRevision;
     _trackSession(() async {
       try {
-        await dao.pauseSession(id);
-        await dao.heartbeat(id, seconds);
+        await database.transaction(() async {
+          if (database.workspaceRevision != revision ||
+              (await database.select(database.backupRestoreTable).get())
+                  .isNotEmpty) {
+            return;
+          }
+          await dao.pauseSession(id);
+          await dao.heartbeat(id, seconds);
+        });
       } catch (error) {
         debugPrint('Learning pause sync failed: $error');
       }
@@ -365,10 +414,19 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     final seconds = _sessionSeconds;
     _activeSessionId = null;
     final dao = ref.read(timeSessionDaoProvider);
+    final database = ref.read(databaseProvider);
+    final revision = _catalogRevision;
     _trackSession(() async {
       try {
-        await dao.completeSession(id);
-        await dao.heartbeat(id, seconds);
+        await database.transaction(() async {
+          if (database.workspaceRevision != revision ||
+              (await database.select(database.backupRestoreTable).get())
+                  .isNotEmpty) {
+            return;
+          }
+          await dao.heartbeat(id, seconds);
+          await dao.completeSession(id);
+        });
       } catch (error) {
         debugPrint('Learning completion session sync failed: $error');
       }
@@ -377,6 +435,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
   @override
   LearningHubState build() {
+    _catalogRevision = ref.read(databaseProvider).workspaceRevision;
     final prefs = ref.watch(sharedPreferencesProvider);
     final initialCourses = _loadStoredCourses(prefs);
     final activeCourseId =
@@ -578,7 +637,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_catalogLoading || _completionPending) return;
+      if (_catalogLoading ||
+          _completionPending ||
+          ref.read(databaseProvider).workspaceRevision != _catalogRevision) {
+        return;
+      }
       final startedAt = state.playStartedAt;
       if (startedAt == null) return;
 
@@ -877,7 +940,11 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _completionPending = true;
     try {
       await _saveSnapshot(courses);
-      if (!ref.mounted) return;
+      if (!ref.mounted) {
+        throw StateError(
+          'The learning workspace changed before publishing the save',
+        );
+      }
       state = state.copyWith(courses: courses);
     } finally {
       _completionPending = false;
@@ -1269,13 +1336,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         return lecture;
       }).toList();
 
-      return CourseModule(
-        id: module.id,
-        title: module.title,
-        description: module.description,
-        durationHours: module.durationHours,
-        lectures: updatedLectures,
-      );
+      return module.copyWith(lectures: updatedLectures);
     }).toList();
 
     final updatedCourse = activeC.copyWith(modules: updatedModules);

@@ -13,13 +13,14 @@ class RiyaResolution {
 /// never interpreted as an instruction. Resolved edits are still reviewed.
 class RiyaIntentResolver {
   RiyaIntentResolver(this.db, {DateTime Function()? clock})
-    : clock = clock ?? DateTime.now;
+    : clock = clock ?? DateTime.now, _revision = db.workspaceRevision;
   final AppDatabase db;
   final DateTime Function() clock;
   String? _reminderTitle;
   DateTime? _reminderDay, _editAt;
   List<Reminder>? _editChoices;
   bool _interviewChoice = false;
+  int _revision;
   late final _workspace = RiyaWorkspaceIntents(db, clock);
 
   void rememberResult(RiyaResult result) {
@@ -29,6 +30,11 @@ class RiyaIntentResolver {
   }
 
   Future<RiyaResolution?> resolve(String prompt) async {
+    if (_revision != db.workspaceRevision) {
+      _clear();
+      _workspace.cancel();
+      _revision = db.workspaceRevision;
+    }
     final lower = prompt.trim().toLowerCase();
     final now = clock();
     if (lower == 'cancel' || lower == 'never mind') {

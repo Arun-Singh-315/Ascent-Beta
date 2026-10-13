@@ -4,6 +4,8 @@ part of '../app_database.dart';
 class ReminderDao extends DatabaseAccessor<AppDatabase>
     with _$ReminderDaoMixin {
   ReminderDao(super.db);
+  final _deletedReminders = <int, (Reminder, List<int>)>{};
+  void clearDeletionUndo() => _deletedReminders.clear();
 
   /// Watch all reminders ordered by scheduledAt asc.
   Stream<List<Reminder>> watchAllReminders() {
@@ -88,7 +90,12 @@ class ReminderDao extends DatabaseAccessor<AppDatabase>
 
   /// Delete reminder by id.
   Future<int> deleteReminder(int id) => db.transaction(() async {
-    if (await getReminderById(id) != null) {
+    final original = await getReminderById(id);
+    if (original != null) {
+      _deletedReminders[id] = (original, await getLinkedThoughtIds(id));
+      if (_deletedReminders.length > 20) {
+        _deletedReminders.remove(_deletedReminders.keys.first);
+      }
       await db
           .into(db.aiCommandTable)
           .insert(
@@ -122,6 +129,10 @@ class ReminderDao extends DatabaseAccessor<AppDatabase>
     List<int> thoughtIds,
   ) => db.transaction(() async {
     if (await getReminderById(original.id) != null) return false;
+    final saved = _deletedReminders[original.id];
+    if (saved == null) return false;
+    original = saved.$1;
+    thoughtIds = saved.$2;
     final task = original.linkedTaskId == null
         ? null
         : await db.taskDao.getTaskById(original.linkedTaskId!);
@@ -151,6 +162,7 @@ class ReminderDao extends DatabaseAccessor<AppDatabase>
             );
       }
     }
+    _deletedReminders.remove(original.id);
     return true;
   });
 

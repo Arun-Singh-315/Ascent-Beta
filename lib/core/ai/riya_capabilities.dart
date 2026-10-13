@@ -6,6 +6,8 @@ import 'ai_action_execution.dart';
 import 'ai_service.dart';
 import 'riya_workspace_actions.dart';
 import 'riya_life_actions.dart';
+import 'riya_learning_actions.dart';
+import 'riya_session_reads.dart';
 
 enum RiyaValue {
   text,
@@ -44,6 +46,8 @@ class RiyaCapability {
 const riyaCapabilities = <RiyaCapability>[
   ...riyaWorkspaceCapabilities,
   ...riyaLifeCapabilities,
+  ...riyaLearningCapabilities,
+  ...riyaSessionCapabilities,
   RiyaCapability(
     'tasks.today',
     'Read today’s tasks',
@@ -196,7 +200,10 @@ const riyaCapabilities = <RiyaCapability>[
 ];
 
 class RiyaCommand {
-  const RiyaCommand(this.id, this.arguments);
+  const RiyaCommand(this.id, this.arguments, {this.executionRequestId});
+  final String? executionRequestId;
+  RiyaCommand forExecution(String requestId) =>
+      RiyaCommand(id, arguments, executionRequestId: requestId);
   final String id;
   final Map<String, dynamic> arguments;
   RiyaCapability get capability => riyaCapabilities.firstWhere(
@@ -290,7 +297,9 @@ bool _validCalendarDate(String value) {
     final month = int.parse(parts.group(2)!);
     final day = int.parse(parts.group(3)!);
     final calendar = DateTime(year, month, day);
-    if (calendar.year != year || calendar.month != month || calendar.day != day) {
+    if (calendar.year != year ||
+        calendar.month != month ||
+        calendar.day != day) {
       return false;
     }
     int number(int group) => int.tryParse(parts.group(group) ?? '0') ?? 0;
@@ -315,8 +324,27 @@ class RiyaExecutor {
     DateTime Function()? clock,
     this.external,
     this.verifyExternal,
+    this.expectedWorkspaceRevision,
   }) : clock = clock ?? DateTime.now;
   final AppDatabase db;
+  final int? expectedWorkspaceRevision;
+  void _checkWorkspace(int revision) {
+    if (db.workspaceRevision != revision) {
+      throw StateError(
+        'The workspace changed. Choose the record again and confirm a fresh request',
+      );
+    }
+  }
+
+  Future<void> _checkWritableWorkspace(int revision) async {
+    _checkWorkspace(revision);
+    if ((await db.select(db.backupRestoreTable).get()).isNotEmpty) {
+      throw StateError(
+        'Finish workspace recovery before making another change',
+      );
+    }
+  }
+
   final DateTime Function() clock;
   final Future<RiyaResult> Function(RiyaCommand)? external;
   final Future<RiyaResult?> Function(RiyaCommand)? verifyExternal;
@@ -327,6 +355,7 @@ class RiyaExecutor {
     'learning.complete',
     'learning.pause',
     'learning.resume',
+    ...riyaLearningWriteIds,
   };
 
   void validate(RiyaCommand command, {bool checkTime = true}) {
@@ -410,6 +439,8 @@ class RiyaExecutor {
     required String requestId,
     bool approved = false,
   }) async {
+    final revision = expectedWorkspaceRevision ?? db.workspaceRevision;
+    _checkWorkspace(revision);
     final c = command.capability;
     if (c.write && !approved) throw StateError('Confirmation required');
     // Request IDs belong to a persisted user chat turn, not arbitrary retrieved text.
@@ -436,7 +467,7 @@ class RiyaExecutor {
         if (old.$1 != identity) throw StateError('Request ID already used');
         return RiyaResult.fromJson((await old.$2).toJson(), replayed: true);
       }
-      final work = _executeExternal(command, requestId, payload);
+      final work = _executeExternal(command, requestId, payload, revision);
       running[requestId] = (identity, work);
       try {
         return await work;
@@ -445,6 +476,7 @@ class RiyaExecutor {
       }
     }
     return db.transaction(() async {
+      await _checkWritableWorkspace(revision);
       final old = await (db.select(
         db.aiCommandTable,
       )..where((r) => r.requestId.equals(requestId))).getSingleOrNull();
@@ -484,8 +516,10 @@ class RiyaExecutor {
     RiyaCommand command,
     String requestId,
     String arguments,
+    int revision,
   ) async {
     final old = await db.transaction(() async {
+      await _checkWritableWorkspace(revision);
       final row = await (db.select(
         db.aiCommandTable,
       )..where((r) => r.requestId.equals(requestId))).getSingleOrNull();
@@ -508,6 +542,7 @@ class RiyaExecutor {
           );
       return null;
     });
+    _checkWorkspace(revision);
     RiyaResult result;
     if (old != null) {
       final saved = jsonDecode(old.resultJson) as Map<String, dynamic>;
@@ -516,7 +551,9 @@ class RiyaExecutor {
       }
       // An interrupted action may already have happened. Verify current state;
       // never reapply an old request over a newer user change.
-      final verified = await verifyExternal?.call(command);
+      final verified = await verifyExternal?.call(
+        command.forExecution(requestId),
+      );
       if (verified == null) {
         throw StateError(
           'This interrupted request needs a fresh confirmation; newer work was kept',
@@ -524,7 +561,7 @@ class RiyaExecutor {
       }
       result = verified;
     } else {
-      result = await _run(command);
+      result = await _run(command.forExecution(requestId));
     }
     try {
       final updated =
@@ -545,8 +582,20 @@ class RiyaExecutor {
   Future<RiyaResult> _run(RiyaCommand cmd) async {
     final a = cmd.arguments;
     final route = cmd.capability.route;
+    if (riyaSessionCapabilities.any((c) => c.id == cmd.id)) {
+      return RiyaSessionReads(db, clock).run(cmd);
+    }
     final workspace = RiyaWorkspaceActions(db, clock, external: external);
-    if (workspace.handles(cmd.id)) return workspace.run(cmd);
+    if (workspace.handles(cmd.id) ||
+        riyaLearningCapabilities.any((c) => c.id == cmd.id)) {
+      if (cmd.id.startsWith('learning.') && !workspace.handles(cmd.id)) {
+        if (external == null) {
+          throw StateError('This action needs the active workspace');
+        }
+        return external!(cmd);
+      }
+      return workspace.run(cmd);
+    }
     final life = RiyaLifeActions(db, clock);
     if (life.handles(cmd.id)) return life.run(cmd);
     switch (cmd.id) {
