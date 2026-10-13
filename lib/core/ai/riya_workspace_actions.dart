@@ -3,6 +3,7 @@ import '../database/app_database.dart';
 import '../../features/thought_wall/thought_actions.dart';
 import '../services/promise_service.dart';
 import 'riya_capabilities.dart';
+import 'riya_money_actions.dart';
 
 const riyaWorkspaceCapabilities = <RiyaCapability>[
   RiyaCapability(
@@ -140,7 +141,9 @@ const riyaWorkspaceCapabilities = <RiyaCapability>[
     required: ['id', 'alarm'],
     write: true,
   ),
-  RiyaCapability('expenses.list', 'Read recent expenses', '/money', {
+  RiyaCapability('expenses.list', 'Read scoped expenses', '/money', {
+    'scope': RiyaValue.text,
+    'day': RiyaValue.date,
     'offset': RiyaValue.offset,
   }),
   RiyaCapability(
@@ -516,24 +519,20 @@ class RiyaWorkspaceActions {
           reminderIds: reschedule ? [old.id] : [],
         );
       case 'expenses.list':
-        final rows =
-            await (db.select(db.financeTransactionTable)
-                  ..where((r) => r.type.equals('expense'))
-                  ..orderBy([
-                    (r) => OrderingTerm.desc(r.date),
-                    (r) => OrderingTerm.desc(r.id),
-                  ])
-                  ..limit(4, offset: a['offset'] as int? ?? 0))
-                .get();
+        final result = await RiyaMoneyActions(db, clock).run(
+          RiyaCommand('transactions.list', {
+            ...a,
+            'type': 'expense',
+            if (a['scope'] == 'recent') 'scope': 'all',
+          }),
+        );
         return RiyaResult(
-          rows.isEmpty
-              ? 'No recorded expenses.'
-              : 'Recent expenses:\n${rows.take(3).map((r) => '#${r.id} ₹${r.amount.toStringAsFixed(2)} · ${_excerpt(r.title)}').join('\n')}',
+          result.message,
           route,
           options: [
-            'Spending today',
-            'Spending this week',
-            if (rows.length > 3) 'More expenses',
+            'Expenses today',
+            'Expenses all',
+            if (result.options.contains('More transactions')) 'More expenses',
           ],
         );
       case 'expenses.edit':

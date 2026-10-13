@@ -168,6 +168,43 @@ void main() {
         requestId: 'device-qa-read',
       );
       expect(result.message, contains('Today'));
+      final money = RiyaExecutor(db);
+      final income = await money.execute(
+        const RiyaCommand('transactions.create', {
+          'title': 'Device QA salary',
+          'amount': 2500,
+          'type': 'income',
+        }),
+        requestId: 'device-qa-income',
+        approved: true,
+      );
+      ascentRouter.go('/money');
+      await until(find.text('Device QA salary'));
+      expect(await db.financeDao.watchTodaySpending().first, 0);
+      await money.execute(
+        RiyaCommand('transactions.edit', {
+          'id': income.entityId!,
+          'title': 'Device QA corrected salary',
+          'account': 'Cash',
+        }),
+        requestId: 'device-qa-income-edit',
+        approved: true,
+      );
+      await until(find.text('Device QA corrected salary'));
+      final savedIncome = await money.execute(
+        RiyaCommand('transactions.read', {'id': income.entityId!}),
+        requestId: 'device-qa-income-read',
+      );
+      expect(savedIncome.message, contains('Cash'));
+      await money.execute(
+        RiyaCommand('transactions.delete', {'id': income.entityId!}),
+        requestId: 'device-qa-income-delete',
+        approved: true,
+      );
+      await until(find.text('No Transactions Yet'));
+      debugPrint(
+        'QA: native Money reflects bot income creation, correction and deletion',
+      );
       expect(tester.takeException(), isNull);
       debugPrint('QA: Mind Space native device suite passed');
     },

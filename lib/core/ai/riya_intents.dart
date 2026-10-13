@@ -45,14 +45,14 @@ class RiyaIntentResolver {
     final workspace =
         _reminderTitle == null ||
             RegExp(
-              r'^(show|list|find|read|pin|unpin|archive|delete|remove|choose|edit|update|create|save|add|set|clear|correct|complete|finish|merge|convert|give|suggest|share)\b',
+              r'^(show|list|find|read|pin|unpin|archive|delete|remove|choose|edit|update|create|save|add|record|log|set|clear|correct|complete|finish|merge|convert|give|suggest|share)\b',
             ).hasMatch(lower)
         ? await _workspace.resolve(prompt)
         : null;
     if (workspace != null) {
       if (workspace.command != null ||
           RegExp(
-            r'^(create|add|set|edit|change|clear|correct|delete|remove|give|suggest|share)\b',
+            r'^(create|add|record|log|set|edit|change|clear|correct|delete|remove|give|suggest|share)\b',
           ).hasMatch(lower)) {
         _clear();
       }
@@ -60,7 +60,7 @@ class RiyaIntentResolver {
     }
     // Any new explicit command replaces an unfinished clarification.
     if (RegExp(
-      r'^(add|create|find|show|start|pause|resume|open|remind|change|edit)\b',
+      r'^(add|record|log|create|find|show|start|pause|resume|open|remind|change|edit)\b',
     ).hasMatch(lower)) {
       _clear();
     }

@@ -39,7 +39,7 @@ The executable registry and executor are in `lib/core/ai/riya_capabilities.dart`
 - Thoughts: list/search/read/create/edit/pin/archive/restore/delete/merge/convert.
 - Tasks: list/create/checklist/edit/reschedule/complete/delete, with timed/checklist/lecture restrictions.
 - Reminders: scoped lists, create/edit/done/delete/snooze/alert mode, plus durable native reconciliation.
-- Money: expense create/summary/read/edit/delete; monthly budget list/set/edit/delete; savings goal list/create/edit/delete and explicit contributions. Contributions update tracked savings without creating a transaction.
+- Money: income/expense transaction create/read/edit/delete with explicit date, category, account and notes; bounded Today/date/All lists and SQL-aggregated income/spending/net summaries. Existing expense lists also default to Today. Record corrections preserve unspecified metadata and can explicitly clear notes. Legacy transfers remain readable and are excluded from income/spending totals; new transfers require a separate account-transfer model and are not fabricated. Monthly budget and savings goal lifecycle commands remain supported. Contributions update tracked savings without creating a transaction.
 - Learning: bounded course/module/lecture reads; course, module and lecture create/edit/delete; scoped selection/playback, activity linking and gated completion. Catalog creation uses durable request identities; replay verifies existing outcomes without replacing later edits. Optional course URLs/dates can be explicitly cleared.
 - Home: layout reads and card visibility changes.
 - Hydration/Focus: water logging, day-scoped entry lists, correction/delete and daily goal updates; Focus start/pause/resume and stop, plus bounded date-scoped recorded Focus/Learning history. History pagination retains its selected date across midnight. Goal updates do not fabricate water entries.
@@ -47,7 +47,7 @@ The executable registry and executor are in `lib/core/ai/riya_capabilities.dart`
 
 Offline reflection suggestions are authored suggestions, distinct from retrieved notes. They are saved only after an explicit Save request. They do not imply a connected model generated new content.
 
-Phase F still requires remaining transaction types, medicine, challenges/walks and other-tool lifecycle coverage. Learning has catalog executors and supported natural command forms; broader conversational phrasing still needs an audit. Full bot control of every app feature is not claimed by this registry. Projects remain the separately deferred scope defined in the original plan.
+Phase F still requires medicine, challenges/walks and other-tool lifecycle coverage. Learning has catalog executors and supported natural command forms; broader conversational phrasing still needs an audit. Full bot control of every app feature is not claimed by this registry. Projects remain the separately deferred scope defined in the original plan.
 
 ## Verification evidence
 
@@ -71,15 +71,19 @@ The isolated Android suite passed on the connected Nothing A142 on 13 October 20
 | Tasks and reminders | Supported | Typed lifecycle commands, scoped pages and completion/native-effect gates. |
 | Learning | Core lifecycle implemented | UI and bot catalog CRUD, activity linking, scoped playback, completion and recorded history; broader conversational phrasing remains under audit. |
 | Focus | Core lifecycle implemented | Timer lifecycle and bounded recorded history with stable date pagination. |
-| Money | Partial | Expenses, budgets and savings supported; income/general transaction commands remain required. |
+| Money | Core lifecycle implemented | Income/expense transactions, scoped lists, metadata corrections, summaries, budgets and savings supported. Legacy transfer records are preserved; no new transfer behavior is advertised. |
 | Hydration | Supported | Explicit logs, scoped reads, corrections, deletion and goal preferences. |
 | Medicine | Planned for broader bot control | Existing UI/services preserved; bot scheduling/logging/editing requires shared lifecycle work. |
 | Challenges and walks | Planned for broader bot control | Existing UI/native services; evidence-aware bot executors remain required. |
 | Other tools and settings | Partial | Existing guides/navigation; inventory and executable operations remain required. |
 | Backup/restore | UI supported; bot partial | Replacement review and file picker remain explicit. |
 
-Latest completed regression refresh: **356 tests passed**, `flutter analyze` reported no issues, and `git diff --check` passed. This includes Learning catalog CRUD/replay, converted-task routing, recorded history/date pagination, task-tree Undo, workspace replacement guards, Money/hydration coverage, calendar validation, bounded task pages and the header audit. The focused Money/hydration + workspace suites passed 18 tests; the header/layout regression batch passed 14 tests. The isolated native Android refresh also passed Home capture, Thought Wall styling/pinning, Both replay, notification scheduling/cancellation, lecture eligibility and all-hidden capture. These are verified checkpoints, not a claim that the full plan is complete.
+Latest completed regression refresh: **363 tests passed**, `flutter analyze` reported no issues, and `git diff --check` passed. This includes Learning catalog CRUD/replay, converted-task routing, recorded history/date pagination, task-tree Undo, workspace replacement guards, Money/hydration coverage, calendar validation, bounded task pages and the header audit. The focused Money/hydration + workspace suites passed 18 tests; the header/layout regression batch passed 14 tests. The isolated native Android refresh also passed Home capture, Thought Wall styling/pinning, Both replay, notification scheduling/cancellation, lecture eligibility and all-hidden capture. These are verified checkpoints, not a claim that the full plan is complete.
 
 The latest focused Learning/Undo/history regression batch passed 29 tests before the final 356-test refresh. New Learning work also verifies that converted tasks cannot start generic timers or bypass lecture completion gates.
 
 Final review added a regression for history-to-reminder context switching: “Tomorrow” follows the newer reminder list, not the prior history query. Static analysis and the final full suite passed after this correction.
+
+Money expansion: six new typed transaction capabilities use the existing receipt transaction, confirmation and workspace recovery guards. Focused Money/history/workspace/hydration regression batch: 29 tests passed. Monthly Money aggregates use `[month start, next month start)`; transaction summaries aggregate in SQL rather than retrieving every record. Full suite: 363 tests passed; static analysis clean. The final Money/UI regression batch passed 14 tests after the empty-state copy correction. The isolated Android suite also passed: Money displayed bot-created income, reflected metadata/title corrections, and removed the deleted record live; income did not increase today's spending.
+
+Next lifecycle audit: MedicineService currently inserts a schedule and generated tasks/reminders/logs separately and schedules notifications during generation. MedicineDao deletion removes reminder/task rows directly. Before exposing bot schedule mutations, move generation/deletion to shared atomic operations and durable post-commit alert reconciliation; preserve completed dose history and explicit reversible dose logging. This is an implementation gap, not a claimed completed capability.

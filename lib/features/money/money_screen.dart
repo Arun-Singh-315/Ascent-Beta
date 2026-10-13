@@ -445,9 +445,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   if (transactions.isEmpty) {
                     return EmptyState(
                       icon: Icons.receipt_long_outlined,
-                      title: 'No Expenses Recorded Yet',
+                      title: 'No Transactions Yet',
                       subtitle:
-                          'Start with one expense using Add Expense above.',
+                          'Use Add Expense above to record spending or income.',
                     );
                   }
 

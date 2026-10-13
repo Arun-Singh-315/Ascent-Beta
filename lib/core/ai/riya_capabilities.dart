@@ -8,6 +8,7 @@ import 'riya_workspace_actions.dart';
 import 'riya_life_actions.dart';
 import 'riya_learning_actions.dart';
 import 'riya_session_reads.dart';
+import 'riya_money_actions.dart';
 
 enum RiyaValue {
   text,
@@ -46,6 +47,7 @@ class RiyaCapability {
 const riyaCapabilities = <RiyaCapability>[
   ...riyaWorkspaceCapabilities,
   ...riyaLifeCapabilities,
+  ...riyaMoneyCapabilities,
   ...riyaLearningCapabilities,
   ...riyaSessionCapabilities,
   RiyaCapability(
@@ -585,6 +587,8 @@ class RiyaExecutor {
     if (riyaSessionCapabilities.any((c) => c.id == cmd.id)) {
       return RiyaSessionReads(db, clock).run(cmd);
     }
+    final money = RiyaMoneyActions(db, clock);
+    if (money.handles(cmd.id)) return money.run(cmd);
     final workspace = RiyaWorkspaceActions(db, clock, external: external);
     if (workspace.handles(cmd.id) ||
         riyaLearningCapabilities.any((c) => c.id == cmd.id)) {

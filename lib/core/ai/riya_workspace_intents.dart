@@ -5,6 +5,7 @@ import 'riya_intents.dart';
 import 'riya_life_intents.dart';
 import 'riya_learning_intents.dart';
 import 'riya_session_reads.dart';
+import 'riya_money_intents.dart';
 
 /// Generic verbs + real entities, rather than a phrase for every test case.
 class RiyaWorkspaceIntents {
@@ -14,6 +15,7 @@ class RiyaWorkspaceIntents {
   late final _life = RiyaLifeIntents(clock);
   late final _learning = RiyaLearningIntents(db);
   late final _sessions = RiyaSessionIntents(clock);
+  late final _money = RiyaMoneyIntents(clock);
   String? _listDomain, _listScope;
   int _offset = 0;
   String? _from, _to;
@@ -29,6 +31,14 @@ class RiyaWorkspaceIntents {
   DateTime? _conversionDay;
 
   void remember(String type, int id) {
+    if (type == 'transactions') {
+      _money.remember(id);
+      _life.clearSelection();
+      _selectedType = null;
+      _selectedId = null;
+      return;
+    }
+    _money.clearSelection();
     if ({'savings', 'budgets', 'hydration'}.contains(type)) {
       _life.remember(type, id);
       _selectedType = null;
@@ -44,6 +54,7 @@ class RiyaWorkspaceIntents {
     _life.cancel();
     _learning.cancel();
     _sessions.cancel();
+    _money.cancel();
     _pendingIdCommand = null;
     _pendingIdType = null;
     _choices = {};
@@ -67,6 +78,19 @@ class RiyaWorkspaceIntents {
 
   Future<RiyaResolution?> resolve(String prompt) async {
     final lower = prompt.trim().toLowerCase();
+    final money = _money.resolve(prompt);
+    if (money != null) {
+      _sessions.cancel();
+      newCommand();
+      _listDomain = null;
+      _listScope = null;
+      _offset = 0;
+      _life.clearSelection();
+      _selectedType = null;
+      _selectedId = null;
+      return money;
+    }
+    _money.clearSelection();
     final session = _sessions.resolve(prompt);
     if (session != null) {
       newCommand();
@@ -265,9 +289,7 @@ class RiyaWorkspaceIntents {
       _offset = 0;
       _chooseReminderDate = false;
       return RiyaResolution(
-        command: RiyaCommand('$domain.list', {
-          if (domain != 'expenses') 'scope': scope,
-        }),
+        command: RiyaCommand('$domain.list', {'scope': scope}),
       );
     }
     final more = RegExp(
@@ -284,7 +306,7 @@ class RiyaWorkspaceIntents {
       return RiyaResolution(
         command: RiyaCommand('$domain.list', {
           'offset': _offset,
-          if (domain != 'expenses') 'scope': _listScope ?? 'today',
+          'scope': _listScope ?? 'today',
           if (domain == 'reminders' && _listScope == 'date' && _from != null)
             'from': _from,
           if (domain == 'reminders' && _listScope == 'date' && _to != null)
