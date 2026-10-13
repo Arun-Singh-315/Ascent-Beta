@@ -8,6 +8,7 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/notifications/reminder_alert_sync.dart';
 import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/ai/riya_capabilities.dart';
+import 'package:ascent/core/ai/riya_alert_effects.dart';
 import 'package:ascent/features/thought_wall/thought_actions.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:flutter/material.dart';
@@ -27,7 +28,12 @@ void main() {
         'com.arun.ascent.debug',
       );
       final prefs = await SharedPreferences.getInstance();
-      for (final feature in ['Thought Wall', 'Tasks & Today', 'Focus Timer']) {
+      for (final feature in [
+        'Thought Wall',
+        'Tasks & Today',
+        'Focus Timer',
+        'Medicine & Health',
+      ]) {
         await prefs.setBool('feature_guide_v1_$feature', true);
       }
       await app.main();
@@ -204,6 +210,57 @@ void main() {
       await until(find.text('No Transactions Yet'));
       debugPrint(
         'QA: native Money reflects bot income creation, correction and deletion',
+      );
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      final medicine = await money.execute(
+        RiyaCommand('medicine.create', {
+          'name': 'Device QA schedule',
+          'dosage': 'User recorded dose',
+          'form': 'tablet',
+          'times': ['09:00'],
+          'days': 1,
+          'startDate': tomorrow.toIso8601String(),
+        }),
+        requestId: 'device-qa-medicine',
+        approved: true,
+      );
+      expect(
+        await RiyaAlertEffects.device(db).syncRequest('device-qa-medicine'),
+        true,
+      );
+      ascentRouter.go('/medicine');
+      await until(find.byTooltip('Edit Prescription'));
+      await tester.ensureVisible(find.byTooltip('Edit Prescription'));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.byTooltip('Edit Prescription'));
+      await until(find.text('Edit Medicine'));
+      await tester.enterText(
+        find.byType(TextField).first,
+        'Device QA edited schedule',
+      );
+      await tester.ensureVisible(find.text('Update Prescription'));
+      await tester.tap(find.text('Update Prescription'));
+      await tester.pump(const Duration(seconds: 2));
+      expect(
+        (await db.medicineDao.getMedicineById(medicine.entityId!))!.name,
+        'Device QA edited schedule',
+      );
+      expect(await db.select(db.medicineTable).get(), hasLength(1));
+      expect(await db.select(db.medicineLogTable).get(), hasLength(1));
+      await money.execute(
+        RiyaCommand('medicine.delete', {'id': medicine.entityId!}),
+        requestId: 'device-qa-medicine-delete',
+        approved: true,
+      );
+      expect(
+        await RiyaAlertEffects.device(
+          db,
+        ).syncRequest('device-qa-medicine-delete'),
+        true,
+      );
+      await until(find.text('No Medicines Added Yet'));
+      debugPrint(
+        'QA: dedicated medicine alert, edit sheet identity and durable deletion verified',
       );
       expect(tester.takeException(), isNull);
       debugPrint('QA: Mind Space native device suite passed');

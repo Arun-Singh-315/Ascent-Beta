@@ -339,6 +339,10 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
 
     if (completed) {
       if (_isTimeBound(task)) return false;
+      final children = await (select(
+        taskTable,
+      )..where((t) => t.parentTaskId.equals(id))).get();
+      if (children.any((t) => t.actualCompletedDate == null)) return false;
       await _writeCompletedTask(task);
     } else {
       await _writeIncompleteTask(task);

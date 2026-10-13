@@ -2,6 +2,35 @@ import '../database/app_database.dart';
 import 'notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
+  if (!r.alarmEnabled) {
+    final dose =
+        await (db.select(db.medicineLogTable)
+              ..where((l) => l.linkedReminderId.equals(r.id))
+              ..limit(1))
+            .getSingleOrNull();
+    final medicine = dose == null
+        ? null
+        : await db.medicineDao.getMedicineById(dose.medicineId);
+    if (medicine != null) {
+      return NotificationService.instance.scheduleMedicineReminderChecked(
+        id: r.id,
+        medicineName: medicine.name,
+        dosage: medicine.dosage,
+        instructions: medicine.instructions,
+        scheduledAt: r.scheduledAt,
+      );
+    }
+  }
+  return NotificationService.instance.scheduleReminderNotificationChecked(
+    id: r.id,
+    title: r.title,
+    scheduledAt: r.scheduledAt,
+    alarmEnabled: r.alarmEnabled,
+    scheduleFollowUp: false,
+  );
+}
+
 class ReminderAlertSyncResult {
   const ReminderAlertSyncResult(
     this.total,
@@ -27,14 +56,7 @@ class ReminderAlertSync {
   factory ReminderAlertSync.device(AppDatabase db) => ReminderAlertSync(
     db,
     enabled: NotificationService.instance.areNotificationsEnabled,
-    schedule: (r) =>
-        NotificationService.instance.scheduleReminderNotificationChecked(
-          id: r.id,
-          title: r.title,
-          scheduledAt: r.scheduledAt,
-          alarmEnabled: r.alarmEnabled,
-          scheduleFollowUp: false,
-        ),
+    schedule: (r) => scheduleReminderOnDevice(db, r),
     reset: NotificationService.instance.cancelAllChecked,
     cancel: NotificationService.instance.cancelChecked,
   );

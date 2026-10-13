@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../notifications/notification_service.dart';
+import '../notifications/reminder_alert_sync.dart';
 
 /// OS effects are retried after the database receipt commits, including restart.
 class RiyaAlertEffects {
@@ -9,14 +10,7 @@ class RiyaAlertEffects {
   factory RiyaAlertEffects.device(AppDatabase db) => RiyaAlertEffects(
     db,
     cancel: NotificationService.instance.cancelChecked,
-    schedule: (r) =>
-        NotificationService.instance.scheduleReminderNotificationChecked(
-          id: r.id,
-          title: r.title,
-          scheduledAt: r.scheduledAt,
-          alarmEnabled: r.alarmEnabled,
-          scheduleFollowUp: false,
-        ),
+    schedule: (r) => scheduleReminderOnDevice(db, r),
   );
   final AppDatabase db;
   final Future<bool> Function(int) cancel;

@@ -6,6 +6,7 @@ import 'riya_life_intents.dart';
 import 'riya_learning_intents.dart';
 import 'riya_session_reads.dart';
 import 'riya_money_intents.dart';
+import 'riya_medicine_intents.dart';
 
 /// Generic verbs + real entities, rather than a phrase for every test case.
 class RiyaWorkspaceIntents {
@@ -16,6 +17,7 @@ class RiyaWorkspaceIntents {
   late final _learning = RiyaLearningIntents(db);
   late final _sessions = RiyaSessionIntents(clock);
   late final _money = RiyaMoneyIntents(clock);
+  late final _medicine = RiyaMedicineIntents(clock);
   String? _listDomain, _listScope;
   int _offset = 0;
   String? _from, _to;
@@ -31,6 +33,15 @@ class RiyaWorkspaceIntents {
   DateTime? _conversionDay;
 
   void remember(String type, int id) {
+    if (type == 'medicine') {
+      _medicine.remember(id);
+      _money.clearSelection();
+      _life.clearSelection();
+      _selectedType = null;
+      _selectedId = null;
+      return;
+    }
+    _medicine.clearSelection();
     if (type == 'transactions') {
       _money.remember(id);
       _life.clearSelection();
@@ -55,6 +66,7 @@ class RiyaWorkspaceIntents {
     _learning.cancel();
     _sessions.cancel();
     _money.cancel();
+    _medicine.cancel();
     _pendingIdCommand = null;
     _pendingIdType = null;
     _choices = {};
@@ -78,6 +90,19 @@ class RiyaWorkspaceIntents {
 
   Future<RiyaResolution?> resolve(String prompt) async {
     final lower = prompt.trim().toLowerCase();
+    final medicine = _medicine.resolve(prompt);
+    if (medicine != null) {
+      _money.cancel();
+      _sessions.cancel();
+      newCommand();
+      _listDomain = null;
+      _listScope = null;
+      _life.clearSelection();
+      _selectedType = null;
+      _selectedId = null;
+      return medicine;
+    }
+    _medicine.clearSelection();
     final money = _money.resolve(prompt);
     if (money != null) {
       _sessions.cancel();

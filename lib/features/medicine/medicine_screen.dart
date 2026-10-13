@@ -22,8 +22,6 @@ class MedicineScreen extends ConsumerStatefulWidget {
 
 class _MedicineScreenState extends ConsumerState<MedicineScreen> {
   void _openAddMedicineSheet([Medicine? existing]) {
-    final nameController = TextEditingController(text: existing?.name ?? '');
-    final dosageController = TextEditingController(text: existing?.dosage ?? '1 Tablet');
     String instructions = existing?.instructions ?? 'After food';
     String type = existing?.type ?? 'tablet';
     int durationDays = existing?.durationDays ?? 7;
@@ -39,364 +37,567 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
       } catch (_) {}
     }
 
+    bool saving = false;
     showModalBottomSheet(
       context: context,
+      isDismissible: false,
+      enableDrag: false,
       isScrollControlled: true,
       backgroundColor: context.glass.bg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-            final g = context.glass;
+        return _MedicineSheetControllers(
+          name: existing?.name ?? '',
+          dosage: existing?.dosage ?? '1 Tablet',
+          builder: (nameController, dosageController) => StatefulBuilder(
+            builder: (context, setSheetState) {
+              final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+              final g = context.glass;
 
-            final maxHeight = MediaQuery.of(context).size.height * 0.88;
+              final maxHeight = MediaQuery.of(context).size.height * 0.88;
 
-            return ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  top: 20,
-                  bottom: bottomInset + 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Pinned Drag Handle
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: g.line,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+              return PopScope(
+                canPop: !saving,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 20,
+                      bottom: bottomInset + 16,
                     ),
-                    const SizedBox(height: 16),
-
-                    // Pinned Header Row
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          existing == null ? 'Add Medicine' : 'Edit Medicine',
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            color: g.ink,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        // Pinned Drag Handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: g.line,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
-                        IconButton(
-                          icon: Icon(Icons.close_rounded, color: g.inkMuted),
-                          onPressed: () => Navigator.pop(sheetContext),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                        const SizedBox(height: 16),
 
-                    // Scrollable Fields Body
-                    Flexible(
-                      child: SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        // Pinned Header Row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Medicine Name Input
-                            TextField(
-                              controller: nameController,
-                              autofocus: existing == null,
-                      style: TextStyle(color: g.ink, fontSize: 14),
-                      decoration: InputDecoration(
-                        labelText: 'Medicine Name',
-                        hintText: 'e.g. Paracetamol 500mg, Vitamin C',
-                        labelStyle: TextStyle(color: g.inkSecondary, fontSize: 13),
-                        hintStyle: TextStyle(color: g.inkMuted, fontSize: 13),
-                        filled: true,
-                        fillColor: g.claySoft,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: g.line),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: g.line),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: g.clay, width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Quick name suggestion chips
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: ['Paracetamol', 'Vitamin D3', 'Amoxicillin', 'Omega-3', 'Cetirizine']
-                          .map((chip) => ActionChip(
-                                label: Text(chip, style: TextStyle(fontSize: 11, color: g.inkSecondary)),
-                                backgroundColor: g.fill,
-                                side: BorderSide(color: g.line),
-                                onPressed: () {
-                                  nameController.text = chip;
-                                  setSheetState(() {});
-                                },
-                              ))
-                          .toList(),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Dosage & Form Factor Row
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: TextField(
-                            controller: dosageController,
-                            style: TextStyle(color: g.ink, fontSize: 14),
-                            decoration: InputDecoration(
-                              labelText: 'Dosage',
-                              hintText: '1 Tablet, 5ml',
-                              labelStyle: TextStyle(color: g.inkSecondary, fontSize: 13),
-                              hintStyle: TextStyle(color: g.inkMuted, fontSize: 13),
-                              filled: true,
-                              fillColor: g.claySoft,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: g.line),
+                            Expanded(
+                              child: Text(
+                                existing == null
+                                    ? 'Add Medicine'
+                                    : 'Edit Medicine',
+                                style: AscentTextStyles.displaySmall.copyWith(
+                                  color: g.ink,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: g.line),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: g.inkMuted,
                               ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              onPressed: saving
+                                  ? null
+                                  : () => Navigator.pop(sheetContext),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          flex: 2,
-                          child: DropdownButtonFormField<String>(
-                            initialValue: type,
-                            dropdownColor: g.bg,
-                            style: TextStyle(color: g.ink, fontSize: 13),
-                            decoration: InputDecoration(
-                              labelText: 'Form',
-                              labelStyle: TextStyle(color: g.inkSecondary, fontSize: 13),
-                              filled: true,
-                              fillColor: g.claySoft,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
-                                borderSide: BorderSide(color: g.line),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'tablet', child: Text('Tablet')),
-                              DropdownMenuItem(value: 'capsule', child: Text('Capsule')),
-                              DropdownMenuItem(value: 'syrup', child: Text('Syrup')),
-                              DropdownMenuItem(value: 'drops', child: Text('Drops')),
-                              DropdownMenuItem(value: 'injection', child: Text('Injection')),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) setSheetState(() => type = val);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Food Condition
-                    Text(
-                      'Instructions / Meal Timing',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: g.ink),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: ['After food', 'Before meal', 'With water', 'Empty stomach'].map((opt) {
-                        final isSel = instructions == opt;
-                        return ChoiceChip(
-                          label: Text(opt, style: TextStyle(fontSize: 12, color: isSel ? Colors.white : g.inkSecondary)),
-                          selected: isSel,
-                          selectedColor: g.clay,
-                          backgroundColor: g.fill,
-                          side: BorderSide(color: isSel ? g.clay : g.line),
-                          onSelected: (val) {
-                            if (val) setSheetState(() => instructions = opt);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Daily Schedule Timings
-                    Text(
-                      'Daily Doses & Timing Slots',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: g.ink),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _buildTimeChip(
-                          label: 'Morning',
-                          time: '08:00',
-                          isSelected: selectedTimes.contains('08:00'),
-                          g: g,
-                          onToggle: () {
-                            setSheetState(() {
-                              if (selectedTimes.contains('08:00')) {
-                                if (selectedTimes.length > 1) selectedTimes.remove('08:00');
-                              } else {
-                                selectedTimes.add('08:00');
-                              }
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildTimeChip(
-                          label: 'Afternoon',
-                          time: '13:00',
-                          isSelected: selectedTimes.contains('13:00'),
-                          g: g,
-                          onToggle: () {
-                            setSheetState(() {
-                              if (selectedTimes.contains('13:00')) {
-                                if (selectedTimes.length > 1) selectedTimes.remove('13:00');
-                              } else {
-                                selectedTimes.add('13:00');
-                              }
-                            });
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildTimeChip(
-                          label: 'Night',
-                          time: '20:00',
-                          isSelected: selectedTimes.contains('20:00'),
-                          g: g,
-                          onToggle: () {
-                            setSheetState(() {
-                              if (selectedTimes.contains('20:00')) {
-                                if (selectedTimes.length > 1) selectedTimes.remove('20:00');
-                              } else {
-                                selectedTimes.add('20:00');
-                              }
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Duration (How many days)
-                    Text(
-                      'Course Duration (Days)',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: g.ink),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: [3, 5, 7, 14, 30].map((d) {
-                        final isSel = durationDays == d;
-                        return ChoiceChip(
-                          label: Text('$d Days', style: TextStyle(fontSize: 12, color: isSel ? Colors.white : g.inkSecondary)),
-                          selected: isSel,
-                          selectedColor: g.clay,
-                          backgroundColor: g.fill,
-                          side: BorderSide(color: isSel ? g.clay : g.line),
-                          onSelected: (val) {
-                            if (val) setSheetState(() => durationDays = d);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Info banner explaining the automated sync
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: g.claySoft,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: g.line),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(Icons.sync_rounded, color: g.clay, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Sync Guarantee: Automatically creates daily To-dos and reminders for all $durationDays days.',
-                              style: TextStyle(fontSize: 11, color: g.inkSecondary, height: 1.3),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 12),
+
+                        // Scrollable Fields Body
+                        Flexible(
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Medicine Name Input
+                                TextField(
+                                  controller: nameController,
+                                  autofocus: existing == null,
+                                  style: TextStyle(color: g.ink, fontSize: 14),
+                                  decoration: InputDecoration(
+                                    labelText: 'Medicine Name',
+                                    hintText:
+                                        'e.g. Paracetamol 500mg, Vitamin C',
+                                    labelStyle: TextStyle(
+                                      color: g.inkSecondary,
+                                      fontSize: 13,
+                                    ),
+                                    hintStyle: TextStyle(
+                                      color: g.inkMuted,
+                                      fontSize: 13,
+                                    ),
+                                    filled: true,
+                                    fillColor: g.claySoft,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(color: g.line),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(color: g.line),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                      borderSide: BorderSide(
+                                        color: g.clay,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+
+                                // Quick name suggestion chips
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children:
+                                      [
+                                            'Paracetamol',
+                                            'Vitamin D3',
+                                            'Amoxicillin',
+                                            'Omega-3',
+                                            'Cetirizine',
+                                          ]
+                                          .map(
+                                            (chip) => ActionChip(
+                                              label: Text(
+                                                chip,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: g.inkSecondary,
+                                                ),
+                                              ),
+                                              backgroundColor: g.fill,
+                                              side: BorderSide(color: g.line),
+                                              onPressed: () {
+                                                nameController.text = chip;
+                                                setSheetState(() {});
+                                              },
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
+                                const SizedBox(height: 14),
+
+                                // Dosage & Form Factor Row
+                                Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: TextField(
+                                        controller: dosageController,
+                                        style: TextStyle(
+                                          color: g.ink,
+                                          fontSize: 14,
+                                        ),
+                                        decoration: InputDecoration(
+                                          labelText: 'Dosage',
+                                          hintText: '1 Tablet, 5ml',
+                                          labelStyle: TextStyle(
+                                            color: g.inkSecondary,
+                                            fontSize: 13,
+                                          ),
+                                          hintStyle: TextStyle(
+                                            color: g.inkMuted,
+                                            fontSize: 13,
+                                          ),
+                                          filled: true,
+                                          fillColor: g.claySoft,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: g.line,
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: g.line,
+                                            ),
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 14,
+                                                vertical: 12,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: DropdownButtonFormField<String>(
+                                        isExpanded: true,
+                                        initialValue: type,
+                                        dropdownColor: g.bg,
+                                        style: TextStyle(
+                                          color: g.ink,
+                                          fontSize: 13,
+                                        ),
+                                        decoration: InputDecoration(
+                                          labelText: 'Form',
+                                          labelStyle: TextStyle(
+                                            color: g.inkSecondary,
+                                            fontSize: 13,
+                                          ),
+                                          filled: true,
+                                          fillColor: g.claySoft,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            borderSide: BorderSide(
+                                              color: g.line,
+                                            ),
+                                          ),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 12,
+                                              ),
+                                        ),
+                                        items: const [
+                                          DropdownMenuItem(
+                                            value: 'tablet',
+                                            child: Text('Tablet'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'capsule',
+                                            child: Text('Capsule'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'syrup',
+                                            child: Text('Syrup'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'drops',
+                                            child: Text('Drops'),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'injection',
+                                            child: Text('Injection'),
+                                          ),
+                                        ],
+                                        onChanged: (val) {
+                                          if (val != null) {
+                                            setSheetState(() => type = val);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Food Condition
+                                Text(
+                                  'Instructions / Meal Timing',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  children:
+                                      [
+                                        'After food',
+                                        'Before meal',
+                                        'With water',
+                                        'Empty stomach',
+                                      ].map((opt) {
+                                        final isSel = instructions == opt;
+                                        return ChoiceChip(
+                                          label: Text(
+                                            opt,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: isSel
+                                                  ? Colors.white
+                                                  : g.inkSecondary,
+                                            ),
+                                          ),
+                                          selected: isSel,
+                                          selectedColor: g.clay,
+                                          backgroundColor: g.fill,
+                                          side: BorderSide(
+                                            color: isSel ? g.clay : g.line,
+                                          ),
+                                          onSelected: (val) {
+                                            if (val) {
+                                              setSheetState(
+                                                () => instructions = opt,
+                                              );
+                                            }
+                                          },
+                                        );
+                                      }).toList(),
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Daily Schedule Timings
+                                Text(
+                                  'Daily Doses & Timing Slots',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    _buildTimeChip(
+                                      label: 'Morning',
+                                      time: '08:00',
+                                      isSelected: selectedTimes.contains(
+                                        '08:00',
+                                      ),
+                                      g: g,
+                                      onToggle: () {
+                                        setSheetState(() {
+                                          if (selectedTimes.contains('08:00')) {
+                                            if (selectedTimes.length > 1) {
+                                              selectedTimes.remove('08:00');
+                                            }
+                                          } else {
+                                            selectedTimes.add('08:00');
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildTimeChip(
+                                      label: 'Afternoon',
+                                      time: '13:00',
+                                      isSelected: selectedTimes.contains(
+                                        '13:00',
+                                      ),
+                                      g: g,
+                                      onToggle: () {
+                                        setSheetState(() {
+                                          if (selectedTimes.contains('13:00')) {
+                                            if (selectedTimes.length > 1) {
+                                              selectedTimes.remove('13:00');
+                                            }
+                                          } else {
+                                            selectedTimes.add('13:00');
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildTimeChip(
+                                      label: 'Night',
+                                      time: '20:00',
+                                      isSelected: selectedTimes.contains(
+                                        '20:00',
+                                      ),
+                                      g: g,
+                                      onToggle: () {
+                                        setSheetState(() {
+                                          if (selectedTimes.contains('20:00')) {
+                                            if (selectedTimes.length > 1) {
+                                              selectedTimes.remove('20:00');
+                                            }
+                                          } else {
+                                            selectedTimes.add('20:00');
+                                          }
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Duration (How many days)
+                                Text(
+                                  'Course Duration (Days)',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.ink,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  children: [3, 5, 7, 14, 30].map((d) {
+                                    final isSel = durationDays == d;
+                                    return ChoiceChip(
+                                      label: Text(
+                                        '$d Days',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isSel
+                                              ? Colors.white
+                                              : g.inkSecondary,
+                                        ),
+                                      ),
+                                      selected: isSel,
+                                      selectedColor: g.clay,
+                                      backgroundColor: g.fill,
+                                      side: BorderSide(
+                                        color: isSel ? g.clay : g.line,
+                                      ),
+                                      onSelected: (val) {
+                                        if (val) {
+                                          setSheetState(() => durationDays = d);
+                                        }
+                                      },
+                                    );
+                                  }).toList(),
+                                ),
+                                const SizedBox(height: 14),
+
+                                // Info banner explaining the automated sync
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: g.claySoft,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: g.line),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.sync_rounded,
+                                        color: g.clay,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          'Sync Guarantee: Automatically creates daily To-dos and reminders for all $durationDays days.',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: g.inkSecondary,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // ALWAYS IN FRAME: Pinned Save Action Button
+                        Container(
+                          padding: const EdgeInsets.only(top: 8),
+                          decoration: BoxDecoration(
+                            border: Border(top: BorderSide(color: g.line)),
+                          ),
+                          child: AscentButton.primary(
+                            label: saving
+                                ? 'Saving…'
+                                : existing == null
+                                ? 'Save Prescription & Schedule'
+                                : 'Update Prescription',
+                            expanded: true,
+                            onPressed: saving
+                                ? null
+                                : () async {
+                                    final service = ref.read(
+                                      medicineServiceProvider,
+                                    );
+                                    final name = nameController.text.trim();
+                                    final dosage = dosageController.text.trim();
+                                    final sortedTimes = selectedTimes.toList()
+                                      ..sort();
+                                    setSheetState(() => saving = true);
+                                    HapticFeedback.mediumImpact();
+                                    try {
+                                      if (existing == null) {
+                                        await service.addMedicine(
+                                          name: name,
+                                          dosage: dosage,
+                                          scheduledTimes: sortedTimes,
+                                          durationDays: durationDays,
+                                          startDate: startDate,
+                                          instructions: instructions,
+                                          type: type,
+                                        );
+                                      } else {
+                                        await service.updateMedicine(
+                                          existing.id,
+                                          name: name,
+                                          dosage: dosage,
+                                          scheduledTimes: sortedTimes,
+                                          durationDays: durationDays,
+                                          startDate: startDate,
+                                          instructions: instructions,
+                                          type: type,
+                                        );
+                                      }
+                                      if (!mounted || !sheetContext.mounted) {
+                                        return;
+                                      }
+                                      setSheetState(() => saving = false);
+                                      Navigator.pop(sheetContext);
+                                      ScaffoldMessenger.of(
+                                        this.context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Saved $name. Reminder delivery depends on device permissions.',
+                                          ),
+                                        ),
+                                      );
+                                    } catch (error) {
+                                      if (sheetContext.mounted) {
+                                        setSheetState(() => saving = false);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Could not save schedule: $error',
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                          ),
+                        ),
+                      ],
                     ),
-
-                    const SizedBox(height: 12),
-
-                    // ALWAYS IN FRAME: Pinned Save Action Button
-                    Container(
-                      padding: const EdgeInsets.only(top: 8),
-                      decoration: BoxDecoration(
-                        border: Border(top: BorderSide(color: g.line)),
-                      ),
-                      child: AscentButton.primary(
-                        label: existing == null ? 'Save Prescription & Schedule' : 'Update Prescription',
-                        expanded: true,
-                        onPressed: () async {
-                          if (nameController.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter medicine name')),
-                            );
-                            return;
-                          }
-
-                          HapticFeedback.mediumImpact();
-                          Navigator.pop(sheetContext);
-
-                          final sortedTimes = selectedTimes.toList()..sort();
-                          await ref.read(medicineServiceProvider).addMedicine(
-                                name: nameController.text.trim(),
-                                dosage: dosageController.text.trim(),
-                                scheduledTimes: sortedTimes,
-                                durationDays: durationDays,
-                                startDate: startDate,
-                                instructions: instructions,
-                                type: type,
-                              );
-
-                          if (mounted && context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Scheduled ${nameController.text} for $durationDays days with reminders & tasks!'),
-                                backgroundColor: g.clay,
-                              ),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
@@ -462,7 +663,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
           children: [
             Icon(Icons.delete_outline_rounded, color: g.coral, size: 24),
             const SizedBox(width: 8),
-            Text('Delete ${medicine.name}', style: TextStyle(color: g.ink, fontSize: 16)),
+            Text(
+              'Delete ${medicine.name}',
+              style: TextStyle(color: g.ink, fontSize: 16),
+            ),
           ],
         ),
         content: Text(
@@ -477,19 +681,30 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: g.coral,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
               HapticFeedback.mediumImpact();
               Navigator.pop(dlgContext);
-              await ref.read(medicineServiceProvider).deleteMedicine(medicine.id);
+              await ref
+                  .read(medicineServiceProvider)
+                  .deleteMedicine(medicine.id);
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Removed ${medicine.name} and cancelled future reminders.')),
+                  SnackBar(
+                    content: Text(
+                      'Removed ${medicine.name}. Alert cancellation will retry if needed.',
+                    ),
+                  ),
                 );
               }
             },
-            child: const Text('Delete & Cancel Reminders', style: TextStyle(color: Colors.white, fontSize: 12)),
+            child: const Text(
+              'Delete & Cancel Reminders',
+              style: TextStyle(color: Colors.white, fontSize: 12),
+            ),
           ),
         ],
       ),
@@ -525,7 +740,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
             data: (todayLogs) {
               final total = todayLogs.length;
               final taken = todayLogs.where((l) => l.isTaken).length;
-              final progress = total > 0 ? (taken / total).clamp(0.0, 1.0) : 0.0;
+              final progress = total > 0
+                  ? (taken / total).clamp(0.0, 1.0)
+                  : 0.0;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,41 +754,43 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: g.claySoft,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(Icons.medication_rounded, color: g.clay, size: 20),
-                                ),
-                                const SizedBox(width: 10),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Today\'s Doses',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.bold,
-                                        color: g.ink,
-                                      ),
-                                    ),
-                                    Text(
-                                      '$taken of $total doses taken',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: g.inkSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: g.claySoft,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.medication_rounded,
+                                color: g.clay,
+                                size: 20,
+                              ),
                             ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Today's Doses",
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: g.ink,
+                                    ),
+                                  ),
+                                  Text(
+                                    '$taken of $total doses taken',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: g.inkSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             Text(
                               '${(progress * 100).toInt()}%',
                               style: TextStyle(
@@ -620,7 +839,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                               child: Center(
                                 child: Text(
                                   'No doses scheduled for today.',
-                                  style: TextStyle(color: g.inkMuted, fontSize: 13),
+                                  style: TextStyle(
+                                    color: g.inkMuted,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ),
@@ -633,24 +855,36 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                         loading: () => const SizedBox.shrink(),
                         error: (_, _) => const SizedBox.shrink(),
                         data: (meds) {
-                          final med = meds.where((m) => m.id == log.medicineId).firstOrNull;
+                          final med = meds
+                              .where((m) => m.id == log.medicineId)
+                              .firstOrNull;
                           final medName = med?.name ?? 'Medicine';
                           final medDosage = med?.dosage ?? '';
                           final instructions = med?.instructions ?? '';
-                          final timeStr = MedicineService.formatTimeSlot(log.timeSlot);
+                          final timeStr = MedicineService.formatTimeSlot(
+                            log.timeSlot,
+                          );
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             child: GlassSurface(
                               radius: 16,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
                               child: Row(
                                 children: [
                                   // Time badge
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: log.isTaken ? g.sage.withValues(alpha: 0.15) : g.claySoft,
+                                      color: log.isTaken
+                                          ? g.sage.withValues(alpha: 0.15)
+                                          : g.claySoft,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -667,7 +901,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                   // Details
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           medName,
@@ -675,7 +910,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: g.ink,
-                                            decoration: log.isTaken ? TextDecoration.lineThrough : null,
+                                            decoration: log.isTaken
+                                                ? TextDecoration.lineThrough
+                                                : null,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
@@ -686,11 +923,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                             color: g.inkSecondary,
                                           ),
                                         ),
-                                        if (log.isTaken && log.takenAt != null) ...[
+                                        if (log.isTaken &&
+                                            log.takenAt != null) ...[
                                           const SizedBox(height: 2),
                                           Text(
                                             'Taken at ${DateFormat('h:mm a').format(log.takenAt!)}',
-                                            style: TextStyle(fontSize: 10, color: g.sage, fontWeight: FontWeight.w500),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              color: g.sage,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                         ],
                                       ],
@@ -701,11 +943,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                   InkWell(
                                     onTap: () async {
                                       HapticFeedback.lightImpact();
-                                      await ref.read(medicineServiceProvider).toggleDose(log.id, !log.isTaken);
+                                      await ref
+                                          .read(medicineServiceProvider)
+                                          .toggleDose(log.id, !log.isTaken);
                                     },
                                     borderRadius: BorderRadius.circular(20),
                                     child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: log.isTaken ? g.sage : g.clay,
                                         borderRadius: BorderRadius.circular(20),
@@ -714,7 +961,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            log.isTaken ? Icons.check_rounded : Icons.radio_button_unchecked_rounded,
+                                            log.isTaken
+                                                ? Icons.check_rounded
+                                                : Icons
+                                                      .radio_button_unchecked_rounded,
                                             size: 14,
                                             color: Colors.white,
                                           ),
@@ -758,7 +1008,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
 
           medicinesAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(child: Text('Error: $err', style: TextStyle(color: g.inkMuted))),
+            error: (err, _) => Center(
+              child: Text('Error: $err', style: TextStyle(color: g.inkMuted)),
+            ),
             data: (medicines) {
               if (medicines.isEmpty) {
                 return GlassSurface(
@@ -766,17 +1018,29 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                   padding: const EdgeInsets.all(28),
                   child: Column(
                     children: [
-                      Icon(Icons.medication_rounded, size: 48, color: g.inkMuted),
+                      Icon(
+                        Icons.medication_rounded,
+                        size: 48,
+                        color: g.inkMuted,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'No Medicines Added Yet',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: g.ink),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: g.ink,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Add your prescriptions with dosage & duration.\nReminders & daily to-dos will sync automatically.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: g.inkSecondary, height: 1.4),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: g.inkSecondary,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       AscentButton.primary(
@@ -793,16 +1057,31 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                 children: medicines.map((med) {
                   final now = DateTime.now();
                   final today = DateTime(now.year, now.month, now.day);
-                  final start = DateTime(med.startDate.year, med.startDate.month, med.startDate.day);
+                  final start = DateTime(
+                    med.startDate.year,
+                    med.startDate.month,
+                    med.startDate.day,
+                  );
                   final elapsedDays = today.difference(start).inDays + 1;
                   final clampedDay = elapsedDays.clamp(1, med.durationDays);
-                  final remainingDays = (med.durationDays - clampedDay).clamp(0, med.durationDays);
-                  final progress = (clampedDay / med.durationDays).clamp(0.0, 1.0);
+                  final remainingDays = (med.durationDays - clampedDay).clamp(
+                    0,
+                    med.durationDays,
+                  );
+                  final progress = (clampedDay / med.durationDays).clamp(
+                    0.0,
+                    1.0,
+                  );
 
                   List<String> timesList = [];
                   try {
-                    final decoded = jsonDecode(med.scheduledTimes) as List<dynamic>;
-                    timesList = decoded.map((e) => MedicineService.formatTimeSlot(e.toString())).toList();
+                    final decoded =
+                        jsonDecode(med.scheduledTimes) as List<dynamic>;
+                    timesList = decoded
+                        .map(
+                          (e) => MedicineService.formatTimeSlot(e.toString()),
+                        )
+                        .toList();
                   } catch (_) {}
 
                   return Container(
@@ -820,7 +1099,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 6,
                                       children: [
                                         Text(
                                           med.name,
@@ -830,16 +1111,24 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                             color: g.ink,
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 3,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: g.claySoft,
-                                            borderRadius: BorderRadius.circular(6),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
                                           ),
                                           child: Text(
                                             med.type.toUpperCase(),
-                                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: g.clay),
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              fontWeight: FontWeight.bold,
+                                              color: g.clay,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -847,15 +1136,33 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '${med.dosage} • ${med.instructions}',
-                                      style: TextStyle(fontSize: 12, color: g.inkSecondary),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: g.inkSecondary,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
 
                               IconButton(
+                                tooltip: 'Edit Prescription',
+                                icon: Icon(
+                                  Icons.edit_outlined,
+                                  color: g.inkMuted,
+                                ),
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  _openAddMedicineSheet(med);
+                                },
+                              ),
+                              IconButton(
                                 tooltip: 'Delete Prescription',
-                                icon: Icon(Icons.delete_outline_rounded, color: g.coral, size: 20),
+                                icon: Icon(
+                                  Icons.delete_outline_rounded,
+                                  color: g.coral,
+                                  size: 20,
+                                ),
                                 onPressed: () => _confirmDeleteMedicine(med),
                               ),
                             ],
@@ -868,38 +1175,65 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                             spacing: 6,
                             runSpacing: 4,
                             children: timesList
-                                .map((t) => Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: g.fill,
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: g.line),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.access_time_rounded, size: 11, color: g.inkMuted),
-                                          const SizedBox(width: 4),
-                                          Text(t, style: TextStyle(fontSize: 10, color: g.inkSecondary, fontWeight: FontWeight.w500)),
-                                        ],
-                                      ),
-                                    ))
+                                .map(
+                                  (t) => Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: g.fill,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: g.line),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.access_time_rounded,
+                                          size: 11,
+                                          color: g.inkMuted,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          t,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: g.inkSecondary,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
                                 .toList(),
                           ),
 
                           const SizedBox(height: 14),
 
                           // Course Duration Progress
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            spacing: 12,
+                            runSpacing: 6,
                             children: [
                               Text(
                                 'Day $clampedDay of ${med.durationDays}',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: g.ink),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: g.ink,
+                                ),
                               ),
                               Text(
-                                remainingDays == 0 ? 'Course complete' : '$remainingDays days left',
-                                style: TextStyle(fontSize: 11, color: g.inkMuted),
+                                remainingDays == 0
+                                    ? 'Course complete'
+                                    : '$remainingDays days left',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: g.inkMuted,
+                                ),
                               ),
                             ],
                           ),
@@ -926,5 +1260,31 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
         ],
       ),
     );
+  }
+}
+
+class _MedicineSheetControllers extends StatefulWidget {
+  const _MedicineSheetControllers({
+    required this.name,
+    required this.dosage,
+    required this.builder,
+  });
+  final String name, dosage;
+  final Widget Function(TextEditingController, TextEditingController) builder;
+  @override
+  State<_MedicineSheetControllers> createState() =>
+      _MedicineSheetControllersState();
+}
+
+class _MedicineSheetControllersState extends State<_MedicineSheetControllers> {
+  late final name = TextEditingController(text: widget.name);
+  late final dosage = TextEditingController(text: widget.dosage);
+  @override
+  Widget build(BuildContext context) => widget.builder(name, dosage);
+  @override
+  void dispose() {
+    name.dispose();
+    dosage.dispose();
+    super.dispose();
   }
 }

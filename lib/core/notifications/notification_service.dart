@@ -1144,7 +1144,25 @@ class NotificationService {
     required String instructions,
     required DateTime scheduledAt,
   }) async {
+    await scheduleMedicineReminderChecked(
+      id: id,
+      medicineName: medicineName,
+      dosage: dosage,
+      instructions: instructions,
+      scheduledAt: scheduledAt,
+    );
+  }
+
+  Future<bool> scheduleMedicineReminderChecked({
+    required int id,
+    required String medicineName,
+    required String dosage,
+    required String instructions,
+    required DateTime scheduledAt,
+  }) async {
     if (!_isInitialized) await initialize();
+    if (!await areNotificationsEnabled()) return false;
+    await refreshLocalTimeZone();
 
     final nowTz = tz.TZDateTime.now(tz.local);
     var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
@@ -1154,7 +1172,7 @@ class NotificationService {
         scheduledTz = nowTz.add(const Duration(seconds: 10));
       } else {
         debugPrint('Cannot schedule medicine in past: $scheduledTz');
-        return;
+        return false;
       }
     }
 
@@ -1182,6 +1200,7 @@ class NotificationService {
         payload: '/medicine',
       );
       debugPrint('Scheduled exact medicine reminder id=$id at $scheduledTz');
+      return true;
     } catch (e) {
       try {
         await _plugin.zonedSchedule(
@@ -1196,8 +1215,10 @@ class NotificationService {
         debugPrint(
           'Scheduled fallback medicine reminder id=$id at $scheduledTz',
         );
+        return true;
       } catch (err) {
         debugPrint('Failed to schedule medicine reminder: $err');
+        return false;
       }
     }
   }
@@ -1219,7 +1240,9 @@ class NotificationService {
       await _plugin.cancel(id: id);
       await _plugin.cancel(id: id + followUpIdOffset);
       return true;
-    } catch (_) { return false; }
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Cancels all notifications.
