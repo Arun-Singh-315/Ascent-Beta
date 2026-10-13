@@ -23,6 +23,8 @@ class ReminderTable extends Table {
   /// Explicit opt-in; existing and new reminders remain quiet by default.
   BoolColumn get alarmEnabled => boolean().withDefault(const Constant(false))();
 
+  BoolColumn get alertSyncPending => boolean().withDefault(const Constant(false))();
+
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
   DateTimeColumn get createdAt =>

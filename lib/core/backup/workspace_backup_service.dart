@@ -182,11 +182,45 @@ class WorkspaceBackupService {
   Future<Map<String, dynamic>> _validated(String raw) async {
     final payload = await compute(_decode, raw);
     // Backups from 1.0.7 keep their quiet reminder behavior after upgrading.
-    if (payload['format'] == 'ascent.workspace' && payload['version'] == 1 && payload['schema'] == 14 && db.schemaVersion == 15 && payload['tables'] is Map && payload['tables']['reminders'] is List) {
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 14 &&
+        db.schemaVersion >= 15 &&
+        payload['tables'] is Map &&
+        payload['tables']['reminders'] is List) {
       for (final row in payload['tables']['reminders'] as List) {
         if (row is Map) row['alarm_enabled'] = 0;
       }
       payload['schema'] = 15;
+    }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 15 &&
+        db.schemaVersion == 16 &&
+        payload['tables'] is Map) {
+      final tables = payload['tables'] as Map;
+      if (tables.containsKey('thought_reminder_links') || tables.containsKey('thought_merge_sources')) { throw const FormatException('Legacy schema contains newer relationships'); }
+      if (tables['tasks'] is! List || tables['time_sessions'] is! List) {
+        throw const FormatException('Incomplete legacy backup');
+      }
+      for (final row in tables['tasks'] as List) {
+        if (row is Map) { row['linked_thought_id'] = null; row['learning_course_id'] = null; row['learning_lecture_id'] = null; }
+      }
+      for (final row in tables['time_sessions'] as List) {
+        if (row is Map) {
+          row['learning_course_id'] = null;
+          row['learning_lecture_id'] = null;
+        }
+      }
+      if (tables['reminders'] is! List) {
+        throw const FormatException('Incomplete legacy backup');
+      }
+      for (final row in tables['reminders'] as List) {
+        if (row is Map) row['alert_sync_pending'] = 0;
+      }
+      tables['thought_reminder_links'] = <dynamic>[];
+      tables['thought_merge_sources'] = <dynamic>[];
+      payload['schema'] = 16;
     }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
@@ -389,6 +423,7 @@ class WorkspaceBackupService {
             );
           }
         }
+        await db.backfillThoughtLinks();
         if ((await db.customSelect('PRAGMA foreign_key_check').get())
             .isNotEmpty) {
           throw const FormatException(

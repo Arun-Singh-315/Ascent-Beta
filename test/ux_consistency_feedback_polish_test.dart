@@ -84,6 +84,7 @@ void main() {
             isActive: true,
             createdAt: now,
             linkedTaskId: null,
+            alertSyncPending: false,
           ),
           Reminder(
             alarmEnabled: false,
@@ -93,6 +94,7 @@ void main() {
             isActive: true,
             createdAt: now,
             linkedTaskId: null,
+            alertSyncPending: false,
           ),
           Reminder(
             alarmEnabled: false,
@@ -102,6 +104,7 @@ void main() {
             isActive: true,
             createdAt: now,
             linkedTaskId: null,
+            alertSyncPending: false,
           ),
         ];
 

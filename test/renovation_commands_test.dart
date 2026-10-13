@@ -342,7 +342,10 @@ void main() {
       final resolver = RiyaIntentResolver(db, clock: () => now);
       final first = await resolver.resolve('Remind me to call tomorrow');
       expect(first!.command, isNull);
-      expect(first.message, contains('What time'));
+      expect(
+        first.message,
+        anyOf(contains('What time'), contains('Choose a day, then a time')),
+      );
       final second = await resolver.resolve('7 PM');
       expect(second!.command!.arguments['title'], 'call');
       expect(
@@ -427,6 +430,15 @@ void main() {
       old.execute('DROP TABLE ai_command_table');
       old.execute('DROP TABLE backup_restore_state');
       old.execute('ALTER TABLE reminders DROP COLUMN alarm_enabled');
+      old.execute('DROP INDEX tasks_linked_thought_unique');
+      old.execute('DROP TABLE thought_reminder_links');
+      old.execute('DROP TABLE thought_merge_sources');
+      old.execute('ALTER TABLE tasks DROP COLUMN linked_thought_id');
+      old.execute('ALTER TABLE tasks DROP COLUMN learning_course_id');
+      old.execute('ALTER TABLE tasks DROP COLUMN learning_lecture_id');
+      old.execute('ALTER TABLE time_sessions DROP COLUMN learning_course_id');
+      old.execute('ALTER TABLE time_sessions DROP COLUMN learning_lecture_id');
+      old.execute('ALTER TABLE reminders DROP COLUMN alert_sync_pending');
       old.execute('PRAGMA user_version = 12');
       old.close();
       stored = AppDatabase.forTesting(NativeDatabase(file));

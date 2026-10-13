@@ -25,7 +25,7 @@ void main() {
 
   group('Thought Wall Archiving & Done Status Logic Tests', () {
     test(
-      'Active thoughts stream excludes archived thoughts and sorts active before completed',
+      'Active thoughts stream excludes archived thoughts and keeps pinned/newest order independent of completion',
       () async {
         final now = DateTime.now();
 
@@ -59,11 +59,11 @@ void main() {
         expect(active.length, 2);
         expect(active.any((t) => t.id == id3), isFalse);
 
-        // Uncompleted thought must appear before completed thought
-        expect(active.first.id, id1);
-        expect(active.first.isCompleted, isFalse);
-        expect(active.last.id, id2);
-        expect(active.last.isCompleted, isTrue);
+        // Completion does not reorder a note out of its chronological section.
+        expect(active.first.id, id2);
+        expect(active.first.isCompleted, isTrue);
+        expect(active.last.id, id1);
+        expect(active.last.isCompleted, isFalse);
 
         final archived = await dao.watchArchivedThoughts().first;
         expect(archived.length, 1);

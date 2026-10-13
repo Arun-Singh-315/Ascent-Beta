@@ -722,6 +722,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     if (confirmed == true) {
       final dao = ref.read(reminderDaoProvider);
       final deletedReminder = reminder;
+      final thoughtIds = await dao.getLinkedThoughtIds(deletedReminder.id);
       await dao.deleteReminder(deletedReminder.id);
       await NotificationService.instance.cancel(deletedReminder.id);
       ref.invalidate(allRemindersProvider);
@@ -738,24 +739,30 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               label: 'UNDO',
               textColor: const Color(0xFFF9AB67),
               onPressed: () async {
-                final restoredId = await dao.insertReminder(
-                  ReminderTableCompanion(
-                    title: drift.Value(deletedReminder.title),
-                    scheduledAt: drift.Value(deletedReminder.scheduledAt),
-                    isActive: drift.Value(deletedReminder.isActive),
-                    alarmEnabled: drift.Value(deletedReminder.alarmEnabled),
-                    createdAt: drift.Value(deletedReminder.createdAt),
-                  ),
-                );
-                if (deletedReminder.isActive &&
-                    deletedReminder.scheduledAt.isAfter(DateTime.now())) {
-                  await NotificationService.instance
-                      .scheduleReminderNotification(
-                        id: restoredId,
-                        title: deletedReminder.title,
-                        scheduledAt: deletedReminder.scheduledAt,
-                        alarmEnabled: deletedReminder.alarmEnabled,
-                      );
+                try {
+                  final restored = await dao.restoreDeletedReminder(
+                    deletedReminder,
+                    thoughtIds,
+                  );
+                  if (!restored && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'A newer reminder already uses this record. It was kept.',
+                        ),
+                      ),
+                    );
+                  }
+                } catch (_) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Could not restore the reminder. Try again.',
+                        ),
+                      ),
+                    );
+                  }
                 }
                 ref.invalidate(allRemindersProvider);
                 ref.invalidate(nextUpcomingReminderProvider);

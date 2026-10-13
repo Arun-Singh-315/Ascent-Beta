@@ -529,6 +529,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final reminderDao = ref.watch(reminderDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
+  final learningHub = ref.watch(learningHubProvider);
 
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
@@ -548,6 +549,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
 
     // 1. Process tasks planned for today
     for (final task in tasks) {
+      if (task.learningCourseId != null) continue;
       final taskSessions = sessions
           .where((s) => s.linkedTaskId == task.id)
           .toList();
@@ -644,7 +646,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
     // 2. Process standalone sessions (excluding lectures which are kept in Learning Hub)
     for (final session in sessions) {
       if (accountedSessionIds.contains(session.id) ||
-          session.activityRefType == 'lecture') {
+          (session.activityRefType == 'lecture' ||
+              session.learningCourseId != null)) {
         continue;
       }
 
@@ -704,38 +707,64 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       );
     }
 
-    // 2.6 Guarantee completed lectures from the course remain visible in Completed activities
-    final learningHub = ref.read(learningHubProvider);
-    final curCourse = learningHub.course;
-    for (final mod in curCourse.modules) {
-      for (final lec in mod.lectures) {
-        if (lec.isCompleted) {
-          final lecItemId = 'lecture_${lec.id}';
-          if (!items.any((it) => it.id == lecItemId)) {
-            final targetMins = (lec.durationSeconds > 0)
-                ? (lec.durationSeconds / 60).round()
-                : 5;
-            items.add(
-              TodayActivityItem(
-                id: lecItemId,
-                title: '${curCourse.title}: ${lec.title}',
-                sourceType: 'lecture',
-                status: TodayActivityStatus.done,
-                elapsedSecondsToday: lec.durationSeconds > 0
-                    ? lec.durationSeconds
-                    : lec.elapsedSeconds,
-                linkedTaskId: null,
-                linkedSessionId: null,
-                categoryTag: 'Study',
-                kind: ActivityKind.duration,
-                targetMinutes: targetMins,
-                plannedDate: lec.lastPlayedAt ?? DateTime.now(),
-                isOverdue: false,
-                completedAt: lec.lastPlayedAt ?? DateTime.now(),
-              ),
-            );
-          }
-        }
+    // A lecture is projected once, with a course-scoped identity and genuine
+    // engagement. It remains in the catalog when dismissed from Today.
+    for (final course in learningHub.courses) {
+      for (final lec in course.modules.expand((m) => m.lectures)) {
+        final related = sessions
+            .where(
+              (s) =>
+                  s.learningCourseId == course.id &&
+                  s.learningLectureId == lec.id &&
+                  s.activityRefType == 'lecture',
+            )
+            .toList();
+        final planned = lec.plannedDate;
+        final plannedToday =
+            planned != null &&
+            planned.year == today.year &&
+            planned.month == today.month &&
+            planned.day == today.day;
+        if (!lec.isCompleted && !plannedToday && related.isEmpty) continue;
+        final active =
+            learningHub.activeCourseId == course.id &&
+            learningHub.activeLectureId == lec.id;
+        final linkedTask = tasks
+            .where(
+              (t) =>
+                  t.learningCourseId == course.id &&
+                  t.learningLectureId == lec.id,
+            )
+            .firstOrNull;
+        final elapsedToday = related.fold<int>(
+          0,
+          (sum, session) => sum + session.durationSeconds,
+        );
+        items.add(
+          TodayActivityItem(
+            id: 'lecture_${Uri.encodeComponent(course.id)}_${lec.id}',
+            title: '${course.title}: ${lec.title}',
+            sourceType: 'lecture',
+            learningCourseId: course.id,
+            learningLectureId: lec.id,
+            status: lec.isCompleted
+                ? TodayActivityStatus.done
+                : active && learningHub.isPlaying
+                ? TodayActivityStatus.inProgress
+                : related.isNotEmpty
+                ? TodayActivityStatus.paused
+                : TodayActivityStatus.notStarted,
+            elapsedSecondsToday: elapsedToday,
+            linkedTaskId: linkedTask?.id,
+            categoryTag: 'Study',
+            kind: ActivityKind.duration,
+            targetMinutes: lec.durationSeconds > 0
+                ? (lec.requiredStudySeconds / 60).ceil()
+                : null,
+            plannedDate: planned ?? lec.lastPlayedAt,
+            completedAt: lec.isCompleted ? lec.lastPlayedAt : null,
+          ),
+        );
       }
     }
 
@@ -847,67 +876,9 @@ Future<void> deleteTaskAndCleanCascade(
   int taskId, {
   String? taskTitle,
 }) async {
-  // 1. Cancel local notification alarms and delete reminders by linkedTaskId (and title fallback)
-  try {
-    final reminderDao = ref.read(reminderDaoProvider);
-    final linkedReminders = await reminderDao.getRemindersByTaskId(taskId);
-    for (final r in linkedReminders) {
-      await NotificationService.instance.cancel(r.id);
-      await reminderDao.deleteReminder(r.id);
-    }
-    if (taskTitle != null && taskTitle.trim().isNotEmpty) {
-      final all = await reminderDao.watchAllReminders().first;
-      final norm = taskTitle.trim().toLowerCase();
-      for (final r in all) {
-        if (r.title.trim().toLowerCase() == norm) {
-          await NotificationService.instance.cancel(r.id);
-          await reminderDao.deleteReminder(r.id);
-        }
-      }
-    }
-  } catch (_) {}
-
-  // 2. Terminate running time session if currently active
-  try {
-    final tracking = ref.read(timeTrackingProvider);
-    if (tracking.activeSession != null &&
-        (tracking.activeSession?.linkedTaskId == taskId ||
-            (taskTitle != null &&
-                tracking.activeSession?.label.trim().toLowerCase() ==
-                    taskTitle.trim().toLowerCase()))) {
-      await ref
-          .read(timeSessionDaoProvider)
-          .deleteSession(tracking.activeSession!.id);
-    }
-  } catch (_) {}
-
-  // 3. Delete any time sessions associated with this task ID
-  try {
-    final sessionDao = ref.read(timeSessionDaoProvider);
-    final sessions = await sessionDao
-        .watchSessionsForDate(DateTime.now())
-        .first;
-    for (final s in sessions) {
-      if (s.linkedTaskId == taskId) {
-        await sessionDao.deleteSession(s.id);
-      }
-    }
-  } catch (_) {}
-
-  // 4. Recursively cascade delete any child subtasks
-  try {
-    final taskDao = ref.read(taskDaoProvider);
-    final allTasks = await taskDao.watchAllTasks().first;
-    final subTasks = allTasks.where((t) => t.parentTaskId == taskId).toList();
-    for (final sub in subTasks) {
-      await deleteTaskAndCleanCascade(ref, sub.id, taskTitle: sub.title);
-    }
-  } catch (_) {}
-
-  // 5. Delete the task itself from SQLite
-  try {
-    await ref.read(taskDaoProvider).deleteTask(taskId);
-  } catch (_) {}
+  // Shared deletion uses explicit IDs across the entire history and commits
+  // durable native alert cancellation; matching titles never select records.
+  await ref.read(taskDaoProvider).deleteTask(taskId);
 }
 
 Future<void> deleteTodayActivity(
@@ -919,21 +890,17 @@ Future<void> deleteTodayActivity(
       .read(dismissedTodayActivityIdsProvider.notifier)
       .dismissActivityId(activity.id);
 
-  // 2. If it's a lecture, pause playback in Learning Hub and pause any running timer session
+  // Dismissing a lecture never deletes its task, catalog, or timer history.
   if (activity.sourceType == 'lecture' || activity.id.startsWith('lecture_')) {
-    try {
-      final learningState = ref.read(learningHubProvider);
-      if (learningState.isPlaying) {
-        ref.read(learningHubProvider.notifier).pause();
-      }
-      final activeSession = ref.read(timeTrackingProvider).activeSession;
-      if (activeSession != null &&
-          (activeSession.activityRefType == 'lecture' ||
-              activeSession.label.contains(activity.title) ||
-              activity.title.contains(activeSession.label))) {
-        ref.read(timeTrackingProvider.notifier).pauseSession();
-      }
-    } catch (_) {}
+    final learning = ref.read(learningHubProvider);
+    final matches = activity.learningCourseId == null
+        ? activity.id == 'lecture_${learning.activeLectureId}'
+        : activity.learningCourseId == learning.activeCourseId &&
+              activity.learningLectureId == learning.activeLectureId;
+    if (matches && learning.isPlaying) {
+      ref.read(learningHubProvider.notifier).pause();
+    }
+    return;
   }
 
   // 3. If linked to a task, cascade delete

@@ -1,3 +1,4 @@
+import 'support/learning_fixtures.dart';
 import 'support/returning_user_guides.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -51,6 +52,7 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
+    await container.read(learningHubProvider.notifier).ready;
   });
 
   tearDown(() async {
@@ -180,13 +182,19 @@ void main() {
         final activeLec = container.read(learningHubProvider).activeLecture;
 
         // Mark lecture completed
-        hubNotifier.markLectureCompleted(activeLec.id, completed: true);
+        await seedLectureStudyEvidence(container, activeLec.id);
+        await container
+            .read(learningHubProvider.notifier)
+            .markLectureCompleted(activeLec.id, completed: true);
 
         // Fetch today's activities
         final todayList = await readTodayActivities(container);
 
         final completedItem = todayList.firstWhere(
-          (it) => it.id == 'lecture_${activeLec.id}',
+          (it) =>
+              it.learningLectureId == activeLec.id &&
+              it.learningCourseId ==
+                  container.read(learningHubProvider).activeCourseId,
           orElse: () => throw Exception(
             'Completed lecture not found in today activities',
           ),

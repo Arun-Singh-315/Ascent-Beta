@@ -14,16 +14,17 @@ class TimeSessionTable extends Table {
   TextColumn get label => text()();
 
   /// Activity label convenience (study | entertainment | custom).
-  TextColumn get activityType =>
-      text().withDefault(const Constant('study'))();
+  TextColumn get activityType => text().withDefault(const Constant('study'))();
 
   /// Authoritative FK to [SessionCategoryTable].
-  IntColumn get categoryId =>
-      integer().references(SessionCategoryTable, #id)();
+  IntColumn get categoryId => integer().references(SessionCategoryTable, #id)();
 
   /// Optional FK to [TaskTable].
   IntColumn get linkedTaskId =>
       integer().nullable().references(TaskTable, #id)();
+
+  TextColumn get learningCourseId => text().nullable()();
+  IntColumn get learningLectureId => integer().nullable()();
 
   /// Start timestamp of the session.
   DateTimeColumn get startedAt => dateTime()();
@@ -32,16 +33,13 @@ class TimeSessionTable extends Table {
   DateTimeColumn get endedAt => dateTime().nullable()();
 
   /// JSON array of paused intervals: `[{"pausedAt":"...","resumedAt":"..."}]`.
-  TextColumn get pausedIntervals =>
-      text().withDefault(const Constant('[]'))();
+  TextColumn get pausedIntervals => text().withDefault(const Constant('[]'))();
 
   /// Session status: 'running' | 'paused' | 'completed' | 'discarded'.
-  TextColumn get status =>
-      text().withDefault(const Constant('running'))();
+  TextColumn get status => text().withDefault(const Constant('running'))();
 
   /// Accumulated active duration in seconds.
-  IntColumn get durationSeconds =>
-      integer().withDefault(const Constant(0))();
+  IntColumn get durationSeconds => integer().withDefault(const Constant(0))();
 
   /// Reference type: 'task' | 'dsa_log' | 'interview_prep' | 'custom'.
   TextColumn get activityRefType =>
@@ -50,6 +48,5 @@ class TimeSessionTable extends Table {
   /// Heartbeat timestamp flushed periodically while running.
   DateTimeColumn get lastHeartbeatAt => dateTime().nullable()();
 
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

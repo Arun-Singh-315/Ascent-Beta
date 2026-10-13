@@ -2,6 +2,7 @@ import 'core/notifications/alarm_lifecycle.dart';
 import 'core/notifications/reminder_alarm_bridge.dart';
 import 'core/providers/database_provider.dart';
 import 'core/notifications/reminder_alert_sync.dart';
+import 'core/ai/riya_alert_effects.dart';
 import 'package:path_provider/path_provider.dart';
 import 'core/database/app_database.dart';
 import 'core/backup/workspace_backup_service.dart';
@@ -84,6 +85,15 @@ Future<void> main() async {
     } finally {
       await alarmDb.close();
     }
+  }
+  final pendingAlertDb = AppDatabase();
+  try {
+    await RiyaAlertEffects.device(pendingAlertDb).syncPending();
+    await ReminderAlertSync.device(pendingAlertDb).sync(onlyPending: true);
+  } catch (_) {
+    // Pending rows remain durable for retry when alerts become available.
+  } finally {
+    await pendingAlertDb.close();
   }
   await touchLastOpened(prefs);
 

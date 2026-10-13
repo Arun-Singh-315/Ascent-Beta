@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
+import 'module_lecture_editor_sheets.dart';
 
 class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
   const LectureFocusPlayerSheet({super.key});
@@ -27,10 +28,12 @@ class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<LectureFocusPlayerSheet> createState() => _LectureFocusPlayerSheetState();
+  ConsumerState<LectureFocusPlayerSheet> createState() =>
+      _LectureFocusPlayerSheetState();
 }
 
-class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerSheet> {
+class _LectureFocusPlayerSheetState
+    extends ConsumerState<LectureFocusPlayerSheet> {
   bool _switcherExpanded = false;
 
   @override
@@ -75,454 +78,598 @@ class _LectureFocusPlayerSheetState extends ConsumerState<LectureFocusPlayerShee
             // 1. Top Header Handle + Title
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 28),
-                  onPressed: () => Navigator.pop(context),
-                  color: context.textPrimary,
-                ),
-                Text(
-                  'Lecture Focus Player',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 28,
+                    ),
+                    onPressed: () => Navigator.pop(context),
                     color: context.textPrimary,
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: state.isPlaying
-                        ? context.accentSecondary.withValues(alpha: 0.15)
-                        : Colors.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
+                  Text(
+                    'Lecture Focus Player',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.textPrimary,
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: state.isPlaying ? context.accentSecondary : Colors.orange,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: state.isPlaying
+                          ? context.accentSecondary.withValues(alpha: 0.15)
+                          : Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: state.isPlaying
+                                ? context.accentSecondary
+                                : Colors.orange,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        state.isPlaying ? 'LIVE FOCUS' : 'PAUSED',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: state.isPlaying ? context.accentSecondary : Colors.orange,
+                        const SizedBox(width: 5),
+                        Text(
+                          state.isPlaying ? 'LIVE FOCUS' : 'PAUSED',
+                          style: GoogleFonts.jetBrainsMono(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: state.isPlaying
+                                ? context.accentSecondary
+                                : Colors.orange,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          Divider(height: 1, color: context.divider),
+            Divider(height: 1, color: context.divider),
 
-          // Main scrollable player content
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              children: [
-                // Breadcrumbs
-                Text(
-                  '${state.course.title.toUpperCase()} / ${activeMod.title}',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: context.accentPrimary,
-                    letterSpacing: 0.4,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+            // Main scrollable player content
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-                const SizedBox(height: 8),
-
-                // Lecture Title
-                Text(
-                  'Lecture ${active.id}: ${active.title}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: active.isCompleted ? context.textMuted : context.textPrimary,
-                    decoration: active.isCompleted ? TextDecoration.lineThrough : null,
-                    decorationColor: context.textMuted,
-                    height: 1.25,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 14),
-
-                // Progress slider
-                Column(
-                  children: [
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        activeTrackColor: context.accentSecondary,
-                        inactiveTrackColor: context.divider,
-                        thumbColor: context.accentSecondary,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                        trackHeight: 3.5,
-                      ),
-                      child: Slider(
-                        value: state.progressFraction,
-                        onChanged: (val) => notifier.seekTo(val),
-                      ),
+                children: [
+                  // Breadcrumbs
+                  Text(
+                    '${state.course.title.toUpperCase()} / ${activeMod.title}',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: context.accentPrimary,
+                      letterSpacing: 0.4,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            state.formattedElapsed,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11,
-                              color: context.textMuted,
-                            ),
-                          ),
-                          Text(
-                            active.formattedDuration,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11,
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
 
-                // Circular countdown ring
-                Center(
-                  child: Stack(
-                    alignment: Alignment.center,
+                  // Lecture Title
+                  Text(
+                    'Lecture ${active.id}: ${active.title}',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: active.isCompleted
+                          ? context.textMuted
+                          : context.textPrimary,
+                      decoration: active.isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: context.textMuted,
+                      height: 1.25,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Progress slider
+                  Column(
                     children: [
-                      SizedBox(
-                        width: 170,
-                        height: 170,
-                        child: CircularProgressIndicator(
+                      SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          activeTrackColor: context.accentSecondary,
+                          inactiveTrackColor: context.divider,
+                          thumbColor: context.accentSecondary,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          trackHeight: 3.5,
+                        ),
+                        child: Slider(
                           value: state.progressFraction,
-                          strokeWidth: 9,
-                          backgroundColor: context.divider,
-                          color: context.accentSecondary,
-                          strokeCap: StrokeCap.round,
+                          onChanged: (val) => notifier.seekTo(val),
                         ),
                       ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            state.formattedRemaining,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: context.textPrimary,
-                              letterSpacing: -1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'REMAINING',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: context.textMuted,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: context.accentSecondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${state.progressPercent}% Completed',
-                              style: TextStyle(
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              state.formattedElapsed,
+                              style: GoogleFonts.jetBrainsMono(
                                 fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: context.accentSecondary,
+                                color: context.textMuted,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // Playback Controls (-10s, Play/Pause, +10s)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      iconSize: 34,
-                      icon: const Icon(Icons.replay_10_rounded),
-                      color: context.textPrimary,
-                      onPressed: () => notifier.seekBy(-10),
-                    ),
-                    const SizedBox(width: 20),
-                    InkWell(
-                      onTap: () => notifier.togglePlayPause(),
-                      borderRadius: BorderRadius.circular(40),
-                      child: Container(
-                        width: 68,
-                        height: 68,
-                        decoration: BoxDecoration(
-                          color: context.accentPrimary.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: context.accentPrimary.withValues(alpha: 0.45),
-                            width: 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
+                            Text(
+                              active.formattedDuration,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                color: context.textMuted,
+                              ),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          size: 38,
-                          color: context.accentPrimary,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Circular countdown ring
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 170,
+                          height: 170,
+                          child: CircularProgressIndicator(
+                            value: state.progressFraction,
+                            strokeWidth: 9,
+                            backgroundColor: context.divider,
+                            color: context.accentSecondary,
+                            strokeCap: StrokeCap.round,
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    IconButton(
-                      iconSize: 34,
-                      icon: const Icon(Icons.forward_10_rounded),
-                      color: context.textPrimary,
-                      onPressed: () => notifier.seekBy(10),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
-
-                // Mark Lecture Completed
-                Center(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(
-                        color: active.isCompleted ? context.accentSecondary : context.divider,
-                        width: 1.5,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    ),
-                    onPressed: active.isCompleted
-                        ? null
-                        : () {
-                            notifier.markLectureCompleted(active.id);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Lecture ${active.id} completed! Progress saved.'),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              state.formattedRemaining,
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                color: context.textPrimary,
+                                letterSpacing: -1,
                               ),
-                            );
-                          },
-                    icon: Icon(
-                      active.isCompleted ? Icons.check_circle_rounded : Icons.check_rounded,
-                      color: active.isCompleted ? context.accentSecondary : context.textPrimary,
-                      size: 20,
-                    ),
-                    label: Text(
-                      active.isCompleted ? 'Lecture Completed' : 'Mark Lecture Completed',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: active.isCompleted ? context.accentSecondary : context.textPrimary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Swift Lecture Switcher Card
-                Material(
-                  color: context.bgBase,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                    side: BorderSide(color: context.divider.withValues(alpha: 0.8)),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    children: [
-                      // Header
-                      InkWell(
-                        onTap: () {
-                          setState(() {
-                            _switcherExpanded = !_switcherExpanded;
-                          });
-                        },
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.playlist_play_rounded, size: 20),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Swift Lecture Switcher',
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                      color: context.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: context.bgSurface,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      '${state.course.totalLectures} Total',
-                                      style: GoogleFonts.jetBrainsMono(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: context.textMuted,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Icon(
-                                _switcherExpanded
-                                    ? Icons.keyboard_arrow_up_rounded
-                                    : Icons.keyboard_arrow_down_rounded,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'REMAINING',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                                 color: context.textMuted,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: context.accentSecondary.withValues(
+                                  alpha: 0.12,
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '${state.progressPercent}% Completed',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.accentSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Playback Controls (-10s, Play/Pause, +10s)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        iconSize: 34,
+                        icon: const Icon(Icons.replay_10_rounded),
+                        color: context.textPrimary,
+                        onPressed: () => notifier.seekBy(-10),
+                      ),
+                      const SizedBox(width: 20),
+                      InkWell(
+                        onTap: () => notifier.togglePlayPause(),
+                        borderRadius: BorderRadius.circular(40),
+                        child: Container(
+                          width: 68,
+                          height: 68,
+                          decoration: BoxDecoration(
+                            color: context.accentPrimary.withValues(
+                              alpha: 0.12,
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: context.accentPrimary.withValues(
+                                alpha: 0.45,
+                              ),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
+                          child: Icon(
+                            state.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            size: 38,
+                            color: context.accentPrimary,
+                          ),
                         ),
                       ),
+                      const SizedBox(width: 20),
+                      IconButton(
+                        iconSize: 34,
+                        icon: const Icon(Icons.forward_10_rounded),
+                        color: context.textPrimary,
+                        onPressed: () => notifier.seekBy(10),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
 
-                      if (_switcherExpanded) ...[
-                        Divider(height: 1, color: context.divider),
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          itemCount: state.course.modules.expand((m) => m.lectures).length,
-                          itemBuilder: (context, index) {
-                            final all = state.course.modules.expand((m) => m.lectures).toList();
-                            final lec = all[index];
-                            final isCurrent = lec.id == state.activeLectureId;
+                  // Mark Lecture Completed
+                  Center(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(
+                          color: active.isCompleted
+                              ? context.accentSecondary
+                              : context.divider,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                      onPressed:
+                          active.isCompleted ||
+                              !active.canComplete ||
+                              state.isSavingCompletion
+                          ? null
+                          : () async {
+                              final completed = await notifier
+                                  .markLectureCompleted(active.id);
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    completed
+                                        ? 'Lecture completed. Progress saved.'
+                                        : 'Could not complete this lecture. Your progress is unchanged.',
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                      icon: Icon(
+                        active.isCompleted
+                            ? Icons.check_circle_rounded
+                            : Icons.check_rounded,
+                        color: active.isCompleted
+                            ? context.accentSecondary
+                            : context.textPrimary,
+                        size: 20,
+                      ),
+                      label: Text(
+                        active.isCompleted
+                            ? 'Lecture Completed'
+                            : state.isSavingCompletion
+                            ? 'Saving…'
+                            : 'Mark Lecture Completed',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: active.isCompleted
+                              ? context.accentSecondary
+                              : context.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    active.isCompleted
+                        ? 'Completion saved'
+                        : 'Study time: ${active.studyProgressPercent}% · ${active.completionThresholdPercent}% required',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: context.textMuted,
+                    ),
+                  ),
+                  if (!active.isCompleted) ...[
+                    if (active.durationSeconds <= 0)
+                      TextButton.icon(
+                        onPressed: () => showEditLectureSheet(
+                          context,
+                          ref,
+                          state.course.id,
+                          active,
+                        ),
+                        icon: const Icon(Icons.timer_outlined),
+                        label: const Text('Set lecture duration'),
+                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Seeking changes your place, not your study credit. External video watching is not verified.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
 
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                              child: Material(
-                                color: isCurrent
-                                    ? context.accentSecondary.withValues(alpha: 0.12)
-                                    : Colors.transparent,
-                                shape: isCurrent
-                                    ? RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        side: BorderSide(color: context.accentSecondary.withValues(alpha: 0.4)),
-                                      )
-                                    : RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                child: ListTile(
-                                  dense: true,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                                  leading: Container(
-                                    width: 26,
-                                    height: 26,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: isCurrent
-                                        ? context.accentSecondary
-                                        : (lec.isCompleted
-                                            ? context.accentPrimary.withValues(alpha: 0.2)
-                                            : context.divider.withValues(alpha: 0.6)),
-                                  ),
-                                  child: Center(
-                                    child: lec.isCompleted
-                                        ? Icon(Icons.check, size: 14, color: context.accentPrimary)
-                                        : Text(
-                                            '${lec.id}',
-                                            style: GoogleFonts.jetBrainsMono(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: isCurrent ? Colors.white : context.textPrimary,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                                title: Text(
-                                  lec.title,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 12.5,
-                                    fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-                                    color: lec.isCompleted ? context.textMuted : context.textPrimary,
-                                    decoration: lec.isCompleted ? TextDecoration.lineThrough : null,
-                                    decorationColor: context.textMuted,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                  // Swift Lecture Switcher Card
+                  Material(
+                    color: context.bgBase,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                      side: BorderSide(
+                        color: context.divider.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      children: [
+                        // Header
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _switcherExpanded = !_switcherExpanded;
+                            });
+                          },
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(18),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
                                   children: [
+                                    const Icon(
+                                      Icons.playlist_play_rounded,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      lec.formattedDuration,
-                                      style: GoogleFonts.jetBrainsMono(
-                                        fontSize: 11,
-                                        color: isCurrent ? context.accentSecondary : context.textMuted,
-                                        fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+                                      'Swift Lecture Switcher',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 14,
+                                        color: context.textPrimary,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 16,
-                                      color: isCurrent ? context.accentSecondary : context.textMuted,
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: context.bgSurface,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${state.course.totalLectures} Total',
+                                        style: GoogleFonts.jetBrainsMono(
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.textMuted,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
-                                onTap: () {
-                                  notifier.selectLecture(lec.id, autoPlay: true);
-                                },
-                              ),
+                                Icon(
+                                  _switcherExpanded
+                                      ? Icons.keyboard_arrow_up_rounded
+                                      : Icons.keyboard_arrow_down_rounded,
+                                  color: context.textMuted,
+                                ),
+                              ],
                             ),
-                          );
-                        },
+                          ),
                         ),
+
+                        if (_switcherExpanded) ...[
+                          Divider(height: 1, color: context.divider),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            itemCount: state.course.modules
+                                .expand((m) => m.lectures)
+                                .length,
+                            itemBuilder: (context, index) {
+                              final all = state.course.modules
+                                  .expand((m) => m.lectures)
+                                  .toList();
+                              final lec = all[index];
+                              final isCurrent = lec.id == state.activeLectureId;
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 3,
+                                ),
+                                child: Material(
+                                  color: isCurrent
+                                      ? context.accentSecondary.withValues(
+                                          alpha: 0.12,
+                                        )
+                                      : Colors.transparent,
+                                  shape: isCurrent
+                                      ? RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          side: BorderSide(
+                                            color: context.accentSecondary
+                                                .withValues(alpha: 0.4),
+                                          ),
+                                        )
+                                      : RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                  child: ListTile(
+                                    dense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 2,
+                                    ),
+                                    leading: Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isCurrent
+                                            ? context.accentSecondary
+                                            : (lec.isCompleted
+                                                  ? context.accentPrimary
+                                                        .withValues(alpha: 0.2)
+                                                  : context.divider.withValues(
+                                                      alpha: 0.6,
+                                                    )),
+                                      ),
+                                      child: Center(
+                                        child: lec.isCompleted
+                                            ? Icon(
+                                                Icons.check,
+                                                size: 14,
+                                                color: context.accentPrimary,
+                                              )
+                                            : Text(
+                                                '${lec.id}',
+                                                style:
+                                                    GoogleFonts.jetBrainsMono(
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                      color: isCurrent
+                                                          ? Colors.white
+                                                          : context.textPrimary,
+                                                    ),
+                                              ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      lec.title,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 12.5,
+                                        fontWeight: isCurrent
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: lec.isCompleted
+                                            ? context.textMuted
+                                            : context.textPrimary,
+                                        decoration: lec.isCompleted
+                                            ? TextDecoration.lineThrough
+                                            : null,
+                                        decorationColor: context.textMuted,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          lec.formattedDuration,
+                                          style: GoogleFonts.jetBrainsMono(
+                                            fontSize: 11,
+                                            color: isCurrent
+                                                ? context.accentSecondary
+                                                : context.textMuted,
+                                            fontWeight: isCurrent
+                                                ? FontWeight.w700
+                                                : FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Icon(
+                                          Icons.chevron_right_rounded,
+                                          size: 16,
+                                          color: isCurrent
+                                              ? context.accentSecondary
+                                              : context.textMuted,
+                                        ),
+                                      ],
+                                    ),
+                                    onTap: () {
+                                      notifier.selectLecture(
+                                        lec.id,
+                                        autoPlay: true,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 }

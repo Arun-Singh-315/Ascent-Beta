@@ -8,10 +8,7 @@ import '../../../core/streak/study_streak_models.dart';
 class StreakCelebrationDialog extends StatelessWidget {
   final StudyStreakStatus status;
 
-  const StreakCelebrationDialog({
-    super.key,
-    required this.status,
-  });
+  const StreakCelebrationDialog({super.key, required this.status});
 
   static Future<void> show(BuildContext context, StudyStreakStatus status) {
     HapticFeedback.heavyImpact();
@@ -36,12 +33,16 @@ class StreakCelebrationDialog extends StatelessWidget {
           color: g.fill,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
-            color: isRescue ? Colors.amberAccent.withValues(alpha: 0.5) : Colors.deepOrangeAccent.withValues(alpha: 0.5),
+            color: isRescue
+                ? Colors.amberAccent.withValues(alpha: 0.5)
+                : Colors.deepOrangeAccent.withValues(alpha: 0.5),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isRescue ? Colors.amber : Colors.deepOrange).withValues(alpha: 0.2),
+              color: (isRescue ? Colors.amber : Colors.deepOrange).withValues(
+                alpha: 0.2,
+              ),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -58,8 +59,14 @@ class StreakCelebrationDialog extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: isRescue
-                      ? [Colors.amberAccent.withValues(alpha: 0.3), Colors.transparent]
-                      : [Colors.deepOrangeAccent.withValues(alpha: 0.3), Colors.transparent],
+                      ? [
+                          Colors.amberAccent.withValues(alpha: 0.3),
+                          Colors.transparent,
+                        ]
+                      : [
+                          Colors.deepOrangeAccent.withValues(alpha: 0.3),
+                          Colors.transparent,
+                        ],
                 ),
               ),
               child: Center(

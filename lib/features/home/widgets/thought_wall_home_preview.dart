@@ -12,6 +12,9 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/thought_excerpt.dart';
+import '../../thought_wall/thought_quick_actions.dart';
+import '../../thought_wall/thought_detail_sheet.dart';
 
 /// Level 3 · Supporting: Mind Space
 /// Redesigned according to Ascent Home Redesign spec:
@@ -19,7 +22,14 @@ import '../../../shared/widgets/glass_surface.dart';
 /// - Glass thought bubble for latest reflection.
 /// - 44dp hit targets.
 class ThoughtWallHomePreview extends ConsumerStatefulWidget {
-  const ThoughtWallHomePreview({super.key});
+  const ThoughtWallHomePreview({
+    super.key,
+    this.showComposer = true,
+    this.showNotes = true,
+    this.previewLimit = 3,
+  });
+  final bool showComposer, showNotes;
+  final int previewLimit;
 
   @override
   ConsumerState<ThoughtWallHomePreview> createState() =>
@@ -30,6 +40,8 @@ class _ThoughtWallHomePreviewState
     extends ConsumerState<ThoughtWallHomePreview> {
   final _controller = TextEditingController();
   bool _saving = false;
+  int? _lastSavedThoughtId;
+  Thought? _lastSavedThought;
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
 
@@ -45,11 +57,13 @@ class _ThoughtWallHomePreviewState
   void initState() {
     super.initState();
     try {
-      _draft = NoteDraftBinding(
-        _controller,
-        ref.read(sharedPreferencesProvider),
-        'home',
-      );
+      if (widget.showComposer) {
+        _draft = NoteDraftBinding(
+          _controller,
+          ref.read(sharedPreferencesProvider),
+          'home',
+        );
+      }
     } catch (_) {
       // An optional preference provider may be absent in isolated widget tests.
     }
@@ -66,7 +80,7 @@ class _ThoughtWallHomePreviewState
     if (content.isEmpty || _saving) return;
     setState(() => _saving = true);
     try {
-      await ref
+      final id = await ref
           .read(thoughtDaoProvider)
           .insertThought(
             ThoughtTableCompanion.insert(
@@ -74,7 +88,12 @@ class _ThoughtWallHomePreviewState
               mood: const drift.Value('thought'),
             ),
           );
+      final saved = await ref.read(thoughtDaoProvider).getThoughtById(id);
       if (mounted) {
+        setState(() {
+          _lastSavedThoughtId = id;
+          _lastSavedThought = saved;
+        });
         if (_controller.text.trim() == content) _controller.clear();
         FocusScope.of(context).unfocus();
       }
@@ -94,7 +113,9 @@ class _ThoughtWallHomePreviewState
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
+    final recentThoughtsAsync = widget.showNotes
+        ? ref.watch(recentThoughtsStreamProvider)
+        : const AsyncData<List<Thought>>([]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,7 +125,7 @@ class _ThoughtWallHomePreviewState
           children: [
             Expanded(
               child: Text(
-                'Mind space',
+                widget.showNotes ? 'Mind space' : 'Quick capture',
                 style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
               ),
             ),
@@ -125,59 +146,78 @@ class _ThoughtWallHomePreviewState
 
         const SizedBox(height: 10),
 
-        Container(
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: _focusNode.hasFocus ? g.clay : g.line,
-                width: _focusNode.hasFocus ? 2 : 1,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  cursorColor: g.clay,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: g.ink,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: "What's on your mind?",
-                    filled: false,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    focusedErrorBorder: InputBorder.none,
-                    border: InputBorder.none,
-                  ),
+        if (widget.showComposer)
+          Container(
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: _focusNode.hasFocus ? g.clay : g.line,
+                  width: _focusNode.hasFocus ? 2 : 1,
                 ),
               ),
-              IconButton(
-                tooltip: 'Send thought',
-                onPressed: _saving || _controller.text.trim().isEmpty
-                    ? null
-                    : _send,
-                icon: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(Icons.send_rounded, color: g.clay),
-              ),
-            ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    cursorColor: g.clay,
+                    minLines: 1,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: g.ink,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: "What's on your mind?",
+                      filled: false,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Send thought',
+                  onPressed: _saving || _controller.text.trim().isEmpty
+                      ? null
+                      : _send,
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(Icons.send_rounded, color: g.clay),
+                ),
+              ],
+            ),
           ),
-        ),
 
+        if (widget.showComposer &&
+            !widget.showNotes &&
+            _lastSavedThought != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              _lastSavedThought!.content,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
+            ),
+          ),
+          ThoughtQuickActions(
+            key: ValueKey('capture_quick_${_lastSavedThought!.id}'),
+            thought: _lastSavedThought!,
+            db: ref.read(databaseProvider),
+          ),
+        ],
         // ── THOUGHTS BUBBLE PREVIEW (ALTERNATING LEFT/RIGHT) ───────────
         recentThoughtsAsync.when(
           loading: () => const SizedBox.shrink(),
@@ -187,7 +227,9 @@ class _ThoughtWallHomePreviewState
               return const SizedBox.shrink();
             }
 
-            final previewThoughts = thoughts.take(3).toList();
+            final previewThoughts = thoughts
+                .take(widget.previewLimit.clamp(1, 3))
+                .toList();
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -220,7 +262,11 @@ class _ThoughtWallHomePreviewState
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            context.push('/thought-wall');
+                            showThoughtDetail(
+                              context,
+                              ref.read(databaseProvider),
+                              thought.id,
+                            );
                           },
                           child: Column(
                             crossAxisAlignment: isEven
@@ -261,8 +307,13 @@ class _ThoughtWallHomePreviewState
                                 ),
                                 const SizedBox(height: 7),
                               ],
-                              Text(
-                                thought.content,
+                              ThoughtExcerpt(
+                                content: thought.content,
+                                onReadMore: () => showThoughtDetail(
+                                  context,
+                                  ref.read(databaseProvider),
+                                  thought.id,
+                                ),
                                 style: GoogleFonts.plusJakartaSans(
                                   color: thought.isCompleted
                                       ? g.inkMuted
@@ -273,9 +324,15 @@ class _ThoughtWallHomePreviewState
                                       ? TextDecoration.lineThrough
                                       : null,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
+                              if (thought.id == _lastSavedThoughtId)
+                                ThoughtQuickActions(
+                                  key: ValueKey(
+                                    'home_thought_quick_${thought.id}',
+                                  ),
+                                  thought: thought,
+                                  db: ref.read(databaseProvider),
+                                ),
                               const SizedBox(height: 5),
                               Row(
                                 mainAxisSize: MainAxisSize.min,

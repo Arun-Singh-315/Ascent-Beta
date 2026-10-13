@@ -1,5 +1,6 @@
 import '../database/app_database.dart';
 import 'riya_capabilities.dart';
+import 'riya_workspace_intents.dart';
 
 class RiyaResolution {
   const RiyaResolution({this.command, this.message, this.options = const []});
@@ -19,13 +20,37 @@ class RiyaIntentResolver {
   DateTime? _reminderDay, _editAt;
   List<Reminder>? _editChoices;
   bool _interviewChoice = false;
+  late final _workspace = RiyaWorkspaceIntents(db, clock);
+
+  void rememberResult(RiyaResult result) {
+    if (result.entityType != null && result.entityId != null) {
+      _workspace.remember(result.entityType!, result.entityId!);
+    }
+  }
 
   Future<RiyaResolution?> resolve(String prompt) async {
     final lower = prompt.trim().toLowerCase();
     final now = clock();
     if (lower == 'cancel' || lower == 'never mind') {
       _clear();
+      _workspace.cancel();
       return const RiyaResolution(message: 'Cancelled. No changes were made.');
+    }
+    final workspace =
+        _reminderTitle == null ||
+            RegExp(
+              r'^(show|list|find|read|pin|unpin|archive|delete|remove|choose|edit|update|create|save|add|set|clear|correct|complete|finish|merge|convert|give|suggest|share)\b',
+            ).hasMatch(lower)
+        ? await _workspace.resolve(prompt)
+        : null;
+    if (workspace != null) {
+      if (workspace.command != null ||
+          RegExp(
+            r'^(create|add|set|edit|change|clear|correct|delete|remove|give|suggest|share)\b',
+          ).hasMatch(lower)) {
+        _clear();
+      }
+      return workspace;
     }
     // Any new explicit command replaces an unfinished clarification.
     if (RegExp(
@@ -70,9 +95,19 @@ class RiyaIntentResolver {
       );
     }
     if (_reminderTitle != null) {
+      if (lower.contains('tomorrow') || lower == 'today') {
+        _reminderDay = DateTime(
+          now.year,
+          now.month,
+          now.day + (lower.contains('tomorrow') ? 1 : 0),
+        );
+      }
       final at = _time(prompt, _reminderDay ?? now);
       if (at == null) {
-        return const RiyaResolution(message: 'What time? For example, 7 PM.');
+        return const RiyaResolution(
+          message: 'What time? For example, 7 PM.',
+          options: ['7 AM', '7 PM'],
+        );
       }
       final title = _reminderTitle!;
       _clear();
@@ -207,6 +242,7 @@ class RiyaIntentResolver {
             lower.startsWith('show my') ||
             lower.startsWith('what '))) {
       if (!lower.startsWith('add ') && !lower.startsWith('create ')) {
+        await _workspace.resolve('Show tasks');
         return const RiyaResolution(command: RiyaCommand('tasks.today', {}));
       }
     }
@@ -302,7 +338,8 @@ class RiyaIntentResolver {
         _reminderTitle = title;
         _reminderDay = day;
         return const RiyaResolution(
-          message: 'When should I remind you? What time?',
+          message: 'When should I remind you? Choose a day, then a time.',
+          options: ['Today', 'Tomorrow'],
         );
       }
       return RiyaResolution(

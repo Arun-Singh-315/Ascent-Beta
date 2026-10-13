@@ -25,15 +25,20 @@ class QuickModulesNavHub extends ConsumerWidget {
     final g = context.glass;
 
     // Medicine stream watchers
-    final todayMedicineLogs = ref.watch(todayMedicineLogsStreamProvider).value ?? [];
+    final todayMedicineLogs =
+        ref.watch(todayMedicineLogsStreamProvider).value ?? [];
     final totalMedDoses = todayMedicineLogs.length;
     final takenMedDoses = todayMedicineLogs.where((l) => l.isTaken).length;
-    final medProgress = totalMedDoses > 0 ? (takenMedDoses / totalMedDoses).clamp(0.0, 1.0) : 0.0;
+    final medProgress = totalMedDoses > 0
+        ? (takenMedDoses / totalMedDoses).clamp(0.0, 1.0)
+        : 0.0;
 
     // Hydration stream watchers
     final waterMl = ref.watch(todayWaterMlStreamProvider).value ?? 0;
     final waterGoal = ref.watch(dailyWaterGoalStreamProvider).value ?? 2500;
-    final waterProgress = waterGoal > 0 ? (waterMl / waterGoal).clamp(0.0, 1.0) : 0.0;
+    final waterProgress = waterGoal > 0
+        ? (waterMl / waterGoal).clamp(0.0, 1.0)
+        : 0.0;
 
     // Challenge watchers
     final challengeAsync = ref.watch(activeChallengeProvider);
@@ -42,13 +47,14 @@ class QuickModulesNavHub extends ConsumerWidget {
         ? null
         : ref.watch(challengeProofsProvider(challenge.id));
     final proofs = proofsAsync?.value ?? const [];
-    final progress = challenge == null ? null : progressForChallenge(challenge, proofs);
+    final progress = challenge == null
+        ? null
+        : progressForChallenge(challenge, proofs);
 
     final challengeStatusColor = switch (progress?.status) {
       ChallengePaceStatus.ahead ||
       ChallengePaceStatus.onTrack ||
-      ChallengePaceStatus.complete =>
-        const Color(0xFF4E9B6B),
+      ChallengePaceStatus.complete => const Color(0xFF4E9B6B),
       ChallengePaceStatus.atRisk => const Color(0xFFD99A37),
       ChallengePaceStatus.failed => const Color(0xFFCA5C54),
       null => g.clay,
@@ -65,9 +71,7 @@ class QuickModulesNavHub extends ConsumerWidget {
           children: [
             Text(
               'Life & Health',
-              style: AscentTextStyles.homeTitle.copyWith(
-                color: g.ink,
-              ),
+              style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
             ),
           ],
         ),
@@ -88,9 +92,14 @@ class QuickModulesNavHub extends ConsumerWidget {
                     HapticFeedback.lightImpact();
                     context.push('/momentum');
                   },
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 13,
+                    ),
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(color: g.line, width: 1.0),
@@ -116,13 +125,18 @@ class QuickModulesNavHub extends ConsumerWidget {
                               Expanded(
                                 child: Text(
                                   'Set a Challenge — track real progress',
-                                  style: AscentTextStyles.homeSecondary.copyWith(
-                                    color: g.inkMuted,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(
+                                        color: g.inkMuted,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                 ),
                               ),
-                              Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
                             ],
                           )
                         : Column(
@@ -134,7 +148,9 @@ class QuickModulesNavHub extends ConsumerWidget {
                                     width: 30,
                                     height: 30,
                                     decoration: BoxDecoration(
-                                      color: challengeStatusColor.withValues(alpha: 0.12),
+                                      color: challengeStatusColor.withValues(
+                                        alpha: 0.12,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Icon(
@@ -149,10 +165,11 @@ class QuickModulesNavHub extends ConsumerWidget {
                                       challenge.title,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: AscentTextStyles.homeSecondary.copyWith(
-                                        color: g.ink,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      style: AscentTextStyles.homeSecondary
+                                          .copyWith(
+                                            color: g.ink,
+                                            fontWeight: FontWeight.w600,
+                                          ),
                                     ),
                                   ),
                                   Text(
@@ -164,7 +181,11 @@ class QuickModulesNavHub extends ConsumerWidget {
                                     ),
                                   ),
                                   const SizedBox(width: 4),
-                                  Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 16,
+                                    color: g.inkMuted,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 7),
@@ -175,7 +196,9 @@ class QuickModulesNavHub extends ConsumerWidget {
                                   value: (progress?.percent ?? 0) / 100,
                                   minHeight: 3,
                                   backgroundColor: g.track,
-                                  valueColor: AlwaysStoppedAnimation(challengeStatusColor),
+                                  valueColor: AlwaysStoppedAnimation(
+                                    challengeStatusColor,
+                                  ),
                                 ),
                               ),
                             ],
@@ -201,19 +224,28 @@ class QuickModulesNavHub extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.medication_rounded, size: 16, color: g.inkMuted),
+                              Icon(
+                                Icons.medication_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Medicine',
-                                  style: AscentTextStyles.homeSecondary.copyWith(
-                                    color: g.inkSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(
+                                        color: g.inkSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -258,19 +290,28 @@ class QuickModulesNavHub extends ConsumerWidget {
                         children: [
                           Row(
                             children: [
-                              Icon(Icons.water_drop_rounded, size: 16, color: g.inkMuted),
+                              Icon(
+                                Icons.water_drop_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Hydration',
-                                  style: AscentTextStyles.homeSecondary.copyWith(
-                                    color: g.inkSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(
+                                        color: g.inkSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              Icon(Icons.chevron_right_rounded, size: 16, color: g.inkMuted),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
@@ -304,11 +345,16 @@ class QuickModulesNavHub extends ConsumerWidget {
                                 child: InkWell(
                                   onTap: () async {
                                     HapticFeedback.mediumImpact();
-                                    await ref.read(waterDaoProvider).addWater(250);
+                                    await ref
+                                        .read(waterDaoProvider)
+                                        .addWater(250);
                                   },
                                   borderRadius: BorderRadius.circular(8),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: g.claySoft,
                                       borderRadius: BorderRadius.circular(8),
@@ -320,7 +366,11 @@ class QuickModulesNavHub extends ConsumerWidget {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(Icons.add_rounded, size: 12, color: g.clay),
+                                        Icon(
+                                          Icons.add_rounded,
+                                          size: 12,
+                                          color: g.clay,
+                                        ),
                                         Text(
                                           '250',
                                           style: GoogleFonts.jetBrainsMono(
@@ -355,9 +405,14 @@ class QuickModulesNavHub extends ConsumerWidget {
                     HapticFeedback.lightImpact();
                     context.push('/chai-break');
                   },
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(24),
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -421,7 +476,9 @@ class _LifeGridCell extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             border: Border(
-              right: borderRight ? BorderSide(color: g.line, width: 1.0) : BorderSide.none,
+              right: borderRight
+                  ? BorderSide(color: g.line, width: 1.0)
+                  : BorderSide.none,
             ),
           ),
           child: child,

@@ -1290,8 +1290,22 @@ class _CourseSwitcherSheet extends StatelessWidget {
                                   size: 18,
                                 ),
                                 color: context.stateDanger,
-                                onPressed: () {
-                                  notifier.deleteCourse(c.id);
+                                onPressed: () async {
+                                  try {
+                                    await notifier.deleteCourse(c.id);
+                                  } catch (_) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Could not delete the course. Try again.',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  }
                                 },
                               ),
                           ],

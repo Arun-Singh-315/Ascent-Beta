@@ -21,6 +21,7 @@ import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
+import 'thought_quick_actions.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
@@ -95,6 +96,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   String _categoryFilter =
       'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
   bool _isSelectionMode = false;
+  int? _lastSavedThoughtId;
   final Set<int> _selectedIds = <int>{};
 
   final Map<String, (String, IconData)> _filterMeta = const {
@@ -171,7 +173,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
     final colorHex = '#${moodColor.toARGB32().toRadixString(16)}';
     setState(() => _isSubmitting = true);
     try {
-      await ref
+      final savedId = await ref
           .read(thoughtDaoProvider)
           .insertThought(
             ThoughtTableCompanion.insert(
@@ -183,6 +185,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       if (_inputController.text.trim() == text) _inputController.clear();
 
       if (!mounted) return;
+      setState(() => _lastSavedThoughtId = savedId);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(persist: false, content: Text('Added to your Thought Wall.')),
       );
@@ -247,6 +250,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               ),
               itemBuilder: (_) => const [
                 PopupMenuItem(value: 'todo', child: Text('Add to Todo')),
+                PopupMenuItem(value: 'both', child: Text('Todo + Reminder')),
+                PopupMenuItem(
+                  value: 'merge',
+                  child: Text('Merge selected notes'),
+                ),
                 PopupMenuItem(
                   value: 'reminder',
                   child: Text('Remind each note'),
@@ -663,14 +671,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
                       final thought = filtered[index];
-                      return ThoughtCardBubble(
+                      final bubble = ThoughtCardBubble(
                         thought: thought,
                         index: index,
+                        showQuickActions: thought.id == _lastSavedThoughtId,
                         isSelected: _selectedIds.contains(thought.id),
                         isSelectionMode: _isSelectionMode,
                         onToggleSelect: () => _toggleSelection(thought.id),
                         onLongPress: () => _enterSelectionMode(thought.id),
                       );
+                      final showHeading = _categoryFilter != 'pinned' && !thought.isArchived && (index == 0 || filtered[index - 1].isPinned != thought.isPinned);
+                      return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        if (showHeading) Padding(padding: const EdgeInsets.fromLTRB(4, 10, 4, 10), child: Text(thought.isPinned ? 'Pinned' : 'Recent', style: AscentTextStyles.labelMedium.copyWith(color: g.inkMuted))),
+                        bubble,
+                      ]);
                     },
                   );
                 },
@@ -694,6 +708,7 @@ class ThoughtCardBubble extends ConsumerWidget {
   final Thought thought;
   final int index;
   final bool isSelected;
+  final bool showQuickActions;
   final bool isSelectionMode;
   final VoidCallback? onToggleSelect;
   final VoidCallback? onLongPress;
@@ -703,6 +718,7 @@ class ThoughtCardBubble extends ConsumerWidget {
     required this.thought,
     required this.index,
     this.isSelected = false,
+    this.showQuickActions = false,
     this.isSelectionMode = false,
     this.onToggleSelect,
     this.onLongPress,
@@ -810,9 +826,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                       label: 'UNDO',
                       textColor: context.accentPrimary,
                       onPressed: () async {
-                        await thoughtDao.insertThought(
-                          backup.toCompanion(true),
-                        );
+                        await thoughtDao.restoreDeletedThought(backup);
                       },
                     ),
                   ),
@@ -921,18 +935,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                     bottomLeft: Radius.circular((index % 2 == 0) ? 4 : 18),
                     bottomRight: Radius.circular((index % 2 == 1) ? 4 : 18),
                   ),
-                  border: Border.all(
-                    color: isSelected
-                        ? g.clay
-                        : (thought.isPinned
-                              ? (context.isDark
-                                    ? Colors.amber.shade400
-                                    : Colors.amber.shade700)
-                              : (context.isDark
-                                    ? g.edge
-                                    : Colors.black.withValues(alpha: 0.85))),
-                    width: isSelected ? 1.8 : 1.2,
-                  ),
+                  border: isSelected
+                      ? Border.all(color: g.clay, width: 1.8)
+                      : null,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(
@@ -1024,6 +1029,37 @@ class ThoughtCardBubble extends ConsumerWidget {
                           ),
                           const SizedBox(width: 2),
                         ],
+                        if (!isSelectionMode && !thought.isArchived)
+                          IconButton(
+                            tooltip: thought.isPinned
+                                ? 'Unpin thought'
+                                : 'Pin thought',
+                            icon: Icon(
+                              thought.isPinned
+                                  ? Icons.push_pin_rounded
+                                  : Icons.push_pin_outlined,
+                              size: 18,
+                              color: thought.isPinned ? g.clay : g.inkMuted,
+                            ),
+                            onPressed: () async {
+                              HapticFeedback.selectionClick();
+                              try {
+                                await ref
+                                    .read(thoughtDaoProvider)
+                                    .togglePin(thought.id);
+                              } catch (_) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Could not change the pin. Try again.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                          ),
                         PopupMenuButton<String>(
                           icon: Icon(
                             Icons.more_horiz_rounded,
@@ -1050,6 +1086,13 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 ref.read(databaseProvider),
                                 [thought],
                                 'todo',
+                              );
+                            } else if (action == 'both') {
+                              await applyThoughtAction(
+                                context,
+                                ref.read(databaseProvider),
+                                [thought],
+                                'both',
                               );
                             } else if (action == 'reminder') {
                               await applyThoughtAction(
@@ -1125,6 +1168,10 @@ class ThoughtCardBubble extends ConsumerWidget {
                             }
                           },
                           itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'both',
+                              child: Text('Todo + Reminder'),
+                            ),
                             const PopupMenuItem(
                               value: 'reminder',
                               child: Row(
@@ -1334,6 +1381,52 @@ class ThoughtCardBubble extends ConsumerWidget {
                       ),
                     ],
 
+                    Padding(
+                      key: ValueKey('thought_header_divider_${thought.id}'),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.transparent,
+                                    g.line,
+                                    g.clay.withValues(alpha: .35),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Container(
+                            width: 4,
+                            height: 4,
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            decoration: BoxDecoration(
+                              color: g.clay.withValues(alpha: .55),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    g.clay.withValues(alpha: .35),
+                                    g.line,
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     // Optional prompt question banner
                     if (thought.promptQuestion != null) ...[
                       const SizedBox(height: 10),
@@ -1394,6 +1487,15 @@ class ThoughtCardBubble extends ConsumerWidget {
                         fontSize: 14,
                       ),
                     ),
+                    if (showQuickActions &&
+                        !isSelectionMode &&
+                        !thought.isArchived &&
+                        !thought.isCompleted)
+                      ThoughtQuickActions(
+                        key: ValueKey('thought_quick_${thought.id}'),
+                        thought: thought,
+                        db: ref.read(databaseProvider),
+                      ),
                     if (!isSelectionMode)
                       Align(
                         alignment: Alignment.centerRight,

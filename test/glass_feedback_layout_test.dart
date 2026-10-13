@@ -91,6 +91,7 @@ void main() {
                   createdAt: DateTime(2026),
                   alarmEnabled: false,
                   isActive: true,
+                  alertSyncPending: false,
                 ),
               ),
             ),

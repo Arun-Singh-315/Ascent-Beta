@@ -62,7 +62,7 @@ void main() {
     );
 
     test(
-      'Completing a task with matching title also syncs completion to matching thought',
+      'Matching text without an explicit link never completes an unrelated thought',
       () async {
         final thoughtId = await db.thoughtDao.insertThought(
           ThoughtTableCompanion.insert(
@@ -81,7 +81,7 @@ void main() {
         await db.taskDao.markComplete(taskId);
 
         final thought = await db.thoughtDao.getThoughtById(thoughtId);
-        expect(thought!.isCompleted, isTrue);
+        expect(thought!.isCompleted, isFalse);
       },
     );
 

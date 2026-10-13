@@ -59,6 +59,7 @@ void main() {
                 title: 'One',
                 durationSeconds: 2500,
                 elapsedSeconds: 500,
+                studySeconds: 500,
               ),
             ],
           ),

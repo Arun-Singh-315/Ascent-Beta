@@ -15,8 +15,10 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
 import '../../core/ai/riya_intents.dart';
+import '../../core/ai/riya_alert_effects.dart';
+import '../../core/learning_hub/learning_hub_provider.dart';
+import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
-import '../../core/notifications/notification_service.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -135,7 +137,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       String? actionType;
       final data = <String, dynamic>{'quickOptions': options};
       if (command != null) {
-        final executor = RiyaExecutor(db);
+        final executor = RiyaExecutor(
+          db,
+          external: _workspaceCommand,
+          verifyExternal: _verifyWorkspaceCommand,
+        );
         executor.validate(command);
         final capability = command.capability;
         bool approved = !capability.requiresConfirmation;
@@ -173,37 +179,16 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             );
             savedResult = result;
             reply = result.message;
-            if (result.reminderIds.isNotEmpty) {
-              var alertsScheduled = true;
-              for (final id in result.reminderIds) {
-                try {
-                  final reminder = await db.reminderDao.getReminderById(id);
-                  if (reminder == null) {
-                    alertsScheduled = false;
-                    continue;
-                  }
-                  if (command.id == 'reminders.edit') {
-                    await NotificationService.instance.cancel(id);
-                  }
-                  final permission = await NotificationService.instance
-                      .areNotificationsEnabled();
-                  final scheduled =
-                      permission &&
-                      await NotificationService.instance
-                          .scheduleReminderNotificationChecked(
-                            id: id,
-                            title: reminder.title,
-                            scheduledAt: reminder.scheduledAt,
-                            alarmEnabled: reminder.alarmEnabled,
-                            scheduleFollowUp: false,
-                          );
-                  alertsScheduled = alertsScheduled && scheduled;
-                } catch (_) {
-                  alertsScheduled = false;
-                }
-              }
+            _resolver?.rememberResult(result);
+            options = result.options;
+            data['quickOptions'] = options;
+            if (result.reminderIds.isNotEmpty ||
+                result.cancelReminderIds.isNotEmpty) {
+              final verified = await RiyaAlertEffects.device(
+                db,
+              ).syncRequest(requestId);
               reply =
-                  '${result.message.replaceFirst(' Device alert scheduling has not been verified.', '')}\n${alertsScheduled ? 'Device alerts are scheduled.' : 'Device alerts could not be scheduled. Check notification permissions in Settings.'}';
+                  '${result.message.replaceFirst(' Device alert scheduling has not been verified.', '')}\n${verified ? 'Device alert changes verified.' : 'Device alert changes are pending and will be retried.'}';
             }
             actionType = command.id;
             data.addAll({
@@ -217,14 +202,23 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             if (command.id == 'navigation.open' && mounted) {
               context.push(result.route);
             }
-          } catch (_) {
+          } catch (error) {
+            if (error is RiyaCommittedActionError) {
+              savedResult = error.result;
+              data['requestId'] = requestId;
+              data['route'] = error.result.route;
+            }
             reply = savedResult != null
-                ? '${savedResult.message} Device alerts could not be verified.'
+                ? '${savedResult.message} Confirmation history or device effects are pending verification.'
                 : command.id == 'focus.start' &&
                       await db.timeSessionDao.getActiveFocusSession() != null
                 ? 'A Focus session is already active. Open Focus to continue or finish it.'
-                : 'I could not verify that change. No new change was committed by this request. Please try again.';
-            data['executionStatus'] = 'failed';
+                : error is StateError
+                ? error.message.toString()
+                : 'I could not verify that change. Check the relevant screen before trying again.';
+            data['executionStatus'] = savedResult == null
+                ? 'failed'
+                : 'recovery_pending';
           }
         } else {
           reply = 'Cancelled. No changes were made.';
@@ -289,6 +283,102 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       payload['taskIds'] = [action.payload['taskId']];
     }
     return RiyaCommand(id, payload);
+  }
+
+  Future<RiyaResult?> _verifyWorkspaceCommand(RiyaCommand command) async {
+    if (command.id == 'home.visibility') {
+      final layout = ref.read(homeLayoutProvider);
+      if (layout.visible.contains(command.arguments['section']) !=
+          command.arguments['visible']) {
+        return null;
+      }
+      return RiyaResult('Home visibility verified.', '/home');
+    }
+    final notifier = ref.read(learningHubProvider.notifier);
+    await notifier.ready;
+    final state = ref.read(learningHubProvider);
+    if (command.id == 'learning.complete') {
+      final course = state.courses
+          .where((c) => c.id == command.arguments['courseId'])
+          .firstOrNull;
+      if (course?.modules
+              .expand((m) => m.lectures)
+              .any(
+                (l) => l.id == command.arguments['lectureId'] && l.isCompleted,
+              ) !=
+          true) {
+        return null;
+      }
+      return const RiyaResult('Lecture completion verified.', '/learning');
+    }
+    if (command.id == 'learning.pause' && !state.isPlaying) {
+      return const RiyaResult('Learning pause verified.', '/learning');
+    }
+    if (command.id == 'learning.resume' && state.isPlaying) {
+      return const RiyaResult('Learning resume verified.', '/learning');
+    }
+    return null;
+  }
+
+  Future<RiyaResult> _workspaceCommand(RiyaCommand command) async {
+    final args = command.arguments;
+    if (command.id.startsWith('home.')) {
+      final layout = ref.read(homeLayoutProvider);
+      if (command.id == 'home.layout') {
+        return RiyaResult(
+          'Home: ${layout.order.where(layout.visible.contains).map((id) => homeSections[id]).join(', ')}. Quick capture stays available.',
+          '/home',
+        );
+      }
+      final section = args['section'] as String;
+      if (!homeSections.containsKey(section)) {
+        throw ArgumentError('Choose a supported Home card');
+      }
+      final visible = {...layout.visible};
+      args['visible'] == true ? visible.add(section) : visible.remove(section);
+      await ref
+          .read(homeLayoutProvider.notifier)
+          .save(layout.copyWith(visible: visible));
+      return RiyaResult(
+        '${args['visible'] == true ? 'Showing' : 'Hidden'} ${homeSections[section]}. Records and services are unchanged.',
+        '/home',
+      );
+    }
+    final notifier = ref.read(learningHubProvider.notifier);
+    await notifier.ready;
+    final state = ref.read(learningHubProvider);
+    switch (command.id) {
+      case 'learning.list':
+        return RiyaResult(
+          'Learning:\n${state.courses.take(3).map((c) => '${c.title} (${c.id}): ${c.completedLectures}/${c.totalLectures} completed').join('\n')}${state.courses.length > 3 ? '\nOpen Learning for all courses.' : ''}',
+          '/learning',
+        );
+      case 'learning.complete':
+        final completed = await notifier.markLectureCompleted(
+          args['lectureId'],
+          courseId: args['courseId'],
+        );
+        if (!completed) {
+          throw StateError(
+            'The study target has not been met, or progress could not be saved',
+          );
+        }
+        return const RiyaResult('Lecture completion saved.', '/learning');
+      case 'learning.pause':
+        notifier.pause();
+        return const RiyaResult('Learning paused.', '/learning');
+      case 'learning.resume':
+        notifier.play();
+        if (!ref.read(learningHubProvider).isPlaying) {
+          throw StateError('Select a lecture first');
+        }
+        return const RiyaResult(
+          'Learning resumed. Study time is tracked; external video watching is not verified.',
+          '/learning',
+        );
+      default:
+        throw UnsupportedError('Unsupported workspace action');
+    }
   }
 
   @override

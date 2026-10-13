@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:drift/drift.dart' as drift;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:drift/drift.dart' as drift;
 
 import '../database/app_database.dart';
 import '../providers/database_provider.dart';
@@ -13,6 +13,7 @@ import '../notifications/notification_service.dart';
 import '../streak/study_streak_provider.dart';
 import 'default_course_data.dart';
 import 'learning_hub_models.dart';
+import 'learning_catalog.dart';
 
 const _kCoursesListKey = 'ascent_learning_hub_courses_v3';
 const _kActiveCourseIdKey = 'ascent_learning_hub_active_course_v3';
@@ -21,11 +22,33 @@ const _kLegacyProgressKey = 'ascent_learning_hub_lecture_progress_v2';
 const _kLegacyActiveLectureIdKey = 'ascent_learning_hub_active_lecture_id_v2';
 const _kHasStartedLearningKey = 'ascent_learning_hub_has_started_learning_v1';
 
+/// Primary Learning catalog persistence. Injectable for failure/recovery tests.
+final learningCourseSaveProvider = Provider<Future<void> Function(String)>((
+  ref,
+) {
+  final preferences = ref.watch(sharedPreferencesProvider);
+  final database = ref.watch(databaseProvider);
+  return LearningCatalog(database, preferences).saveJson;
+});
+
+final learningClockProvider = Provider<DateTime Function()>(
+  (ref) => DateTime.now,
+);
+
+final learningElapsedClockProvider = Provider<int Function()>((ref) {
+  final watch = Stopwatch()..start();
+  ref.onDispose(watch.stop);
+  return () => watch.elapsedMicroseconds;
+});
+
+const _unchangedLearningTime = Object();
+
 class LearningHubState {
   final List<Course> courses;
   final String activeCourseId;
   final int activeLectureId;
   final bool isPlaying;
+  final bool isSavingCompletion;
   final int currentElapsedSeconds;
   final bool isLiveFocusActive;
   final bool isFloatingDismissed;
@@ -38,6 +61,7 @@ class LearningHubState {
     required this.activeCourseId,
     required this.activeLectureId,
     this.isPlaying = false,
+    this.isSavingCompletion = false,
     this.currentElapsedSeconds = 0,
     this.isLiveFocusActive = false,
     this.isFloatingDismissed = false,
@@ -127,10 +151,11 @@ class LearningHubState {
     String? activeCourseId,
     int? activeLectureId,
     bool? isPlaying,
+    bool? isSavingCompletion,
     int? currentElapsedSeconds,
     bool? isLiveFocusActive,
     bool? isFloatingDismissed,
-    DateTime? playStartedAt,
+    Object? playStartedAt = _unchangedLearningTime,
     int? sessionBaseElapsed,
     bool? hasStartedLearning,
   }) {
@@ -139,11 +164,14 @@ class LearningHubState {
       activeCourseId: activeCourseId ?? this.activeCourseId,
       activeLectureId: activeLectureId ?? this.activeLectureId,
       isPlaying: isPlaying ?? this.isPlaying,
+      isSavingCompletion: isSavingCompletion ?? this.isSavingCompletion,
       currentElapsedSeconds:
           currentElapsedSeconds ?? this.currentElapsedSeconds,
       isLiveFocusActive: isLiveFocusActive ?? this.isLiveFocusActive,
       isFloatingDismissed: isFloatingDismissed ?? this.isFloatingDismissed,
-      playStartedAt: playStartedAt ?? this.playStartedAt,
+      playStartedAt: identical(playStartedAt, _unchangedLearningTime)
+          ? this.playStartedAt
+          : playStartedAt as DateTime?,
       sessionBaseElapsed: sessionBaseElapsed ?? this.sessionBaseElapsed,
       hasStartedLearning: hasStartedLearning ?? this.hasStartedLearning,
     );
@@ -154,65 +182,197 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   Timer? _ticker;
   Timer? _flushTimer;
   int? _activeSessionId;
+  int _sessionEpoch = 0;
+  int _sessionStudyStart = 0;
+  int _sessionLoggedBase = 0;
+  int get _sessionSeconds =>
+      _sessionLoggedBase +
+      (state.activeLecture.studySeconds - _sessionStudyStart).clamp(
+        0,
+        31536000,
+      );
+  final _sessionBaselines = <int, (int, int)>{};
+  final _sessionWrites = <Future<void>>{};
+  void _trackSession(Future<void> work) {
+    _sessionWrites.add(work);
+    unawaited(work.whenComplete(() => _sessionWrites.remove(work)));
+  }
+
+  int? _lastCreditMicros;
+  bool _completionPending = false;
+  Future<void> _saveQueue = Future.value();
+  Future<void> _catalogReady = Future.value();
+  bool _catalogLoading = true;
+  Future<void> get ready => _catalogReady;
+  Future<void> get settled async {
+    await _saveQueue;
+    while (_sessionWrites.isNotEmpty) {
+      await Future.wait([..._sessionWrites]);
+    }
+  }
+
+  DateTime get _now => ref.read(learningClockProvider)();
+
+  Future<void> _saveSnapshot(List<Course> courses) {
+    final json = jsonEncode(courses.map((c) => c.toJson()).toList());
+    final save = ref.read(learningCourseSaveProvider);
+    final ready = _catalogReady;
+    final next = _saveQueue.then((_) async {
+      await ready;
+      if (!ref.mounted) return;
+      await save(json);
+    });
+    _saveQueue = next.catchError((Object error) {});
+    return next;
+  }
+
+  void _creditEngagement() {
+    if (!state.isPlaying || _lastCreditMicros == null || _completionPending) {
+      return;
+    }
+    final now = ref.read(learningElapsedClockProvider)();
+    final seconds =
+        (now - _lastCreditMicros!) ~/ Duration.microsecondsPerSecond;
+    if (seconds <= 0) return;
+    _lastCreditMicros =
+        _lastCreditMicros! + seconds * Duration.microsecondsPerSecond;
+    final lecture = state.activeLecture;
+    final position = lecture.durationSeconds > 0
+        ? (state.currentElapsedSeconds + seconds).clamp(
+            0,
+            lecture.durationSeconds,
+          )
+        : state.currentElapsedSeconds + seconds;
+    state = state.copyWith(currentElapsedSeconds: position);
+    _updateCurrentLectureInCourse(
+      position,
+      lecture.isCompleted,
+      studySeconds: lecture.studySeconds + seconds,
+    );
+  }
 
   Future<void> _syncStartSession(DateTime now) async {
+    final epoch = ++_sessionEpoch;
+    final dao = ref.read(timeSessionDaoProvider);
+    final database = ref.read(databaseProvider);
+    final lecture = state.activeLecture;
+    final course = state.course;
     try {
-      final sessionDao = ref.read(timeSessionDaoProvider);
-      final activeLec = state.activeLecture;
-      final curCourse = state.course;
-      final sessionLabel = '${curCourse.title}: ${activeLec.title}';
-
-      final existing = await sessionDao.getTodayActiveOrPausedSessionByLabel(
-        sessionLabel,
-      );
-      if (existing != null) {
-        _activeSessionId = existing.id;
-        if (existing.status == 'paused') {
-          await sessionDao.resumeSession(existing.id);
-        }
-      } else {
-        _activeSessionId = await sessionDao.startSession(
-          label: sessionLabel,
-          categoryId: 1, // Study category
+      final today = DateTime(now.year, now.month, now.day);
+      final session = await database.transaction(() async {
+        final existing =
+            await (database.select(database.timeSessionTable)
+                  ..where(
+                    (s) =>
+                        s.learningCourseId.equals(course.id) &
+                        s.learningLectureId.equals(lecture.id) &
+                        s.activityRefType.equals('lecture') &
+                        s.status.isIn(['running', 'paused']) &
+                        s.startedAt.isBiggerOrEqualValue(today) &
+                        s.startedAt.isSmallerThanValue(
+                          DateTime(now.year, now.month, now.day + 1),
+                        ),
+                  )
+                  ..limit(1))
+                .getSingleOrNull();
+        if (existing != null) return existing;
+        final id = await dao.startSession(
+          label: '${course.title}: ${lecture.title}',
+          categoryId: 1,
           activityType: 'study',
           activityRefType: 'lecture',
+          learningCourseId: course.id,
+          learningLectureId: lecture.id,
           startedAt: now,
         );
+        return (await (database.select(
+          database.timeSessionTable,
+        )..where((s) => s.id.equals(id))).getSingle());
+      });
+      final id = session.id;
+      final baseline = _sessionBaselines.putIfAbsent(
+        id,
+        () => (lecture.studySeconds, session.durationSeconds),
+      );
+      if (_sessionBaselines.length > 100) {
+        _sessionBaselines.remove(_sessionBaselines.keys.first);
       }
-      if (_activeSessionId != null) {
-        await sessionDao.heartbeat(
-          _activeSessionId!,
-          state.currentElapsedSeconds,
-        );
+      if (!ref.mounted ||
+          epoch != _sessionEpoch ||
+          !state.isPlaying ||
+          state.activeCourseId != course.id ||
+          state.activeLectureId != lecture.id) {
+        await database.transaction(() async {
+          if (ref.mounted &&
+              state.isPlaying &&
+              state.activeCourseId == course.id &&
+              state.activeLectureId == lecture.id) {
+            return;
+          }
+          final owner = state.courses
+              .where((c) => c.id == course.id)
+              .firstOrNull;
+          final latest = owner?.modules
+              .expand((m) => m.lectures)
+              .where((l) => l.id == lecture.id)
+              .firstOrNull;
+          if (latest?.isCompleted == true) {
+            await dao.completeSession(id);
+          } else {
+            await dao.pauseSession(id);
+          }
+          if (latest != null) {
+            await dao.heartbeat(
+              id,
+              baseline.$2 +
+                  (latest.studySeconds - baseline.$1).clamp(0, 31536000),
+            );
+          }
+        });
+        return;
       }
-    } catch (_) {}
+      _activeSessionId = id;
+      _sessionStudyStart = baseline.$1;
+      _sessionLoggedBase = baseline.$2;
+      await dao.resumeSession(id);
+      await dao.heartbeat(id, _sessionSeconds);
+    } catch (error) {
+      debugPrint('Learning session sync failed: $error');
+    }
   }
 
   void _syncPauseSession() {
-    if (_activeSessionId != null) {
-      final sId = _activeSessionId!;
-      final currentElapsed = state.currentElapsedSeconds;
-      Future.microtask(() async {
-        try {
-          final sessionDao = ref.read(timeSessionDaoProvider);
-          await sessionDao.heartbeat(sId, currentElapsed);
-          await sessionDao.pauseSession(sId);
-          await sessionDao.heartbeat(sId, currentElapsed);
-        } catch (_) {}
-      });
-    }
+    ++_sessionEpoch;
+    final id = _activeSessionId;
+    if (id == null) return;
+    final seconds = _sessionSeconds;
+    _activeSessionId = null;
+    final dao = ref.read(timeSessionDaoProvider);
+    _trackSession(() async {
+      try {
+        await dao.pauseSession(id);
+        await dao.heartbeat(id, seconds);
+      } catch (error) {
+        debugPrint('Learning pause sync failed: $error');
+      }
+    }());
   }
 
   void _syncCompleteSession() {
-    if (_activeSessionId != null) {
-      final sId = _activeSessionId!;
-      _activeSessionId = null;
-      Future.microtask(() async {
-        try {
-          await ref.read(timeSessionDaoProvider).completeSession(sId);
-        } catch (_) {}
-      });
-    }
+    ++_sessionEpoch;
+    final id = _activeSessionId;
+    if (id == null) return;
+    final seconds = _sessionSeconds;
+    _activeSessionId = null;
+    final dao = ref.read(timeSessionDaoProvider);
+    _trackSession(() async {
+      try {
+        await dao.completeSession(id);
+        await dao.heartbeat(id, seconds);
+      } catch (error) {
+        debugPrint('Learning completion session sync failed: $error');
+      }
+    }());
   }
 
   @override
@@ -227,7 +387,9 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
     Course activeCourse = initialCourses.firstWhere(
       (c) => c.id == activeCourseId,
-      orElse: () => initialCourses.first,
+      orElse: () => initialCourses.isEmpty
+          ? buildDefaultSpringBootCourse()
+          : initialCourses.first,
     );
 
     final activeLectureId =
@@ -268,6 +430,36 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       _flushTimer?.cancel();
     });
 
+    final catalog = LearningCatalog(ref.read(databaseProvider), prefs);
+    _catalogLoading = true;
+    _catalogReady = Future.microtask(() async {
+      try {
+        final courses = await catalog.loadOrImport(initialCourses);
+        if (!ref.mounted) return;
+        final active =
+            courses.where((c) => c.id == state.activeCourseId).firstOrNull ??
+            courses.firstOrNull;
+        final lectures =
+            active?.modules.expand((m) => m.lectures).toList() ?? <Lecture>[];
+        final lecture =
+            lectures.where((l) => l.id == state.activeLectureId).firstOrNull ??
+            lectures.firstOrNull;
+        state = state.copyWith(
+          courses: courses,
+          activeCourseId: active?.id ?? '',
+          activeLectureId: lecture?.id ?? 0,
+          currentElapsedSeconds: lecture?.elapsedSeconds ?? 0,
+        );
+      } finally {
+        _catalogLoading = false;
+      }
+    });
+    // Keep bootstrap errors observable by commands without an unhandled future.
+    unawaited(
+      _catalogReady.catchError((Object error) {
+        debugPrint('Learning catalog load failed: $error');
+      }),
+    );
     return LearningHubState(
       courses: initialCourses,
       activeCourseId: activeCourse.id,
@@ -286,17 +478,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         final courses = list
             .map((item) => Course.fromJson(item as Map<String, dynamic>))
             .toList();
-        if (courses.isNotEmpty) {
-          final javaCourse = buildCompleteJava2026Course();
-          if (!courses.any((c) => c.id == javaCourse.id)) {
-            courses.add(javaCourse);
-          }
-          final springCourse = buildDefaultSpringBootCourse();
-          if (!courses.any((c) => c.id == springCourse.id)) {
-            courses.insert(0, springCourse);
-          }
-          return courses;
-        }
+        return courses;
       } catch (_) {}
     }
 
@@ -341,41 +523,18 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
   void _persistCourses() {
     final prefs = ref.read(sharedPreferencesProvider);
-    final jsonStr = jsonEncode(state.courses.map((c) => c.toJson()).toList());
-    prefs.setString(_kCoursesListKey, jsonStr);
+    if (_catalogLoading || _completionPending) return;
+    unawaited(
+      _saveSnapshot(state.courses).catchError((Object error) {
+        debugPrint('Learning progress save failed: $error');
+      }),
+    );
     prefs.setString(_kActiveCourseIdKey, state.activeCourseId);
     prefs.setInt(_kActiveLectureIdKey, state.activeLectureId);
-
-    // Durable SQLite persistence via CourseDao
-    Future.microtask(() async {
-      try {
-        final courseDao = ref.read(courseDaoProvider);
-        for (final c in state.courses) {
-          await courseDao.upsertCourse(
-            CourseTableCompanion.insert(
-              id: c.id,
-              title: c.title,
-              description: drift.Value(c.description),
-              author: drift.Value(c.author),
-              category: drift.Value(c.category),
-              sourceUrl: drift.Value(c.sourceUrl),
-              targetCompletionDate: drift.Value(c.targetCompletionDate),
-              daysLeft: drift.Value(c.daysLeft),
-              targetMinutesPerDay: drift.Value(c.targetMinutesPerDay),
-              modulesJson: jsonEncode(
-                c.modules.map((m) => m.toJson()).toList(),
-              ),
-              updatedAt: drift.Value(DateTime.now()),
-            ),
-          );
-        }
-      } catch (e) {
-        debugPrint('CourseDao persistence sync warning: $e');
-      }
-    });
   }
 
   void startLearning({String? courseId}) {
+    if (_catalogLoading) return;
     ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
     if (courseId != null && courseId != state.activeCourseId) {
       switchCourse(courseId);
@@ -385,11 +544,17 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   void play() {
-    if (state.isPlaying) return;
+    if (_catalogLoading || _completionPending || state.isPlaying) return;
+    if (!state.course.modules.any(
+      (m) => m.lectures.any((l) => l.id == state.activeLectureId),
+    )) {
+      return;
+    }
 
     _unDismissLecture(state.activeLectureId);
     ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
-    final now = DateTime.now();
+    final now = _now;
+    _lastCreditMicros = ref.read(learningElapsedClockProvider)();
     state = state.copyWith(
       isPlaying: true,
       isLiveFocusActive: true,
@@ -400,7 +565,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     );
 
     // Sync active session in SQLite TimeSessionDao
-    _syncStartSession(now);
+    _trackSession(_syncStartSession(now));
 
     NotificationService.instance.showOngoingSessionNotification(
       title: state.activeLecture.title,
@@ -413,12 +578,14 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
 
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_catalogLoading || _completionPending) return;
       final startedAt = state.playStartedAt;
       if (startedAt == null) return;
 
-      final diff = DateTime.now().difference(startedAt).inSeconds;
+      final diff = _now.difference(startedAt).inSeconds.clamp(0, 31536000);
+      _creditEngagement();
       final active = state.activeLecture;
-      final newElapsed = state.sessionBaseElapsed + diff;
+      final newElapsed = state.currentElapsedSeconds;
 
       // Increment active study watch seconds for strict study streak
       ref.read(studyStreakProvider.notifier).creditActiveSecond(DateTime.now());
@@ -427,15 +594,16 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       if (diff > 0 && diff % 5 == 0 && _activeSessionId != null) {
         ref
             .read(timeSessionDaoProvider)
-            .heartbeat(_activeSessionId!, newElapsed);
+            .heartbeat(_activeSessionId!, _sessionSeconds);
       }
 
-      if (active.durationSeconds > 0 && newElapsed >= active.durationSeconds) {
-        // Lecture completed automatically
-        markLectureCompleted(active.id);
-      } else {
-        state = state.copyWith(currentElapsedSeconds: newElapsed);
-        _updateCurrentLectureInCourse(newElapsed, active.isCompleted);
+      state = state.copyWith(currentElapsedSeconds: newElapsed);
+      _updateCurrentLectureInCourse(newElapsed, active.isCompleted);
+      if (active.durationSeconds > 0 &&
+          state.activeLecture.studySeconds >= active.durationSeconds &&
+          !active.isCompleted &&
+          !_completionPending) {
+        unawaited(markLectureCompleted(active.id));
       }
     });
 
@@ -446,6 +614,8 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   void pause({bool updateNotification = true}) {
+    _creditEngagement();
+    _lastCreditMicros = null;
     _ticker?.cancel();
     _flushTimer?.cancel();
     _syncPauseSession();
@@ -479,6 +649,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   void seekBy(int offsetSeconds) {
+    _creditEngagement();
     final active = state.activeLecture;
     final maxDur = active.durationSeconds > 0 ? active.durationSeconds : 3600;
     final target = (state.currentElapsedSeconds + offsetSeconds).clamp(
@@ -486,7 +657,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       maxDur,
     );
 
-    final now = DateTime.now();
+    final now = _now;
     state = state.copyWith(
       currentElapsedSeconds: target,
       sessionBaseElapsed: target,
@@ -505,6 +676,8 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   void seekTo(double fraction) {
+    if (!fraction.isFinite) return;
+    _creditEngagement();
     final active = state.activeLecture;
     if (active.durationSeconds <= 0) return;
     final target = (active.durationSeconds * fraction).round().clamp(
@@ -512,7 +685,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       active.durationSeconds,
     );
 
-    final now = DateTime.now();
+    final now = _now;
     state = state.copyWith(
       currentElapsedSeconds: target,
       sessionBaseElapsed: target,
@@ -534,17 +707,17 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     try {
       ref
           .read(dismissedTodayActivityIdsProvider.notifier)
+          .unDismissActivityId(
+            'lecture_${Uri.encodeComponent(state.activeCourseId)}_$lectureId',
+          );
+      ref
+          .read(dismissedTodayActivityIdsProvider.notifier)
           .unDismissActivityId('lecture_$lectureId');
     } catch (_) {}
   }
 
   void selectLecture(int lectureId, {bool autoPlay = false}) {
-    _unDismissLecture(lectureId);
-    _persistCourses();
-    _ticker?.cancel();
-    _flushTimer?.cancel();
-    _syncPauseSession();
-
+    if (_catalogLoading || _completionPending) return;
     Lecture? targetLecture;
     for (final mod in state.course.modules) {
       for (final lec in mod.lectures) {
@@ -556,6 +729,13 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     }
 
     if (targetLecture == null) return;
+    _creditEngagement();
+    _lastCreditMicros = null;
+    _unDismissLecture(lectureId);
+    _persistCourses();
+    _ticker?.cancel();
+    _flushTimer?.cancel();
+    _syncPauseSession();
 
     ref.read(sharedPreferencesProvider).setBool(_kHasStartedLearningKey, true);
     state = state.copyWith(
@@ -575,34 +755,82 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     }
   }
 
-  void markLectureCompleted(int lectureId, {bool? completed}) {
-    final curLec = state.activeLecture;
-    final markValue = completed ?? true;
-    _updateCurrentLectureInCourse(
-      lectureId == curLec.id ? state.currentElapsedSeconds : null,
-      markValue,
-      targetLectureId: lectureId,
+  Future<bool> markLectureCompleted(
+    int lectureId, {
+    bool? completed,
+    String? courseId,
+  }) async {
+    try {
+      await ready;
+    } catch (_) {
+      return false;
+    }
+    if (!ref.mounted || _completionPending || completed == false) return false;
+    final ownerId = courseId ?? state.activeCourseId;
+    Course? owner;
+    Lecture? target;
+    for (final course in state.courses) {
+      if (course.id != ownerId) continue;
+      owner = course;
+      for (final module in course.modules) {
+        for (final lecture in module.lectures) {
+          if (lecture.id == lectureId) target = lecture;
+        }
+      }
+    }
+    if (owner == null || target == null) return false;
+    if (target.isCompleted) return true;
+    if (!target.canComplete) return false;
+    _completionPending = true;
+    state = state.copyWith(isSavingCompletion: true);
+    final wasPlaying = state.isPlaying;
+    final updatedOwner = owner.copyWith(
+      modules: owner.modules
+          .map(
+            (module) => module.copyWith(
+              lectures: module.lectures
+                  .map(
+                    (lecture) => lecture.id == lectureId
+                        ? lecture.copyWith(isCompleted: true)
+                        : lecture,
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
     );
+    final courses = state.courses
+        .map((course) => course.id == ownerId ? updatedOwner : course)
+        .toList();
+    try {
+      await _saveSnapshot(courses);
+      state = state.copyWith(courses: courses);
+    } catch (error) {
+      debugPrint('Learning completion save failed: $error');
+      return false;
+    } finally {
+      _completionPending = false;
+      state = state.copyWith(isSavingCompletion: false);
+    }
     _persistCourses();
-    _syncCompleteSession();
-
-    if (markValue && lectureId == state.activeLectureId) {
-      // Advance to next lecture if available
-      final allLectures = state.course.modules
-          .expand((m) => m.lectures)
-          .toList();
-      final currentIndex = allLectures.indexWhere((l) => l.id == lectureId);
-      if (currentIndex != -1 && currentIndex + 1 < allLectures.length) {
-        final nextLec = allLectures[currentIndex + 1];
-        selectLecture(nextLec.id, autoPlay: state.isPlaying);
+    if (ownerId == state.activeCourseId && lectureId == state.activeLectureId) {
+      _syncCompleteSession();
+      final next = updatedOwner.nextLecture;
+      if (next != null) {
+        selectLecture(next.id, autoPlay: wasPlaying);
       } else {
         pause();
       }
     }
+    return true;
   }
 
   void switchCourse(String courseId) {
+    if (_catalogLoading || _completionPending) return;
     if (courseId == state.activeCourseId) return;
+    if (!state.courses.any((c) => c.id == courseId)) {
+      throw ArgumentError('This course no longer exists');
+    }
 
     pause();
 
@@ -642,87 +870,364 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     _persistCourses();
   }
 
-  void addCourse(Course course) {
+  Future<void> _commitCatalog(List<Course> courses) async {
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
+    _completionPending = true;
+    try {
+      await _saveSnapshot(courses);
+      if (!ref.mounted) return;
+      state = state.copyWith(courses: courses);
+    } finally {
+      _completionPending = false;
+    }
+  }
+
+  Future<void> addCourse(Course course) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
+    if (state.courses.any((c) => c.id == course.id)) {
+      throw ArgumentError('A course with this ID already exists');
+    }
+    course = course.copyWith(
+      modules: course.modules
+          .map(
+            (m) => m.copyWith(
+              lectures: m.lectures
+                  .map(
+                    (l) => l.copyWith(
+                      studySeconds: 0,
+                      isCompleted: false,
+                      completionThresholdPercent:
+                          l.completionThresholdPercent == 50 ? 50 : 100,
+                    ),
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
+    );
     final updated = [...state.courses, course];
-    state = state.copyWith(courses: updated);
-    _persistCourses();
+    await _commitCatalog(updated);
     switchCourse(course.id);
   }
 
-  void updateCourse(Course course) {
+  Future<void> updateCourse(Course course) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
+    final previous = state.courses.where((c) => c.id == course.id).firstOrNull;
+    if (previous == null) throw StateError('This course no longer exists');
+    final existing = {
+      for (final m in previous.modules)
+        for (final l in m.lectures) l.id: l,
+    };
+    course = course.copyWith(
+      modules: course.modules
+          .map(
+            (m) => m.copyWith(
+              lectures: m.lectures.map((l) {
+                final old = existing[l.id];
+                return l.copyWith(
+                  isCompleted: old?.isCompleted ?? false,
+                  studySeconds: old?.studySeconds ?? 0,
+                );
+              }).toList(),
+            ),
+          )
+          .toList(),
+    );
     final updated = state.courses
         .map((c) => c.id == course.id ? course : c)
         .toList();
-    state = state.copyWith(courses: updated);
-    _persistCourses();
+    await _commitCatalog(updated);
+    if (course.id == state.activeCourseId &&
+        !course.modules.any(
+          (m) => m.lectures.any((l) => l.id == state.activeLectureId),
+        )) {
+      final next =
+          course.nextLecture ??
+          course.modules.expand((m) => m.lectures).firstOrNull;
+      state = state.copyWith(
+        activeLectureId: next?.id ?? 0,
+        currentElapsedSeconds: next?.elapsedSeconds ?? 0,
+        sessionBaseElapsed: next?.elapsedSeconds ?? 0,
+        isPlaying: false,
+        playStartedAt: null,
+      );
+    }
   }
 
-  void deleteCourse(String courseId) {
+  Future<void> deleteCourse(String courseId) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
     if (state.courses.length <= 1) return; // Keep at least one course
+    final wasActive = courseId == state.activeCourseId;
+    if (wasActive) pause(updateNotification: false);
     final updated = state.courses.where((c) => c.id != courseId).toList();
     final nextCourseId = courseId == state.activeCourseId
         ? updated.first.id
         : state.activeCourseId;
-    state = state.copyWith(courses: updated);
-    _persistCourses();
-    if (courseId == state.activeCourseId) {
+    await _commitCatalog(updated);
+    if (wasActive) {
       switchCourse(nextCourseId);
     }
   }
 
-  void addModule(String courseId, CourseModule module) {
+  Future<void> addModule(String courseId, CourseModule module) async {
+    await ready;
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = [...course.modules, module];
     final updatedCourse = course.copyWith(modules: updatedModules);
-    updateCourse(updatedCourse);
+    await updateCourse(updatedCourse);
   }
 
-  void updateModule(String courseId, CourseModule module) {
+  Future<void> updateModule(String courseId, CourseModule module) async {
+    await ready;
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = course.modules
         .map((m) => m.id == module.id ? module : m)
         .toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
-    updateCourse(updatedCourse);
+    await updateCourse(updatedCourse);
   }
 
-  void deleteModule(String courseId, int moduleId) {
+  Future<void> deleteModule(String courseId, int moduleId) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
+    if (courseId == state.activeCourseId &&
+        state.activeLecture.moduleId == moduleId) {
+      pause(updateNotification: false);
+    }
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = course.modules
         .where((m) => m.id != moduleId)
         .toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
-    updateCourse(updatedCourse);
+    await updateCourse(updatedCourse);
   }
 
-  void addLecture(String courseId, int moduleId, Lecture lecture) {
+  /// Links an activity to one canonical lecture. Historical generic timer
+  /// sessions keep their durations; they do not become watched evidence.
+  Future<Lecture> saveLectureActivity({
+    required String requestId,
+    required String courseId,
+    required int moduleId,
+    required DateTime plannedDate,
+    int? existingLectureId,
+    int? taskId,
+    String? title,
+    int? durationSeconds,
+    int thresholdPercent = 100,
+  }) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
+    pause(updateNotification: false);
+    _completionPending = true;
+    try {
+      await _saveQueue;
+      final course = state.courses.where((c) => c.id == courseId).firstOrNull;
+      final module = course?.modules.where((m) => m.id == moduleId).firstOrNull;
+      if (course == null || module == null) {
+        throw StateError('Choose an existing course and module');
+      }
+      if (requestId.trim().isEmpty) {
+        throw ArgumentError('An operation identity is required');
+      }
+      final db = ref.read(databaseProvider);
+      Task? source;
+      if (taskId != null) {
+        source = await db.taskDao.getTaskById(taskId);
+        if (source == null || source.actualCompletedDate != null) {
+          throw StateError('Choose an unfinished activity');
+        }
+        if (source.learningCourseId != null &&
+            (source.learningCourseId != courseId ||
+                source.learningLectureId != existingLectureId &&
+                    !course.modules
+                        .expand((m) => m.lectures)
+                        .any(
+                          (l) =>
+                              l.id == source!.learningLectureId &&
+                              l.originRequestId == requestId,
+                        ))) {
+          throw StateError('This activity already belongs to a lecture');
+        }
+        final children = await (db.select(
+          db.taskTable,
+        )..where((t) => t.parentTaskId.equals(taskId))).get();
+        if (children.isNotEmpty) {
+          throw StateError(
+            'Convert an individual activity, keeping its checklist separate',
+          );
+        }
+      }
+      final reused = module.lectures
+          .where((l) => l.originRequestId == requestId)
+          .firstOrNull;
+      Lecture? lecture = existingLectureId == null
+          ? reused
+          : module.lectures.where((l) => l.id == existingLectureId).firstOrNull;
+      if (existingLectureId != null && lecture == null) {
+        throw StateError('This lecture no longer exists in the chosen module');
+      }
+      if (lecture == null) {
+        final cleanTitle = (title ?? source?.title ?? '').trim();
+        if (cleanTitle.isEmpty ||
+            cleanTitle.length > 300 ||
+            durationSeconds == null ||
+            durationSeconds <= 0 ||
+            durationSeconds > 86400 ||
+            ![50, 100].contains(thresholdPercent)) {
+          throw ArgumentError(
+            'Choose a title, duration of up to 24 hours, and completion policy',
+          );
+        }
+        final ids = course.modules.expand((m) => m.lectures).map((l) => l.id);
+        final nextId =
+            ids.fold<int>(0, (largest, id) => id > largest ? id : largest) + 1;
+        lecture = Lecture(
+          id: nextId,
+          moduleId: moduleId,
+          moduleTitle: module.title,
+          title: cleanTitle,
+          durationSeconds: durationSeconds,
+          completionThresholdPercent: thresholdPercent,
+          plannedDate: plannedDate,
+          originRequestId: requestId,
+        );
+      } else {
+        lecture = lecture.copyWith(plannedDate: plannedDate);
+      }
+      if (source != null && lecture.isCompleted) {
+        throw StateError('Choose an unfinished lecture for this activity');
+      }
+      final chosen = lecture;
+      final updated = course.copyWith(
+        modules: course.modules
+            .map(
+              (m) => m.id != moduleId
+                  ? m
+                  : m.copyWith(
+                      lectures: [
+                        ...m.lectures.where((l) => l.id != chosen.id),
+                        chosen,
+                      ],
+                    ),
+            )
+            .toList(),
+      );
+      final courses = state.courses
+          .map((c) => c.id == courseId ? updated : c)
+          .toList();
+      final catalog = LearningCatalog(db, ref.read(sharedPreferencesProvider));
+      await db.transaction(() async {
+        await catalog.saveCourses(courses);
+        if (source != null) {
+          await (db.update(
+            db.taskTable,
+          )..where((t) => t.id.equals(source!.id))).write(
+            TaskTableCompanion(
+              learningCourseId: drift.Value(courseId),
+              learningLectureId: drift.Value(chosen.id),
+              plannedDate: drift.Value(plannedDate),
+            ),
+          );
+          await (db.update(
+            db.timeSessionTable,
+          )..where((t) => t.linkedTaskId.equals(source!.id))).write(
+            TimeSessionTableCompanion(
+              learningCourseId: drift.Value(courseId),
+              learningLectureId: drift.Value(chosen.id),
+              activityRefType: const drift.Value('lecture_history'),
+            ),
+          );
+        }
+      });
+      state = state.copyWith(courses: courses);
+      await catalog.cache(courses);
+      return chosen;
+    } finally {
+      _completionPending = false;
+    }
+  }
+
+  Future<void> addLecture(
+    String courseId,
+    int moduleId,
+    Lecture lecture,
+  ) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
     final course = state.courses.firstWhere((c) => c.id == courseId);
+    if (!course.modules.any((m) => m.id == moduleId) ||
+        course.modules.any((m) => m.lectures.any((l) => l.id == lecture.id))) {
+      throw ArgumentError('Choose an existing module and a unique lecture ID');
+    }
     final updatedModules = course.modules.map((m) {
       if (m.id == moduleId) {
-        return m.copyWith(lectures: [...m.lectures, lecture]);
+        return m.copyWith(
+          lectures: [
+            ...m.lectures,
+            lecture.copyWith(studySeconds: 0, isCompleted: false),
+          ],
+        );
       }
       return m;
     }).toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
-    updateCourse(updatedCourse);
+    await updateCourse(updatedCourse);
   }
 
-  void updateLecture(String courseId, Lecture lecture) {
+  Future<void> updateLecture(String courseId, Lecture lecture) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = course.modules.map((m) {
       if (m.id == lecture.moduleId) {
         final updatedLectures = m.lectures
-            .map((l) => l.id == lecture.id ? lecture : l)
+            .map(
+              (l) => l.id == lecture.id
+                  ? lecture.copyWith(
+                      studySeconds: l.studySeconds,
+                      isCompleted: l.isCompleted,
+                      completionThresholdPercent:
+                          lecture.completionThresholdPercent == 50 ? 50 : 100,
+                    )
+                  : l,
+            )
             .toList();
         return m.copyWith(lectures: updatedLectures);
       }
       return m;
     }).toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
-    updateCourse(updatedCourse);
+    await updateCourse(updatedCourse);
   }
 
-  void deleteLecture(String courseId, int lectureId) {
+  Future<void> deleteLecture(String courseId, int lectureId) async {
+    await ready;
+    if (_completionPending) {
+      throw StateError('Wait for the current learning save');
+    }
+    if (courseId == state.activeCourseId &&
+        lectureId == state.activeLectureId) {
+      pause(updateNotification: false);
+    }
     final course = state.courses.firstWhere((c) => c.id == courseId);
     final updatedModules = course.modules.map((m) {
       final updatedLectures = m.lectures
@@ -731,7 +1236,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
       return m.copyWith(lectures: updatedLectures);
     }).toList();
     final updatedCourse = course.copyWith(modules: updatedModules);
-    updateCourse(updatedCourse);
+    await updateCourse(updatedCourse);
   }
 
   void dismissFloatingPlayer() {
@@ -746,6 +1251,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     int? elapsed,
     bool isCompleted, {
     int? targetLectureId,
+    int? studySeconds,
   }) {
     final targetId = targetLectureId ?? state.activeLectureId;
     final activeC = state.course;
@@ -755,6 +1261,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
         if (lecture.id == targetId) {
           return lecture.copyWith(
             elapsedSeconds: elapsed ?? lecture.elapsedSeconds,
+            studySeconds: studySeconds ?? lecture.studySeconds,
             isCompleted: lecture.isCompleted || isCompleted,
             lastPlayedAt: DateTime.now(),
           );

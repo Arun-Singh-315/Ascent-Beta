@@ -22,6 +22,7 @@ class ReminderAlertSync {
     required this.enabled,
     required this.schedule,
     required this.reset,
+    this.cancel,
   });
   factory ReminderAlertSync.device(AppDatabase db) => ReminderAlertSync(
     db,
@@ -35,13 +36,25 @@ class ReminderAlertSync {
           scheduleFollowUp: false,
         ),
     reset: NotificationService.instance.cancelAllChecked,
+    cancel: NotificationService.instance.cancelChecked,
   );
   final AppDatabase db;
   final Future<bool> Function() enabled, reset;
   final Future<bool> Function(Reminder) schedule;
-  Future<ReminderAlertSyncResult> sync({bool replaceAll = false}) async {
+  final Future<bool> Function(int)? cancel;
+  Future<ReminderAlertSyncResult> sync({
+    bool replaceAll = false,
+    bool onlyPending = false,
+    List<int>? ids,
+  }) async {
     final reminders = (await db.reminderDao.watchAllReminders().first)
-        .where((r) => r.isActive && r.scheduledAt.isAfter(DateTime.now()))
+        .where(
+          (r) =>
+              (ids == null || ids.contains(r.id)) &&
+              (onlyPending
+                  ? r.alertSyncPending
+                  : r.isActive && r.scheduledAt.isAfter(DateTime.now())),
+        )
         .toList();
     if (replaceAll && !await reset()) {
       return ReminderAlertSyncResult(
@@ -50,11 +63,20 @@ class ReminderAlertSync {
         resetSucceeded: false,
       );
     }
-    if (!await enabled()) return ReminderAlertSyncResult(reminders.length, 0);
+    final permitted = await enabled();
     var count = 0;
     for (final reminder in reminders) {
       try {
-        if (await schedule(reminder)) count++;
+        final succeeded =
+            !reminder.isActive || !reminder.scheduledAt.isAfter(DateTime.now())
+            ? await (cancel?.call(reminder.id) ?? Future.value(false))
+            : permitted && await schedule(reminder);
+        if (succeeded) {
+          if (reminder.alertSyncPending) {
+            if (!await db.reminderDao.acknowledgeAlertSync(reminder)) continue;
+          }
+          count++;
+        }
       } catch (_) {}
     }
     return ReminderAlertSyncResult(reminders.length, count);

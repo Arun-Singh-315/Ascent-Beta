@@ -4,8 +4,21 @@ import '../database/app_database.dart';
 import '../../shared/widgets/feature_guide.dart';
 import 'ai_action_execution.dart';
 import 'ai_service.dart';
+import 'riya_workspace_actions.dart';
+import 'riya_life_actions.dart';
 
-enum RiyaValue { text, integer, number, date, integerList, textList }
+enum RiyaValue {
+  text,
+  longText,
+  integer,
+  offset,
+  boolean,
+  number,
+  nonnegativeNumber,
+  date,
+  integerList,
+  textList,
+}
 
 class RiyaCapability {
   const RiyaCapability(
@@ -29,6 +42,8 @@ class RiyaCapability {
 }
 
 const riyaCapabilities = <RiyaCapability>[
+  ...riyaWorkspaceCapabilities,
+  ...riyaLifeCapabilities,
   RiyaCapability(
     'tasks.today',
     'Read today’s tasks',
@@ -69,9 +84,14 @@ const riyaCapabilities = <RiyaCapability>[
   ),
   RiyaCapability(
     'reminders.list',
-    'Read upcoming reminders',
+    'Read reminders for a selected day',
     '/reminders',
-    {},
+    {
+      'scope': RiyaValue.text,
+      'from': RiyaValue.date,
+      'to': RiyaValue.date,
+      'offset': RiyaValue.offset,
+    },
     example: 'Show my reminders',
   ),
   RiyaCapability(
@@ -197,7 +217,13 @@ class RiyaCommand {
       'priority': 'Priority',
       'category': 'Category',
       'account': 'Account',
-      'id': 'Reminder number',
+      'id': 'Record number',
+      'noteIds': 'Selected note numbers',
+      'content': 'Thought',
+      'mode': 'Action',
+      'grouped': 'One grouped item',
+      'section': 'Home card',
+      'visible': 'Show card',
       'taskIds': 'Task numbers',
       'newDate': 'Move to',
     };
@@ -216,14 +242,27 @@ class RiyaResult {
     this.route, {
     this.reminderIds = const [],
     this.replayed = false,
+    this.options = const [],
+    this.cancelReminderIds = const [],
+    this.entityType,
+    this.entityId,
   });
   final String message, route;
-  final List<int> reminderIds;
+  final String? entityType;
+  final int? entityId;
+  final List<int> reminderIds, cancelReminderIds;
+  final List<String> options;
   final bool replayed;
   Map<String, dynamic> toJson() => {
     'message': message,
     'route': route,
     'reminderIds': reminderIds,
+    'cancelReminderIds': cancelReminderIds,
+    'options': options,
+    'entityType': entityType,
+    'entityId': entityId,
+    'alertEffectsPending':
+        reminderIds.isNotEmpty || cancelReminderIds.isNotEmpty,
   };
   factory RiyaResult.fromJson(
     Map<String, dynamic> json, {
@@ -231,16 +270,64 @@ class RiyaResult {
   }) => RiyaResult(
     json['message'] as String,
     json['route'] as String,
-    reminderIds: (json['reminderIds'] as List).cast<int>(),
+    reminderIds: (json['reminderIds'] as List? ?? []).cast<int>(),
+    cancelReminderIds: (json['cancelReminderIds'] as List? ?? []).cast<int>(),
+    options: (json['options'] as List? ?? []).cast<String>(),
+    entityType: json['entityType'] as String?,
+    entityId: json['entityId'] as int?,
     replayed: replayed,
   );
 }
 
+bool _validCalendarDate(String value) {
+  if (DateTime.tryParse(value) == null) return false;
+  final parts = RegExp(
+    r'^([+-]?\d{4,6})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(?:[zZ]|[+-](\d{2}):?(\d{2}))?)?$',
+  ).firstMatch(value);
+  if (parts == null) return false;
+  try {
+    final year = int.parse(parts.group(1)!);
+    final month = int.parse(parts.group(2)!);
+    final day = int.parse(parts.group(3)!);
+    final calendar = DateTime(year, month, day);
+    if (calendar.year != year || calendar.month != month || calendar.day != day) {
+      return false;
+    }
+    int number(int group) => int.tryParse(parts.group(group) ?? '0') ?? 0;
+    return number(4) <= 23 &&
+        number(5) <= 59 &&
+        number(6) <= 59 &&
+        number(7) <= 23 &&
+        number(8) <= 59;
+  } catch (_) {
+    return false;
+  }
+}
+
+class RiyaCommittedActionError implements Exception {
+  const RiyaCommittedActionError(this.result);
+  final RiyaResult result;
+}
+
 class RiyaExecutor {
-  RiyaExecutor(this.db, {DateTime Function()? clock})
-    : clock = clock ?? DateTime.now;
+  RiyaExecutor(
+    this.db, {
+    DateTime Function()? clock,
+    this.external,
+    this.verifyExternal,
+  }) : clock = clock ?? DateTime.now;
   final AppDatabase db;
   final DateTime Function() clock;
+  final Future<RiyaResult> Function(RiyaCommand)? external;
+  final Future<RiyaResult?> Function(RiyaCommand)? verifyExternal;
+  static final _externalWrites =
+      Expando<Map<String, (String, Future<RiyaResult>)>>();
+  static const _recoverableExternal = {
+    'home.visibility',
+    'learning.complete',
+    'learning.pause',
+    'learning.resume',
+  };
 
   void validate(RiyaCommand command, {bool checkTime = true}) {
     final c = command.capability;
@@ -255,10 +342,15 @@ class RiyaExecutor {
       final v = entry.value;
       final valid = switch (c.schema[entry.key]!) {
         RiyaValue.text => v is String && v.trim().isNotEmpty && v.length <= 300,
+        RiyaValue.longText =>
+          v is String && v.trim().isNotEmpty && v.length <= 20000,
+        RiyaValue.offset => v is int && v >= 0 && v <= 100000,
+        RiyaValue.boolean => v is bool,
         RiyaValue.integer =>
           v is int && (v > 0 || (entry.key == 'estimatedMinutes' && v == -1)),
         RiyaValue.number => v is num && v.isFinite && v > 0,
-        RiyaValue.date => v is String && DateTime.tryParse(v) != null,
+        RiyaValue.nonnegativeNumber => v is num && v.isFinite && v >= 0,
+        RiyaValue.date => v is String && _validCalendarDate(v),
         RiyaValue.textList =>
           v is List &&
               v.isNotEmpty &&
@@ -270,7 +362,10 @@ class RiyaExecutor {
                     item.length <= 300,
               ),
         RiyaValue.integerList =>
-          v is List && v.isNotEmpty && v.every((id) => id is int && id > 0),
+          v is List &&
+              v.isNotEmpty &&
+              v.length <= 100 &&
+              v.every((id) => id is int && id > 0),
       };
       if (!valid) throw ArgumentError('Invalid ${entry.key}');
     }
@@ -323,6 +418,32 @@ class RiyaExecutor {
     if (!c.write) {
       return _run(command);
     }
+    if (c.id.startsWith('home.') || c.id.startsWith('learning.')) {
+      if (!_recoverableExternal.contains(c.id)) {
+        throw UnsupportedError(
+          'This workspace action needs a recoverable domain executor',
+        );
+      }
+      final sorted = Map<String, dynamic>.fromEntries(
+        command.arguments.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key)),
+      );
+      final payload = jsonEncode(sorted);
+      final identity = '${c.id}:$payload';
+      final running = _externalWrites[db] ??= {};
+      final old = running[requestId];
+      if (old != null) {
+        if (old.$1 != identity) throw StateError('Request ID already used');
+        return RiyaResult.fromJson((await old.$2).toJson(), replayed: true);
+      }
+      final work = _executeExternal(command, requestId, payload);
+      running[requestId] = (identity, work);
+      try {
+        return await work;
+      } finally {
+        running.remove(requestId);
+      }
+    }
     return db.transaction(() async {
       final old = await (db.select(
         db.aiCommandTable,
@@ -357,22 +478,81 @@ class RiyaExecutor {
     });
   }
 
+  /// Prepare a durable identity before stateful/prefs work. These domain
+  /// adapters commit independently; they never publish inside a receipt TX.
+  Future<RiyaResult> _executeExternal(
+    RiyaCommand command,
+    String requestId,
+    String arguments,
+  ) async {
+    final old = await db.transaction(() async {
+      final row = await (db.select(
+        db.aiCommandTable,
+      )..where((r) => r.requestId.equals(requestId))).getSingleOrNull();
+      if (row != null) {
+        if (row.capability != command.id || row.argumentsJson != arguments) {
+          throw StateError('Request ID already used');
+        }
+        return row;
+      }
+      validate(command);
+      await db
+          .into(db.aiCommandTable)
+          .insert(
+            AiCommandTableCompanion.insert(
+              requestId: requestId,
+              capability: command.id,
+              argumentsJson: arguments,
+              resultJson: jsonEncode({'executionStatus': 'prepared'}),
+            ),
+          );
+      return null;
+    });
+    RiyaResult result;
+    if (old != null) {
+      final saved = jsonDecode(old.resultJson) as Map<String, dynamic>;
+      if (saved['executionStatus'] != 'prepared') {
+        return RiyaResult.fromJson(saved, replayed: true);
+      }
+      // An interrupted action may already have happened. Verify current state;
+      // never reapply an old request over a newer user change.
+      final verified = await verifyExternal?.call(command);
+      if (verified == null) {
+        throw StateError(
+          'This interrupted request needs a fresh confirmation; newer work was kept',
+        );
+      }
+      result = verified;
+    } else {
+      result = await _run(command);
+    }
+    try {
+      final updated =
+          await (db.update(
+            db.aiCommandTable,
+          )..where((r) => r.requestId.equals(requestId))).write(
+            AiCommandTableCompanion(
+              resultJson: Value(jsonEncode(result.toJson())),
+            ),
+          );
+      if (updated != 1) throw StateError('Confirmation record missing');
+    } catch (_) {
+      throw RiyaCommittedActionError(result);
+    }
+    return result;
+  }
+
   Future<RiyaResult> _run(RiyaCommand cmd) async {
     final a = cmd.arguments;
     final route = cmd.capability.route;
+    final workspace = RiyaWorkspaceActions(db, clock, external: external);
+    if (workspace.handles(cmd.id)) return workspace.run(cmd);
+    final life = RiyaLifeActions(db, clock);
+    if (life.handles(cmd.id)) return life.run(cmd);
     switch (cmd.id) {
       case 'tasks.today':
-        final rows = await db.taskDao.watchTasksByDate(clock()).first;
-        return RiyaResult(
-          rows.isEmpty
-              ? 'Nothing planned today.'
-              : rows
-                    .map(
-                      (t) =>
-                          '${t.actualCompletedDate == null ? '•' : '✓'} ${t.title}',
-                    )
-                    .join('\n'),
-          route,
+        return workspace.run(
+          const RiyaCommand('tasks.list', {'scope': 'today'}),
         );
       case 'tasks.checklist':
         final parent = await db.taskDao.insertTask(
@@ -403,21 +583,78 @@ class RiyaExecutor {
           route,
         );
       case 'reminders.list':
-        final rows = await db.reminderDao.watchUpcomingReminders().first;
+        final now = clock();
+        final scope = a['scope'] as String? ?? 'today';
+        if (!{'today', 'tomorrow', 'date', 'all', 'overdue'}.contains(scope)) {
+          throw ArgumentError('Choose a reminder period');
+        }
+        final from = a['from'] == null
+            ? DateTime(
+                now.year,
+                now.month,
+                now.day + (scope == 'tomorrow' ? 1 : 0),
+              )
+            : DateTime.parse(a['from']).toLocal();
+        final to = a['to'] == null
+            ? DateTime(from.year, from.month, from.day + 1)
+            : DateTime.parse(a['to']).toLocal();
+        if (!to.isAfter(from)) throw ArgumentError('Choose a valid period');
+        Expression<bool> filter = db.reminderTable.isActive.equals(true);
+        if (scope == 'overdue') {
+          filter &= db.reminderTable.scheduledAt.isSmallerThanValue(now);
+        } else if (scope != 'all') {
+          filter &=
+              db.reminderTable.scheduledAt.isBiggerOrEqualValue(from) &
+              db.reminderTable.scheduledAt.isSmallerThanValue(to) &
+              db.reminderTable.scheduledAt.isBiggerOrEqualValue(now);
+        }
+        final count = db.reminderTable.id.count();
+        final countQuery = db.selectOnly(db.reminderTable)
+          ..addColumns([count])
+          ..where(filter);
+        final total = (await countQuery.getSingle()).read(count) ?? 0;
+        final rows =
+            await (db.select(db.reminderTable)
+                  ..where((_) => filter)
+                  ..orderBy([
+                    (r) => OrderingTerm.asc(r.scheduledAt),
+                    (r) => OrderingTerm.asc(r.id),
+                  ])
+                  ..limit(3, offset: a['offset'] as int? ?? 0))
+                .get();
+        final overdueCount = db.reminderTable.id.count();
+        final overdueQuery = db.selectOnly(db.reminderTable)
+          ..addColumns([overdueCount])
+          ..where(
+            db.reminderTable.isActive.equals(true) &
+                db.reminderTable.scheduledAt.isSmallerThanValue(now),
+          );
+        final overdue =
+            (await overdueQuery.getSingle()).read(overdueCount) ?? 0;
+        final label = scope == 'date'
+            ? '${from.day}/${from.month}/${from.year}'
+            : '${scope[0].toUpperCase()}${scope.substring(1)}';
+        final message = rows.isEmpty
+            ? 'No reminders for $label.'
+            : '$label: $total reminder${total == 1 ? '' : 's'}.\n${rows.map((r) => '#${r.id} ${r.title.length > 140 ? '${r.title.substring(0, 137)}…' : r.title} · ${r.scheduledAt.hour.toString().padLeft(2, '0')}:${r.scheduledAt.minute.toString().padLeft(2, '0')}').join('\n')}';
         return RiyaResult(
-          rows.isEmpty
-              ? 'No upcoming reminders.'
-              : rows
-                    .map((r) => '#${r.id} ${r.title} · ${r.scheduledAt}')
-                    .join('\n'),
+          '$message${overdue > 0 && scope != 'overdue' ? '\n$overdue overdue reminder${overdue == 1 ? '' : 's'} available separately.' : ''}',
           route,
+          options: [
+            'Reminders tomorrow',
+            'Choose reminder date',
+            'All reminders',
+            if (overdue > 0) 'Overdue reminders',
+            if ((a['offset'] as int? ?? 0) + rows.length < total)
+              'More reminders',
+          ],
         );
       case 'thoughts.search':
         final query = (a['query'] as String).toLowerCase();
         // Bound SQLite instr avoids wildcard interpretation; retrieved content stays inert.
         final rows = await db
             .customSelect(
-              'SELECT id, content, is_archived FROM thoughts WHERE instr(lower(content), ?) > 0 ORDER BY created_at DESC LIMIT 20',
+              'SELECT id, content, is_archived FROM thoughts WHERE instr(lower(content), ?) > 0 ORDER BY created_at DESC, id DESC LIMIT 4',
               variables: [Variable(query)],
               readsFrom: {db.thoughtTable},
             )
@@ -426,9 +663,10 @@ class RiyaExecutor {
           rows.isEmpty
               ? 'No thoughts match “$query”.'
               : rows
+                    .take(3)
                     .map(
                       (r) =>
-                          '${r.read<int>('is_archived') == 1 ? '[Archived] ' : ''}${r.read<String>('content')}',
+                          '#${r.read<int>('id')} ${r.read<int>('is_archived') == 1 ? '[Archived] ' : ''}${r.read<String>('content').length > 180 ? '${r.read<String>('content').substring(0, 177)}…' : r.read<String>('content')}',
                     )
                     .join('\n\n'),
           route,
@@ -455,19 +693,24 @@ class RiyaExecutor {
         int id;
         if (cmd.id == 'reminders.create') {
           id = await db.reminderDao.insertReminder(
-            ReminderTableCompanion.insert(title: a['title'], scheduledAt: at),
+            ReminderTableCompanion.insert(
+              title: a['title'],
+              scheduledAt: at,
+              alertSyncPending: const Value(true),
+            ),
           );
         } else {
           id = a['id'];
           final old = await db.reminderDao.getReminderById(id);
           if (old == null) throw StateError('Reminder no longer exists');
           await db.reminderDao.updateReminder(
-            ReminderTableCompanion(
-              id: Value(id),
-              title: Value(old.title),
-              scheduledAt: Value(at),
-              isActive: const Value(true),
-            ),
+            old
+                .toCompanion(true)
+                .copyWith(
+                  scheduledAt: Value(at),
+                  isActive: const Value(true),
+                  alertSyncPending: const Value(true),
+                ),
           );
         }
         final saved = await db.reminderDao.getReminderById(id);

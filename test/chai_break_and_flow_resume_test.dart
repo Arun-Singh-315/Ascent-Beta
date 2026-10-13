@@ -132,6 +132,7 @@ void main() {
         );
 
         final learningNotifier = container.read(learningHubProvider.notifier);
+        await tester.runAsync(() => learningNotifier.ready);
         learningNotifier.startLearning();
 
         // Simulate playing and advancing lecture

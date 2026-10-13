@@ -65,33 +65,38 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     List<Lecture> lectures = [];
     final modId = _modules.length + 1;
 
-    if (_useBulkLectureEntry && _bulkLecturesController.text.trim().isNotEmpty) {
+    if (_useBulkLectureEntry &&
+        _bulkLecturesController.text.trim().isNotEmpty) {
       final lines = _bulkLecturesController.text.split('\n');
       int lecIdx = 1;
       for (final line in lines) {
         final clean = line.replaceAll(RegExp(r'^\s*[\d\.\-\*]+\s*'), '').trim();
         if (clean.isNotEmpty) {
-          lectures.add(Lecture(
-            id: DateTime.now().millisecondsSinceEpoch % 100000 + lecIdx,
-            moduleId: modId,
-            moduleTitle: modTitle,
-            title: clean,
-            author: _authorController.text.trim(),
-            durationSeconds: _defaultLectureDurationMins * 60,
-          ));
+          lectures.add(
+            Lecture(
+              id: DateTime.now().millisecondsSinceEpoch % 100000 + lecIdx,
+              moduleId: modId,
+              moduleTitle: modTitle,
+              title: clean,
+              author: _authorController.text.trim(),
+              durationSeconds: _defaultLectureDurationMins * 60,
+            ),
+          );
           lecIdx++;
         }
       }
     } else {
       // Create a default starter lecture for the module
-      lectures.add(Lecture(
-        id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
-        moduleId: modId,
-        moduleTitle: modTitle,
-        title: 'Lecture 1: Introduction to $modTitle',
-        author: _authorController.text.trim(),
-        durationSeconds: _defaultLectureDurationMins * 60,
-      ));
+      lectures.add(
+        Lecture(
+          id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
+          moduleId: modId,
+          moduleTitle: modTitle,
+          title: 'Lecture 1: Introduction to $modTitle',
+          author: _authorController.text.trim(),
+          durationSeconds: _defaultLectureDurationMins * 60,
+        ),
+      );
     }
 
     final newModule = CourseModule(
@@ -109,29 +114,31 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     });
   }
 
-  void _saveCourse() {
+  Future<void> _saveCourse() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
     List<CourseModule> finalModules = List.from(_modules);
     if (finalModules.isEmpty) {
       // Add a starter module if none was created
-      finalModules.add(CourseModule(
-        id: 1,
-        title: 'Module 1: Getting Started',
-        description: '',
-        durationHours: 0.5,
-        lectures: [
-          Lecture(
-            id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
-            moduleId: 1,
-            moduleTitle: 'Module 1: Getting Started',
-            title: 'Overview & Objectives',
-            author: _authorController.text.trim(),
-            durationSeconds: 900,
-          ),
-        ],
-      ));
+      finalModules.add(
+        CourseModule(
+          id: 1,
+          title: 'Module 1: Getting Started',
+          description: '',
+          durationHours: 0.5,
+          lectures: [
+            Lecture(
+              id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
+              moduleId: 1,
+              moduleTitle: 'Module 1: Getting Started',
+              title: 'Overview & Objectives',
+              author: _authorController.text.trim(),
+              durationSeconds: 900,
+            ),
+          ],
+        ),
+      );
     }
 
     final newCourse = Course(
@@ -145,7 +152,21 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
       targetMinutesPerDay: 45,
     );
 
-    ref.read(learningHubProvider.notifier).addCourse(newCourse);
+    try {
+      await ref.read(learningHubProvider.notifier).addCourse(newCourse);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not create the course. Your draft is still here.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
     HapticFeedback.mediumImpact();
 
     Navigator.of(context).pop();
@@ -201,7 +222,11 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.school_rounded, color: context.accentPrimary, size: 22),
+                      Icon(
+                        Icons.school_rounded,
+                        color: context.accentPrimary,
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Create Course',
@@ -254,8 +279,8 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                   child: _currentStep == 0
                       ? _buildStep0Details(isDark)
                       : _currentStep == 1
-                          ? _buildStep1Modules(isDark)
-                          : _buildStep2Review(),
+                      ? _buildStep1Modules(isDark)
+                      : _buildStep2Review(),
                 ),
               ),
 
@@ -275,12 +300,16 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                   Expanded(
                     child: AscentButton.primary(
                       label: _currentStep < 2 ? 'Next Step' : 'Save Course',
-                      icon: _currentStep < 2 ? Icons.arrow_forward_rounded : Icons.check_circle_outline_rounded,
+                      icon: _currentStep < 2
+                          ? Icons.arrow_forward_rounded
+                          : Icons.check_circle_outline_rounded,
                       onPressed: () {
                         if (_currentStep == 0) {
                           if (_titleController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter a course name')),
+                              const SnackBar(
+                                content: Text('Please enter a course name'),
+                              ),
                             );
                             return;
                           }
@@ -306,45 +335,73 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Course Name *', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Course Name *',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _titleController,
           autofocus: true,
           decoration: InputDecoration(
             hintText: 'e.g., Spring Boot Masterclass, Java Fundamentals, DSA',
-            hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+            hintStyle: AscentTextStyles.bodyMedium.copyWith(
+              color: context.textMuted,
+            ),
             filled: true,
-            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
+            fillColor: isDark
+                ? const Color(0xFF201A14)
+                : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Category or Subject', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Category or Subject',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _categoryController,
           decoration: InputDecoration(
             hintText: 'e.g., Backend Engineering, Algorithms, Mobile',
             filled: true,
-            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
+            fillColor: isDark
+                ? const Color(0xFF201A14)
+                : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Instructor / Author', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Instructor / Author',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _authorController,
           decoration: InputDecoration(
             hintText: 'e.g., Engineering Digest, Kunal Kushwaha, Self-Study',
             filled: true,
-            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
+            fillColor: isDark
+                ? const Color(0xFF201A14)
+                : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Description (Optional)', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Description (Optional)',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _descController,
@@ -352,7 +409,9 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           decoration: InputDecoration(
             hintText: 'Key topics, syllabus, or learning goals...',
             filled: true,
-            fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
+            fillColor: isDark
+                ? const Color(0xFF201A14)
+                : const Color(0xFFF7F6F2),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
@@ -376,7 +435,10 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
             ),
             Row(
               children: [
-                Text('Bulk paste:', style: TextStyle(fontSize: 11, color: context.textMuted)),
+                Text(
+                  'Bulk paste:',
+                  style: TextStyle(fontSize: 11, color: context.textMuted),
+                ),
                 Switch(
                   value: _useBulkLectureEntry,
                   onChanged: (v) => setState(() => _useBulkLectureEntry = v),
@@ -398,29 +460,44 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Module Title:', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
+              Text(
+                'Module Title:',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: context.textMuted,
+                ),
+              ),
               const SizedBox(height: 4),
               TextField(
                 controller: _moduleTitleController,
                 decoration: InputDecoration(
                   hintText: 'e.g. Module 1: Core Principles',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
               if (_useBulkLectureEntry) ...[
                 Text(
                   'Paste lecture titles (one per line):',
-                  style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: context.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 TextField(
                   controller: _bulkLecturesController,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: "1. Introduction\n2. Architecture Overview\n3. Setting up Environment\n4. First Application",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    hintText:
+                        "1. Introduction\n2. Architecture Overview\n3. Setting up Environment\n4. First Application",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     contentPadding: const EdgeInsets.all(10),
                   ),
                 ),
@@ -428,15 +505,26 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Default lecture duration: ', style: TextStyle(fontSize: 11, color: context.textMuted)),
+                  Text(
+                    'Default lecture duration: ',
+                    style: TextStyle(fontSize: 11, color: context.textMuted),
+                  ),
                   DropdownButton<int>(
                     value: _defaultLectureDurationMins,
                     underline: const SizedBox.shrink(),
                     items: [10, 15, 20, 30, 45, 60].map((m) {
-                      return DropdownMenuItem(value: m, child: Text('$m mins', style: const TextStyle(fontSize: 12)));
+                      return DropdownMenuItem(
+                        value: m,
+                        child: Text(
+                          '$m mins',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      );
                     }).toList(),
                     onChanged: (v) {
-                      if (v != null) setState(() => _defaultLectureDurationMins = v);
+                      if (v != null) {
+                        setState(() => _defaultLectureDurationMins = v);
+                      }
                     },
                   ),
                 ],
@@ -457,7 +545,10 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
         const SizedBox(height: 16),
         Text(
           'Configured Modules (${_modules.length})',
-          style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w600),
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         const SizedBox(height: 6),
 
@@ -477,23 +568,43 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
               decoration: BoxDecoration(
                 color: context.bgBase,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                border: Border.all(
+                  color: context.divider.withValues(alpha: 0.6),
+                ),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 12,
-                    backgroundColor: context.accentPrimary.withValues(alpha: 0.15),
-                    child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: context.accentPrimary)),
+                    backgroundColor: context.accentPrimary.withValues(
+                      alpha: 0.15,
+                    ),
+                    child: Text(
+                      '${i + 1}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: context.accentPrimary,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_modules[i].title, style: AscentTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
-                        Text('${_modules[i].lectures.length} lectures • ${_modules[i].durationHours.toStringAsFixed(1)}h',
-                            style: TextStyle(fontSize: 11, color: context.textMuted)),
+                        Text(
+                          _modules[i].title,
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          '${_modules[i].lectures.length} lectures • ${_modules[i].durationHours.toStringAsFixed(1)}h',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: context.textMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -522,13 +633,17 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           decoration: BoxDecoration(
             color: context.accentPrimary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.accentPrimary.withValues(alpha: 0.3)),
+            border: Border.all(
+              color: context.accentPrimary.withValues(alpha: 0.3),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _titleController.text.trim().isEmpty ? 'Untitled Course' : _titleController.text.trim(),
+                _titleController.text.trim().isEmpty
+                    ? 'Untitled Course'
+                    : _titleController.text.trim(),
                 style: AscentTextStyles.displaySmall.copyWith(
                   fontWeight: FontWeight.bold,
                   color: context.textPrimary,
@@ -537,7 +652,9 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
               const SizedBox(height: 4),
               Text(
                 '${_categoryController.text.trim()} • Instructor: ${_authorController.text.trim()}',
-                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -552,7 +669,12 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Curriculum Outline:', style: AscentTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          'Curriculum Outline:',
+          style: AscentTextStyles.labelMedium.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 8),
         for (final m in _modules)
           Padding(
@@ -560,7 +682,11 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.folder_open_rounded, size: 16, color: Colors.grey),
+                const Icon(
+                  Icons.folder_open_rounded,
+                  size: 16,
+                  color: Colors.grey,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -629,7 +755,12 @@ class _MetricItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: AscentTextStyles.displaySmall.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: AscentTextStyles.displaySmall.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ],
     );

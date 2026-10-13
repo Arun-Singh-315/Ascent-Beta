@@ -197,10 +197,11 @@ void main() {
       (tester) async {
         final container = ProviderContainer(
           overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
           ],
         );
-        addTearDown(container.dispose);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -219,6 +220,9 @@ void main() {
 
         expect(find.text('Jarvis'), findsOneWidget);
         expect(find.text('Riya'), findsNothing);
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+        await tester.pump(const Duration(milliseconds: 300));
       },
     );
   });

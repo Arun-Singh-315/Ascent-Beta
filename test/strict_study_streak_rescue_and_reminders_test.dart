@@ -1,3 +1,5 @@
+import 'package:ascent/core/providers/settings_provider.dart';
+import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -298,6 +300,7 @@ void main() {
             isActive: true,
             linkedTaskId: null,
             createdAt: DateTime.now(),
+            alertSyncPending: false,
           ),
         ];
 
@@ -370,6 +373,7 @@ void main() {
             isActive: true,
             linkedTaskId: null,
             createdAt: DateTime.now(),
+            alertSyncPending: false,
           ),
         );
 
@@ -426,14 +430,17 @@ void main() {
     );
 
     testWidgets(
-      'HomeHeader streak flame pill tap toggles studyStreakCardVisibleProvider',
+      'HomeHeader streak flame pill saves canonical Home visibility',
       (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
         final container = ProviderContainer(
           overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
           ],
         );
-        addTearDown(container.dispose);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -445,19 +452,22 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(container.read(studyStreakCardVisibleProvider), isTrue);
+        expect(container.read(homeStreakVisibleProvider), isTrue);
 
         // Tap on the streak pill in the header
         await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
         await tester.pumpAndSettle();
 
         // Card visibility should now be toggled to false (hidden)
-        expect(container.read(studyStreakCardVisibleProvider), isFalse);
+        expect(container.read(homeStreakVisibleProvider), isFalse);
 
         // Tap again to restore
         await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
         await tester.pumpAndSettle();
-        expect(container.read(studyStreakCardVisibleProvider), isTrue);
+        expect(container.read(homeStreakVisibleProvider), isTrue);
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+        await tester.pump(const Duration(milliseconds: 300));
       },
     );
   });

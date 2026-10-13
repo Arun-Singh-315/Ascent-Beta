@@ -46,6 +46,23 @@ void main() {
     final envelope = jsonDecode(await service.export()) as Map<String, dynamic>;
     final payload = envelope['payload'] as Map<String, dynamic>;
     payload['schema'] = 14;
+    final legacyTables = payload['tables'] as Map;
+    legacyTables.remove('thought_reminder_links');
+    legacyTables.remove('thought_merge_sources');
+    for (final row in legacyTables['tasks'] as List) {
+      (row as Map)
+        ..remove('linked_thought_id')
+        ..remove('learning_course_id')
+        ..remove('learning_lecture_id');
+    }
+    for (final row in legacyTables['time_sessions'] as List) {
+      (row as Map)
+        ..remove('learning_course_id')
+        ..remove('learning_lecture_id');
+    }
+    for (final row in legacyTables['reminders'] as List) {
+      (row as Map).remove('alert_sync_pending');
+    }
     for (final row in payload['tables']['reminders'] as List) {
       (row as Map).remove('alarm_enabled');
     }

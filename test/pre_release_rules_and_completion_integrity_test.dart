@@ -1,3 +1,4 @@
+import 'support/learning_fixtures.dart';
 import 'support/returning_user_guides.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,12 +44,13 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final notifier = container.read(learningHubProvider.notifier);
         final initialState = container.read(learningHubProvider);
         final activeLec = initialState.activeLecture;
 
         // Mark lecture completed
-        notifier.markLectureCompleted(activeLec.id, completed: true);
+        await seedLectureStudyEvidence(container, activeLec.id);
+        final refreshed = container.read(learningHubProvider.notifier);
+        await refreshed.markLectureCompleted(activeLec.id, completed: true);
         var state = container.read(learningHubProvider);
         var targetLec = state.course.modules
             .expand((m) => m.lectures)
@@ -56,7 +58,7 @@ void main() {
         expect(targetLec.isCompleted, isTrue);
 
         // Attempt to un-complete lecture: must remain completed ("completed means completed")
-        notifier.markLectureCompleted(activeLec.id, completed: false);
+        await refreshed.markLectureCompleted(activeLec.id, completed: false);
         state = container.read(learningHubProvider);
         targetLec = state.course.modules
             .expand((m) => m.lectures)
@@ -79,9 +81,8 @@ void main() {
         addTearDown(container.dispose);
 
         // Complete first lecture
-        container
-            .read(learningHubProvider.notifier)
-            .markLectureCompleted(1, completed: true);
+        await seedLectureStudyEvidence(container, 1);
+        await container.read(learningHubProvider.notifier).markLectureCompleted(1, completed: true);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(

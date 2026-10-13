@@ -33,7 +33,8 @@ class ActivityRowItem extends ConsumerWidget {
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
-    final isTimed = activity.kind == ActivityKind.duration ||
+    final isTimed =
+        activity.kind == ActivityKind.duration ||
         (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
         activity.sourceType == 'lecture';
 
@@ -60,7 +61,9 @@ class ActivityRowItem extends ConsumerWidget {
               if (taskBackup != null) {
                 await taskDao.insertTask(taskBackup.toCompanion(true));
               }
-              await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId(activity.id);
+              await ref
+                  .read(dismissedTodayActivityIdsProvider.notifier)
+                  .unDismissActivityId(activity.id);
             },
           );
         }
@@ -69,7 +72,11 @@ class ActivityRowItem extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
         color: context.stateDanger.withValues(alpha: 0.15),
-        child: Icon(Icons.delete_outline_rounded, color: context.stateDanger, size: 22),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          color: context.stateDanger,
+          size: 22,
+        ),
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -80,15 +87,20 @@ class ActivityRowItem extends ConsumerWidget {
         decoration: BoxDecoration(
           color: isRunning
               ? g.claySoft.withValues(alpha: 0.35)
-              : (isPaused ? g.claySoft.withValues(alpha: 0.18) : Colors.transparent),
+              : (isPaused
+                    ? g.claySoft.withValues(alpha: 0.18)
+                    : Colors.transparent),
           borderRadius: (isRunning || isPaused)
               ? BorderRadius.circular(12)
               : BorderRadius.zero,
           border: isRunning
               ? Border.all(color: g.clay.withValues(alpha: 0.35), width: 1.0)
               : (isPaused
-                  ? Border.all(color: g.clay.withValues(alpha: 0.18), width: 1.0)
-                  : Border(bottom: BorderSide(color: g.line, width: 1.0))),
+                    ? Border.all(
+                        color: g.clay.withValues(alpha: 0.18),
+                        width: 1.0,
+                      )
+                    : Border(bottom: BorderSide(color: g.line, width: 1.0))),
         ),
         padding: EdgeInsets.symmetric(
           horizontal: (isRunning || isPaused) ? 12 : 0,
@@ -108,7 +120,8 @@ class ActivityRowItem extends ConsumerWidget {
                       // Once completed, it cannot be undone or brought to active (one way only).
                       AscentSnackBar.show(
                         context,
-                        message: 'Completed items are finished and cannot be reopened.',
+                        message:
+                            'Completed items are finished and cannot be reopened.',
                       );
                       return;
                     }
@@ -116,15 +129,15 @@ class ActivityRowItem extends ConsumerWidget {
                     if (isTimed) {
                       AscentSnackBar.show(
                         context,
-                        message: 'Timed activities complete automatically when the focus timer ends.',
+                        message:
+                            'Timed activities complete automatically when the focus timer ends.',
                       );
                       return;
                     }
                     if (activity.linkedTaskId != null) {
-                      await ref.read(taskDaoProvider).toggleTaskCompletion(
-                            activity.linkedTaskId!,
-                            true,
-                          );
+                      await ref
+                          .read(taskDaoProvider)
+                          .toggleTaskCompletion(activity.linkedTaskId!, true);
                     }
                   },
                   borderRadius: BorderRadius.circular(22),
@@ -136,7 +149,9 @@ class ActivityRowItem extends ConsumerWidget {
                         shape: BoxShape.circle,
                         color: isDone ? g.clay : Colors.transparent,
                         border: Border.all(
-                          color: isDone ? g.clay : (isRunning ? g.clay : g.inkMuted),
+                          color: isDone
+                              ? g.clay
+                              : (isRunning ? g.clay : g.inkMuted),
                           width: 1.75,
                         ),
                       ),
@@ -147,12 +162,12 @@ class ActivityRowItem extends ConsumerWidget {
                               color: Colors.white,
                             )
                           : (isTimed
-                              ? Icon(
-                                  Icons.timer_outlined,
-                                  size: 13,
-                                  color: isRunning ? g.clay : g.inkMuted,
-                                )
-                              : null),
+                                ? Icon(
+                                    Icons.timer_outlined,
+                                    size: 13,
+                                    color: isRunning ? g.clay : g.inkMuted,
+                                  )
+                                : null),
                     ),
                   ),
                 ),
@@ -170,7 +185,9 @@ class ActivityRowItem extends ConsumerWidget {
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Completed activities are sealed and cannot be edited.'),
+                        content: Text(
+                          'Completed activities are sealed and cannot be edited.',
+                        ),
                         duration: Duration(seconds: 2),
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -182,6 +199,7 @@ class ActivityRowItem extends ConsumerWidget {
                     return;
                   }
                   if (activity.sourceType == 'lecture') {
+                    if (!_selectLecture(ref, activity)) return;
                     LectureFocusPlayerSheet.show(context);
                     return;
                   }
@@ -198,7 +216,9 @@ class ActivityRowItem extends ConsumerWidget {
                             activity.title,
                             style: AscentTextStyles.homeHeadline.copyWith(
                               color: isDone ? g.inkMuted : g.ink,
-                              decoration: isDone ? TextDecoration.lineThrough : null,
+                              decoration: isDone
+                                  ? TextDecoration.lineThrough
+                                  : null,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -295,7 +315,9 @@ class ActivityRowItem extends ConsumerWidget {
                     HapticFeedback.lightImpact();
                     Task? task;
                     if (activity.linkedTaskId != null) {
-                      task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                      task = await ref
+                          .read(taskDaoProvider)
+                          .getTaskById(activity.linkedTaskId!);
                     }
                     if (context.mounted) {
                       AddActivitySheet.show(
@@ -319,7 +341,10 @@ class ActivityRowItem extends ConsumerWidget {
                     onTap: () async {
                       HapticFeedback.lightImpact();
                       if (activity.sourceType == 'lecture') {
-                        ref.read(learningHubProvider.notifier).togglePlayPause();
+                        if (!_selectLecture(ref, activity)) return;
+                        ref
+                            .read(learningHubProvider.notifier)
+                            .togglePlayPause();
                         return;
                       }
                       if (isRunning) {
@@ -327,7 +352,9 @@ class ActivityRowItem extends ConsumerWidget {
                       } else if (isPaused) {
                         ref.read(timeTrackingProvider.notifier).resumeSession();
                       } else {
-                        await ref.read(timeTrackingProvider.notifier).switchToTask(
+                        await ref
+                            .read(timeTrackingProvider.notifier)
+                            .switchToTask(
                               title: activity.title,
                               taskId: activity.linkedTaskId,
                               sourceType: activity.sourceType,
@@ -365,7 +392,8 @@ class ActivityRowItem extends ConsumerWidget {
     final elapsed = act.elapsedSecondsToday;
     final m = elapsed ~/ 60;
     final s = elapsed % 60;
-    final timeStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     if (act.targetMinutes != null && act.targetMinutes! > 0) {
       return '$timeStr / ${act.targetMinutes}m';
     }
@@ -398,7 +426,11 @@ class ActivityRowItem extends ConsumerWidget {
     return 'Flexible focus';
   }
 
-  void _showActivityDetailDialog(BuildContext context, WidgetRef ref, TodayActivityItem activity) {
+  void _showActivityDetailDialog(
+    BuildContext context,
+    WidgetRef ref,
+    TodayActivityItem activity,
+  ) {
     final g = context.glass;
     final isDone = activity.status == TodayActivityStatus.done;
     showDialog(
@@ -406,7 +438,10 @@ class ActivityRowItem extends ConsumerWidget {
       builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           child: Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
@@ -428,13 +463,18 @@ class ActivityRowItem extends ConsumerWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: g.claySoft,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        activity.kind == ActivityKind.todo ? 'To-do' : 'Focus Activity',
+                        activity.kind == ActivityKind.todo
+                            ? 'To-do'
+                            : 'Focus Activity',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -446,13 +486,19 @@ class ActivityRowItem extends ConsumerWidget {
                     if (!isDone && activity.kind == ActivityKind.todo)
                       IconButton(
                         tooltip: 'Edit activity',
-                        icon: Icon(Icons.edit_outlined, size: 20, color: g.inkMuted),
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          size: 20,
+                          color: g.inkMuted,
+                        ),
                         visualDensity: VisualDensity.compact,
                         onPressed: () async {
                           Navigator.of(ctx).pop();
                           Task? task;
                           if (activity.linkedTaskId != null) {
-                            task = await ref.read(taskDaoProvider).getTaskById(activity.linkedTaskId!);
+                            task = await ref
+                                .read(taskDaoProvider)
+                                .getTaskById(activity.linkedTaskId!);
                           }
                           if (context.mounted) {
                             AddActivitySheet.show(
@@ -481,7 +527,11 @@ class ActivityRowItem extends ConsumerWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.info_outline_rounded, size: 14, color: g.inkMuted),
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 14,
+                      color: g.inkMuted,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       _subtitleText(activity),
@@ -497,7 +547,10 @@ class ActivityRowItem extends ConsumerWidget {
                       onPressed: () => Navigator.of(ctx).pop(),
                       style: TextButton.styleFrom(
                         foregroundColor: g.inkMuted,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -507,14 +560,19 @@ class ActivityRowItem extends ConsumerWidget {
                         onPressed: () async {
                           HapticFeedback.mediumImpact();
                           Navigator.of(ctx).pop();
-                          final isTimedItem = activity.kind == ActivityKind.duration ||
-                              (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
+                          final isTimedItem =
+                              activity.kind == ActivityKind.duration ||
+                              (activity.targetMinutes != null &&
+                                  activity.targetMinutes! > 0) ||
                               activity.sourceType == 'lecture';
                           if (isTimedItem) {
                             if (activity.sourceType == 'lecture') {
+                              if (!_selectLecture(ref, activity)) return;
                               LectureFocusPlayerSheet.show(context);
                             } else {
-                              await ref.read(timeTrackingProvider.notifier).switchToTask(
+                              await ref
+                                  .read(timeTrackingProvider.notifier)
+                                  .switchToTask(
                                     title: activity.title,
                                     taskId: activity.linkedTaskId,
                                     sourceType: activity.sourceType,
@@ -524,7 +582,9 @@ class ActivityRowItem extends ConsumerWidget {
                             return;
                           }
                           if (activity.linkedTaskId != null) {
-                            await ref.read(taskDaoProvider).toggleTaskCompletion(
+                            await ref
+                                .read(taskDaoProvider)
+                                .toggleTaskCompletion(
                                   activity.linkedTaskId!,
                                   true,
                                 );
@@ -533,12 +593,18 @@ class ActivityRowItem extends ConsumerWidget {
                         style: FilledButton.styleFrom(
                           backgroundColor: g.clay,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: Text(
                           (activity.kind == ActivityKind.duration ||
-                                  (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
+                                  (activity.targetMinutes != null &&
+                                      activity.targetMinutes! > 0) ||
                                   activity.sourceType == 'lecture')
                               ? 'Start Focus'
                               : 'Mark Done',
@@ -550,8 +616,13 @@ class ActivityRowItem extends ConsumerWidget {
                         style: FilledButton.styleFrom(
                           backgroundColor: g.claySoft,
                           foregroundColor: g.clay,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: const Text('Done'),
                       ),
@@ -566,3 +637,22 @@ class ActivityRowItem extends ConsumerWidget {
   }
 }
 
+bool _selectLecture(WidgetRef ref, TodayActivityItem activity) {
+  final courseId = activity.learningCourseId;
+  final lectureId = activity.learningLectureId;
+  if (courseId == null || lectureId == null) return false;
+  final state = ref.read(learningHubProvider);
+  if (!state.courses.any(
+    (c) =>
+        c.id == courseId &&
+        c.modules.any((m) => m.lectures.any((l) => l.id == lectureId)),
+  )) {
+    return false;
+  }
+  final notifier = ref.read(learningHubProvider.notifier);
+  if (state.activeCourseId != courseId) notifier.switchCourse(courseId);
+  if (ref.read(learningHubProvider).activeLectureId != lectureId) {
+    notifier.selectLecture(lectureId, autoPlay: false);
+  }
+  return true;
+}

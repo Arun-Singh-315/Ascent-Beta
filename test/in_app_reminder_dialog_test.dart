@@ -15,6 +15,7 @@ void main() {
         scheduledAt: DateTime(2026, 10, 9, 14, 0),
         isActive: true,
         createdAt: DateTime(2026, 10, 9, 10, 0),
+        alertSyncPending: false,
       );
 
       await tester.pumpWidget(

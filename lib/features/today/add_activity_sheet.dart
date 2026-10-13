@@ -11,6 +11,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
+import 'add_lecture_activity_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 
 class AddActivitySheet extends ConsumerStatefulWidget {
@@ -82,7 +83,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
     if (widget.initialTitle != null) {
       _titleController.text = widget.initialTitle!;
     }
-    if (widget.initialDurationMinutes != null && widget.initialDurationMinutes! > 0) {
+    if (widget.initialDurationMinutes != null &&
+        widget.initialDurationMinutes! > 0) {
       _kind = ActivityKind.duration;
       _targetMinutes = widget.initialDurationMinutes!;
     }
@@ -105,8 +107,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       // Check if existing task has an active reminder
       Future.microtask(() async {
         try {
-          final reminders = await ref.read(reminderDaoProvider).watchAllReminders().first;
-          final existing = reminders.where((r) => r.title.toLowerCase() == t.title.toLowerCase()).firstOrNull;
+          final reminders = await ref
+              .read(reminderDaoProvider)
+              .watchAllReminders()
+              .first;
+          final existing = reminders
+              .where((r) => r.linkedTaskId == t.id)
+              .firstOrNull;
           if (existing != null && mounted) {
             setState(() {
               _hasReminder = true;
@@ -179,12 +186,21 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
         TaskTableCompanion(
           id: drift.Value(taskId),
           title: drift.Value(title),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          notes: drift.Value(
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
           plannedDate: drift.Value(plannedDateTime),
           priority: drift.Value(_priority),
           estimatedMinutes: drift.Value(estMinutes),
-          parentTaskId: drift.Value(widget.parentTaskId ?? widget.existingTask?.parentTaskId),
-          linkedApplicationId: drift.Value(widget.prefilledApplicationId ?? widget.existingTask?.linkedApplicationId),
+          parentTaskId: drift.Value(
+            widget.parentTaskId ?? widget.existingTask?.parentTaskId,
+          ),
+          linkedApplicationId: drift.Value(
+            widget.prefilledApplicationId ??
+                widget.existingTask?.linkedApplicationId,
+          ),
           lastInteractedAt: drift.Value(DateTime.now()),
         ),
       );
@@ -192,7 +208,11 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       taskId = await taskDao.insertTask(
         TaskTableCompanion.insert(
           title: title,
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          notes: drift.Value(
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
           plannedDate: drift.Value(plannedDateTime),
           priority: drift.Value(_priority),
           estimatedMinutes: drift.Value(estMinutes),
@@ -208,15 +228,20 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
     // Clean up previous reminders for this activity to avoid duplicates
     if (widget.existingTask != null) {
       try {
-        final linkedReminders = await reminderDao.getRemindersByTaskId(widget.existingTask!.id);
+        final linkedReminders = await reminderDao.getRemindersByTaskId(
+          widget.existingTask!.id,
+        );
         for (final r in linkedReminders) {
           await reminderDao.deleteReminder(r.id);
           await NotificationService.instance.cancel(r.id);
         }
         final allReminders = await reminderDao.watchAllReminders().first;
-        for (final r in allReminders.where((r) =>
-            r.title.toLowerCase() == widget.existingTask!.title.toLowerCase() ||
-            r.title.toLowerCase() == title.toLowerCase())) {
+        for (final r in allReminders.where(
+          (r) =>
+              r.title.toLowerCase() ==
+                  widget.existingTask!.title.toLowerCase() ||
+              r.title.toLowerCase() == title.toLowerCase(),
+        )) {
           await reminderDao.deleteReminder(r.id);
           await NotificationService.instance.cancel(r.id);
         }
@@ -241,18 +266,24 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           title: title,
           scheduledAt: plannedDateTime,
         );
-        debugPrint('Activity reminder saved: id=$reminderId title="$title" at $plannedDateTime linked to task $taskId');
+        debugPrint(
+          'Activity reminder saved: id=$reminderId title="$title" at $plannedDateTime linked to task $taskId',
+        );
       } catch (e) {
         debugPrint('Error inserting reminder or scheduling notification: $e');
       }
     }
 
-
     if (mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        AscentSnackBar.build(context,
-          content: Text(widget.existingTask != null ? 'Activity updated' : 'Activity added to hub'),
+        AscentSnackBar.build(
+          context,
+          content: Text(
+            widget.existingTask != null
+                ? 'Activity updated'
+                : 'Activity added to hub',
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -303,7 +334,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      widget.existingTask != null ? 'Edit Activity' : 'Add Activity',
+                      widget.existingTask != null
+                          ? 'Edit Activity'
+                          : 'Add Activity',
                       style: AscentTextStyles.displaySmall.copyWith(
                         color: context.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -331,24 +364,39 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   controller: _titleController,
                   autofocus: widget.existingTask == null,
                   textCapitalization: TextCapitalization.sentences,
-                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                  style: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textPrimary,
+                  ),
                   decoration: InputDecoration(
-                    hintText: 'e.g., Buy groceries, Exercise, Study Java, Meditate',
-                    hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                    hintText:
+                        'e.g., Buy groceries, Exercise, Study Java, Meditate',
+                    hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                      color: context.textMuted,
+                    ),
                     filled: true,
-                    fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    fillColor: isDark
+                        ? const Color(0xFF201A14)
+                        : const Color(0xFFF7F6F2),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                       borderSide: BorderSide(color: context.divider),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.divider.withValues(alpha: 0.8)),
+                      borderSide: BorderSide(
+                        color: context.divider.withValues(alpha: 0.8),
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.accentPrimary, width: 1.5),
+                      borderSide: BorderSide(
+                        color: context.accentPrimary,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
@@ -400,6 +448,27 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   ],
                 ),
 
+                if (widget.existingTask?.actualCompletedDate == null)
+                  TextButton.icon(
+                    icon: const Icon(Icons.school_outlined),
+                    label: Text(
+                      widget.existingTask == null
+                          ? 'Plan a lecture instead'
+                          : 'Convert to a course lecture',
+                    ),
+                    onPressed: () async {
+                      final saved = await AddLectureActivitySheet.show(
+                        context,
+                        task: widget.existingTask,
+                        title: _titleController.text,
+                        minutes: _kind == ActivityKind.duration
+                            ? _targetMinutes
+                            : null,
+                      );
+                      if (saved && context.mounted) Navigator.pop(context);
+                    },
+                  ),
+
                 // 3. Progressive Target Duration (Shown only when Timed is selected)
                 if (_kind == ActivityKind.duration) ...[
                   const SizedBox(height: 16),
@@ -418,17 +487,22 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       for (final mins in [15, 30, 45, 60, 90])
                         ChoiceChip(
                           label: Text('$mins min'),
-                          selected: !_isCustomDuration && _targetMinutes == mins,
-                          selectedColor: context.accentPrimary.withValues(alpha: 0.15),
+                          selected:
+                              !_isCustomDuration && _targetMinutes == mins,
+                          selectedColor: context.accentPrimary.withValues(
+                            alpha: 0.15,
+                          ),
                           side: BorderSide(
-                            color: (!_isCustomDuration && _targetMinutes == mins)
+                            color:
+                                (!_isCustomDuration && _targetMinutes == mins)
                                 ? context.accentPrimary
                                 : context.divider,
                           ),
                           labelStyle: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: (!_isCustomDuration && _targetMinutes == mins)
+                            color:
+                                (!_isCustomDuration && _targetMinutes == mins)
                                 ? context.accentPrimary
                                 : context.textPrimary,
                           ),
@@ -443,14 +517,20 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       ChoiceChip(
                         label: const Text('Custom'),
                         selected: _isCustomDuration,
-                        selectedColor: context.accentPrimary.withValues(alpha: 0.15),
+                        selectedColor: context.accentPrimary.withValues(
+                          alpha: 0.15,
+                        ),
                         side: BorderSide(
-                          color: _isCustomDuration ? context.accentPrimary : context.divider,
+                          color: _isCustomDuration
+                              ? context.accentPrimary
+                              : context.divider,
                         ),
                         labelStyle: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: _isCustomDuration ? context.accentPrimary : context.textPrimary,
+                          color: _isCustomDuration
+                              ? context.accentPrimary
+                              : context.textPrimary,
                         ),
                         onSelected: (_) {
                           HapticFeedback.selectionClick();
@@ -466,11 +546,20 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       keyboardType: TextInputType.number,
                       decoration: InputDecoration(
                         hintText: 'Enter duration in minutes (e.g. 120)',
-                        hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                        hintStyle: AscentTextStyles.bodySmall.copyWith(
+                          color: context.textMuted,
+                        ),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        fillColor: isDark
+                            ? const Color(0xFF201A14)
+                            : const Color(0xFFF7F6F2),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ],
@@ -497,10 +586,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             children: [
                               ChoiceChip(
                                 label: const Text('Today'),
-                                selected: DateUtils.isSameDay(_selectedDate, DateTime.now()),
+                                selected: DateUtils.isSameDay(
+                                  _selectedDate,
+                                  DateTime.now(),
+                                ),
                                 onSelected: (_) {
                                   HapticFeedback.selectionClick();
-                                  setState(() => _selectedDate = DateTime.now());
+                                  setState(
+                                    () => _selectedDate = DateTime.now(),
+                                  );
                                 },
                               ),
                               const SizedBox(width: 6),
@@ -512,19 +606,30 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 ),
                                 onSelected: (_) {
                                   HapticFeedback.selectionClick();
-                                  setState(() => _selectedDate = DateTime.now().add(const Duration(days: 1)));
+                                  setState(
+                                    () => _selectedDate = DateTime.now().add(
+                                      const Duration(days: 1),
+                                    ),
+                                  );
                                 },
                               ),
                               const SizedBox(width: 6),
                               IconButton(
-                                icon: const Icon(Icons.calendar_today_rounded, size: 20),
+                                icon: const Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 20,
+                                ),
                                 color: context.accentPrimary,
                                 onPressed: () async {
                                   final picked = await showDatePicker(
                                     context: context,
                                     initialDate: _selectedDate,
-                                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                                    firstDate: DateTime.now().subtract(
+                                      const Duration(days: 30),
+                                    ),
+                                    lastDate: DateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
                                   );
                                   if (picked != null) {
                                     setState(() => _selectedDate = picked);
@@ -543,15 +648,26 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
                 // 5. Reminder Toggle
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
+                    color: isDark
+                        ? const Color(0xFF201A14)
+                        : const Color(0xFFF7F6F2),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                    border: Border.all(
+                      color: context.divider.withValues(alpha: 0.6),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.notifications_active_outlined, size: 20, color: context.accentPrimary),
+                      Icon(
+                        Icons.notifications_active_outlined,
+                        size: 20,
+                        color: context.accentPrimary,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: InkWell(
@@ -574,16 +690,18 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 children: [
                                   Text(
                                     'Remind me',
-                                    style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                                    style: AscentTextStyles.labelMedium
+                                        .copyWith(color: context.textPrimary),
                                   ),
                                   if (_hasReminder) ...[
                                     const SizedBox(width: 6),
                                     Text(
                                       '(Tap to edit)',
-                                      style: AscentTextStyles.captionMedium.copyWith(
-                                        color: context.textMuted,
-                                        fontSize: 10,
-                                      ),
+                                      style: AscentTextStyles.captionMedium
+                                          .copyWith(
+                                            color: context.textMuted,
+                                            fontSize: 10,
+                                          ),
                                     ),
                                   ],
                                 ],
@@ -591,10 +709,11 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               if (_hasReminder)
                                 Text(
                                   '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
-                                  style: AscentTextStyles.captionMedium.copyWith(
-                                    color: context.accentPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AscentTextStyles.captionMedium
+                                      .copyWith(
+                                        color: context.accentPrimary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                             ],
                           ),
@@ -604,14 +723,26 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         value: _hasReminder,
                         onChanged: (val) async {
                           if (val) {
-                            await NotificationService.instance.requestPermissions();
+                            await NotificationService.instance
+                                .requestPermissions();
                             if (!context.mounted) return;
                             final now = TimeOfDay.now();
-                            final isPastToday = DateUtils.isSameDay(_selectedDate, DateTime.now()) &&
+                            final isPastToday =
+                                DateUtils.isSameDay(
+                                  _selectedDate,
+                                  DateTime.now(),
+                                ) &&
                                 (_selectedTime.hour < now.hour ||
-                                    (_selectedTime.hour == now.hour && _selectedTime.minute <= now.minute));
+                                    (_selectedTime.hour == now.hour &&
+                                        _selectedTime.minute <= now.minute));
                             final initial = isPastToday
-                                ? TimeOfDay(hour: (now.hour + (now.minute >= 45 ? 1 : 0)) % 24, minute: (now.minute + 15) % 60)
+                                ? TimeOfDay(
+                                    hour:
+                                        (now.hour +
+                                            (now.minute >= 45 ? 1 : 0)) %
+                                        24,
+                                    minute: (now.minute + 15) % 60,
+                                  )
                                 : _selectedTime;
 
                             final pickedTime = await showTimePicker(
@@ -637,17 +768,26 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
                 // 6. Priority & Notes (Collapsible)
                 Theme(
-                  data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: Text(
                       'Priority & Notes',
-                      style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: context.textMuted,
+                      ),
                     ),
                     children: [
                       Row(
                         children: [
-                          Text('Priority: ', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
+                          Text(
+                            'Priority: ',
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: context.textMuted,
+                            ),
+                          ),
                           const SizedBox(width: 8),
                           for (final p in ['low', 'medium', 'high'])
                             Padding(
@@ -656,14 +796,21 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 label: Text(p.toUpperCase()),
                                 selected: _priority == p,
                                 selectedColor: p == 'high'
-                                    ? context.stateDanger.withValues(alpha: 0.15)
-                                    : context.accentPrimary.withValues(alpha: 0.15),
+                                    ? context.stateDanger.withValues(
+                                        alpha: 0.15,
+                                      )
+                                    : context.accentPrimary.withValues(
+                                        alpha: 0.15,
+                                      ),
                                 labelStyle: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
-                                  color: _priority == p ? context.textPrimary : context.textMuted,
+                                  color: _priority == p
+                                      ? context.textPrimary
+                                      : context.textMuted,
                                 ),
-                                onSelected: (_) => setState(() => _priority = p),
+                                onSelected: (_) =>
+                                    setState(() => _priority = p),
                               ),
                             ),
                         ],
@@ -672,13 +819,21 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       TextField(
                         controller: _notesController,
                         maxLines: 2,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Add notes or description (optional)',
-                          hintStyle: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          hintStyle: AscentTextStyles.bodySmall.copyWith(
+                            color: context.textMuted,
+                          ),
                           filled: true,
-                          fillColor: isDark ? const Color(0xFF201A14) : const Color(0xFFF7F6F2),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          fillColor: isDark
+                              ? const Color(0xFF201A14)
+                              : const Color(0xFFF7F6F2),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -690,8 +845,12 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
                 // Save button
                 AscentButton.primary(
-                  label: widget.existingTask != null ? 'Save Changes' : 'Create Activity',
-                  icon: widget.existingTask != null ? Icons.check_rounded : Icons.add_rounded,
+                  label: widget.existingTask != null
+                      ? 'Save Changes'
+                      : 'Create Activity',
+                  icon: widget.existingTask != null
+                      ? Icons.check_rounded
+                      : Icons.add_rounded,
                   onPressed: _save,
                 ),
 
@@ -707,14 +866,18 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           context: context,
                           builder: (ctx) => AlertDialog(
                             title: const Text('Delete Activity?'),
-                            content: Text('Are you sure you want to delete "${widget.existingTask!.title}"? This will also remove any linked reminders.'),
+                            content: Text(
+                              'Are you sure you want to delete "${widget.existingTask!.title}"? This will also remove any linked reminders.',
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Navigator.of(ctx).pop(false),
                                 child: const Text('Cancel'),
                               ),
                               FilledButton(
-                                style: FilledButton.styleFrom(backgroundColor: context.stateDanger),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: context.stateDanger,
+                                ),
                                 onPressed: () => Navigator.of(ctx).pop(true),
                                 child: const Text('Delete'),
                               ),
@@ -741,8 +904,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               message: 'Activity "${taskBackup.title}" deleted',
                               onUndo: () async {
                                 HapticFeedback.lightImpact();
-                                await ref.read(taskDaoProvider).insertTask(taskBackup.toCompanion(true));
-                                await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId(dummyItem.id);
+                                await ref
+                                    .read(taskDaoProvider)
+                                    .insertTask(taskBackup.toCompanion(true));
+                                await ref
+                                    .read(
+                                      dismissedTodayActivityIdsProvider
+                                          .notifier,
+                                    )
+                                    .unDismissActivityId(dummyItem.id);
                               },
                             );
                           }
@@ -750,12 +920,19 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.stateDanger,
-                        side: BorderSide(color: context.stateDanger.withValues(alpha: 0.5)),
+                        side: BorderSide(
+                          color: context.stateDanger.withValues(alpha: 0.5),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      label: const Text('Delete Activity', style: TextStyle(fontWeight: FontWeight.w600)),
+                      label: const Text(
+                        'Delete Activity',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ],

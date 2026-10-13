@@ -18,7 +18,8 @@ import 'activity_row_item.dart';
 /// - 44dp hit-area task items.
 /// - Inline "Add activity" action row.
 class ActivityHubCard extends ConsumerStatefulWidget {
-  const ActivityHubCard({super.key});
+  const ActivityHubCard({super.key, this.previewLimit = 4});
+  final int previewLimit;
 
   @override
   ConsumerState<ActivityHubCard> createState() => _ActivityHubCardState();
@@ -38,26 +39,49 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       loading: () => SkeletonShimmer.card(height: 140),
       error: (err, _) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text('Error loading activities: $err', style: TextStyle(color: g.inkMuted)),
+        child: Text(
+          'Error loading activities: $err',
+          style: TextStyle(color: g.inkMuted),
+        ),
       ),
       data: (activities) {
-        final doneActivities = activities.where((a) => a.status == TodayActivityStatus.done).toList();
-        final pendingActivities = activities.where((a) => a.status != TodayActivityStatus.done).toList();
+        final doneActivities = activities
+            .where((a) => a.status == TodayActivityStatus.done)
+            .toList();
+        final pendingActivities = activities
+            .where((a) => a.status != TodayActivityStatus.done)
+            .toList();
         final doneCount = doneActivities.length;
         final totalCount = activities.length;
-        final progressFraction = totalCount > 0 ? (doneCount / totalCount).clamp(0.0, 1.0) : 0.0;
+        final progressFraction = totalCount > 0
+            ? (doneCount / totalCount).clamp(0.0, 1.0)
+            : 0.0;
 
         // Sort so that any currently active running activity is prioritised at the top
-        final sortedPending = <TodayActivityItem>[...pendingActivities]..sort((a, b) {
-          if (a.status == TodayActivityStatus.inProgress && b.status != TodayActivityStatus.inProgress) return -1;
-          if (b.status == TodayActivityStatus.inProgress && a.status != TodayActivityStatus.inProgress) return 1;
-          return 0;
-        });
-        final sortedAll = <TodayActivityItem>[...activities]..sort((a, b) {
-          if (a.status == TodayActivityStatus.inProgress && b.status != TodayActivityStatus.inProgress) return -1;
-          if (b.status == TodayActivityStatus.inProgress && a.status != TodayActivityStatus.inProgress) return 1;
-          return 0;
-        });
+        final sortedPending = <TodayActivityItem>[...pendingActivities]
+          ..sort((a, b) {
+            if (a.status == TodayActivityStatus.inProgress &&
+                b.status != TodayActivityStatus.inProgress) {
+              return -1;
+            }
+            if (b.status == TodayActivityStatus.inProgress &&
+                a.status != TodayActivityStatus.inProgress) {
+              return 1;
+            }
+            return 0;
+          });
+        final sortedAll = <TodayActivityItem>[...activities]
+          ..sort((a, b) {
+            if (a.status == TodayActivityStatus.inProgress &&
+                b.status != TodayActivityStatus.inProgress) {
+              return -1;
+            }
+            if (b.status == TodayActivityStatus.inProgress &&
+                a.status != TodayActivityStatus.inProgress) {
+              return 1;
+            }
+            return 0;
+          });
 
         List<TodayActivityItem> filteredList;
         if (_selectedTabIndex == 0) {
@@ -79,9 +103,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               children: [
                 Text(
                   'Today',
-                  style: AscentTextStyles.homeTitle.copyWith(
-                    color: g.ink,
-                  ),
+                  style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
                 ),
                 InkWell(
                   onTap: () {
@@ -90,7 +112,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   },
                   borderRadius: BorderRadius.circular(6),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -237,7 +262,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               )
             else ...[
               // Render either capped items (max 4) or all if expanded
-              for (final act in (_showAll ? filteredList : filteredList.take(4)))
+              for (final act
+                  in (_showAll
+                      ? filteredList
+                      : filteredList.take(widget.previewLimit.clamp(1, 4))))
                 ActivityRowItem(activity: act),
 
               // Show more / Show less toggle when count exceeds 4
@@ -254,18 +282,25 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                _showAll ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                _showAll
+                                    ? Icons.keyboard_arrow_up_rounded
+                                    : Icons.keyboard_arrow_down_rounded,
                                 size: 18,
                                 color: g.clay,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                _showAll ? 'Show less' : 'Show ${filteredList.length - 4} more',
+                                _showAll
+                                    ? 'Show less'
+                                    : 'Show ${filteredList.length - 4} more',
                                 style: AscentTextStyles.homeSecondary.copyWith(
                                   color: g.clay,
                                   fontWeight: FontWeight.w600,
@@ -282,7 +317,10 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                         },
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           child: Text(
                             'Open Board ›',
                             style: AscentTextStyles.homeSecondary.copyWith(
@@ -319,7 +357,11 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                             shape: BoxShape.circle,
                             color: g.claySoft,
                           ),
-                          child: Icon(Icons.add_rounded, size: 16, color: g.clay),
+                          child: Icon(
+                            Icons.add_rounded,
+                            size: 16,
+                            color: g.clay,
+                          ),
                         ),
                       ),
                     ),

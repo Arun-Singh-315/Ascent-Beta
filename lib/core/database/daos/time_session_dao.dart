@@ -74,7 +74,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (s) =>
                 s.status.isIn(['running', 'paused']) &
-                s.activityRefType.isNotValue('lecture'),
+                s.activityRefType.isNotValue('lecture') &
+                s.learningCourseId.isNull(),
           )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
@@ -95,7 +96,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (s) =>
                 s.status.isIn(['running', 'paused']) &
-                s.activityRefType.isNotValue('lecture'),
+                s.activityRefType.isNotValue('lecture') &
+                s.learningCourseId.isNull(),
           )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
@@ -191,6 +193,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     String activityType = 'study',
     int? linkedTaskId,
     String activityRefType = 'task',
+    String? learningCourseId,
+    int? learningLectureId,
     DateTime? startedAt,
   }) {
     final now = startedAt ?? DateTime.now();
@@ -201,6 +205,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         activityType: Value(activityType),
         linkedTaskId: Value(linkedTaskId),
         activityRefType: Value(activityRefType),
+        learningCourseId: Value(learningCourseId),
+        learningLectureId: Value(learningLectureId),
         startedAt: now,
         status: const Value('running'),
         durationSeconds: const Value(0),
@@ -235,7 +241,11 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
       TimeSessionTableCompanion(
         status: const Value('paused'),
         pausedIntervals: Value(jsonEncode(intervals)),
-        durationSeconds: Value(currentDuration),
+        durationSeconds: Value(
+          session.learningCourseId != null
+              ? session.durationSeconds
+              : currentDuration,
+        ),
         lastHeartbeatAt: Value(now),
       ),
     );

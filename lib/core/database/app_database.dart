@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:intl/intl.dart';
-import '../notifications/notification_service.dart';
 
 import 'tables/application_table.dart';
 import 'tables/consistency_log_table.dart';
@@ -26,6 +25,7 @@ import 'tables/ai_command_table.dart';
 import 'tables/backup_restore_table.dart';
 import 'tables/water_tables.dart';
 import 'tables/thought_tables.dart';
+import 'tables/thought_relationship_tables.dart';
 import 'tables/course_table.dart';
 import 'tables/momentum_tables.dart';
 import 'tables/challenge_tables.dart';
@@ -84,6 +84,8 @@ part 'daos/medicine_dao.dart';
     WaterLogTable,
     WaterGoalTable,
     ThoughtTable,
+    ThoughtReminderLinkTable,
+    ThoughtMergeSourceTable,
     CourseTable,
     MomentumChallengeTable,
     MomentumCommitmentTable,
@@ -124,12 +126,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+      await _createThoughtLinkIndex();
       // Seed built-in categories on fresh install
       await into(sessionCategoryTable).insert(
         SessionCategoryTableCompanion.insert(
@@ -147,7 +150,9 @@ class AppDatabase extends _$AppDatabase {
       );
     },
     onUpgrade: (m, from, to) async {
-      if (from < 15) await m.addColumn(reminderTable, reminderTable.alarmEnabled);
+      if (from < 15) {
+        await m.addColumn(reminderTable, reminderTable.alarmEnabled);
+      }
       if (from < 14) {
         await m.createTable(backupRestoreTable);
       }
@@ -221,8 +226,47 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(challengeProofEventTable);
         await m.createTable(challengeAmendmentTable);
       }
+      if (from < 16) {
+        await m.addColumn(taskTable, taskTable.linkedThoughtId);
+        await m.addColumn(taskTable, taskTable.learningCourseId);
+        await m.addColumn(taskTable, taskTable.learningLectureId);
+        await m.addColumn(reminderTable, reminderTable.alertSyncPending);
+        await m.addColumn(timeSessionTable, timeSessionTable.learningCourseId);
+        await m.addColumn(timeSessionTable, timeSessionTable.learningLectureId);
+        await m.createTable(thoughtReminderLinkTable);
+        await m.createTable(thoughtMergeSourceTable);
+        await backfillThoughtLinks();
+        await _createThoughtLinkIndex();
+      }
     },
   );
+
+  Future<void> _createThoughtLinkIndex() => customStatement(
+    'CREATE UNIQUE INDEX IF NOT EXISTS tasks_linked_thought_unique ON tasks(linked_thought_id) WHERE linked_thought_id IS NOT NULL',
+  );
+
+  /// Only unambiguous legacy ID markers are linked; identical text is never identity.
+  Future<void> backfillThoughtLinks() async {
+    final rows = await (select(
+      taskTable,
+    )..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+    final claimed = rows.map((t) => t.linkedThoughtId).whereType<int>().toSet();
+    for (final task in rows) {
+      if (task.linkedThoughtId != null) continue;
+      final matches = RegExp(
+        r'(?:^|[ •])thought_id:(\d+)(?=\s|•|$)',
+      ).allMatches(task.notes ?? '').toList();
+      if (matches.length != 1) continue;
+      final id = int.parse(matches.single.group(1)!);
+      if (claimed.contains(id) || await thoughtDao.getThoughtById(id) == null) {
+        continue;
+      }
+      await (update(taskTable)..where((t) => t.id.equals(task.id))).write(
+        TaskTableCompanion(linkedThoughtId: Value(id)),
+      );
+      claimed.add(id);
+    }
+  }
 
   /// Opens (or creates) the SQLite database via drift_flutter.
   /// Uses an in-background isolate for heavy queries automatically.

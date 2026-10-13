@@ -10,12 +10,17 @@ class LearningPlanSummary {
         0,
         (total, l) =>
             total +
-            (l.durationSeconds - l.elapsedSeconds).clamp(0, l.durationSeconds),
+            (l.requiredStudySeconds - l.studySeconds).clamp(
+              0,
+              l.durationSeconds,
+            ),
       );
   int? get sessionsRemaining => course.targetMinutesPerDay <= 0
       ? null
       : (remainingSeconds / (course.targetMinutesPerDay * 60)).ceil();
-  String get paceLabel => course.totalLectures == 0 ? 'Add lectures to estimate your plan' : sessionsRemaining == null
+  String get paceLabel => course.totalLectures == 0
+      ? 'Add lectures to estimate your plan'
+      : sessionsRemaining == null
       ? 'Set a daily pace to estimate your plan'
       : sessionsRemaining == 0
       ? 'Course completed — review whenever you like'

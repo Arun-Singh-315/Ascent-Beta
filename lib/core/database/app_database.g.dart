@@ -1856,6 +1856,566 @@ class SeriesTableCompanion extends UpdateCompanion<Series> {
   }
 }
 
+class $ThoughtTableTable extends ThoughtTable
+    with TableInfo<$ThoughtTableTable, Thought> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ThoughtTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  @override
+  late final GeneratedColumn<String> mood = GeneratedColumn<String>(
+    'mood',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('thought'),
+  );
+  static const VerificationMeta _colorHexMeta = const VerificationMeta(
+    'colorHex',
+  );
+  @override
+  late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
+    'color_hex',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('#2D2D3A'),
+  );
+  static const VerificationMeta _isPinnedMeta = const VerificationMeta(
+    'isPinned',
+  );
+  @override
+  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
+    'is_pinned',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pinned" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _promptQuestionMeta = const VerificationMeta(
+    'promptQuestion',
+  );
+  @override
+  late final GeneratedColumn<String> promptQuestion = GeneratedColumn<String>(
+    'prompt_question',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    content,
+    mood,
+    colorHex,
+    isPinned,
+    isArchived,
+    isCompleted,
+    promptQuestion,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'thoughts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Thought> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('mood')) {
+      context.handle(
+        _moodMeta,
+        mood.isAcceptableOrUnknown(data['mood']!, _moodMeta),
+      );
+    }
+    if (data.containsKey('color_hex')) {
+      context.handle(
+        _colorHexMeta,
+        colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
+      );
+    }
+    if (data.containsKey('is_pinned')) {
+      context.handle(
+        _isPinnedMeta,
+        isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
+      );
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
+          _isCompletedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('prompt_question')) {
+      context.handle(
+        _promptQuestionMeta,
+        promptQuestion.isAcceptableOrUnknown(
+          data['prompt_question']!,
+          _promptQuestionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Thought map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Thought(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      mood: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}mood'],
+      )!,
+      colorHex: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color_hex'],
+      )!,
+      isPinned: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pinned'],
+      )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      promptQuestion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}prompt_question'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ThoughtTableTable createAlias(String alias) {
+    return $ThoughtTableTable(attachedDatabase, alias);
+  }
+}
+
+class Thought extends DataClass implements Insertable<Thought> {
+  final int id;
+  final String content;
+  final String mood;
+  final String colorHex;
+  final bool isPinned;
+  final bool isArchived;
+  final bool isCompleted;
+  final String? promptQuestion;
+  final DateTime createdAt;
+  const Thought({
+    required this.id,
+    required this.content,
+    required this.mood,
+    required this.colorHex,
+    required this.isPinned,
+    required this.isArchived,
+    required this.isCompleted,
+    this.promptQuestion,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['content'] = Variable<String>(content);
+    map['mood'] = Variable<String>(mood);
+    map['color_hex'] = Variable<String>(colorHex);
+    map['is_pinned'] = Variable<bool>(isPinned);
+    map['is_archived'] = Variable<bool>(isArchived);
+    map['is_completed'] = Variable<bool>(isCompleted);
+    if (!nullToAbsent || promptQuestion != null) {
+      map['prompt_question'] = Variable<String>(promptQuestion);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ThoughtTableCompanion toCompanion(bool nullToAbsent) {
+    return ThoughtTableCompanion(
+      id: Value(id),
+      content: Value(content),
+      mood: Value(mood),
+      colorHex: Value(colorHex),
+      isPinned: Value(isPinned),
+      isArchived: Value(isArchived),
+      isCompleted: Value(isCompleted),
+      promptQuestion: promptQuestion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(promptQuestion),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Thought.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Thought(
+      id: serializer.fromJson<int>(json['id']),
+      content: serializer.fromJson<String>(json['content']),
+      mood: serializer.fromJson<String>(json['mood']),
+      colorHex: serializer.fromJson<String>(json['colorHex']),
+      isPinned: serializer.fromJson<bool>(json['isPinned']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+      promptQuestion: serializer.fromJson<String?>(json['promptQuestion']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'content': serializer.toJson<String>(content),
+      'mood': serializer.toJson<String>(mood),
+      'colorHex': serializer.toJson<String>(colorHex),
+      'isPinned': serializer.toJson<bool>(isPinned),
+      'isArchived': serializer.toJson<bool>(isArchived),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
+      'promptQuestion': serializer.toJson<String?>(promptQuestion),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Thought copyWith({
+    int? id,
+    String? content,
+    String? mood,
+    String? colorHex,
+    bool? isPinned,
+    bool? isArchived,
+    bool? isCompleted,
+    Value<String?> promptQuestion = const Value.absent(),
+    DateTime? createdAt,
+  }) => Thought(
+    id: id ?? this.id,
+    content: content ?? this.content,
+    mood: mood ?? this.mood,
+    colorHex: colorHex ?? this.colorHex,
+    isPinned: isPinned ?? this.isPinned,
+    isArchived: isArchived ?? this.isArchived,
+    isCompleted: isCompleted ?? this.isCompleted,
+    promptQuestion: promptQuestion.present
+        ? promptQuestion.value
+        : this.promptQuestion,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Thought copyWithCompanion(ThoughtTableCompanion data) {
+    return Thought(
+      id: data.id.present ? data.id.value : this.id,
+      content: data.content.present ? data.content.value : this.content,
+      mood: data.mood.present ? data.mood.value : this.mood,
+      colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
+      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
+      promptQuestion: data.promptQuestion.present
+          ? data.promptQuestion.value
+          : this.promptQuestion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Thought(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('mood: $mood, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('promptQuestion: $promptQuestion, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    content,
+    mood,
+    colorHex,
+    isPinned,
+    isArchived,
+    isCompleted,
+    promptQuestion,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Thought &&
+          other.id == this.id &&
+          other.content == this.content &&
+          other.mood == this.mood &&
+          other.colorHex == this.colorHex &&
+          other.isPinned == this.isPinned &&
+          other.isArchived == this.isArchived &&
+          other.isCompleted == this.isCompleted &&
+          other.promptQuestion == this.promptQuestion &&
+          other.createdAt == this.createdAt);
+}
+
+class ThoughtTableCompanion extends UpdateCompanion<Thought> {
+  final Value<int> id;
+  final Value<String> content;
+  final Value<String> mood;
+  final Value<String> colorHex;
+  final Value<bool> isPinned;
+  final Value<bool> isArchived;
+  final Value<bool> isCompleted;
+  final Value<String?> promptQuestion;
+  final Value<DateTime> createdAt;
+  const ThoughtTableCompanion({
+    this.id = const Value.absent(),
+    this.content = const Value.absent(),
+    this.mood = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.promptQuestion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ThoughtTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String content,
+    this.mood = const Value.absent(),
+    this.colorHex = const Value.absent(),
+    this.isPinned = const Value.absent(),
+    this.isArchived = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.promptQuestion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : content = Value(content);
+  static Insertable<Thought> custom({
+    Expression<int>? id,
+    Expression<String>? content,
+    Expression<String>? mood,
+    Expression<String>? colorHex,
+    Expression<bool>? isPinned,
+    Expression<bool>? isArchived,
+    Expression<bool>? isCompleted,
+    Expression<String>? promptQuestion,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (content != null) 'content': content,
+      if (mood != null) 'mood': mood,
+      if (colorHex != null) 'color_hex': colorHex,
+      if (isPinned != null) 'is_pinned': isPinned,
+      if (isArchived != null) 'is_archived': isArchived,
+      if (isCompleted != null) 'is_completed': isCompleted,
+      if (promptQuestion != null) 'prompt_question': promptQuestion,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ThoughtTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? content,
+    Value<String>? mood,
+    Value<String>? colorHex,
+    Value<bool>? isPinned,
+    Value<bool>? isArchived,
+    Value<bool>? isCompleted,
+    Value<String?>? promptQuestion,
+    Value<DateTime>? createdAt,
+  }) {
+    return ThoughtTableCompanion(
+      id: id ?? this.id,
+      content: content ?? this.content,
+      mood: mood ?? this.mood,
+      colorHex: colorHex ?? this.colorHex,
+      isPinned: isPinned ?? this.isPinned,
+      isArchived: isArchived ?? this.isArchived,
+      isCompleted: isCompleted ?? this.isCompleted,
+      promptQuestion: promptQuestion ?? this.promptQuestion,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (mood.present) {
+      map['mood'] = Variable<String>(mood.value);
+    }
+    if (colorHex.present) {
+      map['color_hex'] = Variable<String>(colorHex.value);
+    }
+    if (isPinned.present) {
+      map['is_pinned'] = Variable<bool>(isPinned.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
+    if (promptQuestion.present) {
+      map['prompt_question'] = Variable<String>(promptQuestion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThoughtTableCompanion(')
+          ..write('id: $id, ')
+          ..write('content: $content, ')
+          ..write('mood: $mood, ')
+          ..write('colorHex: $colorHex, ')
+          ..write('isPinned: $isPinned, ')
+          ..write('isArchived: $isArchived, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('promptQuestion: $promptQuestion, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ApplicationTableTable extends ApplicationTable
     with TableInfo<$ApplicationTableTable, ApplicationRow> {
   @override
@@ -2574,6 +3134,42 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _linkedThoughtIdMeta = const VerificationMeta(
+    'linkedThoughtId',
+  );
+  @override
+  late final GeneratedColumn<int> linkedThoughtId = GeneratedColumn<int>(
+    'linked_thought_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES thoughts (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _learningCourseIdMeta = const VerificationMeta(
+    'learningCourseId',
+  );
+  @override
+  late final GeneratedColumn<String> learningCourseId = GeneratedColumn<String>(
+    'learning_course_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _learningLectureIdMeta = const VerificationMeta(
+    'learningLectureId',
+  );
+  @override
+  late final GeneratedColumn<int> learningLectureId = GeneratedColumn<int>(
+    'learning_lecture_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _plannedDateMeta = const VerificationMeta(
     'plannedDate',
   );
@@ -2752,6 +3348,9 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
     id,
     title,
     notes,
+    linkedThoughtId,
+    learningCourseId,
+    learningLectureId,
     plannedDate,
     actualCompletedDate,
     priority,
@@ -2794,6 +3393,33 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
       context.handle(
         _notesMeta,
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('linked_thought_id')) {
+      context.handle(
+        _linkedThoughtIdMeta,
+        linkedThoughtId.isAcceptableOrUnknown(
+          data['linked_thought_id']!,
+          _linkedThoughtIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learning_course_id')) {
+      context.handle(
+        _learningCourseIdMeta,
+        learningCourseId.isAcceptableOrUnknown(
+          data['learning_course_id']!,
+          _learningCourseIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learning_lecture_id')) {
+      context.handle(
+        _learningLectureIdMeta,
+        learningLectureId.isAcceptableOrUnknown(
+          data['learning_lecture_id']!,
+          _learningLectureIdMeta,
+        ),
       );
     }
     if (data.containsKey('planned_date')) {
@@ -2931,6 +3557,18 @@ class $TaskTableTable extends TaskTable with TableInfo<$TaskTableTable, Task> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      linkedThoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_thought_id'],
+      ),
+      learningCourseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}learning_course_id'],
+      ),
+      learningLectureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}learning_lecture_id'],
+      ),
       plannedDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}planned_date'],
@@ -3002,6 +3640,11 @@ class Task extends DataClass implements Insertable<Task> {
 
   /// Optional free-text notes about the task.
   final String? notes;
+  final int? linkedThoughtId;
+
+  /// Canonical learning association; IDs are scoped to their course.
+  final String? learningCourseId;
+  final int? learningLectureId;
 
   /// The calendar date on which the user plans to work on this task.
   final DateTime? plannedDate;
@@ -3045,6 +3688,9 @@ class Task extends DataClass implements Insertable<Task> {
     required this.id,
     required this.title,
     this.notes,
+    this.linkedThoughtId,
+    this.learningCourseId,
+    this.learningLectureId,
     this.plannedDate,
     this.actualCompletedDate,
     required this.priority,
@@ -3067,6 +3713,15 @@ class Task extends DataClass implements Insertable<Task> {
     map['title'] = Variable<String>(title);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    if (!nullToAbsent || linkedThoughtId != null) {
+      map['linked_thought_id'] = Variable<int>(linkedThoughtId);
+    }
+    if (!nullToAbsent || learningCourseId != null) {
+      map['learning_course_id'] = Variable<String>(learningCourseId);
+    }
+    if (!nullToAbsent || learningLectureId != null) {
+      map['learning_lecture_id'] = Variable<int>(learningLectureId);
     }
     if (!nullToAbsent || plannedDate != null) {
       map['planned_date'] = Variable<DateTime>(plannedDate);
@@ -3112,6 +3767,15 @@ class Task extends DataClass implements Insertable<Task> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      linkedThoughtId: linkedThoughtId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedThoughtId),
+      learningCourseId: learningCourseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learningCourseId),
+      learningLectureId: learningLectureId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learningLectureId),
       plannedDate: plannedDate == null && nullToAbsent
           ? const Value.absent()
           : Value(plannedDate),
@@ -3158,6 +3822,9 @@ class Task extends DataClass implements Insertable<Task> {
       id: serializer.fromJson<int>(json['id']),
       title: serializer.fromJson<String>(json['title']),
       notes: serializer.fromJson<String?>(json['notes']),
+      linkedThoughtId: serializer.fromJson<int?>(json['linkedThoughtId']),
+      learningCourseId: serializer.fromJson<String?>(json['learningCourseId']),
+      learningLectureId: serializer.fromJson<int?>(json['learningLectureId']),
       plannedDate: serializer.fromJson<DateTime?>(json['plannedDate']),
       actualCompletedDate: serializer.fromJson<DateTime?>(
         json['actualCompletedDate'],
@@ -3187,6 +3854,9 @@ class Task extends DataClass implements Insertable<Task> {
       'id': serializer.toJson<int>(id),
       'title': serializer.toJson<String>(title),
       'notes': serializer.toJson<String?>(notes),
+      'linkedThoughtId': serializer.toJson<int?>(linkedThoughtId),
+      'learningCourseId': serializer.toJson<String?>(learningCourseId),
+      'learningLectureId': serializer.toJson<int?>(learningLectureId),
       'plannedDate': serializer.toJson<DateTime?>(plannedDate),
       'actualCompletedDate': serializer.toJson<DateTime?>(actualCompletedDate),
       'priority': serializer.toJson<String>(priority),
@@ -3208,6 +3878,9 @@ class Task extends DataClass implements Insertable<Task> {
     int? id,
     String? title,
     Value<String?> notes = const Value.absent(),
+    Value<int?> linkedThoughtId = const Value.absent(),
+    Value<String?> learningCourseId = const Value.absent(),
+    Value<int?> learningLectureId = const Value.absent(),
     Value<DateTime?> plannedDate = const Value.absent(),
     Value<DateTime?> actualCompletedDate = const Value.absent(),
     String? priority,
@@ -3226,6 +3899,15 @@ class Task extends DataClass implements Insertable<Task> {
     id: id ?? this.id,
     title: title ?? this.title,
     notes: notes.present ? notes.value : this.notes,
+    linkedThoughtId: linkedThoughtId.present
+        ? linkedThoughtId.value
+        : this.linkedThoughtId,
+    learningCourseId: learningCourseId.present
+        ? learningCourseId.value
+        : this.learningCourseId,
+    learningLectureId: learningLectureId.present
+        ? learningLectureId.value
+        : this.learningLectureId,
     plannedDate: plannedDate.present ? plannedDate.value : this.plannedDate,
     actualCompletedDate: actualCompletedDate.present
         ? actualCompletedDate.value
@@ -3260,6 +3942,15 @@ class Task extends DataClass implements Insertable<Task> {
       id: data.id.present ? data.id.value : this.id,
       title: data.title.present ? data.title.value : this.title,
       notes: data.notes.present ? data.notes.value : this.notes,
+      linkedThoughtId: data.linkedThoughtId.present
+          ? data.linkedThoughtId.value
+          : this.linkedThoughtId,
+      learningCourseId: data.learningCourseId.present
+          ? data.learningCourseId.value
+          : this.learningCourseId,
+      learningLectureId: data.learningLectureId.present
+          ? data.learningLectureId.value
+          : this.learningLectureId,
       plannedDate: data.plannedDate.present
           ? data.plannedDate.value
           : this.plannedDate,
@@ -3303,6 +3994,9 @@ class Task extends DataClass implements Insertable<Task> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('notes: $notes, ')
+          ..write('linkedThoughtId: $linkedThoughtId, ')
+          ..write('learningCourseId: $learningCourseId, ')
+          ..write('learningLectureId: $learningLectureId, ')
           ..write('plannedDate: $plannedDate, ')
           ..write('actualCompletedDate: $actualCompletedDate, ')
           ..write('priority: $priority, ')
@@ -3326,6 +4020,9 @@ class Task extends DataClass implements Insertable<Task> {
     id,
     title,
     notes,
+    linkedThoughtId,
+    learningCourseId,
+    learningLectureId,
     plannedDate,
     actualCompletedDate,
     priority,
@@ -3348,6 +4045,9 @@ class Task extends DataClass implements Insertable<Task> {
           other.id == this.id &&
           other.title == this.title &&
           other.notes == this.notes &&
+          other.linkedThoughtId == this.linkedThoughtId &&
+          other.learningCourseId == this.learningCourseId &&
+          other.learningLectureId == this.learningLectureId &&
           other.plannedDate == this.plannedDate &&
           other.actualCompletedDate == this.actualCompletedDate &&
           other.priority == this.priority &&
@@ -3368,6 +4068,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
   final Value<int> id;
   final Value<String> title;
   final Value<String?> notes;
+  final Value<int?> linkedThoughtId;
+  final Value<String?> learningCourseId;
+  final Value<int?> learningLectureId;
   final Value<DateTime?> plannedDate;
   final Value<DateTime?> actualCompletedDate;
   final Value<String> priority;
@@ -3386,6 +4089,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     this.id = const Value.absent(),
     this.title = const Value.absent(),
     this.notes = const Value.absent(),
+    this.linkedThoughtId = const Value.absent(),
+    this.learningCourseId = const Value.absent(),
+    this.learningLectureId = const Value.absent(),
     this.plannedDate = const Value.absent(),
     this.actualCompletedDate = const Value.absent(),
     this.priority = const Value.absent(),
@@ -3405,6 +4111,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     this.id = const Value.absent(),
     required String title,
     this.notes = const Value.absent(),
+    this.linkedThoughtId = const Value.absent(),
+    this.learningCourseId = const Value.absent(),
+    this.learningLectureId = const Value.absent(),
     this.plannedDate = const Value.absent(),
     this.actualCompletedDate = const Value.absent(),
     this.priority = const Value.absent(),
@@ -3424,6 +4133,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     Expression<int>? id,
     Expression<String>? title,
     Expression<String>? notes,
+    Expression<int>? linkedThoughtId,
+    Expression<String>? learningCourseId,
+    Expression<int>? learningLectureId,
     Expression<DateTime>? plannedDate,
     Expression<DateTime>? actualCompletedDate,
     Expression<String>? priority,
@@ -3443,6 +4155,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
       if (id != null) 'id': id,
       if (title != null) 'title': title,
       if (notes != null) 'notes': notes,
+      if (linkedThoughtId != null) 'linked_thought_id': linkedThoughtId,
+      if (learningCourseId != null) 'learning_course_id': learningCourseId,
+      if (learningLectureId != null) 'learning_lecture_id': learningLectureId,
       if (plannedDate != null) 'planned_date': plannedDate,
       if (actualCompletedDate != null)
         'actual_completed_date': actualCompletedDate,
@@ -3466,6 +4181,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     Value<int>? id,
     Value<String>? title,
     Value<String?>? notes,
+    Value<int?>? linkedThoughtId,
+    Value<String?>? learningCourseId,
+    Value<int?>? learningLectureId,
     Value<DateTime?>? plannedDate,
     Value<DateTime?>? actualCompletedDate,
     Value<String>? priority,
@@ -3485,6 +4203,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
       id: id ?? this.id,
       title: title ?? this.title,
       notes: notes ?? this.notes,
+      linkedThoughtId: linkedThoughtId ?? this.linkedThoughtId,
+      learningCourseId: learningCourseId ?? this.learningCourseId,
+      learningLectureId: learningLectureId ?? this.learningLectureId,
       plannedDate: plannedDate ?? this.plannedDate,
       actualCompletedDate: actualCompletedDate ?? this.actualCompletedDate,
       priority: priority ?? this.priority,
@@ -3513,6 +4234,15 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
+    }
+    if (linkedThoughtId.present) {
+      map['linked_thought_id'] = Variable<int>(linkedThoughtId.value);
+    }
+    if (learningCourseId.present) {
+      map['learning_course_id'] = Variable<String>(learningCourseId.value);
+    }
+    if (learningLectureId.present) {
+      map['learning_lecture_id'] = Variable<int>(learningLectureId.value);
     }
     if (plannedDate.present) {
       map['planned_date'] = Variable<DateTime>(plannedDate.value);
@@ -3567,6 +4297,9 @@ class TaskTableCompanion extends UpdateCompanion<Task> {
           ..write('id: $id, ')
           ..write('title: $title, ')
           ..write('notes: $notes, ')
+          ..write('linkedThoughtId: $linkedThoughtId, ')
+          ..write('learningCourseId: $learningCourseId, ')
+          ..write('learningLectureId: $learningLectureId, ')
           ..write('plannedDate: $plannedDate, ')
           ..write('actualCompletedDate: $actualCompletedDate, ')
           ..write('priority: $priority, ')
@@ -6907,6 +7640,28 @@ class $TimeSessionTableTable extends TimeSessionTable
       'REFERENCES tasks (id)',
     ),
   );
+  static const VerificationMeta _learningCourseIdMeta = const VerificationMeta(
+    'learningCourseId',
+  );
+  @override
+  late final GeneratedColumn<String> learningCourseId = GeneratedColumn<String>(
+    'learning_course_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _learningLectureIdMeta = const VerificationMeta(
+    'learningLectureId',
+  );
+  @override
+  late final GeneratedColumn<int> learningLectureId = GeneratedColumn<int>(
+    'learning_lecture_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _startedAtMeta = const VerificationMeta(
     'startedAt',
   );
@@ -7006,6 +7761,8 @@ class $TimeSessionTableTable extends TimeSessionTable
     activityType,
     categoryId,
     linkedTaskId,
+    learningCourseId,
+    learningLectureId,
     startedAt,
     endedAt,
     pausedIntervals,
@@ -7061,6 +7818,24 @@ class $TimeSessionTableTable extends TimeSessionTable
         linkedTaskId.isAcceptableOrUnknown(
           data['linked_task_id']!,
           _linkedTaskIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learning_course_id')) {
+      context.handle(
+        _learningCourseIdMeta,
+        learningCourseId.isAcceptableOrUnknown(
+          data['learning_course_id']!,
+          _learningCourseIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('learning_lecture_id')) {
+      context.handle(
+        _learningLectureIdMeta,
+        learningLectureId.isAcceptableOrUnknown(
+          data['learning_lecture_id']!,
+          _learningLectureIdMeta,
         ),
       );
     }
@@ -7155,6 +7930,14 @@ class $TimeSessionTableTable extends TimeSessionTable
         DriftSqlType.int,
         data['${effectivePrefix}linked_task_id'],
       ),
+      learningCourseId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}learning_course_id'],
+      ),
+      learningLectureId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}learning_lecture_id'],
+      ),
       startedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}started_at'],
@@ -7210,6 +7993,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
 
   /// Optional FK to [TaskTable].
   final int? linkedTaskId;
+  final String? learningCourseId;
+  final int? learningLectureId;
 
   /// Start timestamp of the session.
   final DateTime startedAt;
@@ -7238,6 +8023,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
     required this.activityType,
     required this.categoryId,
     this.linkedTaskId,
+    this.learningCourseId,
+    this.learningLectureId,
     required this.startedAt,
     this.endedAt,
     required this.pausedIntervals,
@@ -7256,6 +8043,12 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
     map['category_id'] = Variable<int>(categoryId);
     if (!nullToAbsent || linkedTaskId != null) {
       map['linked_task_id'] = Variable<int>(linkedTaskId);
+    }
+    if (!nullToAbsent || learningCourseId != null) {
+      map['learning_course_id'] = Variable<String>(learningCourseId);
+    }
+    if (!nullToAbsent || learningLectureId != null) {
+      map['learning_lecture_id'] = Variable<int>(learningLectureId);
     }
     map['started_at'] = Variable<DateTime>(startedAt);
     if (!nullToAbsent || endedAt != null) {
@@ -7281,6 +8074,12 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
       linkedTaskId: linkedTaskId == null && nullToAbsent
           ? const Value.absent()
           : Value(linkedTaskId),
+      learningCourseId: learningCourseId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learningCourseId),
+      learningLectureId: learningLectureId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(learningLectureId),
       startedAt: Value(startedAt),
       endedAt: endedAt == null && nullToAbsent
           ? const Value.absent()
@@ -7307,6 +8106,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
       activityType: serializer.fromJson<String>(json['activityType']),
       categoryId: serializer.fromJson<int>(json['categoryId']),
       linkedTaskId: serializer.fromJson<int?>(json['linkedTaskId']),
+      learningCourseId: serializer.fromJson<String?>(json['learningCourseId']),
+      learningLectureId: serializer.fromJson<int?>(json['learningLectureId']),
       startedAt: serializer.fromJson<DateTime>(json['startedAt']),
       endedAt: serializer.fromJson<DateTime?>(json['endedAt']),
       pausedIntervals: serializer.fromJson<String>(json['pausedIntervals']),
@@ -7326,6 +8127,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
       'activityType': serializer.toJson<String>(activityType),
       'categoryId': serializer.toJson<int>(categoryId),
       'linkedTaskId': serializer.toJson<int?>(linkedTaskId),
+      'learningCourseId': serializer.toJson<String?>(learningCourseId),
+      'learningLectureId': serializer.toJson<int?>(learningLectureId),
       'startedAt': serializer.toJson<DateTime>(startedAt),
       'endedAt': serializer.toJson<DateTime?>(endedAt),
       'pausedIntervals': serializer.toJson<String>(pausedIntervals),
@@ -7343,6 +8146,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
     String? activityType,
     int? categoryId,
     Value<int?> linkedTaskId = const Value.absent(),
+    Value<String?> learningCourseId = const Value.absent(),
+    Value<int?> learningLectureId = const Value.absent(),
     DateTime? startedAt,
     Value<DateTime?> endedAt = const Value.absent(),
     String? pausedIntervals,
@@ -7357,6 +8162,12 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
     activityType: activityType ?? this.activityType,
     categoryId: categoryId ?? this.categoryId,
     linkedTaskId: linkedTaskId.present ? linkedTaskId.value : this.linkedTaskId,
+    learningCourseId: learningCourseId.present
+        ? learningCourseId.value
+        : this.learningCourseId,
+    learningLectureId: learningLectureId.present
+        ? learningLectureId.value
+        : this.learningLectureId,
     startedAt: startedAt ?? this.startedAt,
     endedAt: endedAt.present ? endedAt.value : this.endedAt,
     pausedIntervals: pausedIntervals ?? this.pausedIntervals,
@@ -7381,6 +8192,12 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
       linkedTaskId: data.linkedTaskId.present
           ? data.linkedTaskId.value
           : this.linkedTaskId,
+      learningCourseId: data.learningCourseId.present
+          ? data.learningCourseId.value
+          : this.learningCourseId,
+      learningLectureId: data.learningLectureId.present
+          ? data.learningLectureId.value
+          : this.learningLectureId,
       startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
       endedAt: data.endedAt.present ? data.endedAt.value : this.endedAt,
       pausedIntervals: data.pausedIntervals.present
@@ -7408,6 +8225,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
           ..write('activityType: $activityType, ')
           ..write('categoryId: $categoryId, ')
           ..write('linkedTaskId: $linkedTaskId, ')
+          ..write('learningCourseId: $learningCourseId, ')
+          ..write('learningLectureId: $learningLectureId, ')
           ..write('startedAt: $startedAt, ')
           ..write('endedAt: $endedAt, ')
           ..write('pausedIntervals: $pausedIntervals, ')
@@ -7427,6 +8246,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
     activityType,
     categoryId,
     linkedTaskId,
+    learningCourseId,
+    learningLectureId,
     startedAt,
     endedAt,
     pausedIntervals,
@@ -7445,6 +8266,8 @@ class TimeSession extends DataClass implements Insertable<TimeSession> {
           other.activityType == this.activityType &&
           other.categoryId == this.categoryId &&
           other.linkedTaskId == this.linkedTaskId &&
+          other.learningCourseId == this.learningCourseId &&
+          other.learningLectureId == this.learningLectureId &&
           other.startedAt == this.startedAt &&
           other.endedAt == this.endedAt &&
           other.pausedIntervals == this.pausedIntervals &&
@@ -7461,6 +8284,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
   final Value<String> activityType;
   final Value<int> categoryId;
   final Value<int?> linkedTaskId;
+  final Value<String?> learningCourseId;
+  final Value<int?> learningLectureId;
   final Value<DateTime> startedAt;
   final Value<DateTime?> endedAt;
   final Value<String> pausedIntervals;
@@ -7475,6 +8300,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
     this.activityType = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.linkedTaskId = const Value.absent(),
+    this.learningCourseId = const Value.absent(),
+    this.learningLectureId = const Value.absent(),
     this.startedAt = const Value.absent(),
     this.endedAt = const Value.absent(),
     this.pausedIntervals = const Value.absent(),
@@ -7490,6 +8317,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
     this.activityType = const Value.absent(),
     required int categoryId,
     this.linkedTaskId = const Value.absent(),
+    this.learningCourseId = const Value.absent(),
+    this.learningLectureId = const Value.absent(),
     required DateTime startedAt,
     this.endedAt = const Value.absent(),
     this.pausedIntervals = const Value.absent(),
@@ -7507,6 +8336,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
     Expression<String>? activityType,
     Expression<int>? categoryId,
     Expression<int>? linkedTaskId,
+    Expression<String>? learningCourseId,
+    Expression<int>? learningLectureId,
     Expression<DateTime>? startedAt,
     Expression<DateTime>? endedAt,
     Expression<String>? pausedIntervals,
@@ -7522,6 +8353,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
       if (activityType != null) 'activity_type': activityType,
       if (categoryId != null) 'category_id': categoryId,
       if (linkedTaskId != null) 'linked_task_id': linkedTaskId,
+      if (learningCourseId != null) 'learning_course_id': learningCourseId,
+      if (learningLectureId != null) 'learning_lecture_id': learningLectureId,
       if (startedAt != null) 'started_at': startedAt,
       if (endedAt != null) 'ended_at': endedAt,
       if (pausedIntervals != null) 'paused_intervals': pausedIntervals,
@@ -7539,6 +8372,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
     Value<String>? activityType,
     Value<int>? categoryId,
     Value<int?>? linkedTaskId,
+    Value<String?>? learningCourseId,
+    Value<int?>? learningLectureId,
     Value<DateTime>? startedAt,
     Value<DateTime?>? endedAt,
     Value<String>? pausedIntervals,
@@ -7554,6 +8389,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
       activityType: activityType ?? this.activityType,
       categoryId: categoryId ?? this.categoryId,
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
+      learningCourseId: learningCourseId ?? this.learningCourseId,
+      learningLectureId: learningLectureId ?? this.learningLectureId,
       startedAt: startedAt ?? this.startedAt,
       endedAt: endedAt ?? this.endedAt,
       pausedIntervals: pausedIntervals ?? this.pausedIntervals,
@@ -7582,6 +8419,12 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
     }
     if (linkedTaskId.present) {
       map['linked_task_id'] = Variable<int>(linkedTaskId.value);
+    }
+    if (learningCourseId.present) {
+      map['learning_course_id'] = Variable<String>(learningCourseId.value);
+    }
+    if (learningLectureId.present) {
+      map['learning_lecture_id'] = Variable<int>(learningLectureId.value);
     }
     if (startedAt.present) {
       map['started_at'] = Variable<DateTime>(startedAt.value);
@@ -7618,6 +8461,8 @@ class TimeSessionTableCompanion extends UpdateCompanion<TimeSession> {
           ..write('activityType: $activityType, ')
           ..write('categoryId: $categoryId, ')
           ..write('linkedTaskId: $linkedTaskId, ')
+          ..write('learningCourseId: $learningCourseId, ')
+          ..write('learningLectureId: $learningLectureId, ')
           ..write('startedAt: $startedAt, ')
           ..write('endedAt: $endedAt, ')
           ..write('pausedIntervals: $pausedIntervals, ')
@@ -8072,6 +8917,21 @@ class $ReminderTableTable extends ReminderTable
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _alertSyncPendingMeta = const VerificationMeta(
+    'alertSyncPending',
+  );
+  @override
+  late final GeneratedColumn<bool> alertSyncPending = GeneratedColumn<bool>(
+    'alert_sync_pending',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("alert_sync_pending" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _isActiveMeta = const VerificationMeta(
     'isActive',
   );
@@ -8106,6 +8966,7 @@ class $ReminderTableTable extends ReminderTable
     linkedTaskId,
     scheduledAt,
     alarmEnabled,
+    alertSyncPending,
     isActive,
     createdAt,
   ];
@@ -8161,6 +9022,15 @@ class $ReminderTableTable extends ReminderTable
         ),
       );
     }
+    if (data.containsKey('alert_sync_pending')) {
+      context.handle(
+        _alertSyncPendingMeta,
+        alertSyncPending.isAcceptableOrUnknown(
+          data['alert_sync_pending']!,
+          _alertSyncPendingMeta,
+        ),
+      );
+    }
     if (data.containsKey('is_active')) {
       context.handle(
         _isActiveMeta,
@@ -8202,6 +9072,10 @@ class $ReminderTableTable extends ReminderTable
         DriftSqlType.bool,
         data['${effectivePrefix}alarm_enabled'],
       )!,
+      alertSyncPending: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}alert_sync_pending'],
+      )!,
       isActive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_active'],
@@ -8234,6 +9108,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
   /// Whether notification is active.
   /// Explicit opt-in; existing and new reminders remain quiet by default.
   final bool alarmEnabled;
+  final bool alertSyncPending;
   final bool isActive;
   final DateTime createdAt;
   const Reminder({
@@ -8242,6 +9117,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     this.linkedTaskId,
     required this.scheduledAt,
     required this.alarmEnabled,
+    required this.alertSyncPending,
     required this.isActive,
     required this.createdAt,
   });
@@ -8255,6 +9131,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     }
     map['scheduled_at'] = Variable<DateTime>(scheduledAt);
     map['alarm_enabled'] = Variable<bool>(alarmEnabled);
+    map['alert_sync_pending'] = Variable<bool>(alertSyncPending);
     map['is_active'] = Variable<bool>(isActive);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -8269,6 +9146,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           : Value(linkedTaskId),
       scheduledAt: Value(scheduledAt),
       alarmEnabled: Value(alarmEnabled),
+      alertSyncPending: Value(alertSyncPending),
       isActive: Value(isActive),
       createdAt: Value(createdAt),
     );
@@ -8285,6 +9163,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       linkedTaskId: serializer.fromJson<int?>(json['linkedTaskId']),
       scheduledAt: serializer.fromJson<DateTime>(json['scheduledAt']),
       alarmEnabled: serializer.fromJson<bool>(json['alarmEnabled']),
+      alertSyncPending: serializer.fromJson<bool>(json['alertSyncPending']),
       isActive: serializer.fromJson<bool>(json['isActive']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -8298,6 +9177,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       'linkedTaskId': serializer.toJson<int?>(linkedTaskId),
       'scheduledAt': serializer.toJson<DateTime>(scheduledAt),
       'alarmEnabled': serializer.toJson<bool>(alarmEnabled),
+      'alertSyncPending': serializer.toJson<bool>(alertSyncPending),
       'isActive': serializer.toJson<bool>(isActive),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -8309,6 +9189,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     Value<int?> linkedTaskId = const Value.absent(),
     DateTime? scheduledAt,
     bool? alarmEnabled,
+    bool? alertSyncPending,
     bool? isActive,
     DateTime? createdAt,
   }) => Reminder(
@@ -8317,6 +9198,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     linkedTaskId: linkedTaskId.present ? linkedTaskId.value : this.linkedTaskId,
     scheduledAt: scheduledAt ?? this.scheduledAt,
     alarmEnabled: alarmEnabled ?? this.alarmEnabled,
+    alertSyncPending: alertSyncPending ?? this.alertSyncPending,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -8333,6 +9215,9 @@ class Reminder extends DataClass implements Insertable<Reminder> {
       alarmEnabled: data.alarmEnabled.present
           ? data.alarmEnabled.value
           : this.alarmEnabled,
+      alertSyncPending: data.alertSyncPending.present
+          ? data.alertSyncPending.value
+          : this.alertSyncPending,
       isActive: data.isActive.present ? data.isActive.value : this.isActive,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
@@ -8346,6 +9231,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           ..write('linkedTaskId: $linkedTaskId, ')
           ..write('scheduledAt: $scheduledAt, ')
           ..write('alarmEnabled: $alarmEnabled, ')
+          ..write('alertSyncPending: $alertSyncPending, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -8359,6 +9245,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
     linkedTaskId,
     scheduledAt,
     alarmEnabled,
+    alertSyncPending,
     isActive,
     createdAt,
   );
@@ -8371,6 +9258,7 @@ class Reminder extends DataClass implements Insertable<Reminder> {
           other.linkedTaskId == this.linkedTaskId &&
           other.scheduledAt == this.scheduledAt &&
           other.alarmEnabled == this.alarmEnabled &&
+          other.alertSyncPending == this.alertSyncPending &&
           other.isActive == this.isActive &&
           other.createdAt == this.createdAt);
 }
@@ -8381,6 +9269,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
   final Value<int?> linkedTaskId;
   final Value<DateTime> scheduledAt;
   final Value<bool> alarmEnabled;
+  final Value<bool> alertSyncPending;
   final Value<bool> isActive;
   final Value<DateTime> createdAt;
   const ReminderTableCompanion({
@@ -8389,6 +9278,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     this.linkedTaskId = const Value.absent(),
     this.scheduledAt = const Value.absent(),
     this.alarmEnabled = const Value.absent(),
+    this.alertSyncPending = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -8398,6 +9288,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     this.linkedTaskId = const Value.absent(),
     required DateTime scheduledAt,
     this.alarmEnabled = const Value.absent(),
+    this.alertSyncPending = const Value.absent(),
     this.isActive = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title),
@@ -8408,6 +9299,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     Expression<int>? linkedTaskId,
     Expression<DateTime>? scheduledAt,
     Expression<bool>? alarmEnabled,
+    Expression<bool>? alertSyncPending,
     Expression<bool>? isActive,
     Expression<DateTime>? createdAt,
   }) {
@@ -8417,6 +9309,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
       if (linkedTaskId != null) 'linked_task_id': linkedTaskId,
       if (scheduledAt != null) 'scheduled_at': scheduledAt,
       if (alarmEnabled != null) 'alarm_enabled': alarmEnabled,
+      if (alertSyncPending != null) 'alert_sync_pending': alertSyncPending,
       if (isActive != null) 'is_active': isActive,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -8428,6 +9321,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     Value<int?>? linkedTaskId,
     Value<DateTime>? scheduledAt,
     Value<bool>? alarmEnabled,
+    Value<bool>? alertSyncPending,
     Value<bool>? isActive,
     Value<DateTime>? createdAt,
   }) {
@@ -8437,6 +9331,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       alarmEnabled: alarmEnabled ?? this.alarmEnabled,
+      alertSyncPending: alertSyncPending ?? this.alertSyncPending,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -8460,6 +9355,9 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
     if (alarmEnabled.present) {
       map['alarm_enabled'] = Variable<bool>(alarmEnabled.value);
     }
+    if (alertSyncPending.present) {
+      map['alert_sync_pending'] = Variable<bool>(alertSyncPending.value);
+    }
     if (isActive.present) {
       map['is_active'] = Variable<bool>(isActive.value);
     }
@@ -8477,6 +9375,7 @@ class ReminderTableCompanion extends UpdateCompanion<Reminder> {
           ..write('linkedTaskId: $linkedTaskId, ')
           ..write('scheduledAt: $scheduledAt, ')
           ..write('alarmEnabled: $alarmEnabled, ')
+          ..write('alertSyncPending: $alertSyncPending, ')
           ..write('isActive: $isActive, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -12405,12 +13304,245 @@ class WaterGoalTableCompanion extends UpdateCompanion<WaterGoal> {
   }
 }
 
-class $ThoughtTableTable extends ThoughtTable
-    with TableInfo<$ThoughtTableTable, Thought> {
+class $ThoughtReminderLinkTableTable extends ThoughtReminderLinkTable
+    with TableInfo<$ThoughtReminderLinkTableTable, ThoughtReminderLink> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ThoughtTableTable(this.attachedDatabase, [this._alias]);
+  $ThoughtReminderLinkTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _thoughtIdMeta = const VerificationMeta(
+    'thoughtId',
+  );
+  @override
+  late final GeneratedColumn<int> thoughtId = GeneratedColumn<int>(
+    'thought_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES thoughts (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _reminderIdMeta = const VerificationMeta(
+    'reminderId',
+  );
+  @override
+  late final GeneratedColumn<int> reminderId = GeneratedColumn<int>(
+    'reminder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES reminders (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [thoughtId, reminderId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'thought_reminder_links';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ThoughtReminderLink> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('thought_id')) {
+      context.handle(
+        _thoughtIdMeta,
+        thoughtId.isAcceptableOrUnknown(data['thought_id']!, _thoughtIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_thoughtIdMeta);
+    }
+    if (data.containsKey('reminder_id')) {
+      context.handle(
+        _reminderIdMeta,
+        reminderId.isAcceptableOrUnknown(data['reminder_id']!, _reminderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reminderIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {thoughtId, reminderId};
+  @override
+  ThoughtReminderLink map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ThoughtReminderLink(
+      thoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}thought_id'],
+      )!,
+      reminderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_id'],
+      )!,
+    );
+  }
+
+  @override
+  $ThoughtReminderLinkTableTable createAlias(String alias) {
+    return $ThoughtReminderLinkTableTable(attachedDatabase, alias);
+  }
+}
+
+class ThoughtReminderLink extends DataClass
+    implements Insertable<ThoughtReminderLink> {
+  final int thoughtId;
+  final int reminderId;
+  const ThoughtReminderLink({
+    required this.thoughtId,
+    required this.reminderId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['thought_id'] = Variable<int>(thoughtId);
+    map['reminder_id'] = Variable<int>(reminderId);
+    return map;
+  }
+
+  ThoughtReminderLinkTableCompanion toCompanion(bool nullToAbsent) {
+    return ThoughtReminderLinkTableCompanion(
+      thoughtId: Value(thoughtId),
+      reminderId: Value(reminderId),
+    );
+  }
+
+  factory ThoughtReminderLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ThoughtReminderLink(
+      thoughtId: serializer.fromJson<int>(json['thoughtId']),
+      reminderId: serializer.fromJson<int>(json['reminderId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'thoughtId': serializer.toJson<int>(thoughtId),
+      'reminderId': serializer.toJson<int>(reminderId),
+    };
+  }
+
+  ThoughtReminderLink copyWith({int? thoughtId, int? reminderId}) =>
+      ThoughtReminderLink(
+        thoughtId: thoughtId ?? this.thoughtId,
+        reminderId: reminderId ?? this.reminderId,
+      );
+  ThoughtReminderLink copyWithCompanion(
+    ThoughtReminderLinkTableCompanion data,
+  ) {
+    return ThoughtReminderLink(
+      thoughtId: data.thoughtId.present ? data.thoughtId.value : this.thoughtId,
+      reminderId: data.reminderId.present
+          ? data.reminderId.value
+          : this.reminderId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThoughtReminderLink(')
+          ..write('thoughtId: $thoughtId, ')
+          ..write('reminderId: $reminderId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(thoughtId, reminderId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ThoughtReminderLink &&
+          other.thoughtId == this.thoughtId &&
+          other.reminderId == this.reminderId);
+}
+
+class ThoughtReminderLinkTableCompanion
+    extends UpdateCompanion<ThoughtReminderLink> {
+  final Value<int> thoughtId;
+  final Value<int> reminderId;
+  final Value<int> rowid;
+  const ThoughtReminderLinkTableCompanion({
+    this.thoughtId = const Value.absent(),
+    this.reminderId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ThoughtReminderLinkTableCompanion.insert({
+    required int thoughtId,
+    required int reminderId,
+    this.rowid = const Value.absent(),
+  }) : thoughtId = Value(thoughtId),
+       reminderId = Value(reminderId);
+  static Insertable<ThoughtReminderLink> custom({
+    Expression<int>? thoughtId,
+    Expression<int>? reminderId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (thoughtId != null) 'thought_id': thoughtId,
+      if (reminderId != null) 'reminder_id': reminderId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ThoughtReminderLinkTableCompanion copyWith({
+    Value<int>? thoughtId,
+    Value<int>? reminderId,
+    Value<int>? rowid,
+  }) {
+    return ThoughtReminderLinkTableCompanion(
+      thoughtId: thoughtId ?? this.thoughtId,
+      reminderId: reminderId ?? this.reminderId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (thoughtId.present) {
+      map['thought_id'] = Variable<int>(thoughtId.value);
+    }
+    if (reminderId.present) {
+      map['reminder_id'] = Variable<int>(reminderId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThoughtReminderLinkTableCompanion(')
+          ..write('thoughtId: $thoughtId, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ThoughtMergeSourceTableTable extends ThoughtMergeSourceTable
+    with TableInfo<$ThoughtMergeSourceTableTable, ThoughtMergeSource> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ThoughtMergeSourceTableTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -12424,127 +13556,100 @@ class $ThoughtTableTable extends ThoughtTable
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
-  static const VerificationMeta _contentMeta = const VerificationMeta(
-    'content',
+  static const VerificationMeta _mergedThoughtIdMeta = const VerificationMeta(
+    'mergedThoughtId',
   );
   @override
-  late final GeneratedColumn<String> content = GeneratedColumn<String>(
-    'content',
+  late final GeneratedColumn<int> mergedThoughtId = GeneratedColumn<int>(
+    'merged_thought_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES thoughts (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _sourceThoughtIdMeta = const VerificationMeta(
+    'sourceThoughtId',
+  );
+  @override
+  late final GeneratedColumn<int> sourceThoughtId = GeneratedColumn<int>(
+    'source_thought_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES thoughts (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceSnapshotMeta = const VerificationMeta(
+    'sourceSnapshot',
+  );
+  @override
+  late final GeneratedColumn<String> sourceSnapshot = GeneratedColumn<String>(
+    'source_snapshot',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  static const VerificationMeta _mergedSnapshotMeta = const VerificationMeta(
+    'mergedSnapshot',
+  );
   @override
-  late final GeneratedColumn<String> mood = GeneratedColumn<String>(
-    'mood',
+  late final GeneratedColumn<String> mergedSnapshot = GeneratedColumn<String>(
+    'merged_snapshot',
     aliasedName,
     false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('thought'),
+    requiredDuringInsert: true,
   );
-  static const VerificationMeta _colorHexMeta = const VerificationMeta(
-    'colorHex',
-  );
-  @override
-  late final GeneratedColumn<String> colorHex = GeneratedColumn<String>(
-    'color_hex',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-    defaultValue: const Constant('#2D2D3A'),
-  );
-  static const VerificationMeta _isPinnedMeta = const VerificationMeta(
-    'isPinned',
+  static const VerificationMeta _archivedByMergeMeta = const VerificationMeta(
+    'archivedByMerge',
   );
   @override
-  late final GeneratedColumn<bool> isPinned = GeneratedColumn<bool>(
-    'is_pinned',
+  late final GeneratedColumn<bool> archivedByMerge = GeneratedColumn<bool>(
+    'archived_by_merge',
     aliasedName,
     false,
     type: DriftSqlType.bool,
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_pinned" IN (0, 1))',
+      'CHECK ("archived_by_merge" IN (0, 1))',
     ),
     defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
-    'isArchived',
-  );
-  @override
-  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
-    'is_archived',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_archived" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
-    'isCompleted',
-  );
-  @override
-  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
-    'is_completed',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_completed" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
-  static const VerificationMeta _promptQuestionMeta = const VerificationMeta(
-    'promptQuestion',
-  );
-  @override
-  late final GeneratedColumn<String> promptQuestion = GeneratedColumn<String>(
-    'prompt_question',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: false,
-    defaultValue: currentDateAndTime,
   );
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    content,
-    mood,
-    colorHex,
-    isPinned,
-    isArchived,
-    isCompleted,
-    promptQuestion,
-    createdAt,
+    mergedThoughtId,
+    sourceThoughtId,
+    position,
+    sourceSnapshot,
+    mergedSnapshot,
+    archivedByMerge,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'thoughts';
+  static const String $name = 'thought_merge_sources';
   @override
   VerificationContext validateIntegrity(
-    Insertable<Thought> instance, {
+    Insertable<ThoughtMergeSource> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -12552,60 +13657,63 @@ class $ThoughtTableTable extends ThoughtTable
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('content')) {
+    if (data.containsKey('merged_thought_id')) {
       context.handle(
-        _contentMeta,
-        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+        _mergedThoughtIdMeta,
+        mergedThoughtId.isAcceptableOrUnknown(
+          data['merged_thought_id']!,
+          _mergedThoughtIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_contentMeta);
+      context.missing(_mergedThoughtIdMeta);
     }
-    if (data.containsKey('mood')) {
+    if (data.containsKey('source_thought_id')) {
       context.handle(
-        _moodMeta,
-        mood.isAcceptableOrUnknown(data['mood']!, _moodMeta),
-      );
-    }
-    if (data.containsKey('color_hex')) {
-      context.handle(
-        _colorHexMeta,
-        colorHex.isAcceptableOrUnknown(data['color_hex']!, _colorHexMeta),
-      );
-    }
-    if (data.containsKey('is_pinned')) {
-      context.handle(
-        _isPinnedMeta,
-        isPinned.isAcceptableOrUnknown(data['is_pinned']!, _isPinnedMeta),
-      );
-    }
-    if (data.containsKey('is_archived')) {
-      context.handle(
-        _isArchivedMeta,
-        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
-      );
-    }
-    if (data.containsKey('is_completed')) {
-      context.handle(
-        _isCompletedMeta,
-        isCompleted.isAcceptableOrUnknown(
-          data['is_completed']!,
-          _isCompletedMeta,
+        _sourceThoughtIdMeta,
+        sourceThoughtId.isAcceptableOrUnknown(
+          data['source_thought_id']!,
+          _sourceThoughtIdMeta,
         ),
       );
     }
-    if (data.containsKey('prompt_question')) {
+    if (data.containsKey('position')) {
       context.handle(
-        _promptQuestionMeta,
-        promptQuestion.isAcceptableOrUnknown(
-          data['prompt_question']!,
-          _promptQuestionMeta,
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('source_snapshot')) {
+      context.handle(
+        _sourceSnapshotMeta,
+        sourceSnapshot.isAcceptableOrUnknown(
+          data['source_snapshot']!,
+          _sourceSnapshotMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_sourceSnapshotMeta);
     }
-    if (data.containsKey('created_at')) {
+    if (data.containsKey('merged_snapshot')) {
       context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+        _mergedSnapshotMeta,
+        mergedSnapshot.isAcceptableOrUnknown(
+          data['merged_snapshot']!,
+          _mergedSnapshotMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_mergedSnapshotMeta);
+    }
+    if (data.containsKey('archived_by_merge')) {
+      context.handle(
+        _archivedByMergeMeta,
+        archivedByMerge.isAcceptableOrUnknown(
+          data['archived_by_merge']!,
+          _archivedByMergeMeta,
+        ),
       );
     }
     return context;
@@ -12614,123 +13722,106 @@ class $ThoughtTableTable extends ThoughtTable
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  Thought map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ThoughtMergeSource map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Thought(
+    return ThoughtMergeSource(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      content: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}content'],
+      mergedThoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}merged_thought_id'],
       )!,
-      mood: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}mood'],
-      )!,
-      colorHex: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}color_hex'],
-      )!,
-      isPinned: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_pinned'],
-      )!,
-      isArchived: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_archived'],
-      )!,
-      isCompleted: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_completed'],
-      )!,
-      promptQuestion: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}prompt_question'],
+      sourceThoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_thought_id'],
       ),
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      sourceSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_snapshot'],
+      )!,
+      mergedSnapshot: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}merged_snapshot'],
+      )!,
+      archivedByMerge: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}archived_by_merge'],
       )!,
     );
   }
 
   @override
-  $ThoughtTableTable createAlias(String alias) {
-    return $ThoughtTableTable(attachedDatabase, alias);
+  $ThoughtMergeSourceTableTable createAlias(String alias) {
+    return $ThoughtMergeSourceTableTable(attachedDatabase, alias);
   }
 }
 
-class Thought extends DataClass implements Insertable<Thought> {
+class ThoughtMergeSource extends DataClass
+    implements Insertable<ThoughtMergeSource> {
   final int id;
-  final String content;
-  final String mood;
-  final String colorHex;
-  final bool isPinned;
-  final bool isArchived;
-  final bool isCompleted;
-  final String? promptQuestion;
-  final DateTime createdAt;
-  const Thought({
+  final int mergedThoughtId;
+  final int? sourceThoughtId;
+  final int position;
+  final String sourceSnapshot;
+  final String mergedSnapshot;
+  final bool archivedByMerge;
+  const ThoughtMergeSource({
     required this.id,
-    required this.content,
-    required this.mood,
-    required this.colorHex,
-    required this.isPinned,
-    required this.isArchived,
-    required this.isCompleted,
-    this.promptQuestion,
-    required this.createdAt,
+    required this.mergedThoughtId,
+    this.sourceThoughtId,
+    required this.position,
+    required this.sourceSnapshot,
+    required this.mergedSnapshot,
+    required this.archivedByMerge,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['content'] = Variable<String>(content);
-    map['mood'] = Variable<String>(mood);
-    map['color_hex'] = Variable<String>(colorHex);
-    map['is_pinned'] = Variable<bool>(isPinned);
-    map['is_archived'] = Variable<bool>(isArchived);
-    map['is_completed'] = Variable<bool>(isCompleted);
-    if (!nullToAbsent || promptQuestion != null) {
-      map['prompt_question'] = Variable<String>(promptQuestion);
+    map['merged_thought_id'] = Variable<int>(mergedThoughtId);
+    if (!nullToAbsent || sourceThoughtId != null) {
+      map['source_thought_id'] = Variable<int>(sourceThoughtId);
     }
-    map['created_at'] = Variable<DateTime>(createdAt);
+    map['position'] = Variable<int>(position);
+    map['source_snapshot'] = Variable<String>(sourceSnapshot);
+    map['merged_snapshot'] = Variable<String>(mergedSnapshot);
+    map['archived_by_merge'] = Variable<bool>(archivedByMerge);
     return map;
   }
 
-  ThoughtTableCompanion toCompanion(bool nullToAbsent) {
-    return ThoughtTableCompanion(
+  ThoughtMergeSourceTableCompanion toCompanion(bool nullToAbsent) {
+    return ThoughtMergeSourceTableCompanion(
       id: Value(id),
-      content: Value(content),
-      mood: Value(mood),
-      colorHex: Value(colorHex),
-      isPinned: Value(isPinned),
-      isArchived: Value(isArchived),
-      isCompleted: Value(isCompleted),
-      promptQuestion: promptQuestion == null && nullToAbsent
+      mergedThoughtId: Value(mergedThoughtId),
+      sourceThoughtId: sourceThoughtId == null && nullToAbsent
           ? const Value.absent()
-          : Value(promptQuestion),
-      createdAt: Value(createdAt),
+          : Value(sourceThoughtId),
+      position: Value(position),
+      sourceSnapshot: Value(sourceSnapshot),
+      mergedSnapshot: Value(mergedSnapshot),
+      archivedByMerge: Value(archivedByMerge),
     );
   }
 
-  factory Thought.fromJson(
+  factory ThoughtMergeSource.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Thought(
+    return ThoughtMergeSource(
       id: serializer.fromJson<int>(json['id']),
-      content: serializer.fromJson<String>(json['content']),
-      mood: serializer.fromJson<String>(json['mood']),
-      colorHex: serializer.fromJson<String>(json['colorHex']),
-      isPinned: serializer.fromJson<bool>(json['isPinned']),
-      isArchived: serializer.fromJson<bool>(json['isArchived']),
-      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
-      promptQuestion: serializer.fromJson<String?>(json['promptQuestion']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      mergedThoughtId: serializer.fromJson<int>(json['mergedThoughtId']),
+      sourceThoughtId: serializer.fromJson<int?>(json['sourceThoughtId']),
+      position: serializer.fromJson<int>(json['position']),
+      sourceSnapshot: serializer.fromJson<String>(json['sourceSnapshot']),
+      mergedSnapshot: serializer.fromJson<String>(json['mergedSnapshot']),
+      archivedByMerge: serializer.fromJson<bool>(json['archivedByMerge']),
     );
   }
   @override
@@ -12738,72 +13829,66 @@ class Thought extends DataClass implements Insertable<Thought> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'content': serializer.toJson<String>(content),
-      'mood': serializer.toJson<String>(mood),
-      'colorHex': serializer.toJson<String>(colorHex),
-      'isPinned': serializer.toJson<bool>(isPinned),
-      'isArchived': serializer.toJson<bool>(isArchived),
-      'isCompleted': serializer.toJson<bool>(isCompleted),
-      'promptQuestion': serializer.toJson<String?>(promptQuestion),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'mergedThoughtId': serializer.toJson<int>(mergedThoughtId),
+      'sourceThoughtId': serializer.toJson<int?>(sourceThoughtId),
+      'position': serializer.toJson<int>(position),
+      'sourceSnapshot': serializer.toJson<String>(sourceSnapshot),
+      'mergedSnapshot': serializer.toJson<String>(mergedSnapshot),
+      'archivedByMerge': serializer.toJson<bool>(archivedByMerge),
     };
   }
 
-  Thought copyWith({
+  ThoughtMergeSource copyWith({
     int? id,
-    String? content,
-    String? mood,
-    String? colorHex,
-    bool? isPinned,
-    bool? isArchived,
-    bool? isCompleted,
-    Value<String?> promptQuestion = const Value.absent(),
-    DateTime? createdAt,
-  }) => Thought(
+    int? mergedThoughtId,
+    Value<int?> sourceThoughtId = const Value.absent(),
+    int? position,
+    String? sourceSnapshot,
+    String? mergedSnapshot,
+    bool? archivedByMerge,
+  }) => ThoughtMergeSource(
     id: id ?? this.id,
-    content: content ?? this.content,
-    mood: mood ?? this.mood,
-    colorHex: colorHex ?? this.colorHex,
-    isPinned: isPinned ?? this.isPinned,
-    isArchived: isArchived ?? this.isArchived,
-    isCompleted: isCompleted ?? this.isCompleted,
-    promptQuestion: promptQuestion.present
-        ? promptQuestion.value
-        : this.promptQuestion,
-    createdAt: createdAt ?? this.createdAt,
+    mergedThoughtId: mergedThoughtId ?? this.mergedThoughtId,
+    sourceThoughtId: sourceThoughtId.present
+        ? sourceThoughtId.value
+        : this.sourceThoughtId,
+    position: position ?? this.position,
+    sourceSnapshot: sourceSnapshot ?? this.sourceSnapshot,
+    mergedSnapshot: mergedSnapshot ?? this.mergedSnapshot,
+    archivedByMerge: archivedByMerge ?? this.archivedByMerge,
   );
-  Thought copyWithCompanion(ThoughtTableCompanion data) {
-    return Thought(
+  ThoughtMergeSource copyWithCompanion(ThoughtMergeSourceTableCompanion data) {
+    return ThoughtMergeSource(
       id: data.id.present ? data.id.value : this.id,
-      content: data.content.present ? data.content.value : this.content,
-      mood: data.mood.present ? data.mood.value : this.mood,
-      colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
-      isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
-      isArchived: data.isArchived.present
-          ? data.isArchived.value
-          : this.isArchived,
-      isCompleted: data.isCompleted.present
-          ? data.isCompleted.value
-          : this.isCompleted,
-      promptQuestion: data.promptQuestion.present
-          ? data.promptQuestion.value
-          : this.promptQuestion,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      mergedThoughtId: data.mergedThoughtId.present
+          ? data.mergedThoughtId.value
+          : this.mergedThoughtId,
+      sourceThoughtId: data.sourceThoughtId.present
+          ? data.sourceThoughtId.value
+          : this.sourceThoughtId,
+      position: data.position.present ? data.position.value : this.position,
+      sourceSnapshot: data.sourceSnapshot.present
+          ? data.sourceSnapshot.value
+          : this.sourceSnapshot,
+      mergedSnapshot: data.mergedSnapshot.present
+          ? data.mergedSnapshot.value
+          : this.mergedSnapshot,
+      archivedByMerge: data.archivedByMerge.present
+          ? data.archivedByMerge.value
+          : this.archivedByMerge,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('Thought(')
+    return (StringBuffer('ThoughtMergeSource(')
           ..write('id: $id, ')
-          ..write('content: $content, ')
-          ..write('mood: $mood, ')
-          ..write('colorHex: $colorHex, ')
-          ..write('isPinned: $isPinned, ')
-          ..write('isArchived: $isArchived, ')
-          ..write('isCompleted: $isCompleted, ')
-          ..write('promptQuestion: $promptQuestion, ')
-          ..write('createdAt: $createdAt')
+          ..write('mergedThoughtId: $mergedThoughtId, ')
+          ..write('sourceThoughtId: $sourceThoughtId, ')
+          ..write('position: $position, ')
+          ..write('sourceSnapshot: $sourceSnapshot, ')
+          ..write('mergedSnapshot: $mergedSnapshot, ')
+          ..write('archivedByMerge: $archivedByMerge')
           ..write(')'))
         .toString();
   }
@@ -12811,107 +13896,93 @@ class Thought extends DataClass implements Insertable<Thought> {
   @override
   int get hashCode => Object.hash(
     id,
-    content,
-    mood,
-    colorHex,
-    isPinned,
-    isArchived,
-    isCompleted,
-    promptQuestion,
-    createdAt,
+    mergedThoughtId,
+    sourceThoughtId,
+    position,
+    sourceSnapshot,
+    mergedSnapshot,
+    archivedByMerge,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Thought &&
+      (other is ThoughtMergeSource &&
           other.id == this.id &&
-          other.content == this.content &&
-          other.mood == this.mood &&
-          other.colorHex == this.colorHex &&
-          other.isPinned == this.isPinned &&
-          other.isArchived == this.isArchived &&
-          other.isCompleted == this.isCompleted &&
-          other.promptQuestion == this.promptQuestion &&
-          other.createdAt == this.createdAt);
+          other.mergedThoughtId == this.mergedThoughtId &&
+          other.sourceThoughtId == this.sourceThoughtId &&
+          other.position == this.position &&
+          other.sourceSnapshot == this.sourceSnapshot &&
+          other.mergedSnapshot == this.mergedSnapshot &&
+          other.archivedByMerge == this.archivedByMerge);
 }
 
-class ThoughtTableCompanion extends UpdateCompanion<Thought> {
+class ThoughtMergeSourceTableCompanion
+    extends UpdateCompanion<ThoughtMergeSource> {
   final Value<int> id;
-  final Value<String> content;
-  final Value<String> mood;
-  final Value<String> colorHex;
-  final Value<bool> isPinned;
-  final Value<bool> isArchived;
-  final Value<bool> isCompleted;
-  final Value<String?> promptQuestion;
-  final Value<DateTime> createdAt;
-  const ThoughtTableCompanion({
+  final Value<int> mergedThoughtId;
+  final Value<int?> sourceThoughtId;
+  final Value<int> position;
+  final Value<String> sourceSnapshot;
+  final Value<String> mergedSnapshot;
+  final Value<bool> archivedByMerge;
+  const ThoughtMergeSourceTableCompanion({
     this.id = const Value.absent(),
-    this.content = const Value.absent(),
-    this.mood = const Value.absent(),
-    this.colorHex = const Value.absent(),
-    this.isPinned = const Value.absent(),
-    this.isArchived = const Value.absent(),
-    this.isCompleted = const Value.absent(),
-    this.promptQuestion = const Value.absent(),
-    this.createdAt = const Value.absent(),
+    this.mergedThoughtId = const Value.absent(),
+    this.sourceThoughtId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.sourceSnapshot = const Value.absent(),
+    this.mergedSnapshot = const Value.absent(),
+    this.archivedByMerge = const Value.absent(),
   });
-  ThoughtTableCompanion.insert({
+  ThoughtMergeSourceTableCompanion.insert({
     this.id = const Value.absent(),
-    required String content,
-    this.mood = const Value.absent(),
-    this.colorHex = const Value.absent(),
-    this.isPinned = const Value.absent(),
-    this.isArchived = const Value.absent(),
-    this.isCompleted = const Value.absent(),
-    this.promptQuestion = const Value.absent(),
-    this.createdAt = const Value.absent(),
-  }) : content = Value(content);
-  static Insertable<Thought> custom({
+    required int mergedThoughtId,
+    this.sourceThoughtId = const Value.absent(),
+    required int position,
+    required String sourceSnapshot,
+    required String mergedSnapshot,
+    this.archivedByMerge = const Value.absent(),
+  }) : mergedThoughtId = Value(mergedThoughtId),
+       position = Value(position),
+       sourceSnapshot = Value(sourceSnapshot),
+       mergedSnapshot = Value(mergedSnapshot);
+  static Insertable<ThoughtMergeSource> custom({
     Expression<int>? id,
-    Expression<String>? content,
-    Expression<String>? mood,
-    Expression<String>? colorHex,
-    Expression<bool>? isPinned,
-    Expression<bool>? isArchived,
-    Expression<bool>? isCompleted,
-    Expression<String>? promptQuestion,
-    Expression<DateTime>? createdAt,
+    Expression<int>? mergedThoughtId,
+    Expression<int>? sourceThoughtId,
+    Expression<int>? position,
+    Expression<String>? sourceSnapshot,
+    Expression<String>? mergedSnapshot,
+    Expression<bool>? archivedByMerge,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (content != null) 'content': content,
-      if (mood != null) 'mood': mood,
-      if (colorHex != null) 'color_hex': colorHex,
-      if (isPinned != null) 'is_pinned': isPinned,
-      if (isArchived != null) 'is_archived': isArchived,
-      if (isCompleted != null) 'is_completed': isCompleted,
-      if (promptQuestion != null) 'prompt_question': promptQuestion,
-      if (createdAt != null) 'created_at': createdAt,
+      if (mergedThoughtId != null) 'merged_thought_id': mergedThoughtId,
+      if (sourceThoughtId != null) 'source_thought_id': sourceThoughtId,
+      if (position != null) 'position': position,
+      if (sourceSnapshot != null) 'source_snapshot': sourceSnapshot,
+      if (mergedSnapshot != null) 'merged_snapshot': mergedSnapshot,
+      if (archivedByMerge != null) 'archived_by_merge': archivedByMerge,
     });
   }
 
-  ThoughtTableCompanion copyWith({
+  ThoughtMergeSourceTableCompanion copyWith({
     Value<int>? id,
-    Value<String>? content,
-    Value<String>? mood,
-    Value<String>? colorHex,
-    Value<bool>? isPinned,
-    Value<bool>? isArchived,
-    Value<bool>? isCompleted,
-    Value<String?>? promptQuestion,
-    Value<DateTime>? createdAt,
+    Value<int>? mergedThoughtId,
+    Value<int?>? sourceThoughtId,
+    Value<int>? position,
+    Value<String>? sourceSnapshot,
+    Value<String>? mergedSnapshot,
+    Value<bool>? archivedByMerge,
   }) {
-    return ThoughtTableCompanion(
+    return ThoughtMergeSourceTableCompanion(
       id: id ?? this.id,
-      content: content ?? this.content,
-      mood: mood ?? this.mood,
-      colorHex: colorHex ?? this.colorHex,
-      isPinned: isPinned ?? this.isPinned,
-      isArchived: isArchived ?? this.isArchived,
-      isCompleted: isCompleted ?? this.isCompleted,
-      promptQuestion: promptQuestion ?? this.promptQuestion,
-      createdAt: createdAt ?? this.createdAt,
+      mergedThoughtId: mergedThoughtId ?? this.mergedThoughtId,
+      sourceThoughtId: sourceThoughtId ?? this.sourceThoughtId,
+      position: position ?? this.position,
+      sourceSnapshot: sourceSnapshot ?? this.sourceSnapshot,
+      mergedSnapshot: mergedSnapshot ?? this.mergedSnapshot,
+      archivedByMerge: archivedByMerge ?? this.archivedByMerge,
     );
   }
 
@@ -12921,45 +13992,37 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (content.present) {
-      map['content'] = Variable<String>(content.value);
+    if (mergedThoughtId.present) {
+      map['merged_thought_id'] = Variable<int>(mergedThoughtId.value);
     }
-    if (mood.present) {
-      map['mood'] = Variable<String>(mood.value);
+    if (sourceThoughtId.present) {
+      map['source_thought_id'] = Variable<int>(sourceThoughtId.value);
     }
-    if (colorHex.present) {
-      map['color_hex'] = Variable<String>(colorHex.value);
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
     }
-    if (isPinned.present) {
-      map['is_pinned'] = Variable<bool>(isPinned.value);
+    if (sourceSnapshot.present) {
+      map['source_snapshot'] = Variable<String>(sourceSnapshot.value);
     }
-    if (isArchived.present) {
-      map['is_archived'] = Variable<bool>(isArchived.value);
+    if (mergedSnapshot.present) {
+      map['merged_snapshot'] = Variable<String>(mergedSnapshot.value);
     }
-    if (isCompleted.present) {
-      map['is_completed'] = Variable<bool>(isCompleted.value);
-    }
-    if (promptQuestion.present) {
-      map['prompt_question'] = Variable<String>(promptQuestion.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
+    if (archivedByMerge.present) {
+      map['archived_by_merge'] = Variable<bool>(archivedByMerge.value);
     }
     return map;
   }
 
   @override
   String toString() {
-    return (StringBuffer('ThoughtTableCompanion(')
+    return (StringBuffer('ThoughtMergeSourceTableCompanion(')
           ..write('id: $id, ')
-          ..write('content: $content, ')
-          ..write('mood: $mood, ')
-          ..write('colorHex: $colorHex, ')
-          ..write('isPinned: $isPinned, ')
-          ..write('isArchived: $isArchived, ')
-          ..write('isCompleted: $isCompleted, ')
-          ..write('promptQuestion: $promptQuestion, ')
-          ..write('createdAt: $createdAt')
+          ..write('mergedThoughtId: $mergedThoughtId, ')
+          ..write('sourceThoughtId: $sourceThoughtId, ')
+          ..write('position: $position, ')
+          ..write('sourceSnapshot: $sourceSnapshot, ')
+          ..write('mergedSnapshot: $mergedSnapshot, ')
+          ..write('archivedByMerge: $archivedByMerge')
           ..write(')'))
         .toString();
   }
@@ -19343,6 +20406,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $SeriesTableTable seriesTable = $SeriesTableTable(this);
+  late final $ThoughtTableTable thoughtTable = $ThoughtTableTable(this);
   late final $ApplicationTableTable applicationTable = $ApplicationTableTable(
     this,
   );
@@ -19384,7 +20448,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $BackupRestoreTableTable(this);
   late final $WaterLogTableTable waterLogTable = $WaterLogTableTable(this);
   late final $WaterGoalTableTable waterGoalTable = $WaterGoalTableTable(this);
-  late final $ThoughtTableTable thoughtTable = $ThoughtTableTable(this);
+  late final $ThoughtReminderLinkTableTable thoughtReminderLinkTable =
+      $ThoughtReminderLinkTableTable(this);
+  late final $ThoughtMergeSourceTableTable thoughtMergeSourceTable =
+      $ThoughtMergeSourceTableTable(this);
   late final $CourseTableTable courseTable = $CourseTableTable(this);
   late final $MomentumChallengeTableTable momentumChallengeTable =
       $MomentumChallengeTableTable(this);
@@ -19447,6 +20514,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     userProfileTable,
     studyPhaseTable,
     seriesTable,
+    thoughtTable,
     applicationTable,
     taskTable,
     dsaLogTable,
@@ -19469,7 +20537,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     backupRestoreTable,
     waterLogTable,
     waterGoalTable,
-    thoughtTable,
+    thoughtReminderLinkTable,
+    thoughtMergeSourceTable,
     courseTable,
     momentumChallengeTable,
     momentumCommitmentTable,
@@ -19480,6 +20549,44 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     medicineTable,
     medicineLogTable,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'thoughts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tasks', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'thoughts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('thought_reminder_links', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'reminders',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('thought_reminder_links', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'thoughts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('thought_merge_sources', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'thoughts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('thought_merge_sources', kind: UpdateKind.update)],
+    ),
+  ]);
 }
 
 typedef $$UserProfileTableTableCreateCompanionBuilder =
@@ -20782,6 +21889,698 @@ typedef $$SeriesTableTableProcessedTableManager =
       Series,
       PrefetchHooks Function({bool linkedPhaseId, bool taskTableRefs})
     >;
+typedef $$ThoughtTableTableCreateCompanionBuilder =
+    ThoughtTableCompanion Function({
+      Value<int> id,
+      required String content,
+      Value<String> mood,
+      Value<String> colorHex,
+      Value<bool> isPinned,
+      Value<bool> isArchived,
+      Value<bool> isCompleted,
+      Value<String?> promptQuestion,
+      Value<DateTime> createdAt,
+    });
+typedef $$ThoughtTableTableUpdateCompanionBuilder =
+    ThoughtTableCompanion Function({
+      Value<int> id,
+      Value<String> content,
+      Value<String> mood,
+      Value<String> colorHex,
+      Value<bool> isPinned,
+      Value<bool> isArchived,
+      Value<bool> isCompleted,
+      Value<String?> promptQuestion,
+      Value<DateTime> createdAt,
+    });
+
+final class $$ThoughtTableTableReferences
+    extends BaseReferences<_$AppDatabase, $ThoughtTableTable, Thought> {
+  $$ThoughtTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$TaskTableTable, List<Task>> _taskTableRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.taskTable,
+    aliasName: 'thoughts__id__tasks__linked_thought_id',
+  );
+
+  $$TaskTableTableProcessedTableManager get taskTableRefs {
+    final manager = $$TaskTableTableTableManager(
+      $_db,
+      $_db.taskTable,
+    ).filter((f) => f.linkedThoughtId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_taskTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ThoughtReminderLinkTableTable,
+    List<ThoughtReminderLink>
+  >
+  _thoughtReminderLinkTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.thoughtReminderLinkTable,
+        aliasName: 'thoughts__id__thought_reminder_links__thought_id',
+      );
+
+  $$ThoughtReminderLinkTableTableProcessedTableManager
+  get thoughtReminderLinkTableRefs {
+    final manager = $$ThoughtReminderLinkTableTableTableManager(
+      $_db,
+      $_db.thoughtReminderLinkTable,
+    ).filter((f) => f.thoughtId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _thoughtReminderLinkTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ThoughtMergeSourceTableTable,
+    List<ThoughtMergeSource>
+  >
+  _mergedNoteSourcesTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.thoughtMergeSourceTable,
+    aliasName: 'thoughts__id__thought_merge_sources__merged_thought_id',
+  );
+
+  $$ThoughtMergeSourceTableTableProcessedTableManager get mergedNoteSources {
+    final manager = $$ThoughtMergeSourceTableTableTableManager(
+      $_db,
+      $_db.thoughtMergeSourceTable,
+    ).filter((f) => f.mergedThoughtId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_mergedNoteSourcesTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ThoughtMergeSourceTableTable,
+    List<ThoughtMergeSource>
+  >
+  _sourceNoteMergesTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.thoughtMergeSourceTable,
+    aliasName: 'thoughts__id__thought_merge_sources__source_thought_id',
+  );
+
+  $$ThoughtMergeSourceTableTableProcessedTableManager get sourceNoteMerges {
+    final manager = $$ThoughtMergeSourceTableTableTableManager(
+      $_db,
+      $_db.thoughtMergeSourceTable,
+    ).filter((f) => f.sourceThoughtId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_sourceNoteMergesTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ThoughtTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ThoughtTableTable> {
+  $$ThoughtTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get promptQuestion => $composableBuilder(
+    column: $table.promptQuestion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> taskTableRefs(
+    Expression<bool> Function($$TaskTableTableFilterComposer f) f,
+  ) {
+    final $$TaskTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.linkedThoughtId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableFilterComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> thoughtReminderLinkTableRefs(
+    Expression<bool> Function($$ThoughtReminderLinkTableTableFilterComposer f)
+    f,
+  ) {
+    final $$ThoughtReminderLinkTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtReminderLinkTable,
+          getReferencedColumn: (t) => t.thoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtReminderLinkTableTableFilterComposer(
+                $db: $db,
+                $table: $db.thoughtReminderLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> mergedNoteSources(
+    Expression<bool> Function($$ThoughtMergeSourceTableTableFilterComposer f) f,
+  ) {
+    final $$ThoughtMergeSourceTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtMergeSourceTable,
+          getReferencedColumn: (t) => t.mergedThoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtMergeSourceTableTableFilterComposer(
+                $db: $db,
+                $table: $db.thoughtMergeSourceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<bool> sourceNoteMerges(
+    Expression<bool> Function($$ThoughtMergeSourceTableTableFilterComposer f) f,
+  ) {
+    final $$ThoughtMergeSourceTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtMergeSourceTable,
+          getReferencedColumn: (t) => t.sourceThoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtMergeSourceTableTableFilterComposer(
+                $db: $db,
+                $table: $db.thoughtMergeSourceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ThoughtTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ThoughtTableTable> {
+  $$ThoughtTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get colorHex => $composableBuilder(
+    column: $table.colorHex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPinned => $composableBuilder(
+    column: $table.isPinned,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get promptQuestion => $composableBuilder(
+    column: $table.promptQuestion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ThoughtTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ThoughtTableTable> {
+  $$ThoughtTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get mood =>
+      $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<String> get colorHex =>
+      $composableBuilder(column: $table.colorHex, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPinned =>
+      $composableBuilder(column: $table.isPinned, builder: (column) => column);
+
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get promptQuestion => $composableBuilder(
+    column: $table.promptQuestion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> taskTableRefs<T extends Object>(
+    Expression<T> Function($$TaskTableTableAnnotationComposer a) f,
+  ) {
+    final $$TaskTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.linkedThoughtId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> thoughtReminderLinkTableRefs<T extends Object>(
+    Expression<T> Function($$ThoughtReminderLinkTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ThoughtReminderLinkTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtReminderLinkTable,
+          getReferencedColumn: (t) => t.thoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtReminderLinkTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.thoughtReminderLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> mergedNoteSources<T extends Object>(
+    Expression<T> Function($$ThoughtMergeSourceTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ThoughtMergeSourceTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtMergeSourceTable,
+          getReferencedColumn: (t) => t.mergedThoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtMergeSourceTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.thoughtMergeSourceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> sourceNoteMerges<T extends Object>(
+    Expression<T> Function($$ThoughtMergeSourceTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ThoughtMergeSourceTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtMergeSourceTable,
+          getReferencedColumn: (t) => t.sourceThoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtMergeSourceTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.thoughtMergeSourceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$ThoughtTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ThoughtTableTable,
+          Thought,
+          $$ThoughtTableTableFilterComposer,
+          $$ThoughtTableTableOrderingComposer,
+          $$ThoughtTableTableAnnotationComposer,
+          $$ThoughtTableTableCreateCompanionBuilder,
+          $$ThoughtTableTableUpdateCompanionBuilder,
+          (Thought, $$ThoughtTableTableReferences),
+          Thought,
+          PrefetchHooks Function({
+            bool taskTableRefs,
+            bool thoughtReminderLinkTableRefs,
+            bool mergedNoteSources,
+            bool sourceNoteMerges,
+          })
+        > {
+  $$ThoughtTableTableTableManager(_$AppDatabase db, $ThoughtTableTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ThoughtTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ThoughtTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ThoughtTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<String> mood = const Value.absent(),
+                Value<String> colorHex = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<String?> promptQuestion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ThoughtTableCompanion(
+                id: id,
+                content: content,
+                mood: mood,
+                colorHex: colorHex,
+                isPinned: isPinned,
+                isArchived: isArchived,
+                isCompleted: isCompleted,
+                promptQuestion: promptQuestion,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String content,
+                Value<String> mood = const Value.absent(),
+                Value<String> colorHex = const Value.absent(),
+                Value<bool> isPinned = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<String?> promptQuestion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ThoughtTableCompanion.insert(
+                id: id,
+                content: content,
+                mood: mood,
+                colorHex: colorHex,
+                isPinned: isPinned,
+                isArchived: isArchived,
+                isCompleted: isCompleted,
+                promptQuestion: promptQuestion,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ThoughtTableTable, Thought>(table),
+                  $$ThoughtTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                taskTableRefs = false,
+                thoughtReminderLinkTableRefs = false,
+                mergedNoteSources = false,
+                sourceNoteMerges = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (taskTableRefs) db.taskTable,
+                    if (thoughtReminderLinkTableRefs)
+                      db.thoughtReminderLinkTable,
+                    if (mergedNoteSources) db.thoughtMergeSourceTable,
+                    if (sourceNoteMerges) db.thoughtMergeSourceTable,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (taskTableRefs)
+                        await $_getPrefetchedData<
+                          Thought,
+                          $ThoughtTableTable,
+                          Task
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ThoughtTableTableReferences
+                              ._taskTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ThoughtTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).taskTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.linkedThoughtId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (thoughtReminderLinkTableRefs)
+                        await $_getPrefetchedData<
+                          Thought,
+                          $ThoughtTableTable,
+                          ThoughtReminderLink
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ThoughtTableTableReferences
+                              ._thoughtReminderLinkTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ThoughtTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).thoughtReminderLinkTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.thoughtId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (mergedNoteSources)
+                        await $_getPrefetchedData<
+                          Thought,
+                          $ThoughtTableTable,
+                          ThoughtMergeSource
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ThoughtTableTableReferences
+                              ._mergedNoteSourcesTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ThoughtTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).mergedNoteSources,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.mergedThoughtId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (sourceNoteMerges)
+                        await $_getPrefetchedData<
+                          Thought,
+                          $ThoughtTableTable,
+                          ThoughtMergeSource
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ThoughtTableTableReferences
+                              ._sourceNoteMergesTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ThoughtTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).sourceNoteMerges,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sourceThoughtId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ThoughtTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ThoughtTableTable,
+      Thought,
+      $$ThoughtTableTableFilterComposer,
+      $$ThoughtTableTableOrderingComposer,
+      $$ThoughtTableTableAnnotationComposer,
+      $$ThoughtTableTableCreateCompanionBuilder,
+      $$ThoughtTableTableUpdateCompanionBuilder,
+      (Thought, $$ThoughtTableTableReferences),
+      Thought,
+      PrefetchHooks Function({
+        bool taskTableRefs,
+        bool thoughtReminderLinkTableRefs,
+        bool mergedNoteSources,
+        bool sourceNoteMerges,
+      })
+    >;
 typedef $$ApplicationTableTableCreateCompanionBuilder =
     ApplicationTableCompanion Function({
       Value<int> id,
@@ -21523,6 +23322,9 @@ typedef $$TaskTableTableCreateCompanionBuilder =
       Value<int> id,
       required String title,
       Value<String?> notes,
+      Value<int?> linkedThoughtId,
+      Value<String?> learningCourseId,
+      Value<int?> learningLectureId,
       Value<DateTime?> plannedDate,
       Value<DateTime?> actualCompletedDate,
       Value<String> priority,
@@ -21543,6 +23345,9 @@ typedef $$TaskTableTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> title,
       Value<String?> notes,
+      Value<int?> linkedThoughtId,
+      Value<String?> learningCourseId,
+      Value<int?> learningLectureId,
       Value<DateTime?> plannedDate,
       Value<DateTime?> actualCompletedDate,
       Value<String> priority,
@@ -21562,6 +23367,23 @@ typedef $$TaskTableTableUpdateCompanionBuilder =
 final class $$TaskTableTableReferences
     extends BaseReferences<_$AppDatabase, $TaskTableTable, Task> {
   $$TaskTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ThoughtTableTable _linkedThoughtIdTable(_$AppDatabase db) =>
+      db.thoughtTable.createAlias('tasks__linked_thought_id__thoughts__id');
+
+  $$ThoughtTableTableProcessedTableManager? get linkedThoughtId {
+    final $_column = $_itemColumn<int>('linked_thought_id');
+    if ($_column == null) return null;
+    final manager = $$ThoughtTableTableTableManager(
+      $_db,
+      $_db.thoughtTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_linkedThoughtIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static $StudyPhaseTableTable _linkedPhaseIdTable(_$AppDatabase db) => db
       .studyPhaseTable
@@ -21717,6 +23539,16 @@ class $$TaskTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get learningCourseId => $composableBuilder(
+    column: $table.learningCourseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get learningLectureId => $composableBuilder(
+    column: $table.learningLectureId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<DateTime> get plannedDate => $composableBuilder(
     column: $table.plannedDate,
     builder: (column) => ColumnFilters(column),
@@ -21766,6 +23598,29 @@ class $$TaskTableTableFilterComposer
     column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$ThoughtTableTableFilterComposer get linkedThoughtId {
+    final $$ThoughtTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableFilterComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$StudyPhaseTableTableFilterComposer get linkedPhaseId {
     final $$StudyPhaseTableTableFilterComposer composer = $composerBuilder(
@@ -21959,6 +23814,16 @@ class $$TaskTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get learningCourseId => $composableBuilder(
+    column: $table.learningCourseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get learningLectureId => $composableBuilder(
+    column: $table.learningLectureId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get plannedDate => $composableBuilder(
     column: $table.plannedDate,
     builder: (column) => ColumnOrderings(column),
@@ -22008,6 +23873,29 @@ class $$TaskTableTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$ThoughtTableTableOrderingComposer get linkedThoughtId {
+    final $$ThoughtTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$StudyPhaseTableTableOrderingComposer get linkedPhaseId {
     final $$StudyPhaseTableTableOrderingComposer composer = $composerBuilder(
@@ -22120,6 +24008,16 @@ class $$TaskTableTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumn<String> get learningCourseId => $composableBuilder(
+    column: $table.learningCourseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get learningLectureId => $composableBuilder(
+    column: $table.learningLectureId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get plannedDate => $composableBuilder(
     column: $table.plannedDate,
     builder: (column) => column,
@@ -22163,6 +24061,29 @@ class $$TaskTableTableAnnotationComposer
 
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ThoughtTableTableAnnotationComposer get linkedThoughtId {
+    final $$ThoughtTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   $$StudyPhaseTableTableAnnotationComposer get linkedPhaseId {
     final $$StudyPhaseTableTableAnnotationComposer composer = $composerBuilder(
@@ -22346,6 +24267,7 @@ class $$TaskTableTableTableManager
           (Task, $$TaskTableTableReferences),
           Task,
           PrefetchHooks Function({
+            bool linkedThoughtId,
             bool linkedPhaseId,
             bool seriesId,
             bool parentTaskId,
@@ -22371,6 +24293,9 @@ class $$TaskTableTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<int?> linkedThoughtId = const Value.absent(),
+                Value<String?> learningCourseId = const Value.absent(),
+                Value<int?> learningLectureId = const Value.absent(),
                 Value<DateTime?> plannedDate = const Value.absent(),
                 Value<DateTime?> actualCompletedDate = const Value.absent(),
                 Value<String> priority = const Value.absent(),
@@ -22389,6 +24314,9 @@ class $$TaskTableTableTableManager
                 id: id,
                 title: title,
                 notes: notes,
+                linkedThoughtId: linkedThoughtId,
+                learningCourseId: learningCourseId,
+                learningLectureId: learningLectureId,
                 plannedDate: plannedDate,
                 actualCompletedDate: actualCompletedDate,
                 priority: priority,
@@ -22409,6 +24337,9 @@ class $$TaskTableTableTableManager
                 Value<int> id = const Value.absent(),
                 required String title,
                 Value<String?> notes = const Value.absent(),
+                Value<int?> linkedThoughtId = const Value.absent(),
+                Value<String?> learningCourseId = const Value.absent(),
+                Value<int?> learningLectureId = const Value.absent(),
                 Value<DateTime?> plannedDate = const Value.absent(),
                 Value<DateTime?> actualCompletedDate = const Value.absent(),
                 Value<String> priority = const Value.absent(),
@@ -22427,6 +24358,9 @@ class $$TaskTableTableTableManager
                 id: id,
                 title: title,
                 notes: notes,
+                linkedThoughtId: linkedThoughtId,
+                learningCourseId: learningCourseId,
+                learningLectureId: learningLectureId,
                 plannedDate: plannedDate,
                 actualCompletedDate: actualCompletedDate,
                 priority: priority,
@@ -22452,6 +24386,7 @@ class $$TaskTableTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                linkedThoughtId = false,
                 linkedPhaseId = false,
                 seriesId = false,
                 parentTaskId = false,
@@ -22483,6 +24418,19 @@ class $$TaskTableTableTableManager
                           dynamic
                         >
                       >(state) {
+                        if (linkedThoughtId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.linkedThoughtId,
+                                    referencedTable: $$TaskTableTableReferences
+                                        ._linkedThoughtIdTable(db),
+                                    referencedColumn: $$TaskTableTableReferences
+                                        ._linkedThoughtIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
                         if (linkedPhaseId) {
                           state =
                               state.withJoin(
@@ -22624,6 +24572,7 @@ typedef $$TaskTableTableProcessedTableManager =
       (Task, $$TaskTableTableReferences),
       Task,
       PrefetchHooks Function({
+        bool linkedThoughtId,
         bool linkedPhaseId,
         bool seriesId,
         bool parentTaskId,
@@ -24846,6 +26795,8 @@ typedef $$TimeSessionTableTableCreateCompanionBuilder =
       Value<String> activityType,
       required int categoryId,
       Value<int?> linkedTaskId,
+      Value<String?> learningCourseId,
+      Value<int?> learningLectureId,
       required DateTime startedAt,
       Value<DateTime?> endedAt,
       Value<String> pausedIntervals,
@@ -24862,6 +26813,8 @@ typedef $$TimeSessionTableTableUpdateCompanionBuilder =
       Value<String> activityType,
       Value<int> categoryId,
       Value<int?> linkedTaskId,
+      Value<String?> learningCourseId,
+      Value<int?> learningLectureId,
       Value<DateTime> startedAt,
       Value<DateTime?> endedAt,
       Value<String> pausedIntervals,
@@ -24937,6 +26890,16 @@ class $$TimeSessionTableTableFilterComposer
 
   ColumnFilters<String> get activityType => $composableBuilder(
     column: $table.activityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get learningCourseId => $composableBuilder(
+    column: $table.learningCourseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get learningLectureId => $composableBuilder(
+    column: $table.learningLectureId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25051,6 +27014,16 @@ class $$TimeSessionTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get learningCourseId => $composableBuilder(
+    column: $table.learningCourseId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get learningLectureId => $composableBuilder(
+    column: $table.learningLectureId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get startedAt => $composableBuilder(
     column: $table.startedAt,
     builder: (column) => ColumnOrderings(column),
@@ -25156,6 +27129,16 @@ class $$TimeSessionTableTableAnnotationComposer
 
   GeneratedColumn<String> get activityType => $composableBuilder(
     column: $table.activityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get learningCourseId => $composableBuilder(
+    column: $table.learningCourseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get learningLectureId => $composableBuilder(
+    column: $table.learningLectureId,
     builder: (column) => column,
   );
 
@@ -25274,6 +27257,8 @@ class $$TimeSessionTableTableTableManager
                 Value<String> activityType = const Value.absent(),
                 Value<int> categoryId = const Value.absent(),
                 Value<int?> linkedTaskId = const Value.absent(),
+                Value<String?> learningCourseId = const Value.absent(),
+                Value<int?> learningLectureId = const Value.absent(),
                 Value<DateTime> startedAt = const Value.absent(),
                 Value<DateTime?> endedAt = const Value.absent(),
                 Value<String> pausedIntervals = const Value.absent(),
@@ -25288,6 +27273,8 @@ class $$TimeSessionTableTableTableManager
                 activityType: activityType,
                 categoryId: categoryId,
                 linkedTaskId: linkedTaskId,
+                learningCourseId: learningCourseId,
+                learningLectureId: learningLectureId,
                 startedAt: startedAt,
                 endedAt: endedAt,
                 pausedIntervals: pausedIntervals,
@@ -25304,6 +27291,8 @@ class $$TimeSessionTableTableTableManager
                 Value<String> activityType = const Value.absent(),
                 required int categoryId,
                 Value<int?> linkedTaskId = const Value.absent(),
+                Value<String?> learningCourseId = const Value.absent(),
+                Value<int?> learningLectureId = const Value.absent(),
                 required DateTime startedAt,
                 Value<DateTime?> endedAt = const Value.absent(),
                 Value<String> pausedIntervals = const Value.absent(),
@@ -25318,6 +27307,8 @@ class $$TimeSessionTableTableTableManager
                 activityType: activityType,
                 categoryId: categoryId,
                 linkedTaskId: linkedTaskId,
+                learningCourseId: learningCourseId,
+                learningLectureId: learningLectureId,
                 startedAt: startedAt,
                 endedAt: endedAt,
                 pausedIntervals: pausedIntervals,
@@ -25646,6 +27637,7 @@ typedef $$ReminderTableTableCreateCompanionBuilder =
       Value<int?> linkedTaskId,
       required DateTime scheduledAt,
       Value<bool> alarmEnabled,
+      Value<bool> alertSyncPending,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
@@ -25656,6 +27648,7 @@ typedef $$ReminderTableTableUpdateCompanionBuilder =
       Value<int?> linkedTaskId,
       Value<DateTime> scheduledAt,
       Value<bool> alarmEnabled,
+      Value<bool> alertSyncPending,
       Value<bool> isActive,
       Value<DateTime> createdAt,
     });
@@ -25682,6 +27675,31 @@ final class $$ReminderTableTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ThoughtReminderLinkTableTable,
+    List<ThoughtReminderLink>
+  >
+  _thoughtReminderLinkTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.thoughtReminderLinkTable,
+        aliasName: 'reminders__id__thought_reminder_links__reminder_id',
+      );
+
+  $$ThoughtReminderLinkTableTableProcessedTableManager
+  get thoughtReminderLinkTableRefs {
+    final manager = $$ThoughtReminderLinkTableTableTableManager(
+      $_db,
+      $_db.thoughtReminderLinkTable,
+    ).filter((f) => f.reminderId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _thoughtReminderLinkTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 
@@ -25735,6 +27753,11 @@ class $$ReminderTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get alertSyncPending => $composableBuilder(
+    column: $table.alertSyncPending,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<bool> get isActive => $composableBuilder(
     column: $table.isActive,
     builder: (column) => ColumnFilters(column),
@@ -25766,6 +27789,33 @@ class $$ReminderTableTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> thoughtReminderLinkTableRefs(
+    Expression<bool> Function($$ThoughtReminderLinkTableTableFilterComposer f)
+    f,
+  ) {
+    final $$ThoughtReminderLinkTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtReminderLinkTable,
+          getReferencedColumn: (t) => t.reminderId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtReminderLinkTableTableFilterComposer(
+                $db: $db,
+                $table: $db.thoughtReminderLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
   }
 
   Expression<bool> medicineLogTableRefs(
@@ -25820,6 +27870,11 @@ class $$ReminderTableTableOrderingComposer
 
   ColumnOrderings<bool> get alarmEnabled => $composableBuilder(
     column: $table.alarmEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get alertSyncPending => $composableBuilder(
+    column: $table.alertSyncPending,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -25882,6 +27937,11 @@ class $$ReminderTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get alertSyncPending => $composableBuilder(
+    column: $table.alertSyncPending,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isActive =>
       $composableBuilder(column: $table.isActive, builder: (column) => column);
 
@@ -25909,6 +27969,33 @@ class $$ReminderTableTableAnnotationComposer
           ),
     );
     return composer;
+  }
+
+  Expression<T> thoughtReminderLinkTableRefs<T extends Object>(
+    Expression<T> Function($$ThoughtReminderLinkTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$ThoughtReminderLinkTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.thoughtReminderLinkTable,
+          getReferencedColumn: (t) => t.reminderId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ThoughtReminderLinkTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.thoughtReminderLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
   }
 
   Expression<T> medicineLogTableRefs<T extends Object>(
@@ -25950,7 +28037,11 @@ class $$ReminderTableTableTableManager
           $$ReminderTableTableUpdateCompanionBuilder,
           (Reminder, $$ReminderTableTableReferences),
           Reminder,
-          PrefetchHooks Function({bool linkedTaskId, bool medicineLogTableRefs})
+          PrefetchHooks Function({
+            bool linkedTaskId,
+            bool thoughtReminderLinkTableRefs,
+            bool medicineLogTableRefs,
+          })
         > {
   $$ReminderTableTableTableManager(_$AppDatabase db, $ReminderTableTable table)
     : super(
@@ -25970,6 +28061,7 @@ class $$ReminderTableTableTableManager
                 Value<int?> linkedTaskId = const Value.absent(),
                 Value<DateTime> scheduledAt = const Value.absent(),
                 Value<bool> alarmEnabled = const Value.absent(),
+                Value<bool> alertSyncPending = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ReminderTableCompanion(
@@ -25978,6 +28070,7 @@ class $$ReminderTableTableTableManager
                 linkedTaskId: linkedTaskId,
                 scheduledAt: scheduledAt,
                 alarmEnabled: alarmEnabled,
+                alertSyncPending: alertSyncPending,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
@@ -25988,6 +28081,7 @@ class $$ReminderTableTableTableManager
                 Value<int?> linkedTaskId = const Value.absent(),
                 required DateTime scheduledAt,
                 Value<bool> alarmEnabled = const Value.absent(),
+                Value<bool> alertSyncPending = const Value.absent(),
                 Value<bool> isActive = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ReminderTableCompanion.insert(
@@ -25996,6 +28090,7 @@ class $$ReminderTableTableTableManager
                 linkedTaskId: linkedTaskId,
                 scheduledAt: scheduledAt,
                 alarmEnabled: alarmEnabled,
+                alertSyncPending: alertSyncPending,
                 isActive: isActive,
                 createdAt: createdAt,
               ),
@@ -26008,10 +28103,16 @@ class $$ReminderTableTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({linkedTaskId = false, medicineLogTableRefs = false}) {
+              ({
+                linkedTaskId = false,
+                thoughtReminderLinkTableRefs = false,
+                medicineLogTableRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (thoughtReminderLinkTableRefs)
+                      db.thoughtReminderLinkTable,
                     if (medicineLogTableRefs) db.medicineLogTable,
                   ],
                   addJoins:
@@ -26050,6 +28151,27 @@ class $$ReminderTableTableTableManager
                       },
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (thoughtReminderLinkTableRefs)
+                        await $_getPrefetchedData<
+                          Reminder,
+                          $ReminderTableTable,
+                          ThoughtReminderLink
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ReminderTableTableReferences
+                              ._thoughtReminderLinkTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ReminderTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).thoughtReminderLinkTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.reminderId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (medicineLogTableRefs)
                         await $_getPrefetchedData<
                           Reminder,
@@ -26091,7 +28213,11 @@ typedef $$ReminderTableTableProcessedTableManager =
       $$ReminderTableTableUpdateCompanionBuilder,
       (Reminder, $$ReminderTableTableReferences),
       Reminder,
-      PrefetchHooks Function({bool linkedTaskId, bool medicineLogTableRefs})
+      PrefetchHooks Function({
+        bool linkedTaskId,
+        bool thoughtReminderLinkTableRefs,
+        bool medicineLogTableRefs,
+      })
     >;
 typedef $$FinanceTransactionTableTableCreateCompanionBuilder =
     FinanceTransactionTableCompanion Function({
@@ -28374,34 +30500,454 @@ typedef $$WaterGoalTableTableProcessedTableManager =
       WaterGoal,
       PrefetchHooks Function()
     >;
-typedef $$ThoughtTableTableCreateCompanionBuilder =
-    ThoughtTableCompanion Function({
-      Value<int> id,
-      required String content,
-      Value<String> mood,
-      Value<String> colorHex,
-      Value<bool> isPinned,
-      Value<bool> isArchived,
-      Value<bool> isCompleted,
-      Value<String?> promptQuestion,
-      Value<DateTime> createdAt,
+typedef $$ThoughtReminderLinkTableTableCreateCompanionBuilder =
+    ThoughtReminderLinkTableCompanion Function({
+      required int thoughtId,
+      required int reminderId,
+      Value<int> rowid,
     });
-typedef $$ThoughtTableTableUpdateCompanionBuilder =
-    ThoughtTableCompanion Function({
-      Value<int> id,
-      Value<String> content,
-      Value<String> mood,
-      Value<String> colorHex,
-      Value<bool> isPinned,
-      Value<bool> isArchived,
-      Value<bool> isCompleted,
-      Value<String?> promptQuestion,
-      Value<DateTime> createdAt,
+typedef $$ThoughtReminderLinkTableTableUpdateCompanionBuilder =
+    ThoughtReminderLinkTableCompanion Function({
+      Value<int> thoughtId,
+      Value<int> reminderId,
+      Value<int> rowid,
     });
 
-class $$ThoughtTableTableFilterComposer
-    extends Composer<_$AppDatabase, $ThoughtTableTable> {
-  $$ThoughtTableTableFilterComposer({
+final class $$ThoughtReminderLinkTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ThoughtReminderLinkTableTable,
+          ThoughtReminderLink
+        > {
+  $$ThoughtReminderLinkTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ThoughtTableTable _thoughtIdTable(_$AppDatabase db) => db.thoughtTable
+      .createAlias('thought_reminder_links__thought_id__thoughts__id');
+
+  $$ThoughtTableTableProcessedTableManager get thoughtId {
+    final $_column = $_itemColumn<int>('thought_id')!;
+
+    final manager = $$ThoughtTableTableTableManager(
+      $_db,
+      $_db.thoughtTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_thoughtIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ReminderTableTable _reminderIdTable(_$AppDatabase db) => db
+      .reminderTable
+      .createAlias('thought_reminder_links__reminder_id__reminders__id');
+
+  $$ReminderTableTableProcessedTableManager get reminderId {
+    final $_column = $_itemColumn<int>('reminder_id')!;
+
+    final manager = $$ReminderTableTableTableManager(
+      $_db,
+      $_db.reminderTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_reminderIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ThoughtReminderLinkTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ThoughtReminderLinkTableTable> {
+  $$ThoughtReminderLinkTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$ThoughtTableTableFilterComposer get thoughtId {
+    final $$ThoughtTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.thoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableFilterComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ReminderTableTableFilterComposer get reminderId {
+    final $$ReminderTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reminderId,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableFilterComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ThoughtReminderLinkTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ThoughtReminderLinkTableTable> {
+  $$ThoughtReminderLinkTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$ThoughtTableTableOrderingComposer get thoughtId {
+    final $$ThoughtTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.thoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ReminderTableTableOrderingComposer get reminderId {
+    final $$ReminderTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reminderId,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ThoughtReminderLinkTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ThoughtReminderLinkTableTable> {
+  $$ThoughtReminderLinkTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$ThoughtTableTableAnnotationComposer get thoughtId {
+    final $$ThoughtTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.thoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ReminderTableTableAnnotationComposer get reminderId {
+    final $$ReminderTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reminderId,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ThoughtReminderLinkTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ThoughtReminderLinkTableTable,
+          ThoughtReminderLink,
+          $$ThoughtReminderLinkTableTableFilterComposer,
+          $$ThoughtReminderLinkTableTableOrderingComposer,
+          $$ThoughtReminderLinkTableTableAnnotationComposer,
+          $$ThoughtReminderLinkTableTableCreateCompanionBuilder,
+          $$ThoughtReminderLinkTableTableUpdateCompanionBuilder,
+          (ThoughtReminderLink, $$ThoughtReminderLinkTableTableReferences),
+          ThoughtReminderLink,
+          PrefetchHooks Function({bool thoughtId, bool reminderId})
+        > {
+  $$ThoughtReminderLinkTableTableTableManager(
+    _$AppDatabase db,
+    $ThoughtReminderLinkTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ThoughtReminderLinkTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ThoughtReminderLinkTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ThoughtReminderLinkTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> thoughtId = const Value.absent(),
+                Value<int> reminderId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ThoughtReminderLinkTableCompanion(
+                thoughtId: thoughtId,
+                reminderId: reminderId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int thoughtId,
+                required int reminderId,
+                Value<int> rowid = const Value.absent(),
+              }) => ThoughtReminderLinkTableCompanion.insert(
+                thoughtId: thoughtId,
+                reminderId: reminderId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $ThoughtReminderLinkTableTable,
+                    ThoughtReminderLink
+                  >(table),
+                  $$ThoughtReminderLinkTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({thoughtId = false, reminderId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (thoughtId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.thoughtId,
+                                referencedTable:
+                                    $$ThoughtReminderLinkTableTableReferences
+                                        ._thoughtIdTable(db),
+                                referencedColumn:
+                                    $$ThoughtReminderLinkTableTableReferences
+                                        ._thoughtIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (reminderId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.reminderId,
+                                referencedTable:
+                                    $$ThoughtReminderLinkTableTableReferences
+                                        ._reminderIdTable(db),
+                                referencedColumn:
+                                    $$ThoughtReminderLinkTableTableReferences
+                                        ._reminderIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ThoughtReminderLinkTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ThoughtReminderLinkTableTable,
+      ThoughtReminderLink,
+      $$ThoughtReminderLinkTableTableFilterComposer,
+      $$ThoughtReminderLinkTableTableOrderingComposer,
+      $$ThoughtReminderLinkTableTableAnnotationComposer,
+      $$ThoughtReminderLinkTableTableCreateCompanionBuilder,
+      $$ThoughtReminderLinkTableTableUpdateCompanionBuilder,
+      (ThoughtReminderLink, $$ThoughtReminderLinkTableTableReferences),
+      ThoughtReminderLink,
+      PrefetchHooks Function({bool thoughtId, bool reminderId})
+    >;
+typedef $$ThoughtMergeSourceTableTableCreateCompanionBuilder =
+    ThoughtMergeSourceTableCompanion Function({
+      Value<int> id,
+      required int mergedThoughtId,
+      Value<int?> sourceThoughtId,
+      required int position,
+      required String sourceSnapshot,
+      required String mergedSnapshot,
+      Value<bool> archivedByMerge,
+    });
+typedef $$ThoughtMergeSourceTableTableUpdateCompanionBuilder =
+    ThoughtMergeSourceTableCompanion Function({
+      Value<int> id,
+      Value<int> mergedThoughtId,
+      Value<int?> sourceThoughtId,
+      Value<int> position,
+      Value<String> sourceSnapshot,
+      Value<String> mergedSnapshot,
+      Value<bool> archivedByMerge,
+    });
+
+final class $$ThoughtMergeSourceTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $ThoughtMergeSourceTableTable,
+          ThoughtMergeSource
+        > {
+  $$ThoughtMergeSourceTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ThoughtTableTable _mergedThoughtIdTable(_$AppDatabase db) => db
+      .thoughtTable
+      .createAlias('thought_merge_sources__merged_thought_id__thoughts__id');
+
+  $$ThoughtTableTableProcessedTableManager get mergedThoughtId {
+    final $_column = $_itemColumn<int>('merged_thought_id')!;
+
+    final manager = $$ThoughtTableTableTableManager(
+      $_db,
+      $_db.thoughtTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_mergedThoughtIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ThoughtTableTable _sourceThoughtIdTable(_$AppDatabase db) => db
+      .thoughtTable
+      .createAlias('thought_merge_sources__source_thought_id__thoughts__id');
+
+  $$ThoughtTableTableProcessedTableManager? get sourceThoughtId {
+    final $_column = $_itemColumn<int>('source_thought_id');
+    if ($_column == null) return null;
+    final manager = $$ThoughtTableTableTableManager(
+      $_db,
+      $_db.thoughtTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sourceThoughtIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ThoughtMergeSourceTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ThoughtMergeSourceTableTable> {
+  $$ThoughtMergeSourceTableTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -28413,50 +30959,76 @@ class $$ThoughtTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get content => $composableBuilder(
-    column: $table.content,
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get mood => $composableBuilder(
-    column: $table.mood,
+  ColumnFilters<String> get sourceSnapshot => $composableBuilder(
+    column: $table.sourceSnapshot,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get colorHex => $composableBuilder(
-    column: $table.colorHex,
+  ColumnFilters<String> get mergedSnapshot => $composableBuilder(
+    column: $table.mergedSnapshot,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get isPinned => $composableBuilder(
-    column: $table.isPinned,
+  ColumnFilters<bool> get archivedByMerge => $composableBuilder(
+    column: $table.archivedByMerge,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get isArchived => $composableBuilder(
-    column: $table.isArchived,
-    builder: (column) => ColumnFilters(column),
-  );
+  $$ThoughtTableTableFilterComposer get mergedThoughtId {
+    final $$ThoughtTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mergedThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableFilterComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
-  ColumnFilters<bool> get isCompleted => $composableBuilder(
-    column: $table.isCompleted,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get promptQuestion => $composableBuilder(
-    column: $table.promptQuestion,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
+  $$ThoughtTableTableFilterComposer get sourceThoughtId {
+    final $$ThoughtTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableFilterComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
-class $$ThoughtTableTableOrderingComposer
-    extends Composer<_$AppDatabase, $ThoughtTableTable> {
-  $$ThoughtTableTableOrderingComposer({
+class $$ThoughtMergeSourceTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ThoughtMergeSourceTableTable> {
+  $$ThoughtMergeSourceTableTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -28468,50 +31040,76 @@ class $$ThoughtTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get content => $composableBuilder(
-    column: $table.content,
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get mood => $composableBuilder(
-    column: $table.mood,
+  ColumnOrderings<String> get sourceSnapshot => $composableBuilder(
+    column: $table.sourceSnapshot,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get colorHex => $composableBuilder(
-    column: $table.colorHex,
+  ColumnOrderings<String> get mergedSnapshot => $composableBuilder(
+    column: $table.mergedSnapshot,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isPinned => $composableBuilder(
-    column: $table.isPinned,
+  ColumnOrderings<bool> get archivedByMerge => $composableBuilder(
+    column: $table.archivedByMerge,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isArchived => $composableBuilder(
-    column: $table.isArchived,
-    builder: (column) => ColumnOrderings(column),
-  );
+  $$ThoughtTableTableOrderingComposer get mergedThoughtId {
+    final $$ThoughtTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mergedThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
-  ColumnOrderings<bool> get isCompleted => $composableBuilder(
-    column: $table.isCompleted,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get promptQuestion => $composableBuilder(
-    column: $table.promptQuestion,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
+  $$ThoughtTableTableOrderingComposer get sourceThoughtId {
+    final $$ThoughtTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
-class $$ThoughtTableTableAnnotationComposer
-    extends Composer<_$AppDatabase, $ThoughtTableTable> {
-  $$ThoughtTableTableAnnotationComposer({
+class $$ThoughtMergeSourceTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ThoughtMergeSourceTableTable> {
+  $$ThoughtMergeSourceTableTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -28521,137 +31119,231 @@ class $$ThoughtTableTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get content =>
-      $composableBuilder(column: $table.content, builder: (column) => column);
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
 
-  GeneratedColumn<String> get mood =>
-      $composableBuilder(column: $table.mood, builder: (column) => column);
-
-  GeneratedColumn<String> get colorHex =>
-      $composableBuilder(column: $table.colorHex, builder: (column) => column);
-
-  GeneratedColumn<bool> get isPinned =>
-      $composableBuilder(column: $table.isPinned, builder: (column) => column);
-
-  GeneratedColumn<bool> get isArchived => $composableBuilder(
-    column: $table.isArchived,
+  GeneratedColumn<String> get sourceSnapshot => $composableBuilder(
+    column: $table.sourceSnapshot,
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get isCompleted => $composableBuilder(
-    column: $table.isCompleted,
+  GeneratedColumn<String> get mergedSnapshot => $composableBuilder(
+    column: $table.mergedSnapshot,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get promptQuestion => $composableBuilder(
-    column: $table.promptQuestion,
+  GeneratedColumn<bool> get archivedByMerge => $composableBuilder(
+    column: $table.archivedByMerge,
     builder: (column) => column,
   );
 
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+  $$ThoughtTableTableAnnotationComposer get mergedThoughtId {
+    final $$ThoughtTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mergedThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ThoughtTableTableAnnotationComposer get sourceThoughtId {
+    final $$ThoughtTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
-class $$ThoughtTableTableTableManager
+class $$ThoughtMergeSourceTableTableTableManager
     extends
         RootTableManager<
           _$AppDatabase,
-          $ThoughtTableTable,
-          Thought,
-          $$ThoughtTableTableFilterComposer,
-          $$ThoughtTableTableOrderingComposer,
-          $$ThoughtTableTableAnnotationComposer,
-          $$ThoughtTableTableCreateCompanionBuilder,
-          $$ThoughtTableTableUpdateCompanionBuilder,
-          (Thought, BaseReferences<_$AppDatabase, $ThoughtTableTable, Thought>),
-          Thought,
-          PrefetchHooks Function()
+          $ThoughtMergeSourceTableTable,
+          ThoughtMergeSource,
+          $$ThoughtMergeSourceTableTableFilterComposer,
+          $$ThoughtMergeSourceTableTableOrderingComposer,
+          $$ThoughtMergeSourceTableTableAnnotationComposer,
+          $$ThoughtMergeSourceTableTableCreateCompanionBuilder,
+          $$ThoughtMergeSourceTableTableUpdateCompanionBuilder,
+          (ThoughtMergeSource, $$ThoughtMergeSourceTableTableReferences),
+          ThoughtMergeSource,
+          PrefetchHooks Function({bool mergedThoughtId, bool sourceThoughtId})
         > {
-  $$ThoughtTableTableTableManager(_$AppDatabase db, $ThoughtTableTable table)
-    : super(
+  $$ThoughtMergeSourceTableTableTableManager(
+    _$AppDatabase db,
+    $ThoughtMergeSourceTableTable table,
+  ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$ThoughtTableTableFilterComposer($db: db, $table: table),
+              $$ThoughtMergeSourceTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
           createOrderingComposer: () =>
-              $$ThoughtTableTableOrderingComposer($db: db, $table: table),
+              $$ThoughtMergeSourceTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
           createComputedFieldComposer: () =>
-              $$ThoughtTableTableAnnotationComposer($db: db, $table: table),
+              $$ThoughtMergeSourceTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<String> content = const Value.absent(),
-                Value<String> mood = const Value.absent(),
-                Value<String> colorHex = const Value.absent(),
-                Value<bool> isPinned = const Value.absent(),
-                Value<bool> isArchived = const Value.absent(),
-                Value<bool> isCompleted = const Value.absent(),
-                Value<String?> promptQuestion = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-              }) => ThoughtTableCompanion(
+                Value<int> mergedThoughtId = const Value.absent(),
+                Value<int?> sourceThoughtId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String> sourceSnapshot = const Value.absent(),
+                Value<String> mergedSnapshot = const Value.absent(),
+                Value<bool> archivedByMerge = const Value.absent(),
+              }) => ThoughtMergeSourceTableCompanion(
                 id: id,
-                content: content,
-                mood: mood,
-                colorHex: colorHex,
-                isPinned: isPinned,
-                isArchived: isArchived,
-                isCompleted: isCompleted,
-                promptQuestion: promptQuestion,
-                createdAt: createdAt,
+                mergedThoughtId: mergedThoughtId,
+                sourceThoughtId: sourceThoughtId,
+                position: position,
+                sourceSnapshot: sourceSnapshot,
+                mergedSnapshot: mergedSnapshot,
+                archivedByMerge: archivedByMerge,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required String content,
-                Value<String> mood = const Value.absent(),
-                Value<String> colorHex = const Value.absent(),
-                Value<bool> isPinned = const Value.absent(),
-                Value<bool> isArchived = const Value.absent(),
-                Value<bool> isCompleted = const Value.absent(),
-                Value<String?> promptQuestion = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-              }) => ThoughtTableCompanion.insert(
+                required int mergedThoughtId,
+                Value<int?> sourceThoughtId = const Value.absent(),
+                required int position,
+                required String sourceSnapshot,
+                required String mergedSnapshot,
+                Value<bool> archivedByMerge = const Value.absent(),
+              }) => ThoughtMergeSourceTableCompanion.insert(
                 id: id,
-                content: content,
-                mood: mood,
-                colorHex: colorHex,
-                isPinned: isPinned,
-                isArchived: isArchived,
-                isCompleted: isCompleted,
-                promptQuestion: promptQuestion,
-                createdAt: createdAt,
+                mergedThoughtId: mergedThoughtId,
+                sourceThoughtId: sourceThoughtId,
+                position: position,
+                sourceSnapshot: sourceSnapshot,
+                mergedSnapshot: mergedSnapshot,
+                archivedByMerge: archivedByMerge,
               ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable<$ThoughtTableTable, Thought>(table),
-                  BaseReferences<_$AppDatabase, $ThoughtTableTable, Thought>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  e.readTable<
+                    $ThoughtMergeSourceTableTable,
+                    ThoughtMergeSource
+                  >(table),
+                  $$ThoughtMergeSourceTableTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback:
+              ({mergedThoughtId = false, sourceThoughtId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (mergedThoughtId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.mergedThoughtId,
+                                    referencedTable:
+                                        $$ThoughtMergeSourceTableTableReferences
+                                            ._mergedThoughtIdTable(db),
+                                    referencedColumn:
+                                        $$ThoughtMergeSourceTableTableReferences
+                                            ._mergedThoughtIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (sourceThoughtId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sourceThoughtId,
+                                    referencedTable:
+                                        $$ThoughtMergeSourceTableTableReferences
+                                            ._sourceThoughtIdTable(db),
+                                    referencedColumn:
+                                        $$ThoughtMergeSourceTableTableReferences
+                                            ._sourceThoughtIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
         ),
       );
 }
 
-typedef $$ThoughtTableTableProcessedTableManager =
+typedef $$ThoughtMergeSourceTableTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ThoughtTableTable,
-      Thought,
-      $$ThoughtTableTableFilterComposer,
-      $$ThoughtTableTableOrderingComposer,
-      $$ThoughtTableTableAnnotationComposer,
-      $$ThoughtTableTableCreateCompanionBuilder,
-      $$ThoughtTableTableUpdateCompanionBuilder,
-      (Thought, BaseReferences<_$AppDatabase, $ThoughtTableTable, Thought>),
-      Thought,
-      PrefetchHooks Function()
+      $ThoughtMergeSourceTableTable,
+      ThoughtMergeSource,
+      $$ThoughtMergeSourceTableTableFilterComposer,
+      $$ThoughtMergeSourceTableTableOrderingComposer,
+      $$ThoughtMergeSourceTableTableAnnotationComposer,
+      $$ThoughtMergeSourceTableTableCreateCompanionBuilder,
+      $$ThoughtMergeSourceTableTableUpdateCompanionBuilder,
+      (ThoughtMergeSource, $$ThoughtMergeSourceTableTableReferences),
+      ThoughtMergeSource,
+      PrefetchHooks Function({bool mergedThoughtId, bool sourceThoughtId})
     >;
 typedef $$CourseTableTableCreateCompanionBuilder =
     CourseTableCompanion Function({
@@ -33083,6 +35775,8 @@ class $AppDatabaseManager {
       $$StudyPhaseTableTableTableManager(_db, _db.studyPhaseTable);
   $$SeriesTableTableTableManager get seriesTable =>
       $$SeriesTableTableTableManager(_db, _db.seriesTable);
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db, _db.thoughtTable);
   $$ApplicationTableTableTableManager get applicationTable =>
       $$ApplicationTableTableTableManager(_db, _db.applicationTable);
   $$TaskTableTableTableManager get taskTable =>
@@ -33140,8 +35834,16 @@ class $AppDatabaseManager {
       $$WaterLogTableTableTableManager(_db, _db.waterLogTable);
   $$WaterGoalTableTableTableManager get waterGoalTable =>
       $$WaterGoalTableTableTableManager(_db, _db.waterGoalTable);
-  $$ThoughtTableTableTableManager get thoughtTable =>
-      $$ThoughtTableTableTableManager(_db, _db.thoughtTable);
+  $$ThoughtReminderLinkTableTableTableManager get thoughtReminderLinkTable =>
+      $$ThoughtReminderLinkTableTableTableManager(
+        _db,
+        _db.thoughtReminderLinkTable,
+      );
+  $$ThoughtMergeSourceTableTableTableManager get thoughtMergeSourceTable =>
+      $$ThoughtMergeSourceTableTableTableManager(
+        _db,
+        _db.thoughtMergeSourceTable,
+      );
   $$CourseTableTableTableManager get courseTable =>
       $$CourseTableTableTableManager(_db, _db.courseTable);
   $$MomentumChallengeTableTableTableManager get momentumChallengeTable =>
@@ -33191,6 +35893,7 @@ class UserProfileDaoManager {
 }
 
 mixin _$TaskDaoMixin on DatabaseAccessor<AppDatabase> {
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
   $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
   $ApplicationTableTable get applicationTable =>
@@ -33202,6 +35905,8 @@ mixin _$TaskDaoMixin on DatabaseAccessor<AppDatabase> {
 class TaskDaoManager {
   final _$TaskDaoMixin _db;
   TaskDaoManager(this._db);
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
   $$StudyPhaseTableTableTableManager get studyPhaseTable =>
       $$StudyPhaseTableTableTableManager(
         _db.attachedDatabase,
@@ -33273,6 +35978,7 @@ class DsaDaoManager {
 mixin _$SeriesDaoMixin on DatabaseAccessor<AppDatabase> {
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
   $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $ApplicationTableTable get applicationTable =>
       attachedDatabase.applicationTable;
   $TaskTableTable get taskTable => attachedDatabase.taskTable;
@@ -33289,6 +35995,8 @@ class SeriesDaoManager {
       );
   $$SeriesTableTableTableManager get seriesTable =>
       $$SeriesTableTableTableManager(_db.attachedDatabase, _db.seriesTable);
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
   $$ApplicationTableTableTableManager get applicationTable =>
       $$ApplicationTableTableTableManager(
         _db.attachedDatabase,
@@ -33300,6 +36008,7 @@ class SeriesDaoManager {
 
 mixin _$StudyPhaseDaoMixin on DatabaseAccessor<AppDatabase> {
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
   $ApplicationTableTable get applicationTable =>
       attachedDatabase.applicationTable;
@@ -33315,6 +36024,8 @@ class StudyPhaseDaoManager {
         _db.attachedDatabase,
         _db.studyPhaseTable,
       );
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
   $$SeriesTableTableTableManager get seriesTable =>
       $$SeriesTableTableTableManager(_db.attachedDatabase, _db.seriesTable);
   $$ApplicationTableTableTableManager get applicationTable =>
@@ -33387,6 +36098,7 @@ class InsightDismissalDaoManager {
 mixin _$TimeSessionDaoMixin on DatabaseAccessor<AppDatabase> {
   $SessionCategoryTableTable get sessionCategoryTable =>
       attachedDatabase.sessionCategoryTable;
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
   $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
   $ApplicationTableTable get applicationTable =>
@@ -33407,6 +36119,8 @@ class TimeSessionDaoManager {
         _db.attachedDatabase,
         _db.sessionCategoryTable,
       );
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
   $$StudyPhaseTableTableTableManager get studyPhaseTable =>
       $$StudyPhaseTableTableTableManager(
         _db.attachedDatabase,
@@ -33450,6 +36164,7 @@ class UpcomingInterviewDaoManager {
 }
 
 mixin _$ReminderDaoMixin on DatabaseAccessor<AppDatabase> {
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
   $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
   $ApplicationTableTable get applicationTable =>
@@ -33462,6 +36177,8 @@ mixin _$ReminderDaoMixin on DatabaseAccessor<AppDatabase> {
 class ReminderDaoManager {
   final _$ReminderDaoMixin _db;
   ReminderDaoManager(this._db);
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
   $$StudyPhaseTableTableTableManager get studyPhaseTable =>
       $$StudyPhaseTableTableTableManager(
         _db.attachedDatabase,
@@ -33652,6 +36369,7 @@ class ChallengeDaoManager {
 
 mixin _$MedicineDaoMixin on DatabaseAccessor<AppDatabase> {
   $MedicineTableTable get medicineTable => attachedDatabase.medicineTable;
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
   $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
   $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
   $ApplicationTableTable get applicationTable =>
@@ -33668,6 +36386,8 @@ class MedicineDaoManager {
   MedicineDaoManager(this._db);
   $$MedicineTableTableTableManager get medicineTable =>
       $$MedicineTableTableTableManager(_db.attachedDatabase, _db.medicineTable);
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
   $$StudyPhaseTableTableTableManager get studyPhaseTable =>
       $$StudyPhaseTableTableTableManager(
         _db.attachedDatabase,

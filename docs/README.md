@@ -1,8 +1,9 @@
 # Ascent documentation
 
-Current planning and contributor references, reviewed on 12 October 2026:
+Current planning and contributor references, reviewed on 13 October 2026:
 
-- [Mind Space feedback plan](MIND_SPACE_FEEDBACK_PLAN.md): the eleven feedback notes, proposed implementation order and acceptance cases. Planning only.
+- [Mind Space feedback plan](MIND_SPACE_FEEDBACK_PLAN.md): the eleven feedback notes, proposed implementation order and acceptance cases. Requirements and implementation stages.
+- [Mind Space implementation](MIND_SPACE_IMPLEMENTATION.md): current behavior, capability boundaries and verification evidence.
 - [Next update plan](NEXT_UPDATE_PLAN.md): Home customization and optional connected projects. Planning only.
 - [Application architecture](APP_ARCHITECTURE.md): current storage, state, services and navigation boundaries.
 - [Design system](DESIGN_SYSTEM.md): shared theme and UI conventions.

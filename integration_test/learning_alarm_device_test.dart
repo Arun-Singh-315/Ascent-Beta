@@ -50,7 +50,7 @@ void main() {
     expect(access['fullScreen'], true);
     final learning = container.read(learningHubProvider.notifier);
     final original = container.read(learningHubProvider);
-    learning.updateCourse(
+    await learning.updateCourse(
       original.course.copyWith(
         title: 'QA Learning course',
         modules: original.course.modules

@@ -10,6 +10,7 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
+import '../../../core/providers/home_layout_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
 
 /// Redesigned HomeHeader based on Ascent Home Redesign spec:
@@ -44,7 +45,7 @@ class HomeHeader extends ConsumerWidget {
       'EEE, d MMM',
     ).format(DateTime.now()).toUpperCase();
     final studyStreak = ref.watch(studyStreakProvider);
-    final isStreakCardVisible = ref.watch(studyStreakCardVisibleProvider);
+    final isStreakCardVisible = ref.watch(homeStreakVisibleProvider);
     final streak = studyStreak.displayStreakDays;
     final assistantName = ref.watch(assistantNameProvider);
 
@@ -54,9 +55,10 @@ class HomeHeader extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── TOP ROW: DATE CAPTION & ACTION PILLS (RIYA + AVATAR) ───────
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               // Date Caption
               Text(
@@ -69,18 +71,37 @@ class HomeHeader extends ConsumerWidget {
               ),
 
               // Right cluster: Interactive Streak flame + Riya button + Avatar
-              Row(
-                mainAxisSize: MainAxisSize.min,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   // Streak Pill (Toggles Home Streak Card visibility)
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () {
+                      onTap: () async {
                         HapticFeedback.lightImpact();
-                        ref
-                            .read(studyStreakCardVisibleProvider.notifier)
-                            .toggle();
+                        final layout = ref.read(homeLayoutProvider);
+                        final visible = {...layout.visible};
+                        isStreakCardVisible
+                            ? visible.remove('streak')
+                            : visible.add('streak');
+                        try {
+                          await ref
+                              .read(homeLayoutProvider.notifier)
+                              .save(layout.copyWith(visible: visible));
+                        } catch (_) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Could not update Home. Try again.',
+                                ),
+                              ),
+                            );
+                          }
+                        }
                       },
                       onLongPress: () {
                         HapticFeedback.mediumImpact();
@@ -88,8 +109,11 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        constraints: const BoxConstraints(minHeight: 48),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: isStreakCardVisible ? g.claySoft : g.fill,
                           borderRadius: BorderRadius.circular(99),
@@ -121,8 +145,6 @@ class HomeHeader extends ConsumerWidget {
                     ),
                   ),
 
-                  const SizedBox(width: 8),
-
                   // Riya glass pill button
                   Material(
                     color: Colors.transparent,
@@ -133,8 +155,11 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        height: 36,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        constraints: const BoxConstraints(minHeight: 48),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: g.fill,
                           borderRadius: BorderRadius.circular(99),
@@ -158,12 +183,16 @@ class HomeHeader extends ConsumerWidget {
                               color: g.clay,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              assistantName,
-                              style: AscentTextStyles.homeSecondary.copyWith(
-                                color: g.ink,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
+                            Flexible(
+                              child: Text(
+                                assistantName,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.ink,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
                           ],
@@ -171,8 +200,6 @@ class HomeHeader extends ConsumerWidget {
                       ),
                     ),
                   ),
-
-                  const SizedBox(width: 8),
 
                   // Avatar Circle (opens profile & quick settings sheet)
                   Material(
@@ -184,8 +211,8 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        width: 48,
+                        height: 48,
                         decoration: BoxDecoration(
                           color: g.claySoft,
                           shape: BoxShape.circle,
@@ -194,7 +221,9 @@ class HomeHeader extends ConsumerWidget {
                         child: Center(
                           child: Text(
                             name.isNotEmpty
-                                ? name.substring(0, 1).toUpperCase()
+                                ? String.fromCharCode(
+                                    name.runes.first,
+                                  ).toUpperCase()
                                 : 'A',
                             style: GoogleFonts.bricolageGrotesque(
                               color: g.ink,
@@ -359,7 +388,9 @@ class HomeHeader extends ConsumerWidget {
                     child: Center(
                       child: Text(
                         name.isNotEmpty
-                            ? name.substring(0, 1).toUpperCase()
+                            ? String.fromCharCode(
+                                name.runes.first,
+                              ).toUpperCase()
                             : 'A',
                         style: GoogleFonts.bricolageGrotesque(
                           color: g.ink,

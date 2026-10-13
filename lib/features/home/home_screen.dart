@@ -9,8 +9,11 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../core/providers/home_layout_provider.dart';
+import '../money/add_transaction_sheet.dart';
+import 'home_customization_sheet.dart';
+import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
-import '../../core/services/hydration_reminder_service.dart';
 import '../../core/streak/study_streak_provider.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
 import '../reminders/widgets/in_app_reminder_dialog.dart';
@@ -56,9 +59,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
         );
       }
-      ref
-          .read(hydrationReminderServiceProvider)
-          .checkAndPromptHydration(context);
 
       if (!_hasCheckedOverdueReminders) {
         _hasCheckedOverdueReminders = true;
@@ -72,7 +72,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final overdueReminders = await ref
           .read(reminderDaoProvider)
           .getOverdueActiveReminders();
-      final quietReminders = overdueReminders.where((r) => !r.alarmEnabled).toList();
+      final quietReminders = overdueReminders
+          .where((r) => !r.alarmEnabled)
+          .toList();
       if (quietReminders.isNotEmpty && mounted) {
         await InAppReminderDialog.show(context, quietReminders.first);
       }
@@ -85,9 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final profileAsync = ref.watch(userProfileStreamProvider);
     final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
-    final studyStreak = ref.watch(studyStreakProvider);
-    final isStreakCardVisible = ref.watch(studyStreakCardVisibleProvider);
-    final visibleReminders = ref.watch(homeVisibleRemindersProvider);
+    final layout = ref.watch(homeLayoutProvider);
     ref.watch(challengeProofSyncProvider);
 
     // Listen for celebratory streak unlocked event
@@ -165,6 +165,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
 
+                    // Capture stays above guidance and every optional card.
+                    const ThoughtWallHomePreview(showNotes: false),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          showHomeCustomization(context);
+                        },
+                        icon: const Icon(Icons.tune_rounded, size: 18),
+                        label: const Text('Customize Home'),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? ''),
 
@@ -174,82 +189,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       WelcomeBackBanner(days: daysSinceLastOpen),
                     ],
 
-                    // ── STREAK DOPAMINE METER (TOGGLEABLE VIA HEADER FLAME) ──
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOutCubic,
-                      child: isStreakCardVisible
-                          ? Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(height: 16),
-                                StudyStreakMeterCard(
-                                  status: studyStreak,
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    ref
-                                        .read(
-                                          studyStreakCardVisibleProvider
-                                              .notifier,
-                                        )
-                                        .toggle();
-                                  },
+                    if (layout.shortcuts.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: layout.shortcuts
+                              .map(
+                                (id) => ActionChip(
+                                  label: Text(homeShortcutRoutes[id]!),
+                                  onPressed: () => context.push('/$id'),
                                 ),
-                              ],
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── HOME DISMISSIBLE REMINDERS (SWIPE TO REMOVE / ACTION) ──
-                    if (visibleReminders.isNotEmpty)
-                      HomeDismissibleRemindersSection(
-                        reminders: visibleReminders,
-                        onAddReminder: () => context.push('/reminders'),
-                        onViewAll: () => context.push('/reminders'),
-                        onDismissReminder: (reminder) async {
-                          await ref
-                              .read(dismissedTodayReminderIdsProvider.notifier)
-                              .dismissReminderId(reminder.id);
-                        },
-                        onCompleteReminder: (reminder) async {
-                          try {
-                            final dao = ref.read(reminderDaoProvider);
-                            await dao.updateReminder(
-                              reminder
-                                  .toCompanion(true)
-                                  .copyWith(isActive: const drift.Value(false)),
-                            );
-                            await NotificationService.instance.cancel(
-                              reminder.id,
-                            );
-                            ref.invalidate(allRemindersProvider);
-                          } catch (_) {}
-                        },
+                              )
+                              .toList(),
+                        ),
                       ),
-
-                    if (visibleReminders.isNotEmpty) const SizedBox(height: 16),
-
-                    // ── LEVEL 1: TODAY EXECUTION (PRIMARY) ───────────────
-                    const ActivityHubCard(),
-
-                    const SizedBox(height: 24),
-
-                    // ── LEVEL 2: LEARNING HUB ────────────────────────────
-                    const LearningHubCard(),
-
-                    const SizedBox(height: 32),
-
-                    // ── LEVEL 2: LIFE & SANCTUARY (2x2 GRID + CHAI) ──────
-                    const QuickModulesNavHub(),
-
-                    const SizedBox(height: 32),
-
-                    // ── LEVEL 3: MIND SPACE & SELF-TALK (NOTES) ──────────
-                    const ThoughtWallHomePreview(),
-
-                    const SizedBox(height: 24),
+                    for (final id in layout.order.where(
+                      layout.visible.contains,
+                    ))
+                      _homeSection(id, layout),
+                    if (layout.visible.isEmpty)
+                      Column(
+                        children: [
+                          Text(
+                            'Make this space yours',
+                            style: TextStyle(color: g.ink),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              HapticFeedback.selectionClick();
+                              showHomeCustomization(context);
+                            },
+                            child: const Text('Customize Home'),
+                          ),
+                          TextButton(
+                            onPressed: () => context.push('/more'),
+                            child: const Text('Open tools'),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               );
@@ -258,6 +237,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _homeSection(String id, HomeLayout layout) {
+    Widget spaced(Widget child) =>
+        Padding(padding: const EdgeInsets.only(bottom: 24), child: child);
+    switch (id) {
+      case 'streak':
+        if (!ref.watch(homeStreakVisibleProvider)) {
+          return const SizedBox.shrink();
+        }
+        return spaced(
+          StudyStreakMeterCard(
+            status: ref.watch(studyStreakProvider),
+            onTap: () => ref
+                .read(homeLayoutProvider.notifier)
+                .save(
+                  layout.copyWith(
+                    visible: {...layout.visible}..remove('streak'),
+                  ),
+                ),
+          ),
+        );
+      case 'reminders':
+        final reminders = ref.watch(homeVisibleRemindersProvider);
+        if (reminders.isEmpty) return const SizedBox.shrink();
+        return spaced(
+          HomeDismissibleRemindersSection(
+            reminders: reminders,
+            onAddReminder: () => context.push('/reminders'),
+            onViewAll: () => context.push('/reminders'),
+            onDismissReminder: (reminder) => ref
+                .read(dismissedTodayReminderIdsProvider.notifier)
+                .dismissReminderId(reminder.id),
+            onCompleteReminder: (reminder) async {
+              await ref
+                  .read(reminderDaoProvider)
+                  .updateReminder(
+                    reminder
+                        .toCompanion(true)
+                        .copyWith(isActive: const drift.Value(false)),
+                  );
+              await NotificationService.instance.cancel(reminder.id);
+            },
+          ),
+        );
+      case 'today':
+        return spaced(
+          ActivityHubCard(previewLimit: layout.compact.contains(id) ? 2 : 4),
+        );
+      case 'learning':
+        return spaced(const LearningHubCard());
+      case 'mind':
+        return spaced(
+          ThoughtWallHomePreview(
+            showComposer: false,
+            previewLimit: layout.compact.contains(id) ? 1 : 3,
+          ),
+        );
+      case 'life':
+        if (layout.tools.isEmpty) return const SizedBox.shrink();
+        if (layout.tools.length == homeTools.length) {
+          return spaced(const QuickModulesNavHub());
+        }
+        return spaced(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Life & Health',
+                style: TextStyle(color: context.glass.ink, fontSize: 18),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: layout.tools
+                    .map(
+                      (tool) => ActionChip(
+                        label: Text(homeTools[tool]!),
+                        onPressed: () => context.push('/$tool'),
+                      ),
+                    )
+                    .toList(),
+              ),
+              if (layout.tools.contains('hydration'))
+                TextButton(
+                  onPressed: () async {
+                    await ref.read(waterDaoProvider).addWater(250);
+                  },
+                  child: const Text('Log 250 ml water'),
+                ),
+            ],
+          ),
+        );
+      case 'money':
+        return spaced(
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.payments_outlined),
+            title: const Text('Log an expense'),
+            subtitle: const Text('Amount, category and date — when you want'),
+            onTap: () => AddTransactionSheet.show(context),
+          ),
+        );
+      case 'checkin':
+        return spaced(const DailyCheckInCard());
+      default:
+        return const SizedBox.shrink();
+    }
   }
 }
 

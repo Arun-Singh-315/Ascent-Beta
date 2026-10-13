@@ -15,11 +15,18 @@ class WelcomeBackBanner extends ConsumerWidget {
       decoration: BoxDecoration(
         color: context.accentSecondary.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: context.accentSecondary.withValues(alpha: 0.25), width: 0.8),
+        border: Border.all(
+          color: context.accentSecondary.withValues(alpha: 0.25),
+          width: 0.8,
+        ),
       ),
       child: Row(
         children: [
-          Icon(Icons.wb_sunny_outlined, color: context.accentSecondary, size: 20),
+          Icon(
+            Icons.wb_sunny_outlined,
+            color: context.accentSecondary,
+            size: 20,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -35,7 +42,10 @@ class WelcomeBackBanner extends ConsumerWidget {
                 const SizedBox(height: 1),
                 Text(
                   'Consistency starts with one focused block. Let\'s build momentum today!',
-                  style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted, fontSize: 11),
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),

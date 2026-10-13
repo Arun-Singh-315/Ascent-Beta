@@ -67,7 +67,10 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
           itemBuilder: (context) => [
             const PopupMenuItem(value: 'All', child: Text('All Priorities')),
             const PopupMenuItem(value: 'high', child: Text('High Priority')),
-            const PopupMenuItem(value: 'medium', child: Text('Medium Priority')),
+            const PopupMenuItem(
+              value: 'medium',
+              child: Text('Medium Priority'),
+            ),
             const PopupMenuItem(value: 'low', child: Text('Low Priority')),
           ],
         ),
@@ -131,7 +134,11 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
               continue;
             }
 
-            final plannedDay = DateTime(t.plannedDate!.year, t.plannedDate!.month, t.plannedDate!.day);
+            final plannedDay = DateTime(
+              t.plannedDate!.year,
+              t.plannedDate!.month,
+              t.plannedDate!.day,
+            );
             if (plannedDay.isBefore(today)) {
               overdueTasks.add(t);
             } else if (plannedDay.isAtSameMomentAs(today)) {
@@ -141,14 +148,18 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
             }
           }
 
-          final hasActiveTasks = overdueTasks.isNotEmpty || todayTasks.isNotEmpty || upcomingTasks.isNotEmpty;
+          final hasActiveTasks =
+              overdueTasks.isNotEmpty ||
+              todayTasks.isNotEmpty ||
+              upcomingTasks.isNotEmpty;
 
           // §7: Clean empty state for new users
           if (!hasActiveTasks && completedTasks.isEmpty) {
             return EmptyState(
               icon: Icons.landscape_rounded,
               title: 'Your slate is clean',
-              subtitle: 'Add your first prep task for today, or link one to an active application.',
+              subtitle:
+                  'Add your first prep task for today, or link one to an active application.',
               actionLabel: 'Add Task',
               onAction: () => _openAddTaskSheet(context),
             );
@@ -167,9 +178,24 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                   ),
                   child: Row(
                     children: [
-                      _buildTabSegment('Today', _TaskBoardTab.today, todayTasks.length + overdueTasks.length, g),
-                      _buildTabSegment('Others', _TaskBoardTab.others, upcomingTasks.length, g),
-                      _buildTabSegment('Completed', _TaskBoardTab.completed, completedTasks.length, g),
+                      _buildTabSegment(
+                        'Today',
+                        _TaskBoardTab.today,
+                        todayTasks.length + overdueTasks.length,
+                        g,
+                      ),
+                      _buildTabSegment(
+                        'Others',
+                        _TaskBoardTab.others,
+                        upcomingTasks.length,
+                        g,
+                      ),
+                      _buildTabSegment(
+                        'Completed',
+                        _TaskBoardTab.completed,
+                        completedTasks.length,
+                        g,
+                      ),
                     ],
                   ),
                 ),
@@ -187,11 +213,14 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                           color: context.stateDanger,
                         ),
                         const SizedBox(height: 8),
-                        ...overdueTasks.map((t) => _TaskItemTile(
-                              task: t,
-                              subTasks: subTasksByParent[t.id] ?? [],
-                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                            )),
+                        ...overdueTasks.map(
+                          (t) => _TaskItemTile(
+                            task: t,
+                            subTasks: subTasksByParent[t.id] ?? [],
+                            onAddSubTask: () =>
+                                _openAddTaskSheet(context, parentTaskId: t.id),
+                          ),
+                        ),
                         const SizedBox(height: 18),
                       ],
 
@@ -204,19 +233,27 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                       const SizedBox(height: 8),
                       if (todayTasks.isEmpty && overdueTasks.isEmpty)
                         AscentCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           color: context.bgSurfaceElevated,
                           child: Text(
                             'No tasks scheduled for today. Great time to catch up or relax!',
-                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         )
                       else
-                        ...todayTasks.map((t) => _TaskItemTile(
-                              task: t,
-                              subTasks: subTasksByParent[t.id] ?? [],
-                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                            )),
+                        ...todayTasks.map(
+                          (t) => _TaskItemTile(
+                            task: t,
+                            subTasks: subTasksByParent[t.id] ?? [],
+                            onAddSubTask: () =>
+                                _openAddTaskSheet(context, parentTaskId: t.id),
+                          ),
+                        ),
                     ] else if (_selectedTab == _TaskBoardTab.others) ...[
                       // Upcoming Group
                       _SectionHeader(
@@ -227,19 +264,27 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                       const SizedBox(height: 8),
                       if (upcomingTasks.isEmpty)
                         AscentCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           color: context.bgSurfaceElevated,
                           child: Text(
                             'No upcoming tasks in queue. Tap + to plan future tasks.',
-                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         )
                       else
-                        ...upcomingTasks.map((t) => _TaskItemTile(
-                              task: t,
-                              subTasks: subTasksByParent[t.id] ?? [],
-                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                            )),
+                        ...upcomingTasks.map(
+                          (t) => _TaskItemTile(
+                            task: t,
+                            subTasks: subTasksByParent[t.id] ?? [],
+                            onAddSubTask: () =>
+                                _openAddTaskSheet(context, parentTaskId: t.id),
+                          ),
+                        ),
                     ] else ...[
                       // Completed Group
                       _SectionHeader(
@@ -250,20 +295,28 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                       const SizedBox(height: 8),
                       if (completedTasks.isEmpty)
                         AscentCard(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                           color: context.bgSurfaceElevated,
                           child: Text(
                             'No completed tasks yet. Finish a task to see it here!',
-                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         )
                       else
-                        ...completedTasks.map((t) => _TaskItemTile(
-                              task: t,
-                              subTasks: subTasksByParent[t.id] ?? [],
-                              isCompletedView: true,
-                              onAddSubTask: () => _openAddTaskSheet(context, parentTaskId: t.id),
-                            )),
+                        ...completedTasks.map(
+                          (t) => _TaskItemTile(
+                            task: t,
+                            subTasks: subTasksByParent[t.id] ?? [],
+                            isCompletedView: true,
+                            onAddSubTask: () =>
+                                _openAddTaskSheet(context, parentTaskId: t.id),
+                          ),
+                        ),
                     ],
                   ],
                 ),
@@ -275,7 +328,12 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
     );
   }
 
-  Widget _buildTabSegment(String label, _TaskBoardTab tab, int count, AscentGlass g) {
+  Widget _buildTabSegment(
+    String label,
+    _TaskBoardTab tab,
+    int count,
+    AscentGlass g,
+  ) {
     final isSelected = _selectedTab == tab;
     return Expanded(
       child: GestureDetector(
@@ -305,9 +363,14 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
               if (count > 0) ...[
                 const SizedBox(width: 5),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1.5,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white.withValues(alpha: 0.25) : g.claySoft,
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : g.claySoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -387,7 +450,8 @@ class _TaskItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDone = task.actualCompletedDate != null;
-    final isTimeBound = task.estimatedMinutes != null && task.estimatedMinutes! > 0;
+    final isTimeBound =
+        task.estimatedMinutes != null && task.estimatedMinutes! > 0;
 
     final status = SeriesEngine.computeTaskStatus(
       plannedDate: task.plannedDate,
@@ -395,19 +459,26 @@ class _TaskItemTile extends ConsumerWidget {
     );
 
     final reminders = ref.watch(allRemindersProvider).value ?? [];
-    final hasReminder = reminders.any((r) =>
-        r.isActive &&
-        (r.linkedTaskId == task.id ||
-            (r.linkedTaskId == null && r.title.trim().toLowerCase() == task.title.trim().toLowerCase())));
+    final hasReminder = reminders.any(
+      (r) =>
+          r.isActive &&
+          (r.linkedTaskId == task.id ||
+              (r.linkedTaskId == null &&
+                  r.title.trim().toLowerCase() ==
+                      task.title.trim().toLowerCase())),
+    );
 
-    final completedSubTasks =
-        subTasks.where((s) => s.actualCompletedDate != null).length;
+    final completedSubTasks = subTasks
+        .where((s) => s.actualCompletedDate != null)
+        .length;
 
     return Dismissible(
       key: ValueKey('task_${task.id}'),
       direction: (isCompletedView || isDone)
           ? DismissDirection.none
-          : (isTimeBound ? DismissDirection.endToStart : DismissDirection.horizontal),
+          : (isTimeBound
+                ? DismissDirection.endToStart
+                : DismissDirection.horizontal),
       // Swipe Right: Complete
       background: Container(
         alignment: Alignment.centerLeft,
@@ -416,7 +487,11 @@ class _TaskItemTile extends ConsumerWidget {
           color: context.accentPrimary.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(Icons.check_circle_rounded, color: context.accentPrimary, size: 28),
+        child: Icon(
+          Icons.check_circle_rounded,
+          color: context.accentPrimary,
+          size: 28,
+        ),
       ),
       // Swipe Left: Delete
       secondaryBackground: Container(
@@ -426,7 +501,11 @@ class _TaskItemTile extends ConsumerWidget {
           color: context.stateDanger.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(Icons.delete_outline_rounded, color: context.stateDanger, size: 28),
+        child: Icon(
+          Icons.delete_outline_rounded,
+          color: context.stateDanger,
+          size: 28,
+        ),
       ),
       confirmDismiss: (direction) async {
         final taskDao = ref.read(taskDaoProvider);
@@ -436,9 +515,11 @@ class _TaskItemTile extends ConsumerWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(completed
-                    ? 'Task marked complete!'
-                    : 'Timed activities complete after their focus target is reached.'),
+                content: Text(
+                  completed
+                      ? 'Task marked complete!'
+                      : 'Timed activities complete after their focus target is reached.',
+                ),
                 duration: Duration(seconds: 2),
                 behavior: SnackBarBehavior.floating,
               ),
@@ -460,13 +541,17 @@ class _TaskItemTile extends ConsumerWidget {
                   children: [
                     Text(
                       'Delete Task?',
-                      style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.displaySmall.copyWith(
+                        color: context.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '"${task.title}" will be removed.',
                       textAlign: TextAlign.center,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textMuted,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Row(
@@ -514,8 +599,12 @@ class _TaskItemTile extends ConsumerWidget {
                     estimatedMinutes: drift.Value(task.estimatedMinutes),
                   ),
                 );
-                await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId('task_${task.id}');
-                await ref.read(dismissedTodayActivityIdsProvider.notifier).unDismissActivityId('task_$newId');
+                await ref
+                    .read(dismissedTodayActivityIdsProvider.notifier)
+                    .unDismissActivityId('task_${task.id}');
+                await ref
+                    .read(dismissedTodayActivityIdsProvider.notifier)
+                    .unDismissActivityId('task_$newId');
               },
             );
           }
@@ -546,7 +635,9 @@ class _TaskItemTile extends ConsumerWidget {
                       if (isTimeBound) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Timed activities complete after their focus target is reached.'),
+                            content: Text(
+                              'Timed activities complete after their focus target is reached.',
+                            ),
                           ),
                         );
                         return;
@@ -559,15 +650,23 @@ class _TaskItemTile extends ConsumerWidget {
                       width: 26,
                       height: 26,
                       decoration: BoxDecoration(
-                        color: isDone ? context.accentPrimary : Colors.transparent,
+                        color: isDone
+                            ? context.accentPrimary
+                            : Colors.transparent,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDone ? context.accentPrimary : context.divider,
+                          color: isDone
+                              ? context.accentPrimary
+                              : context.divider,
                           width: 1.8,
                         ),
                       ),
                       child: isDone
-                          ? Icon(Icons.check_rounded, size: 18, color: context.textOnPrimary)
+                          ? Icon(
+                              Icons.check_rounded,
+                              size: 18,
+                              color: context.textOnPrimary,
+                            )
                           : null,
                     ),
                   ),
@@ -582,8 +681,12 @@ class _TaskItemTile extends ConsumerWidget {
                               child: Text(
                                 task.title,
                                 style: AscentTextStyles.bodyMedium.copyWith(
-                                  color: isDone ? context.textMuted : context.textPrimary,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  color: isDone
+                                      ? context.textMuted
+                                      : context.textPrimary,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -591,17 +694,23 @@ class _TaskItemTile extends ConsumerWidget {
                             if (subTasks.isNotEmpty) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: context.accentPrimary.withValues(alpha: 0.12),
+                                  color: context.accentPrimary.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   '$completedSubTasks/${subTasks.length} sub-tasks',
-                                  style: AscentTextStyles.captionMedium.copyWith(
-                                    color: context.accentPrimaryBright,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AscentTextStyles.captionMedium
+                                      .copyWith(
+                                        color: context.accentPrimaryBright,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                 ),
                               ),
                             ],
@@ -611,7 +720,9 @@ class _TaskItemTile extends ConsumerWidget {
                           const SizedBox(height: 2),
                           Text(
                             task.notes!,
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: context.textMuted,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -636,7 +747,8 @@ class _TaskItemTile extends ConsumerWidget {
                                     color: status == TaskComputedStatus.lagging
                                         ? context.stateDanger
                                         : context.textMuted,
-                                    fontWeight: status == TaskComputedStatus.lagging
+                                    fontWeight:
+                                        status == TaskComputedStatus.lagging
                                         ? FontWeight.w600
                                         : FontWeight.w400,
                                   ),
@@ -655,7 +767,10 @@ class _TaskItemTile extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   'High',
-                                  style: TextStyle(fontSize: 11, color: context.stateDanger),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.stateDanger,
+                                  ),
                                 ),
                               ],
                               if (hasReminder) ...[
@@ -663,16 +778,23 @@ class _TaskItemTile extends ConsumerWidget {
                                 Icon(
                                   Icons.alarm_rounded,
                                   size: 13,
-                                  color: isDone ? context.textMuted : context.accentPrimary,
+                                  color: isDone
+                                      ? context.textMuted
+                                      : context.accentPrimary,
                                 ),
                               ],
                               if (isDone) ...[
-                                if (task.plannedDate != null) const SizedBox(width: 8),
+                                if (task.plannedDate != null)
+                                  const SizedBox(width: 8),
                                 Text(
                                   task.actualCompletedDate != null
                                       ? '✓ Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}'
                                       : '✓ Completed',
-                                  style: TextStyle(fontSize: 11, color: context.accentPrimary, fontWeight: FontWeight.w500),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: context.accentPrimary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ],
@@ -681,11 +803,15 @@ class _TaskItemTile extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  if (!isDone && task.estimatedMinutes != null && task.estimatedMinutes! > 0) ...[
+                  if (!isDone &&
+                      task.estimatedMinutes != null &&
+                      task.estimatedMinutes! > 0) ...[
                     const SizedBox(width: 8),
                     InkWell(
                       onTap: () async {
-                        await ref.read(timeTrackingProvider.notifier).switchToTask(
+                        await ref
+                            .read(timeTrackingProvider.notifier)
+                            .switchToTask(
                               title: task.title,
                               taskId: task.id,
                               sourceType: 'task',
@@ -703,7 +829,11 @@ class _TaskItemTile extends ConsumerWidget {
                           shape: BoxShape.circle,
                           color: context.accentPrimary.withValues(alpha: 0.12),
                         ),
-                        child: Icon(Icons.play_arrow_rounded, color: context.accentPrimary, size: 20),
+                        child: Icon(
+                          Icons.play_arrow_rounded,
+                          color: context.accentPrimary,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ],
@@ -711,7 +841,11 @@ class _TaskItemTile extends ConsumerWidget {
                     const SizedBox(width: 4),
                     IconButton(
                       tooltip: 'Edit task',
-                      icon: Icon(Icons.edit_outlined, size: 18, color: context.textMuted),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: context.textMuted,
+                      ),
                       visualDensity: VisualDensity.compact,
                       onPressed: () {
                         HapticFeedback.lightImpact();
@@ -724,7 +858,10 @@ class _TaskItemTile extends ConsumerWidget {
               // §7: Sub-entries rendered as an indented checklist
               if (subTasks.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Divider(color: context.divider.withValues(alpha: 0.5), height: 1),
+                Divider(
+                  color: context.divider.withValues(alpha: 0.5),
+                  height: 1,
+                ),
                 const SizedBox(height: 6),
                 ...subTasks.map((sub) {
                   final isSubDone = sub.actualCompletedDate != null;
@@ -746,7 +883,9 @@ class _TaskItemTile extends ConsumerWidget {
                               if (!completed && context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Timed activities complete after their focus target is reached.'),
+                                    content: Text(
+                                      'Timed activities complete after their focus target is reached.',
+                                    ),
                                   ),
                                 );
                               }
@@ -757,15 +896,23 @@ class _TaskItemTile extends ConsumerWidget {
                             width: 20,
                             height: 20,
                             decoration: BoxDecoration(
-                              color: isSubDone ? context.accentPrimary : Colors.transparent,
+                              color: isSubDone
+                                  ? context.accentPrimary
+                                  : Colors.transparent,
                               borderRadius: BorderRadius.circular(5),
                               border: Border.all(
-                                color: isSubDone ? context.accentPrimary : context.divider,
+                                color: isSubDone
+                                    ? context.accentPrimary
+                                    : context.divider,
                                 width: 1.5,
                               ),
                             ),
                             child: isSubDone
-                                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                                ? const Icon(
+                                    Icons.check_rounded,
+                                    size: 14,
+                                    color: Colors.white,
+                                  )
                                 : null,
                           ),
                         ),
@@ -774,8 +921,12 @@ class _TaskItemTile extends ConsumerWidget {
                           child: Text(
                             sub.title,
                             style: AscentTextStyles.bodySmall.copyWith(
-                              color: isSubDone ? context.textMuted : context.textPrimary,
-                              decoration: isSubDone ? TextDecoration.lineThrough : null,
+                              color: isSubDone
+                                  ? context.textMuted
+                                  : context.textPrimary,
+                              decoration: isSubDone
+                                  ? TextDecoration.lineThrough
+                                  : null,
                             ),
                           ),
                         ),
@@ -793,7 +944,11 @@ class _TaskItemTile extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.add_rounded, size: 16, color: context.accentPrimary),
+                        Icon(
+                          Icons.add_rounded,
+                          size: 16,
+                          color: context.accentPrimary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Add sub-task',
@@ -827,7 +982,10 @@ class _TaskItemTile extends ConsumerWidget {
       builder: (ctx) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 24,
+          ),
           child: Container(
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
@@ -849,7 +1007,10 @@ class _TaskItemTile extends ConsumerWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: g.claySoft,
                         borderRadius: BorderRadius.circular(12),
@@ -867,7 +1028,11 @@ class _TaskItemTile extends ConsumerWidget {
                     if (!isDone)
                       IconButton(
                         tooltip: 'Edit task',
-                        icon: Icon(Icons.edit_outlined, size: 20, color: g.inkMuted),
+                        icon: Icon(
+                          Icons.edit_outlined,
+                          size: 20,
+                          color: g.inkMuted,
+                        ),
                         visualDensity: VisualDensity.compact,
                         onPressed: () {
                           Navigator.of(ctx).pop();
@@ -902,11 +1067,18 @@ class _TaskItemTile extends ConsumerWidget {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      Icon(Icons.calendar_today_rounded, size: 14, color: g.inkMuted),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 14,
+                        color: g.inkMuted,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         DateFormat('EEEE, MMM d, y').format(task.plannedDate!),
-                        style: GoogleFonts.inter(fontSize: 13, color: g.inkMuted),
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: g.inkMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -919,7 +1091,10 @@ class _TaskItemTile extends ConsumerWidget {
                       onPressed: () => Navigator.of(ctx).pop(),
                       style: TextButton.styleFrom(
                         foregroundColor: g.inkMuted,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -928,13 +1103,17 @@ class _TaskItemTile extends ConsumerWidget {
                       FilledButton(
                         onPressed: () async {
                           HapticFeedback.mediumImpact();
-                          final completed = await ref.read(taskDaoProvider).markComplete(task.id);
+                          final completed = await ref
+                              .read(taskDaoProvider)
+                              .markComplete(task.id);
                           if (completed) {
                             if (ctx.mounted) Navigator.of(ctx).pop();
                           } else if (ctx.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Timed activities complete after their focus target is reached.'),
+                                content: Text(
+                                  'Timed activities complete after their focus target is reached.',
+                                ),
                               ),
                             );
                           }
@@ -942,8 +1121,13 @@ class _TaskItemTile extends ConsumerWidget {
                         style: FilledButton.styleFrom(
                           backgroundColor: g.clay,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: const Text('Mark Done'),
                       )
@@ -953,8 +1137,13 @@ class _TaskItemTile extends ConsumerWidget {
                         style: FilledButton.styleFrom(
                           backgroundColor: g.claySoft,
                           foregroundColor: g.clay,
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                         ),
                         child: const Text('Done'),
                       ),
@@ -968,4 +1157,3 @@ class _TaskItemTile extends ConsumerWidget {
     );
   }
 }
-

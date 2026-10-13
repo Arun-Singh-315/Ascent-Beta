@@ -40,9 +40,7 @@ class LearningHubCard extends ConsumerWidget {
             Expanded(
               child: Text(
                 'Learning',
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                ),
+                style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -66,11 +64,7 @@ class LearningHubCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 2),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 16,
-                      color: g.clay,
-                    ),
+                    Icon(Icons.chevron_right_rounded, size: 16, color: g.clay),
                   ],
                 ),
               ),
@@ -100,7 +94,9 @@ class LearningHubCard extends ConsumerWidget {
                         onTap: () {
                           HapticFeedback.mediumImpact();
                           if (hasStarted) {
-                            ref.read(learningHubProvider.notifier).togglePlayPause();
+                            ref
+                                .read(learningHubProvider.notifier)
+                                .togglePlayPause();
                           } else {
                             context.push('/study-plan');
                           }
@@ -121,7 +117,9 @@ class LearningHubCard extends ConsumerWidget {
                           child: Center(
                             child: Icon(
                               hasStarted
-                                  ? (state.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded)
+                                  ? (state.isPlaying
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded)
                                   : Icons.play_arrow_rounded,
                               size: 26,
                               color: Colors.white,
@@ -154,8 +152,12 @@ class LearningHubCard extends ConsumerWidget {
                                 ? 'Lecture ${active.id}: ${active.title}'
                                 : 'Start learning',
                             style: AscentTextStyles.homeHeadline.copyWith(
-                              color: (hasStarted && active.isCompleted) ? g.inkMuted : g.ink,
-                              decoration: (hasStarted && active.isCompleted) ? TextDecoration.lineThrough : null,
+                              color: (hasStarted && active.isCompleted)
+                                  ? g.inkMuted
+                                  : g.ink,
+                              decoration: (hasStarted && active.isCompleted)
+                                  ? TextDecoration.lineThrough
+                                  : null,
                               decorationColor: g.inkMuted,
                               fontSize: 15.5,
                               fontWeight: FontWeight.w700,
@@ -168,28 +170,33 @@ class LearningHubCard extends ConsumerWidget {
                             Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: g.claySoft,
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
                                     'Resume · ${(state.remainingSeconds / 60).ceil()} min left',
-                                    style: AscentTextStyles.captionMedium.copyWith(
-                                      color: g.clay,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 11,
-                                    ),
+                                    style: AscentTextStyles.captionMedium
+                                        .copyWith(
+                                          color: g.clay,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 11,
+                                        ),
                                   ),
                                 ),
                                 const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
                                     activeMod.title,
-                                    style: AscentTextStyles.homeSecondary.copyWith(
-                                      color: g.inkSecondary,
-                                      fontSize: 11.5,
-                                    ),
+                                    style: AscentTextStyles.homeSecondary
+                                        .copyWith(
+                                          color: g.inkSecondary,
+                                          fontSize: 11.5,
+                                        ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -218,23 +225,38 @@ class LearningHubCard extends ConsumerWidget {
                   if (hasStarted) ...[
                     IconButton(
                       tooltip: 'View Syllabus',
-                      icon: Icon(Icons.format_list_bulleted_rounded, size: 20, color: g.inkMuted),
+                      icon: Icon(
+                        Icons.format_list_bulleted_rounded,
+                        size: 20,
+                        color: g.inkMuted,
+                      ),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (ctx) => StudyPlanScreen(courseId: course.id),
+                            builder: (ctx) =>
+                                StudyPlanScreen(courseId: course.id),
                           ),
                         );
                       },
                     ),
                     IconButton(
                       tooltip: 'Open Player Sheet',
-                      icon: Icon(Icons.open_in_full_rounded, size: 17, color: g.inkMuted),
+                      icon: Icon(
+                        Icons.open_in_full_rounded,
+                        size: 17,
+                        color: g.inkMuted,
+                      ),
                       padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         LectureFocusPlayerSheet.show(context);
@@ -243,7 +265,11 @@ class LearningHubCard extends ConsumerWidget {
                   ] else ...[
                     IconButton(
                       tooltip: 'Explore Catalog',
-                      icon: Icon(Icons.chevron_right_rounded, size: 22, color: g.inkMuted),
+                      icon: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 22,
+                        color: g.inkMuted,
+                      ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         context.push('/study-plan');

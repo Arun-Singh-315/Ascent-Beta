@@ -1213,6 +1213,15 @@ class NotificationService {
     }
   }
 
+  Future<bool> cancelChecked(int id) async {
+    try {
+      await ReminderAlarmBridge.cancel(id);
+      await _plugin.cancel(id: id);
+      await _plugin.cancel(id: id + followUpIdOffset);
+      return true;
+    } catch (_) { return false; }
+  }
+
   /// Cancels all notifications.
   Future<void> cancelAll() async {
     await cancelAllChecked();

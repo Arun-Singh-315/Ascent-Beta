@@ -145,7 +145,7 @@ void main() {
     });
 
     testWidgets(
-      'Thought card has black border and transparent styling in day/light mode',
+      'Thought card uses an inset header separator without a full outline in day mode',
       (tester) async {
         final thought = Thought(
           id: 1,
@@ -173,32 +173,20 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        final animatedContainers = tester.widgetList<AnimatedContainer>(
-          find.byType(AnimatedContainer),
-        );
-        bool foundBlackBorder = false;
-
-        for (final ac in animatedContainers) {
-          if (ac.decoration is BoxDecoration) {
-            final box = ac.decoration as BoxDecoration;
-            if (box.color == Colors.transparent &&
-                box.border != null &&
-                box.border is Border) {
-              final border = box.border as Border;
-              if (border.top.color.r < 0.15 &&
-                  border.top.color.g < 0.15 &&
-                  border.top.color.b < 0.15) {
-                foundBlackBorder = true;
-              }
-            }
-          }
-        }
-
+        final surfaces = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .where((c) => c.decoration is BoxDecoration)
+            .map((c) => c.decoration as BoxDecoration);
         expect(
-          foundBlackBorder,
+          surfaces.any(
+            (surface) =>
+                surface.color == Colors.transparent && surface.border == null,
+          ),
           isTrue,
-          reason:
-              'Thought card container must have crisp black border in day mode',
+        );
+        expect(
+          find.byKey(ValueKey('thought_header_divider_${thought.id}')),
+          findsOneWidget,
         );
       },
     );
