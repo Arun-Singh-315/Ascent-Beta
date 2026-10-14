@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
@@ -8,16 +10,16 @@ Future<void> showThoughtDetail(BuildContext context, AppDatabase db, int id) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      backgroundColor: AppPalette.transparent,
+      builder: (context) => AppCard(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * .9,
         ),
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: context.glass.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpace.s16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -38,12 +40,12 @@ Future<void> showThoughtDetail(BuildContext context, AppDatabase db, int id) =>
                   builder: (context, snapshot) =>
                       snapshot.connectionState == ConnectionState.waiting
                       ? const Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: EdgeInsets.all(AppSpace.s24),
                           child: CircularProgressIndicator(),
                         )
                       : snapshot.data == null
                       ? const Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: EdgeInsets.all(AppSpace.s24),
                           child: Text('This note is no longer available.'),
                         )
                       : ThoughtCardBubble(thought: snapshot.data!, index: 0),

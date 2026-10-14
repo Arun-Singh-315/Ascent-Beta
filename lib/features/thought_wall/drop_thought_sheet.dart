@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -8,7 +11,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -34,7 +36,7 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
   static Future<void> showPromise(BuildContext context) {
     return showDialog(
       context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
+      barrierColor: AppPalette.black.withValues(alpha: 0.6),
       barrierDismissible: true,
       builder: (ctx) => const _PromiseDialog(),
     );
@@ -55,7 +57,7 @@ class DropThoughtSheet extends ConsumerStatefulWidget {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => DropThoughtSheet(
         initialPrompt: initialPrompt,
         initialMood: initialMood,
@@ -153,26 +155,34 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
     return FadeTransition(
       opacity: _fadeAnim,
       child: Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        backgroundColor: AppPalette.transparent,
+        insetPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s24,
+          vertical: AppSpace.s40,
+        ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
+          borderRadius: AppGeometry.roundedr28,
+          child: AppSurfaceBlur(
             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
+            child: AppCard(
+              nightDecoration: BoxDecoration(
                 color:
                     (context.isDark
-                            ? const Color(0xFF1D1610)
-                            : const Color(0xFFF8FAFC))
+                            ? AppPalette.colorFF1D1610
+                            : AppPalette.colorFFF8FAFC)
                         .withValues(alpha: 0.95),
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: AppGeometry.roundedr28,
                 border: Border.all(
                   color: g.edge.withValues(alpha: 0.35),
-                  width: 1.0,
+                  width: AppBorderScale.w1point0,
                 ),
               ),
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s24,
+                AppSpace.s28,
+                AppSpace.s24,
+                AppSpace.s24,
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,23 +190,23 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                   // ── Header ──────────────────────────────────────────
                   Row(
                     children: [
-                      Container(
+                      AppCard(
                         width: 44,
                         height: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFFB46824,
-                          ).withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(14),
+                        nightDecoration: BoxDecoration(
+                          color: AppPalette.colorFFB46824.withValues(
+                            alpha: 0.14,
+                          ),
+                          borderRadius: AppGeometry.roundedr14,
                           border: Border.all(
-                            color: const Color(
-                              0xFFB46824,
-                            ).withValues(alpha: 0.3),
+                            color: AppPalette.colorFFB46824.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                         child: const Icon(
                           Icons.handshake_rounded,
-                          color: Color(0xFFB46824),
+                          color: AppPalette.colorFFB46824,
                           size: 22,
                         ),
                       ),
@@ -207,11 +217,9 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                           children: [
                             Text(
                               'Make a Promise',
-                              style: AscentTextStyles.headlineMedium.copyWith(
-                                color: context.textPrimary,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: AscentTextStyles.headlineMedium
+                                  .copyWith(color: context.textPrimary)
+                                  .merge(AppTypeRoles.typeRole53),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -262,16 +270,16 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                       ),
                       filled: true,
                       fillColor: context.bgBase,
-                      contentPadding: const EdgeInsets.all(14),
+                      contentPadding: const EdgeInsets.all(AppSpace.s14),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppGeometry.roundedr14,
                         borderSide: BorderSide(color: context.divider),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppGeometry.roundedr14,
                         borderSide: const BorderSide(
-                          color: Color(0xFFB46824),
-                          width: 1.5,
+                          color: AppPalette.colorFFB46824,
+                          width: AppBorderScale.w1point5,
                         ),
                       ),
                     ),
@@ -288,10 +296,9 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                           children: [
                             Text(
                               'Keep me accountable for',
-                              style: AscentTextStyles.labelMedium.copyWith(
-                                color: context.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AscentTextStyles.labelMedium
+                                  .copyWith(color: context.textPrimary)
+                                  .merge(AppTypeRoles.typeRole8),
                             ),
                             const SizedBox(height: 3),
                             Text(
@@ -305,10 +312,10 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                       ),
                       const SizedBox(width: 12),
                       // Compact days stepper
-                      Container(
-                        decoration: BoxDecoration(
+                      AppCard(
+                        nightDecoration: BoxDecoration(
                           color: context.bgBase,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                           border: Border.all(color: context.divider),
                         ),
                         child: Row(
@@ -334,15 +341,14 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                                   FilteringTextInputFormatter.digitsOnly,
                                   LengthLimitingTextInputFormatter(3),
                                 ],
-                                style: AscentTextStyles.labelLarge.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: AscentTextStyles.labelLarge
+                                    .copyWith(color: context.textPrimary)
+                                    .merge(AppTypeRoles.typeRole2),
                                 decoration: InputDecoration(
                                   border: InputBorder.none,
                                   isDense: true,
                                   contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 10,
+                                    vertical: AppSpace.s10,
                                   ),
                                   suffix: Text(
                                     'd',
@@ -373,7 +379,7 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                     Text(
                       _saveError!,
                       style: AscentTextStyles.bodySmall.copyWith(
-                        color: Colors.redAccent,
+                        color: AppPalette.redAccent,
                       ),
                     ),
                   ],
@@ -386,13 +392,19 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: g.inkMuted,
-                            side: BorderSide(color: g.line),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                          style: context.surfaces.buttonStyle(
+                            OutlinedButton.styleFrom(
+                              foregroundColor: g.inkMuted,
+                              side: BorderSide(color: g.line),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr14,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSpace.s14,
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            filled: false,
+                            icon: false,
                           ),
                           child: const Text('Cancel'),
                         ),
@@ -402,12 +414,18 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                         flex: 2,
                         child: FilledButton.icon(
                           onPressed: _isSaving ? null : _save,
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFB46824),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                          style: context.surfaces.buttonStyle(
+                            FilledButton.styleFrom(
+                              backgroundColor: AppPalette.colorFFB46824,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr14,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSpace.s14,
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            filled: true,
+                            icon: false,
                           ),
                           icon: _isSaving
                               ? const SizedBox(
@@ -415,7 +433,7 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: AppPalette.white,
                                   ),
                                 )
                               : const Icon(Icons.handshake_rounded, size: 18),
@@ -443,14 +461,14 @@ class _StepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AppTapArea(
       onTap: () {
         HapticFeedback.selectionClick();
         onTap();
       },
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: AppGeometry.roundedr8,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(AppSpace.s8),
         child: Icon(icon, size: 16, color: context.textMuted),
       ),
     );
@@ -484,13 +502,13 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       'key': 'thought',
       'label': 'Note',
       'icon': Icons.edit_note_rounded,
-      'color': Color(0xFF6E8565),
+      'color': AppPalette.colorFF6E8565,
     },
     {
       'key': 'promise',
       'label': 'Promise',
       'icon': Icons.handshake_outlined,
-      'color': Color(0xFFB46824),
+      'color': AppPalette.colorFFB46824,
     },
   ];
 
@@ -674,27 +692,29 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
     final g = context.glass;
 
     return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: BackdropFilter(
+      borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr28),
+      child: AppSurfaceBlur(
         filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          decoration: BoxDecoration(
+        child: AppCard(
+          nightDecoration: BoxDecoration(
             color:
                 (context.isDark
-                        ? const Color(0xFF1D1610)
-                        : const Color(0xFFF8FAFC))
+                        ? AppPalette.colorFF1D1610
+                        : AppPalette.colorFFF8FAFC)
                     .withValues(alpha: 0.90),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(
+              top: AppGeometry.radiusr28,
+            ),
             border: Border.all(
               color: g.edge.withValues(alpha: 0.4),
-              width: 1.0,
+              width: AppBorderScale.w1point0,
             ),
           ),
           padding: EdgeInsets.only(
-            top: 20,
-            left: 20,
-            right: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            top: AppSpace.s20,
+            left: AppSpace.s20,
+            right: AppSpace.s20,
+            bottom: MediaQuery.of(context).viewInsets.bottom + AppSpace.s24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -707,7 +727,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: context.divider,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppGeometry.roundedr2,
                   ),
                 ),
               ),
@@ -716,12 +736,12 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               // Header
               Row(
                 children: [
-                  Container(
+                  AppCard(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(
+                    nightDecoration: BoxDecoration(
                       color: context.accentPrimary.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppGeometry.roundedr12,
                       border: Border.all(
                         color: context.accentPrimary.withValues(alpha: 0.3),
                       ),
@@ -741,11 +761,9 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                           widget.existingThought != null
                               ? 'Edit Reflection'
                               : 'Drop on Thought Wall',
-                          style: AscentTextStyles.headlineMedium.copyWith(
-                            color: context.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AscentTextStyles.headlineMedium
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole21),
                         ),
                         Text(
                           widget.existingThought != null
@@ -780,17 +798,17 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               const SizedBox(height: 14),
 
               // Self-reflection prompts
-              InkWell(
+              AppTapArea(
                 onTap: _cyclePrompt,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
+                borderRadius: AppGeometry.roundedr12,
+                child: AppCard(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 9,
+                    horizontal: AppSpace.s12,
+                    vertical: AppSpace.s9,
                   ),
-                  decoration: BoxDecoration(
+                  nightDecoration: BoxDecoration(
                     color: context.bgBase,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     border: Border.all(color: context.divider),
                   ),
                   child: Row(
@@ -828,12 +846,12 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               // Content TextField
               if (_isDraftRestored)
                 const Padding(
-                  padding: EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.only(bottom: AppSpace.s8),
                   child: Text('Draft restored'),
                 ),
               if (_saveError != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(bottom: AppSpace.s8),
                   child: Text(_saveError!),
                 ),
               TextField(
@@ -853,16 +871,16 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                   ),
                   filled: true,
                   fillColor: context.bgBase,
-                  contentPadding: const EdgeInsets.all(14),
+                  contentPadding: const EdgeInsets.all(AppSpace.s14),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppGeometry.roundedr14,
                     borderSide: BorderSide(color: context.divider),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppGeometry.roundedr14,
                     borderSide: BorderSide(
                       color: context.accentPrimary,
-                      width: 1.5,
+                      width: AppBorderScale.w1point5,
                     ),
                   ),
                 ),

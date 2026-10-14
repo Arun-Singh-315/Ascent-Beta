@@ -1,10 +1,12 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/actions/expense_actions.dart';
@@ -29,7 +31,7 @@ class AddTransactionSheet extends ConsumerStatefulWidget {
       enableDrag: false,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) =>
           AddTransactionSheet(initialData: initialData, onSaved: onSaved),
@@ -279,10 +281,10 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       canPop: !_saving,
       child: Padding(
         padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: bottomInset + 24,
+          left: AppSpace.s20,
+          right: AppSpace.s20,
+          top: AppSpace.s20,
+          bottom: bottomInset + AppSpace.s24,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -295,7 +297,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: context.divider,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppGeometry.roundedr2,
                   ),
                 ),
               ),
@@ -305,10 +307,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 children: [
                   Text(
                     'Record Transaction',
-                    style: AscentTextStyles.displaySmall.copyWith(
-                      color: context.textPrimary,
-                      fontSize: 18,
-                    ),
+                    style: AscentTextStyles.displaySmall
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole1),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
@@ -319,64 +320,64 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               const SizedBox(height: 16),
 
               // Expense / Income Pill Switcher
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
+              AppCard(
+                padding: const EdgeInsets.all(AppSpace.s4),
+                nightDecoration: BoxDecoration(
                   color: context.bgBase,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   border: Border.all(color: context.divider),
                 ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: GestureDetector(
+                      child: AppGestureTap(
                         onTap: _saving
                             ? null
                             : () => setState(() => _type = 'expense'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
+                        child: AppTag(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s8,
+                          ),
+                          nightDecoration: BoxDecoration(
                             color: _type == 'expense'
                                 ? context.accentSecondary
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
+                                : AppPalette.transparent,
+                            borderRadius: AppGeometry.roundedr8,
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             'Expense',
-                            style: TextStyle(
+                            style: AppTypeRoles.typeRole47.copyWith(
                               color: _type == 'expense'
-                                  ? Colors.white
+                                  ? AppPalette.white
                                   : context.textMuted,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
                             ),
                           ),
                         ),
                       ),
                     ),
                     Expanded(
-                      child: GestureDetector(
+                      child: AppGestureTap(
                         onTap: _saving
                             ? null
                             : () => setState(() => _type = 'income'),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
+                        child: AppTag(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s8,
+                          ),
+                          nightDecoration: BoxDecoration(
                             color: _type == 'income'
                                 ? context.accentPrimary
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(8),
+                                : AppPalette.transparent,
+                            borderRadius: AppGeometry.roundedr8,
                           ),
                           alignment: Alignment.center,
                           child: Text(
                             'Income',
-                            style: TextStyle(
+                            style: AppTypeRoles.typeRole47.copyWith(
                               color: _type == 'income'
-                                  ? Colors.white
+                                  ? AppPalette.white
                                   : context.textMuted,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13,
                             ),
                           ),
                         ),
@@ -394,27 +395,25 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                style: AscentTextStyles.displaySmall.copyWith(
-                  color: context.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AscentTextStyles.displaySmall
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole48),
                 autofocus: widget.initialData == null,
                 decoration: InputDecoration(
                   prefixText: '₹ ',
-                  prefixStyle: AscentTextStyles.displaySmall.copyWith(
-                    color: _type == 'expense'
-                        ? context.accentSecondary
-                        : context.accentPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  prefixStyle: AscentTextStyles.displaySmall
+                      .copyWith(
+                        color: _type == 'expense'
+                            ? context.accentSecondary
+                            : context.accentPrimary,
+                      )
+                      .merge(AppTypeRoles.typeRole48),
                   hintText: '0.00',
                   labelText: 'Amount',
                   filled: true,
                   fillColor: context.bgBase,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     borderSide: BorderSide(color: context.divider),
                   ),
                 ),
@@ -435,7 +434,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   filled: true,
                   fillColor: context.bgBase,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     borderSide: BorderSide(color: context.divider),
                   ),
                 ),
@@ -445,10 +444,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               // Category Chips
               Text(
                 'Category',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: context.textMuted,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AscentTextStyles.labelSmall
+                    .copyWith(color: context.textMuted)
+                    .merge(AppTypeRoles.typeRole8),
               ),
               const SizedBox(height: 6),
               Wrap(
@@ -456,20 +454,21 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 runSpacing: 8,
                 children: _categories.map((c) {
                   final isSelected = c == _category;
-                  return ChoiceChip(
+                  return AppPill.choice(
                     label: Text(c),
                     selected: isSelected,
                     selectedColor: context.accentPrimary,
                     backgroundColor: context.bgBase,
-                    labelStyle: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                      color: isSelected ? Colors.white : context.textPrimary,
-                    ),
+                    labelStyle:
+                        AppStateTypography.stateType19(
+                          state0: isSelected,
+                        ).copyWith(
+                          color: isSelected
+                              ? AppPalette.white
+                              : context.textPrimary,
+                        ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppGeometry.roundedr8,
                       side: BorderSide(
                         color: isSelected
                             ? context.accentPrimary
@@ -499,11 +498,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         filled: true,
                         fillColor: context.bgBase,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
+                          horizontal: AppSpace.s12,
+                          vertical: AppSpace.s10,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                           borderSide: BorderSide(color: context.divider),
                         ),
                       ),
@@ -520,12 +519,18 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s14,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr12,
+                          ),
+                          side: BorderSide(color: context.divider),
                         ),
-                        side: BorderSide(color: context.divider),
+                        filled: false,
+                        icon: false,
                       ),
                       icon: Icon(
                         Icons.calendar_today_outlined,

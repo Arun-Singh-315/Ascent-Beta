@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// Measures the rendered text rather than guessing truncation by character count.
@@ -38,10 +39,14 @@ class ThoughtExcerpt extends StatelessWidget {
           if (overflow)
             TextButton(
               onPressed: onReadMore,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(48, 48),
-                alignment: Alignment.centerLeft,
+              style: context.surfaces.buttonStyle(
+                TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(48, 48),
+                  alignment: Alignment.centerLeft,
+                ),
+                filled: false,
+                icon: false,
               ),
               child: const Text('Read more'),
             ),

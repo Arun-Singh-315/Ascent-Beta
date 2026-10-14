@@ -133,31 +133,28 @@ void main() {
       controller.dispose();
     },
   );
-  testWidgets(
-    'Home field never inherits green outline and focuses an accessible underline',
-    (tester) async {
-      await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
-      await tester.pump();
-      final field = tester.widget<TextField>(find.byType(TextField));
-      expect(field.decoration!.filled, isFalse);
-      expect(field.decoration!.focusedBorder, InputBorder.none);
-      await tester.tap(find.byType(TextField));
-      await tester.pump();
-      expect(field.focusNode!.hasFocus, isTrue);
-      expect(
-        find.byWidgetPredicate(
-          (w) =>
-              w is Container &&
-              w.decoration is BoxDecoration &&
-              (w.decoration as BoxDecoration).border is Border &&
-              ((w.decoration as BoxDecoration).border as Border).bottom.width ==
-                  2,
-        ),
-        findsOneWidget,
-      );
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
+  testWidgets('Home field focuses an accessible underline', (tester) async {
+    await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
+    await tester.pump();
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration!.filled, isFalse);
+    expect(field.decoration!.focusedBorder, InputBorder.none);
+    await tester.tap(find.byType(TextField));
+    await tester.pump();
+    expect(field.focusNode!.hasFocus, isTrue);
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.decoration is BoxDecoration &&
+            (w.decoration as BoxDecoration).border is Border &&
+            ((w.decoration as BoxDecoration).border as Border).bottom.width ==
+                2,
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'Riya expense is not saved until confirmation, repeated confirm cannot duplicate',
     (tester) async {

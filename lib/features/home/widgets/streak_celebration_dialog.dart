@@ -1,6 +1,8 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/streak/study_streak_models.dart';
@@ -25,24 +27,23 @@ class StreakCelebrationDialog extends StatelessWidget {
     final isRescue = status.isRescuedToday;
 
     return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
+      backgroundColor: AppPalette.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: AppSpace.s24),
+      child: AppCard(
+        padding: const EdgeInsets.all(AppSpace.s24),
+        nightDecoration: BoxDecoration(
           color: g.fill,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: AppGeometry.roundedr28,
           border: Border.all(
             color: isRescue
-                ? Colors.amberAccent.withValues(alpha: 0.5)
-                : Colors.deepOrangeAccent.withValues(alpha: 0.5),
-            width: 1.5,
+                ? AppPalette.amberAccent.withValues(alpha: 0.5)
+                : AppPalette.deepOrangeAccent.withValues(alpha: 0.5),
+            width: AppBorderScale.w1point5,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isRescue ? Colors.amber : Colors.deepOrange).withValues(
-                alpha: 0.2,
-              ),
+              color: (isRescue ? AppPalette.amber : AppPalette.deepOrange)
+                  .withValues(alpha: 0.2),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -60,30 +61,29 @@ class StreakCelebrationDialog extends StatelessWidget {
                 gradient: RadialGradient(
                   colors: isRescue
                       ? [
-                          Colors.amberAccent.withValues(alpha: 0.3),
-                          Colors.transparent,
+                          AppPalette.amberAccent.withValues(alpha: 0.3),
+                          AppPalette.transparent,
                         ]
                       : [
-                          Colors.deepOrangeAccent.withValues(alpha: 0.3),
-                          Colors.transparent,
+                          AppPalette.deepOrangeAccent.withValues(alpha: 0.3),
+                          AppPalette.transparent,
                         ],
                 ),
               ),
               child: Center(
                 child: Text(
                   isRescue ? '🛡️' : '🔥',
-                  style: const TextStyle(fontSize: 44),
+                  style: AppTypeRoles.typeRole64,
                 ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
               isRescue ? 'STREAK RESCUED!' : 'STREAK SECURED!',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-                color: isRescue ? Colors.amberAccent : Colors.deepOrangeAccent,
+              style: AppTypography.plusJakartaSans20W800112(
+                color: isRescue
+                    ? AppPalette.amberAccent
+                    : AppPalette.deepOrangeAccent,
               ),
             ),
             const SizedBox(height: 8),
@@ -92,20 +92,21 @@ class StreakCelebrationDialog extends StatelessWidget {
                   ? 'You paid off yesterday\'s deficit and completed your 2-hour study goal today. Your discipline is unbroken!'
                   : 'You completed your full 2 hours of study today. Another day conquered!',
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 14,
+              style: AppTypography.plusJakartaSans14Regular89(
                 color: g.inkMuted,
-                height: 1.4,
               ),
             ),
             const SizedBox(height: 20),
 
             // Streak Metric Box
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              decoration: BoxDecoration(
+            AppCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s20,
+                vertical: AppSpace.s12,
+              ),
+              nightDecoration: BoxDecoration(
                 color: g.bg.withValues(alpha: 0.6),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: AppGeometry.roundedr16,
                 border: Border.all(color: g.edge),
               ),
               child: Row(
@@ -113,11 +114,7 @@ class StreakCelebrationDialog extends StatelessWidget {
                 children: [
                   Text(
                     '${status.displayStreakDays}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      color: g.ink,
-                    ),
+                    style: AppTypography.plusJakartaSans32W800113(color: g.ink),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -125,17 +122,13 @@ class StreakCelebrationDialog extends StatelessWidget {
                     children: [
                       Text(
                         'DAYS STREAK',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.8,
-                          color: isRescue ? Colors.amberAccent : g.clay,
+                        style: AppTypography.plusJakartaSans12W700114(
+                          color: isRescue ? AppPalette.amberAccent : g.clay,
                         ),
                       ),
                       Text(
                         'Personal Best: ${status.longestStreakDays}d',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
+                        style: AppTypography.plusJakartaSans11Regular58(
                           color: g.inkMuted,
                         ),
                       ),
@@ -152,20 +145,23 @@ class StreakCelebrationDialog extends StatelessWidget {
               height: 48,
               child: ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isRescue ? Colors.amber.shade700 : g.clay,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                style: context.surfaces.buttonStyle(
+                  ElevatedButton.styleFrom(
+                    backgroundColor: isRescue
+                        ? AppPalette.amber.shade700
+                        : g.clay,
+                    foregroundColor: AppPalette.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppGeometry.roundedr16,
+                    ),
                   ),
+                  filled: true,
+                  icon: false,
                 ),
                 child: Text(
                   'Keep Crushing It 🚀',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTypography.plusJakartaSans15W700115(),
                 ),
               ),
             ),

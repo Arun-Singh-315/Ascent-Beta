@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/database/app_database.dart';
@@ -61,20 +63,20 @@ class _ThoughtQuickActionsState extends State<ThoughtQuickActions> {
   Widget build(BuildContext context) => !_visible
       ? const SizedBox.shrink()
       : Padding(
-          padding: const EdgeInsets.only(top: 8),
+          padding: const EdgeInsets.only(top: AppSpace.s8),
           child: Wrap(
             spacing: 8,
             runSpacing: 6,
             children: [
-              ActionChip(
+              AppPill.action(
                 label: const Text('Todo'),
                 onPressed: () => _act('todo'),
               ),
-              ActionChip(
+              AppPill.action(
                 label: const Text('Reminder'),
                 onPressed: () => _act('reminder'),
               ),
-              ActionChip(
+              AppPill.action(
                 label: const Text('Both'),
                 onPressed: () => _act('both'),
               ),

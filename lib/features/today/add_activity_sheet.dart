@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +8,6 @@ import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
@@ -45,7 +47,7 @@ class AddActivitySheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (ctx) => AddActivitySheet(
         existingTask: existingTask,
         initialTitle: initialTitle,
@@ -295,22 +297,27 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    return AppCard(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.90,
       ),
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
         border: Border.all(
           color: context.divider.withValues(alpha: 0.6),
-          width: 1,
+          width: AppBorderScale.w1,
         ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 16),
+          padding: EdgeInsets.fromLTRB(
+            AppSpace.s20,
+            AppSpace.s16,
+            AppSpace.s20,
+            bottomInset + AppSpace.s16,
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -323,7 +330,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: context.divider,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppGeometry.roundedr2,
                     ),
                   ),
                 ),
@@ -337,10 +344,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       widget.existingTask != null
                           ? 'Edit Activity'
                           : 'Add Activity',
-                      style: AscentTextStyles.displaySmall.copyWith(
-                        color: context.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AscentTextStyles.displaySmall
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole2),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close_rounded, size: 22),
@@ -354,10 +360,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 // 1. What do you want to do?
                 Text(
                   'What do you want to do?',
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    color: context.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AscentTextStyles.labelMedium
+                      .copyWith(color: context.textPrimary)
+                      .merge(AppTypeRoles.typeRole8),
                 ),
                 const SizedBox(height: 6),
                 TextField(
@@ -375,27 +380,27 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     ),
                     filled: true,
                     fillColor: isDark
-                        ? const Color(0xFF201A14)
-                        : const Color(0xFFF7F6F2),
+                        ? AppPalette.colorFF201A14
+                        : AppPalette.colorFFF7F6F2,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 12,
+                      horizontal: AppSpace.s14,
+                      vertical: AppSpace.s12,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppGeometry.roundedr14,
                       borderSide: BorderSide(color: context.divider),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppGeometry.roundedr14,
                       borderSide: BorderSide(
                         color: context.divider.withValues(alpha: 0.8),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppGeometry.roundedr14,
                       borderSide: BorderSide(
                         color: context.accentPrimary,
-                        width: 1.5,
+                        width: AppBorderScale.w1point5,
                       ),
                     ),
                   ),
@@ -405,10 +410,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 // 2. Activity Type Selector (Progressive Disclosure)
                 Text(
                   'Activity Type',
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    color: context.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AscentTextStyles.labelMedium
+                      .copyWith(color: context.textPrimary)
+                      .merge(AppTypeRoles.typeRole8),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -474,10 +478,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   const SizedBox(height: 16),
                   Text(
                     'Target Duration',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -485,7 +488,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     runSpacing: 8,
                     children: [
                       for (final mins in [15, 30, 45, 60, 90])
-                        ChoiceChip(
+                        AppPill.choice(
                           label: Text('$mins min'),
                           selected:
                               !_isCustomDuration && _targetMinutes == mins,
@@ -498,9 +501,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 ? context.accentPrimary
                                 : context.divider,
                           ),
-                          labelStyle: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                          labelStyle: AppTypeRoles.typeRole17.copyWith(
                             color:
                                 (!_isCustomDuration && _targetMinutes == mins)
                                 ? context.accentPrimary
@@ -514,7 +515,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             });
                           },
                         ),
-                      ChoiceChip(
+                      AppPill.choice(
                         label: const Text('Custom'),
                         selected: _isCustomDuration,
                         selectedColor: context.accentPrimary.withValues(
@@ -525,9 +526,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                               ? context.accentPrimary
                               : context.divider,
                         ),
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        labelStyle: AppTypeRoles.typeRole17.copyWith(
                           color: _isCustomDuration
                               ? context.accentPrimary
                               : context.textPrimary,
@@ -551,14 +550,14 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         ),
                         filled: true,
                         fillColor: isDark
-                            ? const Color(0xFF201A14)
-                            : const Color(0xFFF7F6F2),
+                            ? AppPalette.colorFF201A14
+                            : AppPalette.colorFFF7F6F2,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
+                          horizontal: AppSpace.s12,
+                          vertical: AppSpace.s10,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                         ),
                       ),
                     ),
@@ -576,15 +575,14 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         children: [
                           Text(
                             'When should it happen?',
-                            style: AscentTextStyles.labelMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.labelMedium
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              ChoiceChip(
+                              AppPill.choice(
                                 label: const Text('Today'),
                                 selected: DateUtils.isSameDay(
                                   _selectedDate,
@@ -598,7 +596,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 },
                               ),
                               const SizedBox(width: 6),
-                              ChoiceChip(
+                              AppPill.choice(
                                 label: const Text('Tomorrow'),
                                 selected: DateUtils.isSameDay(
                                   _selectedDate,
@@ -647,16 +645,16 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 const SizedBox(height: 14),
 
                 // 5. Reminder Toggle
-                Container(
+                AppCard(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+                    horizontal: AppSpace.s12,
+                    vertical: AppSpace.s8,
                   ),
-                  decoration: BoxDecoration(
+                  nightDecoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF201A14)
-                        : const Color(0xFFF7F6F2),
-                    borderRadius: BorderRadius.circular(14),
+                        ? AppPalette.colorFF201A14
+                        : AppPalette.colorFFF7F6F2,
+                    borderRadius: AppGeometry.roundedr14,
                     border: Border.all(
                       color: context.divider.withValues(alpha: 0.6),
                     ),
@@ -670,7 +668,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: InkWell(
+                        child: AppTapArea(
                           onTap: _hasReminder
                               ? () async {
                                   final pickedTime = await showTimePicker(
@@ -682,7 +680,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                   }
                                 }
                               : null,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppGeometry.roundedr8,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -698,10 +696,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     Text(
                                       '(Tap to edit)',
                                       style: AscentTextStyles.captionMedium
-                                          .copyWith(
-                                            color: context.textMuted,
-                                            fontSize: 10,
-                                          ),
+                                          .copyWith(color: context.textMuted)
+                                          .merge(AppTypeRoles.typeRole18),
                                     ),
                                   ],
                                 ],
@@ -710,10 +706,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 Text(
                                   '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
                                   style: AscentTextStyles.captionMedium
-                                      .copyWith(
-                                        color: context.accentPrimary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
+                                      .copyWith(color: context.accentPrimary)
+                                      .merge(AppTypeRoles.typeRole8),
                                 ),
                             ],
                           ),
@@ -770,7 +764,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                 Theme(
                   data: Theme.of(
                     context,
-                  ).copyWith(dividerColor: Colors.transparent),
+                  ).copyWith(dividerColor: AppPalette.transparent),
                   child: ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     title: Text(
@@ -791,8 +785,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           const SizedBox(width: 8),
                           for (final p in ['low', 'medium', 'high'])
                             Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: ChoiceChip(
+                              padding: const EdgeInsets.only(
+                                right: AppSpace.s6,
+                              ),
+                              child: AppPill.choice(
                                 label: Text(p.toUpperCase()),
                                 selected: _priority == p,
                                 selectedColor: p == 'high'
@@ -802,9 +798,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     : context.accentPrimary.withValues(
                                         alpha: 0.15,
                                       ),
-                                labelStyle: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
+                                labelStyle: AppTypeRoles.typeRole19.copyWith(
                                   color: _priority == p
                                       ? context.textPrimary
                                       : context.textMuted,
@@ -829,10 +823,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           ),
                           filled: true,
                           fillColor: isDark
-                              ? const Color(0xFF201A14)
-                              : const Color(0xFFF7F6F2),
+                              ? AppPalette.colorFF201A14
+                              : AppPalette.colorFFF7F6F2,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppGeometry.roundedr12,
                           ),
                         ),
                       ),
@@ -875,8 +869,12 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 child: const Text('Cancel'),
                               ),
                               FilledButton(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: context.stateDanger,
+                                style: context.surfaces.buttonStyle(
+                                  FilledButton.styleFrom(
+                                    backgroundColor: context.stateDanger,
+                                  ),
+                                  filled: true,
+                                  icon: false,
                                 ),
                                 onPressed: () => Navigator.of(ctx).pop(true),
                                 child: const Text('Delete'),
@@ -918,20 +916,26 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           }
                         }
                       },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.stateDanger,
-                        side: BorderSide(
-                          color: context.stateDanger.withValues(alpha: 0.5),
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          foregroundColor: context.stateDanger,
+                          side: BorderSide(
+                            color: context.stateDanger.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr12,
+                          ),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        filled: false,
+                        icon: false,
                       ),
                       icon: const Icon(Icons.delete_outline_rounded, size: 18),
                       label: const Text(
                         'Delete Activity',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                        style: AppTypeRoles.typeRole8,
                       ),
                     ),
                   ),
@@ -963,16 +967,20 @@ class _TypeSelectChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
+      child: AppTapArea(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-          decoration: BoxDecoration(
+        borderRadius: AppGeometry.roundedr14,
+        child: AppCard(
+          selected: isSelected,
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpace.s10,
+            horizontal: AppSpace.s8,
+          ),
+          nightDecoration: BoxDecoration(
             color: isSelected
                 ? context.accentPrimary.withValues(alpha: 0.12)
                 : context.bgBase,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppGeometry.roundedr14,
             border: Border.all(
               color: isSelected
                   ? context.accentPrimary
@@ -990,15 +998,20 @@ class _TypeSelectChip extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 label,
-                style: AscentTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? context.textPrimary : context.textMuted,
-                ),
+                style: AscentTextStyles.labelMedium
+                    .copyWith(
+                      color: context.surfaces.contentForeground(isSelected, isSelected
+                          ? context.textPrimary
+                          : context.textMuted),
+                    )
+                    .merge(AppTypeRoles.typeRole9),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                style: AppStateTypography.stateType4.copyWith(
+                  color: context.surfaces.contentForeground(isSelected, AppPalette.grey),
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

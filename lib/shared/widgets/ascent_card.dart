@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import 'app_surfaces.dart';
 
 /// Supported visual surface variants for [AscentCard].
 enum AscentCardVariant {
@@ -96,7 +98,7 @@ class AscentCard extends StatelessWidget {
   /// Card visual variant.
   final AscentCardVariant variant;
 
-  /// Inner padding. Defaults to [EdgeInsets.all(16)] when null.
+  /// Inner padding. Defaults to [EdgeInsets.all(AppSpace.s16)] when null.
   final EdgeInsetsGeometry? padding;
 
   /// Outer margin. Defaults to null.
@@ -137,7 +139,7 @@ class AscentCard extends StatelessWidget {
           surfaceColor = context.bgSurfaceElevated;
           break;
         case AscentCardVariant.outlined:
-          surfaceColor = Colors.transparent;
+          surfaceColor = AppPalette.transparent;
           break;
       }
     }
@@ -148,16 +150,20 @@ class AscentCard extends StatelessWidget {
 
     final shadowColor = g.shadow;
 
-    return Container(
+    return AppCard(
       margin: margin,
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: surfaceColor,
         borderRadius: borderRadius,
-        border: hasBorder ? Border.all(color: borderColor, width: 0.9) : null,
+        border: hasBorder
+            ? Border.all(color: borderColor, width: AppBorderScale.w0point9)
+            : null,
         boxShadow: hasShadow
             ? [
                 BoxShadow(
-                  color: shadowColor.withValues(alpha: context.isDark ? 0.25 : 0.03),
+                  color: shadowColor.withValues(
+                    alpha: context.isDark ? 0.25 : 0.03,
+                  ),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -165,10 +171,10 @@ class AscentCard extends StatelessWidget {
             : null,
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         borderRadius: borderRadius,
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
+        child: AppTapArea(
           onTap: onTap == null
               ? null
               : () {

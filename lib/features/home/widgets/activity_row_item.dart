@@ -1,13 +1,15 @@
+import '../../today/add_lecture_activity_sheet.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/providers/database_provider.dart';
@@ -70,7 +72,7 @@ class ActivityRowItem extends ConsumerWidget {
       },
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.only(right: AppSpace.s16),
         color: context.stateDanger.withValues(alpha: 0.15),
         child: Icon(
           Icons.delete_outline_rounded,
@@ -82,31 +84,44 @@ class ActivityRowItem extends ConsumerWidget {
         duration: const Duration(milliseconds: 200),
         constraints: const BoxConstraints(minHeight: 64),
         margin: (isRunning || isPaused)
-            ? const EdgeInsets.symmetric(vertical: 4)
+            ? const EdgeInsets.symmetric(vertical: AppSpace.s4)
             : EdgeInsets.zero,
-        decoration: BoxDecoration(
-          color: isRunning
-              ? (context.isDark ? Colors.white.withValues(alpha: 0.22) : g.fill)
-              : (isPaused
-                    ? (context.isDark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : g.fill.withValues(alpha: 0.7))
-                    : Colors.transparent),
-          borderRadius: (isRunning || isPaused)
-              ? BorderRadius.circular(12)
-              : BorderRadius.zero,
-          border: isRunning
-              ? Border.all(color: g.clay.withValues(alpha: 0.35), width: 1.0)
-              : (isPaused
-                    ? Border.all(
-                        color: g.clay.withValues(alpha: 0.18),
-                        width: 1.0,
-                      )
-                    : Border(bottom: BorderSide(color: g.line, width: 1.0))),
+        decoration: AppCard.decoration(
+          context,
+          night: BoxDecoration(
+            color: isRunning
+                ? (context.isDark
+                      ? AppPalette.white.withValues(alpha: 0.22)
+                      : g.fill)
+                : (isPaused
+                      ? (context.isDark
+                            ? AppPalette.white.withValues(alpha: 0.12)
+                            : g.fill.withValues(alpha: 0.7))
+                      : AppPalette.transparent),
+            borderRadius: (isRunning || isPaused)
+                ? AppGeometry.roundedr12
+                : BorderRadius.zero,
+            border: isRunning
+                ? Border.all(
+                    color: g.clay.withValues(alpha: 0.35),
+                    width: AppBorderScale.w1point0,
+                  )
+                : (isPaused
+                      ? Border.all(
+                          color: g.clay.withValues(alpha: 0.18),
+                          width: AppBorderScale.w1point0,
+                        )
+                      : Border(
+                          bottom: BorderSide(
+                            color: g.line,
+                            width: AppBorderScale.w1point0,
+                          ),
+                        )),
+          ),
         ),
         padding: EdgeInsets.symmetric(
-          horizontal: (isRunning || isPaused) ? 12 : 0,
-          vertical: 10,
+          horizontal: (isRunning || isPaused) ? AppSpace.s12 : AppSpace.s0,
+          vertical: AppSpace.s10,
         ),
         child: Row(
           children: [
@@ -115,8 +130,8 @@ class ActivityRowItem extends ConsumerWidget {
               width: 44,
               height: 44,
               child: Material(
-                color: Colors.transparent,
-                child: InkWell(
+                color: AppPalette.transparent,
+                child: AppTapArea(
                   onTap: () async {
                     if (isDone) {
                       // Once completed, it cannot be undone or brought to active (one way only).
@@ -142,26 +157,26 @@ class ActivityRowItem extends ConsumerWidget {
                           .toggleTaskCompletion(activity.linkedTaskId!, true);
                     }
                   },
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: AppGeometry.roundedr22,
                   child: Center(
-                    child: Container(
+                    child: AppTag(
                       width: 26,
                       height: 26,
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: isDone ? g.clay : Colors.transparent,
+                        color: isDone ? g.clay : AppPalette.transparent,
                         border: Border.all(
                           color: isDone
                               ? g.clay
                               : (isRunning ? g.clay : g.inkMuted),
-                          width: 1.75,
+                          width: AppBorderScale.w1point75,
                         ),
                       ),
                       child: isDone
                           ? const Icon(
                               Icons.check_rounded,
                               size: 16,
-                              color: Colors.white,
+                              color: AppPalette.white,
                             )
                           : (isTimed
                                 ? Icon(
@@ -180,7 +195,7 @@ class ActivityRowItem extends ConsumerWidget {
 
             // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
             Expanded(
-              child: InkWell(
+              child: AppTapArea(
                 onTap: () async {
                   HapticFeedback.lightImpact();
                   if (isDone) {
@@ -222,49 +237,28 @@ class ActivityRowItem extends ConsumerWidget {
                                   ? TextDecoration.lineThrough
                                   : null,
                             ),
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         if (isRunning) ...[
-                          Container(
-                            width: 6,
-                            height: 6,
-                            margin: const EdgeInsets.only(right: 6),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: g.clay,
-                            ),
-                          ),
                           Text(
                             _runningTimerText(activity),
-                            style: GoogleFonts.jetBrainsMono(
+                            style: AppTypography.jetBrainsMono12W600109(
                               color: g.clay,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 12,
                             ),
                           ),
                         ] else if (isPaused) ...[
-                          Container(
-                            width: 6,
-                            height: 6,
-                            margin: const EdgeInsets.only(right: 6),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.orange.shade400,
-                            ),
-                          ),
                           Text(
-                            'Paused • ${_runningTimerText(activity)}',
-                            style: GoogleFonts.jetBrainsMono(
-                              color: Colors.orange.shade400,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 12,
+                            'Paused · ${_runningTimerText(activity)}',
+                            style: AppTypography.jetBrainsMono12W500110(
+                              color: AppPalette.orange.shade400,
                             ),
                           ),
                         ] else ...[
@@ -279,10 +273,9 @@ class ActivityRowItem extends ConsumerWidget {
                           const SizedBox(width: 6),
                           Text(
                             '• Overdue',
-                            style: AscentTextStyles.homeSecondary.copyWith(
-                              color: context.stateDanger,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.homeSecondary
+                                .copyWith(color: context.stateDanger)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                         ],
                         if (activity.hasReminder) ...[
@@ -338,8 +331,8 @@ class ActivityRowItem extends ConsumerWidget {
                 width: 44,
                 height: 44,
                 child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
+                  color: AppPalette.transparent,
+                  child: AppTapArea(
                     onTap: () async {
                       HapticFeedback.lightImpact();
                       if (activity.sourceType == 'lecture') {
@@ -364,19 +357,27 @@ class ActivityRowItem extends ConsumerWidget {
                             );
                       }
                     },
-                    borderRadius: BorderRadius.circular(22),
-                    child: Container(
-                      decoration: BoxDecoration(
+                    borderRadius: AppGeometry.roundedr22,
+                    child: AppTag(
+                      nightDecoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isRunning ? g.clay : g.claySoft,
+                        border:
+                            Theme.of(context).brightness == Brightness.light &&
+                                !isRunning
+                            ? Border.all(
+                                color: g.clay.withValues(alpha: .45),
+                                width: 1,
+                              )
+                            : null,
                       ),
                       child: Center(
                         child: Icon(
                           isRunning
                               ? Icons.pause_rounded
                               : Icons.play_arrow_rounded,
-                          size: 20,
-                          color: isRunning ? Colors.white : g.clay,
+                          size: 26,
+                          color: isRunning ? AppPalette.white : g.clay,
                         ),
                       ),
                     ),
@@ -439,20 +440,20 @@ class ActivityRowItem extends ConsumerWidget {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppPalette.transparent,
           insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
+            horizontal: AppSpace.s24,
+            vertical: AppSpace.s24,
           ),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
+          child: AppCard(
+            padding: const EdgeInsets.all(AppSpace.s22),
+            nightDecoration: BoxDecoration(
               color: ctx.bgSurfaceElevated,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: g.line, width: 1),
+              borderRadius: AppGeometry.roundedr24,
+              border: Border.all(color: g.line, width: AppBorderScale.w1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: AppPalette.black.withValues(alpha: 0.35),
                   blurRadius: 24,
                   offset: const Offset(0, 10),
                 ),
@@ -464,24 +465,20 @@ class ActivityRowItem extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Container(
+                    AppCard(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: AppSpace.s10,
+                        vertical: AppSpace.s4,
                       ),
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: g.claySoft,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                       ),
                       child: Text(
                         activity.kind == ActivityKind.todo
                             ? 'To-do'
                             : 'Focus Activity',
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: g.clay,
-                        ),
+                        style: AppTypography.inter12W600111(color: g.clay),
                       ),
                     ),
                     const Spacer(),
@@ -518,11 +515,8 @@ class ActivityRowItem extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   activity.title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.plusJakartaSans18W6004(
                     color: g.ink,
-                    height: 1.35,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -537,22 +531,47 @@ class ActivityRowItem extends ConsumerWidget {
                     const SizedBox(width: 6),
                     Text(
                       _subtitleText(activity),
-                      style: GoogleFonts.inter(fontSize: 13, color: g.inkMuted),
+                      style: AppTypography.inter13Regular6(color: g.inkMuted),
                     ),
                   ],
                 ),
+                if (!isDone &&
+                    activity.linkedTaskId != null &&
+                    activity.sourceType != 'lecture' &&
+                    (activity.targetMinutes ?? 0) > 0)
+                  TextButton.icon(
+                    icon: const Icon(Icons.school_outlined),
+                    label: const Text('Send to lecture'),
+                    onPressed: () async {
+                      Navigator.of(ctx).pop();
+                      final task = await ref
+                          .read(taskDaoProvider)
+                          .getTaskById(activity.linkedTaskId!);
+                      if (context.mounted && task != null) {
+                        await AddLectureActivitySheet.sendTask(
+                          context,
+                          ref,
+                          task,
+                        );
+                      }
+                    },
+                  ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
-                      style: TextButton.styleFrom(
-                        foregroundColor: g.inkMuted,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                      style: context.surfaces.buttonStyle(
+                        TextButton.styleFrom(
+                          foregroundColor: g.inkMuted,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s10,
+                          ),
                         ),
+                        filled: false,
+                        icon: false,
                       ),
                       child: const Text('Cancel'),
                     ),
@@ -592,16 +611,20 @@ class ActivityRowItem extends ConsumerWidget {
                                 );
                           }
                         },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: g.clay,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
+                        style: context.surfaces.buttonStyle(
+                          FilledButton.styleFrom(
+                            backgroundColor: g.clay,
+                            foregroundColor: AppPalette.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s18,
+                              vertical: AppSpace.s10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr14,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          filled: true,
+                          icon: false,
                         ),
                         child: Text(
                           (activity.kind == ActivityKind.duration ||
@@ -615,16 +638,20 @@ class ActivityRowItem extends ConsumerWidget {
                     else
                       FilledButton(
                         onPressed: () => Navigator.of(ctx).pop(),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: g.claySoft,
-                          foregroundColor: g.clay,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
+                        style: context.surfaces.buttonStyle(
+                          FilledButton.styleFrom(
+                            backgroundColor: g.claySoft,
+                            foregroundColor: g.clay,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s18,
+                              vertical: AppSpace.s10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr14,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          filled: true,
+                          icon: false,
                         ),
                         child: const Text('Done'),
                       ),

@@ -1,12 +1,14 @@
+import 'add_lecture_activity_sheet.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/insight_engine/series_engine.dart';
 import '../../core/providers/database_provider.dart';
@@ -85,7 +87,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               child: Column(
                 children: [
                   SkeletonShimmer(height: 72),
@@ -169,13 +171,18 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpace.s18,
+                  AppSpace.s8,
+                  AppSpace.s18,
+                  AppSpace.s12,
+                ),
+                child: AppCard(
+                  padding: const EdgeInsets.all(AppSpace.s4),
+                  nightDecoration: BoxDecoration(
                     color: g.fill,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: g.line, width: 1),
+                    borderRadius: AppGeometry.roundedr16,
+                    border: Border.all(color: g.line, width: AppBorderScale.w1),
                   ),
                   child: Row(
                     children: [
@@ -203,7 +210,12 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
               ),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 90),
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpace.s18,
+                    AppSpace.s0,
+                    AppSpace.s18,
+                    AppSpace.s90,
+                  ),
                   children: [
                     if (_selectedTab == _TaskBoardTab.today) ...[
                       // Overdue Group
@@ -235,8 +247,8 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                       if (todayTasks.isEmpty && overdueTasks.isEmpty)
                         AscentCard(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s14,
                           ),
                           color: context.bgSurfaceElevated,
                           child: Text(
@@ -266,8 +278,8 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                       if (upcomingTasks.isEmpty)
                         AscentCard(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s14,
                           ),
                           color: context.bgSurfaceElevated,
                           child: Text(
@@ -297,8 +309,8 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                       if (completedTasks.isEmpty)
                         AscentCard(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s14,
                           ),
                           color: context.bgSurfaceElevated,
                           child: Text(
@@ -337,7 +349,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
   ) {
     final isSelected = _selectedTab == tab;
     return Expanded(
-      child: GestureDetector(
+      child: AppGestureTap(
         behavior: HitTestBehavior.opaque,
         onTap: () {
           HapticFeedback.selectionClick();
@@ -345,41 +357,42 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: isSelected ? g.clay : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s9),
+          decoration: AppCard.decoration(
+            context,
+            selected: isSelected,
+            night: BoxDecoration(
+              color: isSelected ? g.clay : AppPalette.transparent,
+              borderRadius: AppGeometry.roundedr12,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 label,
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : g.inkMuted,
+                style: AppStateTypography.stateType2(
+                  state0: isSelected,
+                  color: isSelected ? AppPalette.white : g.inkMuted,
                 ),
               ),
               if (count > 0) ...[
                 const SizedBox(width: 5),
-                Container(
+                AppTag(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 1.5,
+                    horizontal: AppSpace.s6,
+                    vertical: AppSpace.s1point5,
                   ),
-                  decoration: BoxDecoration(
+                  nightDecoration: BoxDecoration(
                     color: isSelected
-                        ? Colors.white.withValues(alpha: 0.25)
+                        ? AppPalette.white.withValues(alpha: 0.25)
                         : g.claySoft,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppGeometry.roundedr8,
                   ),
                   child: Text(
                     '$count',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white : g.clay,
+                    style: AppTypography.jetBrainsMono11W7002(
+                      color: isSelected ? AppPalette.white : g.clay,
                     ),
                   ),
                 ),
@@ -409,25 +422,25 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: AscentTextStyles.displaySmall.copyWith(
-            fontSize: 16,
-            color: context.textPrimary,
-          ),
+          style: AscentTextStyles.displaySmall
+              .copyWith(color: context.textPrimary)
+              .merge(AppTypeRoles.typeRole10),
         ),
         const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-          decoration: BoxDecoration(
+        AppTag(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s7,
+            vertical: AppSpace.s2,
+          ),
+          nightDecoration: BoxDecoration(
             color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppGeometry.roundedr10,
           ),
           child: Text(
             '$count',
-            style: AscentTextStyles.statSmall.copyWith(
-              fontSize: 12,
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AscentTextStyles.statSmall
+                .copyWith(color: color)
+                .merge(AppTypeRoles.typeRole14),
           ),
         ),
       ],
@@ -460,7 +473,7 @@ class _TaskItemTile extends ConsumerWidget {
           .where((l) => l.id == task.learningLectureId)
           .firstOrNull;
       return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: AppSpace.s8),
         child: AscentCard(
           onTap: lecture == null
               ? null
@@ -495,7 +508,7 @@ class _TaskItemTile extends ConsumerWidget {
               ),
               if (lecture != null)
                 const Padding(
-                  padding: EdgeInsets.only(top: 8),
+                  padding: EdgeInsets.only(top: AppSpace.s8),
                   child: Text('Open lecture'),
                 ),
             ],
@@ -534,12 +547,12 @@ class _TaskItemTile extends ConsumerWidget {
                 ? DismissDirection.endToStart
                 : DismissDirection.horizontal),
       // Swipe Right: Complete
-      background: Container(
+      background: AppCard(
         alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.only(left: 20),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.only(left: AppSpace.s20),
+        nightDecoration: BoxDecoration(
           color: context.accentPrimary.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppGeometry.roundedr16,
         ),
         child: Icon(
           Icons.check_circle_rounded,
@@ -548,12 +561,12 @@ class _TaskItemTile extends ConsumerWidget {
         ),
       ),
       // Swipe Left: Delete
-      secondaryBackground: Container(
+      secondaryBackground: AppCard(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.only(right: AppSpace.s20),
+        nightDecoration: BoxDecoration(
           color: context.stateDanger.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppGeometry.roundedr16,
         ),
         child: Icon(
           Icons.delete_outline_rounded,
@@ -585,11 +598,11 @@ class _TaskItemTile extends ConsumerWidget {
             context: context,
             backgroundColor: context.bgSurface,
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr20),
             ),
             builder: (ctx) => SafeArea(
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpace.s20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -679,13 +692,16 @@ class _TaskItemTile extends ConsumerWidget {
         }
       },
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: AppSpace.s8),
         child: AscentCard(
           onTap: () {
             HapticFeedback.lightImpact();
             _showTaskDetailDialog(context, ref, task, subTasks);
           },
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s16,
+            vertical: AppSpace.s14,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -693,7 +709,7 @@ class _TaskItemTile extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Checkbox button
-                  InkWell(
+                  AppTapArea(
                     onTap: () async {
                       if (isDone) {
                         // Once completed, it cannot be undone or brought back to active (one way only).
@@ -712,20 +728,20 @@ class _TaskItemTile extends ConsumerWidget {
                       final taskDao = ref.read(taskDaoProvider);
                       await taskDao.markComplete(task.id);
                     },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
+                    borderRadius: AppGeometry.roundedr12,
+                    child: AppTag(
                       width: 26,
                       height: 26,
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: isDone
                             ? context.accentPrimary
-                            : Colors.transparent,
+                            : AppPalette.transparent,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDone
                               ? context.accentPrimary
                               : context.divider,
-                          width: 1.8,
+                          width: AppBorderScale.w1point8,
                         ),
                       ),
                       child: isDone
@@ -747,37 +763,38 @@ class _TaskItemTile extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 task.title,
-                                style: AscentTextStyles.bodyMedium.copyWith(
-                                  color: isDone
-                                      ? context.textMuted
-                                      : context.textPrimary,
-                                  decoration: isDone
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                style: AscentTextStyles.bodyMedium
+                                    .copyWith(
+                                      color: isDone
+                                          ? context.textMuted
+                                          : context.textPrimary,
+                                      decoration: isDone
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    )
+                                    .merge(AppTypeRoles.typeRole15),
                               ),
                             ),
                             if (subTasks.isNotEmpty) ...[
                               const SizedBox(width: 8),
-                              Container(
+                              AppTag(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
+                                  horizontal: AppSpace.s8,
+                                  vertical: AppSpace.s2,
                                 ),
-                                decoration: BoxDecoration(
+                                nightDecoration: BoxDecoration(
                                   color: context.accentPrimary.withValues(
                                     alpha: 0.12,
                                   ),
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: AppGeometry.roundedr8,
                                 ),
                                 child: Text(
                                   '$completedSubTasks/${subTasks.length} sub-tasks',
                                   style: AscentTextStyles.captionMedium
                                       .copyWith(
                                         color: context.accentPrimaryBright,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                      )
+                                      .merge(AppTypeRoles.typeRole9),
                                 ),
                               ),
                             ],
@@ -809,16 +826,17 @@ class _TaskItemTile extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   DateFormat('MMM d').format(task.plannedDate!),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: status == TaskComputedStatus.lagging
-                                        ? context.stateDanger
-                                        : context.textMuted,
-                                    fontWeight:
-                                        status == TaskComputedStatus.lagging
-                                        ? FontWeight.w600
-                                        : FontWeight.w400,
-                                  ),
+                                  style:
+                                      AppStateTypography.stateType3(
+                                        state0:
+                                            status ==
+                                            TaskComputedStatus.lagging,
+                                      ).copyWith(
+                                        color:
+                                            status == TaskComputedStatus.lagging
+                                            ? context.stateDanger
+                                            : context.textMuted,
+                                      ),
                                 ),
                               ],
                               if (task.priority == 'high') ...[
@@ -834,8 +852,7 @@ class _TaskItemTile extends ConsumerWidget {
                                 const SizedBox(width: 4),
                                 Text(
                                   'High',
-                                  style: TextStyle(
-                                    fontSize: 11,
+                                  style: AppTypeRoles.typeRole4.copyWith(
                                     color: context.stateDanger,
                                   ),
                                 ),
@@ -857,10 +874,8 @@ class _TaskItemTile extends ConsumerWidget {
                                   task.actualCompletedDate != null
                                       ? '✓ Done ${DateFormat('h:mm a').format(task.actualCompletedDate!)}'
                                       : '✓ Completed',
-                                  style: TextStyle(
-                                    fontSize: 11,
+                                  style: AppTypeRoles.typeRole16.copyWith(
                                     color: context.accentPrimary,
-                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ],
@@ -874,7 +889,7 @@ class _TaskItemTile extends ConsumerWidget {
                       task.estimatedMinutes != null &&
                       task.estimatedMinutes! > 0) ...[
                     const SizedBox(width: 8),
-                    InkWell(
+                    AppTapArea(
                       onTap: () async {
                         await ref
                             .read(timeTrackingProvider.notifier)
@@ -888,11 +903,11 @@ class _TaskItemTile extends ConsumerWidget {
                           context.push('/focus');
                         }
                       },
-                      borderRadius: BorderRadius.circular(18),
-                      child: Container(
+                      borderRadius: AppGeometry.roundedr18,
+                      child: AppTag(
                         width: 34,
                         height: 34,
-                        decoration: BoxDecoration(
+                        nightDecoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: context.accentPrimary.withValues(alpha: 0.12),
                         ),
@@ -925,7 +940,7 @@ class _TaskItemTile extends ConsumerWidget {
               // §7: Sub-entries rendered as an indented checklist
               if (subTasks.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Divider(
+                AppDivider(
                   color: context.divider.withValues(alpha: 0.5),
                   height: 1,
                 ),
@@ -937,10 +952,14 @@ class _TaskItemTile extends ConsumerWidget {
                   }
                   final isSubDone = sub.actualCompletedDate != null;
                   return Padding(
-                    padding: const EdgeInsets.only(left: 36, top: 4, bottom: 4),
+                    padding: const EdgeInsets.only(
+                      left: AppSpace.s36,
+                      top: AppSpace.s4,
+                      bottom: AppSpace.s4,
+                    ),
                     child: Row(
                       children: [
-                        InkWell(
+                        AppTapArea(
                           onTap: () async {
                             final dao = ref.read(taskDaoProvider);
                             if (isSubDone) {
@@ -962,27 +981,27 @@ class _TaskItemTile extends ConsumerWidget {
                               }
                             }
                           },
-                          borderRadius: BorderRadius.circular(6),
-                          child: Container(
+                          borderRadius: AppGeometry.roundedr6,
+                          child: AppTag(
                             width: 20,
                             height: 20,
-                            decoration: BoxDecoration(
+                            nightDecoration: BoxDecoration(
                               color: isSubDone
                                   ? context.accentPrimary
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(5),
+                                  : AppPalette.transparent,
+                              borderRadius: AppGeometry.roundedr5,
                               border: Border.all(
                                 color: isSubDone
                                     ? context.accentPrimary
                                     : context.divider,
-                                width: 1.5,
+                                width: AppBorderScale.w1point5,
                               ),
                             ),
                             child: isSubDone
                                 ? const Icon(
                                     Icons.check_rounded,
                                     size: 14,
-                                    color: Colors.white,
+                                    color: AppPalette.white,
                                   )
                                 : null,
                           ),
@@ -1009,8 +1028,11 @@ class _TaskItemTile extends ConsumerWidget {
               // Inline "Add sub-task" button on parent card
               if (!isCompletedView) ...[
                 Padding(
-                  padding: const EdgeInsets.only(left: 36, top: 6),
-                  child: InkWell(
+                  padding: const EdgeInsets.only(
+                    left: AppSpace.s36,
+                    top: AppSpace.s6,
+                  ),
+                  child: AppTapArea(
                     onTap: onAddSubTask,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -1023,10 +1045,9 @@ class _TaskItemTile extends ConsumerWidget {
                         const SizedBox(width: 4),
                         Text(
                           'Add sub-task',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: context.accentPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AscentTextStyles.labelSmall
+                              .copyWith(color: context.accentPrimary)
+                              .merge(AppTypeRoles.typeRole8),
                         ),
                       ],
                     ),
@@ -1054,20 +1075,20 @@ class _TaskItemTile extends ConsumerWidget {
       context: context,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppPalette.transparent,
           insetPadding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 24,
+            horizontal: AppSpace.s24,
+            vertical: AppSpace.s24,
           ),
-          child: Container(
-            padding: const EdgeInsets.all(22),
-            decoration: BoxDecoration(
+          child: AppCard(
+            padding: const EdgeInsets.all(AppSpace.s22),
+            nightDecoration: BoxDecoration(
               color: ctx.bgSurfaceElevated,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: g.line, width: 1),
+              borderRadius: AppGeometry.roundedr24,
+              border: Border.all(color: g.line, width: AppBorderScale.w1),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: AppPalette.black.withValues(alpha: 0.35),
                   blurRadius: 24,
                   offset: const Offset(0, 10),
                 ),
@@ -1079,22 +1100,18 @@ class _TaskItemTile extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    Container(
+                    AppCard(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: AppSpace.s10,
+                        vertical: AppSpace.s4,
                       ),
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: g.claySoft,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                       ),
                       child: Text(
                         task.priority.toUpperCase(),
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: g.clay,
-                        ),
+                        style: AppTypography.inter11W7003(color: g.clay),
                       ),
                     ),
                     const Spacer(),
@@ -1117,11 +1134,8 @@ class _TaskItemTile extends ConsumerWidget {
                 const SizedBox(height: 14),
                 Text(
                   task.title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.plusJakartaSans18W6004(
                     color: g.ink,
-                    height: 1.35,
                     decoration: isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
@@ -1129,11 +1143,7 @@ class _TaskItemTile extends ConsumerWidget {
                   const SizedBox(height: 12),
                   Text(
                     task.notes!,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: g.inkMuted,
-                      height: 1.4,
-                    ),
+                    style: AppTypography.inter14Regular5(color: g.inkMuted),
                   ),
                 ],
                 if (task.plannedDate != null) ...[
@@ -1148,10 +1158,7 @@ class _TaskItemTile extends ConsumerWidget {
                       const SizedBox(width: 6),
                       Text(
                         DateFormat('EEEE, MMM d, y').format(task.plannedDate!),
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: g.inkMuted,
-                        ),
+                        style: AppTypography.inter13Regular6(color: g.inkMuted),
                       ),
                     ],
                   ),
@@ -1164,16 +1171,32 @@ class _TaskItemTile extends ConsumerWidget {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
-                      style: TextButton.styleFrom(
-                        foregroundColor: g.inkMuted,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                      style: context.surfaces.buttonStyle(
+                        TextButton.styleFrom(
+                          foregroundColor: g.inkMuted,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s10,
+                          ),
                         ),
+                        filled: false,
+                        icon: false,
                       ),
                       child: const Text('Cancel'),
                     ),
                     const SizedBox(width: 8),
+                    if (!isDone &&
+                        isTimeBound &&
+                        subTasks.isEmpty &&
+                        task.learningCourseId == null)
+                      TextButton.icon(
+                        icon: const Icon(Icons.school_outlined),
+                        label: const Text('Send to lecture'),
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          AddLectureActivitySheet.sendTask(context, ref, task);
+                        },
+                      ),
                     if (!isDone && isTimeBound)
                       FilledButton.icon(
                         onPressed: () async {
@@ -1210,32 +1233,40 @@ class _TaskItemTile extends ConsumerWidget {
                             );
                           }
                         },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: g.clay,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
+                        style: context.surfaces.buttonStyle(
+                          FilledButton.styleFrom(
+                            backgroundColor: g.clay,
+                            foregroundColor: AppPalette.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s18,
+                              vertical: AppSpace.s10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr14,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          filled: true,
+                          icon: false,
                         ),
                         child: const Text('Mark Done'),
                       )
                     else
                       FilledButton(
                         onPressed: () => Navigator.of(ctx).pop(),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: g.claySoft,
-                          foregroundColor: g.clay,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 18,
-                            vertical: 10,
+                        style: context.surfaces.buttonStyle(
+                          FilledButton.styleFrom(
+                            backgroundColor: g.claySoft,
+                            foregroundColor: g.clay,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s18,
+                              vertical: AppSpace.s10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr14,
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
+                          filled: true,
+                          icon: false,
                         ),
                         child: const Text('Done'),
                       ),

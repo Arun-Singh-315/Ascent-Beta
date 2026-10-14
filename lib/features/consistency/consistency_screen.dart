@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
@@ -34,7 +36,9 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
     final taskDao = ref.watch(taskDaoProvider);
     final studyStreak = ref.watch(studyStreakProvider);
     final legacyStreak = ref.watch(currentStreakStreamProvider).value ?? 0;
-    final currentStreak = studyStreak.displayStreakDays > 0 ? studyStreak.displayStreakDays : legacyStreak;
+    final currentStreak = studyStreak.displayStreakDays > 0
+        ? studyStreak.displayStreakDays
+        : legacyStreak;
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -48,166 +52,182 @@ class _ConsistencyScreenState extends ConsumerState<ConsistencyScreen> {
           final logs = snapshot.data ?? [];
           final logMap = {
             for (final log in logs)
-              DateTime(log.date.year, log.date.month, log.date.day): log
+              DateTime(log.date.year, log.date.month, log.date.day): log,
           };
 
           return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s20,
+              vertical: AppSpace.s12,
+            ),
             children: [
-                  // ── Streak Stats Cards ─────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AscentCard(
-                          padding: const EdgeInsets.all(16),
-                          color: context.accentPrimary.withValues(alpha: 0.1),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+              // ── Streak Stats Cards ─────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: AscentCard(
+                      padding: const EdgeInsets.all(AppSpace.s16),
+                      color: context.accentPrimary.withValues(alpha: 0.1),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'CURRENT STREAK',
+                            style: AscentTextStyles.labelSmall
+                                .copyWith(color: context.accentPrimary)
+                                .merge(AppTypeRoles.typeRole2),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
                             children: [
                               Text(
-                                'CURRENT STREAK',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: context.accentPrimary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                '$currentStreak',
+                                style: AscentTextStyles.statLarge
+                                    .copyWith(color: context.accentPrimary)
+                                    .merge(AppTypeRoles.typeRole20),
                               ),
-                              const SizedBox(height: 6),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '$currentStreak',
-                                    style: AscentTextStyles.statLarge.copyWith(
-                                      color: context.accentPrimary,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'days',
-                                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                                  ),
-                                ],
+                              const SizedBox(width: 4),
+                              Text(
+                                'days',
+                                style: AscentTextStyles.bodyMedium.copyWith(
+                                  color: context.textMuted,
+                                ),
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: AscentCard(
-                          padding: const EdgeInsets.all(16),
-                          color: context.accentSecondary.withValues(alpha: 0.1),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'TOTAL CHECK-INS',
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: context.accentSecondary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '${logs.where((l) => l.present).length}',
-                                    style: AscentTextStyles.statLarge.copyWith(
-                                      color: context.accentSecondary,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'sessions',
-                                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // ── Today's Check-in Card ──────────────────────────────
-                  _DailyCheckInBlock(
-                    today: today,
-                    todayLog: logMap[today],
-                    onCheckIn: (present, note) async {
-                      await consistencyDao.logDay(
-                        today,
-                        present,
-                        note: note,
-                      );
-                      setState(() {});
-                    },
-                  ),
-                  const SizedBox(height: 24),
-
-                  // ── Heatmap Calendar Grid (GitHub Style) ───────────────
-                  Text(
-                    'STUDY ACTIVITY HEATMAP',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: context.textMuted,
-                      letterSpacing: 1.0,
-                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  AscentCard(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AscentCard(
+                      padding: const EdgeInsets.all(AppSpace.s16),
+                      color: context.accentSecondary.withValues(alpha: 0.1),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'TOTAL CHECK-INS',
+                            style: AscentTextStyles.labelSmall
+                                .copyWith(color: context.accentSecondary)
+                                .merge(AppTypeRoles.typeRole2),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '${logs.where((l) => l.present).length}',
+                                style: AscentTextStyles.statLarge
+                                    .copyWith(color: context.accentSecondary)
+                                    .merge(AppTypeRoles.typeRole20),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'sessions',
+                                style: AscentTextStyles.bodyMedium.copyWith(
+                                  color: context.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // ── Today's Check-in Card ──────────────────────────────
+              _DailyCheckInBlock(
+                today: today,
+                todayLog: logMap[today],
+                onCheckIn: (present, note) async {
+                  await consistencyDao.logDay(today, present, note: note);
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: 24),
+
+              // ── Heatmap Calendar Grid (GitHub Style) ───────────────
+              Text(
+                'STUDY ACTIVITY HEATMAP',
+                style: AscentTextStyles.labelSmall
+                    .copyWith(color: context.textMuted, letterSpacing: 1.0)
+                    .merge(AppTypeRoles.typeRole2),
+              ),
+              const SizedBox(height: 12),
+              AscentCard(
+                padding: const EdgeInsets.all(AppSpace.s16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _HeatmapGrid(
+                      daysCount: 84, // 12 weeks
+                      endDate: today,
+                      logMap: logMap,
+                      selectedDate: _selectedDate,
+                      onDateSelected: (date) {
+                        setState(() => _selectedDate = date);
+                      },
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        _HeatmapGrid(
-                          daysCount: 84, // 12 weeks
-                          endDate: today,
-                          logMap: logMap,
-                          selectedDate: _selectedDate,
-                          onDateSelected: (date) {
-                            setState(() => _selectedDate = date);
-                          },
+                        Text(
+                          'Absent',
+                          style: AscentTextStyles.bodySmall
+                              .copyWith(color: context.textMuted)
+                              .merge(AppTypeRoles.typeRole18),
                         ),
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text('Absent', style: AscentTextStyles.bodySmall.copyWith(fontSize: 10, color: context.textMuted)),
-                            const SizedBox(width: 6),
-                            _LegendBox(color: context.divider),
-                            const SizedBox(width: 4),
-                            _LegendBox(color: context.accentPrimary.withValues(alpha: 0.3)),
-                            const SizedBox(width: 4),
-                            _LegendBox(color: context.accentPrimary.withValues(alpha: 0.6)),
-                            const SizedBox(width: 4),
-                            _LegendBox(color: context.accentPrimary),
-                            const SizedBox(width: 6),
-                            Text('Present', style: AscentTextStyles.bodySmall.copyWith(fontSize: 10, color: context.textMuted)),
-                          ],
+                        const SizedBox(width: 6),
+                        _LegendBox(color: context.divider),
+                        const SizedBox(width: 4),
+                        _LegendBox(
+                          color: context.accentPrimary.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(width: 4),
+                        _LegendBox(
+                          color: context.accentPrimary.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 4),
+                        _LegendBox(color: context.accentPrimary),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Present',
+                          style: AscentTextStyles.bodySmall
+                              .copyWith(color: context.textMuted)
+                              .merge(AppTypeRoles.typeRole18),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                  // ── Day Detail Inspection (Spec §5.4) ──────────────────
-                  _DayDetailSection(
-                    date: _selectedDate,
-                    log: logMap[DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day)],
-                    taskDao: taskDao,
-                  ),
-                  const SizedBox(height: 32),
-                ],
-              );
-            },
-          ),
+              // ── Day Detail Inspection (Spec §5.4) ──────────────────
+              _DayDetailSection(
+                date: _selectedDate,
+                log:
+                    logMap[DateTime(
+                      _selectedDate.year,
+                      _selectedDate.month,
+                      _selectedDate.day,
+                    )],
+                taskDao: taskDao,
+              ),
+              const SizedBox(height: 32),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -232,26 +252,29 @@ class _DailyCheckInBlock extends StatelessWidget {
     final isCheckedIn = todayLog != null;
 
     return AscentCard(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpace.s18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(
-                isCheckedIn ? Icons.check_circle_rounded : Icons.help_outline_rounded,
+                isCheckedIn
+                    ? Icons.check_circle_rounded
+                    : Icons.help_outline_rounded,
                 color: isCheckedIn
-                    ? (todayLog!.present ? context.accentPrimary : context.textMuted)
+                    ? (todayLog!.present
+                          ? context.accentPrimary
+                          : context.textMuted)
                     : context.accentSecondary,
                 size: 22,
               ),
               const SizedBox(width: 10),
               Text(
                 'Did you show up today?',
-                style: AscentTextStyles.labelLarge.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.textPrimary,
-                ),
+                style: AscentTextStyles.labelLarge
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole2),
               ),
             ],
           ),
@@ -259,17 +282,21 @@ class _DailyCheckInBlock extends StatelessWidget {
           Text(
             isCheckedIn
                 ? (todayLog!.present
-                    ? 'Logged as present! Consistency builds career breakthroughs.'
-                    : 'Rest day logged. Rest is part of the process.')
+                      ? 'Logged as present! Consistency builds career breakthroughs.'
+                      : 'Rest day logged. Rest is part of the process.')
                 : 'Take 5 seconds to log your presence. Every session counts toward your goal.',
-            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+            style: AscentTextStyles.bodySmall.copyWith(
+              color: context.textMuted,
+            ),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: AscentButton.primary(
-                  label: todayLog?.present == true ? 'Checked In' : 'Yes, showed up',
+                  label: todayLog?.present == true
+                      ? 'Checked In'
+                      : 'Yes, showed up',
                   compact: true,
                   onPressed: () => onCheckIn(true, null),
                 ),
@@ -277,7 +304,9 @@ class _DailyCheckInBlock extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: AscentButton.outlined(
-                  label: todayLog?.present == false ? 'Logged Rest' : 'Rest day / No',
+                  label: todayLog?.present == false
+                      ? 'Logged Rest'
+                      : 'Rest day / No',
                   compact: true,
                   onPressed: () => onCheckIn(false, null),
                 ),
@@ -315,47 +344,55 @@ class _HeatmapGrid extends StatelessWidget {
     final weeks = daysCount ~/ 7;
     final startDate = endDate.subtract(Duration(days: daysCount - 1));
 
-    return Column(
-      children: List.generate(7, (row) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(weeks, (col) {
-              final dayOffset = col * 7 + row;
-              final date = startDate.add(Duration(days: dayOffset));
-              final normalized = DateTime(date.year, date.month, date.day);
-              final log = logMap[normalized];
-              final isPresent = log?.present == true;
-              final isSelected = normalized.year == selectedDate.year &&
-                  normalized.month == selectedDate.month &&
-                  normalized.day == selectedDate.day;
+    return AppHeatmapViewport(
+      columns: weeks,
+      child: Column(
+        children: List.generate(7, (row) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(weeks, (col) {
+                final dayOffset = col * 7 + row;
+                final date = startDate.add(Duration(days: dayOffset));
+                final normalized = DateTime(date.year, date.month, date.day);
+                final log = logMap[normalized];
+                final isPresent = log?.present == true;
+                final isSelected =
+                    normalized.year == selectedDate.year &&
+                    normalized.month == selectedDate.month &&
+                    normalized.day == selectedDate.day;
 
-              Color cellColor = context.divider;
-              if (isPresent) {
-                cellColor = context.accentPrimary;
-              } else if (log != null && !log.present) {
-                cellColor = context.accentSecondary.withValues(alpha: 0.25);
-              }
+                Color cellColor = context.divider;
+                if (isPresent) {
+                  cellColor = context.accentPrimary;
+                } else if (log != null && !log.present) {
+                  cellColor = context.accentSecondary.withValues(alpha: 0.25);
+                }
 
-              return GestureDetector(
-                onTap: () => onDateSelected(normalized),
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: cellColor,
-                    borderRadius: BorderRadius.circular(4),
-                    border: isSelected
-                        ? Border.all(color: context.textPrimary, width: 2)
-                        : null,
+                return AppGestureTap(
+                  onTap: () => onDateSelected(normalized),
+                  child: AppIndicator(
+                    selected: isSelected,
+                    width: 16,
+                    height: 16,
+                    nightDecoration: BoxDecoration(
+                      color: cellColor,
+                      borderRadius: AppGeometry.roundedr4,
+                      border: isSelected
+                          ? Border.all(
+                              color: context.textPrimary,
+                              width: AppBorderScale.w2,
+                            )
+                          : null,
+                    ),
                   ),
-                ),
-              );
-            }),
-          ),
-        );
-      }),
+                );
+              }),
+            ),
+          );
+        }),
+      ),
     );
   }
 }
@@ -367,12 +404,13 @@ class _LegendBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppProgress(
+      filled: true,
       width: 12,
       height: 12,
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: AppGeometry.roundedr3,
       ),
     );
   }
@@ -399,7 +437,7 @@ class _DayDetailSection extends StatelessWidget {
     final isPresent = log?.present == true;
 
     return AscentCard(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpace.s18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -407,28 +445,33 @@ class _DayDetailSection extends StatelessWidget {
             children: [
               Text(
                 dateStr,
-                style: AscentTextStyles.labelLarge.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: context.textPrimary,
-                ),
+                style: AscentTextStyles.labelLarge
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole2),
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
+              AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s10,
+                  vertical: AppSpace.s4,
+                ),
+                nightDecoration: BoxDecoration(
                   color: isPresent
                       ? context.accentPrimary.withValues(alpha: 0.15)
                       : context.divider,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                 ),
                 child: Text(
                   log == null
                       ? 'No Record'
                       : (isPresent ? 'Present' : 'Rest Day'),
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: isPresent ? context.accentPrimary : context.textMuted,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AscentTextStyles.labelSmall
+                      .copyWith(
+                        color: isPresent
+                            ? context.accentPrimary
+                            : context.textMuted,
+                      )
+                      .merge(AppTypeRoles.typeRole2),
                 ),
               ),
             ],
@@ -437,12 +480,16 @@ class _DayDetailSection extends StatelessWidget {
           if (log?.note != null && log!.note!.isNotEmpty) ...[
             Text(
               'Session Note:',
-              style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+              style: AscentTextStyles.labelSmall.copyWith(
+                color: context.textMuted,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               log!.note!,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 12),
           ],
@@ -454,13 +501,17 @@ class _DayDetailSection extends StatelessWidget {
               final doneOnDay = all.where((t) {
                 if (t.actualCompletedDate == null) return false;
                 final c = t.actualCompletedDate!;
-                return c.year == date.year && c.month == date.month && c.day == date.day;
+                return c.year == date.year &&
+                    c.month == date.month &&
+                    c.day == date.day;
               }).toList();
 
               if (doneOnDay.isEmpty) {
                 return Text(
                   'No completed tasks logged for this day.',
-                  style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
+                  ),
                 );
               }
 
@@ -469,30 +520,36 @@ class _DayDetailSection extends StatelessWidget {
                 children: [
                   Text(
                     'Tasks Completed (${doneOnDay.length}):',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: context.accentPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelSmall
+                        .copyWith(color: context.accentPrimary)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 6),
-                  ...doneOnDay.map((t) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 3),
-                        child: Row(
-                          children: [
-                            Icon(Icons.check_circle_outline_rounded,
-                                size: 16, color: context.accentPrimary),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                t.title,
-                                style: AscentTextStyles.bodySmall.copyWith(
-                                  color: context.textPrimary,
-                                ),
+                  ...doneOnDay.map(
+                    (t) => Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpace.s3,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 16,
+                            color: context.accentPrimary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              t.title,
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: context.textPrimary,
                               ),
                             ),
-                          ],
-                        ),
-                      )),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               );
             },

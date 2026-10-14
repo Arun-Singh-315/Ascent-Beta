@@ -1,10 +1,12 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -18,10 +20,12 @@ class SeriesReportCardScreen extends ConsumerStatefulWidget {
   const SeriesReportCardScreen({super.key, required this.seriesId});
 
   @override
-  ConsumerState<SeriesReportCardScreen> createState() => _SeriesReportCardScreenState();
+  ConsumerState<SeriesReportCardScreen> createState() =>
+      _SeriesReportCardScreenState();
 }
 
-class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen> {
+class _SeriesReportCardScreenState
+    extends ConsumerState<SeriesReportCardScreen> {
   final _taskTitleController = TextEditingController();
 
   @override
@@ -36,14 +40,14 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 20,
-          right: 20,
-          top: 24,
+          left: AppSpace.s20,
+          right: AppSpace.s20,
+          top: AppSpace.s24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -54,7 +58,9 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
               children: [
                 Text(
                   'Add Series Milestone',
-                  style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                  style: AscentTextStyles.displaySmall.copyWith(
+                    color: context.textPrimary,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
@@ -65,14 +71,18 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
             const SizedBox(height: 16),
             TextField(
               controller: _taskTitleController,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'e.g. Problems 1-15: Arrays & Two Pointers',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   borderSide: BorderSide(color: context.divider),
                 ),
               ),
@@ -83,13 +93,17 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
               onPressed: () async {
                 final title = _taskTitleController.text.trim();
                 if (title.isNotEmpty) {
-                  await ref.read(taskDaoProvider).insertTask(
-                    TaskTableCompanion.insert(
-                      title: title,
-                      seriesId: drift.Value(widget.seriesId),
-                      plannedDate: drift.Value(DateTime.now().add(const Duration(days: 3))),
-                    ),
-                  );
+                  await ref
+                      .read(taskDaoProvider)
+                      .insertTask(
+                        TaskTableCompanion.insert(
+                          title: title,
+                          seriesId: drift.Value(widget.seriesId),
+                          plannedDate: drift.Value(
+                            DateTime.now().add(const Duration(days: 3)),
+                          ),
+                        ),
+                      );
                   _taskTitleController.clear();
                   if (ctx.mounted) Navigator.pop(ctx);
                 }
@@ -115,7 +129,7 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
         builder: (context, seriesSnapshot) {
           if (seriesSnapshot.connectionState == ConnectionState.waiting) {
             return Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               child: SkeletonShimmer(height: 250),
             );
           }
@@ -125,7 +139,9 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
             return Center(
               child: Text(
                 'Series not found',
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
               ),
             );
           }
@@ -134,13 +150,21 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
             stream: taskDao.watchTasksBySeries(series.id),
             builder: (context, tasksSnapshot) {
               final tasks = tasksSnapshot.data ?? [];
-              final completedTasks = tasks.where((t) => t.actualCompletedDate != null).toList();
-              final totalCount = series.totalItems ?? (tasks.isNotEmpty ? tasks.length : 1);
-              final progress = (completedTasks.length / totalCount).clamp(0.0, 1.0);
+              final completedTasks = tasks
+                  .where((t) => t.actualCompletedDate != null)
+                  .toList();
+              final totalCount =
+                  series.totalItems ?? (tasks.isNotEmpty ? tasks.length : 1);
+              final progress = (completedTasks.length / totalCount).clamp(
+                0.0,
+                1.0,
+              );
               final percentStr = '${(progress * 100).toInt()}%';
 
               // Pacing status calculation
-              final daysLeft = series.endDate?.difference(DateTime.now()).inDays;
+              final daysLeft = series.endDate
+                  ?.difference(DateTime.now())
+                  .inDays;
 
               String paceLabel = 'On Track';
               Color paceColor = context.stateSuccess;
@@ -153,45 +177,53 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
               }
 
               return ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s20,
+                  vertical: AppSpace.s16,
+                ),
                 children: [
                   // ── Hero Series Card ─────────────────────────────────
                   AscentCard(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(AppSpace.s20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
+                            AppTag(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s8,
+                                vertical: AppSpace.s4,
+                              ),
+                              nightDecoration: BoxDecoration(
                                 color: paceColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Text(
                                 paceLabel.toUpperCase(),
-                                style: AscentTextStyles.labelSmall.copyWith(
-                                  color: paceColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: AscentTextStyles.labelSmall
+                                    .copyWith(color: paceColor)
+                                    .merge(AppTypeRoles.typeRole9),
                               ),
                             ),
                             const Spacer(),
                             if (daysLeft != null)
                               Text(
-                                daysLeft >= 0 ? '$daysLeft days remaining' : 'Past deadline',
-                                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                                daysLeft >= 0
+                                    ? '$daysLeft days remaining'
+                                    : 'Past deadline',
+                                style: AscentTextStyles.bodySmall.copyWith(
+                                  color: context.textMuted,
+                                ),
                               ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         Text(
                           series.title,
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            color: context.textPrimary,
-                            fontSize: 22,
-                          ),
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole29),
                         ),
                         const SizedBox(height: 16),
 
@@ -201,25 +233,28 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                           children: [
                             Text(
                               'Progress',
-                              style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: context.textMuted,
+                              ),
                             ),
                             Text(
                               '$percentStr (${completedTasks.length}/$totalCount)',
-                              style: AscentTextStyles.monoCode.copyWith(
-                                color: context.accentPrimary,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AscentTextStyles.monoCode
+                                  .copyWith(color: context.accentPrimary)
+                                  .merge(AppTypeRoles.typeRole9),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppGeometry.roundedr8,
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 8,
                             backgroundColor: context.bgBase,
-                            valueColor: AlwaysStoppedAnimation<Color>(context.accentPrimary),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              context.accentPrimary,
+                            ),
                           ),
                         ),
                       ],
@@ -230,7 +265,7 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
 
                   // ── Velocity / Burn-up Chart ─────────────────────────
                   AscentCard(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(AppSpace.s18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -239,21 +274,26 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                           children: [
                             Text(
                               'Velocity Curve',
-                              style: AscentTextStyles.headlineMedium.copyWith(
-                                color: context.textPrimary,
-                                fontSize: 16,
-                              ),
+                              style: AscentTextStyles.headlineMedium
+                                  .copyWith(color: context.textPrimary)
+                                  .merge(AppTypeRoles.typeRole10),
                             ),
                             Text(
                               'Burn-up trajectory',
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: context.textMuted,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 20),
                         SizedBox(
                           height: 160,
-                          child: _buildBurnUpChart(context, completedTasks.length, totalCount),
+                          child: _buildBurnUpChart(
+                            context,
+                            completedTasks.length,
+                            totalCount,
+                          ),
                         ),
                       ],
                     ),
@@ -267,10 +307,9 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                     children: [
                       Text(
                         'Milestones & Tasks',
-                        style: AscentTextStyles.headlineMedium.copyWith(
-                          color: context.textPrimary,
-                          fontSize: 18,
-                        ),
+                        style: AscentTextStyles.headlineMedium
+                            .copyWith(color: context.textPrimary)
+                            .merge(AppTypeRoles.typeRole1),
                       ),
                       AscentButton.outlined(
                         icon: Icons.add_rounded,
@@ -285,12 +324,14 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
 
                   if (tasks.isEmpty)
                     AscentCard(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(AppSpace.s24),
                       child: Center(
                         child: Text(
                           'No specific tasks linked to this series yet.\nTap "Add Task" to track individual steps.',
                           textAlign: TextAlign.center,
-                          style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: context.textMuted,
+                          ),
                         ),
                       ),
                     )
@@ -298,29 +339,37 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                     ...tasks.map((task) {
                       final isDone = task.actualCompletedDate != null;
                       return AscentCard(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: AppSpace.s8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s14,
+                          vertical: AppSpace.s10,
+                        ),
                         child: Row(
                           children: [
                             Checkbox(
                               value: isDone,
                               activeColor: context.accentPrimary,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: AppGeometry.roundedr4,
                               ),
                               onChanged: (val) async {
                                 if (isDone) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Completed tasks stay sealed.'),
+                                      content: Text(
+                                        'Completed tasks stay sealed.',
+                                      ),
                                     ),
                                   );
                                   return;
                                 }
-                                if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+                                if (task.estimatedMinutes != null &&
+                                    task.estimatedMinutes! > 0) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Timed activities complete after their focus target is reached.'),
+                                      content: Text(
+                                        'Timed activities complete after their focus target is reached.',
+                                      ),
                                     ),
                                   );
                                   return;
@@ -335,8 +384,12 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
                               child: Text(
                                 task.title,
                                 style: AscentTextStyles.bodyMedium.copyWith(
-                                  color: isDone ? context.textMuted : context.textPrimary,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  color: isDone
+                                      ? context.textMuted
+                                      : context.textPrimary,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
                                 ),
                               ),
                             ),
@@ -385,8 +438,12 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
         ),
         titlesData: FlTitlesData(
           show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -394,13 +451,33 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
               getTitlesWidget: (val, meta) {
                 switch (val.toInt()) {
                   case 0:
-                    return Text('Start', style: TextStyle(color: context.textMuted, fontSize: 10));
+                    return Text(
+                      'Start',
+                      style: AppTypeRoles.typeRole18.copyWith(
+                        color: context.textMuted,
+                      ),
+                    );
                   case 1:
-                    return Text('Week 1', style: TextStyle(color: context.textMuted, fontSize: 10));
+                    return Text(
+                      'Week 1',
+                      style: AppTypeRoles.typeRole18.copyWith(
+                        color: context.textMuted,
+                      ),
+                    );
                   case 2:
-                    return Text('Week 2', style: TextStyle(color: context.textMuted, fontSize: 10));
+                    return Text(
+                      'Week 2',
+                      style: AppTypeRoles.typeRole18.copyWith(
+                        color: context.textMuted,
+                      ),
+                    );
                   case 3:
-                    return Text('Target', style: TextStyle(color: context.textMuted, fontSize: 10));
+                    return Text(
+                      'Target',
+                      style: AppTypeRoles.typeRole18.copyWith(
+                        color: context.textMuted,
+                      ),
+                    );
                   default:
                     return const SizedBox.shrink();
                 }
@@ -414,7 +491,9 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
               getTitlesWidget: (val, meta) {
                 return Text(
                   val.toInt().toString(),
-                  style: TextStyle(color: context.textMuted, fontSize: 10),
+                  style: AppTypeRoles.typeRole18.copyWith(
+                    color: context.textMuted,
+                  ),
                 );
               },
             ),
@@ -443,12 +522,13 @@ class _SeriesReportCardScreenState extends ConsumerState<SeriesReportCardScreen>
             barWidth: 3,
             dotData: FlDotData(
               show: true,
-              getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                radius: 4,
-                color: context.accentPrimary,
-                strokeWidth: 2,
-                strokeColor: context.bgSurface,
-              ),
+              getDotPainter: (spot, percent, barData, index) =>
+                  FlDotCirclePainter(
+                    radius: 4,
+                    color: context.accentPrimary,
+                    strokeWidth: 2,
+                    strokeColor: context.bgSurface,
+                  ),
             ),
             belowBarData: BarAreaData(
               show: true,

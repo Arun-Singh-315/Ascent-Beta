@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,6 +23,7 @@ import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
+import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
 import 'widgets/streak_celebration_dialog.dart';
@@ -33,14 +37,24 @@ import '../challenge/integration/challenge_proof_sync.dart';
 /// - Clay accent with neutral ink hierarchy.
 /// - First screen leads with Today execution.
 /// - Stationary ambient atmosphere painter behind smooth scrolling view.
-class HomeScreen extends ConsumerStatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) => Theme(
+    data: HomeTheme.from(Theme.of(context)),
+    child: const _HomeContent(),
+  );
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeContent extends ConsumerStatefulWidget {
+  const _HomeContent();
+
+  @override
+  ConsumerState<_HomeContent> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<_HomeContent> {
   bool _hasCheckedOverdueReminders = false;
 
   @override
@@ -154,10 +168,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    top: 16,
-                    bottom: 96,
+                    left: AppSpace.s24,
+                    right: AppSpace.s24,
+                    top: AppSpace.s16,
+                    bottom: AppSpace.s96,
                   ),
                   children: [
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
@@ -178,13 +192,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                     if (layout.shortcuts.isNotEmpty)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
+                        padding: const EdgeInsets.only(bottom: AppSpace.s18),
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: layout.shortcuts
                               .map(
-                                (id) => ActionChip(
+                                (id) => AppPill.action(
                                   label: Text(homeShortcutRoutes[id]!),
                                   onPressed: () => context.push('/$id'),
                                 ),
@@ -220,8 +234,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _homeSection(String id, HomeLayout layout) {
-    Widget spaced(Widget child) =>
-        Padding(padding: const EdgeInsets.only(bottom: 24), child: child);
+    Widget spaced(Widget child) => Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s32),
+      child: child,
+    );
     switch (id) {
       case 'streak':
         if (!ref.watch(homeStreakVisibleProvider)) {
@@ -279,7 +295,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               Text(
                 'Life & Health',
-                style: TextStyle(color: context.glass.ink, fontSize: 18),
+                style: AppTypeRoles.typeRole1.copyWith(
+                  color: context.glass.ink,
+                ),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -287,7 +305,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 runSpacing: 8,
                 children: layout.tools
                     .map(
-                      (tool) => ActionChip(
+                      (tool) => AppPill.action(
                         label: Text(homeTools[tool]!),
                         onPressed: () => context.push('/$tool'),
                       ),
@@ -328,7 +346,7 @@ class _HomeLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(AppSpace.s24),
       children: [
         SkeletonShimmer.card(height: 50),
         const SizedBox(height: 20),

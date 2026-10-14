@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
@@ -20,7 +22,7 @@ Future<bool> showThoughtConversion(
       useSafeArea: true,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => ThoughtConversionSheet(
         db: db,
         thoughts: thoughts,
@@ -138,215 +140,253 @@ class _ThoughtConversionSheetState extends State<ThoughtConversionSheet> {
     final today = DateTime(now.year, now.month, now.day);
     return PopScope(
       canPop: !_saving,
-      child: Container(
+      child: AppCard(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * .9,
         ),
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: g.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
           border: Border.all(color: g.edge),
         ),
         padding: EdgeInsets.fromLTRB(
-          24,
-          16,
-          24,
-          24 + MediaQuery.viewInsetsOf(context).bottom,
+          AppSpace.s24,
+          AppSpace.s16,
+          AppSpace.s24,
+          AppSpace.s24 + MediaQuery.viewInsetsOf(context).bottom,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: g.line,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                'Turn thoughts into action',
-                style: AscentTextStyles.displaySmall.copyWith(color: g.ink),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '${widget.thoughts.length} selected · your original notes stay here',
-                style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-              ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: ThoughtConversionMode.values
-                    .map(
-                      (mode) => ChoiceChip(
-                        label: Text(switch (mode) {
-                          ThoughtConversionMode.todo => 'Todo',
-                          ThoughtConversionMode.reminder => 'Reminder',
-                          ThoughtConversionMode.both => 'Both',
-                        }),
-                        selected: _mode == mode,
-                        onSelected: _saving
-                            ? null
-                            : (_) => setState(() {
-                                _mode = mode;
-                                _error = null;
-                              }),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: g.line,
+                          borderRadius: AppGeometry.roundedr2,
+                        ),
                       ),
-                    )
-                    .toList(),
-              ),
-              if (widget.thoughts.length > 1) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Individual items'),
-                      selected: !_grouped,
-                      onSelected: _saving
-                          ? null
-                          : (_) => setState(() => _grouped = false),
                     ),
-                    ChoiceChip(
-                      label: const Text('One grouped item'),
-                      selected: _grouped,
-                      onSelected: _saving
-                          ? null
-                          : (_) => setState(() => _grouped = true),
+                    const SizedBox(height: 18),
+                    Text(
+                      'Turn thoughts into action',
+                      style: AscentTextStyles.displaySmall.copyWith(
+                        color: g.ink,
+                      ),
                     ),
-                  ],
-                ),
-                if (_grouped && _mode != ThoughtConversionMode.reminder) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _title,
-                    enabled: !_saving,
-                    maxLength: 300,
-                    decoration: const InputDecoration(
-                      labelText: 'Checklist title',
+                    const SizedBox(height: 6),
+                    Text(
+                      '${widget.thoughts.length} selected · your original notes stay here',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                      ),
                     ),
-                  ),
-                ],
-              ],
-              const SizedBox(height: 16),
-              for (var i = 0; i < widget.thoughts.length.clamp(0, 5); i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(
-                    '${i + 1}. ${widget.thoughts[i].content}',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
-                  ),
-                ),
-              if (widget.thoughts.length > 5)
-                Text(
-                  'And ${widget.thoughts.length - 5} more selected notes',
-                  style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-                ),
-              if (_mode != ThoughtConversionMode.todo) ...[
-                const SizedBox(height: 14),
-                Text(
-                  'When should I remind you?',
-                  style: AscentTextStyles.labelMedium.copyWith(color: g.ink),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Today'),
-                      selected: _day == today,
-                      onSelected: _saving
-                          ? null
-                          : (_) => setState(() => _day = today),
-                    ),
-                    ChoiceChip(
-                      label: const Text('Tomorrow'),
-                      selected:
-                          _day == DateTime(now.year, now.month, now.day + 1),
-                      onSelected: _saving
-                          ? null
-                          : (_) => setState(
-                              () => _day = DateTime(
-                                now.year,
-                                now.month,
-                                now.day + 1,
-                              ),
+                    const SizedBox(height: 18),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: ThoughtConversionMode.values
+                          .map(
+                            (mode) => AppPill.choice(
+                              label: Text(switch (mode) {
+                                ThoughtConversionMode.todo => 'Todo',
+                                ThoughtConversionMode.reminder => 'Reminder',
+                                ThoughtConversionMode.both => 'Both',
+                              }),
+                              selected: _mode == mode,
+                              onSelected: _saving
+                                  ? null
+                                  : (_) => setState(() {
+                                      _mode = mode;
+                                      _error = null;
+                                    }),
                             ),
+                          )
+                          .toList(),
                     ),
-                    ActionChip(
-                      label: const Text('Pick date'),
-                      onPressed: _saving
-                          ? null
-                          : () async {
-                              final date = await showDatePicker(
-                                context: context,
-                                initialDate: _day ?? today,
-                                firstDate: today,
-                                lastDate: DateTime(now.year + 5),
-                              );
-                              if (mounted && date != null) {
-                                setState(() => _day = date);
-                              }
-                            },
-                    ),
+                    if (widget.thoughts.length > 1) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          AppPill.choice(
+                            label: const Text('Individual items'),
+                            selected: !_grouped,
+                            onSelected: _saving
+                                ? null
+                                : (_) => setState(() => _grouped = false),
+                          ),
+                          AppPill.choice(
+                            label: const Text('One grouped item'),
+                            selected: _grouped,
+                            onSelected: _saving
+                                ? null
+                                : (_) => setState(() => _grouped = true),
+                          ),
+                        ],
+                      ),
+                      if (_grouped &&
+                          _mode != ThoughtConversionMode.reminder) ...[
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _title,
+                          enabled: !_saving,
+                          maxLength: 300,
+                          decoration: const InputDecoration(
+                            labelText: 'Checklist title',
+                          ),
+                        ),
+                      ],
+                    ],
+                    const SizedBox(height: 16),
+                    for (var i = 0; i < widget.thoughts.length.clamp(0, 5); i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpace.s6),
+                        child: Text(
+                          '${i + 1}. ${widget.thoughts[i].content}',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: g.ink,
+                          ),
+                        ),
+                      ),
+                    if (widget.thoughts.length > 5)
+                      Text(
+                        'And ${widget.thoughts.length - 5} more selected notes',
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: g.inkMuted,
+                        ),
+                      ),
+                    if (_mode != ThoughtConversionMode.todo) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        'When should I remind you?',
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: g.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          AppPill.choice(
+                            label: const Text('Today'),
+                            selected: _day == today,
+                            onSelected: _saving
+                                ? null
+                                : (_) => setState(() => _day = today),
+                          ),
+                          AppPill.choice(
+                            label: const Text('Tomorrow'),
+                            selected:
+                                _day ==
+                                DateTime(now.year, now.month, now.day + 1),
+                            onSelected: _saving
+                                ? null
+                                : (_) => setState(
+                                    () => _day = DateTime(
+                                      now.year,
+                                      now.month,
+                                      now.day + 1,
+                                    ),
+                                  ),
+                          ),
+                          AppPill.action(
+                            label: const Text('Pick date'),
+                            onPressed: _saving
+                                ? null
+                                : () async {
+                                    final date = await showDatePicker(
+                                      context: context,
+                                      initialDate: _day ?? today,
+                                      firstDate: today,
+                                      lastDate: DateTime(now.year + 5),
+                                    );
+                                    if (mounted && date != null) {
+                                      setState(() => _day = date);
+                                    }
+                                  },
+                          ),
+                        ],
+                      ),
+                      if (_day != null)
+                        Text(
+                          '${_day!.day}/${_day!.month}/${_day!.year}',
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: g.inkMuted,
+                          ),
+                        ),
+                      TextButton.icon(
+                        onPressed: _saving
+                            ? null
+                            : () async {
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: _time ?? TimeOfDay.now(),
+                                );
+                                if (mounted && time != null) {
+                                  setState(() => _time = time);
+                                }
+                              },
+                        icon: const Icon(Icons.schedule_rounded),
+                        label: Text(
+                          _time == null
+                              ? 'Choose time'
+                              : _time!.format(context),
+                        ),
+                      ),
+                    ],
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
+                        child: Text(
+                          _error!,
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: g.coral,
+                          ),
+                          semanticsLabel: _error,
+                        ),
+                      ),
                   ],
                 ),
-                if (_day != null)
-                  Text(
-                    '${_day!.day}/${_day!.month}/${_day!.year}',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: g.inkMuted,
-                    ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: AscentButton.secondary(
+                    label: 'Cancel',
+                    onPressed: _saving
+                        ? null
+                        : () {
+                            HapticFeedback.selectionClick();
+                            Navigator.pop(context);
+                          },
                   ),
-                TextButton.icon(
-                  onPressed: _saving
-                      ? null
-                      : () async {
-                          final time = await showTimePicker(
-                            context: context,
-                            initialTime: _time ?? TimeOfDay.now(),
-                          );
-                          if (mounted && time != null) {
-                            setState(() => _time = time);
-                          }
-                        },
-                  icon: const Icon(Icons.schedule_rounded),
-                  label: Text(
-                    _time == null ? 'Choose time' : _time!.format(context),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AscentButton.primary(
+                    label: _saving ? 'Saving…' : 'Save action',
+                    onPressed: _saving ? null : _save,
                   ),
                 ),
               ],
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Text(
-                    _error!,
-                    style: AscentTextStyles.bodySmall.copyWith(color: g.coral),
-                    semanticsLabel: _error,
-                  ),
-                ),
-              const SizedBox(height: 12),
-              AscentButton.primary(
-                label: _saving ? 'Saving…' : 'Save action',
-                expanded: true,
-                onPressed: _saving ? null : _save,
-              ),
-              TextButton(
-                onPressed: _saving ? null : () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

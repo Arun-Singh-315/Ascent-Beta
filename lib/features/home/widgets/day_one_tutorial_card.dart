@@ -1,7 +1,9 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
@@ -48,13 +50,13 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
     final firstName = widget.userName.trim().split(' ').first;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.only(top: AppSpace.s14),
       child: GlassSurface(
         radius: 20,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(AppSpace.s18),
         customBorder: Border.all(
           color: g.clay.withValues(alpha: 0.35),
-          width: 1.1,
+          width: AppBorderScale.w1point1,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,17 +65,17 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
+                AppTag(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 3.5,
+                    horizontal: AppSpace.s9,
+                    vertical: AppSpace.s3point5,
                   ),
-                  decoration: BoxDecoration(
+                  nightDecoration: BoxDecoration(
                     color: g.claySoft,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppGeometry.roundedr8,
                     border: Border.all(
                       color: g.clay.withValues(alpha: 0.3),
-                      width: 0.8,
+                      width: AppBorderScale.w0point8,
                     ),
                   ),
                   child: Row(
@@ -83,11 +85,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                       const SizedBox(width: 5),
                       Text(
                         'QUICK START GUIDE',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.jetBrainsMono10W700117(
                           color: g.clay,
-                          letterSpacing: 0.8,
                         ),
                       ),
                     ],
@@ -117,12 +116,7 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               firstName.isEmpty
                   ? 'Welcome to your space! Here\'s how Ascent works:'
                   : 'Welcome, $firstName! Here\'s how Ascent works:',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w700,
-                color: g.ink,
-                letterSpacing: -0.2,
-              ),
+              style: AppTypography.plusJakartaSans155W700118(color: g.ink),
             ),
             const SizedBox(height: 12),
 
@@ -162,15 +156,21 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: g.clay,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    style: context.surfaces.buttonStyle(
+                      ElevatedButton.styleFrom(
+                        backgroundColor: g.clay,
+                        foregroundColor: AppPalette.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
+                        minimumSize: const Size(64, 40),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      minimumSize: const Size(64, 40),
+                      filled: true,
+                      icon: false,
                     ),
                     onPressed: () {
                       _dismissTutorial();
@@ -178,34 +178,32 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                     },
                     child: const Text(
                       'Add First Activity 🚀',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTypeRoles.typeRole38,
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: g.edge),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  style: context.surfaces.buttonStyle(
+                    OutlinedButton.styleFrom(
+                      side: BorderSide(color: g.edge),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppGeometry.roundedr12,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s16,
+                        vertical: AppSpace.s10,
+                      ),
+                      foregroundColor: g.ink,
+                      minimumSize: const Size(64, 40),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    foregroundColor: g.ink,
-                    minimumSize: const Size(64, 40),
+                    filled: false,
+                    icon: false,
                   ),
                   onPressed: _dismissTutorial,
                   child: const Text(
                     'Got it! 👍',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTypeRoles.typeRole42,
                   ),
                 ),
               ],
@@ -226,9 +224,9 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
+        AppTag(
+          padding: const EdgeInsets.all(AppSpace.s6),
+          nightDecoration: BoxDecoration(
             color: iconColor.withValues(alpha: 0.14),
             shape: BoxShape.circle,
           ),
@@ -241,17 +239,12 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: g.ink,
-                ),
+                style: AppTypography.plusJakartaSans125W600119(color: g.ink),
               ),
               const SizedBox(height: 1),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 11.5,
+                style: AppTypeRoles.typeRole23.copyWith(
                   color: g.inkMuted,
                   height: 1.3,
                 ),

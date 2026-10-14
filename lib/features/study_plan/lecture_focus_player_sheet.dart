@@ -1,6 +1,8 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
@@ -19,7 +21,7 @@ class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppPalette.transparent,
         builder: (ctx) => const LectureFocusPlayerSheet(),
       );
     } finally {
@@ -43,16 +45,16 @@ class _LectureFocusPlayerSheetState
     final active = state.activeLecture;
     final activeMod = state.activeModule;
 
-    return Container(
+    return AppCard(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.92,
       ),
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr28),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black26,
+            color: AppPalette.black26,
             blurRadius: 20,
             offset: Offset(0, -4),
           ),
@@ -65,20 +67,28 @@ class _LectureFocusPlayerSheetState
           children: [
             // Drag handle
             Padding(
-              padding: const EdgeInsets.only(top: 8, bottom: 4),
+              padding: const EdgeInsets.only(
+                top: AppSpace.s8,
+                bottom: AppSpace.s4,
+              ),
               child: Container(
                 width: 38,
                 height: 4,
                 decoration: BoxDecoration(
                   color: context.divider,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppGeometry.roundedr2,
                 ),
               ),
             ),
             // 1. Top Header Handle + Title
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-              child: Row(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s16,
+                AppSpace.s4,
+                AppSpace.s16,
+                AppSpace.s4,
+              ),
+              child: AppResponsiveRow(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
@@ -91,22 +101,20 @@ class _LectureFocusPlayerSheetState
                   ),
                   Text(
                     'Lecture Focus Player',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                    style: AppTypography.plusJakartaSans16W70012(
                       color: context.textPrimary,
                     ),
                   ),
-                  Container(
+                  AppTag(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: AppSpace.s10,
+                      vertical: AppSpace.s4,
                     ),
-                    decoration: BoxDecoration(
+                    nightDecoration: BoxDecoration(
                       color: state.isPlaying
                           ? context.accentSecondary.withValues(alpha: 0.15)
-                          : Colors.orange.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
+                          : AppPalette.orange.withValues(alpha: 0.15),
+                      borderRadius: AppGeometry.roundedr20,
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -118,18 +126,16 @@ class _LectureFocusPlayerSheetState
                             shape: BoxShape.circle,
                             color: state.isPlaying
                                 ? context.accentSecondary
-                                : Colors.orange,
+                                : AppPalette.orange,
                           ),
                         ),
                         const SizedBox(width: 5),
                         Text(
                           state.isPlaying ? 'LIVE FOCUS' : 'PAUSED',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
+                          style: AppTypography.jetBrainsMono105W70034(
                             color: state.isPlaying
                                 ? context.accentSecondary
-                                : Colors.orange,
+                                : AppPalette.orange,
                           ),
                         ),
                       ],
@@ -139,24 +145,21 @@ class _LectureFocusPlayerSheetState
               ),
             ),
 
-            Divider(height: 1, color: context.divider),
+            AppDivider(height: 1, color: context.divider),
 
             // Main scrollable player content
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
+                  horizontal: AppSpace.s20,
+                  vertical: AppSpace.s12,
                 ),
                 children: [
                   // Breadcrumbs
                   Text(
                     '${state.course.title.toUpperCase()} / ${activeMod.title}',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                    style: AppTypography.jetBrainsMono11W60052(
                       color: context.accentPrimary,
-                      letterSpacing: 0.4,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 1,
@@ -167,9 +170,7 @@ class _LectureFocusPlayerSheetState
                   // Lecture Title
                   Text(
                     'Lecture ${active.id}: ${active.title}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                    style: AppTypography.plusJakartaSans18W70053(
                       color: active.isCompleted
                           ? context.textMuted
                           : context.textPrimary,
@@ -177,7 +178,6 @@ class _LectureFocusPlayerSheetState
                           ? TextDecoration.lineThrough
                           : null,
                       decorationColor: context.textMuted,
-                      height: 1.25,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -202,21 +202,21 @@ class _LectureFocusPlayerSheetState
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s16,
+                        ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
                               state.formattedElapsed,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 11,
+                              style: AppTypography.jetBrainsMono11Regular36(
                                 color: context.textMuted,
                               ),
                             ),
                             Text(
                               active.formattedDuration,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 11,
+                              style: AppTypography.jetBrainsMono11Regular36(
                                 color: context.textMuted,
                               ),
                             ),
@@ -248,40 +248,32 @@ class _LectureFocusPlayerSheetState
                           children: [
                             Text(
                               state.formattedRemaining,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
+                              style: AppTypography.jetBrainsMono32W80054(
                                 color: context.textPrimary,
-                                letterSpacing: -1,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'REMAINING',
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                              style: AppTypography.jetBrainsMono11W70055(
                                 color: context.textMuted,
-                                letterSpacing: 1.2,
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Container(
+                            AppTag(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
+                                horizontal: AppSpace.s8,
+                                vertical: AppSpace.s2,
                               ),
-                              decoration: BoxDecoration(
+                              nightDecoration: BoxDecoration(
                                 color: context.accentSecondary.withValues(
                                   alpha: 0.12,
                                 ),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: AppGeometry.roundedr10,
                               ),
                               child: Text(
                                 '${state.progressPercent}% Completed',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                                style: AppTypeRoles.typeRole33.copyWith(
                                   color: context.accentSecondary,
                                 ),
                               ),
@@ -304,13 +296,13 @@ class _LectureFocusPlayerSheetState
                         onPressed: () => notifier.seekBy(-10),
                       ),
                       const SizedBox(width: 20),
-                      InkWell(
+                      AppTapArea(
                         onTap: () => notifier.togglePlayPause(),
-                        borderRadius: BorderRadius.circular(40),
-                        child: Container(
+                        borderRadius: AppGeometry.roundedr40,
+                        child: AppTag(
                           width: 68,
                           height: 68,
-                          decoration: BoxDecoration(
+                          nightDecoration: BoxDecoration(
                             color: context.accentPrimary.withValues(
                               alpha: 0.12,
                             ),
@@ -319,11 +311,11 @@ class _LectureFocusPlayerSheetState
                               color: context.accentPrimary.withValues(
                                 alpha: 0.45,
                               ),
-                              width: 1.5,
+                              width: AppBorderScale.w1point5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
+                                color: AppPalette.black.withValues(alpha: 0.08),
                                 blurRadius: 14,
                                 offset: const Offset(0, 4),
                               ),
@@ -352,20 +344,24 @@ class _LectureFocusPlayerSheetState
                   // Mark Lecture Completed
                   Center(
                     child: OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(
-                          color: active.isCompleted
-                              ? context.accentSecondary
-                              : context.divider,
-                          width: 1.5,
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          side: BorderSide(
+                            color: active.isCompleted
+                                ? context.accentSecondary
+                                : context.divider,
+                            width: AppBorderScale.w1point5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr20,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s20,
+                            vertical: AppSpace.s12,
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
-                        ),
+                        filled: false,
+                        icon: false,
                       ),
                       onPressed:
                           active.isCompleted ||
@@ -403,9 +399,7 @@ class _LectureFocusPlayerSheetState
                             : state.isSavingCompletion
                             ? 'Saving…'
                             : 'Mark Lecture Completed',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
+                        style: AppTypography.plusJakartaSans135W60056(
                           color: active.isCompleted
                               ? context.accentSecondary
                               : context.textPrimary,
@@ -419,8 +413,7 @@ class _LectureFocusPlayerSheetState
                         ? 'Completion saved'
                         : 'Study time: ${active.studyProgressPercent}% · ${active.completionThresholdPercent}% required',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
+                    style: AppTypography.plusJakartaSans12Regular57(
                       color: context.textMuted,
                     ),
                   ),
@@ -440,8 +433,7 @@ class _LectureFocusPlayerSheetState
                     Text(
                       'Seeking changes your place, not your study credit. External video watching is not verified.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
+                      style: AppTypography.plusJakartaSans11Regular58(
                         color: context.textMuted,
                       ),
                     ),
@@ -449,10 +441,10 @@ class _LectureFocusPlayerSheetState
                   const SizedBox(height: 24),
 
                   // Swift Lecture Switcher Card
-                  Material(
+                  AppCard.materialSurface(
                     color: context.bgBase,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: AppGeometry.roundedr18,
                       side: BorderSide(
                         color: context.divider.withValues(alpha: 0.8),
                       ),
@@ -461,21 +453,21 @@ class _LectureFocusPlayerSheetState
                     child: Column(
                       children: [
                         // Header
-                        InkWell(
+                        AppTapArea(
                           onTap: () {
                             setState(() {
                               _switcherExpanded = !_switcherExpanded;
                             });
                           },
                           borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(18),
+                            top: AppGeometry.radiusr18,
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(14),
-                            child: Row(
+                            padding: const EdgeInsets.all(AppSpace.s14),
+                            child: AppResponsiveRow(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
+                                AppResponsiveRow(
                                   children: [
                                     const Icon(
                                       Icons.playlist_play_rounded,
@@ -484,29 +476,27 @@ class _LectureFocusPlayerSheetState
                                     const SizedBox(width: 8),
                                     Text(
                                       'Swift Lecture Switcher',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                        color: context.textPrimary,
-                                      ),
+                                      style:
+                                          AppTypography.plusJakartaSans14W70021(
+                                            color: context.textPrimary,
+                                          ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Container(
+                                    AppTag(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 7,
-                                        vertical: 2,
+                                        horizontal: AppSpace.s7,
+                                        vertical: AppSpace.s2,
                                       ),
-                                      decoration: BoxDecoration(
+                                      nightDecoration: BoxDecoration(
                                         color: context.bgSurface,
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: AppGeometry.roundedr12,
                                       ),
                                       child: Text(
                                         '${state.course.totalLectures} Total',
-                                        style: GoogleFonts.jetBrainsMono(
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: context.textMuted,
-                                        ),
+                                        style:
+                                            AppTypography.jetBrainsMono105W60041(
+                                              color: context.textMuted,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -523,11 +513,13 @@ class _LectureFocusPlayerSheetState
                         ),
 
                         if (_switcherExpanded) ...[
-                          Divider(height: 1, color: context.divider),
+                          AppDivider(height: 1, color: context.divider),
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpace.s6,
+                            ),
                             itemCount: state.course.modules
                                 .expand((m) => m.lectures)
                                 .length,
@@ -540,15 +532,15 @@ class _LectureFocusPlayerSheetState
 
                               return Padding(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 3,
+                                  horizontal: AppSpace.s10,
+                                  vertical: AppSpace.s3,
                                 ),
                                 child: Material(
                                   color: isCurrent
                                       ? context.accentSecondary.withValues(
                                           alpha: 0.12,
                                         )
-                                      : Colors.transparent,
+                                      : AppPalette.transparent,
                                   shape: isCurrent
                                       ? RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
@@ -567,13 +559,13 @@ class _LectureFocusPlayerSheetState
                                   child: ListTile(
                                     dense: true,
                                     contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 2,
+                                      horizontal: AppSpace.s10,
+                                      vertical: AppSpace.s2,
                                     ),
-                                    leading: Container(
+                                    leading: AppTag(
                                       width: 26,
                                       height: 26,
-                                      decoration: BoxDecoration(
+                                      nightDecoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: isCurrent
                                             ? context.accentSecondary
@@ -594,12 +586,9 @@ class _LectureFocusPlayerSheetState
                                             : Text(
                                                 '${lec.id}',
                                                 style:
-                                                    GoogleFonts.jetBrainsMono(
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
+                                                    AppTypography.jetBrainsMono11W7002(
                                                       color: isCurrent
-                                                          ? Colors.white
+                                                          ? AppPalette.white
                                                           : context.textPrimary,
                                                     ),
                                               ),
@@ -607,11 +596,8 @@ class _LectureFocusPlayerSheetState
                                     ),
                                     title: Text(
                                       lec.title,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12.5,
-                                        fontWeight: isCurrent
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
+                                      style: AppStateTypography.stateType16(
+                                        state0: isCurrent,
                                         color: lec.isCompleted
                                             ? context.textMuted
                                             : context.textPrimary,
@@ -628,14 +614,11 @@ class _LectureFocusPlayerSheetState
                                       children: [
                                         Text(
                                           lec.formattedDuration,
-                                          style: GoogleFonts.jetBrainsMono(
-                                            fontSize: 11,
+                                          style: AppStateTypography.stateType17(
+                                            state0: isCurrent,
                                             color: isCurrent
                                                 ? context.accentSecondary
                                                 : context.textMuted,
-                                            fontWeight: isCurrent
-                                                ? FontWeight.w700
-                                                : FontWeight.w500,
                                           ),
                                         ),
                                         const SizedBox(width: 4),

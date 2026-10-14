@@ -1,9 +1,12 @@
+import '../../shared/widgets/date_range_calendar.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../challenge/challenge_providers.dart';
@@ -71,7 +74,7 @@ class _MomentumScreenState extends ConsumerState<MomentumScreen> {
             }
             final home = ref.watch(activeChallengeProvider).value;
             return ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               children: [
                 Text(
                   'Choose a challenge',
@@ -208,10 +211,13 @@ class _ChallengePickerCard extends ConsumerWidget {
         ? null
         : progressForChallenge(challenge, proofs.value!);
     final g = context.glass;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+    return AppCard.material(
+      margin: const EdgeInsets.only(bottom: AppSpace.s12),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16,
+          vertical: AppSpace.s8,
+        ),
         onTap: onOpen,
         leading: Icon(Icons.flag_outlined, color: g.clay),
         title: Text(challenge.title),
@@ -243,22 +249,27 @@ class _EmptyChallenge extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s32,
+        AppSpace.s20,
+        AppSpace.s40,
+      ),
       children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s22),
+          nightDecoration: BoxDecoration(
             color: g.fill,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppGeometry.roundedr24,
             border: Border.all(color: g.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              AppTag(
                 width: 54,
                 height: 54,
-                decoration: BoxDecoration(
+                nightDecoration: BoxDecoration(
                   color: g.clay.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
@@ -323,9 +334,9 @@ class _ChallengeDetail extends StatelessWidget {
     final statusColor = switch (progress.status) {
       ChallengePaceStatus.ahead ||
       ChallengePaceStatus.onTrack ||
-      ChallengePaceStatus.complete => const Color(0xFF4E9B6B),
-      ChallengePaceStatus.atRisk => const Color(0xFFD99A37),
-      ChallengePaceStatus.failed => const Color(0xFFCA5C54),
+      ChallengePaceStatus.complete => AppPalette.colorFF4E9B6B,
+      ChallengePaceStatus.atRisk => AppPalette.colorFFD99A37,
+      ChallengePaceStatus.failed => AppPalette.colorFFCA5C54,
     };
     final totalDays =
         parseChallengeDay(
@@ -342,7 +353,12 @@ class _ChallengeDetail extends StatelessWidget {
     };
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s18,
+        AppSpace.s20,
+        AppSpace.s40,
+      ),
       children: [
         Row(
           children: [
@@ -367,12 +383,17 @@ class _ChallengeDetail extends StatelessWidget {
           '${challenge.type == 'learning' ? 'Learning Hub' : 'Activity Hub'} · Day $elapsedDays of $totalDays',
           style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
         ),
+        const SizedBox(height: 14),
+        DateRangeCalendar(
+          start: parseChallengeDay(challenge.startDay),
+          end: parseChallengeDay(challenge.endDay),
+        ),
         const SizedBox(height: 18),
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s22),
+          nightDecoration: BoxDecoration(
             color: g.fill,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppGeometry.roundedr24,
             border: Border.all(color: g.line),
           ),
           child: Column(
@@ -396,10 +417,9 @@ class _ChallengeDetail extends StatelessWidget {
                       children: [
                         Text(
                           '${progress.percent}%',
-                          style: AscentTextStyles.displayLarge.copyWith(
-                            color: g.ink,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: AscentTextStyles.displayLarge
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole20),
                         ),
                         Text(
                           'complete',
@@ -413,21 +433,20 @@ class _ChallengeDetail extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Container(
+              AppCard(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: AppSpace.s12,
+                  vertical: AppSpace.s6,
                 ),
-                decoration: BoxDecoration(
+                nightDecoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppGeometry.roundedr20,
                 ),
                 child: Text(
                   label,
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AscentTextStyles.labelMedium
+                      .copyWith(color: statusColor)
+                      .merge(AppTypeRoles.typeRole2),
                 ),
               ),
               const SizedBox(height: 8),
@@ -501,11 +520,11 @@ class _MetricCard extends StatelessWidget {
   final AscentGlass g;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
+  Widget build(BuildContext context) => AppCard(
+    padding: const EdgeInsets.all(AppSpace.s14),
+    nightDecoration: BoxDecoration(
       color: g.fill,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppGeometry.roundedr16,
       border: Border.all(color: g.line),
     ),
     child: Column(
@@ -518,10 +537,9 @@ class _MetricCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           value,
-          style: AscentTextStyles.headlineMedium.copyWith(
-            color: g.ink,
-            fontSize: 18,
-          ),
+          style: AscentTextStyles.headlineMedium
+              .copyWith(color: g.ink)
+              .merge(AppTypeRoles.typeRole1),
         ),
       ],
     ),
@@ -538,11 +556,11 @@ class _MessageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpace.s16),
+      nightDecoration: BoxDecoration(
         color: g.fill,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppGeometry.roundedr18,
         border: Border.all(color: g.line),
       ),
       child: Column(
@@ -550,10 +568,9 @@ class _MessageCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AscentTextStyles.labelLarge.copyWith(
-              color: g.ink,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AscentTextStyles.labelLarge
+                .copyWith(color: g.ink)
+                .merge(AppTypeRoles.typeRole2),
           ),
           const SizedBox(height: 5),
           Text(

@@ -1,6 +1,6 @@
 # Ascent Android builds
 
-Current phone build: **Ascent-1.0.11-12-arm64.apk**, package `com.arun.ascent`, version 1.0.11 (12), database schema 16. This APK targets ARM64, verified on the Nothing A142. Full regression suite: **392 passed**, followed by a passing 11-test final selection/timer boundary batch; static analysis is clean. The combined Home/selection/timer Android suite passed. [Current implementation and verification](../docs/MIND_SPACE_IMPLEMENTATION.md).
+Current build: **Ascent-1.0.13-14-day-outlined-arm64.apk**, package `com.arun.ascent`, version 1.0.13 (14). Installation: verified. [Implementation and validation checkpoint](../docs/DAY_OUTLINED_SURFACES_CHECKPOINT.md).
 
 APKs are ignored by Git and retained in this workspace, with adjacent SHA-256 files. The 1.0.6 (7) and 1.0.7 (8) builds remain available as historical artifacts; installing an older APK over a newer database is not a verified rollback procedure. Use a compatible backup rather than resetting data.
 
@@ -13,3 +13,5 @@ Version **1.0.9 (10) installed successfully** on the Nothing A142 on 12 October 
 Version **1.0.10 (11) installed successfully** over the regular app on the Nothing A142 on 13 October 2026. Cold launch and installed metadata verified. This release adds the focused Learning/Medicine conversation pass; no additional feature area was started. SHA-256: `210f8cc7d486a7bba591e14fecf70b7546fb412800efcee8ba02511c39c82531`.
 
 Version **1.0.11 (12) installed successfully** over the regular app on the Nothing A142 on 14 October 2026. Cold launch, installed metadata and actual Home screenshot verified. Includes compact recent Mind Space, four-note expansion, direct wall navigation, profession-row customization, visible selection actions with successful-save exit, quiet archive/running surfaces and automatic set-duration task completion. Existing user notes remained visible after the update. Challenge calendar is queued for the next separate feature. SHA-256: `40631d619a2c937982edbe84f379f5ad1b27b522b8e9fb5e4008ea8d1529ca56`.
+
+Version **1.0.14 (15)** built on 15 October 2026: `Ascent-1.0.14-15-reflections-calendar-arm64.apk`. Includes the fixed Mind Space conversion footer and reusable calendar in Challenge setup/details. Full suite: 448 tests passed; analyzer clean. APK metadata and signature verified. Phone installation has not been performed. [Checkpoint](../docs/REFLECTIONS_CALENDAR_CHECKPOINT.md).

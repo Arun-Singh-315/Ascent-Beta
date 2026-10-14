@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'learning_next_step_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
@@ -73,7 +75,10 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
         ),
       ],
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s18,
+          vertical: AppSpace.s12,
+        ),
         children: [
           LearningNextStepCard(
             course: state.course,
@@ -100,12 +105,7 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
             children: [
               Text(
                 'YOUR COURSES',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  color: g.inkMuted,
-                ),
+                style: AppTypography.jetBrainsMono11W80046(color: g.inkMuted),
               ),
               TextButton.icon(
                 onPressed: () {
@@ -113,13 +113,14 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
                   AddCourseSheet.show(context);
                 },
                 icon: const Icon(Icons.add, size: 14),
-                label: const Text(
-                  'Add Course',
-                  style: TextStyle(fontSize: 11.5),
-                ),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: g.clay,
+                label: const Text('Add Course', style: AppTypeRoles.typeRole23),
+                style: context.surfaces.buttonStyle(
+                  TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: g.clay,
+                  ),
+                  filled: false,
+                  icon: false,
                 ),
               ),
             ],
@@ -149,7 +150,7 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
             runSpacing: 8,
             children: ['All', 'In progress', 'Completed']
                 .map(
-                  (label) => ChoiceChip(
+                  (label) => AppPill.choice(
                     label: Text(label),
                     selected: _filter == label,
                     onSelected: (_) => setState(() => _filter = label),
@@ -160,7 +161,7 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
           const SizedBox(height: 12),
           if (visibleCourses.isEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.s24),
               child: Column(
                 children: [
                   const Text('No courses match your search.'),
@@ -205,17 +206,17 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
               context.push('/book-reader');
             },
             radius: 18,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpace.s16),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
+                AppCard(
+                  padding: const EdgeInsets.all(AppSpace.s10),
+                  nightDecoration: BoxDecoration(
                     color: g.amberSoft,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     border: Border.all(
                       color: g.amber.withValues(alpha: 0.25),
-                      width: 0.8,
+                      width: AppBorderScale.w0point8,
                     ),
                   ),
                   child: Icon(
@@ -231,16 +232,16 @@ class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
                     children: [
                       Text(
                         'Kindle-Style Notes & Book Reader',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.plusJakartaSans135W70047(
                           color: g.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Read local PDF cheat sheets in Sepia, Dark OLED, or Day mode.',
-                        style: TextStyle(fontSize: 11, color: g.inkMuted),
+                        style: AppTypeRoles.typeRole4.copyWith(
+                          color: g.inkMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -279,7 +280,7 @@ class _CourseHubCard extends StatelessWidget {
     final g = context.glass;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: AppSpace.s14),
       child: GlassSurface(
         onTap: onSelectCourse,
         radius: 20,
@@ -287,7 +288,7 @@ class _CourseHubCard extends StatelessWidget {
           color: isActiveCourse ? g.slate.withValues(alpha: 0.5) : g.edge,
           width: isActiveCourse ? 1.2 : 0.9,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpace.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -296,17 +297,17 @@ class _CourseHubCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (isActiveCourse)
-                  Container(
+                  AppTag(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: AppSpace.s8,
+                      vertical: AppSpace.s3,
                     ),
-                    decoration: BoxDecoration(
+                    nightDecoration: BoxDecoration(
                       color: g.slateSoft,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppGeometry.roundedr8,
                       border: Border.all(
                         color: g.slate.withValues(alpha: 0.35),
-                        width: 0.8,
+                        width: AppBorderScale.w0point8,
                       ),
                     ),
                     child: Row(
@@ -323,41 +324,37 @@ class _CourseHubCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Text(
                           'CURRENTLY STUDYING',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
+                          style: AppTypography.jetBrainsMono95W70048(
                             color: g.slate,
-                            letterSpacing: 0.6,
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  Container(
+                  AppTag(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
+                      horizontal: AppSpace.s8,
+                      vertical: AppSpace.s3,
                     ),
-                    decoration: BoxDecoration(
+                    nightDecoration: BoxDecoration(
                       color: g.fill,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: g.edge, width: 0.8),
+                      borderRadius: AppGeometry.roundedr8,
+                      border: Border.all(
+                        color: g.edge,
+                        width: AppBorderScale.w0point8,
+                      ),
                     ),
                     child: Text(
                       '${course.modules.length} MODULES',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
+                      style: AppTypography.jetBrainsMono95W60049(
                         color: g.inkMuted,
                       ),
                     ),
                   ),
                 Text(
                   '${course.daysLeft}d left · ${course.targetMinutesPerDay}m/day',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.jetBrainsMono105W60041(
                     color: g.inkMuted,
                   ),
                 ),
@@ -368,25 +365,20 @@ class _CourseHubCard extends StatelessWidget {
             // Course Title
             Text(
               course.title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: g.ink,
-                height: 1.25,
-              ),
+              style: AppTypography.plusJakartaSans16W70050(color: g.ink),
             ),
             const SizedBox(height: 4),
 
             // Instructor & curriculum meta
             Text(
               'By ${course.author} • ${course.totalLectures} lectures (${(course.totalDurationSeconds / 3600).toStringAsFixed(1)} hrs total)',
-              style: TextStyle(fontSize: 12, color: g.inkMuted),
+              style: AppTypeRoles.typeRole27.copyWith(color: g.inkMuted),
             ),
             const SizedBox(height: 14),
 
             // Progress Bar & Stats
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: AppGeometry.roundedr6,
               child: LinearProgressIndicator(
                 value: course.progressFraction,
                 minHeight: 6,
@@ -400,18 +392,13 @@ class _CourseHubCard extends StatelessWidget {
               children: [
                 Text(
                   '${course.completedLectures} of ${course.totalLectures} completed',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
+                  style: AppTypography.jetBrainsMono11Regular36(
                     color: g.inkMuted,
                   ),
                 ),
                 Text(
                   '${course.progressPercent}%',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: g.slate,
-                  ),
+                  style: AppTypography.jetBrainsMono12W80051(color: g.slate),
                 ),
               ],
             ),
@@ -422,13 +409,19 @@ class _CourseHubCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: g.edge),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    style: context.surfaces.buttonStyle(
+                      OutlinedButton.styleFrom(
+                        side: BorderSide(color: g.edge),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
+                        foregroundColor: g.ink,
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      foregroundColor: g.ink,
+                      filled: false,
+                      icon: false,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -440,25 +433,27 @@ class _CourseHubCard extends StatelessWidget {
                     ),
                     label: Text(
                       'View Syllabus',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: g.ink,
-                      ),
+                      style: AppTypeRoles.typeRole42.copyWith(color: g.ink),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: g.clay,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    style: context.surfaces.buttonStyle(
+                      ElevatedButton.styleFrom(
+                        backgroundColor: g.clay,
+                        foregroundColor: AppPalette.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      filled: true,
+                      icon: false,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -467,10 +462,7 @@ class _CourseHubCard extends StatelessWidget {
                     icon: const Icon(Icons.play_arrow_rounded, size: 18),
                     label: const Text(
                       'Start / Resume',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTypeRoles.typeRole38,
                     ),
                   ),
                 ),

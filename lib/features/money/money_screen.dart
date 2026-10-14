@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -5,7 +8,6 @@ import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -95,14 +97,14 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          left: AppSpace.s20,
+          right: AppSpace.s20,
+          top: AppSpace.s20,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpace.s24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -113,10 +115,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
               children: [
                 Text(
                   'New Savings Goal',
-                  style: AscentTextStyles.displaySmall.copyWith(
-                    color: context.textPrimary,
-                    fontSize: 18,
-                  ),
+                  style: AscentTextStyles.displaySmall
+                      .copyWith(color: context.textPrimary)
+                      .merge(AppTypeRoles.typeRole1),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
@@ -133,7 +134,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                 ),
               ),
             ),
@@ -147,7 +148,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                 ),
               ),
             ),
@@ -161,7 +162,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                 ),
               ),
             ),
@@ -251,7 +252,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
         unselectedLabelColor: g.inkMuted,
         indicatorColor: g.clay,
         indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: Colors.transparent,
+        dividerColor: AppPalette.transparent,
         tabs: const [
           Tab(text: 'Transactions & Trends'),
           Tab(text: 'Budgets & Goals'),
@@ -262,11 +263,14 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
         children: [
           // ── Tab 0: Transactions & Trends ─────────────────────────────────
           ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s20,
+              vertical: AppSpace.s16,
+            ),
             children: [
               // Hero Balance Card
               AscentCard(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpace.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -275,32 +279,31 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       children: [
                         Text(
                           DateFormat('MMMM y').format(now).toUpperCase(),
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            color: context.textMuted,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AscentTextStyles.labelSmall
+                              .copyWith(
+                                color: context.textMuted,
+                                letterSpacing: 1.2,
+                              )
+                              .merge(AppTypeRoles.typeRole9),
                         ),
-                        Container(
+                        AppTag(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
+                            horizontal: AppSpace.s8,
+                            vertical: AppSpace.s3,
                           ),
-                          decoration: BoxDecoration(
+                          nightDecoration: BoxDecoration(
                             color: (monthSpend > monthlyLimit)
                                 ? context.stateDanger.withValues(alpha: 0.15)
                                 : context.accentSecondary.withValues(
                                     alpha: 0.12,
                                   ),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: AppGeometry.roundedr6,
                           ),
                           child: Text(
                             monthSpend > monthlyLimit
                                 ? 'Over Budget'
                                 : 'On Track',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                            style: AppTypeRoles.typeRole34.copyWith(
                               color: (monthSpend > monthlyLimit)
                                   ? context.stateDanger
                                   : context.accentSecondary,
@@ -316,11 +319,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       children: [
                         Text(
                           '₹${monthSpend.toStringAsFixed(0)}',
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: context.textPrimary,
-                          ),
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole45),
                         ),
                         const SizedBox(width: 8),
                         Text(
@@ -335,7 +336,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
                     // Progress bar
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppGeometry.roundedr6,
                       child: LinearProgressIndicator(
                         value: budgetProgress,
                         minHeight: 7,
@@ -354,17 +355,15 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       children: [
                         Text(
                           'Remaining: ₹${remainingBudget.toStringAsFixed(0)}',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AscentTextStyles.bodySmall
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole8),
                         ),
                         Text(
                           'Income: ₹${monthIncome.toStringAsFixed(0)}',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: context.accentPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AscentTextStyles.bodySmall
+                              .copyWith(color: context.accentPrimary)
+                              .merge(AppTypeRoles.typeRole8),
                         ),
                       ],
                     ),
@@ -380,8 +379,8 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   Expanded(
                     child: AscentCard(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s12,
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -395,10 +394,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                           const SizedBox(height: 4),
                           Text(
                             '₹${todaySpend.toStringAsFixed(0)}',
-                            style: AscentTextStyles.headlineMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AscentTextStyles.headlineMedium
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole9),
                           ),
                         ],
                       ),
@@ -424,10 +422,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 children: [
                   Text(
                     'Recent Transactions',
-                    style: AscentTextStyles.headlineMedium.copyWith(
-                      color: context.textPrimary,
-                      fontSize: 17,
-                    ),
+                    style: AscentTextStyles.headlineMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole13),
                   ),
                   Text(
                     'Real-time',
@@ -461,19 +458,19 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       final catColor = _categoryColor(context, tx.category);
 
                       return AscentCard(
-                        margin: const EdgeInsets.only(bottom: 8),
+                        margin: const EdgeInsets.only(bottom: AppSpace.s8),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
+                          horizontal: AppSpace.s14,
+                          vertical: AppSpace.s12,
                         ),
                         child: Row(
                           children: [
-                            Container(
+                            AppTag(
                               width: 38,
                               height: 38,
-                              decoration: BoxDecoration(
+                              nightDecoration: BoxDecoration(
                                 color: catColor.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: AppGeometry.roundedr10,
                               ),
                               child: Icon(
                                 _categoryIcon(tx.category),
@@ -488,10 +485,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                 children: [
                                   Text(
                                     tx.title,
-                                    style: AscentTextStyles.labelLarge.copyWith(
-                                      color: context.textPrimary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: AscentTextStyles.labelLarge
+                                        .copyWith(color: context.textPrimary)
+                                        .merge(AppTypeRoles.typeRole8),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -517,12 +513,12 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                             .copyWith(color: context.textMuted),
                                       ),
                                       const SizedBox(width: 6),
-                                      Container(
+                                      AppCard(
                                         padding: const EdgeInsets.symmetric(
-                                          horizontal: 5,
-                                          vertical: 1,
+                                          horizontal: AppSpace.s5,
+                                          vertical: AppSpace.s1,
                                         ),
-                                        decoration: BoxDecoration(
+                                        nightDecoration: BoxDecoration(
                                           color: context.bgBase,
                                           borderRadius: BorderRadius.circular(
                                             4,
@@ -533,10 +529,10 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                         ),
                                         child: Text(
                                           tx.account,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: context.textMuted,
-                                          ),
+                                          style: AppTypeRoles.typeRole18
+                                              .copyWith(
+                                                color: context.textMuted,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -546,13 +542,13 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                             ),
                             Text(
                               '${isExpense ? '-' : '+'}₹${tx.amount.toStringAsFixed(0)}',
-                              style: AscentTextStyles.monoCode.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isExpense
-                                    ? context.textPrimary
-                                    : context.accentPrimary,
-                              ),
+                              style: AscentTextStyles.monoCode
+                                  .copyWith(
+                                    color: isExpense
+                                        ? context.textPrimary
+                                        : context.accentPrimary,
+                                  )
+                                  .merge(AppTypeRoles.typeRole30),
                             ),
                             const SizedBox(width: 4),
                             IconButton(
@@ -575,7 +571,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 },
                 loading: () => const Center(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: EdgeInsets.all(AppSpace.s24),
                     child: CircularProgressIndicator(),
                   ),
                 ),
@@ -588,11 +584,14 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
 
           // ── Tab 1: Budgets & Savings Goals ───────────────────────────────
           ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s20,
+              vertical: AppSpace.s16,
+            ),
             children: [
               // Monthly Budget Setting Card
               AscentCard(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(AppSpace.s18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -601,10 +600,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       children: [
                         Text(
                           'Overall Monthly Budget',
-                          style: AscentTextStyles.headlineMedium.copyWith(
-                            color: context.textPrimary,
-                            fontSize: 16,
-                          ),
+                          style: AscentTextStyles.headlineMedium
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole10),
                         ),
                         AscentButton.outlined(
                           label: 'Edit Limit',
@@ -619,11 +617,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     const SizedBox(height: 12),
                     Text(
                       '₹${monthlyLimit.toStringAsFixed(0)} Limit',
-                      style: AscentTextStyles.displaySmall.copyWith(
-                        color: context.textPrimary,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AscentTextStyles.displaySmall
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole46),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -644,10 +640,9 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 children: [
                   Text(
                     'Savings Goals',
-                    style: AscentTextStyles.headlineMedium.copyWith(
-                      color: context.textPrimary,
-                      fontSize: 17,
-                    ),
+                    style: AscentTextStyles.headlineMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole13),
                   ),
                   AscentButton.outlined(
                     icon: Icons.add_rounded,
@@ -663,7 +658,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 data: (goals) {
                   if (goals.isEmpty) {
                     return AscentCard(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(AppSpace.s24),
                       child: Center(
                         child: Column(
                           children: [
@@ -700,8 +695,8 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         1.0,
                       );
                       return AscentCard(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: AppSpace.s10),
+                        padding: const EdgeInsets.all(AppSpace.s16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -711,23 +706,20 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                 Text(
                                   g.title,
                                   style: AscentTextStyles.headlineMedium
-                                      .copyWith(
-                                        color: context.textPrimary,
-                                        fontSize: 16,
-                                      ),
+                                      .copyWith(color: context.textPrimary)
+                                      .merge(AppTypeRoles.typeRole10),
                                 ),
                                 Text(
                                   '${(percent * 100).toInt()}%',
-                                  style: AscentTextStyles.monoCode.copyWith(
-                                    color: context.accentPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AscentTextStyles.monoCode
+                                      .copyWith(color: context.accentPrimary)
+                                      .merge(AppTypeRoles.typeRole9),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
                             ClipRRect(
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: AppGeometry.roundedr6,
                               child: LinearProgressIndicator(
                                 value: percent,
                                 minHeight: 6,
@@ -769,7 +761,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                                       },
                                       child: const Text(
                                         '+₹500',
-                                        style: TextStyle(fontSize: 12),
+                                        style: AppTypeRoles.typeRole27,
                                       ),
                                     ),
                                     IconButton(

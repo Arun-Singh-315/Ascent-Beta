@@ -1,10 +1,11 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -26,12 +27,17 @@ Future<void> showAddModuleSheet(
     useSafeArea: true,
     backgroundColor: context.bgSurface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
     ),
     builder: (ctx) {
       final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
       return Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+        padding: EdgeInsets.fromLTRB(
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20 + bottomInset,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -42,9 +48,7 @@ Future<void> showAddModuleSheet(
                 children: [
                   Text(
                     'Add New Module',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                    style: AppTypography.plusJakartaSans18W70045(
                       color: context.textPrimary,
                     ),
                   ),
@@ -154,12 +158,17 @@ Future<void> showEditModuleSheet(
     useSafeArea: true,
     backgroundColor: context.bgSurface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
     ),
     builder: (ctx) {
       final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
       return Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+        padding: EdgeInsets.fromLTRB(
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20 + bottomInset,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -170,9 +179,7 @@ Future<void> showEditModuleSheet(
                 children: [
                   Text(
                     'Edit Module ${module.id}',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                    style: AppTypography.plusJakartaSans18W70045(
                       color: context.textPrimary,
                     ),
                   ),
@@ -303,14 +310,19 @@ Future<void> showAddLectureSheet(
     useSafeArea: true,
     backgroundColor: context.bgSurface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
     ),
     builder: (ctx) {
       return StatefulBuilder(
         builder: (ctx, setModalState) {
           final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
           return Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+            padding: EdgeInsets.fromLTRB(
+              AppSpace.s20,
+              AppSpace.s20,
+              AppSpace.s20,
+              AppSpace.s20 + bottomInset,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -321,9 +333,7 @@ Future<void> showAddLectureSheet(
                     children: [
                       Text(
                         'Add Lecture / Chapter',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.plusJakartaSans18W70045(
                           color: context.textPrimary,
                         ),
                       ),
@@ -343,11 +353,13 @@ Future<void> showAddLectureSheet(
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
+                  AppCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s12,
+                    ),
+                    nightDecoration: BoxDecoration(
                       color: context.bgBase,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppGeometry.roundedr12,
                       border: Border.all(color: context.divider),
                     ),
                     child: DropdownButtonHideUnderline(
@@ -488,14 +500,19 @@ Future<void> showEditLectureSheet(
     useSafeArea: true,
     backgroundColor: context.bgSurface,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
     ),
     builder: (ctx) {
       return StatefulBuilder(
         builder: (ctx, setModalState) {
           final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
           return Padding(
-            padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+            padding: EdgeInsets.fromLTRB(
+              AppSpace.s20,
+              AppSpace.s20,
+              AppSpace.s20,
+              AppSpace.s20 + bottomInset,
+            ),
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -506,9 +523,7 @@ Future<void> showEditLectureSheet(
                     children: [
                       Text(
                         'Edit Lecture ${lecture.id}',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.plusJakartaSans18W70045(
                           color: context.textPrimary,
                         ),
                       ),

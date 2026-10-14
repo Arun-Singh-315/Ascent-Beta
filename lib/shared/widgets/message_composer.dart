@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
@@ -51,11 +53,11 @@ class _MessageComposerState extends State<MessageComposer> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: Container(
+                child: AppCard(
                   constraints: const BoxConstraints(minHeight: 48),
-                  decoration: BoxDecoration(
+                  nightDecoration: BoxDecoration(
                     color: g.fill,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: AppGeometry.roundedr24,
                     border: Border.all(
                       color: _focus.hasFocus ? g.clay : g.edge,
                       width: _focus.hasFocus ? 1.5 : 1,
@@ -77,8 +79,8 @@ class _MessageComposerState extends State<MessageComposer> {
                         color: g.inkMuted,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
+                        horizontal: AppSpace.s16,
+                        vertical: AppSpace.s14,
                       ),
                       isDense: true,
                       filled: false,
@@ -100,11 +102,15 @@ class _MessageComposerState extends State<MessageComposer> {
                   key: const ValueKey('message_composer_send'),
                   tooltip: 'Send message',
                   onPressed: canSend ? _send : null,
-                  style: IconButton.styleFrom(
-                    backgroundColor: g.clay,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: g.fill,
-                    disabledForegroundColor: g.inkMuted,
+                  style: context.surfaces.buttonStyle(
+                    IconButton.styleFrom(
+                      backgroundColor: g.clay,
+                      foregroundColor: AppPalette.white,
+                      disabledBackgroundColor: g.fill,
+                      disabledForegroundColor: g.inkMuted,
+                    ),
+                    filled: true,
+                    icon: true,
                   ),
                   icon: widget.busy
                       ? const SizedBox(

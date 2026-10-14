@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import 'ascent_card.dart';
 
@@ -65,28 +67,22 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AscentCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpace.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Row
           Row(
             children: [
-              Container(
+              AppCard(
                 width: 38,
                 height: 38,
-                decoration: BoxDecoration(
+                nightDecoration: BoxDecoration(
                   color: g.claySoft,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: g.clay.withValues(alpha: 0.35),
-                  ),
+                  borderRadius: AppGeometry.roundedr12,
+                  border: Border.all(color: g.clay.withValues(alpha: 0.35)),
                 ),
-                child: Icon(
-                  Icons.water_drop_rounded,
-                  color: g.clay,
-                  size: 20,
-                ),
+                child: Icon(Icons.water_drop_rounded, color: g.clay, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -97,27 +93,28 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                       children: [
                         Text(
                           'DAILY HYDRATION',
-                          style: AscentTextStyles.labelSmall.copyWith(
-                            letterSpacing: 1.1,
-                            fontWeight: FontWeight.w700,
-                            color: g.clay,
-                          ),
+                          style: AscentTextStyles.labelSmall
+                              .copyWith(letterSpacing: 1.1, color: g.clay)
+                              .merge(AppTypeRoles.typeRole2),
                         ),
                         if (isGoalMet) ...[
                           const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.16),
-                              borderRadius: BorderRadius.circular(6),
+                          AppTag(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s6,
+                              vertical: AppSpace.s2,
+                            ),
+                            nightDecoration: BoxDecoration(
+                              color: AppPalette.colorFF10B981.withValues(
+                                alpha: 0.16,
+                              ),
+                              borderRadius: AppGeometry.roundedr6,
                             ),
                             child: Text(
                               'GOAL REACHED',
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: const Color(0xFF10B981),
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AscentTextStyles.labelSmall
+                                  .copyWith(color: AppPalette.colorFF10B981)
+                                  .merge(AppTypeRoles.typeRole55),
                             ),
                           ),
                         ],
@@ -134,11 +131,9 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                             children: [
                               TextSpan(
                                 text: '$val ',
-                                style: AscentTextStyles.headlineMedium.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 22,
-                                ),
+                                style: AscentTextStyles.headlineMedium
+                                    .copyWith(color: context.textPrimary)
+                                    .merge(AppTypeRoles.typeRole73),
                               ),
                               TextSpan(
                                 text: '/ $targetMl mL',
@@ -155,22 +150,21 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                 ),
               ),
               // Percentage Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
+              AppTag(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s10,
+                  vertical: AppSpace.s6,
+                ),
+                nightDecoration: BoxDecoration(
                   color: g.claySoft,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: g.clay.withValues(alpha: 0.30),
-                  ),
+                  borderRadius: AppGeometry.roundedr10,
+                  border: Border.all(color: g.clay.withValues(alpha: 0.30)),
                 ),
                 child: Text(
                   '${(progress * 100).toInt()}%',
-                  style: AscentTextStyles.monoCode.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: g.clay,
-                    fontSize: 14,
-                  ),
+                  style: AscentTextStyles.monoCode
+                      .copyWith(color: g.clay)
+                      .merge(AppTypeRoles.typeRole74),
                 ),
               ),
             ],
@@ -180,14 +174,16 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
 
           // Fluid Wave Tank / Vessel
           ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
+            borderRadius: AppGeometry.roundedr14,
+            child: AppCard(
               height: 54,
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2A1C0F).withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.5),
+              nightDecoration: BoxDecoration(
+                color: isDark
+                    ? AppPalette.colorFF2A1C0F.withValues(alpha: 0.6)
+                    : AppPalette.white.withValues(alpha: 0.5),
                 border: Border.all(color: g.line.withValues(alpha: 0.7)),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppGeometry.roundedr14,
               ),
               child: Stack(
                 children: [
@@ -218,7 +214,9 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                   // Overlay Guideline markings (25%, 50%, 75%)
                   Positioned.fill(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s12,
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -270,23 +268,32 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                 ),
                 if (currentMl > 0) ...[
                   const SizedBox(width: 8),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(10),
+                  AppTapArea(
+                    borderRadius: AppGeometry.roundedr10,
                     onTap: _undoLast,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
+                    child: AppTag(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s10,
+                        vertical: AppSpace.s8,
+                      ),
+                      nightDecoration: BoxDecoration(
                         color: context.bgBase,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppGeometry.roundedr10,
                         border: Border.all(color: context.divider),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.undo_rounded, size: 14, color: context.textMuted),
+                          Icon(
+                            Icons.undo_rounded,
+                            size: 14,
+                            color: context.textMuted,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Undo',
-                            style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         ],
                       ),
@@ -304,11 +311,9 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
   Widget _buildGuideline(String text) {
     return Text(
       text,
-      style: AscentTextStyles.labelSmall.copyWith(
-        fontSize: 10,
-        fontWeight: FontWeight.w600,
-        color: context.textMuted.withValues(alpha: 0.6),
-      ),
+      style: AscentTextStyles.labelSmall
+          .copyWith(color: context.textMuted.withValues(alpha: 0.6))
+          .merge(AppTypeRoles.typeRole51),
     );
   }
 }
@@ -348,14 +353,15 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         scale: _pressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
+        child: AppTag(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s12,
+            vertical: AppSpace.s8,
+          ),
+          nightDecoration: BoxDecoration(
             color: g.claySoft.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: g.line,
-            ),
+            borderRadius: AppGeometry.roundedr10,
+            border: Border.all(color: g.line),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -368,17 +374,15 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
                 children: [
                   Text(
                     widget.label,
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: context.textPrimary,
-                    ),
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole9),
                   ),
                   Text(
                     widget.sub,
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      fontSize: 9,
-                      color: context.textMuted,
-                    ),
+                    style: AscentTextStyles.labelSmall
+                        .copyWith(color: context.textMuted)
+                        .merge(AppTypeRoles.typeRole75),
                   ),
                 ],
               ),
@@ -419,7 +423,9 @@ class _FluidWavePainter extends CustomPainter {
     backPath.moveTo(0, size.height);
     backPath.lineTo(0, baseHeight);
     for (double x = 0; x <= size.width; x += 3) {
-      final y = baseHeight + math.sin(x * waveFrequency + wavePhase + 1.2) * (waveAmplitude * 0.7);
+      final y =
+          baseHeight +
+          math.sin(x * waveFrequency + wavePhase + 1.2) * (waveAmplitude * 0.7);
       backPath.lineTo(x, y);
     }
     backPath.lineTo(size.width, size.height);
@@ -446,7 +452,8 @@ class _FluidWavePainter extends CustomPainter {
     frontPath.moveTo(0, size.height);
     frontPath.lineTo(0, baseHeight);
     for (double x = 0; x <= size.width; x += 3) {
-      final y = baseHeight + math.sin(x * waveFrequency + wavePhase) * waveAmplitude;
+      final y =
+          baseHeight + math.sin(x * waveFrequency + wavePhase) * waveAmplitude;
       frontPath.lineTo(x, y);
     }
     frontPath.lineTo(size.width, size.height);

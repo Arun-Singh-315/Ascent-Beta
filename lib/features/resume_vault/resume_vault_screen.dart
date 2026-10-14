@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,7 +15,6 @@ import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -34,7 +36,7 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => _UploadResumeSheet(existing: existing),
     );
@@ -71,19 +73,16 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
     } else {
       final res = await OpenFilex.open(resume.filePath);
       if (res.type != ResultType.done && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Opening file: ${res.message}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Opening file: ${res.message}')));
       }
     }
   }
 
   void _shareResume(Resume resume) {
     SharePlus.instance.share(
-      ShareParams(
-        files: [XFile(resume.filePath)],
-        text: resume.versionLabel,
-      ),
+      ShareParams(files: [XFile(resume.filePath)], text: resume.versionLabel),
     );
   }
 
@@ -92,23 +91,27 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
       context: context,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpace.s24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Delete Resume Version?',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.displaySmall.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Are you sure you want to delete "${resume.versionLabel}"? This cannot be undone.',
                 textAlign: TextAlign.center,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -133,7 +136,9 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                             await file.delete();
                           }
                         } catch (_) {}
-                        await ref.read(resumeDaoProvider).deleteResume(resume.id);
+                        await ref
+                            .read(resumeDaoProvider)
+                            .deleteResume(resume.id);
                       },
                     ),
                   ),
@@ -156,7 +161,11 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
       subtitle: 'Version management & tailoring',
       actions: [
         IconButton(
-          icon: Icon(Icons.upload_file_rounded, color: context.accentPrimary, size: 26),
+          icon: Icon(
+            Icons.upload_file_rounded,
+            color: context.accentPrimary,
+            size: 26,
+          ),
           tooltip: 'Upload Version',
           onPressed: () => _openUploadSheet(),
         ),
@@ -165,9 +174,10 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
       body: StreamBuilder<List<Resume>>(
         stream: resumesStream,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              !snapshot.hasData) {
             return Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               child: SkeletonShimmer(height: 200),
             );
           }
@@ -177,14 +187,14 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
           if (resumes.isEmpty) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(32),
+                padding: const EdgeInsets.all(AppSpace.s32),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
+                    AppTag(
                       width: 72,
                       height: 72,
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: context.accentPrimary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
@@ -197,13 +207,17 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'No Resumes in Vault',
-                      style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.displaySmall.copyWith(
+                        color: context.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Store and track multiple versions of your resume tailored for different roles and companies.',
                       textAlign: TextAlign.center,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textMuted,
+                      ),
                     ),
                     const SizedBox(height: 24),
                     AscentButton.primary(
@@ -218,16 +232,22 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s20,
+              vertical: AppSpace.s16,
+            ),
             itemCount: resumes.length,
             itemBuilder: (context, index) {
               final resume = resumes[index];
               final uploadedStr = DateFormat.yMMMd().format(resume.uploadedAt);
-              final ext = p.extension(resume.filePath).replaceAll('.', '').toUpperCase();
+              final ext = p
+                  .extension(resume.filePath)
+                  .replaceAll('.', '')
+                  .toUpperCase();
 
               return AscentCard(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: AppSpace.s14),
+                padding: const EdgeInsets.all(AppSpace.s16),
                 onTap: () => _openFile(resume),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,42 +255,53 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                     // Top row: Format badge, tailoring chip, popup menu
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: context.accentPrimary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(6),
+                        AppTag(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s8,
+                            vertical: AppSpace.s4,
+                          ),
+                          nightDecoration: BoxDecoration(
+                            color: context.accentPrimary.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: AppGeometry.roundedr6,
                           ),
                           child: Text(
                             ext.isEmpty ? 'DOC' : ext,
-                            style: AscentTextStyles.monoCode.copyWith(
-                              color: context.accentPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
+                            style: AscentTextStyles.monoCode
+                                .copyWith(color: context.accentPrimary)
+                                .merge(AppTypeRoles.typeRole12),
                           ),
                         ),
                         const SizedBox(width: 8),
                         if (resume.tailoredForCompany?.isNotEmpty == true) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: context.accentSecondary.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
+                          AppTag(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s8,
+                              vertical: AppSpace.s4,
+                            ),
+                            nightDecoration: BoxDecoration(
+                              color: context.accentSecondary.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius: AppGeometry.roundedr6,
                             ),
                             child: Text(
                               'Tailored for ${resume.tailoredForCompany}',
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: context.accentSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AscentTextStyles.labelSmall
+                                  .copyWith(color: context.accentSecondary)
+                                  .merge(AppTypeRoles.typeRole8),
                             ),
                           ),
                           const SizedBox(width: 8),
                         ],
                         const Spacer(),
                         PopupMenuButton<String>(
-                          icon: Icon(Icons.more_vert_rounded, size: 18, color: context.textMuted),
+                          icon: Icon(
+                            Icons.more_vert_rounded,
+                            size: 18,
+                            color: context.textMuted,
+                          ),
                           padding: EdgeInsets.zero,
                           onSelected: (val) {
                             if (val == 'open') _openFile(resume);
@@ -280,13 +311,28 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                             if (val == 'delete') _confirmDelete(resume);
                           },
                           itemBuilder: (ctx) => [
-                            const PopupMenuItem(value: 'open', child: Text('Open / Preview')),
-                            const PopupMenuItem(value: 'share', child: Text('Share File')),
-                            const PopupMenuItem(value: 'copy', child: Text('Copy File Path')),
-                            const PopupMenuItem(value: 'edit', child: Text('Edit Info')),
+                            const PopupMenuItem(
+                              value: 'open',
+                              child: Text('Open / Preview'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'share',
+                              child: Text('Share File'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'copy',
+                              child: Text('Copy File Path'),
+                            ),
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit Info'),
+                            ),
                             const PopupMenuItem(
                               value: 'delete',
-                              child: Text('Delete Version', style: TextStyle(color: Colors.red)),
+                              child: Text(
+                                'Delete Version',
+                                style: TextStyle(color: AppPalette.red),
+                              ),
                             ),
                           ],
                         ),
@@ -298,10 +344,9 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                     // Version Label
                     Text(
                       resume.versionLabel,
-                      style: AscentTextStyles.headlineMedium.copyWith(
-                        color: context.textPrimary,
-                        fontSize: 17,
-                      ),
+                      style: AscentTextStyles.headlineMedium
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole13),
                     ),
 
                     const SizedBox(height: 8),
@@ -310,12 +355,16 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                     _InlineResumeNotes(
                       resume: resume,
                       onSaveNotes: (newNotes) async {
-                        await ref.read(resumeDaoProvider).updateResume(
-                          ResumeTableCompanion(
-                            id: drift.Value(resume.id),
-                            notes: drift.Value(newNotes.isEmpty ? null : newNotes),
-                          ),
-                        );
+                        await ref
+                            .read(resumeDaoProvider)
+                            .updateResume(
+                              ResumeTableCompanion(
+                                id: drift.Value(resume.id),
+                                notes: drift.Value(
+                                  newNotes.isEmpty ? null : newNotes,
+                                ),
+                              ),
+                            );
                       },
                     ),
 
@@ -324,56 +373,80 @@ class _ResumeVaultScreenState extends ConsumerState<ResumeVaultScreen> {
                     // Footer meta & actions
                     Row(
                       children: [
-                        Icon(Icons.insert_drive_file_outlined, size: 14, color: context.textMuted),
+                        Icon(
+                          Icons.insert_drive_file_outlined,
+                          size: 14,
+                          color: context.textMuted,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           _formatFileSize(resume.fileSize),
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: context.textMuted,
+                          ),
                         ),
                         const SizedBox(width: 10),
-                        Icon(Icons.access_time_rounded, size: 14, color: context.textMuted),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 14,
+                          color: context.textMuted,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           uploadedStr,
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: context.textMuted,
+                          ),
                         ),
                         const Spacer(),
-                        InkWell(
+                        AppTapArea(
                           onTap: () => _openFile(resume),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: AppGeometry.roundedr6,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s6,
+                              vertical: AppSpace.s4,
+                            ),
                             child: Row(
                               children: [
-                                Icon(Icons.visibility_outlined, size: 14, color: context.accentPrimary),
+                                Icon(
+                                  Icons.visibility_outlined,
+                                  size: 14,
+                                  color: context.accentPrimary,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Preview',
-                                  style: AscentTextStyles.labelSmall.copyWith(
-                                    color: context.accentPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AscentTextStyles.labelSmall
+                                      .copyWith(color: context.accentPrimary)
+                                      .merge(AppTypeRoles.typeRole8),
                                 ),
                               ],
                             ),
                           ),
                         ),
                         const SizedBox(width: 6),
-                        InkWell(
+                        AppTapArea(
                           onTap: () => _shareResume(resume),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: AppGeometry.roundedr6,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s6,
+                              vertical: AppSpace.s4,
+                            ),
                             child: Row(
                               children: [
-                                Icon(Icons.share_rounded, size: 14, color: context.accentPrimary),
+                                Icon(
+                                  Icons.share_rounded,
+                                  size: 14,
+                                  color: context.accentPrimary,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Share',
-                                  style: AscentTextStyles.labelSmall.copyWith(
-                                    color: context.accentPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: AscentTextStyles.labelSmall
+                                      .copyWith(color: context.accentPrimary)
+                                      .merge(AppTypeRoles.typeRole8),
                                 ),
                               ],
                             ),
@@ -448,7 +521,11 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
         // Safe copy to app documents directory
         final appDocDir = await getApplicationDocumentsDirectory();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final safePath = p.join(appDocDir.path, 'resumes', '${timestamp}_$fileName');
+        final safePath = p.join(
+          appDocDir.path,
+          'resumes',
+          '${timestamp}_$fileName',
+        );
 
         final targetDir = Directory(p.dirname(safePath));
         if (!await targetDir.exists()) {
@@ -467,9 +544,9 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File selection failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('File selection failed: $e')));
       }
     }
   }
@@ -482,7 +559,10 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
         await targetDir.create(recursive: true);
       }
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final templatePath = p.join(targetDir.path, 'starter_resume_$timestamp.pdf');
+      final templatePath = p.join(
+        targetDir.path,
+        'starter_resume_$timestamp.pdf',
+      );
       final file = File(templatePath);
       await file.writeAsString(
         '%PDF-1.4\n% Ascent Standard Engineering Resume\n1 0 obj\n<< /Title (Software Engineer Resume) /Author (Ascent User) >>\nendobj\n%%EOF',
@@ -522,8 +602,12 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
 
     setState(() => _isUploading = true);
     final resumeDao = ref.read(resumeDaoProvider);
-    final company = _companyController.text.trim().isEmpty ? null : _companyController.text.trim();
-    final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final company = _companyController.text.trim().isEmpty
+        ? null
+        : _companyController.text.trim();
+    final notes = _notesController.text.trim().isEmpty
+        ? null
+        : _notesController.text.trim();
 
     if (widget.existing != null) {
       await resumeDao.updateResume(
@@ -556,9 +640,9 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20,
-        right: 20,
-        top: 24,
+        left: AppSpace.s20,
+        right: AppSpace.s20,
+        top: AppSpace.s24,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -569,8 +653,12 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  widget.existing != null ? 'Edit Resume Version' : 'Upload Resume Version',
-                  style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                  widget.existing != null
+                      ? 'Edit Resume Version'
+                      : 'Upload Resume Version',
+                  style: AscentTextStyles.displaySmall.copyWith(
+                    color: context.textPrimary,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
@@ -581,17 +669,19 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
             const SizedBox(height: 16),
 
             // File Selector Box
-            InkWell(
+            AppTapArea(
               onTap: _pickFile,
-              borderRadius: BorderRadius.circular(14),
-              child: Container(
+              borderRadius: AppGeometry.roundedr14,
+              child: AppCard(
                 width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(AppSpace.s18),
+                nightDecoration: BoxDecoration(
                   color: context.bgBase,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppGeometry.roundedr14,
                   border: Border.all(
-                    color: _pickedFilePath != null ? context.accentPrimary : context.divider,
+                    color: _pickedFilePath != null
+                        ? context.accentPrimary
+                        : context.divider,
                     width: _pickedFilePath != null ? 1.5 : 1.0,
                   ),
                 ),
@@ -601,7 +691,9 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
                       _pickedFilePath != null
                           ? Icons.check_circle_rounded
                           : Icons.cloud_upload_outlined,
-                      color: _pickedFilePath != null ? context.stateSuccess : context.accentPrimary,
+                      color: _pickedFilePath != null
+                          ? context.stateSuccess
+                          : context.accentPrimary,
                       size: 32,
                     ),
                     const SizedBox(width: 14),
@@ -613,22 +705,27 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
                             _pickedFilePath != null
                                 ? p.basename(_pickedFilePath!)
                                 : 'Select Resume File (PDF, DOCX)',
-                            style: AscentTextStyles.bodyMedium.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.bodyMedium
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             _pickedFilePath != null
                                 ? 'Safely copied to Ascent local vault'
                                 : 'Tap to browse storage',
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 14, color: context.textMuted),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: context.textMuted,
+                    ),
                   ],
                 ),
               ),
@@ -637,13 +734,16 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                icon: Icon(Icons.auto_awesome_rounded, size: 14, color: context.accentPrimary),
+                icon: Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 14,
+                  color: context.accentPrimary,
+                ),
                 label: Text(
                   'Or generate starter template',
-                  style: AscentTextStyles.bodySmall.copyWith(
-                    color: context.accentPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AscentTextStyles.bodySmall
+                      .copyWith(color: context.accentPrimary)
+                      .merge(AppTypeRoles.typeRole8),
                 ),
                 onPressed: _useSampleTemplate,
               ),
@@ -653,19 +753,25 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
             // Version Label
             Text(
               'Version Label *',
-              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.labelMedium.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _labelController,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'e.g. v2 - Backend & Distributed Systems',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   borderSide: BorderSide(color: context.divider),
                 ),
               ),
@@ -676,20 +782,29 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
             // Tailored for company
             Text(
               'Tailored for Company (Optional)',
-              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.labelMedium.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _companyController,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
                 hintText: 'e.g. Google, Stripe, Datadog',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
                 filled: true,
                 fillColor: context.bgBase,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s12,
+                ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   borderSide: BorderSide(color: context.divider),
                 ),
               ),
@@ -700,20 +815,27 @@ class _UploadResumeSheetState extends ConsumerState<_UploadResumeSheet> {
             // Version Notes
             Text(
               'Key Highlights & Changes',
-              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.labelMedium.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _notesController,
               maxLines: 3,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
-                hintText: 'e.g. Rewrote lead bullet for latency reduction; highlighted Kubernetes expertise.',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                hintText:
+                    'e.g. Rewrote lead bullet for latency reduction; highlighted Kubernetes expertise.',
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   borderSide: BorderSide(color: context.divider),
                 ),
               ),
@@ -757,10 +879,7 @@ class _InlineResumeNotes extends StatefulWidget {
   final Resume resume;
   final ValueChanged<String> onSaveNotes;
 
-  const _InlineResumeNotes({
-    required this.resume,
-    required this.onSaveNotes,
-  });
+  const _InlineResumeNotes({required this.resume, required this.onSaveNotes});
 
   @override
   State<_InlineResumeNotes> createState() => _InlineResumeNotesState();
@@ -813,31 +932,39 @@ class _InlineResumeNotesState extends State<_InlineResumeNotes> {
         style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
         decoration: InputDecoration(
           hintText: 'Add notes / highlights (auto-saves on blur)...',
-          hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+          hintStyle: AscentTextStyles.bodyMedium.copyWith(
+            color: context.textMuted,
+          ),
           filled: true,
           fillColor: context.bgBase,
-          contentPadding: const EdgeInsets.all(12),
+          contentPadding: const EdgeInsets.all(AppSpace.s12),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppGeometry.roundedr10,
             borderSide: BorderSide(color: context.accentPrimary),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: context.accentPrimary, width: 1.5),
+            borderRadius: AppGeometry.roundedr10,
+            borderSide: BorderSide(
+              color: context.accentPrimary,
+              width: AppBorderScale.w1point5,
+            ),
           ),
         ),
       );
     }
 
     final hasNotes = widget.resume.notes?.isNotEmpty == true;
-    return InkWell(
+    return AppTapArea(
       onTap: () => setState(() => _isEditing = true),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
+      borderRadius: AppGeometry.roundedr8,
+      child: AppTag(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s10,
+          vertical: AppSpace.s8,
+        ),
+        nightDecoration: BoxDecoration(
           color: context.bgBase.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppGeometry.roundedr8,
           border: Border.all(color: context.divider.withValues(alpha: 0.5)),
         ),
         child: Row(
@@ -858,7 +985,11 @@ class _InlineResumeNotesState extends State<_InlineResumeNotes> {
               ),
             ),
             const SizedBox(width: 6),
-            Icon(Icons.edit_outlined, size: 14, color: context.textMuted.withValues(alpha: 0.6)),
+            Icon(
+              Icons.edit_outlined,
+              size: 14,
+              color: context.textMuted.withValues(alpha: 0.6),
+            ),
           ],
         ),
       ),
@@ -907,17 +1038,18 @@ class _PdfPreviewModalState extends State<PdfPreviewModal> {
             children: [
               Text(
                 widget.title,
-                style: AscentTextStyles.headlineMedium.copyWith(
-                  color: context.textPrimary,
-                  fontSize: 16,
-                ),
+                style: AscentTextStyles.headlineMedium
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole10),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               if (_totalPages > 0)
                 Text(
                   'Page ${_currentPage + 1} of $_totalPages',
-                  style: AscentTextStyles.caption.copyWith(color: context.textMuted),
+                  style: AscentTextStyles.caption.copyWith(
+                    color: context.textMuted,
+                  ),
                 ),
             ],
           ),
@@ -982,20 +1114,28 @@ class _PdfPreviewModalState extends State<PdfPreviewModal> {
             if (_errorMessage.isNotEmpty)
               Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(AppSpace.s24),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.error_outline_rounded, color: context.stateDanger, size: 40),
+                      Icon(
+                        Icons.error_outline_rounded,
+                        color: context.stateDanger,
+                        size: 40,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'Failed to render PDF preview',
-                        style: AscentTextStyles.headlineMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.headlineMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _errorMessage,
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: context.textMuted,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),

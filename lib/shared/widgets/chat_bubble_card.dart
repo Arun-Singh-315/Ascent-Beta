@@ -1,13 +1,9 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import '../../app/theme/color_tokens.dart';
+import 'app_surfaces.dart';
 
-enum BubbleTailPosition {
-  none,
-  topLeft,
-  topRight,
-  bottomLeft,
-  bottomRight,
-}
+enum BubbleTailPosition { none, topLeft, topRight, bottomLeft, bottomRight }
 
 /// A card with speech-bubble styling specified in Ascent V1 Upgrade §11.
 /// Features 20px radii on three corners and 4px on the tail corner,
@@ -20,7 +16,7 @@ class ChatBubbleCard extends StatefulWidget {
     this.borderColor,
     this.accentTint,
     this.isPulsing = false,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(AppSpace.s16),
     this.onTap,
   });
 
@@ -80,31 +76,31 @@ class _ChatBubbleCardState extends State<ChatBubbleCard>
 
   BorderRadius _getBorderRadius() {
     return switch (widget.tailPosition) {
-      BubbleTailPosition.none => BorderRadius.circular(20),
+      BubbleTailPosition.none => AppGeometry.roundedr20,
       BubbleTailPosition.topLeft => const BorderRadius.only(
-          topLeft: Radius.circular(4),
-          topRight: Radius.circular(20),
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
+        topLeft: AppGeometry.radiusr4,
+        topRight: AppGeometry.radiusr20,
+        bottomLeft: AppGeometry.radiusr20,
+        bottomRight: AppGeometry.radiusr20,
+      ),
       BubbleTailPosition.topRight => const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(4),
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
+        topLeft: AppGeometry.radiusr20,
+        topRight: AppGeometry.radiusr4,
+        bottomLeft: AppGeometry.radiusr20,
+        bottomRight: AppGeometry.radiusr20,
+      ),
       BubbleTailPosition.bottomLeft => const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-          bottomLeft: Radius.circular(4),
-          bottomRight: Radius.circular(20),
-        ),
+        topLeft: AppGeometry.radiusr20,
+        topRight: AppGeometry.radiusr20,
+        bottomLeft: AppGeometry.radiusr4,
+        bottomRight: AppGeometry.radiusr20,
+      ),
       BubbleTailPosition.bottomRight => const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(4),
-        ),
+        topLeft: AppGeometry.radiusr20,
+        topRight: AppGeometry.radiusr20,
+        bottomLeft: AppGeometry.radiusr20,
+        bottomRight: AppGeometry.radiusr4,
+      ),
     };
   }
 
@@ -112,16 +108,15 @@ class _ChatBubbleCardState extends State<ChatBubbleCard>
   Widget build(BuildContext context) {
     final borderRadius = _getBorderRadius();
     final tint = widget.accentTint ?? context.accentPrimary;
-    final baseBorderColor =
-        widget.borderColor ?? tint.withValues(alpha: 0.3);
+    final baseBorderColor = widget.borderColor ?? tint.withValues(alpha: 0.3);
 
     Widget buildDecoratedCard(Color currentBorderColor) {
-      return Container(
-        decoration: BoxDecoration(
+      return AppCard(
+        nightDecoration: BoxDecoration(
           borderRadius: borderRadius,
           border: Border.all(
             color: currentBorderColor,
-            width: 1.5,
+            width: AppBorderScale.w1point5,
           ),
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -142,21 +137,20 @@ class _ChatBubbleCardState extends State<ChatBubbleCard>
           ],
         ),
         child: Material(
-          color: Colors.transparent,
+          color: AppPalette.transparent,
           borderRadius: borderRadius,
-          child: InkWell(
+          child: AppTapArea(
             onTap: widget.onTap,
             borderRadius: borderRadius,
-            child: Padding(
-              padding: widget.padding,
-              child: widget.child,
-            ),
+            child: Padding(padding: widget.padding, child: widget.child),
           ),
         ),
       );
     }
 
-    if (widget.isPulsing && _pulseController != null) {
+    if (!context.surfaces.outlined &&
+        widget.isPulsing &&
+        _pulseController != null) {
       return AnimatedBuilder(
         animation: _pulseController!,
         builder: (context, _) {

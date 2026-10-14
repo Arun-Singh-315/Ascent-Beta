@@ -409,6 +409,32 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     return true;
   });
 
+  /// Remaining active focus time, including previously completed sessions.
+  Future<int> focusSecondsRemaining(int id, {DateTime? now}) async {
+    final session = await (select(timeSessionTable)
+          ..where((s) => s.id.equals(id))).getSingleOrNull();
+    if (session == null || session.linkedTaskId == null) return 0;
+    final task = await db.taskDao.getTaskById(session.linkedTaskId!);
+    final target = (task?.estimatedMinutes ?? 0) * 60;
+    if (target <= 0) return 0;
+    final previous = await (select(timeSessionTable)..where((s) =>
+      s.linkedTaskId.equals(session.linkedTaskId!) &
+      s.status.equals('completed') & s.id.isNotValue(id))).get();
+    final elapsed = computeActiveDurationSeconds(
+      session.startedAt, now ?? DateTime.now(), session.pausedIntervals);
+    final remaining = target - elapsed - previous.fold<int>(
+      0, (sum, s) => sum + s.durationSeconds);
+    return remaining > 0 ? remaining : 0;
+  }
+
+  /// Manual focus completion cannot bypass a task's duration requirement.
+  Future<bool> completeFocusSession(int id, {DateTime? now}) =>
+      db.transaction(() async {
+        if (await focusSecondsRemaining(id, now: now) > 0) return false;
+        await completeSession(id, endedAt: now);
+        return true;
+      });
+
   Future<void> completeSession(
     int id, {
     DateTime? endedAt,

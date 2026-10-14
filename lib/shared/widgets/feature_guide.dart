@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -86,7 +87,7 @@ Future<void> showFeatureGuide(BuildContext context, String feature) async {
               .split('\n')
               .map(
                 (tip) => Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: AppSpace.s12),
                   child: Text(tip),
                 ),
               )

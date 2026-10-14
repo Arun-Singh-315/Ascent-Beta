@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -126,15 +128,18 @@ class InAppReminderDialog extends ConsumerWidget {
     final infoColor = context.accentInfo;
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: infoColor.withValues(alpha: 0.3), width: 1.2),
+        borderRadius: AppGeometry.roundedr20,
+        side: BorderSide(
+          color: infoColor.withValues(alpha: 0.3),
+          width: AppBorderScale.w1point2,
+        ),
       ),
       child: GlassSurface(
         radius: 24,
-        padding: const EdgeInsets.all(22),
+        padding: const EdgeInsets.all(AppSpace.s22),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -142,9 +147,9 @@ class InAppReminderDialog extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
+                  AppTag(
+                    padding: const EdgeInsets.all(AppSpace.s10),
+                    nightDecoration: BoxDecoration(
                       color: infoColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
@@ -161,18 +166,14 @@ class InAppReminderDialog extends ConsumerWidget {
                       children: [
                         Text(
                           'REMINDER DUE',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
+                          style: AppTypography.jetBrainsMono11W70087(
                             color: infoColor,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           'Time for your planned task',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
+                          style: AppTypography.plusJakartaSans12Regular57(
                             color: context.textMuted,
                           ),
                         ),
@@ -193,20 +194,17 @@ class InAppReminderDialog extends ConsumerWidget {
 
               const SizedBox(height: 18),
 
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+              AppCard(
+                padding: const EdgeInsets.all(AppSpace.s16),
+                nightDecoration: BoxDecoration(
                   color: g.fill,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppGeometry.roundedr14,
                   border: Border.all(color: g.edge),
                 ),
                 child: Text(
                   reminder.title,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                  style: AppTypography.plusJakartaSans16W70095(
                     color: context.textPrimary,
-                    height: 1.3,
                   ),
                 ),
               ),
@@ -215,10 +213,7 @@ class InAppReminderDialog extends ConsumerWidget {
 
               Text(
                 'SNOOZE OPTIONS',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.0,
+                style: AppTypography.jetBrainsMono10W70096(
                   color: context.textMuted,
                 ),
               ),
@@ -230,22 +225,25 @@ class InAppReminderDialog extends ConsumerWidget {
                     child: OutlinedButton(
                       onPressed: () =>
                           _snooze(context, ref, const Duration(minutes: 10)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.textPrimary,
-                        backgroundColor: g.fill,
-                        minimumSize: const Size(48, 48),
-                        side: BorderSide(color: g.edge),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          foregroundColor: context.textPrimary,
+                          backgroundColor: g.fill,
+                          minimumSize: const Size(48, 48),
+                          side: BorderSide(color: g.edge),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr16,
+                          ),
                         ),
+                        filled: false,
+                        icon: false,
                       ),
                       child: Text(
                         '+10m',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTypography.plusJakartaSans12W60097(),
                       ),
                     ),
                   ),
@@ -254,22 +252,25 @@ class InAppReminderDialog extends ConsumerWidget {
                     child: OutlinedButton(
                       onPressed: () =>
                           _snooze(context, ref, const Duration(hours: 1)),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.textPrimary,
-                        backgroundColor: g.fill,
-                        minimumSize: const Size(48, 48),
-                        side: BorderSide(color: g.edge),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          foregroundColor: context.textPrimary,
+                          backgroundColor: g.fill,
+                          minimumSize: const Size(48, 48),
+                          side: BorderSide(color: g.edge),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr16,
+                          ),
                         ),
+                        filled: false,
+                        icon: false,
                       ),
                       child: Text(
                         '+1h',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTypography.plusJakartaSans12W60097(),
                       ),
                     ),
                   ),
@@ -277,22 +278,25 @@ class InAppReminderDialog extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => _snoozeTomorrow(context, ref),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: context.textPrimary,
-                        backgroundColor: g.fill,
-                        minimumSize: const Size(48, 48),
-                        side: BorderSide(color: g.edge),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          foregroundColor: context.textPrimary,
+                          backgroundColor: g.fill,
+                          minimumSize: const Size(48, 48),
+                          side: BorderSide(color: g.edge),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr16,
+                          ),
                         ),
+                        filled: false,
+                        icon: false,
                       ),
                       child: Text(
                         'Tomorrow',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AppTypography.plusJakartaSans12W60097(),
                       ),
                     ),
                   ),
@@ -306,20 +310,21 @@ class InAppReminderDialog extends ConsumerWidget {
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
                 label: Text(
                   'Mark as Done',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AppTypography.plusJakartaSans13W70098(),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: g.clay,
-                  elevation: 0,
-                  minimumSize: const Size(48, 48),
-                  foregroundColor: context.isDark ? g.bg : Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                style: context.surfaces.buttonStyle(
+                  ElevatedButton.styleFrom(
+                    backgroundColor: g.clay,
+                    elevation: 0,
+                    minimumSize: const Size(48, 48),
+                    foregroundColor: context.isDark ? g.bg : AppPalette.white,
+                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
+                  filled: true,
+                  icon: false,
                 ),
               ),
             ],

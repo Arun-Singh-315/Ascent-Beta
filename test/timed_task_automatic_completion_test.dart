@@ -39,6 +39,53 @@ void main() {
   }
 
   test(
+    'Manual focus completion preserves early paused and running sessions',
+    () async {
+      final (task, id) = await session();
+      expect(
+        await db.timeSessionDao.completeFocusSession(
+          id,
+          now: start.add(const Duration(seconds: 20)),
+        ),
+        false,
+      );
+      expect(
+        (await db.timeSessionDao.getActiveFocusSession())!.status,
+        'running',
+      );
+      await (db.update(
+        db.timeSessionTable,
+      )..where((s) => s.id.equals(id))).write(
+        TimeSessionTableCompanion(
+          status: const drift.Value('paused'),
+          pausedIntervals: drift.Value(
+            jsonEncode([
+              {
+                'pausedAt': start
+                    .add(const Duration(seconds: 20))
+                    .toIso8601String(),
+                'resumedAt': null,
+              },
+            ]),
+          ),
+        ),
+      );
+      expect(
+        await db.timeSessionDao.completeFocusSession(
+          id,
+          now: start.add(const Duration(minutes: 10)),
+        ),
+        false,
+      );
+      expect(
+        (await db.timeSessionDao.getActiveFocusSession())!.status,
+        'paused',
+      );
+      expect((await db.taskDao.getTaskById(task))!.actualCompletedDate, isNull);
+    },
+  );
+
+  test(
     'Target boundary ends session and task atomically; manual Done and early completion fail',
     () async {
       final (task, id) = await session();

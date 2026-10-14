@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
@@ -17,7 +19,7 @@ Future<bool> showThoughtMerge(
         useSafeArea: true,
         isDismissible: false,
         enableDrag: false,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppPalette.transparent,
         builder: (_) => _ThoughtMergeSheet(db: db, thoughts: thoughts),
       ) ??
       false;
@@ -52,22 +54,22 @@ class _ThoughtMergeSheetState extends State<_ThoughtMergeSheet> {
         final g = sheetContext.glass;
         return PopScope(
           canPop: !saving,
-          child: Container(
+          child: AppCard(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.sizeOf(sheetContext).height * .9,
             ),
-            decoration: BoxDecoration(
+            nightDecoration: BoxDecoration(
               color: g.bg,
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+                top: AppGeometry.radiusr24,
               ),
               border: Border.all(color: g.edge),
             ),
             padding: EdgeInsets.fromLTRB(
-              24,
-              20,
-              24,
-              24 + MediaQuery.viewInsetsOf(sheetContext).bottom,
+              AppSpace.s24,
+              AppSpace.s20,
+              AppSpace.s24,
+              AppSpace.s24 + MediaQuery.viewInsetsOf(sheetContext).bottom,
             ),
             child: Material(
               type: MaterialType.transparency,

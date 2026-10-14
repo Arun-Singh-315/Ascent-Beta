@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
@@ -39,12 +42,12 @@ class LearningNextStepCard extends StatelessWidget {
         : elapsed > 0
         ? 'Resume learning'
         : 'Start learning';
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpace.s20),
+      nightDecoration: BoxDecoration(
         color: g.fill,
         border: Border.all(color: g.edge),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: AppGeometry.roundedr22,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,21 +59,17 @@ class LearningNextStepCard extends StatelessWidget {
                   : completed
                   ? 'YOUR COURSE, COMPLETED'
                   : 'YOUR NEXT STEP',
-              style: TextStyle(
+              style: AppTypeRoles.typeRole31.copyWith(
                 color: g.clay,
-                fontWeight: FontWeight.w700,
                 letterSpacing: 1,
-                fontSize: 11,
               ),
             ),
           const SizedBox(height: 10),
           Text(
             compact ? (lesson?.title ?? course.title) : course.title,
-            style: TextStyle(
-              color: g.ink,
-              fontSize: compact ? 18 : 23,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AppStateTypography.stateType15(
+              state0: compact,
+            ).copyWith(color: g.ink),
           ),
           const SizedBox(height: 8),
           if (!compact)
@@ -80,7 +79,7 @@ class LearningNextStepCard extends StatelessWidget {
                   : completed
                   ? 'All lectures are complete. Your syllabus and notes stay available.'
                   : lesson?.title ?? 'Add a lecture to begin',
-              style: TextStyle(color: g.inkMuted, fontSize: 15),
+              style: AppTypeRoles.typeRole41.copyWith(color: g.inkMuted),
             ),
           const SizedBox(height: 16),
           LinearProgressIndicator(
@@ -88,7 +87,7 @@ class LearningNextStepCard extends StatelessWidget {
             color: g.sage,
             backgroundColor: g.edge,
             minHeight: 5,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppGeometry.roundedr8,
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -137,7 +136,10 @@ class LearningNextStepCard extends StatelessWidget {
           if (!compact)
             Text(
               'Your daily course pace is a plan. The study streak has its own 120-minute target; only active study time counts.',
-              style: TextStyle(color: g.inkMuted, fontSize: 12, height: 1.5),
+              style: AppTypeRoles.typeRole27.copyWith(
+                color: g.inkMuted,
+                height: 1.5,
+              ),
             ),
         ],
       ),

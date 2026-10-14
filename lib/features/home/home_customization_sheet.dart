@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/glass_theme.dart';
@@ -13,7 +15,7 @@ Future<void> showHomeCustomization(BuildContext context) =>
       useSafeArea: true,
       isDismissible: false,
       enableDrag: false,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (_) => const HomeCustomizationSheet(),
     );
 
@@ -62,12 +64,17 @@ class _HomeCustomizationSheetState
     final g = context.glass;
     return PopScope(
       canPop: !_saving,
-      child: Container(
+      child: AppCard(
         height: MediaQuery.sizeOf(context).height * .9,
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s16,
+        ),
+        nightDecoration: BoxDecoration(
           color: g.bg,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
           border: Border.all(color: g.edge),
         ),
         child: Material(
@@ -100,17 +107,22 @@ class _HomeCustomizationSheetState
                       runSpacing: 6,
                       children: _draft.order
                           .where(_draft.visible.contains)
-                          .map((id) => Chip(label: Text(homeSections[id]!)))
+                          .map(
+                            (id) =>
+                                AppTag.label(label: Text(homeSections[id]!)),
+                          )
                           .toList(),
                     ),
                     if (_draft.visible.isEmpty)
                       const Text('Hidden tools remain available from More.'),
                     const SizedBox(height: 12),
                     for (var i = 0; i < _draft.order.length; i++)
-                      Container(
+                      AppCard(
                         key: ValueKey('home_editor_${_draft.order[i]}'),
-                        padding: const EdgeInsets.symmetric(vertical: 6),
-                        decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s6,
+                        ),
+                        nightDecoration: BoxDecoration(
                           border: Border(bottom: BorderSide(color: g.line)),
                         ),
                         child: Column(
@@ -159,14 +171,16 @@ class _HomeCustomizationSheetState
                             ),
                             if (_draft.order[i] == 'mind')
                               const Padding(
-                                padding: EdgeInsets.only(left: 14),
+                                padding: EdgeInsets.only(left: AppSpace.s14),
                                 child: Text(
                                   'Shown below your name. Opens with your most recent thought.',
                                 ),
                               ),
                             if (_draft.order[i] == 'today')
                               SwitchListTile(
-                                contentPadding: const EdgeInsets.only(left: 14),
+                                contentPadding: const EdgeInsets.only(
+                                  left: AppSpace.s14,
+                                ),
                                 title: const Text('Compact preview'),
                                 value: _draft.compact.contains(_draft.order[i]),
                                 onChanged: _saving
@@ -198,7 +212,7 @@ class _HomeCustomizationSheetState
                       runSpacing: 6,
                       children: homeTools.entries
                           .map(
-                            (tool) => FilterChip(
+                            (tool) => AppPill.filter(
                               label: Text(tool.value),
                               selected: _draft.tools.contains(tool.key),
                               onSelected: _saving
@@ -230,7 +244,7 @@ class _HomeCustomizationSheetState
                       runSpacing: 6,
                       children: homeShortcutRoutes.entries
                           .map(
-                            (tool) => FilterChip(
+                            (tool) => AppPill.filter(
                               label: Text(tool.value),
                               selected: _draft.shortcuts.contains(tool.key),
                               onSelected:

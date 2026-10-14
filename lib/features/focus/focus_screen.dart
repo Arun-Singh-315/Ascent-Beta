@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +10,6 @@ import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
@@ -17,7 +19,6 @@ import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/live_session_bar.dart';
 import '../today/add_activity_sheet.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FocusScreen extends ConsumerStatefulWidget {
   const FocusScreen({super.key});
@@ -64,7 +65,11 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
   Future<void> _addTaskForToday(String title) async {
     if (title.trim().isEmpty) return;
     final taskDao = ref.read(taskDaoProvider);
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     await taskDao.insertTask(
       TaskTableCompanion.insert(
         title: title.trim(),
@@ -76,15 +81,36 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     ref.invalidate(todayFocusTaskProvider);
   }
 
-  Future<void> _confirmCompleteSession(String taskTitle, String totalTime) async {
+  Future<void> _confirmCompleteSession(
+    String taskTitle,
+    String totalTime,
+  ) async {
+    final active = ref.read(timeTrackingProvider).activeSession;
+    if (active == null) return;
+    final remaining = await ref
+        .read(timeSessionDaoProvider)
+        .focusSecondsRemaining(active.id);
+    if (!mounted) return;
+    if (remaining > 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Keep focusing: ${_formatDuration(remaining)} remaining before this activity can be completed.',
+          ),
+        ),
+      );
+      return;
+    }
     final confirm = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         backgroundColor: context.bgSurface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr20),
         title: Text(
           'Complete session?',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+          style: AscentTextStyles.displaySmall.copyWith(
+            color: context.textPrimary,
+          ),
         ),
         content: Text(
           'Complete session for "$taskTitle"?\nTotal duration: $totalTime',
@@ -96,10 +122,16 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
             child: Text('Cancel', style: TextStyle(color: context.textMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: context.accentPrimary,
-              foregroundColor: context.textOnPrimary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            style: context.surfaces.buttonStyle(
+              ElevatedButton.styleFrom(
+                backgroundColor: context.accentPrimary,
+                foregroundColor: context.textOnPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppGeometry.roundedr10,
+                ),
+              ),
+              filled: true,
+              icon: false,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Complete'),
@@ -112,10 +144,28 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
       final tracking = ref.read(timeTrackingProvider);
       final linkedTask = tracking.activeSession?.linkedTaskId == null
           ? null
-          : await ref.read(taskDaoProvider).getTaskById(
-                tracking.activeSession!.linkedTaskId!,
-              );
-      final taskCompleted = await ref.read(timeTrackingProvider.notifier).completeSession();
+          : await ref
+                .read(taskDaoProvider)
+                .getTaskById(tracking.activeSession!.linkedTaskId!);
+      final taskCompleted = await ref
+          .read(timeTrackingProvider.notifier)
+          .completeSession();
+      if (tracking.activeSession != null &&
+          await ref
+                  .read(timeSessionDaoProvider)
+                  .focusSecondsRemaining(tracking.activeSession!.id) >
+              0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'The activity target has changed. Keep focusing to complete it.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
       ref.invalidate(todayFocusTaskProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,19 +190,30 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
     }
   }
 
-  Future<void> _showSwitchTaskSheet(BuildContext context, List<Task> tasks) async {
+  Future<void> _showSwitchTaskSheet(
+    BuildContext context,
+    List<Task> tasks,
+  ) async {
     await showModalBottomSheet(
       context: context,
       backgroundColor: context.bgSurface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (sheetCtx) {
-        final activeTaskId = ref.watch(timeTrackingProvider).activeSession?.linkedTaskId;
+        final activeTaskId = ref
+            .watch(timeTrackingProvider)
+            .activeSession
+            ?.linkedTaskId;
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s20,
+              AppSpace.s16,
+              AppSpace.s20,
+              AppSpace.s24,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,61 +224,92 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: sheetCtx.divider,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppGeometry.roundedr2,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Switch Task',
-                  style: AscentTextStyles.displaySmall.copyWith(color: sheetCtx.textPrimary),
+                  style: AscentTextStyles.displaySmall.copyWith(
+                    color: sheetCtx.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Current session will pause and your new task will start tracking immediately.',
-                  style: AscentTextStyles.bodySmall.copyWith(color: sheetCtx.textMuted),
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: sheetCtx.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Flexible(
                   child: ListView(
                     shrinkWrap: true,
                     children: [
-                      ...tasks.where((t) => t.actualCompletedDate == null).map((task) {
+                      ...tasks.where((t) => t.actualCompletedDate == null).map((
+                        task,
+                      ) {
                         final isCurrent = task.id == activeTaskId;
                         return ListTile(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          tileColor: isCurrent ? sheetCtx.accentPrimary.withValues(alpha: 0.1) : null,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr12,
+                          ),
+                          tileColor: isCurrent
+                              ? sheetCtx.accentPrimary.withValues(alpha: 0.1)
+                              : null,
                           leading: Icon(
-                            isCurrent ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                            color: isCurrent ? sheetCtx.accentPrimary : sheetCtx.textMuted,
+                            isCurrent
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_unchecked,
+                            color: isCurrent
+                                ? sheetCtx.accentPrimary
+                                : sheetCtx.textMuted,
                           ),
                           title: Text(
                             task.title,
-                            style: AscentTextStyles.bodyMedium.copyWith(
-                              color: sheetCtx.textPrimary,
-                              fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                            ),
+                            style: AscentTextStyles.bodyMedium
+                                .copyWith(color: sheetCtx.textPrimary)
+                                .merge(
+                                  AppStateTypography.stateType6(
+                                    state0: isCurrent,
+                                  ),
+                                ),
                           ),
                           trailing: isCurrent
-                              ? Text('Active', style: TextStyle(color: sheetCtx.accentPrimary, fontSize: 12))
+                              ? Text(
+                                  'Active',
+                                  style: AppTypeRoles.typeRole27.copyWith(
+                                    color: sheetCtx.accentPrimary,
+                                  ),
+                                )
                               : null,
                           onTap: () {
                             Navigator.of(sheetCtx).pop();
                             if (!isCurrent) {
-                              ref.read(timeTrackingProvider.notifier).switchToTask(
-                                title: task.title,
-                                taskId: task.id,
-                              );
+                              ref
+                                  .read(timeTrackingProvider.notifier)
+                                  .switchToTask(
+                                    title: task.title,
+                                    taskId: task.id,
+                                  );
                             }
                           },
                         );
                       }),
                       ListTile(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        leading: Icon(Icons.add_rounded, color: sheetCtx.accentPrimary),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        leading: Icon(
+                          Icons.add_rounded,
+                          color: sheetCtx.accentPrimary,
+                        ),
                         title: Text(
                           'Start untracked or custom activity...',
-                          style: AscentTextStyles.bodyMedium.copyWith(color: sheetCtx.accentPrimary),
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: sheetCtx.accentPrimary,
+                          ),
                         ),
                         onTap: () {
                           Navigator.of(sheetCtx).pop();
@@ -238,7 +330,11 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
   @override
   Widget build(BuildContext context) {
     final trackingState = ref.watch(timeTrackingProvider);
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     final todayTasksAsync = ref.watch(todayTimeSessionsProvider(today));
     final todayTasks = ref.watch(_todayTasksProvider(today));
 
@@ -282,202 +378,239 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
         ),
       ],
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpace.s20),
         children: [
-                  // ── Today across all tasks strip ───────────────────────────
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: context.bgSurface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.divider),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.schedule_rounded, size: 16, color: context.accentPrimary),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Today across all tasks:',
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                        ),
-                        const Spacer(),
-                        Text(
-                          _formatHoursAndMinutes(totalLoggedTodaySeconds),
-                          style: GoogleFonts.jetBrainsMono(
-                            textStyle: AscentTextStyles.labelMedium.copyWith(
-                              color: context.accentPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          ' logged',
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                        ),
-                      ],
-                    ),
+          // ── Today across all tasks strip ───────────────────────────
+          AppCard(
+            margin: const EdgeInsets.only(bottom: AppSpace.s16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s14,
+              vertical: AppSpace.s10,
+            ),
+            nightDecoration: BoxDecoration(
+              color: context.bgSurface,
+              borderRadius: AppGeometry.roundedr12,
+              border: Border.all(color: context.divider),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 16,
+                  color: context.accentPrimary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Today across all tasks:',
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
                   ),
-
-                  // ── Big Clock ──────────────────────────────────────────────
-                  _BigClockCard(
-                    trackingState: trackingState,
-                    formatDuration: _formatDuration,
-                    onStart: () => showStartSessionSheet(context, ref),
-                    onPause: () => ref.read(timeTrackingProvider.notifier).pauseSession(),
-                    onResume: () => ref.read(timeTrackingProvider.notifier).resumeSession(),
-                    onSwitchTask: () {
-                      final tasks = todayTasks.value ?? [];
-                      _showSwitchTaskSheet(context, tasks);
-                    },
-                    onComplete: () {
-                      final title = trackingState.activeSession?.label ?? 'Current session';
-                      final totalTime = _formatDuration(trackingState.elapsedSeconds);
-                      _confirmCompleteSession(title, totalTime);
-                    },
+                ),
+                const Spacer(),
+                Text(
+                  _formatHoursAndMinutes(totalLoggedTodaySeconds),
+                  style: AppTypography.jetBrainsMonoInheritedRegular72(
+                    textStyle: AscentTextStyles.labelMedium
+                        .copyWith(color: context.accentPrimary)
+                        .merge(AppTypeRoles.typeRole2),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // ── Stats Panel ──────────────────────────────────────────
-                  if (_showStats) ...[
-                    _StatsPanel(
-                      todayTasksAsync: todayTasksAsync,
-                      formatMinutes: _formatMinutes,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // ── Today's Tasks ────────────────────────────────────────
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Today's Tasks",
-                        style: AscentTextStyles.labelLarge.copyWith(color: context.textPrimary),
-                      ),
-                      Text(
-                        DateFormat('EEEE, MMM d').format(DateTime.now()),
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
-                      ),
-                    ],
+                ),
+                Text(
+                  ' logged',
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textMuted,
                   ),
-                  const SizedBox(height: 10),
+                ),
+              ],
+            ),
+          ),
 
-                  // Task List
-                  todayTasks.when(
-                    loading: () => const Center(child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
-                    )),
-                    error: (_, _) => const SizedBox.shrink(),
-                    data: (tasks) {
-                      if (tasks.isEmpty) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Text(
-                            'No tasks planned for today.\nAdd one below to get started!',
-                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                            textAlign: TextAlign.center,
-                          ),
-                        );
-                      }
+          // ── Big Clock ──────────────────────────────────────────────
+          _BigClockCard(
+            trackingState: trackingState,
+            formatDuration: _formatDuration,
+            onStart: () => showStartSessionSheet(context, ref),
+            onPause: () =>
+                ref.read(timeTrackingProvider.notifier).pauseSession(),
+            onResume: () =>
+                ref.read(timeTrackingProvider.notifier).resumeSession(),
+            onSwitchTask: () {
+              final tasks = todayTasks.value ?? [];
+              _showSwitchTaskSheet(context, tasks);
+            },
+            onComplete: () {
+              final title =
+                  trackingState.activeSession?.label ?? 'Current session';
+              final totalTime = _formatDuration(trackingState.elapsedSeconds);
+              _confirmCompleteSession(title, totalTime);
+            },
+          ),
 
-                      return Column(
-                        children: tasks.map((task) {
-                          final isActive = trackingState.activeSession?.linkedTaskId == task.id;
-                          final isDone = task.actualCompletedDate != null;
+          const SizedBox(height: 16),
 
-                          // Find time spent on this task today
-                          final taskSeconds = todayTasksAsync.value?.where(
-                            (s) => s.linkedTaskId == task.id,
-                          ).fold<int>(0, (acc, s) {
-                            return acc + TimeSessionDao.computeActiveDurationSeconds(
-                              s.startedAt,
-                              s.endedAt ?? (s.status == 'running' ? DateTime.now() : s.startedAt),
-                              s.pausedIntervals,
-                            );
-                          }) ?? 0;
+          // ── Stats Panel ──────────────────────────────────────────
+          if (_showStats) ...[
+            _StatsPanel(
+              todayTasksAsync: todayTasksAsync,
+              formatMinutes: _formatMinutes,
+            ),
+            const SizedBox(height: 16),
+          ],
 
-                          final isTodoOnly = task.estimatedMinutes == null || task.estimatedMinutes == 0;
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _TaskRow(
-                              task: task,
-                              isActive: isActive,
-                              isDone: isDone,
-                              timeSpent: _formatMinutes(taskSeconds),
-                              onEdit: () {
-                                AddActivitySheet.show(context, existingTask: task);
-                              },
-                              onTap: isDone
-                                  ? null
-                                  : (isTodoOnly
-                                      ? () async {
-                                          final taskDao = ref.read(taskDaoProvider);
-                                          HapticFeedback.lightImpact();
-                                          await taskDao.markComplete(task.id);
-                                          ref.invalidate(todayFocusTaskProvider);
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              SnackBar(
-                                                content: Text('Completed "${task.title}"'),
-                                                duration: const Duration(seconds: 2),
-                                                behavior: SnackBarBehavior.floating,
-                                              ),
-                                            );
-                                          }
-                                        }
-                                      : () {
-                                          ref.read(timeTrackingProvider.notifier).switchToTask(
-                                                title: task.title,
-                                                taskId: task.id,
-                                              );
-                                        }),
-                              onToggleDone: () async {
-                                final taskDao = ref.read(taskDaoProvider);
-                                if (isDone) {
-                                  AscentSnackBar.show(
-                                    context,
-                                    message: 'Completed tasks cannot be reopened.',
-                                  );
-                                  return;
-                                }
-                                if (!isTodoOnly) {
-                                  AscentSnackBar.show(
-                                    context,
-                                    message: 'Timed activities complete after their focus target is reached.',
-                                  );
-                                  return;
-                                }
-                                await taskDao.markComplete(task.id);
-                                ref.invalidate(todayFocusTaskProvider);
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      );
-                    },
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Add Task Input
-                  _AddTaskRow(
-                    controller: _addTaskController,
-                    onAdd: _addTaskForToday,
-                  ),
-
-                  const SizedBox(height: 32),
-                ],
+          // ── Today's Tasks ────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Today's Tasks",
+                style: AscentTextStyles.labelLarge.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
+              Text(
+                DateFormat('EEEE, MMM d').format(DateTime.now()),
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          // Task List
+          todayTasks.when(
+            loading: () => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpace.s20),
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            error: (_, _) => const SizedBox.shrink(),
+            data: (tasks) {
+              if (tasks.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s16),
+                  child: Text(
+                    'No tasks planned for today.\nAdd one below to get started!',
+                    style: AscentTextStyles.bodyMedium.copyWith(
+                      color: context.textMuted,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+
+              return Column(
+                children: tasks.map((task) {
+                  final isActive =
+                      trackingState.activeSession?.linkedTaskId == task.id;
+                  final isDone = task.actualCompletedDate != null;
+
+                  // Find time spent on this task today
+                  final taskSeconds =
+                      todayTasksAsync.value
+                          ?.where((s) => s.linkedTaskId == task.id)
+                          .fold<int>(0, (acc, s) {
+                            return acc +
+                                TimeSessionDao.computeActiveDurationSeconds(
+                                  s.startedAt,
+                                  s.endedAt ??
+                                      (s.status == 'running'
+                                          ? DateTime.now()
+                                          : s.startedAt),
+                                  s.pausedIntervals,
+                                );
+                          }) ??
+                      0;
+
+                  final isTodoOnly =
+                      task.estimatedMinutes == null ||
+                      task.estimatedMinutes == 0;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                    child: _TaskRow(
+                      task: task,
+                      isActive: isActive,
+                      isDone: isDone,
+                      timeSpent: _formatMinutes(taskSeconds),
+                      onEdit: () {
+                        AddActivitySheet.show(context, existingTask: task);
+                      },
+                      onTap: isDone
+                          ? null
+                          : (isTodoOnly
+                                ? () async {
+                                    final taskDao = ref.read(taskDaoProvider);
+                                    HapticFeedback.lightImpact();
+                                    await taskDao.markComplete(task.id);
+                                    ref.invalidate(todayFocusTaskProvider);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Completed "${task.title}"',
+                                          ),
+                                          duration: const Duration(seconds: 2),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                : () {
+                                    ref
+                                        .read(timeTrackingProvider.notifier)
+                                        .switchToTask(
+                                          title: task.title,
+                                          taskId: task.id,
+                                        );
+                                  }),
+                      onToggleDone: () async {
+                        final taskDao = ref.read(taskDaoProvider);
+                        if (isDone) {
+                          AscentSnackBar.show(
+                            context,
+                            message: 'Completed tasks cannot be reopened.',
+                          );
+                          return;
+                        }
+                        if (!isTodoOnly) {
+                          AscentSnackBar.show(
+                            context,
+                            message:
+                                'Timed activities complete after their focus target is reached.',
+                          );
+                          return;
+                        }
+                        await taskDao.markComplete(task.id);
+                        ref.invalidate(todayFocusTaskProvider);
+                      },
+                    ),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // Add Task Input
+          _AddTaskRow(controller: _addTaskController, onAdd: _addTaskForToday),
+
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
 }
 
 // ── Provider for today's tasks ─────────────────────────────────────────────────
 
-final _todayTasksProvider = StreamProvider.family<List<Task>, DateTime>((ref, date) {
+final _todayTasksProvider = StreamProvider.family<List<Task>, DateTime>((
+  ref,
+  date,
+) {
   final dao = ref.watch(taskDaoProvider);
   return dao.watchTasksByDate(date);
 });
@@ -512,17 +645,26 @@ class _BigClockCard extends StatelessWidget {
     final accent = context.accentPrimary;
 
     return AscentCard(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s24,
+        vertical: AppSpace.s28,
+      ),
       child: Column(
         children: [
           // Task label pill
           if (hasSession) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
+            AppTag(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s10,
+                vertical: AppSpace.s4,
+              ),
+              nightDecoration: BoxDecoration(
                 color: context.bgSurfaceElevated,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: context.divider, width: 0.8),
+                borderRadius: AppGeometry.roundedr10,
+                border: Border.all(
+                  color: context.divider,
+                  width: AppBorderScale.w0point8,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -539,9 +681,7 @@ class _BigClockCard extends StatelessWidget {
                   Flexible(
                     child: Text(
                       trackingState.activeSession!.label,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      style: AppTypography.plusJakartaSans12W60073(
                         color: context.textPrimary,
                       ),
                       maxLines: 1,
@@ -555,7 +695,9 @@ class _BigClockCard extends StatelessWidget {
           ] else ...[
             Text(
               'No active session',
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textMuted,
+              ),
             ),
             const SizedBox(height: 14),
           ],
@@ -563,10 +705,7 @@ class _BigClockCard extends StatelessWidget {
           // Clock digits in JetBrains Mono
           Text(
             hasSession ? formatDuration(elapsed) : '00:00',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 52,
-              fontWeight: FontWeight.w400,
-              letterSpacing: -1.5,
+            style: AppTypography.jetBrainsMono52W40074(
               color: hasSession
                   ? (isRunning ? context.textPrimary : context.textMuted)
                   : context.textMuted.withValues(alpha: 0.5),
@@ -577,11 +716,8 @@ class _BigClockCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'PAUSED',
-              style: GoogleFonts.jetBrainsMono(
+              style: AppTypography.jetBrainsMono10W70075(
                 color: context.accentSecondary,
-                fontSize: 10,
-                letterSpacing: 1.5,
-                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -648,7 +784,10 @@ class _StatsPanel extends ConsumerWidget {
   final AsyncValue<List<TimeSession>> todayTasksAsync;
   final String Function(int) formatMinutes;
 
-  const _StatsPanel({required this.todayTasksAsync, required this.formatMinutes});
+  const _StatsPanel({
+    required this.todayTasksAsync,
+    required this.formatMinutes,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -671,11 +810,11 @@ class _StatsPanel extends ConsumerWidget {
           }
         }
 
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+        return AppCard(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          nightDecoration: BoxDecoration(
             color: context.bgSurface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppGeometry.roundedr16,
             border: Border.all(color: context.divider),
           ),
           child: Column(
@@ -683,7 +822,9 @@ class _StatsPanel extends ConsumerWidget {
             children: [
               Text(
                 "Today's Stats",
-                style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.labelMedium.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -734,11 +875,14 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
+      child: AppCard(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s10,
+          vertical: AppSpace.s10,
+        ),
+        nightDecoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppGeometry.roundedr12,
           border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         child: Column(
@@ -748,15 +892,13 @@ class _StatChip extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               value,
-              style: AscentTextStyles.statMedium.copyWith(
-                color: context.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AscentTextStyles.statMedium
+                  .copyWith(color: context.textPrimary)
+                  .merge(AppTypeRoles.typeRole30),
             ),
             Text(
               label,
-              style: TextStyle(fontSize: 10, color: context.textMuted),
+              style: AppTypeRoles.typeRole18.copyWith(color: context.textMuted),
             ),
           ],
         ),
@@ -788,47 +930,62 @@ class _TaskRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTodoOnly = task.estimatedMinutes == null || task.estimatedMinutes == 0;
+    final isTodoOnly =
+        task.estimatedMinutes == null || task.estimatedMinutes == 0;
 
-    return InkWell(
+    return AppTapArea(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: AppGeometry.roundedr14,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: isActive
-              ? context.accentPrimary.withValues(alpha: 0.12)
-              : context.bgSurface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s14,
+          vertical: AppSpace.s11,
+        ),
+        decoration: AppCard.decoration(
+          context,
+          selected: isActive,
+          night: BoxDecoration(
             color: isActive
-                ? context.accentPrimary.withValues(alpha: 0.4)
-                : context.divider,
-            width: isActive ? 1.5 : 1.0,
+                ? context.accentPrimary.withValues(alpha: 0.12)
+                : context.bgSurface,
+            borderRadius: AppGeometry.roundedr14,
+            border: Border.all(
+              color: isActive
+                  ? context.accentPrimary.withValues(alpha: 0.4)
+                  : context.divider,
+              width: isActive ? 1.5 : 1.0,
+            ),
           ),
         ),
         child: Row(
           children: [
             // Done checkbox
-            GestureDetector(
+            AppGestureTap(
               onTap: onToggleDone,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: 24,
                 height: 24,
-                decoration: BoxDecoration(
-                  color: isDone
-                      ? context.accentPrimary.withValues(alpha: 0.15)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDone ? context.accentPrimary : context.divider,
-                    width: 2,
+                decoration: AppTag.decoration(
+                  context,
+                  night: BoxDecoration(
+                    color: isDone
+                        ? context.accentPrimary.withValues(alpha: 0.15)
+                        : AppPalette.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDone ? context.accentPrimary : context.divider,
+                      width: AppBorderScale.w2,
+                    ),
                   ),
                 ),
                 child: isDone
-                    ? Icon(Icons.check_rounded, size: 14, color: context.accentPrimary)
+                    ? Icon(
+                        Icons.check_rounded,
+                        size: 14,
+                        color: context.accentPrimary,
+                      )
                     : null,
               ),
             ),
@@ -841,31 +998,42 @@ class _TaskRow extends StatelessWidget {
                 children: [
                   Text(
                     task.title,
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      color: isDone ? context.textMuted : context.textPrimary,
-                      decoration: isDone ? TextDecoration.lineThrough : null,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                    ),
+                    style: AscentTextStyles.bodyMedium
+                        .copyWith(
+                          color: isDone
+                              ? context.textMuted
+                              : context.textPrimary,
+                          decoration: isDone
+                              ? TextDecoration.lineThrough
+                              : null,
+                        )
+                        .merge(AppStateTypography.stateType6(state0: isActive)),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                        decoration: BoxDecoration(
+                      AppTag(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s5,
+                          vertical: AppSpace.s1,
+                        ),
+                        nightDecoration: BoxDecoration(
                           color: context.bgBase,
-                          borderRadius: BorderRadius.circular(5),
-                          border: Border.all(color: context.divider, width: 0.6),
+                          borderRadius: AppGeometry.roundedr5,
+                          border: Border.all(
+                            color: context.divider,
+                            width: AppBorderScale.w0point6,
+                          ),
                         ),
                         child: Text(
                           isTodoOnly
                               ? (task.priority.toUpperCase())
-                              : (task.estimatedMinutes == -1 ? 'FLEXIBLE' : '${task.estimatedMinutes}M TIMER'),
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
+                              : (task.estimatedMinutes == -1
+                                    ? 'FLEXIBLE'
+                                    : '${task.estimatedMinutes}M TIMER'),
+                          style: AppTypeRoles.typeRole62.copyWith(
                             color: context.textMuted,
                           ),
                         ),
@@ -874,11 +1042,14 @@ class _TaskRow extends StatelessWidget {
                         const SizedBox(width: 6),
                         Text(
                           timeSpent,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: isActive ? context.accentPrimary : context.textMuted,
-                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                          ),
+                          style:
+                              AppStateTypography.stateType22(
+                                state0: isActive,
+                              ).copyWith(
+                                color: isActive
+                                    ? context.accentPrimary
+                                    : context.textMuted,
+                              ),
                         ),
                       ],
                     ],
@@ -892,7 +1063,11 @@ class _TaskRow extends StatelessWidget {
             // Edit button
             if (onEdit != null)
               IconButton(
-                icon: Icon(Icons.edit_outlined, size: 16, color: context.textMuted),
+                icon: Icon(
+                  Icons.edit_outlined,
+                  size: 16,
+                  color: context.textMuted,
+                ),
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
@@ -902,23 +1077,28 @@ class _TaskRow extends StatelessWidget {
 
             // Active indicator / Finish chip (for To-Do) / Start timer button (for Timed)
             if (isActive)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
+              AppTag(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s8,
+                  vertical: AppSpace.s4,
+                ),
+                nightDecoration: BoxDecoration(
                   color: context.accentPrimary,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: AppGeometry.roundedr8,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.radio_button_on_rounded, size: 10, color: context.textOnPrimary),
+                    Icon(
+                      Icons.radio_button_on_rounded,
+                      size: 10,
+                      color: context.textOnPrimary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Active',
-                      style: TextStyle(
-                        fontSize: 10,
+                      style: AppTypeRoles.typeRole3.copyWith(
                         color: context.textOnPrimary,
-                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -926,26 +1106,33 @@ class _TaskRow extends StatelessWidget {
               )
             else if (!isDone) ...[
               if (isTodoOnly)
-                InkWell(
+                AppTapArea(
                   onTap: onToggleDone,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
+                  borderRadius: AppGeometry.roundedr8,
+                  child: AppTag(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s8,
+                      vertical: AppSpace.s4,
+                    ),
+                    nightDecoration: BoxDecoration(
                       color: context.accentPrimary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: context.accentPrimary.withValues(alpha: 0.3)),
+                      borderRadius: AppGeometry.roundedr8,
+                      border: Border.all(
+                        color: context.accentPrimary.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.check_rounded, size: 12, color: context.accentPrimary),
+                        Icon(
+                          Icons.check_rounded,
+                          size: 12,
+                          color: context.accentPrimary,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'Finish',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                          style: AppTypeRoles.typeRole33.copyWith(
                             color: context.accentPrimary,
                           ),
                         ),
@@ -985,16 +1172,24 @@ class _AddTaskRow extends StatelessWidget {
             textCapitalization: TextCapitalization.sentences,
             decoration: InputDecoration(
               hintText: 'Add a task for today...',
-              prefixIcon: Icon(Icons.add_circle_outline_rounded, color: context.accentPrimary, size: 20),
+              prefixIcon: Icon(
+                Icons.add_circle_outline_rounded,
+                color: context.accentPrimary,
+                size: 20,
+              ),
             ),
             onSubmitted: onAdd,
           ),
         ),
         const SizedBox(width: 8),
         IconButton.filled(
-          style: IconButton.styleFrom(
-            backgroundColor: context.accentPrimary,
-            foregroundColor: context.textOnPrimary,
+          style: context.surfaces.buttonStyle(
+            IconButton.styleFrom(
+              backgroundColor: context.accentPrimary,
+              foregroundColor: context.textOnPrimary,
+            ),
+            filled: true,
+            icon: true,
           ),
           icon: const Icon(Icons.add_rounded),
           onPressed: () => onAdd(controller.text),

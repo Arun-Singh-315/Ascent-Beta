@@ -1,11 +1,12 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -114,36 +115,9 @@ class _ThoughtWallHomePreviewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── SECTION HEADING ───────────────────────────────────────────
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Mind space',
-                style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
-              ),
-            ),
-            IconButton(
-              tooltip: _expanded ? 'Collapse Mind Space' : 'Expand Mind Space',
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                setState(() => _expanded = !_expanded);
-              },
-              icon: Icon(
-                _expanded
-                    ? Icons.expand_less_rounded
-                    : Icons.expand_more_rounded,
-                color: g.clay,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 10),
-
         if (widget.showComposer)
-          Container(
-            decoration: BoxDecoration(
+          AppCard(
+            nightDecoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
                   color: _focusNode.hasFocus ? g.clay : g.line,
@@ -161,11 +135,7 @@ class _ThoughtWallHomePreviewState
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: g.ink,
-                    ),
+                    style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                     decoration: const InputDecoration(
                       hintText: "What's on your mind?",
                       filled: false,
@@ -212,11 +182,32 @@ class _ThoughtWallHomePreviewState
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 12),
-                Text(
-                  _expanded ? 'Recent thoughts' : 'Recent thought',
-                  style: AscentTextStyles.homeCaption.copyWith(
-                    color: g.inkMuted,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _expanded ? 'Recent thoughts' : 'Recent thought',
+                        style: AscentTextStyles.homeCaption.copyWith(
+                          color: g.inkMuted,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: _expanded
+                          ? 'Collapse Mind Space'
+                          : 'Expand Mind Space',
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _expanded = !_expanded);
+                      },
+                      icon: Icon(
+                        _expanded
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        color: g.clay,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 ...List.generate(previewThoughts.length, (index) {
@@ -225,7 +216,7 @@ class _ThoughtWallHomePreviewState
                   final timeAgo = _formatTimeAgo(thought.createdAt);
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: AppSpace.s10),
                     child: Align(
                       alignment: isEven
                           ? Alignment.centerLeft
@@ -241,20 +232,20 @@ class _ThoughtWallHomePreviewState
                                   Theme.of(context).brightness ==
                                       Brightness.dark
                                   ? 0.4
-                                  : 0.3,
+                                  : 0.18,
                             ),
-                            width: 1.2,
+                            width: AppBorderScale.w1point2,
                           ),
                           radius: 18,
                           borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(18),
-                            topRight: const Radius.circular(18),
-                            bottomLeft: Radius.circular(isEven ? 4 : 18),
-                            bottomRight: Radius.circular(isEven ? 18 : 4),
+                            topLeft: AppGeometry.radiusr18,
+                            topRight: AppGeometry.radiusr18,
+                            bottomLeft: AppGeometry.bubbleTail(isEven),
+                            bottomRight: AppGeometry.bubbleTail(!isEven),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s12,
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
@@ -267,14 +258,14 @@ class _ThoughtWallHomePreviewState
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (thought.mood == 'promise') ...[
-                                Container(
+                                AppTag(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                                    horizontal: AppSpace.s8,
+                                    vertical: AppSpace.s3,
                                   ),
-                                  decoration: BoxDecoration(
+                                  nightDecoration: BoxDecoration(
                                     color: g.clay.withValues(alpha: 0.14),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -288,11 +279,8 @@ class _ThoughtWallHomePreviewState
                                       Text(
                                         'PROMISE',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(
-                                              color: g.clay,
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                            .copyWith(color: g.clay)
+                                            .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
                                   ),
@@ -304,12 +292,10 @@ class _ThoughtWallHomePreviewState
                                 onReadMore: () => context.push(
                                   '/thought-wall?thought=${thought.id}',
                                 ),
-                                style: GoogleFonts.plusJakartaSans(
+                                style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
                                       ? g.inkMuted
                                       : g.ink,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
                                   decoration: thought.isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -340,10 +326,9 @@ class _ThoughtWallHomePreviewState
                                     style: AscentTextStyles.homeCaption
                                         .copyWith(
                                           color: g.inkMuted,
-                                          fontSize: 10.5,
                                           letterSpacing: 0.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        )
+                                        .merge(AppTypeRoles.typeRole66),
                                   ),
                                 ],
                               ),
@@ -361,6 +346,9 @@ class _ThoughtWallHomePreviewState
         Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
+            style: Theme.of(context).brightness == Brightness.light
+                ? TextButton.styleFrom(foregroundColor: const Color(0xFF53617C))
+                : null,
             onPressed: () {
               HapticFeedback.selectionClick();
               context.push('/thought-wall');

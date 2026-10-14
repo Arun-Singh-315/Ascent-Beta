@@ -1,10 +1,12 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import 'ascent_button.dart';
 import 'glass_surface.dart';
 
@@ -125,13 +127,16 @@ class AscentDialog extends StatelessWidget {
     final g = context.glass;
 
     return Dialog(
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AscentDimensions.radiusXl),
-        side: BorderSide(color: g.edge, width: 1.0),
+        side: BorderSide(color: g.edge, width: AppBorderScale.w1point0),
       ),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s24,
+        vertical: AppSpace.s24,
+      ),
       child: GlassSurface(
         radius: AscentDimensions.radiusXl,
         padding: const EdgeInsets.all(AscentDimensions.spaceXl),
@@ -143,9 +148,9 @@ class AscentDialog extends StatelessWidget {
               if (icon != null) ...[
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
+                  child: AppTag(
+                    padding: const EdgeInsets.all(AppSpace.s8),
+                    nightDecoration: BoxDecoration(
                       color: (iconColor ?? context.accentPrimary).withValues(
                         alpha: 0.14,
                       ),
@@ -162,10 +167,9 @@ class AscentDialog extends StatelessWidget {
               ],
               Text(
                 title,
-                style: AscentTextStyles.displaySmall.copyWith(
-                  color: context.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AscentTextStyles.displaySmall
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole2),
               ),
               if (content != null && content!.isNotEmpty) ...[
                 const SizedBox(height: AscentDimensions.spaceSm),

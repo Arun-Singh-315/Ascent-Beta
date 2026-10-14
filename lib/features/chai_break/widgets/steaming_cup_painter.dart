@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -8,7 +9,7 @@ class SteamingCupWidget extends StatefulWidget {
   const SteamingCupWidget({
     super.key,
     required this.isRunning,
-    this.accentColor = const Color(0xFF6B3A1C),
+    this.accentColor = AppPalette.colorFF6B3A1C,
   });
 
   @override
@@ -88,7 +89,7 @@ class _SteamingCupPainter extends CustomPainter {
             colors: [
               accentColor.withValues(alpha: 0.28),
               accentColor.withValues(alpha: 0.08),
-              Colors.transparent,
+              AppPalette.transparent,
             ],
             stops: const [0.0, 0.55, 1.0],
           ).createShader(
@@ -111,7 +112,7 @@ class _SteamingCupPainter extends CustomPainter {
         final phase = (animationValue + phaseOffsets[i]) % 1.0;
         final alpha = (math.sin(phase * math.pi) * 0.7).clamp(0.0, 0.85);
 
-        steamPaint.color = Colors.white.withValues(
+        steamPaint.color = AppPalette.white.withValues(
           alpha: alpha * (isRunning ? 1 : 0.35),
         );
 
@@ -132,7 +133,7 @@ class _SteamingCupPainter extends CustomPainter {
 
     // 3. Saucer / Plate at base
     final saucerPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.18)
+      ..color = AppPalette.white.withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
     final saucerRect = Rect.fromCenter(
       center: Offset(cx, cy + 28),
@@ -140,7 +141,7 @@ class _SteamingCupPainter extends CustomPainter {
       height: 10,
     );
     canvas.drawRRect(
-      RRect.fromRectAndRadius(saucerRect, const Radius.circular(5)),
+      RRect.fromRectAndRadius(saucerRect, AppGeometry.radiusr5),
       saucerPaint,
     );
 
@@ -173,7 +174,7 @@ class _SteamingCupPainter extends CustomPainter {
 
     // Mug rim border
     final rimPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
+      ..color = AppPalette.white.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     canvas.drawPath(cupPath, rimPaint);
@@ -198,7 +199,7 @@ class _SteamingCupPainter extends CustomPainter {
 
     // 6. Tea/Coffee warm liquid rim
     final liquidPaint = Paint()
-      ..color = const Color(0xFF6B3A1C)
+      ..color = AppPalette.colorFF6B3A1C
       ..style = PaintingStyle.fill;
     canvas.drawOval(
       Rect.fromCenter(

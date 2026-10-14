@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
@@ -16,7 +17,10 @@ class AscentSnackBar {
   }) => SnackBar(
     content: GlassSurface(
       radius: 18,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s16,
+        vertical: AppSpace.s12,
+      ),
       child: DefaultTextStyle(
         style: AscentTextStyles.bodyMedium.copyWith(color: context.glass.ink),
         child: Row(
@@ -30,11 +34,16 @@ class AscentSnackBar {
     duration: duration,
     persist: false,
     behavior: SnackBarBehavior.floating,
-    backgroundColor: Colors.transparent,
+    backgroundColor: AppPalette.transparent,
     elevation: 0,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr18),
     padding: EdgeInsets.zero,
-    margin: const EdgeInsets.fromLTRB(16, 0, 16, 74),
+    margin: const EdgeInsets.fromLTRB(
+      AppSpace.s16,
+      AppSpace.s0,
+      AppSpace.s16,
+      AppSpace.s74,
+    ),
   );
 
   static void show(

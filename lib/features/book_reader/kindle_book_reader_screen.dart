@@ -1,24 +1,45 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 
 enum KindleTheme {
-  sepia('Warm Sepia', Color(0xFFFBF0D9), Color(0xFF2C2523), Color(0xFFD6C8AC)),
-  dark('Dark OLED', Color(0xFF121212), Color(0xFFE2E8F0), Color(0xFF2A2A2A)),
-  light('Crisp Day', Color(0xFFFFFFFF), Color(0xFF1A1A1A), Color(0xFFE5E7EB)),
-  sage('Forest Sage', Color(0xFF162019), Color(0xFFD1E7DD), Color(0xFF26382C));
+  sepia(
+    'Warm Sepia',
+    AppPalette.colorFFFBF0D9,
+    AppPalette.colorFF2C2523,
+    AppPalette.colorFFD6C8AC,
+  ),
+  dark(
+    'Dark OLED',
+    AppPalette.colorFF121212,
+    AppPalette.colorFFE2E8F0,
+    AppPalette.colorFF2A2A2A,
+  ),
+  light(
+    'Crisp Day',
+    AppPalette.colorFFFFFFFF,
+    AppPalette.colorFF1A1A1A,
+    AppPalette.colorFFE5E7EB,
+  ),
+  sage(
+    'Forest Sage',
+    AppPalette.colorFF162019,
+    AppPalette.colorFFD1E7DD,
+    AppPalette.colorFF26382C,
+  );
 
   final String label;
   final Color bg;
@@ -39,10 +60,12 @@ class KindleBookReaderScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<KindleBookReaderScreen> createState() => _KindleBookReaderScreenState();
+  ConsumerState<KindleBookReaderScreen> createState() =>
+      _KindleBookReaderScreenState();
 }
 
-class _KindleBookReaderScreenState extends ConsumerState<KindleBookReaderScreen> {
+class _KindleBookReaderScreenState
+    extends ConsumerState<KindleBookReaderScreen> {
   String? _pdfPath;
   String _docTitle = 'Study Document';
   int _currentPage = 1;
@@ -202,9 +225,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error opening file: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error opening file: $e')));
       }
     }
   }
@@ -224,7 +247,11 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         : 'Review ${_sampleStudyChapters[_builtinPageIndex]['title']}';
     final titleController = TextEditingController(text: defaultTitle);
     final noteController = TextEditingController();
-    DateTime plannedDate = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    DateTime plannedDate = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
     String priority = 'normal';
 
     showModalBottomSheet(
@@ -232,14 +259,19 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (sheetCtx) {
         return StatefulBuilder(
           builder: (ctx, setSheetState) {
             final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
             return Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 24),
+              padding: EdgeInsets.fromLTRB(
+                AppSpace.s20,
+                AppSpace.s20,
+                AppSpace.s20,
+                bottomInset + AppSpace.s24,
+              ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -251,57 +283,73 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                         height: 4,
                         decoration: BoxDecoration(
                           color: ctx.divider,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: AppGeometry.roundedr2,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
+                        AppTag(
+                          padding: const EdgeInsets.all(AppSpace.s8),
+                          nightDecoration: BoxDecoration(
                             color: ctx.accentPrimary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: AppGeometry.roundedr10,
                           ),
-                          child: Icon(Icons.playlist_add_check_rounded, color: ctx.accentPrimary, size: 20),
+                          child: Icon(
+                            Icons.playlist_add_check_rounded,
+                            color: ctx.accentPrimary,
+                            size: 20,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Text(
                           'Add Task from Reading',
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            color: ctx.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(color: ctx.textPrimary)
+                              .merge(AppTypeRoles.typeRole21),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: titleController,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: ctx.textPrimary),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: ctx.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Task Title *',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: noteController,
-                      style: AscentTextStyles.bodySmall.copyWith(color: ctx.textPrimary),
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: ctx.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Study Notes / Key Concept (Optional)',
-                        hintText: 'e.g. Practice Spring Security FilterChain or DP pattern',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        hintText:
+                            'e.g. Practice Spring Security FilterChain or DP pattern',
+                        border: OutlineInputBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Text('Priority:', style: AscentTextStyles.labelMedium.copyWith(color: ctx.textPrimary)),
+                        Text(
+                          'Priority:',
+                          style: AscentTextStyles.labelMedium.copyWith(
+                            color: ctx.textPrimary,
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        ChoiceChip(
+                        AppPill.choice(
                           label: const Text('Normal'),
                           selected: priority == 'normal',
                           onSelected: (val) {
@@ -309,7 +357,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                           },
                         ),
                         const SizedBox(width: 8),
-                        ChoiceChip(
+                        AppPill.choice(
                           label: const Text('High 🔥'),
                           selected: priority == 'high',
                           onSelected: (val) {
@@ -332,9 +380,11 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                             title: title,
                             priority: drift.Value(priority),
                             plannedDate: drift.Value(plannedDate),
-                            notes: drift.Value(noteController.text.trim().isNotEmpty
-                                ? noteController.text.trim()
-                                : 'Created from Reader: $_docTitle'),
+                            notes: drift.Value(
+                              noteController.text.trim().isNotEmpty
+                                  ? noteController.text.trim()
+                                  : 'Created from Reader: $_docTitle',
+                            ),
                           ),
                         );
 
@@ -347,7 +397,9 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Study task added to your Task Board! 🎯'),
+                              content: Text(
+                                'Study task added to your Task Board! 🎯',
+                              ),
                               behavior: SnackBarBehavior.floating,
                               duration: Duration(seconds: 2),
                             ),
@@ -379,12 +431,17 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (sheetCtx) {
         final bottomInset = MediaQuery.of(sheetCtx).viewInsets.bottom;
         return Padding(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 24),
+          padding: EdgeInsets.fromLTRB(
+            AppSpace.s20,
+            AppSpace.s20,
+            AppSpace.s20,
+            bottomInset + AppSpace.s24,
+          ),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -396,50 +453,61 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                     height: 4,
                     decoration: BoxDecoration(
                       color: context.divider,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: AppGeometry.roundedr2,
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
+                    AppTag(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      nightDecoration: BoxDecoration(
                         color: context.accentSecondary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppGeometry.roundedr10,
                       ),
-                      child: Icon(Icons.bookmark_add_outlined, color: context.accentSecondary, size: 20),
+                      child: Icon(
+                        Icons.bookmark_add_outlined,
+                        color: context.accentSecondary,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       'Capture Reading Note',
-                      style: AscentTextStyles.displaySmall.copyWith(
-                        color: context.textPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AscentTextStyles.displaySmall
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole21),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: titleController,
-                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                  style: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Note Title *',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: contentController,
                   maxLines: 4,
-                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                  style: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textPrimary,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Key Takeaways / Highlights *',
-                    hintText: 'Record key insights, syntax, questions or formulas...',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    hintText:
+                        'Record key insights, syntax, questions or formulas...',
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -495,7 +563,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         child: Stack(
           children: [
             // ── Main Reader Viewport ──────────────────────────────────────────
-            GestureDetector(
+            AppGestureTap(
               onTap: _toggleHud,
               child: hasPdf
                   ? PDFView(
@@ -549,14 +617,22 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
               top: _showHud ? 0 : -80,
               left: 0,
               right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s8,
+                ),
+                nightDecoration: BoxDecoration(
                   color: _theme.bg.withValues(alpha: 0.95),
-                  border: Border(bottom: BorderSide(color: _theme.border, width: 0.8)),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: _theme.border,
+                      width: AppBorderScale.w0point8,
+                    ),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: AppPalette.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -565,7 +641,11 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 child: Row(
                   children: [
                     IconButton(
-                      icon: Icon(Icons.arrow_back_rounded, color: _theme.text, size: 22),
+                      icon: Icon(
+                        Icons.arrow_back_rounded,
+                        color: _theme.text,
+                        size: 22,
+                      ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     Expanded(
@@ -575,19 +655,18 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                         children: [
                           Text(
                             _docTitle,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: AppTypography.plusJakartaSans14W7007(
                               color: _theme.text,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            hasPdf ? 'Local PDF Notes' : 'Bundled Study Notes · Swipe left/right',
-                            style: GoogleFonts.jetBrainsMono(
+                            hasPdf
+                                ? 'Local PDF Notes'
+                                : 'Bundled Study Notes · Swipe left/right',
+                            style: AppTypography.jetBrainsMono10Regular8(
                               color: _theme.text.withValues(alpha: 0.65),
-                              fontSize: 10,
                             ),
                           ),
                         ],
@@ -595,22 +674,38 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                     ),
                     IconButton(
                       tooltip: 'Add Study Task',
-                      icon: Icon(Icons.playlist_add_check_rounded, color: _theme.text, size: 22),
+                      icon: Icon(
+                        Icons.playlist_add_check_rounded,
+                        color: _theme.text,
+                        size: 22,
+                      ),
                       onPressed: _showCreateTaskDialog,
                     ),
                     IconButton(
                       tooltip: 'Capture Note',
-                      icon: Icon(Icons.bookmark_add_outlined, color: _theme.text, size: 20),
+                      icon: Icon(
+                        Icons.bookmark_add_outlined,
+                        color: _theme.text,
+                        size: 20,
+                      ),
                       onPressed: _showSaveNoteDialog,
                     ),
                     IconButton(
                       tooltip: 'Open PDF file from phone',
-                      icon: Icon(Icons.folder_open_rounded, color: _theme.text, size: 21),
+                      icon: Icon(
+                        Icons.folder_open_rounded,
+                        color: _theme.text,
+                        size: 21,
+                      ),
                       onPressed: _pickPdfFile,
                     ),
                     IconButton(
                       tooltip: 'Reading Themes',
-                      icon: Icon(Icons.palette_outlined, color: _theme.text, size: 21),
+                      icon: Icon(
+                        Icons.palette_outlined,
+                        color: _theme.text,
+                        size: 21,
+                      ),
                       onPressed: () => _showThemePicker(context),
                     ),
                   ],
@@ -626,13 +721,21 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s20,
+                  vertical: AppSpace.s12,
+                ),
                 decoration: BoxDecoration(
                   color: _theme.bg.withValues(alpha: 0.96),
-                  border: Border(top: BorderSide(color: _theme.border, width: 0.8)),
+                  border: Border(
+                    top: BorderSide(
+                      color: _theme.border,
+                      width: AppBorderScale.w0point8,
+                    ),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
+                      color: AppPalette.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, -4),
                     ),
@@ -648,66 +751,76 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                           hasPdf
                               ? 'Page $_currentPage of $_totalPages'
                               : 'Chapter ${_builtinPageIndex + 1} of ${_sampleStudyChapters.length}',
-                          style: GoogleFonts.jetBrainsMono(
+                          style: AppTypography.jetBrainsMono115W7009(
                             color: _theme.text,
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         // Quick Action Pills
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            InkWell(
+                            AppTapArea(
                               onTap: _showCreateTaskDialog,
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
+                              borderRadius: AppGeometry.roundedr16,
+                              child: AppCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s10,
+                                  vertical: AppSpace.s4,
+                                ),
+                                nightDecoration: BoxDecoration(
                                   color: _theme.text.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: AppGeometry.roundedr16,
                                   border: Border.all(color: _theme.border),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.add_task_rounded, size: 13, color: _theme.text),
+                                    Icon(
+                                      Icons.add_task_rounded,
+                                      size: 13,
+                                      color: _theme.text,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Add Task',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: _theme.text,
-                                      ),
+                                      style:
+                                          AppTypography.plusJakartaSans105W60010(
+                                            color: _theme.text,
+                                          ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            InkWell(
+                            AppTapArea(
                               onTap: _showSaveNoteDialog,
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
+                              borderRadius: AppGeometry.roundedr16,
+                              child: AppCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s10,
+                                  vertical: AppSpace.s4,
+                                ),
+                                nightDecoration: BoxDecoration(
                                   color: _theme.text.withValues(alpha: 0.08),
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: AppGeometry.roundedr16,
                                   border: Border.all(color: _theme.border),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.bookmark_add_outlined, size: 13, color: _theme.text),
+                                    Icon(
+                                      Icons.bookmark_add_outlined,
+                                      size: 13,
+                                      color: _theme.text,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       'Note',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: _theme.text,
-                                      ),
+                                      style:
+                                          AppTypography.plusJakartaSans105W60010(
+                                            color: _theme.text,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -719,10 +832,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                           hasPdf
                               ? '${((_currentPage / (_totalPages > 0 ? _totalPages : 1)) * 100).toInt()}% read'
                               : '${(((_builtinPageIndex + 1) / _sampleStudyChapters.length) * 100).toInt()}% read',
-                          style: GoogleFonts.jetBrainsMono(
+                          style: AppTypography.jetBrainsMono11W60011(
                             color: _theme.text.withValues(alpha: 0.7),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
@@ -732,14 +843,21 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                       SliderTheme(
                         data: SliderThemeData(
                           trackHeight: 3,
-                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 6,
+                          ),
+                          overlayShape: const RoundSliderOverlayShape(
+                            overlayRadius: 14,
+                          ),
                           activeTrackColor: _theme.text,
                           inactiveTrackColor: _theme.border,
                           thumbColor: _theme.text,
                         ),
                         child: Slider(
-                          value: _currentPage.toDouble().clamp(1.0, _totalPages.toDouble()),
+                          value: _currentPage.toDouble().clamp(
+                            1.0,
+                            _totalPages.toDouble(),
+                          ),
                           min: 1.0,
                           max: _totalPages.toDouble(),
                           onChanged: (val) {
@@ -763,11 +881,16 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
       context: context,
       backgroundColor: _theme.bg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr22),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s20,
+            AppSpace.s16,
+            AppSpace.s20,
+            AppSpace.s24,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,16 +901,14 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                   height: 4,
                   decoration: BoxDecoration(
                     color: _theme.border,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppGeometry.roundedr2,
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
                 'Reading Theme',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+                style: AppTypography.plusJakartaSans16W70012(
                   color: _theme.text,
                 ),
               ),
@@ -796,28 +917,35 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                 children: KindleTheme.values.map((t) {
                   final isSelected = t == _theme;
                   return Expanded(
-                    child: GestureDetector(
+                    child: AppGestureTap(
                       onTap: () {
                         Navigator.pop(ctx);
                         _setTheme(t);
                       },
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
+                      child: AppCard(
+                        selected: isSelected,
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s4,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s14,
+                        ),
+                        nightDecoration: BoxDecoration(
                           color: t.bg,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: AppGeometry.roundedr14,
                           border: Border.all(
-                            color: isSelected ? context.accentPrimary : t.border,
+                            color: isSelected
+                                ? context.accentPrimary
+                                : t.border,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
                         child: Column(
                           children: [
-                            Container(
+                            AppIndicator(
                               width: 18,
                               height: 18,
-                              decoration: BoxDecoration(
+                              nightDecoration: BoxDecoration(
                                 color: t.text,
                                 shape: BoxShape.circle,
                               ),
@@ -825,10 +953,8 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
                             const SizedBox(height: 8),
                             Text(
                               t.label,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: t.text,
+                              style: AppTypeRoles.typeRole22.copyWith(
+                                color: context.surfaces.contentForeground(isSelected, t.text),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -871,18 +997,29 @@ class _BuiltinKindleReader extends StatelessWidget {
         final chapter = chapters[index];
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(26, 68, 26, 80),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s26,
+            AppSpace.s68,
+            AppSpace.s26,
+            AppSpace.s80,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Open Local PDF Callout
-              Container(
-                margin: const EdgeInsets.only(bottom: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
+              AppCard(
+                margin: const EdgeInsets.only(bottom: AppSpace.s20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s10,
+                ),
+                nightDecoration: BoxDecoration(
                   color: theme.border.withValues(alpha: 0.35),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: theme.border, width: 0.8),
+                  borderRadius: AppGeometry.roundedr12,
+                  border: Border.all(
+                    color: theme.border,
+                    width: AppBorderScale.w0point8,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -891,16 +1028,25 @@ class _BuiltinKindleReader extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'Want to read your own PDF? Tap here to select any PDF on your phone.',
-                        style: TextStyle(fontSize: 11.5, color: theme.text.withValues(alpha: 0.8)),
+                        style: AppTypeRoles.typeRole23.copyWith(
+                          color: theme.text.withValues(alpha: 0.8),
+                        ),
                       ),
                     ),
                     TextButton(
                       onPressed: onPickPdf,
-                      style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact,
-                        foregroundColor: theme.text,
+                      style: context.surfaces.buttonStyle(
+                        TextButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: theme.text,
+                        ),
+                        filled: false,
+                        icon: false,
                       ),
-                      child: const Text('Open PDF', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      child: const Text(
+                        'Open PDF',
+                        style: AppTypeRoles.typeRole24,
+                      ),
                     ),
                   ],
                 ),
@@ -908,19 +1054,12 @@ class _BuiltinKindleReader extends StatelessWidget {
 
               Text(
                 chapter['title'] ?? '',
-                style: GoogleFonts.merriweather(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: theme.text,
-                  height: 1.3,
-                ),
+                style: AppTypography.merriweather20W80013(color: theme.text),
               ),
               const SizedBox(height: 16),
               Text(
                 chapter['content'] ?? '',
-                style: GoogleFonts.sourceSerif4(
-                  fontSize: 15,
-                  height: 1.6,
+                style: AppTypography.sourceSerif415Regular14(
                   color: theme.text.withValues(alpha: 0.95),
                 ),
               ),

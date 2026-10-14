@@ -1,10 +1,11 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import 'ascent_atmosphere.dart';
 import 'feature_guide.dart';
 
@@ -149,22 +150,15 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           Text(
             title!,
-            style: AscentTextStyles.displaySmall.copyWith(
-              color: g.ink,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-            ),
+            style: AscentTextStyles.displaySmall
+                .copyWith(color: g.ink, letterSpacing: -0.3)
+                .merge(AppTypeRoles.typeRole69),
           ),
           if (subtitle != null && subtitle!.isNotEmpty) ...[
             const SizedBox(height: 1),
             Text(
               subtitle!,
-              style: GoogleFonts.jetBrainsMono(
-                color: g.inkMuted,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTypography.jetBrainsMono105W500120(color: g.inkMuted),
             ),
           ],
         ],
@@ -195,17 +189,17 @@ class _LiquidBackButton extends StatelessWidget {
     final g = context.glass;
 
     return Center(
-      child: Container(
+      child: AppTag(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: g.fill,
           shape: BoxShape.circle,
-          border: Border.all(color: g.edge, width: 0.9),
+          border: Border.all(color: g.edge, width: AppBorderScale.w0point9),
         ),
         child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+          color: AppPalette.transparent,
+          child: AppTapArea(
             customBorder: const CircleBorder(),
             onTap: () {
               HapticFeedback.lightImpact();

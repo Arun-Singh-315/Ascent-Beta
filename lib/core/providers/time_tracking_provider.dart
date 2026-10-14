@@ -436,9 +436,9 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
   Future<bool> completeSession() async {
     final session = state.activeSession;
     if (session == null) return false;
-    _heartbeatTimer?.cancel();
     final dao = ref.read(timeSessionDaoProvider);
-    await dao.completeSession(session.id);
+    if (!await dao.completeFocusSession(session.id)) return false;
+    _heartbeatTimer?.cancel();
 
     var linkedTaskCompleted = false;
     if (session.linkedTaskId != null) {

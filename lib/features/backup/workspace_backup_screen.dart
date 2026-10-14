@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -168,13 +170,13 @@ class _WorkspaceBackupScreenState extends ConsumerState<WorkspaceBackupScreen> {
         subtitle: 'Keep your workspace recoverable',
         onBack: _busy ? () {} : null,
         body: ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpace.s20),
           children: [
             Icon(Icons.backup_rounded, size: 48, color: g.clay),
             const SizedBox(height: 20),
             const Text(
               'Your records, settings and resume files',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+              style: AppTypeRoles.typeRole11,
             ),
             const SizedBox(height: 12),
             const Text(

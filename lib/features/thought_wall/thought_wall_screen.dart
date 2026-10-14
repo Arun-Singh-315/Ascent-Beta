@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/thought_presentation.dart';
@@ -8,12 +11,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -166,18 +167,18 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   Color _getMoodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return const Color(0xFF8B6A4F);
+        return AppPalette.colorFF8B6A4F;
       case 'idea':
-        return const Color(0xFFD97706);
+        return AppPalette.colorFFD97706;
       case 'win':
-        return const Color(0xFF16A34A);
+        return AppPalette.colorFF16A34A;
       case 'future':
-        return const Color(0xFFEA580C);
+        return AppPalette.colorFFEA580C;
       case 'promise':
-        return const Color(0xFFB46824);
+        return AppPalette.colorFFB46824;
       case 'thought':
       default:
-        return const Color(0xFF6E8565);
+        return AppPalette.colorFF6E8565;
     }
   }
 
@@ -252,11 +253,16 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       }
     }
 
-    return Container(
+    return AppCard(
       key: const ValueKey('thought_selection_actions'),
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s16,
+        AppSpace.s6,
+        AppSpace.s16,
+        AppSpace.s10,
+      ),
+      nightDecoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: g.line)),
       ),
       child: Wrap(
@@ -269,7 +275,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
             ('both', 'Both', Icons.add_task_rounded),
             ('merge', 'Merge', Icons.merge_rounded),
           ])
-            ActionChip(
+            AppPill.action(
               avatar: Icon(item.$3, size: 17),
               label: Text(item.$2),
               onPressed:
@@ -279,7 +285,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   ? null
                   : () => act(item.$1),
             ),
-          ActionChip(
+          AppPill.action(
             avatar: const Icon(Icons.share_outlined, size: 17),
             label: const Text('Share'),
             onPressed: _applyingSelection || selected.isEmpty
@@ -293,7 +299,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
   Widget _buildWhatsAppComposer(BuildContext context, AscentGlass g) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s10,
+        AppSpace.s8,
+        AppSpace.s10,
+        AppSpace.s10,
+      ),
       decoration: BoxDecoration(
         color: g.bg,
         border: Border(top: BorderSide(color: g.edge)),
@@ -359,7 +370,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
   Widget _buildViewSegment(String key, String label, IconData icon, dynamic g) {
     final isSelected = _viewToggle == key;
     return Expanded(
-      child: GestureDetector(
+      child: AppGestureTap(
         onTap: () {
           HapticFeedback.selectionClick();
           setState(() {
@@ -372,11 +383,15 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: isSelected ? g.clay : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+          decoration: AppPill.decoration(
+            context,
+            selected: isSelected,
+            night: BoxDecoration(
+              color: isSelected ? g.clay : AppPalette.transparent,
+              borderRadius: AppGeometry.roundedr10,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -385,7 +400,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               Icon(
                 icon,
                 size: 13,
-                color: isSelected ? Colors.white : g.inkMuted,
+                color: isSelected ? AppPalette.white : g.inkMuted,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -393,10 +408,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                    color: isSelected ? Colors.white : g.inkMuted,
+                  style: AppStateTypography.stateType12(
+                    state0: isSelected,
+                    color: isSelected ? AppPalette.white : g.inkMuted,
                   ),
                 ),
               ),
@@ -512,12 +526,15 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         body: Column(
           children: [
             // Segmented 2-Way Toggle: Today | History & Archive
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
+            AppCard(
+              margin: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s4,
+              ),
+              padding: const EdgeInsets.all(AppSpace.s4),
+              nightDecoration: BoxDecoration(
                 color: context.bgSurface,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppGeometry.roundedr14,
                 border: Border.all(
                   color: context.divider.withValues(alpha: 0.8),
                 ),
@@ -543,18 +560,19 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
 
             // Sub-bar: Category Selector & Title that fits directly on screen (NO horizontal swipe)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s18,
+                vertical: AppSpace.s2,
+              ),
               child: Row(
                 children: [
                   Text(
                     _viewToggle == 'today'
                         ? 'TODAY\'S REFLECTIONS'
                         : 'PAST & ARCHIVED',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: context.textMuted,
-                      letterSpacing: 1.0,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AscentTextStyles.labelSmall
+                        .copyWith(color: context.textMuted, letterSpacing: 1.0)
+                        .merge(AppTypeRoles.typeRole2),
                   ),
                   const Spacer(),
                   PopupMenuButton<String>(
@@ -569,14 +587,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                         _isSelectionMode = false;
                       });
                     },
-                    child: Container(
+                    child: AppTag(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 9,
-                        vertical: 4,
+                        horizontal: AppSpace.s9,
+                        vertical: AppSpace.s4,
                       ),
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: context.bgSurface,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppGeometry.roundedr10,
                         border: Border.all(color: context.divider),
                       ),
                       child: Row(
@@ -596,12 +614,13 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                                 ? 'All notes'
                                 : (_filterMeta[_categoryFilter]?.$1 ??
                                       'Filter'),
-                            style: AscentTextStyles.captionMedium.copyWith(
-                              color: _categoryFilter != 'all'
-                                  ? g.clay
-                                  : context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.captionMedium
+                                .copyWith(
+                                  color: _categoryFilter != 'all'
+                                      ? g.clay
+                                      : context.textPrimary,
+                                )
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                           const SizedBox(width: 4),
                           Icon(
@@ -698,10 +717,10 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   return ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      top: 8,
-                      bottom: 16,
+                      left: AppSpace.s16,
+                      right: AppSpace.s16,
+                      top: AppSpace.s8,
+                      bottom: AppSpace.s16,
                     ),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
@@ -725,7 +744,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                         children: [
                           if (showHeading)
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(4, 10, 4, 10),
+                              padding: const EdgeInsets.fromLTRB(
+                                AppSpace.s4,
+                                AppSpace.s10,
+                                AppSpace.s4,
+                                AppSpace.s10,
+                              ),
                               child: Text(
                                 thought.isPinned ? 'Pinned' : 'Recent',
                                 style: AscentTextStyles.labelMedium.copyWith(
@@ -775,18 +799,18 @@ class ThoughtCardBubble extends ConsumerWidget {
   Color _moodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
-        return const Color(0xFF8B6A4F); // Refined Indigo
+        return AppPalette.colorFF8B6A4F; // Refined Indigo
       case 'idea':
-        return const Color(0xFFD97706); // Warm Amber
+        return AppPalette.colorFFD97706; // Warm Amber
       case 'win':
-        return const Color(0xFF16A34A); // Sage Green
+        return AppPalette.colorFF16A34A; // Sage Green
       case 'future':
-        return const Color(0xFFEA580C); // Terracotta
+        return AppPalette.colorFFEA580C; // Terracotta
       case 'promise':
-        return const Color(0xFFB46824);
+        return AppPalette.colorFFB46824;
       case 'thought':
       default:
-        return const Color(0xFF6E8565); // Sky Deep
+        return AppPalette.colorFF6E8565; // Sky Deep
     }
   }
 
@@ -811,9 +835,13 @@ class ThoughtCardBubble extends ConsumerWidget {
       },
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: 14,
-          left: (index % 2 == 1) ? 38.0 : 4.0,
-          right: (index % 2 == 0) ? 38.0 : 4.0,
+          bottom: AppSpace.s14,
+          left: (index % AppSpace.s2 == AppSpace.s1)
+              ? AppSpace.s38point0
+              : AppSpace.s4point0,
+          right: (index % AppSpace.s2 == AppSpace.s0)
+              ? AppSpace.s38point0
+              : AppSpace.s4point0,
         ),
         child: Dismissible(
           key: ValueKey('thought_${thought.id}'),
@@ -883,12 +911,12 @@ class ThoughtCardBubble extends ConsumerWidget {
               return true;
             }
           },
-          background: Container(
+          background: AppCard(
             alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 20),
-            decoration: BoxDecoration(
+            padding: const EdgeInsets.only(left: AppSpace.s20),
+            nightDecoration: BoxDecoration(
               color: g.fill,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppGeometry.roundedr14,
               border: Border.all(color: g.line),
             ),
             child: Row(
@@ -903,47 +931,43 @@ class ThoughtCardBubble extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Text(
                   thought.isArchived ? 'Unarchive' : 'Archive',
-                  style: TextStyle(
-                    color: g.inkSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AppTypeRoles.typeRole8.copyWith(color: g.inkSecondary),
                 ),
               ],
             ),
           ),
-          secondaryBackground: Container(
+          secondaryBackground: AppCard(
             alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20),
-            decoration: BoxDecoration(
-              color: Colors.redAccent.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(14),
+            padding: const EdgeInsets.only(right: AppSpace.s20),
+            nightDecoration: BoxDecoration(
+              color: AppPalette.redAccent.withValues(alpha: 0.2),
+              borderRadius: AppGeometry.roundedr14,
               border: Border.all(
-                color: Colors.redAccent.withValues(alpha: 0.4),
+                color: AppPalette.redAccent.withValues(alpha: 0.4),
               ),
             ),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'Delete',
-                  style: TextStyle(
-                    color: Colors.redAccent,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypeRoles.typeRole8.copyWith(
+                    color: AppPalette.redAccent,
                   ),
                 ),
                 SizedBox(width: 8),
                 Icon(
                   Icons.delete_outline_rounded,
-                  color: Colors.redAccent,
+                  color: AppPalette.redAccent,
                   size: 20,
                 ),
               ],
             ),
           ),
-          child: InkWell(
+          child: AppTapArea(
             onTap: isSelectionMode ? onToggleSelect : null,
             onLongPress: isSelectionMode ? onToggleSelect : onLongPress,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppGeometry.roundedr16,
             child: GestureDetector(
               onDoubleTap: isSelectionMode
                   ? null
@@ -972,32 +996,47 @@ class ThoughtCardBubble extends ConsumerWidget {
                     },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isSelected ? g.clay.withValues(alpha: 0.22) : g.fill,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular((index % 2 == 0) ? 4 : 18),
-                    bottomRight: Radius.circular((index % 2 == 1) ? 4 : 18),
-                  ),
-                  border: isSelected
-                      ? Border.all(color: g.clay, width: 1.8)
-                      : Border.all(
-                          color: g.inkMuted.withValues(
-                            alpha: context.isDark ? 0.4 : 0.3,
-                          ),
-                          width: 1.2,
-                        ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: context.isDark ? 0.30 : 0.06,
-                      ),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+                padding: const EdgeInsets.all(AppSpace.s16),
+                decoration: AppCard.decoration(
+                  context,
+                  selected: isSelected,
+                  night: BoxDecoration(
+                    color: isSelected
+                        ? g.clay.withValues(alpha: context.isDark ? .22 : .12)
+                        : context.isDark
+                        ? g.fill
+                        : const Color(0x1AFFFFFF),
+                    borderRadius: BorderRadius.only(
+                      topLeft: AppGeometry.radiusr18,
+                      topRight: AppGeometry.radiusr18,
+                      bottomLeft: AppGeometry.bubbleTail(index.isEven),
+                      bottomRight: AppGeometry.bubbleTail(index.isOdd),
                     ),
-                  ],
+                    border: isSelected
+                        ? Border.all(
+                            color: g.clay,
+                            width: AppBorderScale.w1point8,
+                          )
+                        : Border.all(
+                            color: context.isDark
+                                ? g.inkMuted.withValues(alpha: .4)
+                                : const Color(
+                                    0xFF73727B,
+                                  ).withValues(alpha: .18),
+                            width: AppBorderScale.w1point2,
+                          ),
+                    boxShadow: context.isDark
+                        ? [
+                            BoxShadow(
+                              color: AppPalette.black.withValues(
+                                alpha: context.isDark ? 0.30 : 0.06,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ]
+                        : const [],
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1021,28 +1060,26 @@ class ThoughtCardBubble extends ConsumerWidget {
                             timeStr,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: g.inkMuted,
-                              fontSize: 10.5,
-                            ),
+                            style: AscentTextStyles.labelSmall
+                                .copyWith(color: g.inkMuted)
+                                .merge(AppTypeRoles.typeRole54),
                           ),
                         ),
                         if (thought.mood == 'promise')
-                          Container(
+                          AppTag(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 7,
-                              vertical: 3,
+                              horizontal: AppSpace.s7,
+                              vertical: AppSpace.s3,
                             ),
-                            decoration: BoxDecoration(
+                            nightDecoration: BoxDecoration(
                               color: g.clay.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(7),
+                              borderRadius: AppGeometry.roundedr7,
                             ),
                             child: Text(
                               'Promise',
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: g.clay,
-                                fontSize: 10,
-                              ),
+                              style: AscentTextStyles.labelSmall
+                                  .copyWith(color: g.clay)
+                                  .merge(AppTypeRoles.typeRole18),
                             ),
                           ),
                         if (thought.isArchived) ...[
@@ -1328,7 +1365,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                               value: 'delete',
                               child: Text(
                                 'Delete thought',
-                                style: TextStyle(color: Colors.redAccent),
+                                style: TextStyle(color: AppPalette.redAccent),
                               ),
                             ),
                           ],
@@ -1346,37 +1383,35 @@ class ThoughtCardBubble extends ConsumerWidget {
                         runSpacing: 4,
                         children: [
                           if (thought.isCompleted)
-                            Container(
+                            AppTag(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 2,
+                                horizontal: AppSpace.s5,
+                                vertical: AppSpace.s2,
                               ),
-                              decoration: BoxDecoration(
+                              nightDecoration: BoxDecoration(
                                 color: context.accentPrimary.withValues(
                                   alpha: 0.14,
                                 ),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Text(
                                 '✓ Done',
-                                style: TextStyle(
+                                style: AppTypeRoles.typeRole55.copyWith(
                                   color: context.accentPrimary,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
                           if (thought.isPinned)
-                            Container(
+                            AppTag(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 2,
+                                horizontal: AppSpace.s5,
+                                vertical: AppSpace.s2,
                               ),
-                              decoration: BoxDecoration(
+                              nightDecoration: BoxDecoration(
                                 color: context.accentPrimary.withValues(
                                   alpha: 0.12,
                                 ),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1389,24 +1424,22 @@ class ThoughtCardBubble extends ConsumerWidget {
                                   const SizedBox(width: 2),
                                   Text(
                                     'PINNED',
-                                    style: AscentTextStyles.labelSmall.copyWith(
-                                      color: context.accentPrimary,
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: AscentTextStyles.labelSmall
+                                        .copyWith(color: context.accentPrimary)
+                                        .merge(AppTypeRoles.typeRole56),
                                   ),
                                 ],
                               ),
                             ),
                           if (thought.isArchived)
-                            Container(
+                            AppTag(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 5,
-                                vertical: 2,
+                                horizontal: AppSpace.s5,
+                                vertical: AppSpace.s2,
                               ),
-                              decoration: BoxDecoration(
+                              nightDecoration: BoxDecoration(
                                 color: g.inkMuted.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -1419,11 +1452,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                                   const SizedBox(width: 2),
                                   Text(
                                     'ARCHIVED',
-                                    style: AscentTextStyles.labelSmall.copyWith(
-                                      color: g.inkSecondary,
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: AscentTextStyles.labelSmall
+                                        .copyWith(color: g.inkSecondary)
+                                        .merge(AppTypeRoles.typeRole56),
                                   ),
                                 ],
                               ),
@@ -1434,65 +1465,71 @@ class ThoughtCardBubble extends ConsumerWidget {
 
                     Padding(
                       key: ValueKey('thought_header_divider_${thought.id}'),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.transparent,
-                                    g.line,
-                                    g.clay.withValues(alpha: .35),
-                                  ],
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpace.s10,
+                      ),
+                      child: AppSeparator(
+                        night: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppPalette.transparent,
+                                      g.line,
+                                      g.clay.withValues(alpha: .35),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          Container(
-                            width: 4,
-                            height: 4,
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
-                            decoration: BoxDecoration(
-                              color: g.clay.withValues(alpha: .55),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              height: 1,
+                            Container(
+                              width: 4,
+                              height: 4,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s6,
+                              ),
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    g.clay.withValues(alpha: .35),
-                                    g.line,
-                                    Colors.transparent,
-                                  ],
+                                color: g.clay.withValues(alpha: .55),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      g.clay.withValues(alpha: .35),
+                                      g.line,
+                                      AppPalette.transparent,
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
 
                     // Optional prompt question banner
                     if (thought.promptQuestion != null) ...[
                       const SizedBox(height: 10),
-                      Container(
+                      AppTag(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
+                          horizontal: AppSpace.s10,
+                          vertical: AppSpace.s6,
                         ),
-                        decoration: BoxDecoration(
+                        nightDecoration: BoxDecoration(
                           color: moodColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppGeometry.roundedr8,
                           border: Border(
                             left: BorderSide(
                               color: moodColor.withValues(alpha: 0.5),
-                              width: 2.5,
+                              width: AppBorderScale.w2point5,
                             ),
                           ),
                         ),
@@ -1508,12 +1545,13 @@ class ThoughtCardBubble extends ConsumerWidget {
                             Expanded(
                               child: Text(
                                 thought.promptQuestion!,
-                                style: AscentTextStyles.bodySmall.copyWith(
-                                  color: context.textMuted,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 12,
-                                  height: 1.3,
-                                ),
+                                style: AscentTextStyles.bodySmall
+                                    .copyWith(
+                                      color: context.textMuted,
+                                      fontStyle: FontStyle.italic,
+                                      height: 1.3,
+                                    )
+                                    .merge(AppTypeRoles.typeRole27),
                               ),
                             ),
                           ],
@@ -1526,16 +1564,17 @@ class ThoughtCardBubble extends ConsumerWidget {
                     // Content
                     Text(
                       quotedThought(thought.content),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w600,
+                      style: AppTypography.plusJakartaSans14W60071(
                         color: thought.isCompleted
-                            ? context.textMuted
-                            : context.textPrimary,
+                            ? (context.isDark
+                                  ? context.textMuted
+                                  : const Color(0xFF73727B))
+                            : (context.isDark
+                                  ? context.textPrimary
+                                  : const Color(0xFF242323)),
                         decoration: thought.isCompleted
                             ? TextDecoration.lineThrough
                             : null,
-                        height: 1.45,
-                        fontSize: 14,
                       ),
                     ),
                     if (showQuickActions &&

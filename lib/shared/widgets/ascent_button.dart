@@ -1,8 +1,10 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 
 /// The core button variants in the Ascent design system.
 enum AscentButtonType {
@@ -266,12 +268,12 @@ class _PrimaryButton extends StatelessWidget {
     final bg = isEnabled
         ? (isDark
               ? context.bgSurfaceElevated.withValues(alpha: 0.92)
-              : const Color(0xFF3B2C1E).withValues(alpha: 0.94))
+              : AppPalette.colorFF3B2C1E.withValues(alpha: 0.94))
         : context.bgSurfaceElevated.withValues(alpha: 0.4);
-    final fg = isDark ? context.textPrimary : Colors.white;
+    final fg = isDark ? context.textPrimary : AppPalette.white;
     final borderColor = isDark
         ? context.textPrimary.withValues(alpha: 0.25)
-        : const Color(0xFF2A1C0F).withValues(alpha: 0.7);
+        : AppPalette.colorFF2A1C0F.withValues(alpha: 0.7);
     final height =
         (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
             .clamp(48.0, 100.0);
@@ -299,7 +301,8 @@ class _PrimaryButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: fg, fontWeight: FontWeight.w700),
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole2),
                 ),
               ),
             ],
@@ -309,27 +312,31 @@ class _PrimaryButton extends StatelessWidget {
       constraints: BoxConstraints(minHeight: height),
       child: ElevatedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          disabledBackgroundColor: context.bgSurfaceElevated.withValues(
-            alpha: 0.4,
-          ),
-          disabledForegroundColor: fg.withValues(alpha: 0.4),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
-            side: BorderSide(
-              color: isEnabled ? borderColor : context.divider,
-              width: 1.1,
+        style: context.surfaces.buttonStyle(
+          ElevatedButton.styleFrom(
+            backgroundColor: bg,
+            foregroundColor: fg,
+            disabledBackgroundColor: context.bgSurfaceElevated.withValues(
+              alpha: 0.4,
             ),
+            disabledForegroundColor: fg.withValues(alpha: 0.4),
+            elevation: 0,
+            shadowColor: AppPalette.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+              side: BorderSide(
+                color: isEnabled ? borderColor : context.divider,
+                width: AppBorderScale.w1point1,
+              ),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
+              vertical: AppSpace.s10,
+            ),
+            minimumSize: Size(compact ? 60 : 90, height),
           ),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 18,
-            vertical: 10,
-          ),
-          minimumSize: Size(compact ? 60 : 90, height),
+          filled: true,
+          icon: false,
         ),
         child: content,
       ),
@@ -395,7 +402,8 @@ class _SecondaryButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: accent, fontWeight: FontWeight.w600),
+                          .copyWith(color: accent)
+                          .merge(AppTypeRoles.typeRole8),
                 ),
               ),
             ],
@@ -405,18 +413,25 @@ class _SecondaryButton extends StatelessWidget {
       constraints: BoxConstraints(minHeight: height),
       child: OutlinedButton(
         onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: accent,
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: accent.withValues(alpha: 0.5), width: 1.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+        style: context.surfaces.buttonStyle(
+          OutlinedButton.styleFrom(
+            foregroundColor: accent,
+            backgroundColor: AppPalette.transparent,
+            side: BorderSide(
+              color: accent.withValues(alpha: 0.5),
+              width: AppBorderScale.w1point0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
+              vertical: AppSpace.s10,
+            ),
+            minimumSize: Size(compact ? 60 : 90, height),
           ),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 18,
-            vertical: 10,
-          ),
-          minimumSize: Size(compact ? 60 : 90, height),
+          filled: false,
+          icon: false,
         ),
         child: content,
       ),
@@ -482,7 +497,8 @@ class _OutlinedSignatureButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: fg, fontWeight: FontWeight.w500),
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole15),
                 ),
               ),
             ],
@@ -492,15 +508,21 @@ class _OutlinedSignatureButton extends StatelessWidget {
       constraints: BoxConstraints(minHeight: height),
       child: OutlinedButton(
         onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: fg,
-          backgroundColor: context.bgSurface.withValues(alpha: 0.4),
-          side: BorderSide(color: border, width: 1.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+        style: context.surfaces.buttonStyle(
+          OutlinedButton.styleFrom(
+            foregroundColor: fg,
+            backgroundColor: context.bgSurface.withValues(alpha: 0.4),
+            side: BorderSide(color: border, width: AppBorderScale.w1point0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+            ),
+            minimumSize: Size(compact ? 50 : 80, height),
           ),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
-          minimumSize: Size(compact ? 50 : 80, height),
+          filled: false,
+          icon: false,
         ),
         child: content,
       ),
@@ -562,7 +584,8 @@ class _GhostButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: fg, fontWeight: FontWeight.w500),
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole15),
                 ),
               ),
             ],
@@ -572,13 +595,17 @@ class _GhostButton extends StatelessWidget {
       constraints: BoxConstraints(minHeight: height),
       child: TextButton(
         onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: fg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 10 : 14,
-            vertical: 10,
+        style: context.surfaces.buttonStyle(
+          TextButton.styleFrom(
+            foregroundColor: fg,
+            shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr8),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s10 : AppSpace.s14,
+              vertical: AppSpace.s10,
+            ),
           ),
+          filled: false,
+          icon: false,
         ),
         child: content,
       ),
@@ -605,19 +632,22 @@ class _IconButton extends StatelessWidget {
     final size = compact ? 34.0 : 40.0;
     final iconSize = compact ? 18.0 : 20.0;
 
-    return Container(
+    return AppCard(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: context.bgSurface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(compact ? 8 : 10),
-        border: Border.all(color: context.divider, width: 0.9),
+        border: Border.all(
+          color: context.divider,
+          width: AppBorderScale.w0point9,
+        ),
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         borderRadius: BorderRadius.circular(compact ? 8 : 10),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
+        child: AppTapArea(
           onTap: onPressed,
           child: Center(
             child: Icon(icon, color: fg, size: iconSize),
@@ -652,17 +682,17 @@ class _FabButtonState extends State<_FabButton> {
         ? AscentColors.shadowDark
         : AscentColors.shadow;
 
-    return GestureDetector(
+    return AppGestureTap(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onPressed,
-      child: Container(
+      child: AppCard(
         width: 48,
         height: 48,
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppGeometry.roundedr14,
           boxShadow: [
             BoxShadow(
               color: shadow.withValues(alpha: 0.16),
@@ -671,7 +701,9 @@ class _FabButtonState extends State<_FabButton> {
             ),
           ],
         ),
-        child: Center(child: Icon(widget.icon, color: Colors.white, size: 22)),
+        child: Center(
+          child: Icon(widget.icon, color: AppPalette.white, size: 22),
+        ),
       ),
     );
   }
@@ -699,7 +731,7 @@ class _DestructiveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = context.stateDanger;
-    const fg = Colors.white;
+    const fg = AppPalette.white;
     final height =
         (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
             .clamp(48.0, 100.0);
@@ -727,7 +759,8 @@ class _DestructiveButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: fg, fontWeight: FontWeight.w600),
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole8),
                 ),
               ),
             ],
@@ -737,19 +770,23 @@ class _DestructiveButton extends StatelessWidget {
       constraints: BoxConstraints(minHeight: height),
       child: ElevatedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+        style: context.surfaces.buttonStyle(
+          ElevatedButton.styleFrom(
+            backgroundColor: bg,
+            foregroundColor: fg,
+            elevation: 0,
+            shadowColor: AppPalette.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
+              vertical: AppSpace.s10,
+            ),
+            minimumSize: Size(compact ? 60 : 90, height),
           ),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 18,
-            vertical: 10,
-          ),
-          minimumSize: Size(compact ? 60 : 90, height),
+          filled: true,
+          icon: false,
         ),
         child: content,
       ),

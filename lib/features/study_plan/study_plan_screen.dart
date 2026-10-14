@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'learning_next_step_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
@@ -51,7 +53,7 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (ctx) => _CourseSwitcherSheet(state: state, notifier: notifier),
     );
   }
@@ -64,21 +66,22 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen>
     final activeLecture = state.activeLecture;
 
     return AscentScaffold(
-      titleWidget: InkWell(
+      titleWidget: AppTapArea(
         onTap: () => _showCourseSwitcher(context, state, notifier),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppGeometry.roundedr10,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s6,
+            vertical: AppSpace.s4,
+          ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
                 child: Text(
                   course.title,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypography.plusJakartaSans155W70030(
                     color: context.textPrimary,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.w700,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -114,8 +117,8 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen>
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: AppSpace.s16,
+                  vertical: AppSpace.s8,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -137,11 +140,11 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen>
                     ),
                     const SizedBox(height: 16),
                     // Tab bar (sleek segmented pill)
-                    Container(
+                    AppCard(
                       height: 44,
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: context.bgSurface,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppGeometry.roundedr14,
                         border: Border.all(
                           color: context.divider.withValues(alpha: 0.8),
                         ),
@@ -149,22 +152,17 @@ class _StudyPlanScreenState extends ConsumerState<StudyPlanScreen>
                       child: TabBar(
                         controller: _tabController,
                         indicatorSize: TabBarIndicatorSize.tab,
-                        indicatorPadding: const EdgeInsets.all(3),
+                        indicatorPadding: const EdgeInsets.all(AppSpace.s3),
                         indicator: BoxDecoration(
                           color: context.accentPrimary,
-                          borderRadius: BorderRadius.circular(11),
+                          borderRadius: AppGeometry.roundedr11,
                         ),
-                        dividerColor: Colors.transparent,
-                        labelColor: Colors.white,
+                        dividerColor: AppPalette.transparent,
+                        labelColor: AppPalette.white,
                         unselectedLabelColor: context.textMuted,
-                        labelStyle: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
-                        unselectedLabelStyle: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                        labelStyle: AppTypography.plusJakartaSans13W70031(),
+                        unselectedLabelStyle:
+                            AppTypography.plusJakartaSans13W60032(),
                         tabs: const [
                           Tab(text: 'Modules'),
                           Tab(text: 'Lectures'),
@@ -218,16 +216,17 @@ class _ModulesListView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s16,
+        vertical: AppSpace.s12,
+      ),
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               '${course.modules.length} Modules · ${course.totalLectures} Lectures',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              style: AppTypography.jetBrainsMono12W60033(
                 color: context.textMuted,
               ),
             ),
@@ -241,7 +240,7 @@ class _ModulesListView extends ConsumerWidget {
                 );
               },
               icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
-              label: const Text('Add Module', style: TextStyle(fontSize: 12)),
+              label: const Text('Add Module', style: AppTypeRoles.typeRole27),
             ),
           ],
         ),
@@ -296,39 +295,39 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
         ? module.lectures.first.id
         : 1;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
+    return AppCard(
+      margin: const EdgeInsets.only(bottom: AppSpace.s12),
+      nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppGeometry.roundedr18,
         border: Border.all(color: context.divider.withValues(alpha: 0.8)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header Tappable Area
-          InkWell(
+          AppTapArea(
             onTap: () {
               setState(() {
                 _isExpanded = !_isExpanded;
               });
             },
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: AppGeometry.roundedr18,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Container(
+                      AppTag(
                         width: 32,
                         height: 32,
-                        decoration: BoxDecoration(
+                        nightDecoration: BoxDecoration(
                           color: context.accentSecondary.withValues(
                             alpha: 0.12,
                           ),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: AppGeometry.roundedr8,
                         ),
                         child: Icon(
                           Icons.folder_outlined,
@@ -337,21 +336,19 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Container(
+                      AppTag(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
+                          horizontal: AppSpace.s8,
+                          vertical: AppSpace.s2,
                         ),
-                        decoration: BoxDecoration(
+                        nightDecoration: BoxDecoration(
                           color: context.bgBase,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppGeometry.roundedr10,
                           border: Border.all(color: context.divider),
                         ),
                         child: Text(
                           'Module ${module.id}',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
+                          style: AppTypography.jetBrainsMono105W70034(
                             color: context.textMuted,
                           ),
                         ),
@@ -359,9 +356,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                       const Spacer(),
                       Text(
                         '${module.completedCount}/${module.lectures.length} done',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                        style: AppTypography.jetBrainsMono11W60011(
                           color: context.textMuted,
                         ),
                       ),
@@ -381,7 +376,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                         ),
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                         ),
                         onSelected: (val) {
                           if (val == 'edit') {
@@ -429,9 +424,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                   const SizedBox(height: 10),
                   Text(
                     module.title,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                    style: AppTypography.plusJakartaSans15W70035(
                       color: context.textPrimary,
                     ),
                   ),
@@ -439,8 +432,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                     const SizedBox(height: 4),
                     Text(
                       module.description,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: AppTypeRoles.typeRole27.copyWith(
                         color: context.textMuted,
                         height: 1.3,
                       ),
@@ -453,17 +445,14 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                     children: [
                       Text(
                         '${module.durationHours} hrs · ${module.lectures.length} lectures',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
+                        style: AppTypography.jetBrainsMono11Regular36(
                           color: context.textMuted,
                         ),
                       ),
                       const Spacer(),
                       Text(
                         '${module.progressPercent}%',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.jetBrainsMono11W7002(
                           color: context.accentSecondary,
                         ),
                       ),
@@ -476,17 +465,28 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
 
           // Action Buttons Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s16,
+              AppSpace.s0,
+              AppSpace.s16,
+              AppSpace.s14,
+            ),
             child: Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: context.divider),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    style: context.surfaces.buttonStyle(
+                      OutlinedButton.styleFrom(
+                        side: BorderSide(color: context.divider),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s9,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      filled: false,
+                      icon: false,
                     ),
                     icon: const Icon(Icons.playlist_add_rounded, size: 16),
                     onPressed: () {
@@ -500,9 +500,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                     },
                     label: Text(
                       '+ Lecture',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                      style: AppTypeRoles.typeRole17.copyWith(
                         color: context.textPrimary,
                       ),
                     ),
@@ -511,23 +509,26 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.accentPrimary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    style: context.surfaces.buttonStyle(
+                      ElevatedButton.styleFrom(
+                        backgroundColor: context.accentPrimary,
+                        foregroundColor: AppPalette.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s9,
+                        ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      filled: true,
+                      icon: false,
                     ),
                     onPressed: widget.onResume,
                     icon: const Icon(Icons.play_arrow_rounded, size: 18),
                     label: Text(
                       'Resume ($firstLecId)',
-                      style: const TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTypeRoles.typeRole38,
                     ),
                   ),
                 ),
@@ -537,14 +538,16 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
 
           // Expanded Lectures List inside Module
           if (_isExpanded) ...[
-            Divider(height: 1, color: context.divider),
+            AppDivider(height: 1, color: context.divider),
             if (module.lectures.isEmpty)
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(AppSpace.s16point0),
                 child: Center(
                   child: Text(
                     'No lectures yet in this module. Tap "+ Lecture" to add one.',
-                    style: TextStyle(fontSize: 12, color: context.textMuted),
+                    style: AppTypeRoles.typeRole27.copyWith(
+                      color: context.textMuted,
+                    ),
                   ),
                 ),
               )
@@ -553,43 +556,43 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: AppSpace.s12,
+                  vertical: AppSpace.s8,
                 ),
                 itemCount: module.lectures.length,
-                separatorBuilder: (context, index) => Divider(
+                separatorBuilder: (context, index) => AppDivider(
                   height: 1,
                   color: context.divider.withValues(alpha: 0.4),
                 ),
                 itemBuilder: (context, index) {
                   final lec = module.lectures[index];
-                  return InkWell(
+                  return AppTapArea(
                     onTap: () => widget.onSelectLecture(lec.id),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppGeometry.roundedr10,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 8,
+                        horizontal: AppSpace.s8,
+                        vertical: AppSpace.s8,
                       ),
                       child: Row(
                         children: [
-                          Container(
+                          AppTag(
                             width: 26,
                             height: 26,
-                            decoration: BoxDecoration(
+                            nightDecoration: BoxDecoration(
                               color: lec.isCompleted
                                   ? context.accentPrimary.withValues(
                                       alpha: 0.15,
                                     )
                                   : context.bgBase,
-                              borderRadius: BorderRadius.circular(7),
+                              borderRadius: AppGeometry.roundedr7,
                               border: Border.all(
                                 color: lec.isCompleted
                                     ? context.accentPrimary.withValues(
                                         alpha: 0.4,
                                       )
                                     : context.divider,
-                                width: 0.8,
+                                width: AppBorderScale.w0point8,
                               ),
                             ),
                             alignment: Alignment.center,
@@ -601,9 +604,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                                   )
                                 : Text(
                                     '${index + 1}',
-                                    style: GoogleFonts.jetBrainsMono(
-                                      fontSize: 10.5,
-                                      fontWeight: FontWeight.w700,
+                                    style: AppTypography.jetBrainsMono105W70034(
                                       color: context.textPrimary,
                                     ),
                                   ),
@@ -612,9 +613,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                           Expanded(
                             child: Text(
                               lec.title,
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
+                              style: AppTypography.plusJakartaSans125W60037(
                                 color: lec.isCompleted
                                     ? context.textMuted
                                     : context.textPrimary,
@@ -630,8 +629,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                           const SizedBox(width: 8),
                           Text(
                             lec.formattedDuration,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 10.5,
+                            style: AppTypography.jetBrainsMono105Regular38(
                               color: context.textMuted,
                             ),
                           ),
@@ -688,7 +686,12 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
         SliverToBoxAdapter(
           child: Container(
             height: 38,
-            margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+            margin: const EdgeInsets.fromLTRB(
+              AppSpace.s16,
+              AppSpace.s10,
+              AppSpace.s16,
+              AppSpace.s4,
+            ),
             child: ListView(
               scrollDirection: Axis.horizontal,
               children: [
@@ -712,15 +715,18 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
         // Subheader count & Add action
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 6),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s16,
+              AppSpace.s4,
+              AppSpace.s16,
+              AppSpace.s6,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   '${displayedLectures.length} Lectures${_selectedModuleId != null ? " (Module $_selectedModuleId)" : ""}',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.jetBrainsMono115W60039(
                     color: context.textMuted,
                   ),
                 ),
@@ -728,7 +734,7 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                   icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
                   label: const Text(
                     'Add Lecture',
-                    style: TextStyle(fontSize: 12),
+                    style: AppTypeRoles.typeRole27,
                   ),
                   onPressed: () {
                     showAddLectureSheet(
@@ -747,19 +753,23 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
 
         // Bounded, Rock-Solid Custom Cards List
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s16,
+            vertical: AppSpace.s4,
+          ),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate((context, index) {
               final lec = displayedLectures[index];
               final isCurrent = lec.id == widget.activeLectureId;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
+              return AppCard(
+                selected: isCurrent,
+                margin: const EdgeInsets.only(bottom: AppSpace.s8),
+                nightDecoration: BoxDecoration(
                   color: isCurrent
                       ? context.accentPrimary.withValues(alpha: 0.10)
                       : context.bgSurface,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppGeometry.roundedr14,
                   border: Border.all(
                     color: isCurrent
                         ? context.accentPrimary.withValues(alpha: 0.45)
@@ -768,22 +778,22 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                   ),
                 ),
                 child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
+                  color: AppPalette.transparent,
+                  child: AppTapArea(
                     onTap: () => widget.onSelectLecture(lec.id),
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppGeometry.roundedr14,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 11,
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s11,
                       ),
                       child: Row(
                         children: [
                           // 1. Index Pill (Fixed 32x32)
-                          Container(
+                          AppTag(
                             width: 32,
                             height: 32,
-                            decoration: BoxDecoration(
+                            nightDecoration: BoxDecoration(
                               color: isCurrent
                                   ? context.accentPrimary
                                   : (lec.isCompleted
@@ -791,7 +801,7 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                             alpha: 0.15,
                                           )
                                         : context.bgBase),
-                              borderRadius: BorderRadius.circular(9),
+                              borderRadius: AppGeometry.roundedr9,
                               border: Border.all(
                                 color: isCurrent
                                     ? context.accentPrimary
@@ -800,7 +810,7 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                               alpha: 0.4,
                                             )
                                           : context.divider),
-                                width: 0.8,
+                                width: AppBorderScale.w0point8,
                               ),
                             ),
                             alignment: Alignment.center,
@@ -809,16 +819,14 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                     Icons.check_rounded,
                                     size: 16,
                                     color: isCurrent
-                                        ? Colors.white
+                                        ? AppPalette.white
                                         : context.accentPrimary,
                                   )
                                 : Text(
                                     '#${index + 1}',
-                                    style: GoogleFonts.jetBrainsMono(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
+                                    style: AppTypography.jetBrainsMono11W7002(
                                       color: isCurrent
-                                          ? Colors.white
+                                          ? AppPalette.white
                                           : context.textPrimary,
                                     ),
                                   ),
@@ -833,19 +841,15 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                               children: [
                                 Text(
                                   lec.title,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    fontWeight: isCurrent
-                                        ? FontWeight.w700
-                                        : FontWeight.w600,
-                                    color: lec.isCompleted
+                                  style: AppStateTypography.stateType11(
+                                    state0: isCurrent,
+                                    color: context.surfaces.contentForeground(isCurrent, lec.isCompleted
                                         ? context.textMuted
-                                        : context.textPrimary,
+                                        : context.textPrimary),
                                     decoration: lec.isCompleted
                                         ? TextDecoration.lineThrough
                                         : null,
                                     decorationColor: context.textMuted,
-                                    height: 1.25,
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
@@ -856,9 +860,8 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                     Flexible(
                                       child: Text(
                                         lec.moduleTitle,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: context.textMuted,
+                                        style: AppTypeRoles.typeRole4.copyWith(
+                                          color: context.surfaces.contentForeground(isCurrent, context.textMuted),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -867,13 +870,12 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                     const SizedBox(width: 6),
                                     Text(
                                       '• ${lec.formattedDuration}',
-                                      style: GoogleFonts.jetBrainsMono(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: isCurrent
-                                            ? context.accentPrimary
-                                            : context.textMuted,
-                                      ),
+                                      style:
+                                          AppTypography.jetBrainsMono105W60041(
+                                            color: context.surfaces.contentForeground(isCurrent, isCurrent
+                                                ? context.accentPrimary
+                                                : context.textMuted),
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -906,10 +908,10 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                             },
                           ),
                           const SizedBox(width: 4),
-                          Container(
+                          AppTag(
                             width: 28,
                             height: 28,
-                            decoration: BoxDecoration(
+                            nightDecoration: BoxDecoration(
                               color: isCurrent
                                   ? context.accentPrimary
                                   : context.accentSecondary.withValues(
@@ -921,7 +923,7 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                               Icons.play_arrow_rounded,
                               size: 16,
                               color: isCurrent
-                                  ? Colors.white
+                                  ? AppPalette.white
                                   : context.accentSecondary,
                             ),
                           ),
@@ -952,26 +954,29 @@ class _FilterChipItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AppGestureTap(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 6),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
+      child: AppPill(
+        selected: isSelected,
+        margin: const EdgeInsets.only(right: AppSpace.s6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s12,
+          vertical: AppSpace.s6,
+        ),
+        nightDecoration: BoxDecoration(
           color: isSelected ? context.accentPrimary : context.bgSurface,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: AppGeometry.roundedr10,
           border: Border.all(
             color: isSelected ? context.accentPrimary : context.divider,
-            width: 0.8,
+            width: AppBorderScale.w0point8,
           ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11.5,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : context.textPrimary,
+          style: AppStateTypography.stateType12(
+            state0: isSelected,
+            color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : context.textPrimary),
           ),
         ),
       ),
@@ -985,21 +990,21 @@ class _CourseNotesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpace.s20),
       children: [
         // Kindle Reader Hero Card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s20),
+          nightDecoration: BoxDecoration(
             color: context.bgSurface,
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: AppGeometry.roundedr22,
             border: Border.all(
-              color: const Color(0xFFD97706).withValues(alpha: 0.35),
-              width: 1.2,
+              color: AppPalette.colorFFD97706.withValues(alpha: 0.35),
+              width: AppBorderScale.w1point2,
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFD97706).withValues(alpha: 0.08),
+                color: AppPalette.colorFFD97706.withValues(alpha: 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, 6),
               ),
@@ -1010,16 +1015,16 @@ class _CourseNotesView extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Container(
+                  AppCard(
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD97706).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                    nightDecoration: BoxDecoration(
+                      color: AppPalette.colorFFD97706.withValues(alpha: 0.15),
+                      borderRadius: AppGeometry.roundedr12,
                     ),
                     child: const Icon(
                       Icons.auto_stories_rounded,
-                      color: Color(0xFFD97706),
+                      color: AppPalette.colorFFD97706,
                       size: 24,
                     ),
                   ),
@@ -1030,16 +1035,13 @@ class _CourseNotesView extends StatelessWidget {
                       children: [
                         Text(
                           'Kindle-Style Notes Reader',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                          style: AppTypography.plusJakartaSans16W70012(
                             color: context.textPrimary,
                           ),
                         ),
                         Text(
                           'Read PDF cheatsheets & book chapters',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTypeRoles.typeRole27.copyWith(
                             color: context.textMuted,
                           ),
                         ),
@@ -1051,24 +1053,28 @@ class _CourseNotesView extends StatelessWidget {
               const SizedBox(height: 14),
               Text(
                 'Open any study PDF from your phone or study the built-in Spring Boot, Microservices, and MongoDB chapters in Warm Sepia, Dark OLED, or Day mode with page-turn gestures.',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
+                style: AppTypography.plusJakartaSans125Regular43(
                   color: context.textMuted,
-                  height: 1.4,
                 ),
               ),
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD97706),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                  style: context.surfaces.buttonStyle(
+                    ElevatedButton.styleFrom(
+                      backgroundColor: AppPalette.colorFFD97706,
+                      foregroundColor: AppPalette.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: AppSpace.s12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppGeometry.roundedr12,
+                      ),
                     ),
+                    filled: true,
+                    icon: false,
                   ),
                   onPressed: () {
                     HapticFeedback.lightImpact();
@@ -1077,10 +1083,7 @@ class _CourseNotesView extends StatelessWidget {
                   icon: const Icon(Icons.menu_book_rounded, size: 18),
                   label: const Text(
                     'Open Book Reader 📖',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AppTypeRoles.typeRole39,
                   ),
                 ),
               ),
@@ -1091,11 +1094,11 @@ class _CourseNotesView extends StatelessWidget {
         const SizedBox(height: 20),
 
         // Quick Notes Info
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          nightDecoration: BoxDecoration(
             color: context.bgSurface.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppGeometry.roundedr16,
             border: Border.all(color: context.divider.withValues(alpha: 0.6)),
           ),
           child: Row(
@@ -1112,23 +1115,23 @@ class _CourseNotesView extends StatelessWidget {
                   children: [
                     Text(
                       'Jot Down STAR & Concept Notes',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
+                      style: AppTypography.plusJakartaSans13W70044(
                         color: context.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Keep course notes in Mind Space.',
-                      style: TextStyle(fontSize: 11, color: context.textMuted),
+                      style: AppTypeRoles.typeRole4.copyWith(
+                        color: context.textMuted,
+                      ),
                     ),
                   ],
                 ),
               ),
               TextButton(
                 onPressed: () => context.push('/thought-wall'),
-                child: const Text('View Notes', style: TextStyle(fontSize: 12)),
+                child: const Text('View Notes', style: AppTypeRoles.typeRole27),
               ),
             ],
           ),
@@ -1146,19 +1149,24 @@ class _CourseSwitcherSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.75,
       ),
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
         border: Border.all(color: context.divider.withValues(alpha: 0.6)),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpace.s20,
+            AppSpace.s16,
+            AppSpace.s20,
+            AppSpace.s20,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1169,7 +1177,7 @@ class _CourseSwitcherSheet extends StatelessWidget {
                   height: 4,
                   decoration: BoxDecoration(
                     color: context.divider,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppGeometry.roundedr2,
                   ),
                 ),
               ),
@@ -1187,9 +1195,7 @@ class _CourseSwitcherSheet extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Switch Course',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.plusJakartaSans18W70045(
                           color: context.textPrimary,
                         ),
                       ),
@@ -1215,19 +1221,20 @@ class _CourseSwitcherSheet extends StatelessWidget {
                     final c = state.courses[index];
                     final isSelected = c.id == state.activeCourseId;
 
-                    return InkWell(
+                    return AppTapArea(
                       onTap: () {
                         notifier.switchCourse(c.id);
                         Navigator.of(context).pop();
                       },
-                      borderRadius: BorderRadius.circular(14),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
+                      borderRadius: AppGeometry.roundedr14,
+                      child: AppCard(
+                        selected: isSelected,
+                        padding: const EdgeInsets.all(AppSpace.s12),
+                        nightDecoration: BoxDecoration(
                           color: isSelected
                               ? context.accentSecondary.withValues(alpha: 0.10)
                               : context.bgBase,
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: AppGeometry.roundedr14,
                           border: Border.all(
                             color: isSelected
                                 ? context.accentSecondary
@@ -1248,7 +1255,7 @@ class _CourseSwitcherSheet extends StatelessWidget {
                                     : Icons.school_outlined,
                                 size: 18,
                                 color: isSelected
-                                    ? Colors.white
+                                    ? AppPalette.white
                                     : context.textPrimary,
                               ),
                             ),
@@ -1259,26 +1266,24 @@ class _CourseSwitcherSheet extends StatelessWidget {
                                 children: [
                                   Text(
                                     c.title,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
-                                      color: context.textPrimary,
-                                    ),
+                                    style:
+                                        AppTypography.plusJakartaSans14W70021(
+                                          color: context.surfaces.contentForeground(isSelected, context.textPrimary),
+                                        ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '${c.modules.length} modules • ${c.totalLectures} lectures • ${c.progressPercent}% completed',
-                                    style: TextStyle(
-                                      fontSize: 11.5,
-                                      color: isSelected
-                                          ? context.accentSecondary
-                                          : context.textMuted,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
+                                    style:
+                                        AppStateTypography.stateType13(
+                                          state0: isSelected,
+                                        ).copyWith(
+                                          color: context.surfaces.contentForeground(isSelected, isSelected
+                                              ? context.accentSecondary
+                                              : context.textMuted),
+                                        ),
                                   ),
                                 ],
                               ),

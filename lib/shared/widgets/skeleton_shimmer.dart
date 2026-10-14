@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -13,10 +15,7 @@ import '../../app/theme/color_tokens.dart';
 /// SkeletonShimmer.custom(child: myShape) // arbitrary shape
 /// ```
 class SkeletonShimmer extends StatelessWidget {
-  const SkeletonShimmer._({
-    super.key,
-    required this.child,
-  });
+  const SkeletonShimmer._({super.key, required this.child});
 
   /// Default skeleton box constructor.
   factory SkeletonShimmer({
@@ -24,13 +23,12 @@ class SkeletonShimmer extends StatelessWidget {
     double? width,
     double height = 120,
     double radius = 16,
-  }) =>
-      SkeletonShimmer.card(
-        key: key,
-        width: width,
-        height: height,
-        radius: radius,
-      );
+  }) => SkeletonShimmer.card(
+    key: key,
+    width: width,
+    height: height,
+    radius: radius,
+  );
 
   /// Single text-line skeleton.
 
@@ -39,15 +37,10 @@ class SkeletonShimmer extends StatelessWidget {
     double? width,
     double height = 14,
     double radius = 6,
-  }) =>
-      SkeletonShimmer._(
-        key: key,
-        child: _ShimmerBox(
-          width: width,
-          height: height,
-          radius: radius,
-        ),
-      );
+  }) => SkeletonShimmer._(
+    key: key,
+    child: _ShimmerBox(width: width, height: height, radius: radius),
+  );
 
   /// Card-shaped skeleton block.
   factory SkeletonShimmer.card({
@@ -55,35 +48,20 @@ class SkeletonShimmer extends StatelessWidget {
     double? width,
     double height = 120,
     double radius = 16,
-  }) =>
-      SkeletonShimmer._(
-        key: key,
-        child: _ShimmerBox(
-          width: width,
-          height: height,
-          radius: radius,
-        ),
-      );
+  }) => SkeletonShimmer._(
+    key: key,
+    child: _ShimmerBox(width: width, height: height, radius: radius),
+  );
 
   /// Circular avatar / icon skeleton.
-  factory SkeletonShimmer.circle({
-    Key? key,
-    double size = 48,
-  }) =>
+  factory SkeletonShimmer.circle({Key? key, double size = 48}) =>
       SkeletonShimmer._(
         key: key,
-        child: _ShimmerBox(
-          width: size,
-          height: size,
-          radius: size / 2,
-        ),
+        child: _ShimmerBox(width: size, height: size, radius: size / 2),
       );
 
   /// Wraps any arbitrary [child] widget with the shimmer effect.
-  factory SkeletonShimmer.custom({
-    Key? key,
-    required Widget child,
-  }) =>
+  factory SkeletonShimmer.custom({Key? key, required Widget child}) =>
       SkeletonShimmer._(key: key, child: child);
 
   final Widget child;
@@ -93,11 +71,11 @@ class SkeletonShimmer extends StatelessWidget {
     final isDark = context.isDark;
 
     final baseColor = isDark
-        ? const Color(0xFF372D25)
-        : const Color(0xFFEFEDE9);
+        ? AppPalette.colorFF372D25
+        : AppPalette.colorFFEFEDE9;
     final highlightColor = isDark
-        ? const Color(0xFF45392E)
-        : const Color(0xFFFBF9F6);
+        ? AppPalette.colorFF45392E
+        : AppPalette.colorFFFBF9F6;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -110,11 +88,7 @@ class SkeletonShimmer extends StatelessWidget {
 // ── Internal helper ─────────────────────────────────────────────────────────
 
 class _ShimmerBox extends StatelessWidget {
-  const _ShimmerBox({
-    this.width,
-    required this.height,
-    required this.radius,
-  });
+  const _ShimmerBox({this.width, required this.height, required this.radius});
 
   final double? width;
   final double height;
@@ -122,11 +96,12 @@ class _ShimmerBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppProgress(
+      filled: true,
       width: width,
       height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
+      nightDecoration: BoxDecoration(
+        color: AppPalette.white,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -192,9 +167,7 @@ class StatsStripSkeleton extends StatelessWidget {
     return Row(
       children: [
         for (int i = 0; i < 4; i++) ...[
-          Expanded(
-            child: SkeletonShimmer.card(height: 72),
-          ),
+          Expanded(child: SkeletonShimmer.card(height: 72)),
           if (i < 3) const SizedBox(width: 10),
         ],
       ],

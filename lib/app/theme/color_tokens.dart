@@ -119,8 +119,7 @@ class AscentColors {
 extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
-  Color get bgBase =>
-      isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
+  Color get bgBase => isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
 
   Color get bgSurface =>
       isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface;
@@ -129,8 +128,7 @@ extension AscentColorsX on BuildContext {
       ? AscentColors.bgSurfaceElevatedDark
       : AscentColors.bgSurfaceElevated;
 
-  Color get accentPrimary =>
-      isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary;
+  Color get accentPrimary => Theme.of(this).colorScheme.primary;
 
   Color get accentSecondary =>
       isDark ? AscentColors.accentSecondaryDark : AscentColors.accentSecondary;
@@ -147,20 +145,19 @@ extension AscentColorsX on BuildContext {
   Color get stateWarning =>
       isDark ? AscentColors.stateWarningDark : AscentColors.stateWarning;
 
-  Color get textPrimary =>
-      isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary;
+  Color get textPrimary => Theme.of(this).colorScheme.onSurface;
 
   Color get textSecondary =>
       isDark ? AscentColors.textSecondaryDark : AscentColors.textSecondary;
 
-  Color get textMuted =>
-      isDark ? AscentColors.textMutedDark : AscentColors.textMuted;
+  Color get textMuted => Theme.of(this).colorScheme.onSurfaceVariant;
 
   Color get textOnPrimary =>
       isDark ? AscentColors.textOnPrimaryDark : AscentColors.textOnPrimary;
 
   Color get divider =>
-      isDark ? AscentColors.dividerDark : AscentColors.divider;
+      Theme.of(this).dividerTheme.color ??
+      (isDark ? AscentColors.dividerDark : AscentColors.divider);
 
   Color get accentPrimaryBright => isDark
       ? AscentColors.accentPrimaryBrightDark

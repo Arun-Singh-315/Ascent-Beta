@@ -1,0 +1,22 @@
+15 October 2026
+
+Full flutter test --no-pub: 449 passed
+
+Analyzing Ascent-Beta...                                        
+No issues found! (ran in 9.7s)
+
+
+Building Linux applications requires some tools that are not included
+in the Flutter snap and need to be installed on your system:
+
+  - GTK 3 development files
+
+To install them, run:
+
+  sudo apt install clang cmake ninja-build g++ pkg-config libgtk-3-dev
+
+00:00 +0: loading /home/arunsinghvisen/Ascent-Beta/test/send_to_lecture_test.dart
+00:00 +0: Timed todo sends once to selected course and opens its lecture player
+Failed to cancel ongoing lecture notification: LateInitializationError: Field '_instance@1066271368' has not been initialized.
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1066271368' has not been initialized.
+00:06 +1: All tests passed!

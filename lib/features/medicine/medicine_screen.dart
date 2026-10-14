@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -5,7 +8,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/medicine/medicine_service.dart';
 import '../../core/providers/database_provider.dart';
@@ -45,7 +47,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
       isScrollControlled: true,
       backgroundColor: context.glass.bg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (sheetContext) {
         return _MedicineSheetControllers(
@@ -64,10 +66,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                   constraints: BoxConstraints(maxHeight: maxHeight),
                   child: Padding(
                     padding: EdgeInsets.only(
-                      left: 20,
-                      right: 20,
-                      top: 20,
-                      bottom: bottomInset + 16,
+                      left: AppSpace.s20,
+                      right: AppSpace.s20,
+                      top: AppSpace.s20,
+                      bottom: bottomInset + AppSpace.s16,
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -80,7 +82,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                             height: 4,
                             decoration: BoxDecoration(
                               color: g.line,
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: AppGeometry.roundedr2,
                             ),
                           ),
                         ),
@@ -95,11 +97,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 existing == null
                                     ? 'Add Medicine'
                                     : 'Edit Medicine',
-                                style: AscentTextStyles.displaySmall.copyWith(
-                                  color: g.ink,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: AscentTextStyles.displaySmall
+                                    .copyWith(color: g.ink)
+                                    .merge(AppTypeRoles.typeRole21),
                               ),
                             ),
                             IconButton(
@@ -126,39 +126,38 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 TextField(
                                   controller: nameController,
                                   autofocus: existing == null,
-                                  style: TextStyle(color: g.ink, fontSize: 14),
+                                  style: AppTypeRoles.typeRole59.copyWith(
+                                    color: g.ink,
+                                  ),
                                   decoration: InputDecoration(
                                     labelText: 'Medicine Name',
                                     hintText:
                                         'e.g. Paracetamol 500mg, Vitamin C',
-                                    labelStyle: TextStyle(
-                                      color: g.inkSecondary,
-                                      fontSize: 13,
-                                    ),
-                                    hintStyle: TextStyle(
+                                    labelStyle: AppTypeRoles.typeRole58
+                                        .copyWith(color: g.inkSecondary),
+                                    hintStyle: AppTypeRoles.typeRole58.copyWith(
                                       color: g.inkMuted,
-                                      fontSize: 13,
                                     ),
                                     filled: true,
                                     fillColor: g.claySoft,
                                     border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: AppGeometry.roundedr14,
                                       borderSide: BorderSide(color: g.line),
                                     ),
                                     enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: AppGeometry.roundedr14,
                                       borderSide: BorderSide(color: g.line),
                                     ),
                                     focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                      borderRadius: AppGeometry.roundedr14,
                                       borderSide: BorderSide(
                                         color: g.clay,
-                                        width: 1.5,
+                                        width: AppBorderScale.w1point5,
                                       ),
                                     ),
                                     contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 12,
+                                      horizontal: AppSpace.s14,
+                                      vertical: AppSpace.s12,
                                     ),
                                   ),
                                 ),
@@ -177,13 +176,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                             'Cetirizine',
                                           ]
                                           .map(
-                                            (chip) => ActionChip(
+                                            (chip) => AppPill.action(
                                               label: Text(
                                                 chip,
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: g.inkSecondary,
-                                                ),
+                                                style: AppTypeRoles.typeRole4
+                                                    .copyWith(
+                                                      color: g.inkSecondary,
+                                                    ),
                                               ),
                                               backgroundColor: g.fill,
                                               side: BorderSide(color: g.line),
@@ -206,21 +205,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                       width: double.infinity,
                                       child: TextField(
                                         controller: dosageController,
-                                        style: TextStyle(
+                                        style: AppTypeRoles.typeRole59.copyWith(
                                           color: g.ink,
-                                          fontSize: 14,
                                         ),
                                         decoration: InputDecoration(
                                           labelText: 'Dosage',
                                           hintText: '1 Tablet, 5ml',
-                                          labelStyle: TextStyle(
-                                            color: g.inkSecondary,
-                                            fontSize: 13,
-                                          ),
-                                          hintStyle: TextStyle(
-                                            color: g.inkMuted,
-                                            fontSize: 13,
-                                          ),
+                                          labelStyle: AppTypeRoles.typeRole58
+                                              .copyWith(color: g.inkSecondary),
+                                          hintStyle: AppTypeRoles.typeRole58
+                                              .copyWith(color: g.inkMuted),
                                           filled: true,
                                           fillColor: g.claySoft,
                                           border: OutlineInputBorder(
@@ -241,8 +235,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                           ),
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                                horizontal: 14,
-                                                vertical: 12,
+                                                horizontal: AppSpace.s14,
+                                                vertical: AppSpace.s12,
                                               ),
                                         ),
                                       ),
@@ -254,16 +248,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                         isExpanded: true,
                                         initialValue: type,
                                         dropdownColor: g.bg,
-                                        style: TextStyle(
+                                        style: AppTypeRoles.typeRole58.copyWith(
                                           color: g.ink,
-                                          fontSize: 13,
                                         ),
                                         decoration: InputDecoration(
                                           labelText: 'Form',
-                                          labelStyle: TextStyle(
-                                            color: g.inkSecondary,
-                                            fontSize: 13,
-                                          ),
+                                          labelStyle: AppTypeRoles.typeRole58
+                                              .copyWith(color: g.inkSecondary),
                                           filled: true,
                                           fillColor: g.claySoft,
                                           border: OutlineInputBorder(
@@ -276,8 +267,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                           ),
                                           contentPadding:
                                               const EdgeInsets.symmetric(
-                                                horizontal: 12,
-                                                vertical: 12,
+                                                horizontal: AppSpace.s12,
+                                                vertical: AppSpace.s12,
                                               ),
                                         ),
                                         items: const [
@@ -316,9 +307,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 // Food Condition
                                 Text(
                                   'Instructions / Meal Timing',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                  style: AppTypeRoles.typeRole17.copyWith(
                                     color: g.ink,
                                   ),
                                 ),
@@ -333,15 +322,15 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                         'Empty stomach',
                                       ].map((opt) {
                                         final isSel = instructions == opt;
-                                        return ChoiceChip(
+                                        return AppPill.choice(
                                           label: Text(
                                             opt,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: isSel
-                                                  ? Colors.white
-                                                  : g.inkSecondary,
-                                            ),
+                                            style: AppTypeRoles.typeRole27
+                                                .copyWith(
+                                                  color: isSel
+                                                      ? AppPalette.white
+                                                      : g.inkSecondary,
+                                                ),
                                           ),
                                           selected: isSel,
                                           selectedColor: g.clay,
@@ -364,9 +353,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 // Daily Schedule Timings
                                 Text(
                                   'Daily Doses & Timing Slots',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                  style: AppTypeRoles.typeRole17.copyWith(
                                     color: g.ink,
                                   ),
                                 ),
@@ -439,9 +426,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 // Duration (How many days)
                                 Text(
                                   'Course Duration (Days)',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
+                                  style: AppTypeRoles.typeRole17.copyWith(
                                     color: g.ink,
                                   ),
                                 ),
@@ -450,13 +435,12 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                   spacing: 8,
                                   children: [3, 5, 7, 14, 30].map((d) {
                                     final isSel = durationDays == d;
-                                    return ChoiceChip(
+                                    return AppPill.choice(
                                       label: Text(
                                         '$d Days',
-                                        style: TextStyle(
-                                          fontSize: 12,
+                                        style: AppTypeRoles.typeRole27.copyWith(
                                           color: isSel
-                                              ? Colors.white
+                                              ? AppPalette.white
                                               : g.inkSecondary,
                                         ),
                                       ),
@@ -477,11 +461,11 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 const SizedBox(height: 14),
 
                                 // Info banner explaining the automated sync
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
+                                AppCard(
+                                  padding: const EdgeInsets.all(AppSpace.s12),
+                                  nightDecoration: BoxDecoration(
                                     color: g.claySoft,
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: AppGeometry.roundedr14,
                                     border: Border.all(color: g.line),
                                   ),
                                   child: Row(
@@ -495,11 +479,11 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                       Expanded(
                                         child: Text(
                                           'Sync Guarantee: Automatically creates daily To-dos and reminders for all $durationDays days.',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: g.inkSecondary,
-                                            height: 1.3,
-                                          ),
+                                          style: AppTypeRoles.typeRole4
+                                              .copyWith(
+                                                color: g.inkSecondary,
+                                                height: 1.3,
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -514,7 +498,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
 
                         // ALWAYS IN FRAME: Pinned Save Action Button
                         Container(
-                          padding: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.only(top: AppSpace.s8),
                           decoration: BoxDecoration(
                             border: Border(top: BorderSide(color: g.line)),
                           ),
@@ -611,35 +595,33 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
     required VoidCallback onToggle,
   }) {
     return Expanded(
-      child: InkWell(
+      child: AppTapArea(
         onTap: () {
           HapticFeedback.selectionClick();
           onToggle();
         },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
+        borderRadius: AppGeometry.roundedr12,
+        child: AppCard(
+          selected: isSelected,
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s10),
+          nightDecoration: BoxDecoration(
             color: isSelected ? g.clay : g.fill,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppGeometry.roundedr12,
             border: Border.all(color: isSelected ? g.clay : g.line),
           ),
           child: Column(
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : g.ink,
+                style: AppTypeRoles.typeRole34.copyWith(
+                  color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : g.ink),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 MedicineService.formatTimeSlot(time),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isSelected ? Colors.white70 : g.inkMuted,
+                style: AppTypeRoles.typeRole18.copyWith(
+                  color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white70 : g.inkMuted),
                 ),
               ),
             ],
@@ -656,7 +638,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
       builder: (dlgContext) => AlertDialog(
         backgroundColor: g.bg,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppGeometry.roundedr20,
           side: BorderSide(color: g.line),
         ),
         title: Row(
@@ -665,13 +647,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
             const SizedBox(width: 8),
             Text(
               'Delete ${medicine.name}',
-              style: TextStyle(color: g.ink, fontSize: 16),
+              style: AppTypeRoles.typeRole10.copyWith(color: g.ink),
             ),
           ],
         ),
         content: Text(
           'Cascading Deletion: This will remove this medicine and cleanly cancel all associated daily dose reminders and Today tasks across the entire course.\n\nAre you sure?',
-          style: TextStyle(color: g.inkSecondary, fontSize: 13, height: 1.4),
+          style: AppTypeRoles.typeRole58.copyWith(
+            color: g.inkSecondary,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
@@ -679,11 +664,15 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
             child: Text('Cancel', style: TextStyle(color: g.inkMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: g.coral,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+            style: context.surfaces.buttonStyle(
+              ElevatedButton.styleFrom(
+                backgroundColor: g.coral,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppGeometry.roundedr10,
+                ),
               ),
+              filled: true,
+              icon: false,
             ),
             onPressed: () async {
               HapticFeedback.mediumImpact();
@@ -701,9 +690,9 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                 );
               }
             },
-            child: const Text(
+            child: Text(
               'Delete & Cancel Reminders',
-              style: TextStyle(color: Colors.white, fontSize: 12),
+              style: AppTypeRoles.typeRole27.copyWith(color: AppPalette.white),
             ),
           ),
         ],
@@ -731,7 +720,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
         ),
       ],
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s20,
+          vertical: AppSpace.s16,
+        ),
         children: [
           // ── 1. TODAY'S DOSE COMPLIANCE CARD ────────────────────────────────
           todayLogsAsync.when(
@@ -749,15 +741,15 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                 children: [
                   GlassSurface(
                     radius: 20,
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(AppSpace.s18),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
+                            AppTag(
+                              padding: const EdgeInsets.all(AppSpace.s8),
+                              nightDecoration: BoxDecoration(
                                 color: g.claySoft,
                                 shape: BoxShape.circle,
                               ),
@@ -774,16 +766,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 children: [
                                   Text(
                                     "Today's Doses",
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
+                                    style: AppTypeRoles.typeRole60.copyWith(
                                       color: g.ink,
                                     ),
                                   ),
                                   Text(
                                     '$taken of $total doses taken',
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    style: AppTypeRoles.typeRole27.copyWith(
                                       color: g.inkSecondary,
                                     ),
                                   ),
@@ -793,9 +782,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                             const SizedBox(width: 8),
                             Text(
                               '${(progress * 100).toInt()}%',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                              style: AppTypeRoles.typeRole21.copyWith(
                                 color: g.clay,
                               ),
                             ),
@@ -803,7 +790,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                         ),
                         const SizedBox(height: 12),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: AppGeometry.roundedr4,
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 6,
@@ -820,9 +807,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                   // Today's Scheduled Dose Items
                   Text(
                     'TODAY\'S SCHEDULE',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
+                    style: AppTypeRoles.typeRole22.copyWith(
                       color: g.inkMuted,
                       letterSpacing: 0.8,
                     ),
@@ -835,13 +820,12 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                           ? const SizedBox.shrink()
                           : GlassSurface(
                               radius: 16,
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(AppSpace.s16),
                               child: Center(
                                 child: Text(
                                   'No doses scheduled for today.',
-                                  style: TextStyle(
+                                  style: AppTypeRoles.typeRole58.copyWith(
                                     color: g.inkMuted,
-                                    fontSize: 13,
                                   ),
                                 ),
                               ),
@@ -866,32 +850,30 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                           );
 
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 10),
+                            margin: const EdgeInsets.only(bottom: AppSpace.s10),
                             child: GlassSurface(
                               radius: 16,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
+                                horizontal: AppSpace.s16,
+                                vertical: AppSpace.s12,
                               ),
                               child: Row(
                                 children: [
                                   // Time badge
-                                  Container(
+                                  AppTag(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
+                                      horizontal: AppSpace.s10,
+                                      vertical: AppSpace.s6,
                                     ),
-                                    decoration: BoxDecoration(
+                                    nightDecoration: BoxDecoration(
                                       color: log.isTaken
                                           ? g.sage.withValues(alpha: 0.15)
                                           : g.claySoft,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppGeometry.roundedr8,
                                     ),
                                     child: Text(
                                       timeStr,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
+                                      style: AppTypeRoles.typeRole34.copyWith(
                                         color: log.isTaken ? g.sage : g.clay,
                                       ),
                                     ),
@@ -906,33 +888,27 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                       children: [
                                         Text(
                                           medName,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: g.ink,
-                                            decoration: log.isTaken
-                                                ? TextDecoration.lineThrough
-                                                : null,
-                                          ),
+                                          style: AppTypeRoles.typeRole61
+                                              .copyWith(
+                                                color: g.ink,
+                                                decoration: log.isTaken
+                                                    ? TextDecoration.lineThrough
+                                                    : null,
+                                              ),
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
                                           '$medDosage • $instructions',
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: g.inkSecondary,
-                                          ),
+                                          style: AppTypeRoles.typeRole4
+                                              .copyWith(color: g.inkSecondary),
                                         ),
                                         if (log.isTaken &&
                                             log.takenAt != null) ...[
                                           const SizedBox(height: 2),
                                           Text(
                                             'Taken at ${DateFormat('h:mm a').format(log.takenAt!)}',
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              color: g.sage,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                            style: AppTypeRoles.typeRole44
+                                                .copyWith(color: g.sage),
                                           ),
                                         ],
                                       ],
@@ -940,22 +916,22 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                   ),
 
                                   // Check/Take action button
-                                  InkWell(
+                                  AppTapArea(
                                     onTap: () async {
                                       HapticFeedback.lightImpact();
                                       await ref
                                           .read(medicineServiceProvider)
                                           .toggleDose(log.id, !log.isTaken);
                                     },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
+                                    borderRadius: AppGeometry.roundedr20,
+                                    child: AppCard(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
+                                        horizontal: AppSpace.s12,
+                                        vertical: AppSpace.s8,
                                       ),
-                                      decoration: BoxDecoration(
+                                      nightDecoration: BoxDecoration(
                                         color: log.isTaken ? g.sage : g.clay,
-                                        borderRadius: BorderRadius.circular(20),
+                                        borderRadius: AppGeometry.roundedr20,
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -966,16 +942,16 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                                 : Icons
                                                       .radio_button_unchecked_rounded,
                                             size: 14,
-                                            color: Colors.white,
+                                            color: AppPalette.white,
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             log.isTaken ? 'Taken' : 'Take',
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
+                                            style: AppStateTypography
+                                                .stateType21
+                                                .copyWith(
+                                                  color: AppPalette.white,
+                                                ),
                                           ),
                                         ],
                                       ),
@@ -997,9 +973,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
           // ── 2. ACTIVE COURSES & PRESCRIPTIONS ──────────────────────────────
           Text(
             'ACTIVE PRESCRIPTIONS',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
+            style: AppTypeRoles.typeRole22.copyWith(
               color: g.inkMuted,
               letterSpacing: 0.8,
             ),
@@ -1015,7 +989,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
               if (medicines.isEmpty) {
                 return GlassSurface(
                   radius: 20,
-                  padding: const EdgeInsets.all(28),
+                  padding: const EdgeInsets.all(AppSpace.s28),
                   child: Column(
                     children: [
                       Icon(
@@ -1026,18 +1000,13 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'No Medicines Added Yet',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: g.ink,
-                        ),
+                        style: AppTypeRoles.typeRole30.copyWith(color: g.ink),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Add your prescriptions with dosage & duration.\nReminders & daily to-dos will sync automatically.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12,
+                        style: AppTypeRoles.typeRole27.copyWith(
                           color: g.inkSecondary,
                           height: 1.4,
                         ),
@@ -1085,10 +1054,10 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                   } catch (_) {}
 
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 14),
+                    margin: const EdgeInsets.only(bottom: AppSpace.s14),
                     child: GlassSurface(
                       radius: 20,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpace.s16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1105,18 +1074,15 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                       children: [
                                         Text(
                                           med.name,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: g.ink,
-                                          ),
+                                          style: AppTypeRoles.typeRole30
+                                              .copyWith(color: g.ink),
                                         ),
-                                        Container(
+                                        AppCard(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 3,
+                                            horizontal: AppSpace.s8,
+                                            vertical: AppSpace.s3,
                                           ),
-                                          decoration: BoxDecoration(
+                                          nightDecoration: BoxDecoration(
                                             color: g.claySoft,
                                             borderRadius: BorderRadius.circular(
                                               6,
@@ -1124,11 +1090,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                           ),
                                           child: Text(
                                             med.type.toUpperCase(),
-                                            style: TextStyle(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.bold,
-                                              color: g.clay,
-                                            ),
+                                            style: AppTypeRoles.typeRole55
+                                                .copyWith(color: g.clay),
                                           ),
                                         ),
                                       ],
@@ -1136,8 +1099,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                     const SizedBox(height: 4),
                                     Text(
                                       '${med.dosage} • ${med.instructions}',
-                                      style: TextStyle(
-                                        fontSize: 12,
+                                      style: AppTypeRoles.typeRole27.copyWith(
                                         color: g.inkSecondary,
                                       ),
                                     ),
@@ -1176,14 +1138,14 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                             runSpacing: 4,
                             children: timesList
                                 .map(
-                                  (t) => Container(
+                                  (t) => AppTag(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
+                                      horizontal: AppSpace.s8,
+                                      vertical: AppSpace.s4,
                                     ),
-                                    decoration: BoxDecoration(
+                                    nightDecoration: BoxDecoration(
                                       color: g.fill,
-                                      borderRadius: BorderRadius.circular(6),
+                                      borderRadius: AppGeometry.roundedr6,
                                       border: Border.all(color: g.line),
                                     ),
                                     child: Row(
@@ -1197,11 +1159,8 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                         const SizedBox(width: 4),
                                         Text(
                                           t,
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            color: g.inkSecondary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                          style: AppTypeRoles.typeRole44
+                                              .copyWith(color: g.inkSecondary),
                                         ),
                                       ],
                                     ),
@@ -1220,9 +1179,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                             children: [
                               Text(
                                 'Day $clampedDay of ${med.durationDays}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                                style: AppTypeRoles.typeRole34.copyWith(
                                   color: g.ink,
                                 ),
                               ),
@@ -1230,8 +1187,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                                 remainingDays == 0
                                     ? 'Course complete'
                                     : '$remainingDays days left',
-                                style: TextStyle(
-                                  fontSize: 11,
+                                style: AppTypeRoles.typeRole4.copyWith(
                                   color: g.inkMuted,
                                 ),
                               ),
@@ -1239,7 +1195,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen> {
                           ),
                           const SizedBox(height: 6),
                           ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: AppGeometry.roundedr3,
                             child: LinearProgressIndicator(
                               value: progress,
                               minHeight: 5,

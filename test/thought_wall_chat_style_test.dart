@@ -180,7 +180,7 @@ void main() {
         expect(
           surfaces.any(
             (surface) =>
-                surface.color == AscentGlass.light.fill &&
+                surface.color == const Color(0x1AFFFFFF) &&
                 surface.border is Border &&
                 (surface.border! as Border).top.width == 1.2,
           ),

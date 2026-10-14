@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
@@ -5,13 +8,11 @@ import '../../core/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/providers/database_provider.dart';
@@ -116,7 +117,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       isScrollControlled: true,
       backgroundColor: context.glass.bg,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (bottomSheetContext) {
         return StatefulBuilder(
@@ -124,10 +125,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
             return Padding(
               padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: bottomInset + 24,
+                left: AppSpace.s20,
+                right: AppSpace.s20,
+                top: AppSpace.s20,
+                bottom: bottomInset + AppSpace.s24,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -140,7 +141,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         height: 4,
                         decoration: BoxDecoration(
                           color: context.divider,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: AppGeometry.roundedr2,
                         ),
                       ),
                     ),
@@ -150,11 +151,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       children: [
                         Text(
                           existing == null ? 'New Reminder' : 'Edit Reminder',
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            color: context.textPrimary,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole21),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
@@ -173,7 +172,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         labelText: 'Reminder Title *',
                         hintText: 'e.g. Solve LeetCode DP, Review notes, Walk',
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                         ),
                       ),
                     ),
@@ -193,13 +192,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                             label: Text(
                               DateFormat('EEE, MMM d').format(scheduledDate),
                             ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: context.glass.fill,
-                              side: BorderSide(color: context.glass.edge),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            style: context.surfaces.buttonStyle(
+                              OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s14,
+                                ),
+                                backgroundColor: context.glass.fill,
+                                side: BorderSide(color: context.glass.edge),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppGeometry.roundedr12,
+                                ),
                               ),
+                              filled: false,
+                              icon: false,
                             ),
                             onPressed: () async {
                               final picked = await showDatePicker(
@@ -231,13 +236,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.access_time, size: 16),
                             label: Text(scheduledTime.format(context)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              backgroundColor: context.glass.fill,
-                              side: BorderSide(color: context.glass.edge),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                            style: context.surfaces.buttonStyle(
+                              OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s14,
+                                ),
+                                backgroundColor: context.glass.fill,
+                                side: BorderSide(color: context.glass.edge),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppGeometry.roundedr12,
+                                ),
                               ),
+                              filled: false,
+                              icon: false,
                             ),
                             onPressed: () async {
                               final picked = await showTimePicker(
@@ -282,7 +293,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         runSpacing: 8,
                         children: _ReminderRepeatMode.values.map((mode) {
                           final isSelected = repeatMode == mode;
-                          return ChoiceChip(
+                          return AppPill.choice(
                             label: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -310,27 +321,26 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                   ? context.glass.clay
                                   : context.glass.edge,
                             ),
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? context.glass.clay
-                                  : context.glass.ink,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                              fontSize: 12,
-                            ),
+                            labelStyle:
+                                AppStateTypography.stateType7(
+                                  state0: isSelected,
+                                ).copyWith(
+                                  color: isSelected
+                                      ? context.glass.clay
+                                      : context.glass.ink,
+                                ),
                           );
                         }).toList(),
                       ),
                       const SizedBox(height: 8),
-                      Container(
+                      AppTag(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                          horizontal: AppSpace.s12,
+                          vertical: AppSpace.s8,
                         ),
-                        decoration: BoxDecoration(
+                        nightDecoration: BoxDecoration(
                           color: context.glass.claySoft,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: AppGeometry.roundedr10,
                           border: Border.all(
                             color: context.glass.clay.withValues(alpha: 0.2),
                           ),
@@ -352,10 +362,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                                     : repeatMode == _ReminderRepeatMode.daily30
                                     ? 'Fires every day for the next 30 days (whole month) at ${scheduledTime.format(context)}.'
                                     : 'Fires every weekday (Mon-Fri) for the next 4 weeks at ${scheduledTime.format(context)}.',
-                                style: AscentTextStyles.bodySmall.copyWith(
-                                  color: context.textPrimary,
-                                  fontSize: 12,
-                                ),
+                                style: AscentTextStyles.bodySmall
+                                    .copyWith(color: context.textPrimary)
+                                    .merge(AppTypeRoles.typeRole27),
                               ),
                             ),
                           ],
@@ -366,8 +375,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     GlassSurface(
                       radius: 18,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s6,
                       ),
                       child: SwitchListTile.adaptive(
                         contentPadding: EdgeInsets.zero,
@@ -427,7 +436,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     ],
                     if (alarmInfo != null)
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.only(bottom: AppSpace.s12),
                         child: Text(alarmInfo!),
                       ),
                     AscentButton.primary(
@@ -711,7 +720,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            style: TextButton.styleFrom(foregroundColor: context.glass.coral),
+            style: context.surfaces.buttonStyle(
+              TextButton.styleFrom(foregroundColor: context.glass.coral),
+              filled: false,
+              icon: false,
+            ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
           ),
@@ -737,7 +750,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             duration: const Duration(seconds: 4),
             action: SnackBarAction(
               label: 'UNDO',
-              textColor: const Color(0xFFF9AB67),
+              textColor: AppPalette.colorFFF9AB67,
               onPressed: () async {
                 try {
                   final restored = await dao.restoreDeletedReminder(
@@ -877,10 +890,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
 
           return ListView(
             padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 16,
-              bottom: 80,
+              left: AppSpace.s16,
+              right: AppSpace.s16,
+              top: AppSpace.s16,
+              bottom: AppSpace.s80,
             ),
             children: [
               Align(
@@ -894,12 +907,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 ),
               ),
               if (!_notificationsEnabled) ...[
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
+                AppCard(
+                  margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                  padding: const EdgeInsets.all(AppSpace.s14),
+                  nightDecoration: BoxDecoration(
                     color: g.amberSoft,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppGeometry.roundedr16,
                     border: Border.all(color: g.amber.withValues(alpha: 0.3)),
                   ),
                   child: Row(
@@ -916,10 +929,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           children: [
                             Text(
                               'Notifications Disabled',
-                              style: AscentTextStyles.labelMedium.copyWith(
-                                color: g.ink,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: AscentTextStyles.labelMedium
+                                  .copyWith(color: g.ink)
+                                  .merge(AppTypeRoles.typeRole2),
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -942,9 +954,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         },
                         child: Text(
                           'Enable',
-                          style: TextStyle(
+                          style: AppTypeRoles.typeRole9.copyWith(
                             color: g.amber,
-                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -954,45 +965,44 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               ],
 
               // ── SEGMENTED TOP TOGGLE: UPCOMING VS COMPLETED ─────────────
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
+              AppCard(
+                margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                padding: const EdgeInsets.all(AppSpace.s4),
+                nightDecoration: BoxDecoration(
                   color: g.fill,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AppGeometry.roundedr16,
                   border: Border.all(color: g.edge),
                 ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: InkWell(
+                      child: AppTapArea(
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() => _selectedTab = 0);
                         },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        borderRadius: AppGeometry.roundedr12,
+                        child: AppCard(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s8,
+                          ),
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(
+                          nightDecoration: BoxDecoration(
                             color: _selectedTab == 0
                                 ? g.claySoft
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                                : AppPalette.transparent,
+                            borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 0
                                   ? g.clay
-                                  : Colors.transparent,
-                              width: 1,
+                                  : AppPalette.transparent,
+                              width: AppBorderScale.w1,
                             ),
                           ),
                           child: Text(
                             'Upcoming (${todayReminders.length + tomorrowReminders.length + thisWeekReminders.length + laterReminders.length})',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12.5,
-                              fontWeight: _selectedTab == 0
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                            style: AppStateTypography.stateType8(
+                              state0: _selectedTab == 0,
                               color: _selectedTab == 0 ? g.ink : g.inkMuted,
                             ),
                           ),
@@ -1001,34 +1011,33 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: InkWell(
+                      child: AppTapArea(
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() => _selectedTab = 1);
                         },
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
+                        borderRadius: AppGeometry.roundedr12,
+                        child: AppCard(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s8,
+                          ),
                           alignment: Alignment.center,
-                          decoration: BoxDecoration(
+                          nightDecoration: BoxDecoration(
                             color: _selectedTab == 1
                                 ? g.claySoft
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                                : AppPalette.transparent,
+                            borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 1
                                   ? g.clay
-                                  : Colors.transparent,
-                              width: 1,
+                                  : AppPalette.transparent,
+                              width: AppBorderScale.w1,
                             ),
                           ),
                           child: Text(
                             'Completed (${pastReminders.length})',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12.5,
-                              fontWeight: _selectedTab == 1
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                            style: AppStateTypography.stateType8(
+                              state0: _selectedTab == 1,
                               color: _selectedTab == 1 ? g.ink : g.inkMuted,
                             ),
                           ),
@@ -1106,7 +1115,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     thisWeekReminders.isEmpty &&
                     laterReminders.isEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s36),
                     child: Center(
                       child: Column(
                         children: [
@@ -1114,10 +1123,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'No active reminders',
-                            style: AscentTextStyles.headlineMedium.copyWith(
-                              color: g.ink,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AscentTextStyles.headlineMedium
+                                .copyWith(color: g.ink)
+                                .merge(AppTypeRoles.typeRole9),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -1145,7 +1153,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ),
                 ] else ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s36),
                     child: Center(
                       child: Column(
                         children: [
@@ -1157,10 +1165,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           const SizedBox(height: 12),
                           Text(
                             'No completed reminders yet',
-                            style: AscentTextStyles.headlineMedium.copyWith(
-                              color: g.ink,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: AscentTextStyles.headlineMedium
+                                .copyWith(color: g.ink)
+                                .merge(AppTypeRoles.typeRole9),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -1194,32 +1201,30 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   ) {
     final g = context.glass;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10, top: 12),
+      padding: const EdgeInsets.only(bottom: AppSpace.s10, top: AppSpace.s12),
       child: Row(
         children: [
           Icon(icon, size: 16, color: color),
           const SizedBox(width: 8),
           Text(
             title,
-            style: AscentTextStyles.labelLarge.copyWith(
-              fontWeight: FontWeight.bold,
-              color: g.ink,
-            ),
+            style: AscentTextStyles.labelLarge
+                .copyWith(color: g.ink)
+                .merge(AppTypeRoles.typeRole9),
           ),
           const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
+          AppTag(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s7,
+              vertical: AppSpace.s2,
+            ),
+            nightDecoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: AppGeometry.roundedr10,
             ),
             child: Text(
               '$count',
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+              style: AppTypeRoles.typeRole34.copyWith(color: color),
             ),
           ),
         ],
@@ -1240,30 +1245,30 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
         await _confirmDeleteReminder(reminder);
         return false;
       },
-      background: Container(
+      background: AppCard(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.only(right: AppSpace.s20),
+        nightDecoration: BoxDecoration(
           color: g.coralSoft,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppGeometry.roundedr16,
         ),
         child: Icon(Icons.delete_outline, color: g.coral),
       ),
       child: AscentCard(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: AppSpace.s10),
+        padding: const EdgeInsets.all(AppSpace.s14),
         onTap: () => _openAddEditReminderSheet(reminder),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
+            AppTag(
+              padding: const EdgeInsets.all(AppSpace.s10),
+              nightDecoration: BoxDecoration(
                 color: isUpcoming ? g.claySoft : g.fill,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isUpcoming ? g.clay.withValues(alpha: 0.25) : g.edge,
-                  width: 0.8,
+                  width: AppBorderScale.w0point8,
                 ),
               ),
               child: Icon(
@@ -1283,13 +1288,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 children: [
                   Text(
                     reminder.title,
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: isUpcoming ? g.ink : g.inkMuted,
-                      decoration: isUpcoming
-                          ? null
-                          : TextDecoration.lineThrough,
-                    ),
+                    style: AscentTextStyles.bodyMedium
+                        .copyWith(
+                          color: isUpcoming ? g.ink : g.inkMuted,
+                          decoration: isUpcoming
+                              ? null
+                              : TextDecoration.lineThrough,
+                        )
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 4),
                   Text(

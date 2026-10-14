@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/surface_tokens.dart';
 
 /// Paints the soothing atmosphere ambient glows behind any Ascent screen or sheet:
 /// - Primary warm glow (defaults to clay) at top-left
@@ -22,6 +23,7 @@ class AscentAtmosphereBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.surfaces.outlined) return child;
     final g = context.glass;
     final color1 = softenGlow(glow1 ?? g.glow1, maxAlpha: 0.18);
     final color2 = softenGlow(glow2 ?? g.glow2, maxAlpha: 0.14);
@@ -32,16 +34,11 @@ class AscentAtmosphereBackground extends StatelessWidget {
         Positioned.fill(
           child: RepaintBoundary(
             child: CustomPaint(
-              painter: AscentAtmospherePainter(
-                glow1: color1,
-                glow2: color2,
-              ),
+              painter: AscentAtmospherePainter(glow1: color1, glow2: color2),
             ),
           ),
         ),
-        Positioned.fill(
-          child: child,
-        ),
+        Positioned.fill(child: child),
       ],
     );
   }
@@ -86,7 +83,10 @@ class AscentAtmospherePainter extends CustomPainter {
         colors: [glow2, glow2.withValues(alpha: 0.0)],
         stops: const [0.0, 0.75],
       ).createShader(rect2);
-    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.2, size.width, size.height * 0.65), paint2);
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.2, size.width, size.height * 0.65),
+      paint2,
+    );
 
     // 3. Glow 3 bottom left: radial-gradient at (-5%, 96%)
     final rect3 = Rect.fromCenter(
@@ -99,7 +99,10 @@ class AscentAtmospherePainter extends CustomPainter {
         colors: [glow1, glow1.withValues(alpha: 0.0)],
         stops: const [0.0, 0.75],
       ).createShader(rect3);
-    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.6, size.width, size.height * 0.4), paint3);
+    canvas.drawRect(
+      Rect.fromLTWH(0, size.height * 0.6, size.width, size.height * 0.4),
+      paint3,
+    );
   }
 
   @override

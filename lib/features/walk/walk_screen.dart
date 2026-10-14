@@ -1,14 +1,15 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/walk/walk_tracking_service.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -58,13 +59,17 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
       builder: (ctx) => AlertDialog(
         title: Text(
           'Finish Walk Session?',
-          style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary, fontSize: 18),
+          style: AscentTextStyles.displaySmall
+              .copyWith(color: context.textPrimary)
+              .merge(AppTypeRoles.typeRole1),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Distance: ${(state.distanceMeters / 1000.0).toStringAsFixed(2)} km'),
+            Text(
+              'Distance: ${(state.distanceMeters / 1000.0).toStringAsFixed(2)} km',
+            ),
             const SizedBox(height: 4),
             Text('Duration: ${state.formattedDuration}'),
             const SizedBox(height: 4),
@@ -104,7 +109,9 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     );
 
     if (saved == true) {
-      await ref.read(walkTrackingProvider.notifier).finishWalk(notes: notesController.text.trim());
+      await ref
+          .read(walkTrackingProvider.notifier)
+          .finishWalk(notes: notesController.text.trim());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -125,10 +132,12 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     final goalAsync = ref.watch(activityGoalStreamProvider);
 
     final todayDistanceKm = (todayDistanceAsync.value ?? 0.0) / 1000.0;
-    final targetDistanceKm = (goalAsync.value?.targetDistanceMeters ?? 5000.0) / 1000.0;
+    final targetDistanceKm =
+        (goalAsync.value?.targetDistanceMeters ?? 5000.0) / 1000.0;
     final progress = (todayDistanceKm / targetDistanceKm).clamp(0.0, 1.0);
 
-    final currentCenter = (walkState.currentLat != null && walkState.currentLng != null)
+    final currentCenter =
+        (walkState.currentLat != null && walkState.currentLng != null)
         ? LatLng(walkState.currentLat!, walkState.currentLng!)
         : const LatLng(28.6139, 77.2090); // default fallback coordinate
 
@@ -151,7 +160,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
         unselectedLabelColor: g.inkMuted,
         indicatorColor: g.sage,
         indicatorSize: TabBarIndicatorSize.label,
-        dividerColor: Colors.transparent,
+        dividerColor: AppPalette.transparent,
         tabs: const [
           Tab(text: 'Live GPS Tracker'),
           Tab(text: 'Walk History & Goals'),
@@ -159,7 +168,8 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
       ),
       body: TabBarView(
         controller: _tabController,
-        physics: const NeverScrollableScrollPhysics(), // Prevent accidental swipes during map gestures
+        physics:
+            const NeverScrollableScrollPhysics(), // Prevent accidental swipes during map gestures
         children: [
           // ── Tab 0: Live GPS Tracker ───────────────────────────────────────
           Stack(
@@ -174,7 +184,8 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.ascent.jobprep',
                     ),
                     if (walkState.routePoints.isNotEmpty)
@@ -187,20 +198,30 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                           ),
                         ],
                       ),
-                    if (walkState.currentLat != null && walkState.currentLng != null)
+                    if (walkState.currentLat != null &&
+                        walkState.currentLng != null)
                       MarkerLayer(
                         markers: [
                           Marker(
-                            point: LatLng(walkState.currentLat!, walkState.currentLng!),
+                            point: LatLng(
+                              walkState.currentLat!,
+                              walkState.currentLng!,
+                            ),
                             width: 22,
                             height: 22,
-                            child: Container(
-                              decoration: BoxDecoration(
+                            child: AppIndicator(
+                              nightDecoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: context.accentPrimary,
-                                border: Border.all(color: Colors.white, width: 2.5),
+                                border: Border.all(
+                                  color: AppPalette.white,
+                                  width: AppBorderScale.w2point5,
+                                ),
                                 boxShadow: const [
-                                  BoxShadow(color: Colors.black26, blurRadius: 4),
+                                  BoxShadow(
+                                    color: AppPalette.black26,
+                                    blurRadius: 4,
+                                  ),
                                 ],
                               ),
                             ),
@@ -223,12 +244,17 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                 child: Row(
                   children: [
                     // GPS Quality Indicator
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
+                    AppCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s10,
+                        vertical: AppSpace.s6,
+                      ),
+                      nightDecoration: BoxDecoration(
                         color: context.bgSurface.withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: context.divider.withValues(alpha: 0.8)),
+                        borderRadius: AppGeometry.roundedr20,
+                        border: Border.all(
+                          color: context.divider.withValues(alpha: 0.8),
+                        ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -238,29 +264,29 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                             size: 13,
                             color: walkState.gpsSignal == GpsSignalQuality.good
                                 ? context.accentPrimary
-                                : (walkState.gpsSignal == GpsSignalQuality.permissionDenied
-                                    ? context.stateDanger
-                                    : Colors.orange),
+                                : (walkState.gpsSignal ==
+                                          GpsSignalQuality.permissionDenied
+                                      ? context.stateDanger
+                                      : AppPalette.orange),
                           ),
                           const SizedBox(width: 5),
                           Text(
                             walkState.gpsSignal == GpsSignalQuality.good
                                 ? 'GPS: Strong'
-                                : (walkState.gpsSignal == GpsSignalQuality.permissionDenied
-                                    ? 'Permission Needed'
-                                    : 'Searching...'),
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                            ),
+                                : (walkState.gpsSignal ==
+                                          GpsSignalQuality.permissionDenied
+                                      ? 'Permission Needed'
+                                      : 'Searching...'),
+                            style: AscentTextStyles.labelSmall
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole36),
                           ),
                         ],
                       ),
                     ),
                     const Spacer(),
                     // Online Map / Radar HUD Switcher
-                    GestureDetector(
+                    AppGestureTap(
                       onTap: () {
                         HapticFeedback.selectionClick();
                         setState(() {
@@ -272,43 +298,54 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                             SnackBar(
                               content: const Text(
                                 'Connecting to online map. Turn on internet if tiles don\'t load.',
-                                style: TextStyle(fontSize: 12),
+                                style: AppTypeRoles.typeRole27,
                               ),
                               duration: const Duration(seconds: 2),
                               behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr10,
+                              ),
                             ),
                           );
                         }
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
+                      child: AppCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s12,
+                          vertical: AppSpace.s6,
+                        ),
+                        nightDecoration: BoxDecoration(
                           color: context.bgSurface.withValues(alpha: 0.92),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: AppGeometry.roundedr20,
                           border: Border.all(
                             color: _showOnlineMap
                                 ? context.accentPrimary.withValues(alpha: 0.6)
                                 : context.divider.withValues(alpha: 0.8),
-                            width: 1,
+                            width: AppBorderScale.w1,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _showOnlineMap ? Icons.fitness_center_rounded : Icons.map_outlined,
+                              _showOnlineMap
+                                  ? Icons.fitness_center_rounded
+                                  : Icons.map_outlined,
                               size: 14,
-                              color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
+                              color: _showOnlineMap
+                                  ? context.accentPrimary
+                                  : context.textPrimary,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               _showOnlineMap ? 'Fitness HUD' : 'Map View',
-                              style: AscentTextStyles.labelSmall.copyWith(
-                                color: _showOnlineMap ? context.accentPrimary : context.textPrimary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
-                              ),
+                              style: AscentTextStyles.labelSmall
+                                  .copyWith(
+                                    color: _showOnlineMap
+                                        ? context.accentPrimary
+                                        : context.textPrimary,
+                                  )
+                                  .merge(AppTypeRoles.typeRole36),
                             ),
                           ],
                         ),
@@ -335,7 +372,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                 right: 16,
                 bottom: 20,
                 child: AscentCard(
-                  padding: const EdgeInsets.all(18),
+                  padding: const EdgeInsets.all(AppSpace.s18),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -345,7 +382,8 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                         children: [
                           _MetricCol(
                             label: 'DISTANCE',
-                            value: (walkState.distanceMeters / 1000.0).toStringAsFixed(2),
+                            value: (walkState.distanceMeters / 1000.0)
+                                .toStringAsFixed(2),
                             unit: 'km',
                             color: context.accentPrimary,
                           ),
@@ -383,7 +421,9 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                             if (!ok) {
                               messenger.showSnackBar(
                                 const SnackBar(
-                                  content: Text('Please enable GPS & grant location permission to track walks.'),
+                                  content: Text(
+                                    'Please enable GPS & grant location permission to track walks.',
+                                  ),
                                 ),
                               );
                             }
@@ -452,42 +492,64 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
 
           // ── Tab 1: Walk History & Goals ───────────────────────────────────
           ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s20,
+              vertical: AppSpace.s16,
+            ),
             children: [
               // Daily Goal Card
               AscentCard(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(AppSpace.s18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Today\'s Activity Goal', style: AscentTextStyles.headlineMedium.copyWith(color: context.textPrimary, fontSize: 16)),
-                        Text('${(progress * 100).toInt()}%', style: AscentTextStyles.monoCode.copyWith(color: context.accentPrimary, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Today\'s Activity Goal',
+                          style: AscentTextStyles.headlineMedium
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole10),
+                        ),
+                        Text(
+                          '${(progress * 100).toInt()}%',
+                          style: AscentTextStyles.monoCode
+                              .copyWith(color: context.accentPrimary)
+                              .merge(AppTypeRoles.typeRole9),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: AppGeometry.roundedr6,
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 7,
                         backgroundColor: context.bgBase,
-                        valueColor: AlwaysStoppedAnimation<Color>(context.accentPrimary),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          context.accentPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       '${todayDistanceKm.toStringAsFixed(2)} km of ${targetDistanceKm.toStringAsFixed(1)} km target completed today.',
-                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: context.textMuted,
+                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
 
-              Text('Saved Walks', style: AscentTextStyles.headlineMedium.copyWith(color: context.textPrimary, fontSize: 17)),
+              Text(
+                'Saved Walks',
+                style: AscentTextStyles.headlineMedium
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole13),
+              ),
               const SizedBox(height: 10),
 
               completedWalksAsync.when(
@@ -496,7 +558,8 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                     return EmptyState(
                       icon: Icons.directions_walk_rounded,
                       title: 'No Recorded Walks Yet',
-                      subtitle: 'Start an outdoor walk with real GPS tracking to build your daily physical activity history.',
+                      subtitle:
+                          'Start an outdoor walk with real GPS tracking to build your daily physical activity history.',
                       actionLabel: 'Go to Live Tracker',
                       onAction: () => _tabController.animateTo(0),
                     );
@@ -511,18 +574,24 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                       final durationStr = h > 0 ? '${h}h ${m}m' : '${m}m ${s}s';
 
                       return AscentCard(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: AppSpace.s10),
+                        padding: const EdgeInsets.all(AppSpace.s14),
                         child: Row(
                           children: [
-                            Container(
+                            AppTag(
                               width: 40,
                               height: 40,
-                              decoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
+                              nightDecoration: BoxDecoration(
+                                color: context.accentPrimary.withValues(
+                                  alpha: 0.12,
+                                ),
+                                borderRadius: AppGeometry.roundedr10,
                               ),
-                              child: Icon(Icons.directions_walk_rounded, color: context.accentPrimary, size: 22),
+                              child: Icon(
+                                Icons.directions_walk_rounded,
+                                color: context.accentPrimary,
+                                size: 22,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -530,29 +599,38 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    DateFormat('EEEE, MMM d • h:mm a').format(w.startTime),
-                                    style: AscentTextStyles.labelLarge.copyWith(color: context.textPrimary, fontWeight: FontWeight.w600),
+                                    DateFormat(
+                                      'EEEE, MMM d • h:mm a',
+                                    ).format(w.startTime),
+                                    style: AscentTextStyles.labelLarge
+                                        .copyWith(color: context.textPrimary)
+                                        .merge(AppTypeRoles.typeRole8),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     '$durationStr • ${w.calories} kcal${w.notes != null ? ' • ${w.notes}' : ''}',
-                                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                                    style: AscentTextStyles.bodySmall.copyWith(
+                                      color: context.textMuted,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             Text(
                               '$km km',
-                              style: AscentTextStyles.monoCode.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: context.accentPrimary,
-                              ),
+                              style: AscentTextStyles.monoCode
+                                  .copyWith(color: context.accentPrimary)
+                                  .merge(AppTypeRoles.typeRole30),
                             ),
                             const SizedBox(width: 4),
                             IconButton(
-                              icon: Icon(Icons.delete_outline_rounded, size: 18, color: context.textMuted),
-                              onPressed: () => ref.read(walkDaoProvider).deleteWalk(w.id),
+                              icon: Icon(
+                                Icons.delete_outline_rounded,
+                                size: 18,
+                                color: context.textMuted,
+                              ),
+                              onPressed: () =>
+                                  ref.read(walkDaoProvider).deleteWalk(w.id),
                             ),
                           ],
                         ),
@@ -560,7 +638,12 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                     }).toList(),
                   );
                 },
-                loading: () => const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator())),
+                loading: () => const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(AppSpace.s24),
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
                 error: (e, _) => Center(child: Text('Error: $e')),
               ),
               const SizedBox(height: 32),
@@ -575,13 +658,15 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (ctx) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpace.s20),
         decoration: BoxDecoration(
           color: ctx.bgSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color: ctx.divider, width: 1.5)),
+          borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
+          border: Border(
+            top: BorderSide(color: ctx.divider, width: AppBorderScale.w1point5),
+          ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -593,20 +678,24 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                 height: 4,
                 decoration: BoxDecoration(
                   color: ctx.divider,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppGeometry.roundedr2,
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
+                AppCard(
+                  padding: const EdgeInsets.all(AppSpace.s10),
+                  nightDecoration: BoxDecoration(
                     color: ctx.glass.sageSoft,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                   ),
-                  child: Icon(Icons.battery_saver_rounded, color: ctx.glass.sage, size: 22),
+                  child: Icon(
+                    Icons.battery_saver_rounded,
+                    color: ctx.glass.sage,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -615,15 +704,15 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
                     children: [
                       Text(
                         'Background Walk Tracking Setup',
-                        style: AscentTextStyles.headlineMedium.copyWith(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: ctx.glass.ink,
-                        ),
+                        style: AscentTextStyles.headlineMedium
+                            .copyWith(color: ctx.glass.ink)
+                            .merge(AppTypeRoles.typeRole37),
                       ),
                       Text(
                         'Prevent Android from killing GPS when locked',
-                        style: AscentTextStyles.bodySmall.copyWith(color: ctx.glass.inkMuted),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: ctx.glass.inkMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -634,19 +723,22 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
             _guideStep(
               number: '1',
               title: 'Open Android App Settings',
-              description: 'Long press Ascent icon on your home screen > App info (or Phone Settings > Apps > Ascent).',
+              description:
+                  'Long press Ascent icon on your home screen > App info (or Phone Settings > Apps > Ascent).',
             ),
             const SizedBox(height: 12),
             _guideStep(
               number: '2',
               title: 'Set Battery to "Unrestricted"',
-              description: 'Under Battery or App Battery Usage, change setting from "Optimized" to "Unrestricted". This allows continuous GPS recording.',
+              description:
+                  'Under Battery or App Battery Usage, change setting from "Optimized" to "Unrestricted". This allows continuous GPS recording.',
             ),
             const SizedBox(height: 12),
             _guideStep(
               number: '3',
               title: 'Keep GPS Live during Walk',
-              description: 'Ascent will continue tracking your active route and distance even when your phone is in your pocket.',
+              description:
+                  'Ascent will continue tracking your active route and distance even when your phone is in your pocket.',
             ),
             const SizedBox(height: 18),
             AscentButton.primary(
@@ -661,7 +753,11 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
     );
   }
 
-  Widget _guideStep({required String number, required String title, required String description}) {
+  Widget _guideStep({
+    required String number,
+    required String title,
+    required String description,
+  }) {
     final g = context.glass;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,7 +767,7 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
           backgroundColor: g.sageSoft,
           child: Text(
             number,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: g.sage),
+            style: AppTypeRoles.typeRole7.copyWith(color: g.sage),
           ),
         ),
         const SizedBox(width: 10),
@@ -681,10 +777,9 @@ class _WalkScreenState extends ConsumerState<WalkScreen>
             children: [
               Text(
                 title,
-                style: AscentTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
+                style: AscentTextStyles.labelMedium
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole9),
               ),
               const SizedBox(height: 2),
               Text(
@@ -721,12 +816,9 @@ class _MetricCol extends StatelessWidget {
       children: [
         Text(
           label,
-          style: AscentTextStyles.labelSmall.copyWith(
-            color: context.textMuted,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.8,
-          ),
+          style: AscentTextStyles.labelSmall
+              .copyWith(color: context.textMuted, letterSpacing: 0.8)
+              .merge(AppTypeRoles.typeRole19),
         ),
         const SizedBox(height: 4),
         Row(
@@ -735,17 +827,17 @@ class _MetricCol extends StatelessWidget {
           children: [
             Text(
               value,
-              style: AscentTextStyles.displaySmall.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+              style: AscentTextStyles.displaySmall
+                  .copyWith(color: color)
+                  .merge(AppTypeRoles.typeRole21),
             ),
             if (unit.isNotEmpty) ...[
               const SizedBox(width: 2),
               Text(
                 unit,
-                style: TextStyle(fontSize: 11, color: context.textMuted),
+                style: AppTypeRoles.typeRole4.copyWith(
+                  color: context.textMuted,
+                ),
               ),
             ],
           ],
@@ -776,7 +868,11 @@ class _WalkFitnessHud extends StatelessWidget {
     final isPaused = walkState.status == WalkTrackingStatus.paused;
     final isStationary = walkState.isStationary;
     final distanceKm = walkState.distanceMeters / 1000.0;
-    final progress = (targetDistanceKm > 0 ? distanceKm / targetDistanceKm : 0.0).clamp(0.0, 1.0);
+    final progress =
+        (targetDistanceKm > 0 ? distanceKm / targetDistanceKm : 0.0).clamp(
+          0.0,
+          1.0,
+        );
 
     return Container(
       decoration: BoxDecoration(
@@ -784,37 +880,45 @@ class _WalkFitnessHud extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: isDark
-              ? [const Color(0xFF160F09), const Color(0xFF2A1C0F)]
-              : [const Color(0xFFF8FAFC), const Color(0xFFEFF6FF)],
+              ? [AppPalette.colorFF160F09, AppPalette.colorFF2A1C0F]
+              : [AppPalette.colorFFF8FAFC, AppPalette.colorFFEFF6FF],
         ),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(top: 60, bottom: 250, left: 20, right: 20),
+          padding: const EdgeInsets.only(
+            top: AppSpace.s60,
+            bottom: AppSpace.s250,
+            left: AppSpace.s20,
+            right: AppSpace.s20,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               // 1. Dynamic Status Indicator Pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
+              AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s7,
+                ),
+                nightDecoration: BoxDecoration(
                   color: isTracking
                       ? (isStationary
-                          ? const Color(0xFF6E8565).withValues(alpha: 0.15)
-                          : const Color(0xFF10B981).withValues(alpha: 0.15))
+                            ? AppPalette.colorFF6E8565.withValues(alpha: 0.15)
+                            : AppPalette.colorFF10B981.withValues(alpha: 0.15))
                       : (isPaused
-                          ? Colors.amber.withValues(alpha: 0.15)
-                          : context.bgSurface.withValues(alpha: 0.8)),
-                  borderRadius: BorderRadius.circular(20),
+                            ? AppPalette.amber.withValues(alpha: 0.15)
+                            : context.bgSurface.withValues(alpha: 0.8)),
+                  borderRadius: AppGeometry.roundedr20,
                   border: Border.all(
                     color: isTracking
                         ? (isStationary
-                            ? const Color(0xFF6E8565).withValues(alpha: 0.4)
-                            : const Color(0xFF10B981).withValues(alpha: 0.5))
+                              ? AppPalette.colorFF6E8565.withValues(alpha: 0.4)
+                              : AppPalette.colorFF10B981.withValues(alpha: 0.5))
                         : (isPaused
-                            ? Colors.amber.withValues(alpha: 0.4)
-                            : context.divider),
-                    width: 1.0,
+                              ? AppPalette.amber.withValues(alpha: 0.4)
+                              : context.divider),
+                    width: AppBorderScale.w1point0,
                   ),
                 ),
                 child: Row(
@@ -826,24 +930,29 @@ class _WalkFitnessHud extends StatelessWidget {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isTracking
-                            ? (isStationary ? const Color(0xFFF89238) : const Color(0xFF22C55E))
-                            : (isPaused ? Colors.amber : context.textMuted),
+                            ? (isStationary
+                                  ? AppPalette.colorFFF89238
+                                  : AppPalette.colorFF22C55E)
+                            : (isPaused ? AppPalette.amber : context.textMuted),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       isTracking
                           ? (isStationary
-                              ? 'RESTING / STATIONARY · 0.0 KM/H'
-                              : 'WALKING · ${walkState.currentSpeedKmh.toStringAsFixed(1)} KM/H')
-                          : (isPaused ? 'SESSION PAUSED' : 'READY FOR OUTDOOR WALK'),
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.6,
+                                ? 'RESTING / STATIONARY · 0.0 KM/H'
+                                : 'WALKING · ${walkState.currentSpeedKmh.toStringAsFixed(1)} KM/H')
+                          : (isPaused
+                                ? 'SESSION PAUSED'
+                                : 'READY FOR OUTDOOR WALK'),
+                      style: AppTypography.plusJakartaSans11W80023(
                         color: isTracking
-                            ? (isStationary ? const Color(0xFFF89238) : const Color(0xFF22C55E))
-                            : (isPaused ? Colors.amber : context.textSecondary),
+                            ? (isStationary
+                                  ? AppPalette.colorFFF89238
+                                  : AppPalette.colorFF22C55E)
+                            : (isPaused
+                                  ? AppPalette.amber
+                                  : context.textSecondary),
                       ),
                     ),
                   ],
@@ -863,9 +972,11 @@ class _WalkFitnessHud extends StatelessWidget {
                         painter: _ActivityRingPainter(
                           progress: progress,
                           trackColor: isDark
-                              ? Colors.white.withValues(alpha: 0.08)
-                              : Colors.black.withValues(alpha: 0.08),
-                          progressColor: isStationary ? const Color(0xFFF89238) : accent,
+                              ? AppPalette.white.withValues(alpha: 0.08)
+                              : AppPalette.black.withValues(alpha: 0.08),
+                          progressColor: isStationary
+                              ? AppPalette.colorFFF89238
+                              : accent,
                         ),
                       ),
                       Column(
@@ -873,34 +984,29 @@ class _WalkFitnessHud extends StatelessWidget {
                         children: [
                           Text(
                             distanceKm.toStringAsFixed(2),
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 44,
-                              fontWeight: FontWeight.w800,
+                            style: AppTypography.plusJakartaSans44W80024(
                               color: context.textPrimary,
-                              letterSpacing: -1.5,
                             ),
                           ),
                           Text(
                             'KILOMETERS',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.5,
+                            style: AppTypography.plusJakartaSans105W80025(
                               color: context.textMuted,
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                            decoration: BoxDecoration(
+                          AppCard(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s10,
+                              vertical: AppSpace.s3,
+                            ),
+                            nightDecoration: BoxDecoration(
                               color: context.bgSurface.withValues(alpha: 0.7),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: AppGeometry.roundedr12,
                             ),
                             child: Text(
                               walkState.formattedDuration,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                              style: AppTypography.jetBrainsMono13W60026(
                                 color: context.textPrimary,
                               ),
                             ),
@@ -961,14 +1067,17 @@ class _HudStatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s14,
+        vertical: AppSpace.s10,
+      ),
+      nightDecoration: BoxDecoration(
         color: context.bgSurface.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: AppGeometry.roundedr14,
         border: Border.all(
           color: context.divider.withValues(alpha: 0.7),
-          width: 0.8,
+          width: AppBorderScale.w0point8,
         ),
       ),
       child: Column(
@@ -980,10 +1089,7 @@ class _HudStatItem extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 label,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+                style: AppTypography.plusJakartaSans95W70027(
                   color: context.textMuted,
                 ),
               ),
@@ -997,9 +1103,7 @@ class _HudStatItem extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                style: AppTypography.jetBrainsMono15W70028(
                   color: context.textPrimary,
                 ),
               ),
@@ -1007,10 +1111,8 @@ class _HudStatItem extends StatelessWidget {
                 const SizedBox(width: 2),
                 Text(
                   unit,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 9.5,
+                  style: AppTypography.plusJakartaSans95W50029(
                     color: context.textMuted,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -1072,4 +1174,3 @@ class _ActivityRingPainter extends CustomPainter {
         oldDelegate.progressColor != progressColor;
   }
 }
-

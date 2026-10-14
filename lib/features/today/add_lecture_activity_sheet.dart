@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,8 @@ import '../../core/database/app_database.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
+import '../../core/providers/database_provider.dart';
+import '../study_plan/lecture_focus_player_sheet.dart';
 import '../study_plan/add_course_sheet.dart';
 import '../study_plan/module_lecture_editor_sheets.dart';
 
@@ -35,6 +39,28 @@ class AddLectureActivitySheet extends ConsumerStatefulWidget {
             AddLectureActivitySheet(task: task, title: title, minutes: minutes),
       ) ??
       false;
+  static Future<void> sendTask(
+    BuildContext context,
+    WidgetRef ref,
+    Task task,
+  ) async {
+    HapticFeedback.selectionClick();
+    final saved = await show(context, task: task);
+    if (!saved || !context.mounted) return;
+    final linked = await ref.read(taskDaoProvider).getTaskById(task.id);
+    if (!context.mounted ||
+        linked?.learningCourseId == null ||
+        linked?.learningLectureId == null) {
+      return;
+    }
+    final learning = ref.read(learningHubProvider.notifier);
+    await learning.ready;
+    if (!context.mounted) return;
+    learning.switchCourse(linked!.learningCourseId!);
+    learning.selectLecture(linked.learningLectureId!, autoPlay: false);
+    await LectureFocusPlayerSheet.show(context);
+  }
+
   @override
   ConsumerState<AddLectureActivitySheet> createState() =>
       _AddLectureActivitySheetState();
@@ -56,6 +82,17 @@ class _AddLectureActivitySheetState
   int _threshold = 100;
   late DateTime _date = widget.task?.plannedDate ?? DateTime.now();
   String? _error;
+  @override
+  void initState() {
+    super.initState();
+    final hub = ref.read(learningHubProvider);
+    final course = hub.courses
+        .where((c) => c.id == hub.activeCourseId)
+        .firstOrNull;
+    _courseId = course?.id;
+    _moduleId = course?.modules.firstOrNull?.id;
+  }
+
   @override
   void dispose() {
     _title.dispose();
@@ -119,10 +156,10 @@ class _AddLectureActivitySheetState
       canPop: !_saving,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
-          24,
-          20,
-          24,
-          MediaQuery.viewInsetsOf(context).bottom + 24,
+          AppSpace.s24,
+          AppSpace.s20,
+          AppSpace.s24,
+          MediaQuery.viewInsetsOf(context).bottom + AppSpace.s24,
         ),
         child: SingleChildScrollView(
           child: Column(
@@ -130,9 +167,7 @@ class _AddLectureActivitySheetState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                widget.task == null
-                    ? 'Plan a lecture'
-                    : 'Make this activity a lecture',
+                widget.task == null ? 'Plan a lecture' : 'Send to lecture',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 8),
@@ -141,7 +176,7 @@ class _AddLectureActivitySheetState
               ),
               if (widget.task != null)
                 const Padding(
-                  padding: EdgeInsets.only(top: 8),
+                  padding: EdgeInsets.only(top: AppSpace.s8),
                   child: Text(
                     'Existing timer history is kept as engagement. Completion requires new lecture study time.',
                   ),
@@ -164,7 +199,12 @@ class _AddLectureActivitySheetState
                     ? null
                     : (id) => setState(() {
                         _courseId = id;
-                        _moduleId = null;
+                        _moduleId = hub.courses
+                            .where((c) => c.id == id)
+                            .firstOrNull
+                            ?.modules
+                            .firstOrNull
+                            ?.id;
                         _lectureId = null;
                       }),
               ),
@@ -215,14 +255,14 @@ class _AddLectureActivitySheetState
               Wrap(
                 spacing: 8,
                 children: [
-                  ChoiceChip(
+                  AppPill.choice(
                     label: const Text('Create lecture'),
                     selected: !_existing,
                     onSelected: _saving
                         ? null
                         : (_) => setState(() => _existing = false),
                   ),
-                  ChoiceChip(
+                  AppPill.choice(
                     label: const Text('Link existing'),
                     selected: _existing,
                     onSelected: _saving
@@ -275,7 +315,7 @@ class _AddLectureActivitySheetState
                   spacing: 8,
                   children: [
                     for (final percent in [100, 50])
-                      ChoiceChip(
+                      AppPill.choice(
                         label: Text(
                           percent == 100 ? 'Full study time' : 'At least half',
                         ),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/surface_tokens.dart';
+import 'app_surfaces.dart';
 
 /// Translucent glass container matching Ascent design system:
 /// - 22px blur BackdropFilter
@@ -15,6 +17,7 @@ class GlassSurface extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
   final Border? customBorder;
+  final Color? fillColor;
   final bool enableBlur;
   final BorderRadius? borderRadius;
 
@@ -22,9 +25,10 @@ class GlassSurface extends StatelessWidget {
     super.key,
     required this.child,
     this.radius = 24,
-    this.padding = const EdgeInsets.all(16),
+    this.padding = const EdgeInsets.all(AppSpace.s16),
     this.onTap,
     this.customBorder,
+    this.fillColor,
     this.enableBlur = true,
     this.borderRadius,
   });
@@ -34,35 +38,37 @@ class GlassSurface extends StatelessWidget {
     final g = context.glass;
     final r = borderRadius ?? BorderRadius.circular(radius);
 
-    Widget content = Container(
+    Widget content = AppCard(
       padding: padding,
-      decoration: BoxDecoration(
-        color: g.fill,
+      nightDecoration: BoxDecoration(
+        color: fillColor ?? g.fill,
         borderRadius: r,
-        border: customBorder ?? Border.all(color: g.edge, width: 1.0),
-        boxShadow: [
-          BoxShadow(
-            color: g.shadow.withValues(alpha: context.isDark ? 0.35 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border:
+            customBorder ??
+            Border.all(color: g.edge, width: AppBorderScale.w1point0),
+        boxShadow: context.surfaces.blur == 0
+            ? const []
+            : [
+                BoxShadow(
+                  color: g.shadow.withValues(
+                    alpha: context.isDark ? 0.35 : 0.08,
+                  ),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: child,
     );
 
     if (onTap != null) {
       content = Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: r,
-          child: content,
-        ),
+        color: AppPalette.transparent,
+        child: AppTapArea(onTap: onTap, borderRadius: r, child: content),
       );
     }
 
-    if (!enableBlur) {
+    if (!enableBlur || context.surfaces.blur == 0) {
       return content;
     }
 

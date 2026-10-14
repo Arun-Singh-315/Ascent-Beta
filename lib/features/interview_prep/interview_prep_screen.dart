@@ -1,10 +1,12 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -18,7 +20,8 @@ class InterviewPrepScreen extends ConsumerStatefulWidget {
   const InterviewPrepScreen({super.key, this.linkedApplicationId});
 
   @override
-  ConsumerState<InterviewPrepScreen> createState() => _InterviewPrepScreenState();
+  ConsumerState<InterviewPrepScreen> createState() =>
+      _InterviewPrepScreenState();
 }
 
 class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
@@ -62,9 +65,12 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
   }
 
   void _openAddEditInterviewSheet([UpcomingInterview? existing]) {
-    final companyController = TextEditingController(text: existing?.companyName ?? '');
+    final companyController = TextEditingController(
+      text: existing?.companyName ?? '',
+    );
     final notesController = TextEditingController(text: existing?.notes ?? '');
-    DateTime selectedDate = existing?.interviewDate ?? DateTime.now().add(const Duration(days: 3));
+    DateTime selectedDate =
+        existing?.interviewDate ?? DateTime.now().add(const Duration(days: 3));
     TimeOfDay selectedTime = TimeOfDay.fromDateTime(selectedDate);
 
     showModalBottomSheet(
@@ -72,7 +78,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
@@ -80,10 +86,10 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
             return Padding(
               padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: bottomInset + 24,
+                left: AppSpace.s20,
+                right: AppSpace.s20,
+                top: AppSpace.s20,
+                bottom: bottomInset + AppSpace.s24,
               ),
               child: SingleChildScrollView(
                 child: Column(
@@ -96,7 +102,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                         height: 4,
                         decoration: BoxDecoration(
                           color: context.divider,
-                          borderRadius: BorderRadius.circular(2),
+                          borderRadius: AppGeometry.roundedr2,
                         ),
                       ),
                     ),
@@ -105,12 +111,12 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          existing == null ? 'Schedule Interview' : 'Edit Interview',
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
+                          existing == null
+                              ? 'Schedule Interview'
+                              : 'Edit Interview',
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole5),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
@@ -122,28 +128,39 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                     TextField(
                       controller: companyController,
                       autofocus: existing == null,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Company / Organization *',
                         hintText: 'e.g. Google, Stripe, Meta',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
                     TextField(
                       controller: notesController,
                       maxLines: 2,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Focus Areas / Notes (optional)',
-                        hintText: 'e.g. System design round, review caching & Kafka',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        hintText:
+                            'e.g. System design round, review caching & Kafka',
+                        border: OutlineInputBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Date & Time',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: context.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -151,17 +168,31 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                         Expanded(
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.calendar_today, size: 16),
-                            label: Text(DateFormat('EEE, MMM d, y').format(selectedDate)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            label: Text(
+                              DateFormat('EEE, MMM d, y').format(selectedDate),
+                            ),
+                            style: context.surfaces.buttonStyle(
+                              OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppGeometry.roundedr12,
+                                ),
+                              ),
+                              filled: false,
+                              icon: false,
                             ),
                             onPressed: () async {
                               final picked = await showDatePicker(
                                 context: context,
                                 initialDate: selectedDate,
-                                firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                                lastDate: DateTime.now().add(const Duration(days: 365)),
+                                firstDate: DateTime.now().subtract(
+                                  const Duration(days: 1),
+                                ),
+                                lastDate: DateTime.now().add(
+                                  const Duration(days: 365),
+                                ),
                               );
                               if (picked != null) {
                                 setSheetState(() {
@@ -182,9 +213,17 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                           child: OutlinedButton.icon(
                             icon: const Icon(Icons.access_time, size: 16),
                             label: Text(selectedTime.format(context)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            style: context.surfaces.buttonStyle(
+                              OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s12,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppGeometry.roundedr12,
+                                ),
+                              ),
+                              filled: false,
+                              icon: false,
                             ),
                             onPressed: () async {
                               final picked = await showTimePicker(
@@ -210,55 +249,69 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                     ),
                     const SizedBox(height: 24),
                     AscentButton.primary(
-                      label: existing == null ? 'Save & Set Interview' : 'Update Interview',
+                      label: existing == null
+                          ? 'Save & Set Interview'
+                          : 'Update Interview',
                       expanded: true,
                       onPressed: () async {
-                          final comp = companyController.text.trim();
-                          if (comp.isEmpty) return;
+                        final comp = companyController.text.trim();
+                        if (comp.isEmpty) return;
 
-                          final fullDateTime = DateTime(
-                            selectedDate.year,
-                            selectedDate.month,
-                            selectedDate.day,
-                            selectedTime.hour,
-                            selectedTime.minute,
+                        final fullDateTime = DateTime(
+                          selectedDate.year,
+                          selectedDate.month,
+                          selectedDate.day,
+                          selectedTime.hour,
+                          selectedTime.minute,
+                        );
+
+                        final dao = ref.read(upcomingInterviewDaoProvider);
+                        if (existing == null) {
+                          await dao.insertInterview(
+                            UpcomingInterviewTableCompanion.insert(
+                              companyName: comp,
+                              interviewDate: fullDateTime,
+                              notes: drift.Value(
+                                notesController.text.trim().isEmpty
+                                    ? null
+                                    : notesController.text.trim(),
+                              ),
+                            ),
                           );
-
-                          final dao = ref.read(upcomingInterviewDaoProvider);
-                          if (existing == null) {
-                            await dao.insertInterview(
-                              UpcomingInterviewTableCompanion.insert(
-                                companyName: comp,
-                                interviewDate: fullDateTime,
-                                notes: drift.Value(notesController.text.trim().isEmpty ? null : notesController.text.trim()),
+                        } else {
+                          await dao.updateInterview(
+                            UpcomingInterviewTableCompanion(
+                              id: drift.Value(existing.id),
+                              companyName: drift.Value(comp),
+                              interviewDate: drift.Value(fullDateTime),
+                              notes: drift.Value(
+                                notesController.text.trim().isEmpty
+                                    ? null
+                                    : notesController.text.trim(),
                               ),
-                            );
-                          } else {
-                            await dao.updateInterview(
-                              UpcomingInterviewTableCompanion(
-                                id: drift.Value(existing.id),
-                                companyName: drift.Value(comp),
-                                interviewDate: drift.Value(fullDateTime),
-                                notes: drift.Value(notesController.text.trim().isEmpty ? null : notesController.text.trim()),
-                              ),
-                            );
-                          }
+                            ),
+                          );
+                        }
 
-                          ref.invalidate(allUpcomingInterviewsProvider);
-                          ref.invalidate(nextUpcomingInterviewProvider);
+                        ref.invalidate(allUpcomingInterviewsProvider);
+                        ref.invalidate(nextUpcomingInterviewProvider);
 
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(existing == null ? 'Interview scheduled!' : 'Interview updated!'),
-                                duration: const Duration(seconds: 2),
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                existing == null
+                                    ? 'Interview scheduled!'
+                                    : 'Interview updated!',
                               ),
-                            );
-                          }
-                        },
-                      ),
-                    ],
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ),
             );
@@ -273,7 +326,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Delete Scheduled Interview?'),
-        content: Text('Are you sure you want to remove the upcoming interview with "${interview.companyName}"?'),
+        content: Text(
+          'Are you sure you want to remove the upcoming interview with "${interview.companyName}"?',
+        ),
         actions: [
           Row(
             children: [
@@ -299,7 +354,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
     );
 
     if (confirmed == true) {
-      await ref.read(upcomingInterviewDaoProvider).deleteInterview(interview.id);
+      await ref
+          .read(upcomingInterviewDaoProvider)
+          .deleteInterview(interview.id);
       ref.invalidate(allUpcomingInterviewsProvider);
       ref.invalidate(nextUpcomingInterviewProvider);
       if (mounted) {
@@ -319,7 +376,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => _AddEditQuestionSheet(
         existing: existing,
@@ -351,7 +408,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
       actions: [
         IconButton(
           icon: Icon(Icons.add_rounded, color: context.accentPrimary, size: 28),
-          tooltip: _tabController.index == 0 ? 'Schedule Interview' : 'Add Question',
+          tooltip: _tabController.index == 0
+              ? 'Schedule Interview'
+              : 'Add Question',
           onPressed: () {
             if (_tabController.index == 0) {
               _openAddEditInterviewSheet();
@@ -383,29 +442,37 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
         if (interviews.isEmpty) {
           return Center(
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(AppSpace.s32),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
+                  AppTag(
                     width: 72,
                     height: 72,
-                    decoration: BoxDecoration(
+                    nightDecoration: BoxDecoration(
                       color: context.accentPrimary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.event_available_rounded, size: 36, color: context.accentPrimary),
+                    child: Icon(
+                      Icons.event_available_rounded,
+                      size: 36,
+                      color: context.accentPrimary,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'No Upcoming Interviews',
-                    style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                    style: AscentTextStyles.displaySmall.copyWith(
+                      color: context.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Schedule your upcoming interview rounds to track deadlines, prep focus areas, and countdown.',
                     textAlign: TextAlign.center,
-                    style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                    style: AscentTextStyles.bodyMedium.copyWith(
+                      color: context.textMuted,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   AscentButton.primary(
@@ -420,7 +487,7 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpace.s20),
           itemCount: interviews.length,
           itemBuilder: (context, index) {
             final interview = interviews[index];
@@ -439,18 +506,22 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
             }
 
             return AscentCard(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: AppSpace.s12),
+              padding: const EdgeInsets.all(AppSpace.s16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
+                  AppTag(
+                    padding: const EdgeInsets.all(AppSpace.s12),
+                    nightDecoration: BoxDecoration(
                       color: context.accentPrimary.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.business_rounded, color: context.accentPrimary, size: 24),
+                    child: Icon(
+                      Icons.business_rounded,
+                      color: context.accentPrimary,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -462,27 +533,32 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                             Expanded(
                               child: Text(
                                 interview.companyName,
-                                style: AscentTextStyles.headlineMedium.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 17,
-                                ),
+                                style: AscentTextStyles.headlineMedium
+                                    .copyWith(color: context.textPrimary)
+                                    .merge(AppTypeRoles.typeRole6),
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
+                            AppTag(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s8,
+                                vertical: AppSpace.s3,
+                              ),
+                              nightDecoration: BoxDecoration(
                                 color: (days <= 2 && days >= 0)
-                                    ? context.accentSecondary.withValues(alpha: 0.15)
-                                    : context.accentPrimary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
+                                    ? context.accentSecondary.withValues(
+                                        alpha: 0.15,
+                                      )
+                                    : context.accentPrimary.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                borderRadius: AppGeometry.roundedr8,
                               ),
                               child: Text(
                                 countdown,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: (days <= 2 && days >= 0) ? context.accentSecondary : context.accentPrimary,
+                                style: AppTypeRoles.typeRole7.copyWith(
+                                  color: (days <= 2 && days >= 0)
+                                      ? context.accentSecondary
+                                      : context.accentPrimary,
                                 ),
                               ),
                             ),
@@ -491,26 +567,41 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Icon(Icons.calendar_month_outlined, size: 14, color: context.textMuted),
+                            Icon(
+                              Icons.calendar_month_outlined,
+                              size: 14,
+                              color: context.textMuted,
+                            ),
                             const SizedBox(width: 5),
                             Text(
-                              DateFormat('EEEE, MMM d • h:mm a').format(interview.interviewDate),
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              DateFormat(
+                                'EEEE, MMM d • h:mm a',
+                              ).format(interview.interviewDate),
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: context.textMuted,
+                              ),
                             ),
                           ],
                         ),
-                        if (interview.notes != null && interview.notes!.isNotEmpty) ...[
+                        if (interview.notes != null &&
+                            interview.notes!.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Text(
                             interview.notes!,
-                            style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                            style: AscentTextStyles.bodyMedium.copyWith(
+                              color: context.textPrimary,
+                            ),
                           ),
                         ],
                       ],
                     ),
                   ),
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert_rounded, size: 20, color: context.textMuted),
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      size: 20,
+                      color: context.textMuted,
+                    ),
                     padding: EdgeInsets.zero,
                     onSelected: (val) {
                       if (val == 'edit') {
@@ -534,9 +625,16 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                         value: 'delete',
                         child: Row(
                           children: [
-                            Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                            Icon(
+                              Icons.delete_outline,
+                              size: 18,
+                              color: AppPalette.redAccent,
+                            ),
                             SizedBox(width: 8),
-                            Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                            Text(
+                              'Delete',
+                              style: TextStyle(color: AppPalette.redAccent),
+                            ),
                           ],
                         ),
                       ),
@@ -553,225 +651,292 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
     );
   }
 
-  Widget _buildQuestionBankTab(BuildContext context, Stream<List<InterviewPrep>> questionsStream, InterviewPrepDao prepDao) {
+  Widget _buildQuestionBankTab(
+    BuildContext context,
+    Stream<List<InterviewPrep>> questionsStream,
+    InterviewPrepDao prepDao,
+  ) {
     return StreamBuilder<List<InterviewPrep>>(
-        stream: questionsStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
-            return Padding(
-              padding: const EdgeInsets.all(20),
-              child: SkeletonShimmer(height: 200),
-            );
-          }
-
-          final allQuestions = snapshot.data ?? [];
-
-          // Filter by category and search
-          final filtered = allQuestions.where((q) {
-            if (_selectedCategory != 'All') {
-              if ((q.category ?? '').toLowerCase() != _selectedCategory.toLowerCase()) {
-                return false;
-              }
-            }
-            if (_searchQuery.isNotEmpty) {
-              final matchQuestion = q.questionAsked.toLowerCase().contains(_searchQuery);
-              final matchCompany = (q.company ?? '').toLowerCase().contains(_searchQuery);
-              final matchNotes = (q.answerNotes ?? '').toLowerCase().contains(_searchQuery);
-              if (!matchQuestion && !matchCompany && !matchNotes) return false;
-            }
-            return true;
-          }).toList();
-
-          // Calculate stats
-          final totalCount = allQuestions.length;
-          final practicedCount = allQuestions.where((q) => q.lastInteractedAt != null).length;
-          final nailedCount = allQuestions.where((q) => q.outcome == 'Nailed it').length;
-
-          return Column(
-            children: [
-              // ── Linked Application Banner ────────────────────────────
-              if (_filterApplicationId != null)
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: context.accentPrimary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: context.accentPrimary.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.business_center_rounded, size: 18, color: context.accentPrimary),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Filtered by linked application',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() => _filterApplicationId = null),
-                        child: Icon(Icons.close_rounded, size: 18, color: context.textMuted),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // ── Search & Filter Bar ──────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                child: TextField(
-                  controller: _searchController,
-                  style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
-                  decoration: InputDecoration(
-                    hintText: 'Search questions, companies, topics...',
-                    hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
-                    prefixIcon: Icon(Icons.search_rounded, color: context.textMuted, size: 20),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18),
-                            onPressed: () => _searchController.clear(),
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: context.bgSurface,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.divider),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.divider),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: context.accentPrimary, width: 1.5),
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Category Chips ───────────────────────────────────────
-              SizedBox(
-                height: 44,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: _categories.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 8),
-                  itemBuilder: (context, index) {
-                    final cat = _categories[index];
-                    final isSelected = cat == _selectedCategory;
-                    return ChoiceChip(
-                      label: Text(cat),
-                      selected: isSelected,
-                      selectedColor: context.accentPrimary,
-                      backgroundColor: context.bgSurface,
-                      labelStyle: AscentTextStyles.bodySmall.copyWith(
-                        color: isSelected ? Colors.white : context.textPrimary,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: isSelected ? context.accentPrimary : context.divider,
-                        ),
-                      ),
-                      onSelected: (selected) {
-                        if (selected) setState(() => _selectedCategory = cat);
-                      },
-                    );
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // ── High Level Stats Strip ───────────────────────────────
-              if (totalCount > 0)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: Row(
-                    children: [
-                      _StatBadge(
-                        label: 'Total',
-                        count: '$totalCount',
-                        color: context.textPrimary,
-                      ),
-                      const SizedBox(width: 8),
-                      _StatBadge(
-                        label: 'Practiced',
-                        count: '$practicedCount',
-                        color: context.accentSecondary,
-                      ),
-                      const SizedBox(width: 8),
-                      _StatBadge(
-                        label: 'Nailed it',
-                        count: '$nailedCount',
-                        color: context.stateSuccess,
-                      ),
-                    ],
-                  ),
-                ),
-
-              // ── Question List / Empty State ──────────────────────────
-              Expanded(
-                child: filtered.isEmpty
-                    ? _buildEmptyState(context, totalCount == 0)
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) {
-                          final item = filtered[index];
-                          final isExpanded = _expandedQuestionIds.contains(item.id);
-                          return _QuestionCard(
-                            item: item,
-                            isExpanded: isExpanded,
-                            onToggleExpand: () {
-                              setState(() {
-                                if (isExpanded) {
-                                  _expandedQuestionIds.remove(item.id);
-                                } else {
-                                  _expandedQuestionIds.add(item.id);
-                                }
-                              });
-                            },
-                            onEdit: () => _openAddEditDialog(item),
-                            onDelete: () => _confirmDeleteQuestion(item.id),
-                            onMarkPracticed: (outcome) async {
-                              await prepDao.updateQuestion(
-                                InterviewPrepTableCompanion(
-                                  id: drift.Value(item.id),
-                                  outcome: drift.Value(outcome),
-                                  lastInteractedAt: drift.Value(DateTime.now()),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ],
+      stream: questionsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return Padding(
+            padding: const EdgeInsets.all(AppSpace.s20),
+            child: SkeletonShimmer(height: 200),
           );
-        },
-      );
+        }
+
+        final allQuestions = snapshot.data ?? [];
+
+        // Filter by category and search
+        final filtered = allQuestions.where((q) {
+          if (_selectedCategory != 'All') {
+            if ((q.category ?? '').toLowerCase() !=
+                _selectedCategory.toLowerCase()) {
+              return false;
+            }
+          }
+          if (_searchQuery.isNotEmpty) {
+            final matchQuestion = q.questionAsked.toLowerCase().contains(
+              _searchQuery,
+            );
+            final matchCompany = (q.company ?? '').toLowerCase().contains(
+              _searchQuery,
+            );
+            final matchNotes = (q.answerNotes ?? '').toLowerCase().contains(
+              _searchQuery,
+            );
+            if (!matchQuestion && !matchCompany && !matchNotes) return false;
+          }
+          return true;
+        }).toList();
+
+        // Calculate stats
+        final totalCount = allQuestions.length;
+        final practicedCount = allQuestions
+            .where((q) => q.lastInteractedAt != null)
+            .length;
+        final nailedCount = allQuestions
+            .where((q) => q.outcome == 'Nailed it')
+            .length;
+
+        return Column(
+          children: [
+            // ── Linked Application Banner ────────────────────────────
+            if (_filterApplicationId != null)
+              AppCard(
+                margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s20,
+                  vertical: AppSpace.s6,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s8,
+                ),
+                nightDecoration: BoxDecoration(
+                  color: context.accentPrimary.withValues(alpha: 0.12),
+                  borderRadius: AppGeometry.roundedr12,
+                  border: Border.all(
+                    color: context.accentPrimary.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.business_center_rounded,
+                      size: 18,
+                      color: context.accentPrimary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Filtered by linked application',
+                        style: AscentTextStyles.bodySmall
+                            .copyWith(color: context.textPrimary)
+                            .merge(AppTypeRoles.typeRole8),
+                      ),
+                    ),
+                    AppGestureTap(
+                      onTap: () => setState(() => _filterApplicationId = null),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 18,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // ── Search & Filter Bar ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpace.s20,
+                AppSpace.s12,
+                AppSpace.s20,
+                AppSpace.s8,
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Search questions, companies, topics...',
+                  hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textMuted,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    color: context.textMuted,
+                    size: 20,
+                  ),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () => _searchController.clear(),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: context.bgSurface,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s16,
+                    vertical: AppSpace.s12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr14,
+                    borderSide: BorderSide(color: context.divider),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr14,
+                    borderSide: BorderSide(color: context.divider),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr14,
+                    borderSide: BorderSide(
+                      color: context.accentPrimary,
+                      width: AppBorderScale.w1point5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Category Chips ───────────────────────────────────────
+            SizedBox(
+              height: 44,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpace.s20),
+                itemCount: _categories.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final cat = _categories[index];
+                  final isSelected = cat == _selectedCategory;
+                  return AppPill.choice(
+                    label: Text(cat),
+                    selected: isSelected,
+                    selectedColor: context.accentPrimary,
+                    backgroundColor: context.bgSurface,
+                    labelStyle: AscentTextStyles.bodySmall
+                        .copyWith(
+                          color: isSelected
+                              ? AppPalette.white
+                              : context.textPrimary,
+                        )
+                        .merge(
+                          AppStateTypography.stateType1(state0: isSelected),
+                        ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppGeometry.roundedr10,
+                      side: BorderSide(
+                        color: isSelected
+                            ? context.accentPrimary
+                            : context.divider,
+                      ),
+                    ),
+                    onSelected: (selected) {
+                      if (selected) setState(() => _selectedCategory = cat);
+                    },
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── High Level Stats Strip ───────────────────────────────
+            if (totalCount > 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s20,
+                  vertical: AppSpace.s6,
+                ),
+                child: Row(
+                  children: [
+                    _StatBadge(
+                      label: 'Total',
+                      count: '$totalCount',
+                      color: context.textPrimary,
+                    ),
+                    const SizedBox(width: 8),
+                    _StatBadge(
+                      label: 'Practiced',
+                      count: '$practicedCount',
+                      color: context.accentSecondary,
+                    ),
+                    const SizedBox(width: 8),
+                    _StatBadge(
+                      label: 'Nailed it',
+                      count: '$nailedCount',
+                      color: context.stateSuccess,
+                    ),
+                  ],
+                ),
+              ),
+
+            // ── Question List / Empty State ──────────────────────────
+            Expanded(
+              child: filtered.isEmpty
+                  ? _buildEmptyState(context, totalCount == 0)
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpace.s20,
+                        AppSpace.s8,
+                        AppSpace.s20,
+                        AppSpace.s24,
+                      ),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+                        final isExpanded = _expandedQuestionIds.contains(
+                          item.id,
+                        );
+                        return _QuestionCard(
+                          item: item,
+                          isExpanded: isExpanded,
+                          onToggleExpand: () {
+                            setState(() {
+                              if (isExpanded) {
+                                _expandedQuestionIds.remove(item.id);
+                              } else {
+                                _expandedQuestionIds.add(item.id);
+                              }
+                            });
+                          },
+                          onEdit: () => _openAddEditDialog(item),
+                          onDelete: () => _confirmDeleteQuestion(item.id),
+                          onMarkPracticed: (outcome) async {
+                            await prepDao.updateQuestion(
+                              InterviewPrepTableCompanion(
+                                id: drift.Value(item.id),
+                                outcome: drift.Value(outcome),
+                                lastInteractedAt: drift.Value(DateTime.now()),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildEmptyState(BuildContext context, bool isTotalZero) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(AppSpace.s32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
+            AppTag(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
+              nightDecoration: BoxDecoration(
                 color: context.accentPrimary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
@@ -783,8 +948,12 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              isTotalZero ? 'No Interview Questions Yet' : 'No Matching Questions',
-              style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+              isTotalZero
+                  ? 'No Interview Questions Yet'
+                  : 'No Matching Questions',
+              style: AscentTextStyles.displaySmall.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -792,7 +961,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                   ? 'Add questions you expect or have encountered. Practice answers, STAR notes, and track your confidence.'
                   : 'Try changing your search query or selected category filter.',
               textAlign: TextAlign.center,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textMuted,
+              ),
             ),
             if (isTotalZero) ...[
               const SizedBox(height: 20),
@@ -813,23 +984,27 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
       context: context,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpace.s24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Delete Question?',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.displaySmall.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'This question and its practice notes will be permanently removed.',
                 textAlign: TextAlign.center,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -848,7 +1023,9 @@ class _InterviewPrepScreenState extends ConsumerState<InterviewPrepScreen>
                       compact: true,
                       onPressed: () async {
                         Navigator.pop(ctx);
-                        await ref.read(interviewPrepDaoProvider).deleteQuestion(id);
+                        await ref
+                            .read(interviewPrepDaoProvider)
+                            .deleteQuestion(id);
                       },
                     ),
                   ),
@@ -879,11 +1056,14 @@ class _StatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
+    return AppTag(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s12,
+        vertical: AppSpace.s6,
+      ),
+      nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: AppGeometry.roundedr10,
         border: Border.all(color: context.divider),
       ),
       child: Row(
@@ -891,14 +1071,15 @@ class _StatBadge extends StatelessWidget {
         children: [
           Text(
             '$label: ',
-            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+            style: AscentTextStyles.bodySmall.copyWith(
+              color: context.textMuted,
+            ),
           ),
           Text(
             count,
-            style: AscentTextStyles.monoCode.copyWith(
-              color: color,
-              fontWeight: FontWeight.bold,
-            ),
+            style: AscentTextStyles.monoCode
+                .copyWith(color: color)
+                .merge(AppTypeRoles.typeRole9),
           ),
         ],
       ),
@@ -950,8 +1131,8 @@ class _QuestionCard extends StatelessWidget {
         : 'Not practiced yet';
 
     return AscentCard(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: AppSpace.s12),
+      padding: const EdgeInsets.all(AppSpace.s16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -959,65 +1140,84 @@ class _QuestionCard extends StatelessWidget {
           Row(
             children: [
               if (item.company?.isNotEmpty == true) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
+                AppTag(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s8,
+                    vertical: AppSpace.s3,
+                  ),
+                  nightDecoration: BoxDecoration(
                     color: context.accentPrimary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: AppGeometry.roundedr6,
                   ),
                   child: Text(
                     item.company!,
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: context.accentPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelSmall
+                        .copyWith(color: context.accentPrimary)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                 ),
                 const SizedBox(width: 8),
               ],
               if (item.category?.isNotEmpty == true) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
+                AppTag(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s8,
+                    vertical: AppSpace.s3,
+                  ),
+                  nightDecoration: BoxDecoration(
                     color: context.bgBase,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: AppGeometry.roundedr6,
                     border: Border.all(color: context.divider),
                   ),
                   child: Text(
                     item.category!,
-                    style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: context.textMuted,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
               ],
               const Spacer(),
               if (item.outcome?.isNotEmpty == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
+                AppTag(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s8,
+                    vertical: AppSpace.s3,
+                  ),
+                  nightDecoration: BoxDecoration(
                     color: outcomeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: AppGeometry.roundedr6,
                   ),
                   child: Text(
                     item.outcome!,
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: outcomeColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelSmall
+                        .copyWith(color: outcomeColor)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                 ),
               PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert_rounded, size: 18, color: context.textMuted),
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  size: 18,
+                  color: context.textMuted,
+                ),
                 padding: EdgeInsets.zero,
                 onSelected: (val) {
                   if (val == 'edit') onEdit();
                   if (val == 'delete') onDelete();
                 },
                 itemBuilder: (ctx) => [
-                  const PopupMenuItem(value: 'edit', child: Text('Edit Question')),
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Text('Edit Question'),
+                  ),
                   const PopupMenuItem(
                     value: 'delete',
-                    child: Text('Delete', style: TextStyle(color: Colors.red)),
+                    child: Text(
+                      'Delete',
+                      style: TextStyle(color: AppPalette.red),
+                    ),
                   ),
                 ],
               ),
@@ -1027,24 +1227,24 @@ class _QuestionCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           // Question Text
-          InkWell(
+          AppTapArea(
             onTap: onToggleExpand,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppGeometry.roundedr8,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Text(
                     item.questionAsked,
-                    style: AscentTextStyles.headlineMedium.copyWith(
-                      color: context.textPrimary,
-                      fontSize: 16,
-                      height: 1.35,
-                    ),
+                    style: AscentTextStyles.headlineMedium
+                        .copyWith(color: context.textPrimary, height: 1.35)
+                        .merge(AppTypeRoles.typeRole10),
                   ),
                 ),
                 Icon(
-                  isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                  isExpanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
                   color: context.textMuted,
                 ),
               ],
@@ -1060,7 +1260,9 @@ class _QuestionCard extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 lastPracticed,
-                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                ),
               ),
             ],
           ),
@@ -1068,23 +1270,22 @@ class _QuestionCard extends StatelessWidget {
           // ── Expanded Content: Answer & Practice controls ───────────
           if (isExpanded) ...[
             const SizedBox(height: 14),
-            const Divider(),
+            const AppDivider(),
             const SizedBox(height: 8),
 
             Text(
               'Answer & Key Talking Points:',
-              style: AscentTextStyles.labelSmall.copyWith(
-                color: context.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AscentTextStyles.labelSmall
+                  .copyWith(color: context.textMuted)
+                  .merge(AppTypeRoles.typeRole8),
             ),
             const SizedBox(height: 6),
-            Container(
+            AppTag(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.all(AppSpace.s12),
+              nightDecoration: BoxDecoration(
                 color: context.bgBase,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: AppGeometry.roundedr10,
                 border: Border.all(color: context.divider),
               ),
               child: Text(
@@ -1105,23 +1306,30 @@ class _QuestionCard extends StatelessWidget {
             // Quick outcome assessment buttons
             Text(
               'Self-Evaluation Rating:',
-              style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+              style: AscentTextStyles.labelSmall.copyWith(
+                color: context.textMuted,
+              ),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
               runSpacing: 6,
-              children: ['Nailed it', 'Solid', 'Needs work', 'Stumped'].map((rating) {
+              children: ['Nailed it', 'Solid', 'Needs work', 'Stumped'].map((
+                rating,
+              ) {
                 final isSelected = item.outcome == rating;
                 final rColor = _outcomeColor(context, rating);
-                return ActionChip(
+                return AppPill.action(
                   label: Text(rating),
-                  labelStyle: AscentTextStyles.labelSmall.copyWith(
-                    color: isSelected ? Colors.white : rColor,
-                    fontWeight: FontWeight.w600,
+                  labelStyle: AscentTextStyles.labelSmall
+                      .copyWith(color: isSelected ? AppPalette.white : rColor)
+                      .merge(AppTypeRoles.typeRole8),
+                  backgroundColor: isSelected
+                      ? rColor
+                      : rColor.withValues(alpha: 0.1),
+                  side: BorderSide(
+                    color: isSelected ? rColor : AppPalette.transparent,
                   ),
-                  backgroundColor: isSelected ? rColor : rColor.withValues(alpha: 0.1),
-                  side: BorderSide(color: isSelected ? rColor : Colors.transparent),
                   onPressed: () => onMarkPracticed(rating),
                 );
               }).toList(),
@@ -1144,7 +1352,8 @@ class _AddEditQuestionSheet extends ConsumerStatefulWidget {
   const _AddEditQuestionSheet({this.existing, this.defaultApplicationId});
 
   @override
-  ConsumerState<_AddEditQuestionSheet> createState() => _AddEditQuestionSheetState();
+  ConsumerState<_AddEditQuestionSheet> createState() =>
+      _AddEditQuestionSheetState();
 }
 
 class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
@@ -1164,12 +1373,7 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
     'Culture & Leadership',
   ];
 
-  final _outcomes = const [
-    'Nailed it',
-    'Solid',
-    'Needs work',
-    'Stumped',
-  ];
+  final _outcomes = const ['Nailed it', 'Solid', 'Needs work', 'Stumped'];
 
   @override
   void initState() {
@@ -1217,16 +1421,22 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
         InterviewPrepTableCompanion(
           id: drift.Value(widget.existing!.id),
           questionAsked: drift.Value(questionText),
-          company: drift.Value(_companyController.text.trim().isEmpty
-              ? null
-              : _companyController.text.trim()),
-          role: drift.Value(_roleController.text.trim().isEmpty
-              ? null
-              : _roleController.text.trim()),
+          company: drift.Value(
+            _companyController.text.trim().isEmpty
+                ? null
+                : _companyController.text.trim(),
+          ),
+          role: drift.Value(
+            _roleController.text.trim().isEmpty
+                ? null
+                : _roleController.text.trim(),
+          ),
           category: drift.Value(_category),
-          answerNotes: drift.Value(_answerController.text.trim().isEmpty
-              ? null
-              : _answerController.text.trim()),
+          answerNotes: drift.Value(
+            _answerController.text.trim().isEmpty
+                ? null
+                : _answerController.text.trim(),
+          ),
           outcome: drift.Value(_outcome),
           linkedApplicationId: drift.Value(_linkedAppId),
           lastInteractedAt: drift.Value(DateTime.now()),
@@ -1236,16 +1446,22 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
       await prepDao.insertQuestion(
         InterviewPrepTableCompanion.insert(
           questionAsked: questionText,
-          company: drift.Value(_companyController.text.trim().isEmpty
-              ? null
-              : _companyController.text.trim()),
-          role: drift.Value(_roleController.text.trim().isEmpty
-              ? null
-              : _roleController.text.trim()),
+          company: drift.Value(
+            _companyController.text.trim().isEmpty
+                ? null
+                : _companyController.text.trim(),
+          ),
+          role: drift.Value(
+            _roleController.text.trim().isEmpty
+                ? null
+                : _roleController.text.trim(),
+          ),
           category: drift.Value(_category),
-          answerNotes: drift.Value(_answerController.text.trim().isEmpty
-              ? null
-              : _answerController.text.trim()),
+          answerNotes: drift.Value(
+            _answerController.text.trim().isEmpty
+                ? null
+                : _answerController.text.trim(),
+          ),
           outcome: drift.Value(_outcome),
           linkedApplicationId: drift.Value(_linkedAppId),
           lastInteractedAt: drift.Value(DateTime.now()),
@@ -1258,14 +1474,16 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final applicationsAsync = ref.watch(applicationDaoProvider).watchAllApplications();
+    final applicationsAsync = ref
+        .watch(applicationDaoProvider)
+        .watchAllApplications();
 
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
-        left: 20,
-        right: 20,
-        top: 24,
+        left: AppSpace.s20,
+        right: AppSpace.s20,
+        top: AppSpace.s24,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -1276,8 +1494,12 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  widget.existing != null ? 'Edit Question' : 'New Interview Question',
-                  style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                  widget.existing != null
+                      ? 'Edit Question'
+                      : 'New Interview Question',
+                  style: AscentTextStyles.displaySmall.copyWith(
+                    color: context.textPrimary,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close_rounded),
@@ -1290,20 +1512,27 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
             // Question Asked
             Text(
               'Question *',
-              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.labelMedium.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _questionController,
               maxLines: 2,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
-                hintText: 'e.g. Tell me about a time you resolved a team conflict.',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                hintText:
+                    'e.g. Tell me about a time you resolved a team conflict.',
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   borderSide: BorderSide(color: context.divider),
                 ),
               ),
@@ -1320,26 +1549,36 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
                     children: [
                       Text(
                         'Category',
-                        style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         initialValue: _category,
                         dropdownColor: context.bgSurface,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: context.bgBase,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s12,
+                            vertical: AppSpace.s10,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppGeometry.roundedr12,
                             borderSide: BorderSide(color: context.divider),
                           ),
                         ),
                         items: _categories
-                            .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                            .map(
+                              (c) => DropdownMenuItem(value: c, child: Text(c)),
+                            )
                             .toList(),
-                        onChanged: (val) => setState(() => _category = val ?? _category),
+                        onChanged: (val) =>
+                            setState(() => _category = val ?? _category),
                       ),
                     ],
                   ),
@@ -1351,26 +1590,36 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
                     children: [
                       Text(
                         'Self-Assessment',
-                        style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         initialValue: _outcome,
                         dropdownColor: context.bgSurface,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: context.bgBase,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s12,
+                            vertical: AppSpace.s10,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppGeometry.roundedr12,
                             borderSide: BorderSide(color: context.divider),
                           ),
                         ),
                         items: _outcomes
-                            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                            .map(
+                              (o) => DropdownMenuItem(value: o, child: Text(o)),
+                            )
                             .toList(),
-                        onChanged: (val) => setState(() => _outcome = val ?? _outcome),
+                        onChanged: (val) =>
+                            setState(() => _outcome = val ?? _outcome),
                       ),
                     ],
                   ),
@@ -1389,20 +1638,29 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
                     children: [
                       Text(
                         'Company (Optional)',
-                        style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _companyController,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'e.g. Stripe',
-                          hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                          hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                            color: context.textMuted,
+                          ),
                           filled: true,
                           fillColor: context.bgBase,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s12,
+                            vertical: AppSpace.s10,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppGeometry.roundedr12,
                             borderSide: BorderSide(color: context.divider),
                           ),
                         ),
@@ -1417,20 +1675,29 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
                     children: [
                       Text(
                         'Role (Optional)',
-                        style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.labelMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _roleController,
-                        style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: context.textPrimary,
+                        ),
                         decoration: InputDecoration(
                           hintText: 'e.g. SDE-2',
-                          hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                          hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                            color: context.textMuted,
+                          ),
                           filled: true,
                           fillColor: context.bgBase,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s12,
+                            vertical: AppSpace.s10,
+                          ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppGeometry.roundedr12,
                             borderSide: BorderSide(color: context.divider),
                           ),
                         ),
@@ -1455,19 +1722,26 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
                   children: [
                     Text(
                       'Link to Pipeline Application',
-                      style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: context.textPrimary,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     DropdownButtonFormField<int?>(
                       initialValue: _linkedAppId,
                       dropdownColor: context.bgSurface,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: context.bgBase,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s12,
+                          vertical: AppSpace.s10,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                           borderSide: BorderSide(color: context.divider),
                         ),
                       ),
@@ -1510,25 +1784,34 @@ class _AddEditQuestionSheetState extends ConsumerState<_AddEditQuestionSheet> {
             // Answer & Talking points (STAR format)
             Text(
               'Answer Notes / Talking Points',
-              style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.labelMedium.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'Tip: Use STAR framework (Situation, Task, Action, Result) with metrics.',
-              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+              style: AscentTextStyles.bodySmall.copyWith(
+                color: context.textMuted,
+              ),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _answerController,
               maxLines: 4,
-              style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.bodyMedium.copyWith(
+                color: context.textPrimary,
+              ),
               decoration: InputDecoration(
-                hintText: 'S: At my previous company...\nT: We needed to reduce latency...\nA: I redesigned the caching tier...\nR: Reduced p99 by 42%.',
-                hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                hintText:
+                    'S: At my previous company...\nT: We needed to reduce latency...\nA: I redesigned the caching tier...\nR: Reduced p99 by 42%.',
+                hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
                 filled: true,
                 fillColor: context.bgBase,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppGeometry.roundedr12,
                   borderSide: BorderSide(color: context.divider),
                 ),
               ),

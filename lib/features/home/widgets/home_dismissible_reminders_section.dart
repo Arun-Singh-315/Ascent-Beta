@@ -1,5 +1,7 @@
+import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -26,13 +28,13 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
     final g = context.glass;
     final reminder = reminders.first;
     return Material(
-      color: Colors.transparent,
-      child: InkWell(
+      color: AppPalette.transparent,
+      child: AppTapArea(
         onTap: onViewAll,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppGeometry.roundedr16,
         child: GlassSurface(
           radius: 18,
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpace.s14),
           child: Row(
             children: [
               Icon(
@@ -49,17 +51,14 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                       reminder.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+                      style: AppTypography.plusJakartaSans14W60080(
                         color: g.ink,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       '${DateFormat('d MMM · h:mm a').format(reminder.scheduledAt)}${reminders.length > 1 ? ' · +${reminders.length - 1} more' : ''}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
+                      style: AppTypography.plusJakartaSans12Regular57(
                         color: g.inkMuted,
                       ),
                     ),

@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -133,21 +135,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _confirmResetData() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) {
         final g = ctx.glass;
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpace.s24),
           decoration: BoxDecoration(
             color: g.bg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(
+              top: AppGeometry.radiusr24,
+            ),
             border: Border(
               top: BorderSide(
                 color: g.coral.withValues(alpha: 0.3),
-                width: 1.5,
+                width: AppBorderScale.w1point5,
               ),
             ),
           ),
@@ -155,10 +159,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
+                AppTag(
                   width: 50,
                   height: 50,
-                  decoration: BoxDecoration(
+                  nightDecoration: BoxDecoration(
                     color: g.coralSoft,
                     shape: BoxShape.circle,
                     border: Border.all(color: g.coral.withValues(alpha: 0.3)),
@@ -247,15 +251,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (ctx) {
         final g = ctx.glass;
         return Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
             color: g.bg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border(top: BorderSide(color: g.edge, width: 1.5)),
+            borderRadius: const BorderRadius.vertical(
+              top: AppGeometry.radiusr24,
+            ),
+            border: Border(
+              top: BorderSide(color: g.edge, width: AppBorderScale.w1point5),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -267,18 +275,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: g.edge,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppGeometry.roundedr2,
                   ),
                 ),
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpace.s10),
+                    nightDecoration: BoxDecoration(
                       color: g.sageSoft,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppGeometry.roundedr12,
                       border: Border.all(color: g.sage.withValues(alpha: 0.3)),
                     ),
                     child: Icon(
@@ -294,11 +302,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       children: [
                         Text(
                           'Background Walk Tracking Setup',
-                          style: AscentTextStyles.headlineMedium.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: g.ink,
-                          ),
+                          style: AscentTextStyles.headlineMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole30),
                         ),
                         Text(
                           'Prevent Android from killing GPS when locked',
@@ -360,11 +366,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           backgroundColor: g.sageSoft,
           child: Text(
             number,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: g.sage,
-            ),
+            style: AppTypeRoles.typeRole7.copyWith(color: g.sage),
           ),
         ),
         const SizedBox(width: 10),
@@ -374,10 +376,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               Text(
                 title,
-                style: AscentTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: g.ink,
-                ),
+                style: AscentTextStyles.labelMedium
+                    .copyWith(color: g.ink)
+                    .merge(AppTypeRoles.typeRole9),
               ),
               const SizedBox(height: 2),
               Text(
@@ -418,7 +419,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         glow2: g.slateSoft,
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: AppSpace.s8),
             child: TextButton.icon(
               onPressed: _persistAndReturn,
               icon: _savedSuccess
@@ -426,16 +427,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   : const SizedBox.shrink(),
               label: Text(
                 _savedSuccess ? 'Saved' : 'Save',
-                style: AscentTextStyles.labelLarge.copyWith(
-                  color: g.clay,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AscentTextStyles.labelLarge
+                    .copyWith(color: g.clay)
+                    .merge(AppTypeRoles.typeRole9),
               ),
             ),
           ),
         ],
         body: ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s16,
+            vertical: AppSpace.s8,
+          ),
           children: [
             // ── Section 1: Target Profile & Identity (Always Visible) ────────
             _SectionHeader(
@@ -443,16 +446,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               dotColor: g.clay,
             ),
             AscentCard(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Your Name',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: g.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 6),
                   TextField(
@@ -466,20 +468,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       filled: true,
                       fillColor: g.fill,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s12,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(color: g.edge),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(color: g.edge),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: g.clay, width: 1.2),
+                        borderRadius: AppGeometry.roundedr12,
+                        borderSide: BorderSide(
+                          color: g.clay,
+                          width: AppBorderScale.w1point2,
+                        ),
                       ),
                     ),
                   ),
@@ -487,10 +492,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                   Text(
                     'Target Role',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: g.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 6),
                   TextField(
@@ -504,20 +508,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       filled: true,
                       fillColor: g.fill,
                       contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s12,
                       ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(color: g.edge),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                         borderSide: BorderSide(color: g.edge),
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: g.clay, width: 1.2),
+                        borderRadius: AppGeometry.roundedr12,
+                        borderSide: BorderSide(
+                          color: g.clay,
+                          width: AppBorderScale.w1point2,
+                        ),
                       ),
                     ),
                   ),
@@ -530,10 +537,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 8),
                       Text(
                         'AI Copilot Name',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: g.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AscentTextStyles.labelMedium
+                            .copyWith(color: g.ink)
+                            .merge(AppTypeRoles.typeRole8),
                       ),
                     ],
                   ),
@@ -559,7 +565,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // ── Section 2: Appearance & Theme (Always Visible) ───────────────
             _SectionHeader(title: 'Appearance & Theme', dotColor: g.slate),
             AscentCard(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -568,10 +574,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text(
                         'Display Mode',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: g.ink,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AscentTextStyles.labelMedium
+                            .copyWith(color: g.ink)
+                            .merge(AppTypeRoles.typeRole2),
                       ),
                       Text(
                         themeMode == ThemeMode.dark
@@ -579,10 +584,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             : (themeMode == ThemeMode.light
                                   ? 'Day Mode'
                                   : 'System Auto'),
-                        style: AscentTextStyles.captionMedium.copyWith(
-                          color: g.clay,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AscentTextStyles.captionMedium
+                            .copyWith(color: g.clay)
+                            .merge(AppTypeRoles.typeRole8),
                       ),
                     ],
                   ),
@@ -654,17 +658,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Text(
                         'Weekly Study Budget',
-                        style: AscentTextStyles.labelMedium.copyWith(
-                          color: g.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AscentTextStyles.labelMedium
+                            .copyWith(color: g.ink)
+                            .merge(AppTypeRoles.typeRole8),
                       ),
                       Text(
                         '$_weeklyHours hrs / wk',
-                        style: AscentTextStyles.monoCode.copyWith(
-                          color: g.clay,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AscentTextStyles.monoCode
+                            .copyWith(color: g.clay)
+                            .merge(AppTypeRoles.typeRole9),
                       ),
                     ],
                   ),
@@ -689,10 +691,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           Text(
                             'Target Interview Date',
-                            style: AscentTextStyles.labelMedium.copyWith(
-                              color: g.ink,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.labelMedium
+                                .copyWith(color: g.ink)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                           Text(
                             _interviewDate != null
@@ -730,10 +731,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   // Target Companies
                   Text(
                     'Target Companies',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: g.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -752,15 +752,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             filled: true,
                             fillColor: g.fill,
                             contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
+                              horizontal: AppSpace.s12,
+                              vertical: AppSpace.s10,
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppGeometry.roundedr10,
                               borderSide: BorderSide(color: g.edge),
                             ),
                             enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: AppGeometry.roundedr10,
                               borderSide: BorderSide(color: g.edge),
                             ),
                           ),
@@ -801,7 +801,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       spacing: 6,
                       runSpacing: 6,
                       children: _targetCompanies.map((c) {
-                        return Chip(
+                        return AppTag.label(
                           label: Text(c),
                           labelStyle: AscentTextStyles.labelSmall.copyWith(
                             color: g.ink,
@@ -838,10 +838,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   Text(
                     'Background Walk Tracking',
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: g.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -877,11 +876,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
+                    leading: AppTag(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      nightDecoration: BoxDecoration(
                         color: g.slateSoft,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppGeometry.roundedr10,
                       ),
                       child: Icon(
                         Icons.download_rounded,
@@ -891,10 +890,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     title: Text(
                       'Save or restore a backup',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.ink,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: g.ink)
+                          .merge(AppTypeRoles.typeRole8),
                     ),
                     subtitle: Text(
                       'Records, settings and resume files',
@@ -912,11 +910,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   _Divider(color: g.line),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
+                    leading: AppTag(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      nightDecoration: BoxDecoration(
                         color: g.coralSoft,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppGeometry.roundedr10,
                       ),
                       child: Icon(
                         Icons.delete_forever_rounded,
@@ -926,10 +924,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     title: Text(
                       'Reset All Data',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.coral,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: g.coral)
+                          .merge(AppTypeRoles.typeRole8),
                     ),
                     subtitle: Text(
                       'Wipe local database and restart onboarding',
@@ -956,13 +953,13 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final Color dotColor;
 
-  const _SectionHeader({required this.title, this.dotColor = Colors.grey});
+  const _SectionHeader({required this.title, this.dotColor = AppPalette.grey});
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      padding: const EdgeInsets.only(left: AppSpace.s4, bottom: AppSpace.s8),
       child: Row(
         children: [
           Container(
@@ -973,12 +970,9 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             title,
-            style: AscentTextStyles.labelSmall.copyWith(
-              color: g.inkMuted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
-              fontSize: 11,
-            ),
+            style: AscentTextStyles.labelSmall
+                .copyWith(color: g.inkMuted, letterSpacing: 0.8)
+                .merge(AppTypeRoles.typeRole31),
           ),
         ],
       ),
@@ -993,7 +987,7 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Divider(height: 20, thickness: 0.8, color: color);
+    return AppDivider(height: 20, thickness: 0.8, color: color);
   }
 }
 
@@ -1025,26 +1019,26 @@ class _CollapsibleSettingsCard extends StatelessWidget {
       child: Column(
         children: [
           Material(
-            color: Colors.transparent,
-            child: InkWell(
+            color: AppPalette.transparent,
+            child: AppTapArea(
               onTap: () {
                 HapticFeedback.lightImpact();
                 onToggle();
               },
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AppGeometry.roundedr16,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
+                  horizontal: AppSpace.s16,
+                  vertical: AppSpace.s14,
                 ),
                 child: Row(
                   children: [
-                    Container(
+                    AppTag(
                       width: 36,
                       height: 36,
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: iconTint.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: AppGeometry.roundedr10,
                         border: Border.all(
                           color: iconTint.withValues(alpha: 0.2),
                         ),
@@ -1058,19 +1052,16 @@ class _CollapsibleSettingsCard extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: AscentTextStyles.labelMedium.copyWith(
-                              color: g.ink,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
-                            ),
+                            style: AscentTextStyles.labelMedium
+                                .copyWith(color: g.ink)
+                                .merge(AppTypeRoles.typeRole32),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             subtitle,
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
-                              fontSize: 11.5,
-                            ),
+                            style: AscentTextStyles.bodySmall
+                                .copyWith(color: g.inkMuted)
+                                .merge(AppTypeRoles.typeRole23),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1078,19 +1069,19 @@ class _CollapsibleSettingsCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Container(
+                    AppCard(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: AppSpace.s8,
+                        vertical: AppSpace.s4,
                       ),
-                      decoration: BoxDecoration(
+                      nightDecoration: BoxDecoration(
                         color: isExpanded ? g.claySoft : g.fill,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppGeometry.roundedr12,
                         border: Border.all(
                           color: isExpanded
                               ? g.clay.withValues(alpha: 0.3)
                               : g.edge,
-                          width: 0.8,
+                          width: AppBorderScale.w0point8,
                         ),
                       ),
                       child: Row(
@@ -1098,11 +1089,11 @@ class _CollapsibleSettingsCard extends StatelessWidget {
                         children: [
                           Text(
                             isExpanded ? 'Hide' : 'Show',
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: isExpanded ? g.clay : g.inkMuted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.labelSmall
+                                .copyWith(
+                                  color: isExpanded ? g.clay : g.inkMuted,
+                                )
+                                .merge(AppTypeRoles.typeRole33),
                           ),
                           const SizedBox(width: 4),
                           Icon(
@@ -1121,8 +1112,8 @@ class _CollapsibleSettingsCard extends StatelessWidget {
             ),
           ),
           if (isExpanded) ...[
-            Divider(height: 1, thickness: 0.8, color: g.line),
-            Padding(padding: const EdgeInsets.all(16), child: child),
+            AppDivider(height: 1, thickness: 0.8, color: g.line),
+            Padding(padding: const EdgeInsets.all(AppSpace.s16), child: child),
           ],
         ],
       ),
@@ -1148,30 +1139,30 @@ class _ThemeOption extends StatelessWidget {
     final g = context.glass;
 
     return Expanded(
-      child: InkWell(
+      child: AppTapArea(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
+        borderRadius: AppGeometry.roundedr12,
+        child: AppCard(
+          selected: isSelected,
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
+          nightDecoration: BoxDecoration(
             color: isSelected ? g.clay : g.fill,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppGeometry.roundedr12,
             border: Border.all(color: isSelected ? g.clay : g.edge),
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                color: isSelected ? Colors.white : g.inkSecondary,
+                color: isSelected ? AppPalette.white : g.inkSecondary,
                 size: 20,
               ),
               const SizedBox(height: 6),
               Text(
                 label,
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: isSelected ? Colors.white : g.ink,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                ),
+                style: AscentTextStyles.labelSmall
+                    .copyWith(color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : g.ink))
+                    .merge(AppStateTypography.stateType1(state0: isSelected)),
               ),
             ],
           ),
@@ -1240,26 +1231,25 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                   filled: true,
                   fillColor: g.fill,
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
+                    horizontal: AppSpace.s14,
+                    vertical: AppSpace.s12,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     borderSide: BorderSide(color: g.edge),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     borderSide: BorderSide(color: g.edge),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     borderSide: BorderSide(color: g.clay),
                   ),
                 ),
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: g.ink,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AscentTextStyles.bodyMedium
+                    .copyWith(color: g.ink)
+                    .merge(AppTypeRoles.typeRole8),
               ),
             ),
             const SizedBox(width: 8),
@@ -1290,7 +1280,7 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
           runSpacing: 6,
           children: ['Riya', 'Aria', 'Jarvis', 'Nova'].map((preset) {
             final isSelected = widget.currentName == preset;
-            return ChoiceChip(
+            return AppPill.choice(
               label: Text(preset),
               selected: isSelected,
               onSelected: (selected) {
@@ -1300,10 +1290,11 @@ class _AssistantNameEditorState extends ConsumerState<_AssistantNameEditor> {
                   setState(() => _isEditing = false);
                 }
               },
-              labelStyle: AscentTextStyles.labelSmall.copyWith(
-                color: isSelected ? Colors.white : g.inkSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-              ),
+              labelStyle: AscentTextStyles.labelSmall
+                  .copyWith(
+                    color: isSelected ? AppPalette.white : g.inkSecondary,
+                  )
+                  .merge(AppStateTypography.stateType6(state0: isSelected)),
               selectedColor: g.clay,
               backgroundColor: g.fill,
               side: BorderSide(color: isSelected ? g.clay : g.edge),

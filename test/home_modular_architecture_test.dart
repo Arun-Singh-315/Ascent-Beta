@@ -143,7 +143,7 @@ void main() {
       );
 
       await tester.pump();
-      expect(find.text('Mind space'), findsOneWidget);
+      expect(find.text('Mind space'), findsNothing);
       expect(find.textContaining("What's on your mind?"), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
@@ -183,7 +183,7 @@ void main() {
 
         // Verify key elements are in tree
         expect(find.byType(HomeScreen), findsOneWidget);
-        expect(find.text('Riya'), findsOneWidget);
+        expect(find.text('Ask Riya'), findsOneWidget);
 
         // Flush 350ms post-frame timer in _HomeScreenState
         await tester.pump(const Duration(milliseconds: 500));
@@ -212,14 +212,14 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(find.text('Riya'), findsOneWidget);
+        expect(find.text('Ask Riya'), findsOneWidget);
 
         // Change assistant identity to Jarvis
         await container.read(assistantNameProvider.notifier).setName('Jarvis');
         await tester.pump();
 
-        expect(find.text('Jarvis'), findsOneWidget);
-        expect(find.text('Riya'), findsNothing);
+        expect(find.text('Ask Jarvis'), findsOneWidget);
+        expect(find.text('Ask Riya'), findsNothing);
         await tester.pumpWidget(const SizedBox());
         container.dispose();
         await tester.pump(const Duration(milliseconds: 300));

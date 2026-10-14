@@ -33,3 +33,11 @@
 ## 5. Build & Deployment
 - Deploy via `/home/arunsinghvisen/Android/Sdk/platform-tools/adb`.
 - Verify connected device via `adb devices`, compile latest APK, and install automatically when approved.
+## Usage-aware task closure
+
+- Check account usage remaining at the start of implementation work, before adding scope, and at meaningful milestones during long tasks, using the available usage-limit tool. Consider the lowest remaining percentage across applicable windows; missing limits mean unknown, not zero.
+- When any applicable allowance falls below **10% remaining**, stop starting new tasks or expanding scope. Focus on finishing the existing bounded task and preparing a usable app before the allowance runs out.
+- Prioritize essential fixes, required analysis and meaningful tests, then build the APK. Install and verify it on the phone when installation is already authorized.
+- Save a clear checkpoint with the changes, validation results, APK path/version, installation status, and remaining backlog. Do not report completion if required checks or the build failed.
+- Begin closure early enough to reserve capacity for verification and building. If completion becomes impossible, preserve the work and record exact next steps so a hard usage limit does not leave an unexplained state.
+

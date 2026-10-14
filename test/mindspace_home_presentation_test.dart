@@ -63,13 +63,27 @@ void main() {
                   ),
                   home: RepaintBoundary(
                     key: boundary,
-                    child: const Scaffold(
+                    child: Scaffold(
                       body: SingleChildScrollView(
                         child: Padding(
                           padding: EdgeInsets.all(24),
                           child: Column(
                             children: [
-                              HomeHeader(profile: null),
+                              HomeHeader(
+                                profile: UserProfile(
+                                  id: 1,
+                                  name:
+                                      'Alexandria Catherine Arun Singh Visen With A Very Long Family Name',
+                                  targetRole: 'Backend Engineer',
+                                  targetCompanies: '[]',
+                                  weeklyHoursAvailable: 10,
+                                  preferredStudyWindow: 'morning',
+                                  skillSelfRatings: '{}',
+                                  createdAt: DateTime(2026),
+                                  updatedAt: DateTime(2026),
+                                  onboardingComplete: true,
+                                ),
+                              ),
                               ThoughtWallHomePreview(),
                             ],
                           ),
@@ -91,14 +105,18 @@ void main() {
               find.byKey(ValueKey('home_thought_${thoughts[1].id}')),
               findsNothing,
             );
-            expect(
-              tester.getRect(find.byKey(const ValueKey('home_date'))).bottom,
-              lessThan(
-                tester
-                    .getRect(find.byKey(const ValueKey('home_header_actions')))
-                    .top,
-              ),
+            final date = tester.getRect(
+              find.byKey(const ValueKey('home_date')),
             );
+            final actions = tester.getRect(
+              find.byKey(const ValueKey('home_header_actions')),
+            );
+            if (dark || scale > 1.3) {
+              expect(date.bottom, lessThan(actions.top));
+            } else {
+              expect(date.right, lessThanOrEqualTo(actions.left));
+              expect((date.center.dy - actions.center.dy).abs(), lessThan(1));
+            }
             if (const bool.fromEnvironment('MINDSPACE_SCREENSHOTS')) {
               await tester.runAsync(() async {
                 final image =

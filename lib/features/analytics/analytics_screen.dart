@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,14 +9,12 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -33,15 +34,15 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheetState) => Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 24,
+            left: AppSpace.s20,
+            right: AppSpace.s20,
+            top: AppSpace.s24,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -52,7 +53,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 children: [
                   Text(
                     'Create New Series',
-                    style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                    style: AscentTextStyles.displaySmall.copyWith(
+                      color: context.textPrimary,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close_rounded),
@@ -63,14 +66,19 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: titleController,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textPrimary,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'Series Title (e.g. Blind 75 DSA, System Design Primer)',
-                  hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                  hintText:
+                      'Series Title (e.g. Blind 75 DSA, System Design Primer)',
+                  hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textMuted,
+                  ),
                   filled: true,
                   fillColor: context.bgBase,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     borderSide: BorderSide(color: context.divider),
                   ),
                 ),
@@ -82,14 +90,18 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     child: TextField(
                       controller: itemsController,
                       keyboardType: TextInputType.number,
-                      style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                      style: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textPrimary,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'Total Items / Target',
-                        labelStyle: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                        labelStyle: AscentTextStyles.labelSmall.copyWith(
+                          color: context.textMuted,
+                        ),
                         filled: true,
                         fillColor: context.bgBase,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppGeometry.roundedr12,
                           borderSide: BorderSide(color: context.divider),
                         ),
                       ),
@@ -98,23 +110,37 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      style: context.surfaces.buttonStyle(
+                        OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpace.s16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr12,
+                          ),
+                          side: BorderSide(color: context.divider),
                         ),
-                        side: BorderSide(color: context.divider),
+                        filled: false,
+                        icon: false,
                       ),
                       child: Text(
-                        targetDate != null ? DateFormat.MMMd().format(targetDate!) : 'No Deadline',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textPrimary),
+                        targetDate != null
+                            ? DateFormat.MMMd().format(targetDate!)
+                            : 'No Deadline',
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: context.textPrimary,
+                        ),
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: ctx,
-                          initialDate: targetDate ?? DateTime.now().add(const Duration(days: 30)),
+                          initialDate:
+                              targetDate ??
+                              DateTime.now().add(const Duration(days: 30)),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
                         );
                         if (picked != null) {
                           setSheetState(() => targetDate = picked);
@@ -130,14 +156,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 onPressed: () async {
                   final title = titleController.text.trim();
                   if (title.isNotEmpty) {
-                    final items = int.tryParse(itemsController.text.trim()) ?? 20;
-                    await ref.read(seriesDaoProvider).insertSeries(
-                      SeriesTableCompanion.insert(
-                        title: title,
-                        totalItems: drift.Value(items),
-                        endDate: drift.Value(targetDate),
-                      ),
-                    );
+                    final items =
+                        int.tryParse(itemsController.text.trim()) ?? 20;
+                    await ref
+                        .read(seriesDaoProvider)
+                        .insertSeries(
+                          SeriesTableCompanion.insert(
+                            title: title,
+                            totalItems: drift.Value(items),
+                            endDate: drift.Value(targetDate),
+                          ),
+                        );
                     if (ctx.mounted) Navigator.pop(ctx);
                   }
                 },
@@ -164,7 +193,11 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       subtitle: 'Study cadence & career velocity',
       actions: [
         IconButton(
-          icon: Icon(Icons.playlist_add_rounded, color: context.accentPrimary, size: 26),
+          icon: Icon(
+            Icons.playlist_add_rounded,
+            color: context.accentPrimary,
+            size: 26,
+          ),
           tooltip: 'New Series',
           onPressed: () => _openCreateSeriesSheet(context),
         ),
@@ -196,11 +229,15 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                               final profile = profileSnapshot.data;
 
                               return ListView(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s20,
+                                  vertical: AppSpace.s12,
+                                ),
                                 children: [
                                   // ── 1. Weekly Rhythm / Study Hours Chart ──
                                   _WeeklyStudyHoursCard(
-                                    weeklyTargetHours: profile?.weeklyHoursAvailable ?? 10,
+                                    weeklyTargetHours:
+                                        profile?.weeklyHoursAvailable ?? 10,
                                   ),
 
                                   const SizedBox(height: 20),
@@ -221,7 +258,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                   // ── 4. Active Series Report Cards ────────
                                   _SeriesReportCardsSection(
                                     seriesList: seriesList,
-                                    onAddNew: () => _openCreateSeriesSheet(context),
+                                    onAddNew: () =>
+                                        _openCreateSeriesSheet(context),
                                   ),
 
                                   const SizedBox(height: 32),
@@ -250,9 +288,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 class _WeeklyStudyHoursCard extends ConsumerWidget {
   final int weeklyTargetHours;
 
-  const _WeeklyStudyHoursCard({
-    required this.weeklyTargetHours,
-  });
+  const _WeeklyStudyHoursCard({required this.weeklyTargetHours});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -284,16 +320,20 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
               final dayEnd = dayStart.add(const Duration(days: 1));
 
               for (final s in sessions) {
-                if ((s.startedAt.isAfter(dayStart) && s.startedAt.isBefore(dayEnd)) ||
+                if ((s.startedAt.isAfter(dayStart) &&
+                        s.startedAt.isBefore(dayEnd)) ||
                     s.startedAt.isAtSameMomentAs(dayStart)) {
-                  final durationSec = TimeSessionDao.computeActiveDurationSeconds(
-                    s.startedAt,
-                    s.endedAt ?? DateTime.now(),
-                    s.pausedIntervals,
-                  );
+                  final durationSec =
+                      TimeSessionDao.computeActiveDurationSeconds(
+                        s.startedAt,
+                        s.endedAt ?? DateTime.now(),
+                        s.pausedIntervals,
+                      );
                   final hours = durationSec / 3600.0;
                   final cat = categoryMap[s.categoryId];
-                  final isStudy = (cat?.name.toLowerCase() == 'study') || (s.activityType.toLowerCase() == 'study');
+                  final isStudy =
+                      (cat?.name.toLowerCase() == 'study') ||
+                      (s.activityType.toLowerCase() == 'study');
                   if (isStudy) {
                     dailyStudyHours[i] += hours;
                   } else {
@@ -303,18 +343,28 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
               }
             }
 
-            final totalStudyHours = dailyStudyHours.fold<double>(0.0, (acc, h) => acc + h);
-            final totalBreakHours = dailyBreakHours.fold<double>(0.0, (acc, h) => acc + h);
+            final totalStudyHours = dailyStudyHours.fold<double>(
+              0.0,
+              (acc, h) => acc + h,
+            );
+            final totalBreakHours = dailyBreakHours.fold<double>(
+              0.0,
+              (acc, h) => acc + h,
+            );
             final totalCombinedHours = totalStudyHours + totalBreakHours;
 
             double maxVal = 6.0;
             for (int i = 0; i < 7; i++) {
-              if (dailyStudyHours[i] > maxVal) maxVal = (dailyStudyHours[i] + 1.0).ceilToDouble();
-              if (dailyBreakHours[i] > maxVal) maxVal = (dailyBreakHours[i] + 1.0).ceilToDouble();
+              if (dailyStudyHours[i] > maxVal) {
+                maxVal = (dailyStudyHours[i] + 1.0).ceilToDouble();
+              }
+              if (dailyBreakHours[i] > maxVal) {
+                maxVal = (dailyBreakHours[i] + 1.0).ceilToDouble();
+              }
             }
 
             return AscentCard(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -323,24 +373,24 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                     children: [
                       Text(
                         'Weekly Study Rhythm',
-                        style: AscentTextStyles.headlineMedium.copyWith(
-                          color: context.textPrimary,
-                          fontSize: 17,
-                        ),
+                        style: AscentTextStyles.headlineMedium
+                            .copyWith(color: context.textPrimary)
+                            .merge(AppTypeRoles.typeRole13),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
+                      AppTag(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s8,
+                          vertical: AppSpace.s4,
+                        ),
+                        nightDecoration: BoxDecoration(
                           color: context.accentPrimary.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: AppGeometry.roundedr6,
                         ),
                         child: Text(
                           '${totalStudyHours.toStringAsFixed(1)} / $weeklyTargetHours hrs',
-                          style: AscentTextStyles.monoCode.copyWith(
-                            color: context.accentPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
+                          style: AscentTextStyles.monoCode
+                              .copyWith(color: context.accentPrimary)
+                              .merge(AppTypeRoles.typeRole24),
                         ),
                       ),
                     ],
@@ -348,10 +398,9 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                   const SizedBox(height: 6),
                   Text(
                     '${totalStudyHours.toStringAsFixed(1)}h study + ${totalBreakHours.toStringAsFixed(1)}h breaks = ${totalCombinedHours.toStringAsFixed(1)}h total',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: context.textMuted,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: AscentTextStyles.bodySmall
+                        .copyWith(color: context.textMuted)
+                        .merge(AppTypeRoles.typeRole15),
                   ),
                   const SizedBox(height: 12),
                   Row(
@@ -384,18 +433,21 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                               final type = isStudy ? 'Study' : 'Break';
                               return BarTooltipItem(
                                 '$type: ${rod.toY.toStringAsFixed(1)}h',
-                                AscentTextStyles.labelSmall.copyWith(
-                                  color: context.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                AscentTextStyles.labelSmall
+                                    .copyWith(color: context.textPrimary)
+                                    .merge(AppTypeRoles.typeRole9),
                               );
                             },
                           ),
                         ),
                         titlesData: FlTitlesData(
                           show: true,
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                           leftTitles: AxisTitles(
                             sideTitles: SideTitles(
                               showTitles: true,
@@ -404,7 +456,9 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                                 if (val % 2 == 0 && val <= maxVal) {
                                   return Text(
                                     '${val.toInt()}h',
-                                    style: TextStyle(color: context.textMuted, fontSize: 10),
+                                    style: AppTypeRoles.typeRole18.copyWith(
+                                      color: context.textMuted,
+                                    ),
                                   );
                                 }
                                 return const SizedBox.shrink();
@@ -420,14 +474,19 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                                 if (idx >= 0 && idx < 7) {
                                   final isToday = idx == 6;
                                   return Padding(
-                                    padding: const EdgeInsets.only(top: 6),
+                                    padding: const EdgeInsets.only(
+                                      top: AppSpace.s6,
+                                    ),
                                     child: Text(
                                       dayLabels[idx],
-                                      style: TextStyle(
-                                        color: isToday ? context.accentPrimary : context.textMuted,
-                                        fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                                        fontSize: 11,
-                                      ),
+                                      style:
+                                          AppStateTypography.stateType5(
+                                            state0: isToday,
+                                          ).copyWith(
+                                            color: isToday
+                                                ? context.accentPrimary
+                                                : context.textMuted,
+                                          ),
                                     ),
                                   );
                                 }
@@ -458,7 +517,9 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                                     ? context.accentPrimaryBright
                                     : context.divider.withValues(alpha: 0.3),
                                 width: 8,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: AppGeometry.radiusr4,
+                                ),
                               ),
                               BarChartRodData(
                                 toY: brk > 0 ? brk : 0.05,
@@ -466,7 +527,9 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
                                     ? context.accentSecondaryBright
                                     : context.divider.withValues(alpha: 0.15),
                                 width: 8,
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                                borderRadius: const BorderRadius.vertical(
+                                  top: AppGeometry.radiusr4,
+                                ),
                               ),
                             ],
                           );
@@ -483,7 +546,11 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildLegendItem(BuildContext context, {required Color color, required String label}) {
+  Widget _buildLegendItem(
+    BuildContext context, {
+    required Color color,
+    required String label,
+  }) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -492,16 +559,15 @@ class _WeeklyStudyHoursCard extends ConsumerWidget {
           height: 8,
           decoration: BoxDecoration(
             color: color,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: AppGeometry.roundedr2,
           ),
         ),
         const SizedBox(width: 6),
         Text(
           label,
-          style: AscentTextStyles.caption.copyWith(
-            color: context.textMuted,
-            fontSize: 11,
-          ),
+          style: AscentTextStyles.caption
+              .copyWith(color: context.textMuted)
+              .merge(AppTypeRoles.typeRole4),
         ),
       ],
     );
@@ -519,41 +585,51 @@ class _ApplicationFunnelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wishlist = applications.where((a) => a.currentStage == ApplicationStage.wishlist.name).length;
-    final applied = applications.where((a) => a.currentStage == ApplicationStage.applied.name).length;
-    final oa = applications.where((a) => a.currentStage == ApplicationStage.oaScreen.name).length;
-    final tech = applications.where((a) => a.currentStage == ApplicationStage.interview.name).length;
-    final offer = applications.where((a) => a.currentStage == ApplicationStage.offer.name).length;
+    final wishlist = applications
+        .where((a) => a.currentStage == ApplicationStage.wishlist.name)
+        .length;
+    final applied = applications
+        .where((a) => a.currentStage == ApplicationStage.applied.name)
+        .length;
+    final oa = applications
+        .where((a) => a.currentStage == ApplicationStage.oaScreen.name)
+        .length;
+    final tech = applications
+        .where((a) => a.currentStage == ApplicationStage.interview.name)
+        .length;
+    final offer = applications
+        .where((a) => a.currentStage == ApplicationStage.offer.name)
+        .length;
     final total = applications.length;
 
     return AscentCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          AppResponsiveRow(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Application Conversion Funnel',
-                style: AscentTextStyles.headlineMedium.copyWith(
-                  color: context.textPrimary,
-                  fontSize: 17,
-                ),
+                style: AscentTextStyles.headlineMedium
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole13),
               ),
               Text(
                 '$total Total Apps',
-                style: AscentTextStyles.monoCode.copyWith(
-                  color: context.textMuted,
-                  fontSize: 12,
-                ),
+                style: AscentTextStyles.monoCode
+                    .copyWith(color: context.textMuted)
+                    .merge(AppTypeRoles.typeRole27),
               ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             'Stage progression and conversion ratios',
-            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+            style: AscentTextStyles.bodySmall.copyWith(
+              color: context.textMuted,
+            ),
           ),
           const SizedBox(height: 18),
 
@@ -597,7 +673,6 @@ class _ApplicationFunnelCard extends StatelessWidget {
   }
 }
 
-
 class _FunnelStageRow extends StatelessWidget {
   final String label;
   final int count;
@@ -622,15 +697,14 @@ class _FunnelStageRow extends StatelessWidget {
           width: 110,
           child: Text(
             label,
-            style: AscentTextStyles.bodySmall.copyWith(
-              color: context.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AscentTextStyles.bodySmall
+                .copyWith(color: context.textPrimary)
+                .merge(AppTypeRoles.typeRole15),
           ),
         ),
         Expanded(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: AppGeometry.roundedr6,
             child: LinearProgressIndicator(
               value: ratio > 0 ? ratio : 0.03,
               minHeight: 10,
@@ -645,10 +719,9 @@ class _FunnelStageRow extends StatelessWidget {
           child: Text(
             '$count ($percentStr)',
             textAlign: TextAlign.end,
-            style: AscentTextStyles.monoCode.copyWith(
-              color: context.textSecondary,
-              fontSize: 11,
-            ),
+            style: AscentTextStyles.monoCode
+                .copyWith(color: context.textSecondary)
+                .merge(AppTypeRoles.typeRole4),
           ),
         ),
       ],
@@ -677,30 +750,31 @@ class _ReadinessBreakdownCard extends StatelessWidget {
     final totalDsa = dsaProblems.length;
 
     final totalQuestions = interviewQuestions.length;
-    final practicedQuestions = interviewQuestions.where((q) => q.lastInteractedAt != null).length;
+    final practicedQuestions = interviewQuestions
+        .where((q) => q.lastInteractedAt != null)
+        .length;
 
     return AscentCard(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpace.s20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Readiness & Practice Matrix',
-            style: AscentTextStyles.headlineMedium.copyWith(
-              color: context.textPrimary,
-              fontSize: 17,
-            ),
+            style: AscentTextStyles.headlineMedium
+                .copyWith(color: context.textPrimary)
+                .merge(AppTypeRoles.typeRole13),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               // DSA Box
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
+                child: AppCard(
+                  padding: const EdgeInsets.all(AppSpace.s14),
+                  nightDecoration: BoxDecoration(
                     color: context.bgBase,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     border: Border.all(color: context.divider),
                   ),
                   child: Column(
@@ -711,25 +785,40 @@ class _ReadinessBreakdownCard extends StatelessWidget {
                         children: [
                           Text(
                             'DSA Solved',
-                            style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                           Text(
                             '$totalDsa',
-                            style: AscentTextStyles.monoCode.copyWith(
-                              color: context.accentPrimary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                            style: AscentTextStyles.monoCode
+                                .copyWith(color: context.accentPrimary)
+                                .merge(AppTypeRoles.typeRole28),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
-                      Row(
+                      AppResponsiveRow(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Easy: $easy', style: TextStyle(color: context.stateSuccess, fontSize: 11)),
-                          Text('Med: $medium', style: TextStyle(color: context.stateWarning, fontSize: 11)),
-                          Text('Hard: $hard', style: TextStyle(color: context.stateDanger, fontSize: 11)),
+                          Text(
+                            'Easy: $easy',
+                            style: AppTypeRoles.typeRole4.copyWith(
+                              color: context.stateSuccess,
+                            ),
+                          ),
+                          Text(
+                            'Med: $medium',
+                            style: AppTypeRoles.typeRole4.copyWith(
+                              color: context.stateWarning,
+                            ),
+                          ),
+                          Text(
+                            'Hard: $hard',
+                            style: AppTypeRoles.typeRole4.copyWith(
+                              color: context.stateDanger,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -739,11 +828,11 @@ class _ReadinessBreakdownCard extends StatelessWidget {
               const SizedBox(width: 12),
               // Interview Prep Box
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
+                child: AppCard(
+                  padding: const EdgeInsets.all(AppSpace.s14),
+                  nightDecoration: BoxDecoration(
                     color: context.bgBase,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                     border: Border.all(color: context.divider),
                   ),
                   child: Column(
@@ -754,25 +843,24 @@ class _ReadinessBreakdownCard extends StatelessWidget {
                         children: [
                           Text(
                             'Interview Q&A',
-                            style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                           Text(
                             '$totalQuestions',
-                            style: AscentTextStyles.monoCode.copyWith(
-                              color: context.accentSecondary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                            style: AscentTextStyles.monoCode
+                                .copyWith(color: context.accentSecondary)
+                                .merge(AppTypeRoles.typeRole28),
                           ),
                         ],
                       ),
                       const SizedBox(height: 10),
                       Text(
                         '$practicedQuestions reviewed and active',
-                        style: AscentTextStyles.bodySmall.copyWith(
-                          color: context.textMuted,
-                          fontSize: 11,
-                        ),
+                        style: AscentTextStyles.bodySmall
+                            .copyWith(color: context.textMuted)
+                            .merge(AppTypeRoles.typeRole4),
                       ),
                     ],
                   ),
@@ -809,10 +897,9 @@ class _SeriesReportCardsSection extends StatelessWidget {
           children: [
             Text(
               'Series Report Cards',
-              style: AscentTextStyles.headlineMedium.copyWith(
-                color: context.textPrimary,
-                fontSize: 17,
-              ),
+              style: AscentTextStyles.headlineMedium
+                  .copyWith(color: context.textPrimary)
+                  .merge(AppTypeRoles.typeRole13),
             ),
             TextButton.icon(
               icon: const Icon(Icons.add_rounded, size: 16),
@@ -824,24 +911,29 @@ class _SeriesReportCardsSection extends StatelessWidget {
         const SizedBox(height: 8),
         if (seriesList.isEmpty)
           AscentCard(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppSpace.s20),
             child: Center(
               child: Column(
                 children: [
-                  Icon(Icons.playlist_play_rounded, size: 36, color: context.accentPrimary),
+                  Icon(
+                    Icons.playlist_play_rounded,
+                    size: 36,
+                    color: context.accentPrimary,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'No active series',
-                    style: AscentTextStyles.bodyMedium.copyWith(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AscentTextStyles.bodyMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Start a structured target like "Blind 75 DSA" or "100 Applications"',
                     textAlign: TextAlign.center,
-                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                    style: AscentTextStyles.bodySmall.copyWith(
+                      color: context.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -850,13 +942,15 @@ class _SeriesReportCardsSection extends StatelessWidget {
         else
           ...seriesList.map((item) {
             final series = item.series;
-            final target = series.totalItems ?? (item.totalCount > 0 ? item.totalCount : 1);
+            final target =
+                series.totalItems ??
+                (item.totalCount > 0 ? item.totalCount : 1);
             final progress = (item.completedCount / target).clamp(0.0, 1.0);
             final percent = (progress * 100).toInt();
 
             return AscentCard(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: AppSpace.s10),
+              padding: const EdgeInsets.all(AppSpace.s16),
               onTap: () => context.push('/analytics/series/${series.id}'),
               child: Row(
                 children: [
@@ -866,37 +960,38 @@ class _SeriesReportCardsSection extends StatelessWidget {
                       children: [
                         Text(
                           series.title,
-                          style: AscentTextStyles.labelLarge.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AscentTextStyles.labelLarge
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole8),
                         ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
                             Text(
                               '$percent% complete',
-                              style: AscentTextStyles.monoCode.copyWith(
-                                color: context.accentPrimary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: AscentTextStyles.monoCode
+                                  .copyWith(color: context.accentPrimary)
+                                  .merge(AppTypeRoles.typeRole7),
                             ),
                             const SizedBox(width: 8),
                             Text(
                               '(${item.completedCount}/$target milestones)',
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: context.textMuted,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: AppGeometry.roundedr6,
                           child: LinearProgressIndicator(
                             value: progress,
                             minHeight: 6,
                             backgroundColor: context.bgBase,
-                            valueColor: AlwaysStoppedAnimation<Color>(context.accentPrimary),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              context.accentPrimary,
+                            ),
                           ),
                         ),
                       ],

@@ -48,12 +48,7 @@ enum SoundscapePreset {
     0xFFF6A45C,
     'audio/night_library_study.wav',
   ),
-  silentZen(
-    'Pure Silence',
-    'Zero audio, deep silent breath',
-    0xFFB8A594,
-    '',
-  ),
+  silentZen('Pure Silence', 'Zero audio, deep silent breath', 0xFFB8A594, ''),
   customSystemAudio(
     'System / My Music',
     'Play custom song or audio from your device',
@@ -144,7 +139,8 @@ class ChaiBreakState {
       isRunning: isRunning ?? this.isRunning,
       selectedSoundscape: selectedSoundscape ?? this.selectedSoundscape,
       breathPhase: breathPhase ?? this.breathPhase,
-      isBreathingGuideEnabled: isBreathingGuideEnabled ?? this.isBreathingGuideEnabled,
+      isBreathingGuideEnabled:
+          isBreathingGuideEnabled ?? this.isBreathingGuideEnabled,
       isAudioMuted: isAudioMuted ?? this.isAudioMuted,
       customAudioPath: customAudioPath ?? this.customAudioPath,
       customAudioName: customAudioName ?? this.customAudioName,
@@ -182,7 +178,9 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 
   void _initAudioPlayer() {
-    final isTestEnv = WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    final isTestEnv = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
     if (isTestEnv) return;
 
     try {
@@ -210,8 +208,11 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
       await _player?.setVolume(state.volume).catchError((_) {});
 
       if (state.selectedSoundscape == SoundscapePreset.customSystemAudio) {
-        if (state.customAudioPath != null && state.customAudioPath!.isNotEmpty) {
-          await _player?.play(DeviceFileSource(state.customAudioPath!)).catchError((_) {});
+        if (state.customAudioPath != null &&
+            state.customAudioPath!.isNotEmpty) {
+          await _player
+              ?.play(DeviceFileSource(state.customAudioPath!))
+              .catchError((_) {});
         } else {
           await _player?.pause().catchError((_) {});
         }
@@ -372,8 +373,13 @@ class ChaiBreakNotifier extends Notifier<ChaiBreakState> {
   }
 
   void toggleBreathingGuide() {
-    state = state.copyWith(isBreathingGuideEnabled: !state.isBreathingGuideEnabled);
+    state = state.copyWith(
+      isBreathingGuideEnabled: !state.isBreathingGuideEnabled,
+    );
   }
 }
 
-final chaiBreakProvider = NotifierProvider.autoDispose<ChaiBreakNotifier, ChaiBreakState>(ChaiBreakNotifier.new);
+final chaiBreakProvider =
+    NotifierProvider.autoDispose<ChaiBreakNotifier, ChaiBreakState>(
+      ChaiBreakNotifier.new,
+    );

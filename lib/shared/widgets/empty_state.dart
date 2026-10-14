@@ -1,7 +1,9 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import 'ascent_button.dart';
 
 /// A full-screen or section-level empty state following the Ascent design system.
@@ -41,25 +43,27 @@ class EmptyState extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s28,
+          vertical: AppSpace.s24,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Outlined icon container with subtle matte fill
-            Container(
+            AppCard(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
+              nightDecoration: BoxDecoration(
                 color: context.bgSurfaceElevated,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: divider, width: 1.0),
+                borderRadius: AppGeometry.roundedr20,
+                border: Border.all(
+                  color: divider,
+                  width: AppBorderScale.w1point0,
+                ),
               ),
               child: Center(
-                child: Icon(
-                  icon,
-                  size: 32,
-                  color: context.accentPrimary,
-                ),
+                child: Icon(icon, size: 32, color: context.accentPrimary),
               ),
             ),
             const SizedBox(height: 18),
@@ -67,11 +71,9 @@ class EmptyState extends StatelessWidget {
             // Title
             Text(
               title,
-              style: AscentTextStyles.displaySmall.copyWith(
-                color: textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AscentTextStyles.displaySmall
+                  .copyWith(color: textPrimary)
+                  .merge(AppTypeRoles.typeRole70),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),

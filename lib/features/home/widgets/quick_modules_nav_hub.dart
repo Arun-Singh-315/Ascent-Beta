@@ -1,11 +1,12 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../challenge/challenge_providers.dart';
@@ -54,9 +55,9 @@ class QuickModulesNavHub extends ConsumerWidget {
     final challengeStatusColor = switch (progress?.status) {
       ChallengePaceStatus.ahead ||
       ChallengePaceStatus.onTrack ||
-      ChallengePaceStatus.complete => const Color(0xFF4E9B6B),
-      ChallengePaceStatus.atRisk => const Color(0xFFD99A37),
-      ChallengePaceStatus.failed => const Color(0xFFCA5C54),
+      ChallengePaceStatus.complete => AppPalette.colorFF4E9B6B,
+      ChallengePaceStatus.atRisk => AppPalette.colorFFD99A37,
+      ChallengePaceStatus.failed => AppPalette.colorFFCA5C54,
       null => g.clay,
     };
 
@@ -71,7 +72,11 @@ class QuickModulesNavHub extends ConsumerWidget {
           children: [
             Text(
               'Life & Health',
-              style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+              style: AscentTextStyles.homeTitle.copyWith(
+                color: g.ink,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -81,39 +86,48 @@ class QuickModulesNavHub extends ConsumerWidget {
         // ── UNIFIED GLASS SURFACE ─────────────────────────────────────
         GlassSurface(
           radius: 24,
+          fillColor: Theme.of(context).brightness == Brightness.light
+              ? Colors.transparent
+              : null,
+          customBorder: Theme.of(context).brightness == Brightness.light
+              ? Border.all(color: Colors.black, width: 1)
+              : null,
           padding: EdgeInsets.zero,
           child: Column(
             children: [
               // ── 0. CHALLENGE BANNER (FULL-WIDTH, TOP) ────────────────
               Material(
-                color: Colors.transparent,
-                child: InkWell(
+                color: AppPalette.transparent,
+                child: AppTapArea(
                   onTap: () {
                     HapticFeedback.lightImpact();
                     context.push('/momentum');
                   },
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
+                    top: AppGeometry.radiusr24,
                   ),
-                  child: Container(
+                  child: AppCard(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 13,
+                      horizontal: AppSpace.s16,
+                      vertical: AppSpace.s13,
                     ),
-                    decoration: BoxDecoration(
+                    nightDecoration: BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(color: g.line, width: 1.0),
+                        bottom: BorderSide(
+                          color: g.line,
+                          width: AppBorderScale.w1point0,
+                        ),
                       ),
                     ),
                     child: challenge == null
                         ? Row(
                             children: [
-                              Container(
+                              AppTag(
                                 width: 30,
                                 height: 30,
-                                decoration: BoxDecoration(
+                                nightDecoration: BoxDecoration(
                                   color: g.claySoft,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: AppGeometry.roundedr8,
                                 ),
                                 child: Icon(
                                   Icons.flag_outlined,
@@ -126,10 +140,8 @@ class QuickModulesNavHub extends ConsumerWidget {
                                 child: Text(
                                   'Set a Challenge — track real progress',
                                   style: AscentTextStyles.homeSecondary
-                                      .copyWith(
-                                        color: g.inkMuted,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                      .copyWith(color: g.inkMuted)
+                                      .merge(AppTypeRoles.typeRole15),
                                 ),
                               ),
                               Icon(
@@ -144,14 +156,14 @@ class QuickModulesNavHub extends ConsumerWidget {
                             children: [
                               Row(
                                 children: [
-                                  Container(
+                                  AppTag(
                                     width: 30,
                                     height: 30,
-                                    decoration: BoxDecoration(
+                                    nightDecoration: BoxDecoration(
                                       color: challengeStatusColor.withValues(
                                         alpha: 0.12,
                                       ),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppGeometry.roundedr8,
                                     ),
                                     child: Icon(
                                       Icons.bolt_rounded,
@@ -166,17 +178,13 @@ class QuickModulesNavHub extends ConsumerWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: AscentTextStyles.homeSecondary
-                                          .copyWith(
-                                            color: g.ink,
-                                            fontWeight: FontWeight.w600,
-                                          ),
+                                          .copyWith(color: g.ink)
+                                          .merge(AppTypeRoles.typeRole8),
                                     ),
                                   ),
                                   Text(
                                     '${progress?.percent ?? 0}%',
-                                    style: GoogleFonts.jetBrainsMono(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                    style: AppTypography.jetBrainsMono12W70063(
                                       color: challengeStatusColor,
                                     ),
                                   ),
@@ -191,7 +199,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                               const SizedBox(height: 7),
                               // Slim progress bar — clean, no labels
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(3),
+                                borderRadius: AppGeometry.roundedr3,
                                 child: LinearProgressIndicator(
                                   value: (progress?.percent ?? 0) / 100,
                                   minHeight: 3,
@@ -208,210 +216,218 @@ class QuickModulesNavHub extends ConsumerWidget {
               ),
 
               // ── 1. TWO-COLUMN GRID (MEDICINE + HYDRATION) ────────────
-              Row(
-                children: [
-                  // Cell A: Medicine
-                  Expanded(
-                    child: _LifeGridCell(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        context.push('/medicine');
-                      },
-                      borderRight: true,
-                      borderRadius: BorderRadius.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stacked =
+                      constraints.maxWidth < 320 ||
+                      MediaQuery.textScalerOf(context).scale(14) > 18;
+                  final cellWidth = stacked
+                      ? constraints.maxWidth
+                      : constraints.maxWidth / 2;
+                  return Wrap(
+                    children: [
+                      // Cell A: Medicine
+                      SizedBox(
+                        width: cellWidth,
+                        child: _LifeGridCell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/medicine');
+                          },
+                          borderRight: !stacked,
+                          borderRadius: BorderRadius.zero,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.medication_rounded,
-                                size: 16,
-                                color: g.inkMuted,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'Medicine',
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(
-                                        color: g.inkSecondary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
-                                color: g.inkMuted,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          RichText(
-                            text: TextSpan(
-                              style: GoogleFonts.bricolageGrotesque(
-                                fontSize: 17,
-                                fontWeight: FontWeight.w600,
-                                color: g.ink,
-                              ),
-                              children: [
-                                TextSpan(text: '$takenMedDoses'),
-                                TextSpan(
-                                  text: ' of $totalMedDoses doses',
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w400,
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.medication_rounded,
+                                    size: 16,
                                     color: g.inkMuted,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          _NeutralProgressBar(progress: medProgress),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Cell B: Hydration
-                  Expanded(
-                    child: _LifeGridCell(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        context.push('/hydration');
-                      },
-                      borderRight: false,
-                      borderRadius: BorderRadius.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.water_drop_rounded,
-                                size: 16,
-                                color: g.inkMuted,
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Medicine',
+                                      style: AscentTextStyles.homeSecondary
+                                          .copyWith(color: g.inkSecondary)
+                                          .merge(AppTypeRoles.typeRole15),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 16,
+                                    color: g.inkMuted,
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'Hydration',
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(
-                                        color: g.inkSecondary,
-                                        fontWeight: FontWeight.w500,
+                              const SizedBox(height: 8),
+                              RichText(
+                                textScaler: MediaQuery.textScalerOf(context),
+                                text: TextSpan(
+                                  style:
+                                      AppTypography.bricolageGrotesque17W600107(
+                                        color: g.ink,
+                                      ).copyWith(fontSize: 22),
+                                  children: [
+                                    TextSpan(text: '$takenMedDoses'),
+                                    TextSpan(
+                                      text: ' of $totalMedDoses doses',
+                                      style: AppTypography.dmSans11W400108(
+                                        color: g.inkMuted,
                                       ),
-                                  overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
-                                color: g.inkMuted,
-                              ),
+                              const SizedBox(height: 8),
+                              _NeutralProgressBar(progress: medProgress),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Row(
+                        ),
+                      ),
+
+                      // Cell B: Hydration
+                      SizedBox(
+                        width: cellWidth,
+                        child: _LifeGridCell(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/hydration');
+                          },
+                          borderRight: false,
+                          borderRadius: BorderRadius.zero,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: GoogleFonts.bricolageGrotesque(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w600,
-                                      color: g.ink,
-                                    ),
-                                    children: [
-                                      TextSpan(text: '$waterMl'),
-                                      TextSpan(
-                                        text: ' of $waterGoal mL',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w400,
-                                          color: g.inkMuted,
-                                        ),
-                                      ),
-                                    ],
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.water_drop_rounded,
+                                    size: 16,
+                                    color: g.inkMuted,
                                   ),
-                                ),
-                              ),
-                              // Instant 1-tap +250 mL Habit Button
-                              Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: () async {
-                                    HapticFeedback.mediumImpact();
-                                    await ref
-                                        .read(waterDaoProvider)
-                                        .addWater(250);
-                                  },
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 3,
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Hydration',
+                                      style: AscentTextStyles.homeSecondary
+                                          .copyWith(color: g.inkSecondary)
+                                          .merge(AppTypeRoles.typeRole15),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    decoration: BoxDecoration(
-                                      color: g.claySoft,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: g.clay.withValues(alpha: 0.5),
-                                        width: 1.0,
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 16,
+                                    color: g.inkMuted,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: RichText(
+                                      textScaler: MediaQuery.textScalerOf(
+                                        context,
+                                      ),
+                                      text: TextSpan(
+                                        style:
+                                            AppTypography.bricolageGrotesque17W600107(
+                                              color: g.ink,
+                                            ).copyWith(fontSize: 22),
+                                        children: [
+                                          TextSpan(text: '$waterMl'),
+                                          TextSpan(
+                                            text: ' of $waterGoal mL',
+                                            style:
+                                                AppTypography.dmSans11W400108(
+                                                  color: g.inkMuted,
+                                                ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.add_rounded,
-                                          size: 12,
-                                          color: g.clay,
+                                  ),
+                                  // Instant 1-tap +250 mL Habit Button
+                                  Material(
+                                    color: AppPalette.transparent,
+                                    child: AppTapArea(
+                                      onTap: () async {
+                                        HapticFeedback.mediumImpact();
+                                        await ref
+                                            .read(waterDaoProvider)
+                                            .addWater(250);
+                                      },
+                                      borderRadius: AppGeometry.roundedr8,
+                                      child: AppTag(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpace.s7,
+                                          vertical: AppSpace.s3,
                                         ),
-                                        Text(
-                                          '250',
-                                          style: GoogleFonts.jetBrainsMono(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                            color: g.clay,
+                                        nightDecoration: BoxDecoration(
+                                          color: g.claySoft,
+                                          borderRadius: AppGeometry.roundedr8,
+                                          border: Border.all(
+                                            color: g.clay.withValues(
+                                              alpha: 0.2,
+                                            ),
+                                            width: AppBorderScale.w1point0,
                                           ),
                                         ),
-                                      ],
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.add_rounded,
+                                              size: 12,
+                                              color: g.clay,
+                                            ),
+                                            Text(
+                                              '250',
+                                              style:
+                                                  AppTypography.jetBrainsMono11W7002(
+                                                    color: g.clay,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
+                              const SizedBox(height: 8),
+                              _NeutralProgressBar(progress: waterProgress),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          _NeutralProgressBar(progress: waterProgress),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  );
+                },
               ),
 
-              Divider(height: 1, thickness: 1, color: g.line),
+              AppDivider(height: 1, thickness: 1, color: g.line),
 
               // ── 2. CHAI & COFFEE BREAK FOOTER ──────────────
               Material(
-                color: Colors.transparent,
-                child: InkWell(
+                color: AppPalette.transparent,
+                child: AppTapArea(
                   onTap: () {
                     HapticFeedback.lightImpact();
                     context.push('/chai-break');
                   },
                   borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(24),
+                    bottom: AppGeometry.radiusr24,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
+                      horizontal: AppSpace.s16,
+                      vertical: AppSpace.s14,
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -422,12 +438,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                           color: g.coral,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Chai & Coffee Break',
-                          style: AscentTextStyles.homeHeadline.copyWith(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: g.ink,
+                        Flexible(
+                          child: Text(
+                            'Chai & Coffee Break',
+                            style: AscentTextStyles.homeHeadline
+                                .copyWith(color: g.ink)
+                                .merge(AppTypeRoles.typeRole61),
                           ),
                         ),
                         const SizedBox(width: 4),
@@ -467,17 +483,17 @@ class _LifeGridCell extends StatelessWidget {
     final g = context.glass;
 
     return Material(
-      color: Colors.transparent,
-      child: InkWell(
+      color: AppPalette.transparent,
+      child: AppTapArea(
         onTap: onTap,
         borderRadius: borderRadius,
-        child: Container(
+        child: AppCard(
           constraints: const BoxConstraints(minHeight: 96),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
+          padding: const EdgeInsets.all(AppSpace.s14),
+          nightDecoration: BoxDecoration(
             border: Border(
               right: borderRight
-                  ? BorderSide(color: g.line, width: 1.0)
+                  ? BorderSide(color: g.line, width: AppBorderScale.w1point0)
                   : BorderSide.none,
             ),
           ),
@@ -501,15 +517,16 @@ class _NeutralProgressBar extends StatelessWidget {
       height: 3,
       decoration: BoxDecoration(
         color: g.track,
-        borderRadius: BorderRadius.circular(3),
+        borderRadius: AppGeometry.roundedr3,
       ),
       alignment: Alignment.centerLeft,
       child: FractionallySizedBox(
         widthFactor: progress.clamp(0.0, 1.0),
-        child: Container(
-          decoration: BoxDecoration(
+        child: AppProgress(
+          filled: true,
+          nightDecoration: BoxDecoration(
             color: g.inkSecondary,
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: AppGeometry.roundedr3,
           ),
         ),
       ),

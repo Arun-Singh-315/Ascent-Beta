@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../core/notifications/notification_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -7,7 +10,6 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -255,7 +257,7 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
           elevation: 0,
           leading: currentStep > 0
               ? Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(AppSpace.s8point0),
                   child: AscentButton.icon(
                     icon: Icons.arrow_back_rounded,
                     compact: true,
@@ -275,7 +277,10 @@ class _OnboardingShellState extends ConsumerState<OnboardingShell> {
                           .startWithoutSetup();
                       if (!context.mounted) return;
                       if (saved) {
-                        context.go(NotificationService.consumePendingDestination() ?? '/home');
+                        context.go(
+                          NotificationService.consumePendingDestination() ??
+                              '/home',
+                        );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -334,11 +339,11 @@ class _ProgressDots extends StatelessWidget {
         return AnimatedContainer(
           duration: const Duration(milliseconds: 240),
           curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
+          margin: const EdgeInsets.symmetric(horizontal: AppSpace.s3),
           width: isCurrent ? 22 : 6,
           height: 6,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(3),
+            borderRadius: AppGeometry.roundedr3,
             color: isCurrent
                 ? context.accentPrimary
                 : isCompleted
@@ -415,18 +420,19 @@ class _StepNameAndRoleState extends ConsumerState<_StepNameAndRole> {
 
     return _ScrollableSetup(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s22,
+          vertical: AppSpace.s16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             Text(
               'Let\'s build your system.',
-              style: AscentTextStyles.displayLarge.copyWith(
-                color: textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AscentTextStyles.displayLarge
+                  .copyWith(color: textPrimary)
+                  .merge(AppTypeRoles.typeRole35),
             ),
             const SizedBox(height: 6),
             Text(
@@ -440,17 +446,15 @@ class _StepNameAndRoleState extends ConsumerState<_StepNameAndRole> {
               children: [
                 Text(
                   'Your Name',
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: AscentTextStyles.labelSmall
+                      .copyWith(color: textPrimary)
+                      .merge(AppTypeRoles.typeRole8),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '*',
-                  style: TextStyle(
+                  style: AppTypeRoles.typeRole9.copyWith(
                     color: context.stateDanger,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -476,10 +480,9 @@ class _StepNameAndRoleState extends ConsumerState<_StepNameAndRole> {
 
             Text(
               'Target Role (optional)',
-              style: AscentTextStyles.labelSmall.copyWith(
-                color: textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+              style: AscentTextStyles.labelSmall
+                  .copyWith(color: textPrimary)
+                  .merge(AppTypeRoles.typeRole8),
             ),
             const SizedBox(height: 6),
             TextField(
@@ -502,20 +505,22 @@ class _StepNameAndRoleState extends ConsumerState<_StepNameAndRole> {
               spacing: 6,
               runSpacing: 6,
               children: _roleSuggestions.map((suggestion) {
-                return ActionChip(
+                return AppPill.action(
                   label: Text(suggestion),
                   backgroundColor: context.bgSurface,
-                  side: BorderSide(color: context.divider, width: 0.8),
-                  labelStyle: AscentTextStyles.bodySmall.copyWith(
-                    color: textPrimary,
-                    fontSize: 11.5,
+                  side: BorderSide(
+                    color: context.divider,
+                    width: AppBorderScale.w0point8,
                   ),
+                  labelStyle: AscentTextStyles.bodySmall
+                      .copyWith(color: textPrimary)
+                      .merge(AppTypeRoles.typeRole23),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
+                    horizontal: AppSpace.s8,
+                    vertical: AppSpace.s2,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppGeometry.roundedr8,
                   ),
                   onPressed: () {
                     widget.roleController.text = suggestion;
@@ -583,18 +588,19 @@ class _StepTargetCompanies extends ConsumerWidget {
 
     return _ScrollableSetup(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s22,
+          vertical: AppSpace.s16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 8),
             Text(
               'Target Companies',
-              style: AscentTextStyles.displayLarge.copyWith(
-                color: textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AscentTextStyles.displayLarge
+                  .copyWith(color: textPrimary)
+                  .merge(AppTypeRoles.typeRole35),
             ),
             const SizedBox(height: 6),
             Text(
@@ -649,7 +655,7 @@ class _StepTargetCompanies extends ConsumerWidget {
               runSpacing: 6,
               children: _popularCompanies.map((comp) {
                 final isChosen = selected.contains(comp);
-                return FilterChip(
+                return AppPill.filter(
                   label: Text(comp),
                   selected: isChosen,
                   selectedColor: context.accentPrimary.withValues(alpha: 0.14),
@@ -657,16 +663,16 @@ class _StepTargetCompanies extends ConsumerWidget {
                   backgroundColor: context.bgSurface,
                   side: BorderSide(
                     color: isChosen ? context.accentPrimary : context.divider,
-                    width: 0.8,
+                    width: AppBorderScale.w0point8,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppGeometry.roundedr8,
                   ),
-                  labelStyle: AscentTextStyles.bodySmall.copyWith(
-                    color: isChosen ? context.accentPrimary : textPrimary,
-                    fontWeight: isChosen ? FontWeight.w600 : FontWeight.w400,
-                    fontSize: 12,
-                  ),
+                  labelStyle: AscentTextStyles.bodySmall
+                      .copyWith(
+                        color: isChosen ? context.accentPrimary : textPrimary,
+                      )
+                      .merge(AppStateTypography.stateType10(state0: isChosen)),
                   onSelected: (_) {
                     ref.read(onboardingProvider.notifier).toggleCompany(comp);
                   },
@@ -706,21 +712,24 @@ class _StepDone extends StatelessWidget {
 
     return _ScrollableSetup(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s24,
+          vertical: AppSpace.s20,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 32),
 
-            Container(
+            AppCard(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
+              nightDecoration: BoxDecoration(
                 color: context.accentPrimary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppGeometry.roundedr20,
                 border: Border.all(
                   color: context.accentPrimary.withValues(alpha: 0.3),
-                  width: 0.9,
+                  width: AppBorderScale.w0point9,
                 ),
               ),
               child: Icon(
@@ -733,11 +742,9 @@ class _StepDone extends StatelessWidget {
 
             Text(
               'Your workspace is ready',
-              style: AscentTextStyles.displayLarge.copyWith(
-                color: textPrimary,
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AscentTextStyles.displayLarge
+                  .copyWith(color: textPrimary)
+                  .merge(AppTypeRoles.typeRole11),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
@@ -756,7 +763,10 @@ class _StepDone extends StatelessWidget {
             // Feature highlights
             AscentCard(
               hasBorder: true,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s14,
+                vertical: AppSpace.s12,
+              ),
               child: Column(
                 children: [
                   _FeatureRow(
@@ -764,7 +774,7 @@ class _StepDone extends StatelessWidget {
                     title: 'Deep Work Timer',
                     subtitle: 'Precision focus tracking without distractions',
                   ),
-                  Divider(color: context.divider, height: 16),
+                  AppDivider(color: context.divider, height: 16),
                   _FeatureRow(
                     icon: Icons.view_kanban_outlined,
                     title: 'Job Pipeline',
@@ -811,17 +821,15 @@ class _FeatureRow extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: context.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AscentTextStyles.labelSmall
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole8),
               ),
               Text(
                 subtitle,
-                style: AscentTextStyles.bodySmall.copyWith(
-                  color: context.textMuted,
-                  fontSize: 11,
-                ),
+                style: AscentTextStyles.bodySmall
+                    .copyWith(color: context.textMuted)
+                    .merge(AppTypeRoles.typeRole4),
               ),
             ],
           ),

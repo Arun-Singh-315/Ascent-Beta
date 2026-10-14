@@ -1,3 +1,4 @@
+import 'theme/app_theme.dart';
 import '../features/backup/workspace_backup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -171,7 +172,8 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.aiAssistant,
       builder: (context, state) =>
-          const FeatureGuideHost(feature: 'Riya', child: AiAssistantScreen()),
+          Theme(data: AscentTheme.assistant(Theme.of(context)),
+            child: const FeatureGuideHost(feature: 'Riya', child: AiAssistantScreen())),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
