@@ -7,26 +7,28 @@ import '../../core/notifications/reminder_alert_sync.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'thought_actions.dart';
 
-Future<void> showThoughtConversion(
+Future<bool> showThoughtConversion(
   BuildContext context,
   AppDatabase db,
   List<Thought> thoughts, {
   ThoughtConversionMode initial = ThoughtConversionMode.todo,
   bool grouped = false,
-}) => showModalBottomSheet(
-  context: context,
-  isScrollControlled: true,
-  useSafeArea: true,
-  isDismissible: false,
-  enableDrag: false,
-  backgroundColor: Colors.transparent,
-  builder: (_) => ThoughtConversionSheet(
-    db: db,
-    thoughts: thoughts,
-    initial: initial,
-    grouped: grouped,
-  ),
-);
+}) async =>
+    await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      isDismissible: false,
+      enableDrag: false,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ThoughtConversionSheet(
+        db: db,
+        thoughts: thoughts,
+        initial: initial,
+        grouped: grouped,
+      ),
+    ) ??
+    false;
 
 class ThoughtConversionSheet extends StatefulWidget {
   const ThoughtConversionSheet({
@@ -110,7 +112,7 @@ class _ThoughtConversionSheetState extends State<ThoughtConversionSheet> {
       }
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
-      Navigator.pop(context);
+      Navigator.pop(context, true);
       HapticFeedback.lightImpact();
       messenger.showSnackBar(
         SnackBar(content: Text(message), duration: const Duration(seconds: 5)),

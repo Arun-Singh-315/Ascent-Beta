@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
@@ -11,7 +10,6 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../money/add_transaction_sheet.dart';
-import 'home_customization_sheet.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
@@ -165,20 +163,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
 
-                    // Capture stays above guidance and every optional card.
-                    const ThoughtWallHomePreview(showNotes: false),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: () {
-                          HapticFeedback.selectionClick();
-                          showHomeCustomization(context);
-                        },
-                        icon: const Icon(Icons.tune_rounded, size: 18),
-                        label: const Text('Customize Home'),
-                      ),
-                    ),
+                    // Mind Space keeps its familiar composer and recent notes above other cards.
+                    if (layout.visible.contains('mind'))
+                      const ThoughtWallHomePreview(),
                     const SizedBox(height: 24),
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? ''),
@@ -206,7 +193,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                     for (final id in layout.order.where(
-                      layout.visible.contains,
+                      (id) => id != 'mind' && layout.visible.contains(id),
                     ))
                       _homeSection(id, layout),
                     if (layout.visible.isEmpty)
@@ -215,13 +202,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           Text(
                             'Make this space yours',
                             style: TextStyle(color: g.ink),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              showHomeCustomization(context);
-                            },
-                            child: const Text('Customize Home'),
                           ),
                           TextButton(
                             onPressed: () => context.push('/more'),
@@ -288,13 +268,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       case 'learning':
         return spaced(const LearningHubCard());
-      case 'mind':
-        return spaced(
-          ThoughtWallHomePreview(
-            showComposer: false,
-            previewLimit: layout.compact.contains(id) ? 1 : 3,
-          ),
-        );
       case 'life':
         if (layout.tools.isEmpty) return const SizedBox.shrink();
         if (layout.tools.length == homeTools.length) {

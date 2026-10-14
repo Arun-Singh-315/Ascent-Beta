@@ -145,7 +145,7 @@ void main() {
     });
 
     testWidgets(
-      'Thought card uses an inset header separator without a full outline in day mode',
+      'Thought card has a visible rounded outline and inset header separator in day mode',
       (tester) async {
         final thought = Thought(
           id: 1,
@@ -180,7 +180,9 @@ void main() {
         expect(
           surfaces.any(
             (surface) =>
-                surface.color == Colors.transparent && surface.border == null,
+                surface.color == AscentGlass.light.fill &&
+                surface.border is Border &&
+                (surface.border! as Border).top.width == 1.2,
           ),
           isTrue,
         );

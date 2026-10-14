@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
@@ -76,6 +77,8 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     _sessionSubscription = dao.watchActiveFocusSession().listen((
       session,
     ) async {
+      _timedTaskDeadline?.cancel();
+      _deadlineGeneration++;
       if (session == null) {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
@@ -116,6 +119,7 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       );
 
       if (isRunning) {
+        unawaited(_armTimedTaskDeadline(session, elapsed).catchError((_) {}));
         _startTicker();
         _startHeartbeat();
         NotificationService.instance.showOngoingSessionNotification(
@@ -144,6 +148,8 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     });
 
     ref.onDispose(() {
+      _timedTaskDeadline?.cancel();
+      _deadlineGeneration++;
       _sessionSubscription?.cancel();
       _ticker?.cancel();
       _heartbeatTimer?.cancel();
@@ -151,6 +157,77 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     });
 
     return const TimeTrackingState();
+  }
+
+  Timer? _timedTaskDeadline;
+  int _deadlineGeneration = 0;
+  Future<void> _armTimedTaskDeadline(TimeSession session, int elapsed) async {
+    final generation = ++_deadlineGeneration;
+    _timedTaskDeadline?.cancel();
+    if (session.status != 'running' ||
+        session.linkedTaskId == null ||
+        session.learningCourseId != null) {
+      return;
+    }
+    final dao = ref.read(timeSessionDaoProvider);
+    final db = ref.read(databaseProvider);
+    final workspaceRevision = db.workspaceRevision;
+    final task = await db.taskDao.getTaskById(session.linkedTaskId!);
+    if (task == null ||
+        task.learningCourseId != null ||
+        (task.estimatedMinutes ?? 0) <= 0) {
+      return;
+    }
+    final dose =
+        await (db.select(db.medicineLogTable)
+              ..where((l) => l.linkedTaskId.equals(task.id))
+              ..limit(1))
+            .getSingleOrNull();
+    if (dose != null) return;
+    final total = db.timeSessionTable.durationSeconds.sum();
+    final history =
+        await (db.selectOnly(db.timeSessionTable)
+              ..addColumns([total])
+              ..where(
+                db.timeSessionTable.linkedTaskId.equals(task.id) &
+                    db.timeSessionTable.status.equals('completed'),
+              ))
+            .getSingle();
+    if (!ref.mounted || generation != _deadlineGeneration) return;
+    final remaining =
+        task.estimatedMinutes! * 60 -
+        elapsed -
+        (history.read(total) ?? 0).toInt();
+    _timedTaskDeadline = Timer(
+      Duration(milliseconds: remaining > 0 ? remaining * 1000 : 1),
+      () async {
+        if (!ref.mounted || generation != _deadlineGeneration) return;
+        if (db.workspaceRevision != workspaceRevision) return;
+        try {
+          if (await dao.completeTimedSessionIfTargetReached(
+            session.id,
+            expectedWorkspaceRevision: workspaceRevision,
+          )) {
+            if (ref.mounted) ref.invalidate(todayFocusTaskProvider);
+          } else if (ref.mounted &&
+              state.activeSession?.id == session.id &&
+              state.isRunning) {
+            // Re-read the target if it was edited while the timer was running.
+            final current = state.activeSession!;
+            await _armTimedTaskDeadline(
+              current,
+              TimeSessionDao.computeActiveDurationSeconds(
+                current.startedAt,
+                DateTime.now(),
+                current.pausedIntervals,
+              ),
+            );
+          }
+        } catch (_) {
+          /* The next durable heartbeat retries this deadline. */
+        }
+      },
+    );
   }
 
   void _startTicker() {

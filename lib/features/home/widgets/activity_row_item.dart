@@ -86,9 +86,11 @@ class ActivityRowItem extends ConsumerWidget {
             : EdgeInsets.zero,
         decoration: BoxDecoration(
           color: isRunning
-              ? g.claySoft.withValues(alpha: 0.35)
+              ? (context.isDark ? Colors.white.withValues(alpha: 0.22) : g.fill)
               : (isPaused
-                    ? g.claySoft.withValues(alpha: 0.18)
+                    ? (context.isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : g.fill.withValues(alpha: 0.7))
                     : Colors.transparent),
           borderRadius: (isRunning || isPaused)
               ? BorderRadius.circular(12)

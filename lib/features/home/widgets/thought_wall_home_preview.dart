@@ -14,7 +14,6 @@ import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
 import '../../thought_wall/thought_quick_actions.dart';
-import '../../thought_wall/thought_detail_sheet.dart';
 
 /// Level 3 · Supporting: Mind Space
 /// Redesigned according to Ascent Home Redesign spec:
@@ -25,10 +24,9 @@ class ThoughtWallHomePreview extends ConsumerStatefulWidget {
   const ThoughtWallHomePreview({
     super.key,
     this.showComposer = true,
-    this.showNotes = true,
-    this.previewLimit = 3,
+    this.previewLimit = 4,
   });
-  final bool showComposer, showNotes;
+  final bool showComposer;
   final int previewLimit;
 
   @override
@@ -40,8 +38,8 @@ class _ThoughtWallHomePreviewState
     extends ConsumerState<ThoughtWallHomePreview> {
   final _controller = TextEditingController();
   bool _saving = false;
+  bool _expanded = false;
   int? _lastSavedThoughtId;
-  Thought? _lastSavedThought;
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
 
@@ -88,11 +86,9 @@ class _ThoughtWallHomePreviewState
               mood: const drift.Value('thought'),
             ),
           );
-      final saved = await ref.read(thoughtDaoProvider).getThoughtById(id);
       if (mounted) {
         setState(() {
           _lastSavedThoughtId = id;
-          _lastSavedThought = saved;
         });
         if (_controller.text.trim() == content) _controller.clear();
         FocusScope.of(context).unfocus();
@@ -113,9 +109,7 @@ class _ThoughtWallHomePreviewState
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final recentThoughtsAsync = widget.showNotes
-        ? ref.watch(recentThoughtsStreamProvider)
-        : const AsyncData<List<Thought>>([]);
+    final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,20 +119,21 @@ class _ThoughtWallHomePreviewState
           children: [
             Expanded(
               child: Text(
-                widget.showNotes ? 'Mind space' : 'Quick capture',
+                'Mind space',
                 style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
               ),
             ),
-            TextButton.icon(
+            IconButton(
+              tooltip: _expanded ? 'Collapse Mind Space' : 'Expand Mind Space',
               onPressed: () {
-                HapticFeedback.lightImpact();
-                context.push('/thought-wall');
+                HapticFeedback.selectionClick();
+                setState(() => _expanded = !_expanded);
               },
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-              icon: Icon(Icons.chevron_right_rounded, size: 18, color: g.clay),
-              label: Text(
-                'Open wall',
-                style: AscentTextStyles.homeSecondary.copyWith(color: g.clay),
+              icon: Icon(
+                _expanded
+                    ? Icons.expand_less_rounded
+                    : Icons.expand_more_rounded,
+                color: g.clay,
               ),
             ),
           ],
@@ -200,24 +195,6 @@ class _ThoughtWallHomePreviewState
             ),
           ),
 
-        if (widget.showComposer &&
-            !widget.showNotes &&
-            _lastSavedThought != null) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              _lastSavedThought!.content,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
-            ),
-          ),
-          ThoughtQuickActions(
-            key: ValueKey('capture_quick_${_lastSavedThought!.id}'),
-            thought: _lastSavedThought!,
-            db: ref.read(databaseProvider),
-          ),
-        ],
         // ── THOUGHTS BUBBLE PREVIEW (ALTERNATING LEFT/RIGHT) ───────────
         recentThoughtsAsync.when(
           loading: () => const SizedBox.shrink(),
@@ -228,13 +205,20 @@ class _ThoughtWallHomePreviewState
             }
 
             final previewThoughts = thoughts
-                .take(widget.previewLimit.clamp(1, 3))
+                .take(_expanded ? widget.previewLimit.clamp(1, 4) : 1)
                 .toList();
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 12),
+                Text(
+                  _expanded ? 'Recent thoughts' : 'Recent thought',
+                  style: AscentTextStyles.homeCaption.copyWith(
+                    color: g.inkMuted,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 ...List.generate(previewThoughts.length, (index) {
                   final thought = previewThoughts[index];
                   final isEven = index % 2 == 0;
@@ -249,6 +233,18 @@ class _ThoughtWallHomePreviewState
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 300),
                         child: GlassSurface(
+                          key: ValueKey('home_thought_${thought.id}'),
+                          enableBlur: false,
+                          customBorder: Border.all(
+                            color: g.inkMuted.withValues(
+                              alpha:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? 0.4
+                                  : 0.3,
+                            ),
+                            width: 1.2,
+                          ),
                           radius: 18,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(18),
@@ -262,11 +258,7 @@ class _ThoughtWallHomePreviewState
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            showThoughtDetail(
-                              context,
-                              ref.read(databaseProvider),
-                              thought.id,
-                            );
+                            context.push('/thought-wall?thought=${thought.id}');
                           },
                           child: Column(
                             crossAxisAlignment: isEven
@@ -309,10 +301,8 @@ class _ThoughtWallHomePreviewState
                               ],
                               ThoughtExcerpt(
                                 content: thought.content,
-                                onReadMore: () => showThoughtDetail(
-                                  context,
-                                  ref.read(databaseProvider),
-                                  thought.id,
+                                onReadMore: () => context.push(
+                                  '/thought-wall?thought=${thought.id}',
                                 ),
                                 style: GoogleFonts.plusJakartaSans(
                                   color: thought.isCompleted
@@ -367,6 +357,17 @@ class _ThoughtWallHomePreviewState
               ],
             );
           },
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              context.push('/thought-wall');
+            },
+            icon: const Icon(Icons.chevron_right_rounded, size: 18),
+            label: const Text('View all'),
+          ),
         ),
       ],
     );

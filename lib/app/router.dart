@@ -186,7 +186,11 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.thoughtWall,
-      builder: (context, state) => const ThoughtWallScreen(),
+      builder: (context, state) => ThoughtWallScreen(
+        initialThoughtId: int.tryParse(
+          state.uri.queryParameters['thought'] ?? '',
+        ),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

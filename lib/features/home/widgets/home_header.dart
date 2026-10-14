@@ -1,3 +1,4 @@
+import '../home_customization_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,15 +55,14 @@ class HomeHeader extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── TOP ROW: DATE CAPTION & ACTION PILLS (RIYA + AVATAR) ───────
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Date has its own line so action pills cannot crowd or cover it.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Date Caption
               Text(
                 dateStr,
+                key: const ValueKey('home_date'),
                 style: AscentTextStyles.homeCaption.copyWith(
                   color: g.inkMuted,
                   letterSpacing: 0.5,
@@ -70,8 +70,11 @@ class HomeHeader extends ConsumerWidget {
                 ),
               ),
 
-              // Right cluster: Interactive Streak flame + Riya button + Avatar
+              const SizedBox(height: 8),
+              // Right cluster wraps on narrow screens and large text.
               Wrap(
+                key: const ValueKey('home_header_actions'),
+                alignment: WrapAlignment.end,
                 spacing: 8,
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -155,7 +158,10 @@ class HomeHeader extends ConsumerWidget {
                       },
                       borderRadius: BorderRadius.circular(99),
                       child: Container(
-                        constraints: const BoxConstraints(minHeight: 48),
+                        constraints: BoxConstraints(
+                          minHeight: 48,
+                          maxWidth: MediaQuery.sizeOf(context).width - 48,
+                        ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 8,
@@ -296,11 +302,11 @@ class HomeHeader extends ConsumerWidget {
                   ),
                 ),
 
-              // Explicitly labeled Mind Space Shortcut
+              // Home customization stays beside the profession label.
               InkWell(
                 onTap: () {
                   HapticFeedback.lightImpact();
-                  context.push('/thought-wall');
+                  showHomeCustomization(context);
                 },
                 borderRadius: BorderRadius.circular(6),
                 child: Container(
@@ -316,14 +322,10 @@ class HomeHeader extends ConsumerWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.psychology_rounded,
-                        size: 13,
-                        color: g.inkSecondary,
-                      ),
+                      Icon(Icons.tune_rounded, size: 13, color: g.inkSecondary),
                       const SizedBox(width: 4),
                       Text(
-                        'Mind Space',
+                        'Customize Home',
                         style: GoogleFonts.plusJakartaSans(
                           color: g.inkSecondary,
                           fontSize: 10.5,

@@ -5,21 +5,22 @@ import '../../core/database/app_database.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'thought_actions.dart';
 
-Future<void> showThoughtMerge(
+Future<bool> showThoughtMerge(
   BuildContext context,
   AppDatabase db,
   List<Thought> thoughts,
 ) async {
-  if (thoughts.length < 2) return;
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    isDismissible: false,
-    enableDrag: false,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _ThoughtMergeSheet(db: db, thoughts: thoughts),
-  );
+  if (thoughts.length < 2) return false;
+  return await showModalBottomSheet<bool>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        isDismissible: false,
+        enableDrag: false,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _ThoughtMergeSheet(db: db, thoughts: thoughts),
+      ) ??
+      false;
 }
 
 class _ThoughtMergeSheet extends StatefulWidget {
@@ -190,7 +191,7 @@ class _ThoughtMergeSheetState extends State<_ThoughtMergeSheet> {
                                       pin: pin,
                                     );
                                 if (!sheetContext.mounted) return;
-                                Navigator.pop(sheetContext);
+                                Navigator.pop(sheetContext, true);
                                 messenger.showSnackBar(
                                   SnackBar(
                                     content: const Text(

@@ -354,7 +354,65 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
-  Future<void> completeSession(int id, {DateTime? endedAt}) async {
+  /// Ends only a running generic timed-task session whose recorded active
+  /// duration, including earlier completed sessions, reaches the current target.
+  Future<bool> completeTimedSessionIfTargetReached(
+    int id, {
+    DateTime? now,
+    int? expectedWorkspaceRevision,
+  }) => db.transaction(() async {
+    if (expectedWorkspaceRevision != null &&
+        expectedWorkspaceRevision != db.workspaceRevision) {
+      return false;
+    }
+    final session = await (select(
+      timeSessionTable,
+    )..where((s) => s.id.equals(id))).getSingleOrNull();
+    if (session == null ||
+        session.status != 'running' ||
+        session.linkedTaskId == null ||
+        session.learningCourseId != null) {
+      return false;
+    }
+    final task = await db.taskDao.getTaskById(session.linkedTaskId!);
+    if (task == null ||
+        task.learningCourseId != null ||
+        (task.estimatedMinutes ?? 0) <= 0) {
+      return false;
+    }
+    // A timer reaching its target is not evidence that a medicine was taken.
+    final dose =
+        await (db.select(db.medicineLogTable)
+              ..where((l) => l.linkedTaskId.equals(task.id))
+              ..limit(1))
+            .getSingleOrNull();
+    if (dose != null) return false;
+    final total = timeSessionTable.durationSeconds.sum();
+    final history =
+        await (selectOnly(timeSessionTable)
+              ..addColumns([total])
+              ..where(
+                timeSessionTable.linkedTaskId.equals(task.id) &
+                    timeSessionTable.status.equals('completed'),
+              ))
+            .getSingle();
+    final end = now ?? DateTime.now();
+    final elapsed = computeActiveDurationSeconds(
+      session.startedAt,
+      end,
+      session.pausedIntervals,
+    );
+    final recorded = history.read(total) ?? 0;
+    if (recorded + elapsed < task.estimatedMinutes! * 60) return false;
+    await completeSession(id, endedAt: end);
+    await db.taskDao.completeTimedTaskAfterFocus(task.id);
+    return true;
+  });
+
+  Future<void> completeSession(
+    int id, {
+    DateTime? endedAt,
+  }) => db.transaction(() async {
     final session = await (select(
       timeSessionTable,
     )..where((s) => s.id.equals(id))).getSingleOrNull();
@@ -439,7 +497,7 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         hoursStudied: totalStudyHours,
       );
     }
-  }
+  });
 
   Future<void> abandonSession(int id) async {
     await (update(timeSessionTable)..where((s) => s.id.equals(id))).write(

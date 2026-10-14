@@ -51,7 +51,7 @@ class HomeLayout {
   final Set<String> visible, tools, compact;
   final List<String> shortcuts;
   factory HomeLayout.defaults() => HomeLayout(
-    order: homeSections.keys.toList(),
+    order: ['mind', ...homeSections.keys.where((id) => id != 'mind')],
     visible: {'streak', 'reminders', 'today', 'learning', 'life', 'mind'},
     tools: homeTools.keys.toSet(),
   );

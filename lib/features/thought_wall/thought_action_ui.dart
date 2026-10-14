@@ -4,17 +4,17 @@ import 'thought_actions.dart';
 import 'thought_conversion_sheet.dart';
 import 'thought_merge_sheet.dart';
 
-Future<void> applyThoughtAction(
+Future<bool> applyThoughtAction(
   BuildContext context,
   AppDatabase db,
   List<Thought> thoughts,
   String action,
 ) async {
-  if (thoughts.isEmpty) return;
+  if (thoughts.isEmpty) return false;
   if (action == 'merge') {
-    await showThoughtMerge(context, db, thoughts);
+    return await showThoughtMerge(context, db, thoughts);
   } else {
-    await showThoughtConversion(
+    return await showThoughtConversion(
       context,
       db,
       thoughts,

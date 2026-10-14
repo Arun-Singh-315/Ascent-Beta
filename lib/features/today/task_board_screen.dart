@@ -1046,6 +1046,8 @@ class _TaskItemTile extends ConsumerWidget {
     Task task,
     List<Task> subTasks,
   ) {
+    final isTimeBound =
+        task.estimatedMinutes != null && task.estimatedMinutes! > 0;
     final isDone = task.actualCompletedDate != null;
     final g = context.glass;
     showDialog(
@@ -1155,8 +1157,10 @@ class _TaskItemTile extends ConsumerWidget {
                   ),
                 ],
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
@@ -1170,7 +1174,24 @@ class _TaskItemTile extends ConsumerWidget {
                       child: const Text('Cancel'),
                     ),
                     const SizedBox(width: 8),
-                    if (!isDone)
+                    if (!isDone && isTimeBound)
+                      FilledButton.icon(
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          await ref
+                              .read(timeTrackingProvider.notifier)
+                              .switchToTask(
+                                title: task.title,
+                                taskId: task.id,
+                                sourceType: 'task',
+                                autoStart: true,
+                              );
+                          if (context.mounted) context.push('/focus');
+                        },
+                        icon: const Icon(Icons.timer_outlined),
+                        label: const Text('Open timer'),
+                      )
+                    else if (!isDone)
                       FilledButton(
                         onPressed: () async {
                           HapticFeedback.mediumImpact();

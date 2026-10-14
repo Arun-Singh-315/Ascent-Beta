@@ -166,9 +166,12 @@ void main() {
       ascentRouter.go('/home');
       await until(find.byType(HomeScreen));
       await tester.pump(const Duration(seconds: 1));
-      expect(find.byTooltip('Send thought'), findsOneWidget);
+      expect(find.byTooltip('Send thought'), findsNothing);
+      expect(find.text('Customize Home'), findsOneWidget);
       expect(find.text('Your Home'), findsNothing);
-      debugPrint('QA: all-hidden Home keeps quick capture accessible');
+      debugPrint(
+        'QA: all-hidden Home keeps customization and More accessible',
+      );
       final result = await RiyaExecutor(db).execute(
         const RiyaCommand('reminders.list', {}),
         requestId: 'device-qa-read',

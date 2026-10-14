@@ -34,6 +34,14 @@ class _HomeCustomizationSheetState
             (id) => id == 'streak' && !ref.read(homeStreakVisibleProvider),
           ),
       );
+  @override
+  void initState() {
+    super.initState();
+    _draft = _draft.copyWith(
+      order: ['mind', ..._draft.order.where((id) => id != 'mind')],
+    );
+  }
+
   bool _saving = false;
   String? _error;
   void _toggle(String id) {
@@ -96,7 +104,7 @@ class _HomeCustomizationSheetState
                           .toList(),
                     ),
                     if (_draft.visible.isEmpty)
-                      const Text('Quick capture and tools stay available.'),
+                      const Text('Hidden tools remain available from More.'),
                     const SizedBox(height: 12),
                     for (var i = 0; i < _draft.order.length; i++)
                       Container(
@@ -129,7 +137,7 @@ class _HomeCustomizationSheetState
                                 IconButton(
                                   tooltip:
                                       'Move ${homeSections[_draft.order[i]]} up',
-                                  onPressed: _saving || i == 0
+                                  onPressed: _saving || i <= 1
                                       ? null
                                       : () => _move(i, -1),
                                   icon: const Icon(Icons.arrow_upward_rounded),
@@ -138,7 +146,9 @@ class _HomeCustomizationSheetState
                                   tooltip:
                                       'Move ${homeSections[_draft.order[i]]} down',
                                   onPressed:
-                                      _saving || i == _draft.order.length - 1
+                                      _saving ||
+                                          i == 0 ||
+                                          i == _draft.order.length - 1
                                       ? null
                                       : () => _move(i, 1),
                                   icon: const Icon(
@@ -147,8 +157,14 @@ class _HomeCustomizationSheetState
                                 ),
                               ],
                             ),
-                            if (_draft.order[i] == 'today' ||
-                                _draft.order[i] == 'mind')
+                            if (_draft.order[i] == 'mind')
+                              const Padding(
+                                padding: EdgeInsets.only(left: 14),
+                                child: Text(
+                                  'Shown below your name. Opens with your most recent thought.',
+                                ),
+                              ),
+                            if (_draft.order[i] == 'today')
                               SwitchListTile(
                                 contentPadding: const EdgeInsets.only(left: 14),
                                 title: const Text('Compact preview'),
