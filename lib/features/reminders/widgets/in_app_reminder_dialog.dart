@@ -124,9 +124,19 @@ class InAppReminderDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
     final isDark = context.isDark;
-    final dialogBg = isDark ? const Color(0xFF1E1813) : const Color(0xFFFAF7F2);
-    final dialogBorder = isDark ? g.edge : const Color(0xFFE2D6CA);
-    final headerAccent = isDark ? const Color(0xFFE6A088) : const Color(0xFFA4523A);
+    final dialogBg = g.frozen
+        ? context.bgSurface
+        : isDark
+        ? const Color(0xFF1E1813)
+        : const Color(0xFFFAF7F2);
+    final dialogBorder = (isDark || g.frozen)
+        ? g.edge
+        : const Color(0xFFE2D6CA);
+    final headerAccent = g.frozen
+        ? g.clay
+        : isDark
+        ? const Color(0xFFE6A088)
+        : const Color(0xFFA4523A);
 
     return Dialog(
       backgroundColor: dialogBg,
@@ -134,10 +144,7 @@ class InAppReminderDialog extends ConsumerWidget {
       shadowColor: AppPalette.black.withValues(alpha: 0.2),
       shape: RoundedRectangleBorder(
         borderRadius: AppGeometry.roundedr24,
-        side: BorderSide(
-          color: dialogBorder,
-          width: AppBorderScale.w1point2,
-        ),
+        side: BorderSide(color: dialogBorder, width: AppBorderScale.w1point2),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpace.s22),
@@ -175,7 +182,9 @@ class InAppReminderDialog extends ConsumerWidget {
                         Text(
                           'Time for your planned task',
                           style: AppTypography.plusJakartaSans12Regular57(
-                            color: isDark ? context.textMuted : const Color(0xFF6B5E52),
+                            color: (isDark || g.frozen)
+                                ? context.textMuted
+                                : const Color(0xFF6B5E52),
                           ),
                         ),
                       ],
@@ -184,7 +193,9 @@ class InAppReminderDialog extends ConsumerWidget {
                   IconButton(
                     icon: Icon(
                       Icons.close_rounded,
-                      color: isDark ? context.textMuted : const Color(0xFF7A6D61),
+                      color: (isDark || g.frozen)
+                          ? context.textMuted
+                          : const Color(0xFF7A6D61),
                       size: 20,
                     ),
                     onPressed: () => Navigator.of(context).pop(),
@@ -198,10 +209,14 @@ class InAppReminderDialog extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(AppSpace.s16),
                 decoration: BoxDecoration(
-                  color: isDark ? g.fill : const Color(0xFFF1E9DE),
+                  color: (isDark || g.frozen)
+                      ? g.fill
+                      : const Color(0xFFF1E9DE),
                   borderRadius: AppGeometry.roundedr14,
                   border: Border.all(
-                    color: isDark ? g.edge : const Color(0xFFDFD2C3),
+                    color: (isDark || g.frozen)
+                        ? g.edge
+                        : const Color(0xFFDFD2C3),
                   ),
                 ),
                 child: Text(
@@ -217,7 +232,9 @@ class InAppReminderDialog extends ConsumerWidget {
               Text(
                 'SNOOZE OPTIONS',
                 style: AppTypography.jetBrainsMono10W70096(
-                  color: isDark ? context.textMuted : const Color(0xFF7A6D61),
+                  color: (isDark || g.frozen)
+                      ? context.textMuted
+                      : const Color(0xFF7A6D61),
                 ),
               ),
               const SizedBox(height: 8),
@@ -230,10 +247,14 @@ class InAppReminderDialog extends ConsumerWidget {
                           _snooze(context, ref, const Duration(minutes: 10)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.textPrimary,
-                        backgroundColor: isDark ? g.fill : const Color(0xFFF5EFE8),
+                        backgroundColor: (isDark || g.frozen)
+                            ? g.fill
+                            : const Color(0xFFF5EFE8),
                         minimumSize: const Size(48, 44),
                         side: BorderSide(
-                          color: isDark ? g.edge : const Color(0xFFDCCFBF),
+                          color: (isDark || g.frozen)
+                              ? g.edge
+                              : const Color(0xFFDCCFBF),
                         ),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s10,
@@ -255,10 +276,14 @@ class InAppReminderDialog extends ConsumerWidget {
                           _snooze(context, ref, const Duration(hours: 1)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.textPrimary,
-                        backgroundColor: isDark ? g.fill : const Color(0xFFF5EFE8),
+                        backgroundColor: (isDark || g.frozen)
+                            ? g.fill
+                            : const Color(0xFFF5EFE8),
                         minimumSize: const Size(48, 44),
                         side: BorderSide(
-                          color: isDark ? g.edge : const Color(0xFFDCCFBF),
+                          color: (isDark || g.frozen)
+                              ? g.edge
+                              : const Color(0xFFDCCFBF),
                         ),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s10,
@@ -279,10 +304,14 @@ class InAppReminderDialog extends ConsumerWidget {
                       onPressed: () => _snoozeTomorrow(context, ref),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: context.textPrimary,
-                        backgroundColor: isDark ? g.fill : const Color(0xFFF5EFE8),
+                        backgroundColor: (isDark || g.frozen)
+                            ? g.fill
+                            : const Color(0xFFF5EFE8),
                         minimumSize: const Size(48, 44),
                         side: BorderSide(
-                          color: isDark ? g.edge : const Color(0xFFDCCFBF),
+                          color: (isDark || g.frozen)
+                              ? g.edge
+                              : const Color(0xFFDCCFBF),
                         ),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s10,
@@ -310,7 +339,9 @@ class InAppReminderDialog extends ConsumerWidget {
                   style: AppTypography.plusJakartaSans13W70098(),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? g.clay : const Color(0xFFB8634D),
+                  backgroundColor: (isDark || g.frozen)
+                      ? g.clay
+                      : const Color(0xFFB8634D),
                   elevation: 0,
                   minimumSize: const Size(48, 48),
                   foregroundColor: AppPalette.white,

@@ -29,6 +29,7 @@ import 'widgets/quick_modules_nav_hub.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
+import 'widgets/home_up_next.dart';
 import 'widgets/welcome_back_banner.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 
@@ -38,17 +39,19 @@ import '../challenge/integration/challenge_proof_sync.dart';
 /// - First screen leads with Today execution.
 /// - Stationary ambient atmosphere painter behind smooth scrolling view.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.notificationUri});
+  final Uri? notificationUri;
 
   @override
   Widget build(BuildContext context) => Theme(
     data: HomeTheme.from(Theme.of(context)),
-    child: const _HomeContent(),
+    child: _HomeContent(notificationUri: notificationUri),
   );
 }
 
 class _HomeContent extends ConsumerStatefulWidget {
-  const _HomeContent();
+  const _HomeContent({this.notificationUri});
+  final Uri? notificationUri;
 
   @override
   ConsumerState<_HomeContent> createState() => _HomeScreenState();
@@ -180,7 +183,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
                       const ThoughtWallHomePreview(),
-                    const SizedBox(height: 24),
+                    HomeUpNext(notificationUri: widget.notificationUri),
+                    const SizedBox(height: 16),
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? ''),
 
@@ -256,7 +260,19 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
           ),
         );
       case 'reminders':
-        final reminders = ref.watch(homeVisibleRemindersProvider);
+        final planIds =
+            ref
+                .watch(homePlansProvider)
+                .value
+                ?.expand(
+                  (p) => [p.reminder.id, if (p.checkIn != null) p.checkIn!.id],
+                )
+                .toSet() ??
+            <int>{};
+        final reminders = ref
+            .watch(homeVisibleRemindersProvider)
+            .where((r) => !planIds.contains(r.id))
+            .toList();
         if (reminders.isEmpty) return const SizedBox.shrink();
         return spaced(
           HomeDismissibleRemindersSection(
@@ -280,7 +296,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
         );
       case 'today':
         return spaced(
-          ActivityHubCard(previewLimit: layout.compact.contains(id) ? 2 : 4),
+          ActivityHubCard(
+            previewLimit: layout.compact.contains(id) ? 2 : 4,
+            excludedTaskIds:
+                ref
+                    .watch(homePlansProvider)
+                    .value
+                    ?.map((p) => p.task?.id)
+                    .whereType<int>()
+                    .toSet() ??
+                {},
+          ),
         );
       case 'learning':
         return spaced(const LearningHubCard());

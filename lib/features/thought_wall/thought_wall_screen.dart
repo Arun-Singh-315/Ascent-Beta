@@ -813,7 +813,9 @@ class ThoughtCardBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final moodColor = _moodColor(thought.mood);
+    final moodColor = context.glass.frozen
+        ? (thought.mood == 'win' ? context.glass.sage : context.glass.slate)
+        : _moodColor(thought.mood);
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
     final g = context.glass;
 
@@ -1386,9 +1388,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 vertical: AppSpace.s2,
                               ),
                               nightDecoration: BoxDecoration(
-                                color: g.sage.withValues(
-                                  alpha: 0.14,
-                                ),
+                                color: g.sage.withValues(alpha: 0.14),
                                 borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Text(
@@ -1405,9 +1405,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 vertical: AppSpace.s2,
                               ),
                               nightDecoration: BoxDecoration(
-                                color: g.amber.withValues(
-                                  alpha: 0.14,
-                                ),
+                                color: g.amber.withValues(alpha: 0.14),
                                 borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Row(

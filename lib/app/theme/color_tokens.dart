@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'glass_theme.dart';
+import 'frozen_palette.dart';
 
 /// All color tokens for the Ascent design system.
 /// Muted, matte, calm, and tailored for focus & productivity.
@@ -119,59 +121,96 @@ class AscentColors {
 extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
-  Color get bgBase => isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
+  bool get isFrozen => Theme.of(this).extension<AscentGlass>()?.frozen == true;
 
-  Color get bgSurface =>
-      isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface;
+  Color get bgBase => isFrozen
+      ? FrozenPalette.canvas
+      : isDark
+      ? AscentColors.bgBaseDark
+      : AscentColors.bgBase;
 
-  Color get bgSurfaceElevated => isDark
+  Color get bgSurface => isFrozen
+      ? FrozenPalette.surface
+      : isDark
+      ? AscentColors.bgSurfaceDark
+      : AscentColors.bgSurface;
+
+  Color get bgSurfaceElevated => isFrozen
+      ? FrozenPalette.elevated
+      : isDark
       ? AscentColors.bgSurfaceElevatedDark
       : AscentColors.bgSurfaceElevated;
 
-  Color get accentPrimary => Theme.of(this).colorScheme.primary;
+  Color get accentPrimary =>
+      isFrozen ? FrozenPalette.accent : Theme.of(this).colorScheme.primary;
 
-  Color get accentSecondary =>
-      isDark ? AscentColors.accentSecondaryDark : AscentColors.accentSecondary;
+  Color get accentSecondary => isFrozen
+      ? FrozenPalette.secondary
+      : isDark
+      ? AscentColors.accentSecondaryDark
+      : AscentColors.accentSecondary;
 
-  Color get accentInfo =>
-      isDark ? AscentColors.accentInfoDark : AscentColors.accentInfo;
+  Color get accentInfo => isFrozen
+      ? FrozenPalette.warning
+      : isDark
+      ? AscentColors.accentInfoDark
+      : AscentColors.accentInfo;
 
-  Color get stateDanger =>
-      isDark ? AscentColors.stateDangerDark : AscentColors.stateDanger;
+  Color get stateDanger => isFrozen
+      ? FrozenPalette.danger
+      : isDark
+      ? AscentColors.stateDangerDark
+      : AscentColors.stateDanger;
 
-  Color get stateSuccess =>
-      isDark ? AscentColors.stateSuccessDark : AscentColors.stateSuccess;
+  Color get stateSuccess => isFrozen
+      ? FrozenPalette.success
+      : isDark
+      ? AscentColors.stateSuccessDark
+      : AscentColors.stateSuccess;
 
-  Color get stateWarning =>
-      isDark ? AscentColors.stateWarningDark : AscentColors.stateWarning;
+  Color get stateWarning => isFrozen
+      ? FrozenPalette.warning
+      : isDark
+      ? AscentColors.stateWarningDark
+      : AscentColors.stateWarning;
 
   Color get textPrimary => Theme.of(this).colorScheme.onSurface;
 
-  Color get textSecondary =>
-      isDark ? AscentColors.textSecondaryDark : AscentColors.textSecondary;
+  Color get textSecondary => isFrozen
+      ? FrozenPalette.secondaryInk
+      : isDark
+      ? AscentColors.textSecondaryDark
+      : AscentColors.textSecondary;
 
   Color get textMuted => Theme.of(this).colorScheme.onSurfaceVariant;
 
-  Color get textOnPrimary =>
-      isDark ? AscentColors.textOnPrimaryDark : AscentColors.textOnPrimary;
+  Color get textOnPrimary => Theme.of(this).colorScheme.onPrimary;
 
   Color get divider =>
       Theme.of(this).dividerTheme.color ??
       (isDark ? AscentColors.dividerDark : AscentColors.divider);
 
-  Color get accentPrimaryBright => isDark
+  Color get accentPrimaryBright => isFrozen
+      ? FrozenPalette.accent
+      : isDark
       ? AscentColors.accentPrimaryBrightDark
       : AscentColors.accentPrimaryBright;
 
-  Color get accentPrimaryDim => isDark
+  Color get accentPrimaryDim => isFrozen
+      ? FrozenPalette.aqua
+      : isDark
       ? AscentColors.accentPrimaryDimDark
       : AscentColors.accentPrimaryDim;
 
-  Color get accentSecondaryBright => isDark
+  Color get accentSecondaryBright => isFrozen
+      ? FrozenPalette.secondary
+      : isDark
       ? AscentColors.accentSecondaryBrightDark
       : AscentColors.accentSecondaryBright;
 
-  Color get stateDangerBright => isDark
+  Color get stateDangerBright => isFrozen
+      ? FrozenPalette.danger
+      : isDark
       ? AscentColors.stateDangerBrightDark
       : AscentColors.stateDangerBright;
 }

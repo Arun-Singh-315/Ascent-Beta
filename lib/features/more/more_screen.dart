@@ -149,7 +149,7 @@ class MoreScreen extends ConsumerWidget {
                 _TileDivider(),
                 _MoreListTile(
                   icon: Icons.bubble_chart_rounded,
-                  iconTint: AppPalette.colorFFEC8C38,
+                  iconTint: g.frozen ? g.slate : AppPalette.colorFFEC8C38,
                   title: 'Thought Wall • Mind Space',
                   subtitle:
                       'Unfiltered self-talk, sparks, daily wins & reflections',
@@ -222,7 +222,7 @@ class MoreScreen extends ConsumerWidget {
                 _TileDivider(),
                 _MoreListTile(
                   icon: Icons.psychology_outlined,
-                  iconTint: AppPalette.colorFFE79D5C,
+                  iconTint: g.frozen ? g.slate : AppPalette.colorFFE79D5C,
                   title: 'Interview Prep Bank',
                   subtitle: 'Question logs, company notes & behavioral rounds',
                   route: '/interview-prep',

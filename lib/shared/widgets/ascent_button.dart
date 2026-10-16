@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
 
 /// The core button variants in the Ascent design system.
 enum AscentButtonType {
@@ -268,12 +269,16 @@ class _PrimaryButton extends StatelessWidget {
     final bg = isEnabled
         ? (isDark
               ? context.bgSurfaceElevated.withValues(alpha: 0.92)
-              : AppPalette.colorFF3B2C1E.withValues(alpha: 0.94))
+              : (context.isFrozen
+                        ? FrozenPalette.action
+                        : AppPalette.colorFF3B2C1E)
+                    .withValues(alpha: 0.94))
         : context.bgSurfaceElevated.withValues(alpha: 0.4);
     final fg = isDark ? context.textPrimary : AppPalette.white;
     final borderColor = isDark
         ? context.textPrimary.withValues(alpha: 0.25)
-        : AppPalette.colorFF2A1C0F.withValues(alpha: 0.7);
+        : (context.isFrozen ? FrozenPalette.action : AppPalette.colorFF2A1C0F)
+              .withValues(alpha: 0.7);
     final height =
         (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
             .clamp(48.0, 100.0);
@@ -374,7 +379,7 @@ class _SecondaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = onPressed != null && !loading;
-    final accent = isEnabled ? context.accentPrimary : context.textMuted;
+    final accent = isEnabled ? FrozenPalette.action : context.textMuted;
     final height =
         (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
             .clamp(48.0, 100.0);
