@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/frozen_palette.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -16,7 +18,6 @@ import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
 import '../../thought_wall/thought_action_ui.dart';
-import '../../../core/services/home_capture_service.dart';
 import 'home_schedule_sheet.dart';
 import 'dart:convert';
 
@@ -204,8 +205,11 @@ class _ThoughtWallHomePreviewState
       return thoughts.take(widget.previewLimit.clamp(1, 4)).toList();
     }
     final pinned = thoughts.where((t) => t.isPinned).firstOrNull;
-    final latest = thoughts.where((t) => t.id != pinned?.id).firstOrNull;
-    return pinned == null ? thoughts.take(1).toList() : [pinned, ?latest];
+    if (pinned == null) {
+      return thoughts.take(2).toList();
+    }
+    final others = thoughts.where((t) => t.id != pinned.id).take(1).toList();
+    return [pinned, ...others];
   }
 
   Widget _draftActions(Map<String, dynamic> draft, {bool showTitle = true}) {
@@ -285,11 +289,13 @@ class _ThoughtWallHomePreviewState
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             nightDecoration: BoxDecoration(
-              color: g.fill,
+              color: Colors.transparent,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _focusNode.hasFocus ? g.clay : g.edge,
-                width: AppBorderScale.w1point0,
+                color: _focusNode.hasFocus
+                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                    : (context.isDark ? FrozenPalette.darkLine : const Color(0xFF1E293B)),
+                width: 1.0,
               ),
             ),
             child: Row(
@@ -297,21 +303,31 @@ class _ThoughtWallHomePreviewState
                 Icon(
                   Icons.edit_note_rounded,
                   size: 20,
-                  color: _focusNode.hasFocus ? g.clay : g.inkMuted,
+                  color: _focusNode.hasFocus
+                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                      : (context.isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    cursorColor: g.clay,
+                    cursorColor: context.isDark ? FrozenPalette.darkAction : FrozenPalette.action,
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
-                    style: AppTypography.plusJakartaSans14W60080(color: g.ink),
+                    style: AppTypography.plusJakartaSans14W60080(
+                      color: context.isDark ? FrozenPalette.darkInk : FrozenPalette.ink,
+                    ),
                     decoration: InputDecoration(
                       hintText: "Capture a thought…",
-                      hintStyle: TextStyle(color: g.inkMuted),
+                      hintStyle: TextStyle(
+                        color: context.isDark
+                            ? FrozenPalette.darkSecondaryInk
+                            : FrozenPalette.secondaryInk,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                       filled: false,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -333,7 +349,10 @@ class _ThoughtWallHomePreviewState
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Icon(Icons.arrow_upward_rounded, color: g.clay),
+                      : Icon(
+                          Icons.arrow_upward_rounded,
+                          color: context.isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                        ),
                 ),
               ],
             ),
@@ -397,17 +416,31 @@ class _ThoughtWallHomePreviewState
                       _transientThoughtId == thought.id &&
                       !thought.isCompleted;
 
+                  final isRight = (index % 2 == 1);
+
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpace.s10),
+                    padding: EdgeInsets.only(
+                      bottom: AppSpace.s10,
+                      left: isRight ? 36.0 : 0.0,
+                      right: isRight ? 0.0 : 36.0,
+                    ),
                     child: GlassSurface(
                       key: ValueKey('home_thought_${thought.id}'),
                       enableBlur: false,
+                      fillColor: Colors.transparent,
                       customBorder: Border.all(
-                        color: g.edge,
-                        width: AppBorderScale.w1point0,
+                        color: context.isDark
+                            ? FrozenPalette.darkLine
+                            : const Color(0xFF1E293B),
+                        width: 1.0,
                       ),
                       radius: 16,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: Radius.circular(isRight ? 16 : 4),
+                        bottomRight: Radius.circular(isRight ? 4 : 16),
+                      ),
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpace.s16,
                         vertical: AppSpace.s12,

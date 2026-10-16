@@ -103,6 +103,10 @@ void main() {
             );
             expect(
               find.byKey(ValueKey('home_thought_${thoughts[1].id}')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(ValueKey('home_thought_${thoughts[2].id}')),
               findsNothing,
             );
             final date = tester.getRect(
@@ -152,6 +156,10 @@ void main() {
             await tester.pumpAndSettle();
             expect(
               find.byKey(ValueKey('home_thought_${thoughts[1].id}')),
+              findsOneWidget,
+            );
+            expect(
+              find.byKey(ValueKey('home_thought_${thoughts[2].id}')),
               findsNothing,
             );
             expect(tester.takeException(), isNull);

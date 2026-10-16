@@ -6,7 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 
+import 'package:flutter/services.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/color_tokens.dart';
+import 'widgets/home_schedule_sheet.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
@@ -121,6 +125,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
     return Scaffold(
       backgroundColor: g.bg,
+      floatingActionButton: _buildFloatingPlanPill(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: HomeAtmosphereBackground(
           child: profileAsync.when(
@@ -231,6 +237,70 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingPlanPill(BuildContext context) {
+    final isDark = context.isDark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            HapticFeedback.lightImpact();
+            final thoughts = ref.read(recentThoughtsStreamProvider).value;
+            final latest = thoughts?.firstOrNull;
+            if (latest != null) {
+              await showHomeSchedule(context, latest);
+            } else {
+              context.push('/thought-wall');
+            }
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
+                    : [FrozenPalette.actionBright, FrozenPalette.action],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                      .withValues(alpha: 0.28),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.edit_calendar_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Plan',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -83,19 +83,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             }
             return 0;
           });
-        final sortedAll = <TodayActivityItem>[...activities]
-          ..sort((a, b) {
-            if (a.status == TodayActivityStatus.inProgress &&
-                b.status != TodayActivityStatus.inProgress) {
-              return -1;
-            }
-            if (b.status == TodayActivityStatus.inProgress &&
-                a.status != TodayActivityStatus.inProgress) {
-              return 1;
-            }
-            return 0;
-          });
-
         final filteredList = sortedPending;
 
         return Column(
