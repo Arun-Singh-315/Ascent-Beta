@@ -530,12 +530,16 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   List<Course> _loadStoredCourses(SharedPreferences prefs) {
+    if (prefs.getInt(_kActiveLectureIdKey) == 38) {
+      prefs.remove(_kActiveLectureIdKey);
+    }
     final rawJson = prefs.getString(_kCoursesListKey);
     if (rawJson != null) {
       try {
         final List<dynamic> list = jsonDecode(rawJson);
         final courses = list
-            .map((item) => Course.fromJson(item as Map<String, dynamic>))
+            .map((item) =>
+                Course.fromJson(item as Map<String, dynamic>).sanitizeTestLectures())
             .toList();
         return courses;
       } catch (_) {}
