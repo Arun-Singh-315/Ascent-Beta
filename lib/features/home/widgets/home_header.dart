@@ -192,12 +192,22 @@ class HomeHeader extends ConsumerWidget {
           // ── GREETING & DISPLAY NAME ───────────────────────────────────
           Text(
             _greeting(),
-            style: AscentTextStyles.homeBody.copyWith(color: g.inkSecondary),
+            style: AscentTextStyles.homeHeadline.copyWith(
+              color: g.inkSecondary,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             name,
-            style: AscentTextStyles.homeDisplay.copyWith(color: g.ink),
+            style: AscentTextStyles.homeTitle.copyWith(
+              color: g.ink,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+              height: 1.15,
+            ),
           ),
 
           const SizedBox(height: 6),

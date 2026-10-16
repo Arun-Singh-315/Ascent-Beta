@@ -186,10 +186,21 @@ class HomeCaptureService {
           'This thought already has a Todo. Use its existing planning controls.',
         );
       }
+      final cleanTitle = title.trim();
+      final cleanContent = source.content.trim();
+      String? taskNotes;
+      if (cleanTitle.toLowerCase() != cleanContent.toLowerCase()) {
+        if (cleanContent.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
+          final remainder = cleanContent.substring(cleanTitle.length).trim();
+          taskNotes = remainder.isNotEmpty ? remainder : null;
+        } else {
+          taskNotes = cleanContent.isNotEmpty ? cleanContent : null;
+        }
+      }
       final id = await db.taskDao.insertTask(
         TaskTableCompanion.insert(
-          title: title.trim(),
-          notes: Value(source.content),
+          title: cleanTitle,
+          notes: Value(taskNotes),
           linkedThoughtId: Value(source.id),
           plannedDate: Value(at),
         ),

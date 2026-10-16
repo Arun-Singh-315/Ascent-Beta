@@ -145,7 +145,7 @@ void main() {
       await tester.pump();
       expect(find.text('Mind space'), findsNothing);
       expect(
-        find.textContaining("A thought, a task, or something to remember…"),
+        find.textContaining("Capture a thought…"),
         findsOneWidget,
       );
 
