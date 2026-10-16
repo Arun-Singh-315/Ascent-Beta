@@ -8,6 +8,8 @@ import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
+import '../../shared/widgets/ascent_atmosphere.dart';
 import '../../shared/widgets/message_composer.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
@@ -1459,6 +1461,22 @@ class _AtmosphericChatBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (context.glass.frozen) {
+      return DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              FrozenPalette.surface,
+              FrozenPalette.canvas,
+              FrozenPalette.elevated,
+            ],
+          ),
+        ),
+        child: const AscentAtmosphereBackground(child: SizedBox.expand()),
+      );
+    }
     if (isDark) {
       return Stack(
         fit: StackFit.expand,

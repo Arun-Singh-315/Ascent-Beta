@@ -1,6 +1,5 @@
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/services/home_capture_service.dart';
-import 'package:ascent/core/notifications/notification_service.dart';
 import 'package:ascent/core/notifications/reminder_alert_sync.dart';
 import 'package:ascent/core/notifications/reminder_alarm_bridge.dart';
 import 'package:drift/native.dart';
@@ -24,8 +23,9 @@ void main() {
       final requests = <Map>[];
       messenger.setMockMethodCallHandler(channel, (call) async {
         if (call.method == 'initialize' ||
-            call.method == 'areNotificationsEnabled')
+            call.method == 'areNotificationsEnabled') {
           return true;
+        }
         if (call.method == 'zonedSchedule') requests.add(call.arguments as Map);
         return null;
       });

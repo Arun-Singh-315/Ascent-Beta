@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -646,12 +647,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       Text(
                         dayPreset == DayThemePreset.nordicSky
-                            ? 'Nordic Sky'
+                            ? 'Frozen Sky'
                             : 'Classic Clay (Default)',
                         style: AscentTextStyles.captionMedium
                             .copyWith(
                               color: dayPreset == DayThemePreset.nordicSky
-                                  ? const Color(0xFF0284C7)
+                                  ? FrozenPalette.accent
                                   : g.clay,
                             )
                             .merge(AppTypeRoles.typeRole8),
@@ -676,9 +677,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ),
                       const SizedBox(width: 8),
                       _DayPresetOption(
-                        label: 'Nordic Sky',
-                        subtitle: 'Ice, Glass & Slate',
-                        colorSwatch: const Color(0xFF0284C7),
+                        label: 'Frozen Sky',
+                        subtitle: 'Frost & Charcoal',
+                        colorSwatch: FrozenPalette.accent,
                         icon: Icons.cloud_outlined,
                         isSelected: dayPreset == DayThemePreset.nordicSky,
                         onTap: () {
@@ -1031,7 +1032,11 @@ class _SectionHeader extends StatelessWidget {
           Text(
             title,
             style: AscentTextStyles.labelSmall
-                .copyWith(color: g.ink, letterSpacing: 0.8, fontWeight: FontWeight.w600)
+                .copyWith(
+                  color: g.ink,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w600,
+                )
                 .merge(AppTypeRoles.typeRole31),
           ),
         ],
@@ -1225,7 +1230,9 @@ class _ThemeOption extends StatelessWidget {
                 style: AscentTextStyles.labelSmall
                     .copyWith(
                       color: isSelected ? AppPalette.white : g.ink,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     )
                     .merge(AppStateTypography.stateType1(state0: isSelected)),
               ),
@@ -1300,22 +1307,20 @@ class _DayPresetOption extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 label,
-                style: AscentTextStyles.labelSmall
-                    .copyWith(
-                      color: isSelected ? AppPalette.white : g.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: isSelected ? AppPalette.white : g.ink,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: AscentTextStyles.captionMedium
-                    .copyWith(
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.90)
-                          : g.inkMuted,
-                      fontSize: 10,
-                    ),
+                style: AscentTextStyles.captionMedium.copyWith(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.90)
+                      : g.inkMuted,
+                  fontSize: 10,
+                ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),

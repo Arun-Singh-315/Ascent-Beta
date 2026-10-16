@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/frozen_palette.dart';
 
 import 'package:flutter/services.dart';
 
@@ -100,7 +101,11 @@ class _MainScaffoldState extends State<MainScaffold> {
               ),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: AppPalette.colorFF2D251E.withValues(alpha: 0.95),
+              backgroundColor:
+                  (context.glass.frozen
+                          ? context.glass.ink
+                          : AppPalette.colorFF2D251E)
+                      .withValues(alpha: 0.95),
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: AppGeometry.roundedr20,
@@ -208,7 +213,9 @@ class _AscentBottomNav extends StatelessWidget {
                             child: Icon(
                               isActive ? tab.activeIcon : tab.icon,
                               color: isActive
-                                  ? context.glass.clay
+                                  ? (context.isFrozen
+                                        ? FrozenPalette.action
+                                        : context.glass.clay)
                                   : inactiveColor,
                               size: 19,
                             ),

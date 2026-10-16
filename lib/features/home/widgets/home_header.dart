@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/home_layout_provider.dart';
@@ -104,14 +105,18 @@ class HomeHeader extends ConsumerWidget {
                       vertical: AppSpace.s8,
                     ),
                     nightDecoration: BoxDecoration(
-                      color: isDark
+                      color: g.frozen
+                          ? FrozenPalette.mint
+                          : isDark
                           ? (isStreakCardVisible ? g.claySoft : g.fill)
                           : g.clay.withValues(
                               alpha: isStreakCardVisible ? .025 : 0,
                             ),
                       borderRadius: AppGeometry.roundedr99,
                       border: Border.all(
-                        color: isDark
+                        color: g.frozen
+                            ? FrozenPalette.line
+                            : isDark
                             ? (isStreakCardVisible ? g.clay : g.edge)
                             : Colors.black,
                         width: AppBorderScale.w1point0,
@@ -292,15 +297,25 @@ class HomeHeader extends ConsumerWidget {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: g.claySoft.withValues(alpha: isDark ? .12 : 0),
+                  color: g.frozen
+                      ? FrozenPalette.lavender
+                      : g.claySoft.withValues(alpha: isDark ? .12 : 0),
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isDark ? g.clay.withValues(alpha: .2) : Colors.black,
+                    color: g.frozen
+                        ? const Color(0xFFCFC3E3)
+                        : isDark
+                        ? g.clay.withValues(alpha: .2)
+                        : Colors.black,
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.auto_awesome_rounded, color: g.clay, size: 22),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: g.frozen ? FrozenPalette.action : g.clay,
+                      size: 22,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

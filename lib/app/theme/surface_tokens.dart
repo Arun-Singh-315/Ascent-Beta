@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'color_tokens.dart';
 import 'dimension_tokens.dart';
 import 'glass_theme.dart';
+import 'frozen_palette.dart';
 
 enum AppSurfaceRole {
   card,
@@ -95,16 +96,16 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
 
   static const nordicSky = AppSurfaces(
     outlined: true,
-    ink: Color(0xFF0F172A),
-    mutedText: Color(0xFF64748B),
-    accent: Color(0xFF0284C7),
-    greenAction: Color(0xFF059669),
+    ink: FrozenPalette.ink,
+    mutedText: FrozenPalette.mutedInk,
+    accent: FrozenPalette.accent,
+    greenAction: FrozenPalette.success,
     cardFill: Colors.transparent,
-    cardBorderColor: Color(0xFF0F172A),
-    pillBorderColor: Color(0xFF0F172A),
-    dividerColor: Color(0x330F172A),
-    tintFill: Color(0x1F0284C7),
-    tintBorder: Color(0x4D0284C7),
+    cardBorderColor: FrozenPalette.line,
+    pillBorderColor: FrozenPalette.line,
+    dividerColor: Color(0x33465B64),
+    tintFill: FrozenPalette.aqua,
+    tintBorder: Color(0x4D465B64),
     onAccent: Colors.white,
     cardBorderWidth: 1.5,
     pillBorderWidth: 1,
@@ -116,7 +117,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     ink: AscentGlass.nordicSky.ink,
     mutedText: AscentGlass.nordicSky.inkMuted,
     accent: AscentGlass.nordicSky.slate,
-    greenAction: const Color(0xFF059669),
+    greenAction: FrozenPalette.success,
     cardFill: AscentGlass.nordicSky.fill,
     cardBorderColor: AscentGlass.nordicSky.edge,
     pillBorderColor: AscentGlass.nordicSky.edge,
@@ -124,6 +125,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     tintFill: AscentGlass.nordicSky.slateSoft,
     tintBorder: AscentGlass.nordicSky.slate.withValues(alpha: .25),
     shadow: AscentGlass.nordicSky.shadow,
+    blur: 12,
   );
 
   static final night = AppSurfaces(

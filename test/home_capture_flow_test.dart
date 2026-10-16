@@ -137,6 +137,42 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+  testWidgets(
+    'Keep as thought clears the unscheduled draft without deleting the note',
+    (tester) async {
+      await mount(
+        tester,
+        theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+      );
+      await tester.enterText(find.byType(TextField), 'Remind me to call Mum');
+      await tester.pump();
+      await tester.tap(find.byTooltip('Send capture'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)),
+      );
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(HomeScheduleSheet))).pop();
+      await tester.pumpAndSettle();
+      expect(find.text('Unscheduled plan'), findsOneWidget);
+      final source = (await db.select(db.thoughtTable).get()).single;
+      expect(
+        find.ancestor(
+          of: find.text('Review & schedule'),
+          matching: find.byKey(ValueKey('home_thought_${source.id}')),
+        ),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Keep as thought'));
+      await tester.tap(find.text('Keep as thought'));
+      await tester.pumpAndSettle();
+      expect(find.text('Unscheduled plan'), findsNothing);
+      expect(prefs.containsKey(homePendingScheduleKey), isFalse);
+      expect(await db.select(db.thoughtTable).get(), hasLength(1));
+      expect(await db.select(db.taskTable).get(), isEmpty);
+      expect(await db.select(db.reminderTable).get(), isEmpty);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
   for (final themeName in ['clay', 'nordic', 'dark']) {
     testWidgets(
       'schedule sheet keeps draft and fits 360px with enlarged text: $themeName',
@@ -176,10 +212,16 @@ void main() {
         // Dismiss and recover the same draft.
         Navigator.of(tester.element(find.byType(HomeScheduleSheet))).pop();
         await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Finish scheduling'));
-        await tester.tap(find.text('Finish scheduling'));
+        await tester.ensureVisible(find.text('Review & schedule'));
+        await tester.tap(find.text('Review & schedule'));
         await tester.pumpAndSettle();
-        expect(find.text('Call Mum about the appointment'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(HomeScheduleSheet),
+            matching: find.text('Call Mum about the appointment'),
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox());
       },
