@@ -3,21 +3,15 @@
 > **Your personal job-search operating system.**  
 > A calm, local-first, empathetic mobile application designed to turn job preparation and interview hunting into a structured, stress-free engineering practice.
 
+Next update planning: [Your Home, Connected Projects](docs/NEXT_UPDATE_PLAN.md) — Home customization first, followed by connections between existing tools.
+
 ---
 
-## 📖 Complete V1 Specifications & Design System Handoff
+## Documentation
 
-For external developers, contributors, and team members building new **V1** features, refer to the master specification:
+See the [documentation index](docs/README.md) for current architecture, design conventions, components, feature entry points and historical release evidence.
 
-👉 **[ASCENT_V1_SPECIFICATION_HANDOFF.md](./ASCENT_V1_SPECIFICATION_HANDOFF.md)**
-
-This document details:
-- **Design Tokens & Theme:** Full hex color codes (Light & Dark modes), font scale (`Plus Jakarta Sans`, `Inter`, `JetBrains Mono`), corner radii, and elevation.
-- **Component Catalog:** Standard widgets (`AscentCard`, `AscentButton`, `MainScaffold`, `AscentDrawer`, `EmptyState`, `SkeletonShimmer`, `UndoSnackbar`).
-- **Complete Screen Directory:** UX flows, states, and interactive specifications for all 15+ screens.
-- **Database Schema & Drift DAOs:** 12 tables, relations, and Riverpod stream providers.
-- **On-Device Intelligence:** `InsightEngine` and `SeriesEngine` velocity math.
-- **Developer Guardrails:** Non-negotiable rules to ensure new v1 features do not regress or alter default aesthetics or data integrity.
+The [Mind Space feedback plan](docs/MIND_SPACE_FEEDBACK_PLAN.md) covers the latest eleven feedback notes and proposed acceptance cases. It is a planning document; those changes have not been implemented yet.
 
 ---
 
@@ -40,7 +34,7 @@ This document details:
 # 1. Fetch dependencies
 flutter pub get
 
-# 2. Run code generation (Drift & Riverpod)
+# 2. Run code generation (Drift)
 dart run build_runner build --delete-conflicting-outputs
 
 # 3. Analyze codebase

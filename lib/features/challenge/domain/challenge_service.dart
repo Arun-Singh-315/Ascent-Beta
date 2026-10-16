@@ -38,12 +38,6 @@ class ChallengeService {
     final endDay = startDay.add(Duration(days: durationDays - 1));
     late final int id;
     await _db.transaction(() async {
-      final existing = await _db.challengeDao.getActiveChallenge();
-      if (existing != null) {
-        throw StateError(
-          'Finish or remove the active challenge before creating another.',
-        );
-      }
       id = await _db.challengeDao.insertChallenge(
         ChallengeTableCompanion.insert(
           type: type,

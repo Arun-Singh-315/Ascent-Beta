@@ -1,8 +1,10 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/glass_theme.dart';
 import '../thought_wall/drop_thought_sheet.dart';
@@ -55,49 +57,54 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(chaiBreakProvider);
     final notifier = ref.read(chaiBreakProvider.notifier);
-    final accentColor = state.selectedSoundscape == SoundscapePreset.customSystemAudio
-        ? const Color(0xFF10B981)
-        : Color(state.selectedSoundscape.accentColorHex);
+    const accentColor = AppPalette.colorFF6B3A1C;
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: g.bg,
-      body: Container(
-        decoration: BoxDecoration(
-          color: g.bg,
-        ),
+      body: AppCard(
+        nightDecoration: BoxDecoration(color: g.bg),
         child: SafeArea(
           child: Column(
             children: [
               // Top Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s16,
+                  vertical: AppSpace.s10,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     IconButton(
-                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: g.ink, size: 20),
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: g.ink,
+                        size: 20,
+                      ),
                       onPressed: () {
                         HapticFeedback.lightImpact();
                         Navigator.of(context).pop();
                       },
                       tooltip: 'Back',
                     ),
-                    Row(
-                      children: [
-                        Icon(Icons.coffee_rounded, color: g.clay, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'CHAI & COFFEE BREAK',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.1,
-                            color: g.ink,
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.coffee_rounded, color: g.clay, size: 18),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'Chai & Coffee',
+                              style: AppTypography.plusJakartaSans13W70016(
+                                color: g.ink,
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     IconButton(
                       icon: Icon(
@@ -123,40 +130,48 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
               Expanded(
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s20,
+                    vertical: AppSpace.s8,
+                  ),
                   children: [
                     // Mode Switcher (Mindful Pause vs Brew With Me)
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
+                    AppCard(
+                      padding: const EdgeInsets.all(AppSpace.s4),
+                      nightDecoration: BoxDecoration(
                         color: g.fill,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppGeometry.roundedr16,
                         border: Border.all(color: g.edge),
                       ),
                       child: Row(
                         children: [
                           Expanded(
-                            child: InkWell(
+                            child: AppTapArea(
                               onTap: () {
                                 if (_isBrewWithMe) {
                                   HapticFeedback.selectionClick();
                                   setState(() => _isBrewWithMe = false);
                                 }
                               },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              borderRadius: AppGeometry.roundedr12,
+                              child: AppCard(
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s12,
+                                ),
                                 alignment: Alignment.center,
-                                decoration: BoxDecoration(
+                                nightDecoration: BoxDecoration(
                                   color: !_isBrewWithMe
                                       ? g.claySoft
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
+                                      : AppPalette.transparent,
+                                  borderRadius: AppGeometry.roundedr12,
                                   border: Border.all(
                                     color: !_isBrewWithMe
                                         ? g.clay
-                                        : Colors.transparent,
-                                    width: 1,
+                                        : AppPalette.transparent,
+                                    width: AppBorderScale.w1,
                                   ),
                                 ),
                                 child: Row(
@@ -165,15 +180,20 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                     Icon(
                                       Icons.spa_rounded,
                                       size: 16,
-                                      color: !_isBrewWithMe ? g.clay : g.inkMuted,
+                                      color: !_isBrewWithMe
+                                          ? g.clay
+                                          : g.inkMuted,
                                     ),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      'Mindful Pause',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12.5,
-                                        fontWeight: !_isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
-                                        color: !_isBrewWithMe ? g.ink : g.inkMuted,
+                                    Flexible(
+                                      child: Text(
+                                        'Mindful Pause',
+                                        style: AppStateTypography.stateType9(
+                                          state0: !_isBrewWithMe,
+                                          color: !_isBrewWithMe
+                                              ? g.ink
+                                              : g.inkMuted,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -183,27 +203,32 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                           ),
                           const SizedBox(width: 6),
                           Expanded(
-                            child: InkWell(
+                            child: AppTapArea(
                               onTap: () {
                                 if (!_isBrewWithMe) {
                                   HapticFeedback.selectionClick();
                                   setState(() => _isBrewWithMe = true);
                                 }
                               },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                              borderRadius: AppGeometry.roundedr12,
+                              child: AppCard(
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s12,
+                                ),
                                 alignment: Alignment.center,
-                                decoration: BoxDecoration(
+                                nightDecoration: BoxDecoration(
                                   color: _isBrewWithMe
                                       ? g.claySoft
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
+                                      : AppPalette.transparent,
+                                  borderRadius: AppGeometry.roundedr12,
                                   border: Border.all(
                                     color: _isBrewWithMe
                                         ? g.clay
-                                        : Colors.transparent,
-                                    width: 1,
+                                        : AppPalette.transparent,
+                                    width: AppBorderScale.w1,
                                   ),
                                 ),
                                 child: Row(
@@ -212,15 +237,20 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                                     Icon(
                                       Icons.coffee_maker_rounded,
                                       size: 16,
-                                      color: _isBrewWithMe ? g.clay : g.inkMuted,
+                                      color: _isBrewWithMe
+                                          ? g.clay
+                                          : g.inkMuted,
                                     ),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      'Brew With Me',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 12.5,
-                                        fontWeight: _isBrewWithMe ? FontWeight.w700 : FontWeight.w500,
-                                        color: _isBrewWithMe ? g.ink : g.inkMuted,
+                                    Flexible(
+                                      child: Text(
+                                        'Brew With Me',
+                                        style: AppStateTypography.stateType9(
+                                          state0: _isBrewWithMe,
+                                          color: _isBrewWithMe
+                                              ? g.ink
+                                              : g.inkMuted,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -232,14 +262,26 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
+                    Text(
+                      _isBrewWithMe
+                          ? 'Follow a gentle guide while you make your drink.'
+                          : 'Choose a short pause, breathe and enjoy your drink.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.plusJakartaSans13Regular18(
+                        color: g.inkMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     if (_isBrewWithMe) ...[
                       const BrewWithMeView(),
                     ] else ...[
-                      // Duration Preset Pills
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      // Duration presets wrap comfortably at larger text sizes.
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
                           _PresetChip(
                             label: '5m Chai',
@@ -250,7 +292,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               notifier.setPresetMinutes(5);
                             },
                           ),
-                          const SizedBox(width: 8),
                           _PresetChip(
                             label: '10m Coffee',
                             minutes: 10,
@@ -260,7 +301,6 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               notifier.setPresetMinutes(10);
                             },
                           ),
-                          const SizedBox(width: 8),
                           _PresetChip(
                             label: '15m Reset',
                             minutes: 15,
@@ -291,20 +331,15 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                           children: [
                             Text(
                               state.formattedRemaining,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 48,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : g.ink,
-                                letterSpacing: -1,
+                              style: AppTypography.jetBrainsMono48W70019(
+                                color: isDark ? AppPalette.white : g.ink,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'remaining of ${state.totalDurationSeconds ~/ 60} minutes mindful break',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: isDark ? Colors.white54 : g.inkMuted,
+                              style: AppTypography.plusJakartaSans12W50020(
+                                color: isDark ? AppPalette.white54 : g.inkMuted,
                               ),
                             ),
                           ],
@@ -329,48 +364,63 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                         children: [
                           IconButton(
                             iconSize: 22,
-                            icon: Icon(Icons.replay_rounded, color: isDark ? Colors.white60 : g.inkMuted),
+                            icon: Icon(
+                              Icons.replay_rounded,
+                              color: isDark ? AppPalette.white60 : g.inkMuted,
+                            ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
-                              notifier.setPresetMinutes(state.totalDurationSeconds ~/ 60);
+                              notifier.setPresetMinutes(
+                                state.totalDurationSeconds ~/ 60,
+                              );
                             },
                             tooltip: 'Reset break timer',
                           ),
                           const SizedBox(width: 14),
                           Material(
-                            color: Colors.transparent,
-                            child: InkWell(
+                            color: AppPalette.transparent,
+                            child: AppTapArea(
                               onTap: () {
                                 HapticFeedback.mediumImpact();
                                 notifier.togglePlayPause();
                               },
-                              borderRadius: BorderRadius.circular(30),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: accentColor.withValues(alpha: isDark ? 0.22 : 0.16),
-                                  borderRadius: BorderRadius.circular(30),
+                              borderRadius: AppGeometry.roundedr30,
+                              child: AppCard(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s24,
+                                  vertical: AppSpace.s12,
+                                ),
+                                nightDecoration: BoxDecoration(
+                                  color: accentColor.withValues(
+                                    alpha: isDark ? 0.22 : 0.16,
+                                  ),
+                                  borderRadius: AppGeometry.roundedr30,
                                   border: Border.all(
-                                    color: accentColor.withValues(alpha: isDark ? 0.7 : 0.8),
-                                    width: 1.2,
+                                    color: accentColor.withValues(
+                                      alpha: isDark ? 0.7 : 0.8,
+                                    ),
+                                    width: AppBorderScale.w1point2,
                                   ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(
-                                      state.isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                                      color: isDark ? Colors.white : g.ink,
+                                      state.isRunning
+                                          ? Icons.pause_rounded
+                                          : Icons.play_arrow_rounded,
+                                      color: isDark ? AppPalette.white : g.ink,
                                       size: 22,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
                                       state.isRunning ? 'Pause' : 'Resume',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        color: isDark ? Colors.white : g.ink,
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
+                                      style:
+                                          AppTypography.plusJakartaSans14W70021(
+                                            color: isDark
+                                                ? AppPalette.white
+                                                : g.ink,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -380,7 +430,10 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                           const SizedBox(width: 14),
                           IconButton(
                             iconSize: 22,
-                            icon: Icon(Icons.check_circle_outline_rounded, color: isDark ? Colors.white60 : g.inkMuted),
+                            icon: Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: isDark ? AppPalette.white60 : g.inkMuted,
+                            ),
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               Navigator.of(context).pop();
@@ -410,18 +463,29 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                     const SizedBox(height: 20),
 
                     // Mindful Quote / Reflection
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: isDark ? Colors.white.withValues(alpha: 0.04) : Colors.black.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(14),
+                    AppCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s16,
+                        vertical: AppSpace.s12,
+                      ),
+                      nightDecoration: BoxDecoration(
+                        color: isDark
+                            ? AppPalette.white.withValues(alpha: 0.04)
+                            : AppPalette.black.withValues(alpha: 0.03),
+                        borderRadius: AppGeometry.roundedr14,
                         border: Border.all(
-                          color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08),
+                          color: isDark
+                              ? AppPalette.white.withValues(alpha: 0.08)
+                              : AppPalette.black.withValues(alpha: 0.08),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.format_quote_rounded, color: Color(0xFFE28B57), size: 18),
+                          const Icon(
+                            Icons.format_quote_rounded,
+                            color: AppPalette.colorFFE28B57,
+                            size: 18,
+                          ),
                           const SizedBox(width: 10),
                           Expanded(
                             child: AnimatedSwitcher(
@@ -429,17 +493,18 @@ class _ChaiBreakScreenState extends ConsumerState<ChaiBreakScreen> {
                               child: Text(
                                 _mindfulQuotes[_quoteIndex],
                                 key: ValueKey(_quoteIndex),
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12.5,
-                                  fontStyle: FontStyle.italic,
-                                  color: isDark ? Colors.white70 : g.ink,
-                                  height: 1.35,
+                                style: AppTypography.plusJakartaSans14Regular22(
+                                  color: isDark ? AppPalette.white70 : g.ink,
                                 ),
                               ),
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.edit_note_rounded, color: isDark ? Colors.white54 : g.inkMuted, size: 20),
+                            icon: Icon(
+                              Icons.edit_note_rounded,
+                              color: isDark ? AppPalette.white54 : g.inkMuted,
+                              size: 20,
+                            ),
                             onPressed: () => DropThoughtSheet.show(context),
                             tooltip: 'Drop a thought into Thought Wall',
                           ),
@@ -478,32 +543,42 @@ class _PresetChip extends StatelessWidget {
     final g = context.glass;
 
     return Material(
-      color: Colors.transparent,
-      child: InkWell(
+      color: AppPalette.transparent,
+      child: AppTapArea(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-          decoration: BoxDecoration(
+        borderRadius: AppGeometry.roundedr12,
+        child: AppCard(
+          selected: isSelected,
+          constraints: const BoxConstraints(minHeight: 48),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s14,
+            vertical: AppSpace.s12,
+          ),
+          nightDecoration: BoxDecoration(
             color: isSelected
-                ? (isDark ? const Color(0xFFE28B57).withValues(alpha: 0.22) : g.claySoft)
-                : (isDark ? const Color(0xFF222832) : Colors.black.withValues(alpha: 0.04)),
-            borderRadius: BorderRadius.circular(12),
+                ? (isDark
+                      ? AppPalette.colorFFE28B57.withValues(alpha: 0.22)
+                      : g.claySoft)
+                : (isDark
+                      ? AppPalette.colorFF322922
+                      : AppPalette.black.withValues(alpha: 0.04)),
+            borderRadius: AppGeometry.roundedr12,
             border: Border.all(
               color: isSelected
-                  ? const Color(0xFFE28B57)
-                  : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.08)),
-              width: 1,
+                  ? AppPalette.colorFFE28B57
+                  : (isDark
+                        ? AppPalette.white.withValues(alpha: 0.08)
+                        : AppPalette.black.withValues(alpha: 0.08)),
+              width: AppBorderScale.w1,
             ),
           ),
           child: Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 12.5,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isSelected
-                  ? const Color(0xFFE28B57)
-                  : (isDark ? Colors.white70 : g.ink),
+            style: AppStateTypography.stateType9(
+              state0: isSelected,
+              color: context.surfaces.contentForeground(isSelected, isSelected
+                  ? (isDark ? AppPalette.colorFFE28B57 : g.clay)
+                  : (isDark ? AppPalette.white70 : g.ink)),
             ),
           ),
         ),

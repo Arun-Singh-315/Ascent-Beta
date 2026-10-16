@@ -1,11 +1,15 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/feature_guide.dart';
 import '../../today/add_activity_sheet.dart';
 
 /// Lightweight, dismissible Day-1 Quick Start Guide.
@@ -23,7 +27,7 @@ class DayOneTutorialCard extends ConsumerStatefulWidget {
 class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
   bool _dismissed = false;
 
-  static const String _prefKey = 'ascent_day_one_tutorial_dismissed';
+  static const String _prefKey = 'ascent_day_one_tutorial_v2_dismissed';
 
   @override
   void initState() {
@@ -44,17 +48,18 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
     if (_dismissed) return const SizedBox.shrink();
 
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryButtonFg = isDark ? context.textOnPrimary : AppPalette.white;
     final firstName = widget.userName.trim().split(' ').first;
-    final displayName = firstName.isNotEmpty ? firstName : 'Friend';
 
     return Padding(
-      padding: const EdgeInsets.only(top: 14),
+      padding: const EdgeInsets.only(top: AppSpace.s14),
       child: GlassSurface(
         radius: 20,
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(AppSpace.s18),
         customBorder: Border.all(
           color: g.clay.withValues(alpha: 0.35),
-          width: 1.1,
+          width: AppBorderScale.w1point1,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,12 +68,18 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                  decoration: BoxDecoration(
+                AppTag(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s9,
+                    vertical: AppSpace.s3point5,
+                  ),
+                  nightDecoration: BoxDecoration(
                     color: g.claySoft,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: g.clay.withValues(alpha: 0.3), width: 0.8),
+                    borderRadius: AppGeometry.roundedr8,
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.3),
+                      width: AppBorderScale.w0point8,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -77,11 +88,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                       const SizedBox(width: 5),
                       Text(
                         'QUICK START GUIDE',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.jetBrainsMono10W700117(
                           color: g.clay,
-                          letterSpacing: 0.8,
                         ),
                       ),
                     ],
@@ -98,15 +106,20 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
             ),
             const SizedBox(height: 12),
 
+            TextButton.icon(
+              onPressed: () => showAscentTour(context),
+              icon: const Icon(Icons.touch_app_outlined),
+              label: const Text(
+                'Start guided tour · try features step by step',
+              ),
+            ),
+
             // Greeting
             Text(
-              'Welcome, $displayName! Here\'s how Ascent works:',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w700,
-                color: g.ink,
-                letterSpacing: -0.2,
-              ),
+              firstName.isEmpty
+                  ? 'Welcome to your space! Here\'s how Ascent works:'
+                  : 'Welcome, $firstName! Here\'s how Ascent works:',
+              style: AppTypography.plusJakartaSans155W700118(color: g.ink),
             ),
             const SizedBox(height: 12),
 
@@ -115,7 +128,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               icon: Icons.check_circle_outline_rounded,
               iconColor: g.sage,
               title: 'To-Dos vs. Timed Focus',
-              description: 'Quick tasks have checkboxes. Long study sessions have dedicated focus clocks.',
+              description:
+                  'Quick tasks have checkboxes. Long study sessions have dedicated focus clocks.',
               g: g,
             ),
             const SizedBox(height: 10),
@@ -124,7 +138,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               icon: Icons.chat_bubble_outline_rounded,
               iconColor: g.clay,
               title: 'Riya AI Gateway',
-              description: 'Tap the glowing Riya button above to plan your day or ask anything naturally.',
+              description:
+                  'Tap the glowing Riya button above to plan your day or ask anything naturally.',
               g: g,
             ),
             const SizedBox(height: 10),
@@ -133,7 +148,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               icon: Icons.school_outlined,
               iconColor: g.slate,
               title: 'Learning Hub & Consistency',
-              description: 'Track your structured course syllabus and build an uninterrupted daily streak.',
+              description:
+                  'Track your structured course syllabus and build an uninterrupted daily streak.',
               g: g,
             ),
             const SizedBox(height: 16),
@@ -143,13 +159,24 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
               children: [
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: g.clay,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      minimumSize: const Size(64, 40),
+                    style: context.surfaces.buttonStyle(
+                      ElevatedButton.styleFrom(
+                        backgroundColor: g.clay,
+                        foregroundColor: primaryButtonFg,
+                        disabledBackgroundColor: g.clay.withValues(alpha: 0.38),
+                        disabledForegroundColor:
+                            primaryButtonFg.withValues(alpha: 0.4),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
+                        minimumSize: const Size(64, 40),
+                      ),
+                      filled: true,
+                      icon: false,
                     ),
                     onPressed: () {
                       _dismissTutorial();
@@ -157,21 +184,33 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                     },
                     child: const Text(
                       'Add First Activity 🚀',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                      style: AppTypeRoles.typeRole38,
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: g.edge),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    foregroundColor: g.ink,
-                    minimumSize: const Size(64, 40),
+                  style: context.surfaces.buttonStyle(
+                    OutlinedButton.styleFrom(
+                      side: BorderSide(color: g.edge),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppGeometry.roundedr12,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s16,
+                        vertical: AppSpace.s10,
+                      ),
+                      foregroundColor: g.ink,
+                      minimumSize: const Size(64, 40),
+                    ),
+                    filled: false,
+                    icon: false,
                   ),
                   onPressed: _dismissTutorial,
-                  child: const Text('Got it! 👍', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    'Got it! 👍',
+                    style: AppTypeRoles.typeRole42,
+                  ),
                 ),
               ],
             ),
@@ -191,9 +230,9 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
+        AppTag(
+          padding: const EdgeInsets.all(AppSpace.s6),
+          nightDecoration: BoxDecoration(
             color: iconColor.withValues(alpha: 0.14),
             shape: BoxShape.circle,
           ),
@@ -206,17 +245,12 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
-                  color: g.ink,
-                ),
+                style: AppTypography.plusJakartaSans125W600119(color: g.ink),
               ),
               const SizedBox(height: 1),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 11.5,
+                style: AppTypeRoles.typeRole23.copyWith(
                   color: g.inkMuted,
                   height: 1.3,
                 ),

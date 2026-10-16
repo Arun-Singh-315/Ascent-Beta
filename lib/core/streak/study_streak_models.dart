@@ -1,3 +1,12 @@
+enum StudyStreakPhase {
+  notStarted,
+  firstDayCompleted,
+  active,
+  atRisk,
+  broken,
+  recovered,
+}
+
 class StudyStreakStatus {
   final int todaySeconds;
   final int targetSeconds;
@@ -29,9 +38,22 @@ class StudyStreakStatus {
     this.hoursRemainingInDay = 24,
   });
 
+  StudyStreakPhase get phase {
+    if (isRescuedToday) return StudyStreakPhase.recovered;
+    if (isTodaySecured && currentStreakDays == 1) {
+      return StudyStreakPhase.firstDayCompleted;
+    }
+    if (isUrgent && displayStreakDays > 0) return StudyStreakPhase.atRisk;
+    if (displayStreakDays > 0) return StudyStreakPhase.active;
+    return longestStreakDays > 0
+        ? StudyStreakPhase.broken
+        : StudyStreakPhase.notStarted;
+  }
+
   int get todayMinutes => todaySeconds ~/ 60;
   int get targetMinutes => targetSeconds ~/ 60;
-  int get remainingSeconds => (targetSeconds - todaySeconds).clamp(0, targetSeconds);
+  int get remainingSeconds =>
+      (targetSeconds - todaySeconds).clamp(0, targetSeconds);
   int get remainingMinutes => (remainingSeconds / 60).ceil();
   int get yesterdayDeficitMinutes => (yesterdayDeficitSeconds / 60).ceil();
 
@@ -68,7 +90,8 @@ class StudyStreakStatus {
       isTodaySecured: isTodaySecured ?? this.isTodaySecured,
       isRescueMode: isRescueMode ?? this.isRescueMode,
       isRescuedToday: isRescuedToday ?? this.isRescuedToday,
-      yesterdayDeficitSeconds: yesterdayDeficitSeconds ?? this.yesterdayDeficitSeconds,
+      yesterdayDeficitSeconds:
+          yesterdayDeficitSeconds ?? this.yesterdayDeficitSeconds,
       isUrgent: isUrgent ?? this.isUrgent,
       hoursRemainingInDay: hoursRemainingInDay ?? this.hoursRemainingInDay,
     );

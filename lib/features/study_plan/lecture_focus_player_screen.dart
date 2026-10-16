@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -10,11 +11,9 @@ class LectureFocusPlayerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Scaffold(
-      backgroundColor: Colors.transparent,
-      body: SafeArea(
-        child: LectureFocusPlayerSheet(),
-      ),
+    return Scaffold(
+      backgroundColor: context.surfaces.playerBackdrop,
+      body: const SafeArea(child: LectureFocusPlayerSheet()),
     );
   }
 }

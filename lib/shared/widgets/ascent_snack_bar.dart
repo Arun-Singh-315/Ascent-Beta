@@ -1,17 +1,51 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import 'glass_surface.dart';
 
-/// Centralized SnackBar utility for Ascent.
-///
-/// Ensures consistent floating elevation, 14px radii, theme-aware contrast,
-/// tactile haptics, and instant "Undo" recovery actions.
+/// Floating, theme-aware glass feedback with optional recovery actions.
 class AscentSnackBar {
   AscentSnackBar._();
 
-  /// Shows a general informational floating snackbar.
+  static SnackBar build(
+    BuildContext context, {
+    required Widget content,
+    Duration duration = const Duration(milliseconds: 2500),
+    SnackBarAction? action,
+  }) => SnackBar(
+    content: GlassSurface(
+      radius: 18,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s16,
+        vertical: AppSpace.s12,
+      ),
+      child: DefaultTextStyle(
+        style: AscentTextStyles.bodyMedium.copyWith(color: context.glass.ink),
+        child: Row(
+          children: [
+            Expanded(child: content),
+            ?action,
+          ],
+        ),
+      ),
+    ),
+    duration: duration,
+    persist: false,
+    behavior: SnackBarBehavior.floating,
+    backgroundColor: AppPalette.transparent,
+    elevation: 0,
+    shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr18),
+    padding: EdgeInsets.zero,
+    margin: const EdgeInsets.fromLTRB(
+      AppSpace.s16,
+      AppSpace.s0,
+      AppSpace.s16,
+      AppSpace.s74,
+    ),
+  );
+
   static void show(
     BuildContext context, {
     required String message,
@@ -21,170 +55,68 @@ class AscentSnackBar {
     VoidCallback? onAction,
   }) {
     HapticFeedback.lightImpact();
-
-    final isDark = context.isDark;
-
     final messenger = ScaffoldMessenger.of(context);
     messenger.removeCurrentSnackBar();
-
     messenger.showSnackBar(
-      SnackBar(
+      build(
+        context,
         content: Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 18, color: context.accentPrimary),
+              Icon(icon, size: 20, color: context.glass.clay),
               const SizedBox(width: 10),
             ],
-            Expanded(
-              child: Text(
-                message,
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: isDark ? const Color(0xFFF1F5F9) : const Color(0xFFEFF2F6),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
+            Expanded(child: Text(message)),
           ],
         ),
+        duration: duration,
         action: actionLabel != null && onAction != null
             ? SnackBarAction(
                 label: actionLabel,
-                textColor: context.accentPrimary,
+                textColor: context.glass.clay,
                 onPressed: () {
                   HapticFeedback.mediumImpact();
                   onAction();
                 },
               )
             : null,
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.96),
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: Colors.white.withValues(alpha: isDark ? 0.16 : 0.08),
-            width: 0.9,
-          ),
-        ),
-        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 74),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
 
-  /// Shows a success snackbar with a green checkmark icon.
   static void success(
     BuildContext context, {
     required String message,
     Duration duration = const Duration(milliseconds: 2500),
-  }) {
-    show(
-      context,
-      message: message,
-      icon: Icons.check_circle_rounded,
-      duration: duration,
-    );
-  }
+  }) => show(
+    context,
+    message: message,
+    icon: Icons.check_circle_rounded,
+    duration: duration,
+  );
 
-  /// Shows an error / alert snackbar with a red warning icon.
   static void error(
     BuildContext context, {
     required String message,
     Duration duration = const Duration(milliseconds: 3000),
-  }) {
-    HapticFeedback.mediumImpact();
+  }) => show(
+    context,
+    message: message,
+    icon: Icons.error_outline_rounded,
+    duration: duration,
+  );
 
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.removeCurrentSnackBar();
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error_outline_rounded, size: 18, color: context.stateDanger),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF261919).withValues(alpha: 0.96),
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: context.stateDanger.withValues(alpha: 0.4),
-            width: 1.0,
-          ),
-        ),
-        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 74),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
-    );
-  }
-
-  /// Shows an undo snackbar allowing the user to recover accidentally deleted entities.
   static void undo(
     BuildContext context, {
     required String message,
     required VoidCallback onUndo,
     Duration duration = const Duration(seconds: 4),
-  }) {
-    HapticFeedback.lightImpact();
-
-    final isDark = context.isDark;
-
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.removeCurrentSnackBar();
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.white70),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'UNDO',
-          textColor: context.accentPrimary,
-          onPressed: () {
-            HapticFeedback.mediumImpact();
-            onUndo();
-          },
-        ),
-        duration: duration,
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.96),
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(
-            color: Colors.white.withValues(alpha: isDark ? 0.20 : 0.10),
-            width: 1.0,
-          ),
-        ),
-        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 74),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      ),
-    );
-  }
+  }) => show(
+    context,
+    message: message,
+    icon: Icons.delete_outline_rounded,
+    duration: duration,
+    actionLabel: 'UNDO',
+    onAction: onUndo,
+  );
 }

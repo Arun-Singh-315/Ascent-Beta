@@ -1,7 +1,9 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../models/brewing_recipe.dart';
 
@@ -44,7 +46,9 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
     _stepTimer?.cancel();
     setState(() {
       _selectedCategory = cat;
-      _selectedRecipe = BuiltInBrewingRecipes.all.firstWhere((r) => r.category == cat);
+      _selectedRecipe = BuiltInBrewingRecipes.all.firstWhere(
+        (r) => r.category == cat,
+      );
       _isBrewingActive = false;
       _currentStepIndex = 0;
       _isStepTimerRunning = false;
@@ -139,8 +143,9 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredRecipes =
-        BuiltInBrewingRecipes.all.where((r) => r.category == _selectedCategory).toList();
+    final filteredRecipes = BuiltInBrewingRecipes.all
+        .where((r) => r.category == _selectedCategory)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -203,14 +208,14 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
   }
 
   Widget _buildRecipeOverviewCard() {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F26),
-        borderRadius: BorderRadius.circular(20),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpace.s18),
+      nightDecoration: BoxDecoration(
+        color: AppPalette.colorFF26201A,
+        borderRadius: AppGeometry.roundedr20,
         border: Border.all(
-          color: const Color(0xFFE28B57).withValues(alpha: 0.25),
-          width: 1.2,
+          color: AppPalette.colorFFE28B57.withValues(alpha: 0.25),
+          width: AppBorderScale.w1point2,
         ),
       ),
       child: Column(
@@ -225,35 +230,33 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                   children: [
                     Text(
                       _selectedRecipe.title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                      style: AppTypography.plusJakartaSans18W70045(
+                        color: AppPalette.white,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       _selectedRecipe.subtitle,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: Colors.white60,
+                      style: AppTypography.plusJakartaSans12Regular57(
+                        color: AppPalette.white60,
                       ),
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE28B57).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+              AppTag(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s10,
+                  vertical: AppSpace.s6,
+                ),
+                nightDecoration: BoxDecoration(
+                  color: AppPalette.colorFFE28B57.withValues(alpha: 0.15),
+                  borderRadius: AppGeometry.roundedr10,
                 ),
                 child: Text(
                   '${_selectedRecipe.totalDurationSeconds ~/ 60}m brew',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFFE28B57),
+                  style: AppTypography.jetBrainsMono12W70063(
+                    color: AppPalette.colorFFE28B57,
                   ),
                 ),
               ),
@@ -267,10 +270,8 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             children: [
               Text(
                 'How many cups?',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white70,
+                style: AppTypography.plusJakartaSans13W60083(
+                  color: AppPalette.white70,
                 ),
               ),
               const Spacer(),
@@ -278,31 +279,32 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                 children: [1, 2, 3, 4].map((cups) {
                   final isSelected = cups == _selectedCups;
                   return Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: InkWell(
+                    padding: const EdgeInsets.only(left: AppSpace.s6),
+                    child: AppTapArea(
                       onTap: () => _onCupsChanged(cups),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
+                      borderRadius: AppGeometry.roundedr8,
+                      child: AppPill(
+                        selected: isSelected,
                         width: 34,
                         height: 34,
                         alignment: Alignment.center,
-                        decoration: BoxDecoration(
+                        nightDecoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFFE28B57)
-                              : Colors.white.withValues(alpha: 0.06),
-                          borderRadius: BorderRadius.circular(8),
+                              ? AppPalette.colorFFE28B57
+                              : AppPalette.white.withValues(alpha: 0.06),
+                          borderRadius: AppGeometry.roundedr8,
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFFE28B57)
-                                : Colors.white.withValues(alpha: 0.1),
+                                ? AppPalette.colorFFE28B57
+                                : AppPalette.white.withValues(alpha: 0.1),
                           ),
                         ),
                         child: Text(
                           '$cups',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected ? Colors.black : Colors.white,
+                          style: AppTypography.jetBrainsMono13W70084(
+                            color: context.surfaces.contentForeground(isSelected, isSelected
+                                ? AppPalette.black
+                                : AppPalette.white),
                           ),
                         ),
                       ),
@@ -314,24 +316,21 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
           ),
 
           const SizedBox(height: 18),
-          const Divider(color: Colors.white12, height: 1),
+          const AppDivider(color: AppPalette.white12, height: 1),
           const SizedBox(height: 16),
 
           // Ingredients list scaled
           Text(
             'PROPORTIONAL INGREDIENTS ($_selectedCups ${_selectedCups == 1 ? 'CUP' : 'CUPS'})',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-              color: const Color(0xFFE28B57),
+            style: AppTypography.jetBrainsMono11W70085(
+              color: AppPalette.colorFFE28B57,
             ),
           ),
           const SizedBox(height: 10),
 
           ..._selectedRecipe.ingredients.map((ing) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.s4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -341,26 +340,23 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
                         width: 6,
                         height: 6,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFE28B57),
+                          color: AppPalette.colorFFE28B57,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Text(
                         ing.name,
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          color: Colors.white,
+                        style: AppTypography.plusJakartaSans13Regular18(
+                          color: AppPalette.white,
                         ),
                       ),
                     ],
                   ),
                   Text(
                     ing.scaledFormatted(_selectedCups),
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white70,
+                    style: AppTypography.jetBrainsMono13W60026(
+                      color: AppPalette.white70,
                     ),
                   ),
                 ],
@@ -378,19 +374,20 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
               icon: const Icon(Icons.soup_kitchen_rounded, size: 20),
               label: Text(
                 'Start Guided Brew (${_selectedRecipe.steps.length} Steps)',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AppTypography.plusJakartaSans14W70086(),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE28B57),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+              style: context.surfaces.buttonStyle(
+                ElevatedButton.styleFrom(
+                  backgroundColor: AppPalette.colorFFE28B57,
+                  foregroundColor: AppPalette.black,
+                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppGeometry.roundedr14,
+                  ),
+                  elevation: 0,
                 ),
-                elevation: 0,
+                filled: true,
+                icon: false,
               ),
             ),
           ),
@@ -405,14 +402,14 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
     final isLastStep = _currentStepIndex == totalSteps - 1;
     final isCompleted = isLastStep && _stepSecondsRemaining == 0;
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1914),
-        borderRadius: BorderRadius.circular(22),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpace.s20),
+      nightDecoration: BoxDecoration(
+        color: AppPalette.colorFF1E1914,
+        borderRadius: AppGeometry.roundedr22,
         border: Border.all(
-          color: const Color(0xFFE28B57).withValues(alpha: 0.4),
-          width: 1.5,
+          color: AppPalette.colorFFE28B57.withValues(alpha: 0.4),
+          width: AppBorderScale.w1point5,
         ),
       ),
       child: Column(
@@ -423,15 +420,16 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             children: [
               Text(
                 'STEP ${_currentStepIndex + 1} OF $totalSteps',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                  color: const Color(0xFFE28B57),
+                style: AppTypography.jetBrainsMono11W70087(
+                  color: AppPalette.colorFFE28B57,
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.white54, size: 20),
+                icon: const Icon(
+                  Icons.close_rounded,
+                  color: AppPalette.white54,
+                  size: 20,
+                ),
                 onPressed: _resetBrewing,
                 tooltip: 'Exit guide',
               ),
@@ -443,10 +441,8 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
           Text(
             currentStep.title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+            style: AppTypography.plusJakartaSans20W70088(
+              color: AppPalette.white,
             ),
           ),
 
@@ -455,30 +451,30 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
           Text(
             currentStep.instruction,
             textAlign: TextAlign.center,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              color: Colors.white70,
-              height: 1.4,
+            style: AppTypography.plusJakartaSans14Regular89(
+              color: AppPalette.white70,
             ),
           ),
 
           const SizedBox(height: 20),
 
           // Countdown display
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
+          AppCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s24,
+              vertical: AppSpace.s12,
+            ),
+            nightDecoration: BoxDecoration(
+              color: AppPalette.black.withValues(alpha: 0.3),
+              borderRadius: AppGeometry.roundedr16,
+              border: Border.all(color: AppPalette.white10),
             ),
             child: Text(
               _formatSeconds(_stepSecondsRemaining),
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 42,
-                fontWeight: FontWeight.w700,
-                color: isCompleted ? const Color(0xFF10B981) : Colors.white,
-                letterSpacing: -1,
+              style: AppTypography.jetBrainsMono42W70090(
+                color: isCompleted
+                    ? AppPalette.colorFF10B981
+                    : AppPalette.white,
               ),
             ),
           ),
@@ -490,31 +486,50 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.skip_previous_rounded, color: Colors.white60),
-                onPressed: _currentStepIndex > 0 ? () => _goToStep(_currentStepIndex - 1) : null,
+                icon: const Icon(
+                  Icons.skip_previous_rounded,
+                  color: AppPalette.white60,
+                ),
+                onPressed: _currentStepIndex > 0
+                    ? () => _goToStep(_currentStepIndex - 1)
+                    : null,
                 tooltip: 'Previous step',
               ),
               const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: _toggleStepTimer,
                 icon: Icon(
-                  _isStepTimerRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                  _isStepTimerRunning
+                      ? Icons.pause_rounded
+                      : Icons.play_arrow_rounded,
                   size: 20,
                 ),
                 label: Text(
                   _isStepTimerRunning ? 'Pause' : 'Resume',
-                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+                  style: AppTypography.plusJakartaSansInheritedW70091(),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE28B57),
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                style: context.surfaces.buttonStyle(
+                  ElevatedButton.styleFrom(
+                    backgroundColor: AppPalette.colorFFE28B57,
+                    foregroundColor: AppPalette.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: AppGeometry.roundedr20,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s20,
+                      vertical: AppSpace.s10,
+                    ),
+                  ),
+                  filled: true,
+                  icon: false,
                 ),
               ),
               const SizedBox(width: 12),
               IconButton(
-                icon: const Icon(Icons.skip_next_rounded, color: Colors.white60),
+                icon: const Icon(
+                  Icons.skip_next_rounded,
+                  color: AppPalette.white60,
+                ),
                 onPressed: _currentStepIndex < totalSteps - 1
                     ? () => _goToStep(_currentStepIndex + 1)
                     : null,
@@ -527,10 +542,8 @@ class _BrewWithMeViewState extends State<BrewWithMeView> {
             const SizedBox(height: 14),
             Text(
               '🎉 Brewing finished! Take a mindful sip and relax.',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF10B981),
+              style: AppTypography.plusJakartaSans13W60083(
+                color: AppPalette.colorFF10B981,
               ),
             ),
           ],
@@ -555,19 +568,25 @@ class _CategoryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AppTapArea(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-        decoration: BoxDecoration(
+      borderRadius: AppGeometry.roundedr14,
+      child: AppCard(
+        selected: isSelected,
+        padding: const EdgeInsets.symmetric(
+          vertical: AppSpace.s12,
+          horizontal: AppSpace.s14,
+        ),
+        nightDecoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFE28B57).withValues(alpha: 0.22)
-              : const Color(0xFF1A1F26),
-          borderRadius: BorderRadius.circular(14),
+              ? AppPalette.colorFFE28B57.withValues(alpha: 0.22)
+              : AppPalette.colorFF26201A,
+          borderRadius: AppGeometry.roundedr14,
           border: Border.all(
-            color: isSelected ? const Color(0xFFE28B57) : Colors.white.withValues(alpha: 0.08),
-            width: 1.2,
+            color: isSelected
+                ? AppPalette.colorFFE28B57
+                : AppPalette.white.withValues(alpha: 0.08),
+            width: AppBorderScale.w1point2,
           ),
         ),
         child: Row(
@@ -576,15 +595,14 @@ class _CategoryButton extends StatelessWidget {
             Icon(
               icon,
               size: 18,
-              color: isSelected ? const Color(0xFFE28B57) : Colors.white60,
+              color: isSelected ? AppPalette.colorFFE28B57 : AppPalette.white60,
             ),
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.white70,
+              style: AppStateTypography.stateType24(
+                state0: isSelected,
+                color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : AppPalette.white70),
               ),
             ),
           ],
@@ -607,19 +625,22 @@ class _RecipeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AppTapArea(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
+      borderRadius: AppGeometry.roundedr14,
+      child: AppCard(
+        selected: isSelected,
         width: 140,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
+        padding: const EdgeInsets.all(AppSpace.s12),
+        nightDecoration: BoxDecoration(
           color: isSelected
-              ? const Color(0xFFE28B57).withValues(alpha: 0.18)
-              : const Color(0xFF181C22),
-          borderRadius: BorderRadius.circular(14),
+              ? AppPalette.colorFFE28B57.withValues(alpha: 0.18)
+              : AppPalette.colorFF221D18,
+          borderRadius: AppGeometry.roundedr14,
           border: Border.all(
-            color: isSelected ? const Color(0xFFE28B57) : Colors.white.withValues(alpha: 0.08),
+            color: isSelected
+                ? AppPalette.colorFFE28B57
+                : AppPalette.white.withValues(alpha: 0.08),
             width: isSelected ? 1.4 : 1,
           ),
         ),
@@ -631,19 +652,15 @@ class _RecipeCard extends StatelessWidget {
               recipe.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                color: isSelected ? const Color(0xFFE28B57) : Colors.white,
-                height: 1.2,
+              style: AppTypography.plusJakartaSans125W70093(
+                color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.colorFFE28B57 : AppPalette.white),
               ),
             ),
             const SizedBox(height: 6),
             Text(
               '${recipe.steps.length} steps • ${recipe.totalDurationSeconds ~/ 60}m',
-              style: GoogleFonts.jetBrainsMono(
-                fontSize: 10,
-                color: Colors.white54,
+              style: AppTypography.jetBrainsMono10Regular8(
+                color: context.surfaces.contentForeground(isSelected, AppPalette.white54),
               ),
             ),
           ],

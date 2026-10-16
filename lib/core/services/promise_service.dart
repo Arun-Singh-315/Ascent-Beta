@@ -52,13 +52,14 @@ class PromiseService {
         ThoughtTableCompanion.insert(
           content: text,
           mood: const drift.Value('promise'),
-          colorHex: const drift.Value('#7C3AED'),
+          colorHex: const drift.Value('#B46824'),
           promptQuestion: drift.Value(promptQuestion),
         ),
       );
       taskId = await _db.taskDao.insertTask(
         TaskTableCompanion.insert(
           title: text,
+          linkedThoughtId: drift.Value(thoughtId),
           // Put the promise in Today immediately. Its due date is kept in notes
           // so it remains visible while the daily reminders run.
           plannedDate: drift.Value(today),
@@ -108,11 +109,7 @@ class PromiseService {
       await _db.thoughtDao.updateThought(
         thought.toCompanion(true).copyWith(content: drift.Value(text)),
       );
-      final task =
-          await (_db.select(_db.taskTable)
-                ..where((row) => row.notes.like('%thought_id:$thoughtId •%'))
-                ..limit(1))
-              .getSingleOrNull();
+      final task = await _db.taskDao.getTaskLinkedToThought(thoughtId);
       if (task == null) {
         throw StateError('The promise Todo could not be found.');
       }
@@ -122,7 +119,10 @@ class PromiseService {
       await (_db.update(
         _db.reminderTable,
       )..where((row) => row.linkedTaskId.equals(task.id))).write(
-        ReminderTableCompanion(title: drift.Value(_reminderTitle(text))),
+        ReminderTableCompanion(
+          title: drift.Value(_reminderTitle(text)),
+          alertSyncPending: const drift.Value(true),
+        ),
       );
     });
     final reminders = await _db.reminderDao.getRemindersByTaskId(linkedTaskId);

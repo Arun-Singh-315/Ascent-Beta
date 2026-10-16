@@ -1,3 +1,5 @@
+import 'support/learning_fixtures.dart';
+import 'support/returning_user_guides.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
@@ -32,7 +34,7 @@ void main() {
     test(
       'LearningHubNotifier sticky completion: once completed, cannot be reverted',
       () async {
-        SharedPreferences.setMockInitialValues({});
+        SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
         final prefs = await SharedPreferences.getInstance();
         final container = ProviderContainer(
           overrides: [
@@ -42,12 +44,13 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final notifier = container.read(learningHubProvider.notifier);
         final initialState = container.read(learningHubProvider);
         final activeLec = initialState.activeLecture;
 
         // Mark lecture completed
-        notifier.markLectureCompleted(activeLec.id, completed: true);
+        await seedLectureStudyEvidence(container, activeLec.id);
+        final refreshed = container.read(learningHubProvider.notifier);
+        await refreshed.markLectureCompleted(activeLec.id, completed: true);
         var state = container.read(learningHubProvider);
         var targetLec = state.course.modules
             .expand((m) => m.lectures)
@@ -55,7 +58,7 @@ void main() {
         expect(targetLec.isCompleted, isTrue);
 
         // Attempt to un-complete lecture: must remain completed ("completed means completed")
-        notifier.markLectureCompleted(activeLec.id, completed: false);
+        await refreshed.markLectureCompleted(activeLec.id, completed: false);
         state = container.read(learningHubProvider);
         targetLec = state.course.modules
             .expand((m) => m.lectures)
@@ -78,9 +81,8 @@ void main() {
         addTearDown(container.dispose);
 
         // Complete first lecture
-        container
-            .read(learningHubProvider.notifier)
-            .markLectureCompleted(1, completed: true);
+        await seedLectureStudyEvidence(container, 1);
+        await container.read(learningHubProvider.notifier).markLectureCompleted(1, completed: true);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -374,7 +376,7 @@ void main() {
     testWidgets('MomentumScreen offers the lightweight challenge entry state', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
       final prefs = await SharedPreferences.getInstance();
       await tester.pumpWidget(
         ProviderScope(

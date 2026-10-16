@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -11,12 +13,12 @@ import '../../shared/widgets/ascent_button.dart';
 class AddCourseSheet extends ConsumerStatefulWidget {
   const AddCourseSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
+  static Future<Course?> show(BuildContext context) {
+    return showModalBottomSheet<Course>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppPalette.transparent,
       builder: (ctx) => const AddCourseSheet(),
     );
   }
@@ -65,33 +67,38 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     List<Lecture> lectures = [];
     final modId = _modules.length + 1;
 
-    if (_useBulkLectureEntry && _bulkLecturesController.text.trim().isNotEmpty) {
+    if (_useBulkLectureEntry &&
+        _bulkLecturesController.text.trim().isNotEmpty) {
       final lines = _bulkLecturesController.text.split('\n');
       int lecIdx = 1;
       for (final line in lines) {
         final clean = line.replaceAll(RegExp(r'^\s*[\d\.\-\*]+\s*'), '').trim();
         if (clean.isNotEmpty) {
-          lectures.add(Lecture(
-            id: DateTime.now().millisecondsSinceEpoch % 100000 + lecIdx,
-            moduleId: modId,
-            moduleTitle: modTitle,
-            title: clean,
-            author: _authorController.text.trim(),
-            durationSeconds: _defaultLectureDurationMins * 60,
-          ));
+          lectures.add(
+            Lecture(
+              id: DateTime.now().millisecondsSinceEpoch % 100000 + lecIdx,
+              moduleId: modId,
+              moduleTitle: modTitle,
+              title: clean,
+              author: _authorController.text.trim(),
+              durationSeconds: _defaultLectureDurationMins * 60,
+            ),
+          );
           lecIdx++;
         }
       }
     } else {
       // Create a default starter lecture for the module
-      lectures.add(Lecture(
-        id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
-        moduleId: modId,
-        moduleTitle: modTitle,
-        title: 'Lecture 1: Introduction to $modTitle',
-        author: _authorController.text.trim(),
-        durationSeconds: _defaultLectureDurationMins * 60,
-      ));
+      lectures.add(
+        Lecture(
+          id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
+          moduleId: modId,
+          moduleTitle: modTitle,
+          title: 'Lecture 1: Introduction to $modTitle',
+          author: _authorController.text.trim(),
+          durationSeconds: _defaultLectureDurationMins * 60,
+        ),
+      );
     }
 
     final newModule = CourseModule(
@@ -109,29 +116,31 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     });
   }
 
-  void _saveCourse() {
+  Future<void> _saveCourse() async {
     final title = _titleController.text.trim();
     if (title.isEmpty) return;
 
     List<CourseModule> finalModules = List.from(_modules);
     if (finalModules.isEmpty) {
       // Add a starter module if none was created
-      finalModules.add(CourseModule(
-        id: 1,
-        title: 'Module 1: Getting Started',
-        description: '',
-        durationHours: 0.5,
-        lectures: [
-          Lecture(
-            id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
-            moduleId: 1,
-            moduleTitle: 'Module 1: Getting Started',
-            title: 'Overview & Objectives',
-            author: _authorController.text.trim(),
-            durationSeconds: 900,
-          ),
-        ],
-      ));
+      finalModules.add(
+        CourseModule(
+          id: 1,
+          title: 'Module 1: Getting Started',
+          description: '',
+          durationHours: 0.5,
+          lectures: [
+            Lecture(
+              id: DateTime.now().millisecondsSinceEpoch % 100000 + 1,
+              moduleId: 1,
+              moduleTitle: 'Module 1: Getting Started',
+              title: 'Overview & Objectives',
+              author: _authorController.text.trim(),
+              durationSeconds: 900,
+            ),
+          ],
+        ),
+      );
     }
 
     final newCourse = Course(
@@ -145,10 +154,24 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
       targetMinutesPerDay: 45,
     );
 
-    ref.read(learningHubProvider.notifier).addCourse(newCourse);
+    try {
+      await ref.read(learningHubProvider.notifier).addCourse(newCourse);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Could not create the course. Your draft is still here.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
     HapticFeedback.mediumImpact();
 
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(newCourse);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Course "$title" created! Switched as active course.'),
@@ -163,22 +186,27 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    return AppCard(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.90,
       ),
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: context.bgSurface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
         border: Border.all(
           color: context.divider.withValues(alpha: 0.6),
-          width: 1,
+          width: AppBorderScale.w1,
         ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 16),
+          padding: EdgeInsets.fromLTRB(
+            AppSpace.s20,
+            AppSpace.s16,
+            AppSpace.s20,
+            bottomInset + AppSpace.s16,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -189,7 +217,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: context.divider,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: AppGeometry.roundedr2,
                   ),
                 ),
               ),
@@ -201,14 +229,17 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.school_rounded, color: context.accentPrimary, size: 22),
+                      Icon(
+                        Icons.school_rounded,
+                        color: context.accentPrimary,
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Create Course',
-                        style: AscentTextStyles.displaySmall.copyWith(
-                          color: context.textPrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: AscentTextStyles.displaySmall
+                            .copyWith(color: context.textPrimary)
+                            .merge(AppTypeRoles.typeRole2),
                       ),
                     ],
                   ),
@@ -254,8 +285,8 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                   child: _currentStep == 0
                       ? _buildStep0Details(isDark)
                       : _currentStep == 1
-                          ? _buildStep1Modules(isDark)
-                          : _buildStep2Review(),
+                      ? _buildStep1Modules(isDark)
+                      : _buildStep2Review(),
                 ),
               ),
 
@@ -275,12 +306,16 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
                   Expanded(
                     child: AscentButton.primary(
                       label: _currentStep < 2 ? 'Next Step' : 'Save Course',
-                      icon: _currentStep < 2 ? Icons.arrow_forward_rounded : Icons.check_circle_outline_rounded,
+                      icon: _currentStep < 2
+                          ? Icons.arrow_forward_rounded
+                          : Icons.check_circle_outline_rounded,
                       onPressed: () {
                         if (_currentStep == 0) {
                           if (_titleController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter a course name')),
+                              const SnackBar(
+                                content: Text('Please enter a course name'),
+                              ),
                             );
                             return;
                           }
@@ -306,45 +341,73 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Course Name *', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Course Name *',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _titleController,
           autofocus: true,
           decoration: InputDecoration(
             hintText: 'e.g., Spring Boot Masterclass, Java Fundamentals, DSA',
-            hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+            hintStyle: AscentTextStyles.bodyMedium.copyWith(
+              color: context.textMuted,
+            ),
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            fillColor: isDark
+                ? AppPalette.colorFF201A14
+                : AppPalette.colorFFF7F6F2,
+            border: OutlineInputBorder(borderRadius: AppGeometry.roundedr12),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Category or Subject', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Category or Subject',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _categoryController,
           decoration: InputDecoration(
             hintText: 'e.g., Backend Engineering, Algorithms, Mobile',
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            fillColor: isDark
+                ? AppPalette.colorFF201A14
+                : AppPalette.colorFFF7F6F2,
+            border: OutlineInputBorder(borderRadius: AppGeometry.roundedr12),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Instructor / Author', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Instructor / Author',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _authorController,
           decoration: InputDecoration(
             hintText: 'e.g., Engineering Digest, Kunal Kushwaha, Self-Study',
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            fillColor: isDark
+                ? AppPalette.colorFF201A14
+                : AppPalette.colorFFF7F6F2,
+            border: OutlineInputBorder(borderRadius: AppGeometry.roundedr12),
           ),
         ),
         const SizedBox(height: 14),
-        Text('Description (Optional)', style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary)),
+        Text(
+          'Description (Optional)',
+          style: AscentTextStyles.labelMedium.copyWith(
+            color: context.textPrimary,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: _descController,
@@ -352,8 +415,10 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           decoration: InputDecoration(
             hintText: 'Key topics, syllabus, or learning goals...',
             filled: true,
-            fillColor: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            fillColor: isDark
+                ? AppPalette.colorFF201A14
+                : AppPalette.colorFFF7F6F2,
+            border: OutlineInputBorder(borderRadius: AppGeometry.roundedr12),
           ),
         ),
       ],
@@ -369,14 +434,18 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           children: [
             Text(
               'Add Modules & Lectures',
-              style: AscentTextStyles.labelMedium.copyWith(
-                color: context.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+              style: AscentTextStyles.labelMedium
+                  .copyWith(color: context.textPrimary)
+                  .merge(AppTypeRoles.typeRole9),
             ),
             Row(
               children: [
-                Text('Bulk paste:', style: TextStyle(fontSize: 11, color: context.textMuted)),
+                Text(
+                  'Bulk paste:',
+                  style: AppTypeRoles.typeRole4.copyWith(
+                    color: context.textMuted,
+                  ),
+                ),
                 Switch(
                   value: _useBulkLectureEntry,
                   onChanged: (v) => setState(() => _useBulkLectureEntry = v),
@@ -388,55 +457,80 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
         const SizedBox(height: 8),
 
         // Module Input Box
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF141720) : const Color(0xFFF7F6F2),
-            borderRadius: BorderRadius.circular(14),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s12),
+          nightDecoration: BoxDecoration(
+            color: isDark ? AppPalette.colorFF201A14 : AppPalette.colorFFF7F6F2,
+            borderRadius: AppGeometry.roundedr14,
             border: Border.all(color: context.divider.withValues(alpha: 0.8)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Module Title:', style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted)),
+              Text(
+                'Module Title:',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: context.textMuted,
+                ),
+              ),
               const SizedBox(height: 4),
               TextField(
                 controller: _moduleTitleController,
                 decoration: InputDecoration(
                   hintText: 'e.g. Module 1: Core Principles',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr10,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s10,
+                    vertical: AppSpace.s8,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
               if (_useBulkLectureEntry) ...[
                 Text(
                   'Paste lecture titles (one per line):',
-                  style: AscentTextStyles.labelSmall.copyWith(color: context.textMuted),
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: context.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 TextField(
                   controller: _bulkLecturesController,
                   maxLines: 4,
                   decoration: InputDecoration(
-                    hintText: "1. Introduction\n2. Architecture Overview\n3. Setting up Environment\n4. First Application",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    contentPadding: const EdgeInsets.all(10),
+                    hintText:
+                        "1. Introduction\n2. Architecture Overview\n3. Setting up Environment\n4. First Application",
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr10,
+                    ),
+                    contentPadding: const EdgeInsets.all(AppSpace.s10),
                   ),
                 ),
               ],
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('Default lecture duration: ', style: TextStyle(fontSize: 11, color: context.textMuted)),
+                  Text(
+                    'Default lecture duration: ',
+                    style: AppTypeRoles.typeRole4.copyWith(
+                      color: context.textMuted,
+                    ),
+                  ),
                   DropdownButton<int>(
                     value: _defaultLectureDurationMins,
                     underline: const SizedBox.shrink(),
                     items: [10, 15, 20, 30, 45, 60].map((m) {
-                      return DropdownMenuItem(value: m, child: Text('$m mins', style: const TextStyle(fontSize: 12)));
+                      return DropdownMenuItem(
+                        value: m,
+                        child: Text('$m mins', style: AppTypeRoles.typeRole27),
+                      );
                     }).toList(),
                     onChanged: (v) {
-                      if (v != null) setState(() => _defaultLectureDurationMins = v);
+                      if (v != null) {
+                        setState(() => _defaultLectureDurationMins = v);
+                      }
                     },
                   ),
                 ],
@@ -457,43 +551,63 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
         const SizedBox(height: 16),
         Text(
           'Configured Modules (${_modules.length})',
-          style: AscentTextStyles.labelMedium.copyWith(color: context.textPrimary, fontWeight: FontWeight.w600),
+          style: AscentTextStyles.labelMedium
+              .copyWith(color: context.textPrimary)
+              .merge(AppTypeRoles.typeRole8),
         ),
         const SizedBox(height: 6),
 
         if (_modules.isEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
             child: Text(
               'No modules added yet. You can add them above or save an empty course and add modules later.',
-              style: TextStyle(fontSize: 12, color: context.textMuted),
+              style: AppTypeRoles.typeRole27.copyWith(color: context.textMuted),
             ),
           )
         else
           for (int i = 0; i < _modules.length; i++)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
+            AppTag(
+              margin: const EdgeInsets.only(bottom: AppSpace.s8),
+              padding: const EdgeInsets.all(AppSpace.s10),
+              nightDecoration: BoxDecoration(
                 color: context.bgBase,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: context.divider.withValues(alpha: 0.6)),
+                borderRadius: AppGeometry.roundedr10,
+                border: Border.all(
+                  color: context.divider.withValues(alpha: 0.6),
+                ),
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 12,
-                    backgroundColor: context.accentPrimary.withValues(alpha: 0.15),
-                    child: Text('${i + 1}', style: TextStyle(fontSize: 11, color: context.accentPrimary)),
+                    backgroundColor: context.accentPrimary.withValues(
+                      alpha: 0.15,
+                    ),
+                    child: Text(
+                      '${i + 1}',
+                      style: AppTypeRoles.typeRole4.copyWith(
+                        color: context.accentPrimary,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_modules[i].title, style: AscentTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
-                        Text('${_modules[i].lectures.length} lectures • ${_modules[i].durationHours.toStringAsFixed(1)}h',
-                            style: TextStyle(fontSize: 11, color: context.textMuted)),
+                        Text(
+                          _modules[i].title,
+                          style: AscentTextStyles.labelMedium.merge(
+                            AppTypeRoles.typeRole9,
+                          ),
+                        ),
+                        Text(
+                          '${_modules[i].lectures.length} lectures • ${_modules[i].durationHours.toStringAsFixed(1)}h',
+                          style: AppTypeRoles.typeRole4.copyWith(
+                            color: context.textMuted,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -517,27 +631,32 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s14),
+          nightDecoration: BoxDecoration(
             color: context.accentPrimary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.accentPrimary.withValues(alpha: 0.3)),
+            borderRadius: AppGeometry.roundedr16,
+            border: Border.all(
+              color: context.accentPrimary.withValues(alpha: 0.3),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _titleController.text.trim().isEmpty ? 'Untitled Course' : _titleController.text.trim(),
-                style: AscentTextStyles.displaySmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: context.textPrimary,
-                ),
+                _titleController.text.trim().isEmpty
+                    ? 'Untitled Course'
+                    : _titleController.text.trim(),
+                style: AscentTextStyles.displaySmall
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole9),
               ),
               const SizedBox(height: 4),
               Text(
                 '${_categoryController.text.trim()} • Instructor: ${_authorController.text.trim()}',
-                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                ),
               ),
               const SizedBox(height: 12),
               Row(
@@ -552,20 +671,27 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
           ),
         ),
         const SizedBox(height: 16),
-        Text('Curriculum Outline:', style: AscentTextStyles.labelMedium.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          'Curriculum Outline:',
+          style: AscentTextStyles.labelMedium.merge(AppTypeRoles.typeRole9),
+        ),
         const SizedBox(height: 8),
         for (final m in _modules)
           Padding(
-            padding: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.only(bottom: AppSpace.s6),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.folder_open_rounded, size: 16, color: Colors.grey),
+                const Icon(
+                  Icons.folder_open_rounded,
+                  size: 16,
+                  color: AppPalette.grey,
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     '${m.title} (${m.lectures.length} lectures)',
-                    style: const TextStyle(fontSize: 12.5),
+                    style: AppTypeRoles.typeRole40,
                   ),
                 ),
               ],
@@ -592,25 +718,24 @@ class _StepPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: InkWell(
+      child: AppTapArea(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 6),
+        borderRadius: AppGeometry.roundedr10,
+        child: AppPill(
+          selected: isActive,
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
           alignment: Alignment.center,
-          decoration: BoxDecoration(
+          nightDecoration: BoxDecoration(
             color: isActive ? context.accentPrimary : context.bgBase,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: AppGeometry.roundedr10,
             border: Border.all(
               color: isActive ? context.accentPrimary : context.divider,
             ),
           ),
           child: Text(
             label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: isActive ? Colors.white : context.textMuted,
+            style: AppTypeRoles.typeRole34.copyWith(
+              color: context.surfaces.contentForeground(isActive, isActive ? AppPalette.white : context.textMuted),
             ),
           ),
         ),
@@ -629,8 +754,16 @@ class _MetricItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(value, style: AscentTextStyles.displaySmall.copyWith(fontWeight: FontWeight.bold)),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        Text(
+          value,
+          style: AscentTextStyles.displaySmall.merge(AppTypeRoles.typeRole9),
+        ),
+        Text(
+          label,
+          style: AppStateTypography.stateType14.copyWith(
+            color: AppPalette.grey,
+          ),
+        ),
       ],
     );
   }

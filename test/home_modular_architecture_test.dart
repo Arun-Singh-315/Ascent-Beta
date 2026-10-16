@@ -13,8 +13,8 @@ import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
+import 'package:ascent/features/challenge/challenge_providers.dart';
 
-import 'package:ascent/core/auth/auth_provider.dart';
 import 'package:drift/drift.dart';
 
 class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -22,11 +22,6 @@ class FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   TimeTrackingState build() {
     return const TimeTrackingState();
   }
-}
-
-class FakeAuthNotifier extends AuthNotifier {
-  @override
-  AuthState build() => const AuthState(isAuthenticated: true, username: 'arn');
 }
 
 final _modularTestProfile = UserProfile(
@@ -59,11 +54,15 @@ void main() {
     final todayStr = DateTime.now().toIso8601String().substring(0, 10);
     SharedPreferences.setMockInitialValues({
       'ascent_new_day_shown': todayStr,
-      'ascent_last_hydration_prompt_time': DateTime.now().millisecondsSinceEpoch,
+      'ascent_last_hydration_prompt_time':
+          DateTime.now().millisecondsSinceEpoch,
     });
     prefs = await SharedPreferences.getInstance();
     await prefs.setString('ascent_new_day_shown', todayStr);
-    await prefs.setInt('ascent_last_hydration_prompt_time', DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(
+      'ascent_last_hydration_prompt_time',
+      DateTime.now().millisecondsSinceEpoch,
+    );
   });
 
   tearDown(() async {
@@ -74,137 +73,157 @@ void main() {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
+        allChallengesProvider.overrideWith((ref) => Stream.value([])),
         sharedPreferencesProvider.overrideWithValue(prefs),
-        authProvider.overrideWith(() => FakeAuthNotifier()),
         timeTrackingProvider.overrideWith(() => FakeTimeTrackingNotifier()),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
         todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1500)),
         dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2500)),
-        todayWalkDistanceStreamProvider.overrideWith((ref) => Stream.value(2400.0)),
+        todayWalkDistanceStreamProvider.overrideWith(
+          (ref) => Stream.value(2400.0),
+        ),
         todaySpendingStreamProvider.overrideWith((ref) => Stream.value(350.0)),
         overallBudgetStreamProvider.overrideWith((ref) => Stream.value(null)),
         activeMedicinesStreamProvider.overrideWith((ref) => Stream.value([])),
         todayMedicineLogsStreamProvider.overrideWith((ref) => Stream.value([])),
-        activeMomentumChallengeStreamProvider.overrideWith((ref) => Stream.value(null)),
-        todayMomentumCommitmentsStreamProvider.overrideWith((ref) => Stream.value([])),
+        activeMomentumChallengeStreamProvider.overrideWith(
+          (ref) => Stream.value(null),
+        ),
+        todayMomentumCommitmentsStreamProvider.overrideWith(
+          (ref) => Stream.value([]),
+        ),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
-        userProfileStreamProvider.overrideWith((ref) => Stream.value(_modularTestProfile)),
+        userProfileStreamProvider.overrideWith(
+          (ref) => Stream.value(_modularTestProfile),
+        ),
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
         todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
       ],
-      child: MaterialApp(
-        home: child,
-      ),
+      child: MaterialApp(home: child),
     );
   }
 
   group('Modular Home Architecture Tests', () {
-    testWidgets('HomeHeader pumps with profile name, greeting, and streak flame', (tester) async {
-      final now = DateTime.now();
-      final profile = UserProfile(
-        id: 1,
-        name: 'Arun',
-        targetRole: 'Senior Flutter Architect',
-        targetCompanies: jsonEncode(['Google']),
-        weeklyHoursAvailable: 20,
-        preferredStudyWindow: 'morning',
-        skillSelfRatings: '{}',
-        createdAt: now,
-        updatedAt: now,
-        onboardingComplete: true,
-      );
+    testWidgets(
+      'HomeHeader pumps with profile name, greeting, and streak flame',
+      (tester) async {
+        final now = DateTime.now();
+        final profile = UserProfile(
+          id: 1,
+          name: 'Arun',
+          targetRole: 'Senior Flutter Architect',
+          targetCompanies: jsonEncode(['Google']),
+          weeklyHoursAvailable: 20,
+          preferredStudyWindow: 'morning',
+          skillSelfRatings: '{}',
+          createdAt: now,
+          updatedAt: now,
+          onboardingComplete: true,
+        );
 
-      await tester.pumpWidget(
-        buildTestableWidget(Scaffold(body: HomeHeader(profile: profile))),
-      );
+        await tester.pumpWidget(
+          buildTestableWidget(Scaffold(body: HomeHeader(profile: profile))),
+        );
 
-      await tester.pump();
-      expect(find.textContaining('Arun'), findsOneWidget);
-      expect(find.textContaining('Senior Flutter Architect'), findsOneWidget);
+        await tester.pump();
+        expect(find.textContaining('Arun'), findsOneWidget);
+        expect(find.textContaining('Senior Flutter Architect'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
-    testWidgets('ThoughtWallHomePreview renders quick mind spark prompt', (tester) async {
+    testWidgets('ThoughtWallHomePreview renders quick mind spark prompt', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestableWidget(const Scaffold(body: ThoughtWallHomePreview())),
       );
 
       await tester.pump();
-      expect(find.text('Mind space'), findsOneWidget);
+      expect(find.text('Mind space'), findsNothing);
       expect(find.textContaining("What's on your mind?"), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
     });
 
-    testWidgets('QuickModulesNavHub renders Medicine, Hydration and Chai Break', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(const Scaffold(body: QuickModulesNavHub())),
-      );
+    testWidgets(
+      'QuickModulesNavHub renders Medicine, Hydration and Chai Break',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(const Scaffold(body: QuickModulesNavHub())),
+        );
 
-      await tester.pump();
-      expect(find.text('Hydration'), findsOneWidget);
-      expect(find.text('250'), findsOneWidget);
-      expect(find.text('Medicine'), findsOneWidget);
-      expect(find.text('Chai & Coffee Break'), findsOneWidget);
+        await tester.pump();
+        expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('250'), findsOneWidget);
+        expect(find.text('Medicine'), findsOneWidget);
+        expect(find.text('Chai & Coffee Break'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
 
-    testWidgets('HomeScreen pumps cleanly with all modular components (<100ms render target)', (tester) async {
-      final stopwatch = Stopwatch()..start();
+    testWidgets(
+      'HomeScreen pumps cleanly with all modular components (<100ms render target)',
+      (tester) async {
+        final stopwatch = Stopwatch()..start();
 
-      await tester.pumpWidget(
-        buildTestableWidget(const HomeScreen()),
-      );
+        await tester.pumpWidget(buildTestableWidget(const HomeScreen()));
 
-      await tester.pump();
-      stopwatch.stop();
+        await tester.pump();
+        stopwatch.stop();
 
-      // Ensure rapid cold-pump
-      expect(stopwatch.elapsedMilliseconds < 2000, true);
+        // Ensure rapid cold-pump
+        expect(stopwatch.elapsedMilliseconds < 2000, true);
 
-      // Verify key elements are in tree
-      expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.text('Riya'), findsOneWidget);
+        // Verify key elements are in tree
+        expect(find.byType(HomeScreen), findsOneWidget);
+        expect(find.text('Ask Riya'), findsOneWidget);
 
-      // Flush 350ms post-frame timer in _HomeScreenState
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        // Flush 350ms post-frame timer in _HomeScreenState
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('HomeHeader dynamically reflects customized assistant identity name', (tester) async {
-      final container = ProviderContainer(
-        overrides: [
-          currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
-        ],
-      );
-      addTearDown(container.dispose);
+    testWidgets(
+      'HomeHeader dynamically reflects customized assistant identity name',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
+          ],
+        );
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HomeHeader(profile: null),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: Scaffold(body: HomeHeader(profile: null)),
             ),
           ),
-        ),
-      );
-      await tester.pump();
-      expect(find.text('Riya'), findsOneWidget);
+        );
+        await tester.pump();
+        expect(find.text('Ask Riya'), findsOneWidget);
 
-      // Change assistant identity to Jarvis
-      await container.read(assistantNameProvider.notifier).setName('Jarvis');
-      await tester.pump();
+        // Change assistant identity to Jarvis
+        await container.read(assistantNameProvider.notifier).setName('Jarvis');
+        await tester.pump();
 
-      expect(find.text('Jarvis'), findsOneWidget);
-      expect(find.text('Riya'), findsNothing);
-    });
+        expect(find.text('Ask Jarvis'), findsOneWidget);
+        expect(find.text('Ask Riya'), findsNothing);
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+        await tester.pump(const Duration(milliseconds: 300));
+      },
+    );
   });
 }

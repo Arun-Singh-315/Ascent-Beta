@@ -1,18 +1,16 @@
 part of '../app_database.dart';
 
-@DriftAccessor(tables: [
-  FinanceTransactionTable,
-  FinanceBudgetTable,
-  SavingsGoalTable,
-])
+@DriftAccessor(
+  tables: [FinanceTransactionTable, FinanceBudgetTable, SavingsGoalTable],
+)
 class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   FinanceDao(super.db);
 
   /// Watch all transactions sorted by date desc.
   Stream<List<FinanceTransaction>> watchAllTransactions() {
-    return (select(financeTransactionTable)
-          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
-        .watch();
+    return (select(
+      financeTransactionTable,
+    )..orderBy([(t) => OrderingTerm.desc(t.date)])).watch();
   }
 
   /// Watch recent transactions with limit.
@@ -27,14 +25,16 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   Stream<double> watchTodaySpending() {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final endOfDay = DateTime(now.year, now.month, now.day + 1);
 
     final amountSum = financeTransactionTable.amount.sum();
     final query = selectOnly(financeTransactionTable)
       ..addColumns([amountSum])
-      ..where(financeTransactionTable.type.equals('expense') &
-          financeTransactionTable.date.isBiggerOrEqualValue(startOfDay) &
-          financeTransactionTable.date.isSmallerOrEqualValue(endOfDay));
+      ..where(
+        financeTransactionTable.type.equals('expense') &
+            financeTransactionTable.date.isBiggerOrEqualValue(startOfDay) &
+            financeTransactionTable.date.isSmallerThanValue(endOfDay),
+      );
 
     return query.watchSingle().map((row) => row.read(amountSum) ?? 0.0);
   }
@@ -42,14 +42,16 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   /// Watch this month's total spending.
   Stream<double> watchMonthSpending(int year, int month) {
     final startOfMonth = DateTime(year, month, 1);
-    final endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
+    final endOfMonth = DateTime(year, month + 1, 1);
 
     final amountSum = financeTransactionTable.amount.sum();
     final query = selectOnly(financeTransactionTable)
       ..addColumns([amountSum])
-      ..where(financeTransactionTable.type.equals('expense') &
-          financeTransactionTable.date.isBiggerOrEqualValue(startOfMonth) &
-          financeTransactionTable.date.isSmallerOrEqualValue(endOfMonth));
+      ..where(
+        financeTransactionTable.type.equals('expense') &
+            financeTransactionTable.date.isBiggerOrEqualValue(startOfMonth) &
+            financeTransactionTable.date.isSmallerThanValue(endOfMonth),
+      );
 
     return query.watchSingle().map((row) => row.read(amountSum) ?? 0.0);
   }
@@ -57,14 +59,16 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   /// Watch this month's total income.
   Stream<double> watchMonthIncome(int year, int month) {
     final startOfMonth = DateTime(year, month, 1);
-    final endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
+    final endOfMonth = DateTime(year, month + 1, 1);
 
     final amountSum = financeTransactionTable.amount.sum();
     final query = selectOnly(financeTransactionTable)
       ..addColumns([amountSum])
-      ..where(financeTransactionTable.type.equals('income') &
-          financeTransactionTable.date.isBiggerOrEqualValue(startOfMonth) &
-          financeTransactionTable.date.isSmallerOrEqualValue(endOfMonth));
+      ..where(
+        financeTransactionTable.type.equals('income') &
+            financeTransactionTable.date.isBiggerOrEqualValue(startOfMonth) &
+            financeTransactionTable.date.isSmallerThanValue(endOfMonth),
+      );
 
     return query.watchSingle().map((row) => row.read(amountSum) ?? 0.0);
   }
@@ -72,16 +76,18 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   /// Watch category spending for a given month.
   Stream<Map<String, double>> watchCategorySpending(int year, int month) {
     final startOfMonth = DateTime(year, month, 1);
-    final endOfMonth = DateTime(year, month + 1, 0, 23, 59, 59);
+    final endOfMonth = DateTime(year, month + 1, 1);
 
     final amountSum = financeTransactionTable.amount.sum();
     final categoryCol = financeTransactionTable.category;
 
     final query = selectOnly(financeTransactionTable)
       ..addColumns([categoryCol, amountSum])
-      ..where(financeTransactionTable.type.equals('expense') &
-          financeTransactionTable.date.isBiggerOrEqualValue(startOfMonth) &
-          financeTransactionTable.date.isSmallerOrEqualValue(endOfMonth))
+      ..where(
+        financeTransactionTable.type.equals('expense') &
+            financeTransactionTable.date.isBiggerOrEqualValue(startOfMonth) &
+            financeTransactionTable.date.isSmallerThanValue(endOfMonth),
+      )
       ..groupBy([categoryCol]);
 
     return query.watch().map((rows) {
@@ -107,7 +113,9 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
 
   /// Delete transaction.
   Future<int> deleteTransaction(int id) {
-    return (delete(financeTransactionTable)..where((t) => t.id.equals(id))).go();
+    return (delete(
+      financeTransactionTable,
+    )..where((t) => t.id.equals(id))).go();
   }
 
   // ── Budgets ────────────────────────────────────────────────────────────────
@@ -121,10 +129,13 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   }
 
   /// Set or update overall budget.
-  Future<void> setOverallBudget(double monthlyLimit, {double? dailyLimit}) async {
-    final existing = await (select(financeBudgetTable)
-          ..where((b) => b.category.isNull()))
-        .getSingleOrNull();
+  Future<void> setOverallBudget(
+    double monthlyLimit, {
+    double? dailyLimit,
+  }) async {
+    final existing = await (select(
+      financeBudgetTable,
+    )..where((b) => b.category.isNull())).getSingleOrNull();
 
     if (existing == null) {
       await into(financeBudgetTable).insert(
@@ -149,9 +160,9 @@ class FinanceDao extends DatabaseAccessor<AppDatabase> with _$FinanceDaoMixin {
   // ── Savings Goals ──────────────────────────────────────────────────────────
 
   Stream<List<SavingsGoal>> watchSavingsGoals() {
-    return (select(savingsGoalTable)
-          ..orderBy([(g) => OrderingTerm.desc(g.createdAt)]))
-        .watch();
+    return (select(
+      savingsGoalTable,
+    )..orderBy([(g) => OrderingTerm.desc(g.createdAt)])).watch();
   }
 
   Future<int> insertSavingsGoal(SavingsGoalTableCompanion entry) {

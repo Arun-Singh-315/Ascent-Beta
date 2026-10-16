@@ -48,7 +48,7 @@ class AscentDimensions {
   /// 20 px — Dialogs (`AscentDialog`), elevated containers.
   static const double radiusXl = 20.0;
 
-  /// 24 px — Modal bottom sheets (`AscentBottomSheet`), `GlassSurface`.
+  /// 24 px — Modal bottom sheets and `GlassSurface`.
   static const double radiusXxl = 24.0;
 
   /// 999 px — Pills, circular action buttons, search bars.

@@ -74,7 +74,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (s) =>
                 s.status.isIn(['running', 'paused']) &
-                s.activityRefType.isNotValue('lecture'),
+                s.activityRefType.isNotValue('lecture') &
+                s.learningCourseId.isNull(),
           )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
@@ -95,7 +96,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (s) =>
                 s.status.isIn(['running', 'paused']) &
-                s.activityRefType.isNotValue('lecture'),
+                s.activityRefType.isNotValue('lecture') &
+                s.learningCourseId.isNull(),
           )
           ..orderBy([(s) => OrderingTerm.desc(s.startedAt)])
           ..limit(1))
@@ -191,6 +193,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     String activityType = 'study',
     int? linkedTaskId,
     String activityRefType = 'task',
+    String? learningCourseId,
+    int? learningLectureId,
     DateTime? startedAt,
   }) {
     final now = startedAt ?? DateTime.now();
@@ -201,6 +205,8 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         activityType: Value(activityType),
         linkedTaskId: Value(linkedTaskId),
         activityRefType: Value(activityRefType),
+        learningCourseId: Value(learningCourseId),
+        learningLectureId: Value(learningLectureId),
         startedAt: now,
         status: const Value('running'),
         durationSeconds: const Value(0),
@@ -235,7 +241,11 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
       TimeSessionTableCompanion(
         status: const Value('paused'),
         pausedIntervals: Value(jsonEncode(intervals)),
-        durationSeconds: Value(currentDuration),
+        durationSeconds: Value(
+          session.learningCourseId != null
+              ? session.durationSeconds
+              : currentDuration,
+        ),
         lastHeartbeatAt: Value(now),
       ),
     );
@@ -344,11 +354,95 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         .getSingleOrNull();
   }
 
-  Future<void> completeSession(int id, {DateTime? endedAt}) async {
+  /// Ends only a running generic timed-task session whose recorded active
+  /// duration, including earlier completed sessions, reaches the current target.
+  Future<bool> completeTimedSessionIfTargetReached(
+    int id, {
+    DateTime? now,
+    int? expectedWorkspaceRevision,
+  }) => db.transaction(() async {
+    if (expectedWorkspaceRevision != null &&
+        expectedWorkspaceRevision != db.workspaceRevision) {
+      return false;
+    }
     final session = await (select(
       timeSessionTable,
     )..where((s) => s.id.equals(id))).getSingleOrNull();
-    if (session == null) return;
+    if (session == null ||
+        session.status != 'running' ||
+        session.linkedTaskId == null ||
+        session.learningCourseId != null) {
+      return false;
+    }
+    final task = await db.taskDao.getTaskById(session.linkedTaskId!);
+    if (task == null ||
+        task.learningCourseId != null ||
+        (task.estimatedMinutes ?? 0) <= 0) {
+      return false;
+    }
+    // A timer reaching its target is not evidence that a medicine was taken.
+    final dose =
+        await (db.select(db.medicineLogTable)
+              ..where((l) => l.linkedTaskId.equals(task.id))
+              ..limit(1))
+            .getSingleOrNull();
+    if (dose != null) return false;
+    final total = timeSessionTable.durationSeconds.sum();
+    final history =
+        await (selectOnly(timeSessionTable)
+              ..addColumns([total])
+              ..where(
+                timeSessionTable.linkedTaskId.equals(task.id) &
+                    timeSessionTable.status.equals('completed'),
+              ))
+            .getSingle();
+    final end = now ?? DateTime.now();
+    final elapsed = computeActiveDurationSeconds(
+      session.startedAt,
+      end,
+      session.pausedIntervals,
+    );
+    final recorded = history.read(total) ?? 0;
+    if (recorded + elapsed < task.estimatedMinutes! * 60) return false;
+    await completeSession(id, endedAt: end);
+    await db.taskDao.completeTimedTaskAfterFocus(task.id);
+    return true;
+  });
+
+  /// Remaining active focus time, including previously completed sessions.
+  Future<int> focusSecondsRemaining(int id, {DateTime? now}) async {
+    final session = await (select(timeSessionTable)
+          ..where((s) => s.id.equals(id))).getSingleOrNull();
+    if (session == null || session.linkedTaskId == null) return 0;
+    final task = await db.taskDao.getTaskById(session.linkedTaskId!);
+    final target = (task?.estimatedMinutes ?? 0) * 60;
+    if (target <= 0) return 0;
+    final previous = await (select(timeSessionTable)..where((s) =>
+      s.linkedTaskId.equals(session.linkedTaskId!) &
+      s.status.equals('completed') & s.id.isNotValue(id))).get();
+    final elapsed = computeActiveDurationSeconds(
+      session.startedAt, now ?? DateTime.now(), session.pausedIntervals);
+    final remaining = target - elapsed - previous.fold<int>(
+      0, (sum, s) => sum + s.durationSeconds);
+    return remaining > 0 ? remaining : 0;
+  }
+
+  /// Manual focus completion cannot bypass a task's duration requirement.
+  Future<bool> completeFocusSession(int id, {DateTime? now}) =>
+      db.transaction(() async {
+        if (await focusSecondsRemaining(id, now: now) > 0) return false;
+        await completeSession(id, endedAt: now);
+        return true;
+      });
+
+  Future<void> completeSession(
+    int id, {
+    DateTime? endedAt,
+  }) => db.transaction(() async {
+    final session = await (select(
+      timeSessionTable,
+    )..where((s) => s.id.equals(id))).getSingleOrNull();
+    if (session == null || session.status == 'completed') return;
 
     final end = endedAt ?? DateTime.now();
 
@@ -364,11 +458,13 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
     }
 
     // Calculate active duration in minutes and hours
-    final durationSeconds = computeActiveDurationSeconds(
-      session.startedAt,
-      end,
-      jsonEncode(intervals),
-    );
+    final durationSeconds = session.learningCourseId != null
+        ? session.durationSeconds
+        : computeActiveDurationSeconds(
+            session.startedAt,
+            end,
+            jsonEncode(intervals),
+          );
     final activeMinutes = (durationSeconds / 60).round();
 
     await (update(timeSessionTable)..where((s) => s.id.equals(id))).write(
@@ -413,11 +509,7 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
             sCategory?.name.toLowerCase() == 'study' ||
             s.activityType.toLowerCase() == 'study';
         if (sIsStudy && s.status == 'completed') {
-          final sDuration = computeActiveDurationSeconds(
-            s.startedAt,
-            s.endedAt ?? end,
-            s.pausedIntervals,
-          );
+          final sDuration = s.durationSeconds;
           totalStudyHours += (sDuration / 3600.0);
         }
       }
@@ -431,7 +523,7 @@ class TimeSessionDao extends DatabaseAccessor<AppDatabase>
         hoursStudied: totalStudyHours,
       );
     }
-  }
+  });
 
   Future<void> abandonSession(int id) async {
     await (update(timeSessionTable)..where((s) => s.id.equals(id))).write(

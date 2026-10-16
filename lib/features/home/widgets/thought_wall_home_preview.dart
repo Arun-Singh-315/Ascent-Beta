@@ -1,123 +1,169 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:drift/drift.dart' as drift;
+import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/settings_provider.dart';
+import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
-import '../../thought_wall/drop_thought_sheet.dart';
+import '../../../shared/widgets/thought_excerpt.dart';
+import '../../thought_wall/thought_quick_actions.dart';
 
 /// Level 3 · Supporting: Mind Space
 /// Redesigned according to Ascent Home Redesign spec:
 /// - Open layout with single underline input (no heavy nested boxes).
 /// - Glass thought bubble for latest reflection.
 /// - 44dp hit targets.
-class ThoughtWallHomePreview extends ConsumerWidget {
-  const ThoughtWallHomePreview({super.key});
+class ThoughtWallHomePreview extends ConsumerStatefulWidget {
+  const ThoughtWallHomePreview({
+    super.key,
+    this.showComposer = true,
+    this.previewLimit = 4,
+  });
+  final bool showComposer;
+  final int previewLimit;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ThoughtWallHomePreview> createState() =>
+      _ThoughtWallHomePreviewState();
+}
+
+class _ThoughtWallHomePreviewState
+    extends ConsumerState<ThoughtWallHomePreview> {
+  final _controller = TextEditingController();
+  bool _saving = false;
+  bool _expanded = false;
+  int? _lastSavedThoughtId;
+  final _focusNode = FocusNode();
+  NoteDraftBinding? _draft;
+
+  @override
+  void dispose() {
+    _draft?.dispose();
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      if (widget.showComposer) {
+        _draft = NoteDraftBinding(
+          _controller,
+          ref.read(sharedPreferencesProvider),
+          'home',
+        );
+      }
+    } catch (_) {
+      // An optional preference provider may be absent in isolated widget tests.
+    }
+    _focusNode.addListener(_refresh);
+    _controller.addListener(_refresh);
+  }
+
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _send() async {
+    final content = _controller.text.trim();
+    if (content.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    try {
+      final id = await ref
+          .read(thoughtDaoProvider)
+          .insertThought(
+            ThoughtTableCompanion.insert(
+              content: content,
+              mood: const drift.Value('thought'),
+            ),
+          );
+      if (mounted) {
+        setState(() {
+          _lastSavedThoughtId = id;
+        });
+        if (_controller.text.trim() == content) _controller.clear();
+        FocusScope.of(context).unfocus();
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save. Your note is still here.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final g = context.glass;
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── SECTION HEADING ───────────────────────────────────────────
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              'Mind space',
-              style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+        if (widget.showComposer)
+          AppCard(
+            nightDecoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: _focusNode.hasFocus ? g.clay : g.line,
+                  width: _focusNode.hasFocus ? 2 : 1,
+                ),
+              ),
             ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               children: [
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/thought-wall');
-                  },
-                  borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 4,
-                      vertical: 2,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'Open wall',
-                          style: AscentTextStyles.homeSecondary.copyWith(
-                            color: g.clay,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 16,
-                          color: g.clay,
-                        ),
-                      ],
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    cursorColor: g.clay,
+                    minLines: 1,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: AppTypography.plusJakartaSans14W60080(color: g.ink),
+                    decoration: const InputDecoration(
+                      hintText: "What's on your mind?",
+                      filled: false,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      border: InputBorder.none,
                     ),
                   ),
                 ),
+                IconButton(
+                  tooltip: 'Send thought',
+                  onPressed: _saving || _controller.text.trim().isEmpty
+                      ? null
+                      : _send,
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(Icons.send_rounded, color: g.clay),
+                ),
               ],
             ),
-          ],
-        ),
-
-        const SizedBox(height: 10),
-
-        // ── OPEN UNDERLINE INPUT ROW ──────────────────────────────────
-        Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              DropThoughtSheet.show(context);
-            },
-            child: Container(
-              constraints: const BoxConstraints(minHeight: 48),
-              decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: g.line, width: 1.0)),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 18, color: g.inkMuted),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "What's on your mind?",
-                      style: AscentTextStyles.homeBody.copyWith(
-                        color: g.inkMuted,
-                        fontSize: 14.5,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'Drop',
-                    style: AscentTextStyles.homeHeadline.copyWith(
-                      color: g.clay,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                ],
-              ),
-            ),
           ),
-        ),
 
         // ── THOUGHTS BUBBLE PREVIEW (ALTERNATING LEFT/RIGHT) ───────────
         recentThoughtsAsync.when(
@@ -128,19 +174,66 @@ class ThoughtWallHomePreview extends ConsumerWidget {
               return const SizedBox.shrink();
             }
 
-            final previewThoughts = thoughts.take(3).toList();
+            final List<Thought> previewThoughts;
+            if (_expanded) {
+              previewThoughts = thoughts
+                  .take(widget.previewLimit.clamp(1, 4))
+                  .toList();
+            } else {
+              final pinned = thoughts.where((t) => t.isPinned).firstOrNull;
+              final latest =
+                  thoughts.where((t) => t.id != pinned?.id).firstOrNull;
+              if (pinned != null) {
+                previewThoughts = [
+                  pinned,
+                  ?latest,
+                ];
+              } else {
+                previewThoughts = thoughts.take(2).toList();
+              }
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _expanded || previewThoughts.length > 1
+                            ? 'Recent thoughts'
+                            : 'Recent thought',
+                        style: AscentTextStyles.homeCaption.copyWith(
+                          color: g.inkMuted,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: _expanded
+                          ? 'Collapse Mind Space'
+                          : 'Expand Mind Space',
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _expanded = !_expanded);
+                      },
+                      icon: Icon(
+                        _expanded
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        color: g.clay,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 ...List.generate(previewThoughts.length, (index) {
                   final thought = previewThoughts[index];
                   final isEven = index % 2 == 0;
                   final timeAgo = _formatTimeAgo(thought.createdAt);
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: AppSpace.s10),
                     child: Align(
                       alignment: isEven
                           ? Alignment.centerLeft
@@ -148,20 +241,32 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 300),
                         child: GlassSurface(
+                          key: ValueKey('home_thought_${thought.id}'),
+                          enableBlur: false,
+                          customBorder: Border.all(
+                            color: g.inkMuted.withValues(
+                              alpha:
+                                  Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? 0.4
+                                  : 0.18,
+                            ),
+                            width: AppBorderScale.w1point2,
+                          ),
                           radius: 18,
                           borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(18),
-                            topRight: const Radius.circular(18),
-                            bottomLeft: Radius.circular(isEven ? 4 : 18),
-                            bottomRight: Radius.circular(isEven ? 18 : 4),
+                            topLeft: AppGeometry.radiusr18,
+                            topRight: AppGeometry.radiusr18,
+                            bottomLeft: AppGeometry.bubbleTail(isEven),
+                            bottomRight: AppGeometry.bubbleTail(!isEven),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            horizontal: AppSpace.s16,
+                            vertical: AppSpace.s12,
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            context.push('/thought-wall');
+                            context.push('/thought-wall?thought=${thought.id}');
                           },
                           child: Column(
                             crossAxisAlignment: isEven
@@ -169,56 +274,87 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                                 : CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (thought.mood == 'promise') ...[
-                                Container(
+                              if (thought.isPinned) ...[
+                                AppTag(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
+                                    horizontal: AppSpace.s8,
+                                    vertical: AppSpace.s3,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(
-                                      0xFF7C3AED,
-                                    ).withValues(alpha: 0.14),
-                                    borderRadius: BorderRadius.circular(10),
+                                  nightDecoration: BoxDecoration(
+                                    color: g.clay.withValues(alpha: 0.14),
+                                    borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
+                                        Icons.push_pin_rounded,
+                                        size: 11,
+                                        color: g.clay,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'PINNED TO HOME',
+                                        style: AscentTextStyles.homeCaption
+                                            .copyWith(color: g.clay)
+                                            .merge(AppTypeRoles.typeRole65),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                              ] else if (thought.mood == 'promise') ...[
+                                AppTag(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpace.s8,
+                                    vertical: AppSpace.s3,
+                                  ),
+                                  nightDecoration: BoxDecoration(
+                                    color: g.clay.withValues(alpha: 0.14),
+                                    borderRadius: AppGeometry.roundedr10,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
                                         Icons.handshake_rounded,
                                         size: 12,
-                                        color: Color(0xFF7C3AED),
+                                        color: g.clay,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PROMISE',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(
-                                              color: const Color(0xFF7C3AED),
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w800,
-                                            ),
+                                            .copyWith(color: g.clay)
+                                            .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 7),
                               ],
-                              Text(
-                                thought.content,
-                                style: AscentTextStyles.homeHeadline.copyWith(
+                              ThoughtExcerpt(
+                                content: thought.content,
+                                onReadMore: () => context.push(
+                                  '/thought-wall?thought=${thought.id}',
+                                ),
+                                style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
                                       ? g.inkMuted
                                       : g.ink,
-                                  fontSize: 14.5,
-                                  fontWeight: FontWeight.w500,
                                   decoration: thought.isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
+                              if (thought.id == _lastSavedThoughtId)
+                                ThoughtQuickActions(
+                                  key: ValueKey(
+                                    'home_thought_quick_${thought.id}',
+                                  ),
+                                  thought: thought,
+                                  db: ref.read(databaseProvider),
+                                ),
                               const SizedBox(height: 5),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -236,10 +372,9 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                                     style: AscentTextStyles.homeCaption
                                         .copyWith(
                                           color: g.inkMuted,
-                                          fontSize: 10.5,
                                           letterSpacing: 0.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                        )
+                                        .merge(AppTypeRoles.typeRole66),
                                   ),
                                 ],
                               ),
@@ -250,55 +385,23 @@ class ThoughtWallHomePreview extends ConsumerWidget {
                     ),
                   );
                 }),
-                const SizedBox(height: 4),
-                Center(
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.lightImpact();
-                      context.push('/thought-wall');
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: g.line, width: 1),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.bubble_chart_outlined,
-                            size: 15,
-                            color: g.clay,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'View all reflections (${thoughts.length})',
-                            style: GoogleFonts.inter(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: g.clay,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                            color: g.clay,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
               ],
             );
           },
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            style: Theme.of(context).brightness == Brightness.light
+                ? TextButton.styleFrom(foregroundColor: const Color(0xFF53617C))
+                : null,
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              context.push('/thought-wall');
+            },
+            icon: const Icon(Icons.chevron_right_rounded, size: 18),
+            label: const Text('View all'),
+          ),
         ),
       ],
     );

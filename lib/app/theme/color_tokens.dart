@@ -18,14 +18,14 @@ class AscentColors {
   /// Slightly elevated surface for nested cards and chips.
   static const Color bgSurfaceElevated = Color(0xFFF1F3F6);
 
-  /// Deep calm forest sage — primary accent.
-  static const Color accentPrimary = Color(0xFF38664D);
+  /// Ascent signature terracotta clay — primary accent.
+  static const Color accentPrimary = Color(0xFFA4523A);
 
-  /// Matte punchy sage for active/interactive buttons and rings.
-  static const Color accentPrimaryBright = Color(0xFF2C553E);
+  /// Matte punchy clay for active/interactive buttons and rings.
+  static const Color accentPrimaryBright = Color(0xFF904530);
 
   /// Subtle soft tint for primary backgrounds and badges.
-  static const Color accentPrimaryDim = Color(0xFFD6E8DC);
+  static const Color accentPrimaryDim = Color(0xFFF6E7E2);
 
   /// Calm composed terracotta / amber cedar — secondary accent (soothing in day mode).
   static const Color accentSecondary = Color(0xFF8A513E);
@@ -33,8 +33,8 @@ class AscentColors {
   /// Composed cedar tone for active countdown and focus markers.
   static const Color accentSecondaryBright = Color(0xFF9E5C47);
 
-  /// Soft slate blue — informational accent.
-  static const Color accentInfo = Color(0xFF4F739D);
+  /// Warm caramel — informational accent.
+  static const Color accentInfo = Color(0xFF9D734F);
 
   /// Restrained rose-crimson — destructive / error state (calm in day mode).
   static const Color stateDanger = Color(0xFFBA433C);
@@ -49,13 +49,13 @@ class AscentColors {
   static const Color stateWarning = Color(0xFFB46824);
 
   /// Deep near-black graphite text.
-  static const Color textPrimary = Color(0xFF16191D);
+  static const Color textPrimary = Color(0xFF1D1916);
 
   /// Refined secondary text.
-  static const Color textSecondary = Color(0xFF525963);
+  static const Color textSecondary = Color(0xFF635A52);
 
   /// Muted / placeholder text.
-  static const Color textMuted = Color(0xFF868E99);
+  static const Color textMuted = Color(0xFF74695F);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
@@ -64,30 +64,30 @@ class AscentColors {
   static const Color divider = Color(0xFFE5E8ED);
 
   /// Shadow tint for soft diffuse elevation.
-  static const Color shadow = Color(0xFF16191D);
+  static const Color shadow = Color(0xFF1D1916);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 
   /// Deep obsidian graphite — page background.
-  static const Color bgBaseDark = Color(0xFF0F1216);
+  static const Color bgBaseDark = Color(0xFF16120F);
 
   /// Matte dark charcoal surface — cards, sheets, inputs.
-  static const Color bgSurfaceDark = Color(0xFF181C22);
+  static const Color bgSurfaceDark = Color(0xFF221D18);
 
   /// Elevated dark surface for nested items and chips.
-  static const Color bgSurfaceElevatedDark = Color(0xFF222832);
+  static const Color bgSurfaceElevatedDark = Color(0xFF322922);
 
-  /// Soft luminous sage — primary accent.
-  static const Color accentPrimaryDark = Color(0xFF63BA8B);
-  static const Color accentPrimaryBrightDark = Color(0xFF78CCA0);
-  static const Color accentPrimaryDimDark = Color(0xFF233E30);
+  /// Warm luminous clay / terracotta — primary accent in dark mode.
+  static const Color accentPrimaryDark = Color(0xFFE6A088);
+  static const Color accentPrimaryBrightDark = Color(0xFFF0B39F);
+  static const Color accentPrimaryDimDark = Color(0xFF3A241D);
 
   /// Warm clay / terracotta — secondary accent.
   static const Color accentSecondaryDark = Color(0xFFE88168);
   static const Color accentSecondaryBrightDark = Color(0xFFF2957E);
 
-  /// Muted slate blue — info accent.
-  static const Color accentInfoDark = Color(0xFF7FA7D6);
+  /// Soft sand — informational accent.
+  static const Color accentInfoDark = Color(0xFFC1A17C);
 
   /// Soft coral red — danger.
   static const Color stateDangerDark = Color(0xFFE26D66);
@@ -103,13 +103,13 @@ class AscentColors {
   static const Color textSecondaryDark = Color(0xFFA2ACB8);
 
   /// Muted text in dark mode.
-  static const Color textMutedDark = Color(0xFF757E8C);
+  static const Color textMutedDark = Color(0xFF8C8075);
 
   /// Text on primary in dark mode.
   static const Color textOnPrimaryDark = Color(0xFF0D1812);
 
   /// Subtle dark divider line.
-  static const Color dividerDark = Color(0xFF262D37);
+  static const Color dividerDark = Color(0xFF372E26);
 
   /// Shadow in dark mode.
   static const Color shadowDark = Color(0xFF000000);
@@ -119,8 +119,7 @@ class AscentColors {
 extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
-  Color get bgBase =>
-      isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
+  Color get bgBase => isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
 
   Color get bgSurface =>
       isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface;
@@ -129,8 +128,7 @@ extension AscentColorsX on BuildContext {
       ? AscentColors.bgSurfaceElevatedDark
       : AscentColors.bgSurfaceElevated;
 
-  Color get accentPrimary =>
-      isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary;
+  Color get accentPrimary => Theme.of(this).colorScheme.primary;
 
   Color get accentSecondary =>
       isDark ? AscentColors.accentSecondaryDark : AscentColors.accentSecondary;
@@ -147,20 +145,19 @@ extension AscentColorsX on BuildContext {
   Color get stateWarning =>
       isDark ? AscentColors.stateWarningDark : AscentColors.stateWarning;
 
-  Color get textPrimary =>
-      isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary;
+  Color get textPrimary => Theme.of(this).colorScheme.onSurface;
 
   Color get textSecondary =>
       isDark ? AscentColors.textSecondaryDark : AscentColors.textSecondary;
 
-  Color get textMuted =>
-      isDark ? AscentColors.textMutedDark : AscentColors.textMuted;
+  Color get textMuted => Theme.of(this).colorScheme.onSurfaceVariant;
 
   Color get textOnPrimary =>
       isDark ? AscentColors.textOnPrimaryDark : AscentColors.textOnPrimary;
 
   Color get divider =>
-      isDark ? AscentColors.dividerDark : AscentColors.divider;
+      Theme.of(this).dividerTheme.color ??
+      (isDark ? AscentColors.dividerDark : AscentColors.divider);
 
   Color get accentPrimaryBright => isDark
       ? AscentColors.accentPrimaryBrightDark

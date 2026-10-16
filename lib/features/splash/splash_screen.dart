@@ -1,9 +1,12 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
+import '../../core/notifications/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_logo.dart';
@@ -61,18 +64,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   Future<void> _checkSessionAndNavigate() async {
     final startTime = DateTime.now();
 
-
     bool hasValidProfile = false;
     try {
       final profileDao = ref.read(userProfileDaoProvider);
       final profile = await profileDao.getProfile();
-      if (profile != null &&
-          profile.onboardingComplete &&
-          profile.name.trim().isNotEmpty &&
-          profile.name.trim().toLowerCase() != 'learner' &&
-          profile.targetRole.trim().isNotEmpty) {
-        hasValidProfile = true;
-      }
+      hasValidProfile = canEnterWorkspace(
+        profile,
+        ref.read(sharedPreferencesProvider),
+      );
     } catch (_) {
       hasValidProfile = false;
     }
@@ -95,7 +94,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (router == null) return;
 
     if (hasValidProfile) {
-      router.go('/home');
+      router.go(NotificationService.consumePendingDestination() ?? '/home');
     } else {
       router.go('/onboarding');
     }
@@ -137,41 +136,40 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               // Title
               Text(
                 'Ascent',
-                style: AscentTextStyles.displayLarge.copyWith(
-                  color: textPrimary,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
-                ),
+                style: AscentTextStyles.displayLarge
+                    .copyWith(color: textPrimary, letterSpacing: -0.5)
+                    .merge(AppTypeRoles.typeRole25),
               ),
               const SizedBox(height: 6),
 
               // Subtitle Tagline
               Text(
                 'Job Prep & Search Operating System',
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: textMuted,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                ),
+                style: AscentTextStyles.bodyMedium
+                    .copyWith(color: textMuted)
+                    .merge(AppTypeRoles.typeRole26),
               ),
               const SizedBox(height: 14),
 
               // Subtle version badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
+              AppCard(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s10,
+                  vertical: AppSpace.s3,
+                ),
+                nightDecoration: BoxDecoration(
                   color: context.bgSurfaceElevated,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: divider, width: 0.8),
+                  borderRadius: AppGeometry.roundedr20,
+                  border: Border.all(
+                    color: divider,
+                    width: AppBorderScale.w0point8,
+                  ),
                 ),
                 child: Text(
                   'BETA · $_versionString',
-                  style: AscentTextStyles.monoCode.copyWith(
-                    fontSize: 11,
-                    color: textMuted,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: AscentTextStyles.monoCode
+                      .copyWith(color: textMuted)
+                      .merge(AppTypeRoles.typeRole16),
                 ),
               ),
             ],

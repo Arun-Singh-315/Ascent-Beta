@@ -1,0 +1,551 @@
+
+Building Linux applications requires some tools that are not included
+in the Flutter snap and need to be installed on your system:
+
+  - GTK 3 development files
+
+To install them, run:
+
+  sudo apt install clang cmake ninja-build g++ pkg-config libgtk-3-dev
+
+00:00 +0: loading /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart
+00:00 +0: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: schema 14 workspace backups upgrade to quiet reminders
+00:00 +1: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: round trip covers all public tables, IDs, relations and every preference type
+00:00 +2: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: round trip covers all public tables, IDs, relations and every preference type
+00:00 +3: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: round trip covers all public tables, IDs, relations and every preference type
+00:00 +4: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: round trip covers all public tables, IDs, relations and every preference type
+00:00 +5: /home/arunsinghvisen/Ascent-Beta/test/audit_and_polish_features_test.dart: Kindle Reader Themes & Model Verification Tests Course model correctly calculates duration and progress for catalog
+00:00 +6: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: confirmation is required and a corrupt checksum never changes records
+00:01 +7: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +8: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +9: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +10: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +11: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +12: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +13: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +14: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: managed resume files survive restore into a new directory with remapped paths
+00:01 +15: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: missing resume files block export rather than claiming a complete backup
+00:01 +16: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: interrupted preference restore recovers from the durable database journal
+00:01 +17: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: legacy partial exports are rejected without pretending to restore everything
+00:01 +18: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: restore can repair a missing current resume
+00:01 +19: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: broken foreign keys roll back the entire replacement
+00:01 +20: /home/arunsinghvisen/Ascent-Beta/test/workspace_backup_test.dart: restored running Focus and walking remain paused
+00:02 +21: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: (setUpAll)
+00:02 +21: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Strict Study Streak & Rescue Math Logic Tests Anti-Cheat: Manual lecture completion does not increment study watch time
+00:02 +22: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Strict Study Streak & Rescue Math Logic Tests Normal Goal: Completing 120 minutes (7200s) secures today and increments streak
+00:02 +23: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Strict Study Streak & Rescue Math Logic Tests Rescue Mode: Deficit from yesterday is added to today requirement (1-day grace)
+00:02 +24: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Strict Study Streak & Rescue Math Logic Tests Rescue Mode: Successfully hitting target today rescues the streak
+00:02 +25: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Strict Study Streak & Rescue Math Logic Tests Snapchat-style Urgency: Alerts user in the evening if minutes are still remaining
+00:02 +26: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Strict Study Streak & Rescue Math Logic Tests Snapchat-style Urgency: Not urgent in morning/afternoon with time remaining
+00:02 +27: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Study Streak Meter UI Widget Tests StudyStreakMeterCard renders real-time progress and streak stats cleanly
+00:03 +28: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Study Streak Meter UI Widget Tests StudyStreakMeterCard shows urgent alert banner when streak is at risk in the evening
+00:03 +29: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Study Streak Meter UI Widget Tests StudyStreakMeterCard shows Rescue banner when yesterday was missed and debt is active
+00:03 +30: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Home Screen Dismissible Reminders Tests HomeDismissibleRemindersSection renders upcoming reminders read-only
+00:04 +31: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Home Screen Dismissible Reminders Tests HomeDismissibleRemindersSection hides all empty reminder UI
+00:04 +32: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Home Screen Dismissible Reminders Tests Rule 7 Capping: HomeDismissibleRemindersSection only renders 1 primary reminder even if 7 exist, with +X more chip
+00:04 +33: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Study Streak Card Visibility Toggle Tests StudyStreakCardVisibilityNotifier defaults to true and toggles cleanly
+00:04 +34: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: Study Streak Card Visibility Toggle Tests HomeHeader streak flame pill tap toggles studyStreakCardVisibleProvider
+00:04 +35: /home/arunsinghvisen/Ascent-Beta/test/strict_study_streak_rescue_and_reminders_test.dart: (tearDownAll)
+00:09 +35: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:09 +36: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:10 +37: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:10 +38: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +39: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +40: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +41: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +42: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +43: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +44: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +45: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +46: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +47: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +48: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:11 +49: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +50: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +51: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +52: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +52: /home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart: receipt survives DB restart, schema12 migration preserves existing data
+WARNING (drift): It looks like you've created the database class AppDatabase multiple times. When these two databases use the same QueryExecutor, race conditions will occur and might corrupt the database. 
+Try to follow the advice at https://drift.simonbinder.eu/faq/#using-the-database or, if you know what you're doing, set driftRuntimeOptions.dontWarnAboutMultipleDatabases = true
+Here is the stacktrace from when the database was opened a second time:
+#0      GeneratedDatabase._handleInstantiated (package:drift/src/runtime/api/db_base.dart:96:30)
+#1      GeneratedDatabase._whenConstructed (package:drift/src/runtime/api/db_base.dart:73:12)
+#2      new GeneratedDatabase (package:drift/src/runtime/api/db_base.dart:64:5)
+#3      new _$AppDatabase (package:ascent/core/database/app_database.g.dart:19337:36)
+#4      new AppDatabase.forTesting (package:ascent/core/database/app_database.dart)
+#5      main.<anonymous closure> (file:///home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart:421:32)
+<asynchronous suspension>
+#6      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:15)
+<asynchronous suspension>
+#7      Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#8      Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+This warning will only appear on debug builds.
+00:12 +53: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +53: /home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart: receipt survives DB restart, schema12 migration preserves existing data
+WARNING (drift): It looks like you've created the database class AppDatabase multiple times. When these two databases use the same QueryExecutor, race conditions will occur and might corrupt the database. 
+Try to follow the advice at https://drift.simonbinder.eu/faq/#using-the-database or, if you know what you're doing, set driftRuntimeOptions.dontWarnAboutMultipleDatabases = true
+Here is the stacktrace from when the database was opened a second time:
+#0      GeneratedDatabase._handleInstantiated (package:drift/src/runtime/api/db_base.dart:96:30)
+#1      GeneratedDatabase._whenConstructed (package:drift/src/runtime/api/db_base.dart:73:12)
+#2      new GeneratedDatabase (package:drift/src/runtime/api/db_base.dart:64:5)
+#3      new _$AppDatabase (package:ascent/core/database/app_database.g.dart:19337:36)
+#4      new AppDatabase.forTesting (package:ascent/core/database/app_database.dart)
+#5      main.<anonymous closure> (file:///home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart:432:28)
+<asynchronous suspension>
+#6      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:15)
+<asynchronous suspension>
+#7      Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#8      Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+This warning will only appear on debug builds.
+WARNING (drift): It looks like you've created the database class AppDatabase multiple times. When these two databases use the same QueryExecutor, race conditions will occur and might corrupt the database. 
+Try to follow the advice at https://drift.simonbinder.eu/faq/#using-the-database or, if you know what you're doing, set driftRuntimeOptions.dontWarnAboutMultipleDatabases = true
+Here is the stacktrace from when the database was opened a second time:
+#0      GeneratedDatabase._handleInstantiated (package:drift/src/runtime/api/db_base.dart:96:30)
+#1      GeneratedDatabase._whenConstructed (package:drift/src/runtime/api/db_base.dart:73:12)
+#2      new GeneratedDatabase (package:drift/src/runtime/api/db_base.dart:64:5)
+#3      new _$AppDatabase (package:ascent/core/database/app_database.g.dart:19337:36)
+#4      new AppDatabase.forTesting (package:ascent/core/database/app_database.dart)
+#5      main.<anonymous closure> (file:///home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart:445:28)
+<asynchronous suspension>
+#6      Declarer.test.<anonymous closure>.<anonymous closure> (package:test_api/src/backend/declarer.dart:253:15)
+<asynchronous suspension>
+#7      Declarer.test.<anonymous closure> (package:test_api/src/backend/declarer.dart:250:11)
+<asynchronous suspension>
+#8      Invoker._waitForOutstandingCallbacks.<anonymous closure> (package:test_api/src/backend/invoker.dart:318:9)
+<asynchronous suspension>
+This warning will only appear on debug builds.
+00:12 +54: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +55: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +56: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +57: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +58: /home/arunsinghvisen/Ascent-Beta/test/notification_startup_route_test.dart: cold reminder destination survives splash rather than reverting to Home
+00:12 +59: /home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart: idle midnight refresh uses current local calendar; stale legacy counter ignored
+00:13 +60: /home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart: idle midnight refresh uses current local calendar; stale legacy counter ignored
+00:13 +61: /home/arunsinghvisen/Ascent-Beta/test/renovation_commands_test.dart: idle midnight refresh uses current local calendar; stale legacy counter ignored
+00:13 +62: /home/arunsinghvisen/Ascent-Beta/test/mindspace_reflections_ux_test.dart: Mind Space Reflections & UX Enhancement Tests WaterDao past 7 days history calculates daily totals and trend accurately
+00:13 +63: /home/arunsinghvisen/Ascent-Beta/test/mindspace_reflections_ux_test.dart: Mind Space Reflections & UX Enhancement Tests WaterDao past 7 days history calculates daily totals and trend accurately
+00:13 +64: /home/arunsinghvisen/Ascent-Beta/test/mindspace_reflections_ux_test.dart: Mind Space Reflections & UX Enhancement Tests StudyStreakMeterCard offers a fresh start after a previous streak
+00:14 +65: /home/arunsinghvisen/Ascent-Beta/test/home_modular_architecture_test.dart: Modular Home Architecture Tests HomeHeader pumps with profile name, greeting, and streak flame
+00:15 +65: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakNotifier initializes with 10 min preset and decrements timer
+Failed to cancel ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+00:15 +66: /home/arunsinghvisen/Ascent-Beta/test/home_modular_architecture_test.dart: Modular Home Architecture Tests HomeHeader pumps with profile name, greeting, and streak flame
+00:16 +67: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakScreen pumps and displays timer, presets, and soundscape
+00:17 +68: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakScreen pumps and displays timer, presets, and soundscape
+00:17 +68: /home/arunsinghvisen/Ascent-Beta/test/reminder_overdue_flow_test.dart: missed active reminders stay Overdue and can be completed from the list
+Error checking notifications enabled: LateInitializationError: Field '_instance@1112271368' has not been initialized.
+00:17 +69: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakScreen pumps and displays timer, presets, and soundscape
+00:17 +70: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakScreen pumps and displays timer, presets, and soundscape
+00:17 +71: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakScreen pumps and displays timer, presets, and soundscape
+00:17 +72: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakScreen pumps and displays timer, presets, and soundscape
+Failed to cancel ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+00:18 +73: /home/arunsinghvisen/Ascent-Beta/test/reminder_overdue_flow_test.dart: missed active reminders stay Overdue and can be completed from the list
+00:18 +73: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests ChaiBreakNotifier initializes with 10 min preset and decrements timer
+NotificationService initialization failed: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+Failed to show ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+Failed to show ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+Failed to show ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+Failed to show ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+Failed to show ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+00:18 +74: /home/arunsinghvisen/Ascent-Beta/test/reminder_overdue_flow_test.dart: missed active reminders stay Overdue and can be completed from the list
+00:18 +75: /home/arunsinghvisen/Ascent-Beta/test/reminder_overdue_flow_test.dart: missed active reminders stay Overdue and can be completed from the list
+00:19 +75: /home/arunsinghvisen/Ascent-Beta/test/chai_break_and_flow_resume_test.dart: Chai & Coffee Break Sanctuary Tests Flow Resume Guarantee: Lecture resume starts at exact paused second, not from 0
+Failed to cancel ongoing chai break notification: LateInitializationError: Field '_instance@1205271368' has not been initialized.
+00:19 +76: /home/arunsinghvisen/Ascent-Beta/test/reminder_overdue_flow_test.dart: missed active reminders stay Overdue and can be completed from the list
+00:19 +77: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests Swiping lecture removes it from today activities without deleting from course catalog
+00:20 +78: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests Dismissed lecture does NOT resurrect upon stream rebuild or update
+00:20 +78: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests Swiping lecture removes it from today activities without deleting from course catalog
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+00:20 +79: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests User explicit play or selection un-dismisses lecture from today list
+00:20 +79: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests Dismissed lecture does NOT resurrect upon stream rebuild or update
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+00:20 +80: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests Completed lecture remains visible in Completed activities for the day
+00:20 +80: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests User explicit play or selection un-dismisses lecture from today list
+CourseDao persistence sync warning: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+00:20 +81: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:20 +81: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests Completed lecture remains visible in Completed activities for the day
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+00:20 +81: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: Lecture Activity Lifecycle & Dismissal Guarantee Tests User explicit play or selection un-dismisses lecture from today list
+Failed to show ongoing session notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+Failed to show ongoing session notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+00:21 +82: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:21 +83: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:21 +84: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:21 +85: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:21 +86: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:21 +87: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:21 +88: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Active activity has endToStart swipe direction; completed activity has none
+00:22 +89: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:22 +90: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:23 +91: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +92: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +92: /home/arunsinghvisen/Ascent-Beta/test/lecture_activity_lifecycle_test.dart: One-Way Completion & Non-Dismissible Completed Items Widget Tests Swiping active lecture displays "Removed from today's activities" snackbar
+Failed to cancel ongoing focus notification: LateInitializationError: Field '_instance@1116271368' has not been initialized.
+00:24 +93: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +94: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +95: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +96: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +97: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +98: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +99: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +100: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: Quick Start reaches daily tools with no profile values
+00:24 +101: /home/arunsinghvisen/Ascent-Beta/test/completed_task_locking_test.dart: Completed Activities & Tasks Locking Tests Completed ActivityRowItem has DismissDirection.none (cannot swipe to delete)
+00:24 +102: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: onboarding and backup remain scrollable at 2x text in both themes
+00:25 +103: /home/arunsinghvisen/Ascent-Beta/test/quality_entry_and_drafts_test.dart: onboarding and backup remain scrollable at 2x text in both themes
+00:25 +104: /home/arunsinghvisen/Ascent-Beta/test/series_engine_test.dart: SeriesEngine Pacing & Velocity Tests computeTaskStatus returns lagging when planned date is in the past and not completed
+00:26 +105: /home/arunsinghvisen/Ascent-Beta/test/series_engine_test.dart: SeriesEngine Pacing & Velocity Tests computeTaskStatus returns done when actualCompletedDate is set
+00:26 +106: /home/arunsinghvisen/Ascent-Beta/test/series_engine_test.dart: SeriesEngine Pacing & Velocity Tests computeTaskStatus returns onTrack when planned date is future and incomplete
+00:26 +107: /home/arunsinghvisen/Ascent-Beta/test/series_engine_test.dart: SeriesEngine Pacing & Velocity Tests computeSeriesStatus returns completed when completedCount >= totalItems
+00:26 +108: /home/arunsinghvisen/Ascent-Beta/test/series_engine_test.dart: SeriesEngine Pacing & Velocity Tests computeSeriesStatus returns recovering when hasLaggingItems is true
+00:26 +109: /home/arunsinghvisen/Ascent-Beta/test/chai_brewing_guide_test.dart: Chai & Coffee Brewing Recipe Logic Tests Built-in recipes contain both Chai and Coffee selections
+00:26 +110: /home/arunsinghvisen/Ascent-Beta/test/chai_brewing_guide_test.dart: Chai & Coffee Brewing Recipe Logic Tests Ingredient scaling multiplies correctly for 1, 2, 3, and 4 cups
+00:26 +111: /home/arunsinghvisen/Ascent-Beta/test/chai_brewing_guide_test.dart: Chai & Coffee Brewing Recipe Logic Tests Recipe steps have positive durations and valid instructions
+00:27 +112: /home/arunsinghvisen/Ascent-Beta/test/overdue_reminder_startup_test.dart: Overdue Reminders on Startup Tests getOverdueActiveReminders returns only active reminders with scheduledAt before now
+00:27 +113: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:27 +114: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:27 +115: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:27 +116: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:27 +117: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:27 +118: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:28 +118: /home/arunsinghvisen/Ascent-Beta/test/database_test.dart: Database & DAOs Tests Promise creation atomically links a Thought, Todo, and daily reminders
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@791271368' has not been initialized.
+00:28 +119: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:28 +120: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:28 +121: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:28 +122: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:28 +123: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:29 +124: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:29 +125: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders single Go to Learning button when only lecture is active
+00:29 +126: /home/arunsinghvisen/Ascent-Beta/test/database_test.dart: Database & DAOs Tests TimeSessionDao tracks session lifecycle and duration
+00:29 +127: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders side-by-side buttons when both lecture and task timer are active
+WARNING (drift): It looks like you've created the database class AppDatabase multiple times. When these two databases use the same QueryExecutor, race conditions will occur and might corrupt the database. 
+Try to follow the advice at https://drift.simonbinder.eu/faq/#using-the-database or, if you know what you're doing, set driftRuntimeOptions.dontWarnAboutMultipleDatabases = true
+Here is the stacktrace from when the database was opened a second time:
+#0      GeneratedDatabase._handleInstantiated (package:drift/src/runtime/api/db_base.dart:96:30)
+#1      GeneratedDatabase._whenConstructed (package:drift/src/runtime/api/db_base.dart:73:12)
+#2      new GeneratedDatabase (package:drift/src/runtime/api/db_base.dart:64:5)
+#3      new _$AppDatabase (package:ascent/core/database/app_database.g.dart:19337:36)
+#4      new AppDatabase (package:ascent/core/database/app_database.dart:123:19)
+#5      databaseProvider.<anonymous closure> (package:ascent/core/providers/database_provider.dart:14:14)
+#6      Provider.create (package:riverpod/src/providers/provider.dart:59:36)
+#7      $ProviderElement.create (package:riverpod/src/providers/provider.dart:343:33)
+#8      ProviderElement.buildState (package:riverpod/src/core/element.dart:751:28)
+#9      ProviderElement.mount (package:riverpod/src/core/element.dart:587:7)
+#10     ProviderElement.flush (package:riverpod/src/core/element.dart:704:9)
+#11     $ProviderBaseImpl._addListener (package:riverpod/src/core/provider/provider.dart:119:24)
+#12     ProviderElement.listen (package:riverpod/src/core/element.dart:991:28)
+#13     Ref.watch (package:riverpod/src/core/ref.dart:726:20)
+#14     courseDaoProvider.<anonymous closure> (package:ascent/core/providers/database_provider.dart:100:26)
+#15     Provider.create (package:riverpod/src/providers/provider.dart:59:36)
+#16     $ProviderElement.create (package:riverpod/src/providers/provider.dart:343:33)
+#17     ProviderElement.buildState (package:riverpod/src/core/element.dart:751:28)
+#18     ProviderElement.mount (package:riverpod/src/core/element.dart:587:7)
+#19     ProviderElement.flush (package:riverpod/src/core/element.dart:704:9)
+#20     $ProviderBaseImpl._addListener (package:riverpod/src/core/provider/provider.dart:119:24)
+#21     ProviderContainer.listen (package:riverpod/src/core/provider_container.dart:1141:26)
+#22     ProviderContainer.read (package:riverpod/src/core/provider_container.dart:1068:17)
+#23     Ref.read (package:riverpod/src/core/ref.dart:609:30)
+#24     LearningHubNotifier._persistCourses.<anonymous closure> (package:ascent/core/learning_hub/learning_hub_provider.dart:352:31)
+#25     new Future.microtask.<anonymous closure> (dart:async/future.dart:287:40)
+#26     StackZoneSpecification._run (package:stack_trace/src/stack_zone_specification.dart:207:15)
+#27     StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:48)
+#28     _rootRun (dart:async/zone_root.dart:27:47)
+#29     _CustomZone.run (dart:async/zone.dart:810:35)
+#30     _CustomZone.runGuarded (dart:async/zone.dart:702:7)
+#31     _CustomZone.bindCallbackGuarded.<anonymous closure> (dart:async/zone.dart:743:23)
+#32     _rootRun (dart:async/zone_root.dart:35:13)
+#33     _CustomZone.run (dart:async/zone.dart:810:35)
+#34     _CustomZone.runGuarded (dart:async/zone.dart:702:7)
+#35     FakeAsync.run.<anonymous closure>.<anonymous closure> (package:fake_async/fake_async.dart:189:18)
+#36     FakeAsync.flushMicrotasks (package:fake_async/fake_async.dart:200:32)
+#37     AutomatedTestWidgetsFlutterBinding.pump.<anonymous closure> (package:flutter_test/src/binding.dart:2258:28)
+#38     _rootRun (dart:async/zone_root.dart:35:13)
+#39     _CustomZone.run (dart:async/zone.dart:810:35)
+#40     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#41     AutomatedTestWidgetsFlutterBinding.pump (package:flutter_test/src/binding.dart:2250:27)
+#42     WidgetTester.pumpWidget.<anonymous closure> (package:flutter_test/src/widget_tester.dart:598:22)
+#43     _rootRun (dart:async/zone_root.dart:35:13)
+#44     _CustomZone.run (dart:async/zone.dart:810:35)
+#45     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)
+#46     WidgetTester.pumpWidget (package:flutter_test/src/widget_tester.dart:595:27)
+#47     main.<anonymous closure>.<anonymous closure> (file:///home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart:91:20)
+#48     testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:29)
+<asynchronous suspension>
+#49     TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1953:5)
+<asynchronous suspension>
+#50     StackZoneSpecification._registerCallback.<anonymous closure> (package:stack_trace/src/stack_zone_specification.dart:114:42)
+<asynchronous suspension>
+This warning will only appear on debug builds.
+00:29 +128: /home/arunsinghvisen/Ascent-Beta/test/chai_break_resume_dock_test.dart: Chai Break Resume Dock UI Tests Renders side-by-side buttons when both lecture and task timer are active
+00:29 +129: /home/arunsinghvisen/Ascent-Beta/test/reminder_alarm_recovery_test.dart: quiet remains the default and native actions never create missing reminders
+00:29 +130: /home/arunsinghvisen/Ascent-Beta/test/reminder_alarm_recovery_test.dart: quiet remains the default and native actions never create missing reminders
+00:29 +131: /home/arunsinghvisen/Ascent-Beta/test/reminder_alarm_recovery_test.dart: absolute snooze recovery and repeated Done are idempotent
+00:29 +132: /home/arunsinghvisen/Ascent-Beta/test/v3_overhaul_test.dart: V3 — ReminderDao Tests Can insert, query upcoming, toggle, and delete reminder
+00:29 +133: /home/arunsinghvisen/Ascent-Beta/test/v3_overhaul_test.dart: V3 — ReminderDao Tests watchNextReminder stream emits single nearest active future reminder
+00:29 +134: /home/arunsinghvisen/Ascent-Beta/test/v3_overhaul_test.dart: V3 — Time Session Continuity (04:03 Timer Guarantee) getTodayActiveOrPausedSessionForTask preserves elapsed duration across sessions
+00:30 +135: /home/arunsinghvisen/Ascent-Beta/test/v3_overhaul_test.dart: V3 — Time Session Continuity (04:03 Timer Guarantee) Completed session does not get picked up as active/paused session
+00:30 +136: /home/arunsinghvisen/Ascent-Beta/test/v3_overhaul_test.dart: V3 — Multi Upcoming Interview Rounds Can manage multiple scheduled rounds and delete specific round
+00:30 +137: /home/arunsinghvisen/Ascent-Beta/test/thought_editing_test.dart: Thought Editing Tests in Mind Space updateThought edits content and mood successfully without changing creation date
+00:31 +138: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Notification Architecture Audit Tests Notification channel constants and IDs are properly configured
+00:31 +139: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Notification Architecture Audit Tests NotificationService permission check methods return valid booleans
+Error checking notifications enabled: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+00:31 +140: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Learning Hub & Activity Real-Time Timer Sync Tests Learning Hub initializes with active lecture and proper target duration
+00:31 +141: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Learning Hub & Activity Real-Time Timer Sync Tests Lecture retains elapsed time upon pause and does not restart from 00:00
+00:32 +142: /home/arunsinghvisen/Ascent-Beta/test/reflections_feedback_test.dart: all active challenges sync their own Focus evidence regardless of Home selection
+00:32 +142: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Learning Hub & Activity Real-Time Timer Sync Tests Lecture retains elapsed time upon pause and does not restart from 00:00
+CourseDao persistence sync warning: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+CourseDao persistence sync warning: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+00:32 +143: /home/arunsinghvisen/Ascent-Beta/test/reflections_feedback_test.dart: all active challenges sync their own Focus evidence regardless of Home selection
+00:32 +143: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Learning Hub & Activity Real-Time Timer Sync Tests Lecture retains elapsed time upon pause and does not restart from 00:00
+NotificationService initialization failed: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+00:32 +144: /home/arunsinghvisen/Ascent-Beta/test/reflections_feedback_test.dart: all active challenges sync their own Focus evidence regardless of Home selection
+00:32 +144: /home/arunsinghvisen/Ascent-Beta/test/notification_learning_sync_and_visual_test.dart: Learning Hub & Activity Real-Time Timer Sync Tests Lecture retains elapsed time upon pause and does not restart from 00:00
+Failed to show ongoing session notification: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+Failed to show ongoing session notification: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+Failed to show ongoing session notification: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+Failed to show ongoing session notification: LateInitializationError: Field '_instance@1163271368' has not been initialized.
+00:32 +145: /home/arunsinghvisen/Ascent-Beta/test/reflections_feedback_test.dart: all active challenges sync their own Focus evidence regardless of Home selection
+00:32 +146: /home/arunsinghvisen/Ascent-Beta/test/settings_screen_test.dart: SettingsScreen pumps without error
+00:32 +147: /home/arunsinghvisen/Ascent-Beta/test/settings_screen_test.dart: SettingsScreen pumps without error
+00:32 +148: /home/arunsinghvisen/Ascent-Beta/test/settings_screen_test.dart: SettingsScreen pumps without error
+00:35 +149: /home/arunsinghvisen/Ascent-Beta/test/reflections_feedback_test.dart: Home sends a note inline without opening a sheet
+00:35 +150: /home/arunsinghvisen/Ascent-Beta/test/new_day_dialog_test.dart: NewDayDialog pumps and renders without error
+00:36 +151: /home/arunsinghvisen/Ascent-Beta/test/new_day_dialog_test.dart: NewDayDialog pumps and renders without error
+00:36 +152: /home/arunsinghvisen/Ascent-Beta/test/new_day_dialog_test.dart: NewDayDialog pumps and renders without error
+00:36 +153: /home/arunsinghvisen/Ascent-Beta/test/new_day_dialog_test.dart: NewDayDialog pumps and renders without error
+00:37 +154: /home/arunsinghvisen/Ascent-Beta/test/new_day_dialog_test.dart: NewDayDialog pumps and renders without error
+00:37 +155: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Chai keeps warm hierarchy and presets readable at larger text sizes
+00:38 +156: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: shared composer has 48dp semantic send, multiline input and disabled state in both themes
+00:38 +157: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Home field never inherits green outline and focuses an accessible underline
+00:39 +158: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Riya expense is not saved until confirmation, repeated confirm cannot duplicate
+00:40 +158: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Medicine Feature & Multi-Day Auto-Sync Tests addMedicine automatically schedules doses, tasks, and reminders across all days
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+00:40 +159: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Medicine Feature & Multi-Day Auto-Sync Tests addMedicine automatically schedules doses, tasks, and reminders across all days
+00:40 +160: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +160: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Medicine Feature & Multi-Day Auto-Sync Tests Bi-directional sync: checking dose in Medicine marks linked task complete and vice versa
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+00:41 +161: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +161: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Medicine Feature & Multi-Day Auto-Sync Tests Cascading Deletion (Rule 8): Deleting medicine cleanly removes all reminders, tasks, and logs
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to cancel notification: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+00:41 +162: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +163: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +164: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +165: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +166: /home/arunsinghvisen/Ascent-Beta/test/renovation_ui_test.dart: Money has one expense primary and no empty or appbar duplicate
+00:41 +167: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Router Resolution & Page Not Found Exception Fix Tests MomentumScreen renders without throwing GoException
+00:41 +168: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Router Resolution & Page Not Found Exception Fix Tests MomentumScreen renders without throwing GoException
+00:42 +169: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Router Resolution & Page Not Found Exception Fix Tests MomentumScreen renders without throwing GoException
+00:43 +170: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Router Resolution & Page Not Found Exception Fix Tests MomentumScreen renders without throwing GoException
+00:43 +171: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: Router Resolution & Page Not Found Exception Fix Tests MomentumScreen renders without throwing GoException
+00:43 +172: /home/arunsinghvisen/Ascent-Beta/test/widget_test.dart: AscentApp smoke test
+00:43 +173: /home/arunsinghvisen/Ascent-Beta/test/widget_test.dart: AscentApp smoke test
+00:43 +174: /home/arunsinghvisen/Ascent-Beta/test/widget_test.dart: AscentApp smoke test
+00:43 +174: /home/arunsinghvisen/Ascent-Beta/test/medicine_and_momentum_sync_test.dart: AI Assistant Medicine Integration Tests Riya handles medicine queries and reports dose compliance
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1792271368' has not been initialized.
+00:43 +175: /home/arunsinghvisen/Ascent-Beta/test/widget_test.dart: AscentApp smoke test
+00:43 +176: /home/arunsinghvisen/Ascent-Beta/test/widget_test.dart: AscentApp smoke test
+00:43 +177: /home/arunsinghvisen/Ascent-Beta/test/widget_test.dart: AscentApp smoke test
+00:44 +178: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification HomeScreen has no TopReminderAlertBanner or SecondaryToolsSection
+00:44 +179: /home/arunsinghvisen/Ascent-Beta/test/timer_notification_polish_and_chat_wall_test.dart: Timer Notification Architecture & Action Integrity Tests Ongoing notification action constants contain strictly pause and resume
+00:44 +180: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification Mind Space (ThoughtDao) persists notes & reflections cleanly
+00:44 +181: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification Mind Space (ThoughtDao) persists notes & reflections cleanly
+00:44 +182: /home/arunsinghvisen/Ascent-Beta/test/timer_notification_polish_and_chat_wall_test.dart: Module Independence: Todo Focus vs Learning Hub Tests watchActiveFocusSession ignores lecture sessions and isolates focus sessions
+00:45 +183: /home/arunsinghvisen/Ascent-Beta/test/timer_notification_polish_and_chat_wall_test.dart: Module Independence: Todo Focus vs Learning Hub Tests watchActiveFocusSession ignores lecture sessions and isolates focus sessions
+00:45 +184: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification HomeScreen renders cleanly in both Light and Dark mode without layout assertion errors
+00:45 +185: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification HomeScreen renders cleanly in both Light and Dark mode without layout assertion errors
+00:45 +186: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification HomeScreen compulsory blockage redirects un-onboarded user to /onboarding
+00:46 +187: /home/arunsinghvisen/Ascent-Beta/test/challenge_momentum_test.dart: Challenge pace engine uses stable inputs and exposes a deterministic pace estimate
+00:46 +188: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification Home remains a local profile screen without a fake account-login guard
+00:46 +189: /home/arunsinghvisen/Ascent-Beta/test/home_notes_reminders_cleanup_test.dart: Mind Space as Unified Notes & Home Cleanup Verification Home remains a local profile screen without a fake account-login guard
+00:46 +190: /home/arunsinghvisen/Ascent-Beta/test/challenge_momentum_test.dart: Challenge persistence creates multiple active challenges with independent source links
+00:46 +191: /home/arunsinghvisen/Ascent-Beta/test/challenge_momentum_test.dart: Challenge persistence proof upsert is idempotent and challenge deletion cleans its records
+00:46 +192: /home/arunsinghvisen/Ascent-Beta/test/in_app_reminder_dialog_test.dart: InAppReminderDialog displays reminder title and snooze buttons
+00:48 +193: /home/arunsinghvisen/Ascent-Beta/test/splash_and_onboarding_lifecycle_test.dart: Splash Screen Visuals & Navigation Lifecycle Tests SplashScreen renders Ascent branding, title, and version tag
+00:49 +193: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Learning Lecture Completion Integrity Tests LearningHubNotifier sticky completion: once completed, cannot be reverted
+CourseDao persistence sync warning: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+00:49 +194: /home/arunsinghvisen/Ascent-Beta/test/splash_and_onboarding_lifecycle_test.dart: Splash Screen Visuals & Navigation Lifecycle Tests SplashScreen renders Ascent branding, title, and version tag
+00:49 +194: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Learning Lecture Completion Integrity Tests LearningHubNotifier sticky completion: once completed, cannot be reverted
+CourseDao persistence sync warning: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+CourseDao persistence sync warning: Bad state: Can't re-open a database after closing it. Please create a new database connection and open that instead.
+00:49 +195: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:49 +196: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +197: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +198: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +199: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +200: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +201: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +202: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +203: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +204: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +205: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:50 +206: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:51 +207: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (false)
+00:51 +208: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Learning Lecture Completion Integrity Tests StudyPlanScreen displays completed lectures with strikethrough decoration
+00:51 +209: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Learning Lecture Completion Integrity Tests StudyPlanScreen displays completed lectures with strikethrough decoration
+00:52 +210: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Learning Lecture Completion Integrity Tests StudyPlanScreen displays completed lectures with strikethrough decoration
+00:52 +211: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:52 +212: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +213: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +214: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +215: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +216: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +217: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +218: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +219: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (false)
+00:53 +220: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Activity Row Completion & Timing Integrity Tests Timed duration activity cannot be completed by clicking checkbox
+00:53 +221: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Glass feedback preserves Undo and fits 2x text (true)
+00:53 +222: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Activity Row Completion & Timing Integrity Tests Simple Todo can be completed by clicking checkbox
+00:53 +223: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Reminder popup retains every action at 2x text (true)
+00:53 +224: /home/arunsinghvisen/Ascent-Beta/test/pre_release_rules_and_completion_integrity_test.dart: Activity Row Completion & Timing Integrity Tests Completed activity cannot be toggled back to active (sealed)
+00:53 +225: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (true)
+00:54 +226: /home/arunsinghvisen/Ascent-Beta/test/glass_feedback_layout_test.dart: Riya user message uses glass in both themes (true)
+00:55 +227: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archiving & Done Status Logic Tests Active thoughts stream excludes archived thoughts and sorts active before completed
+00:55 +228: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archiving & Done Status Logic Tests watchTodayThoughtsCount counts only today non-archived thoughts
+00:55 +229: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archiving & Done Status Logic Tests Unarchiving restores thought to active stream
+00:55 +230: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:55 +231: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:55 +232: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:55 +233: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +234: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +235: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +236: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +237: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +238: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +239: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +240: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +241: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +242: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +243: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +244: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +245: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +246: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +247: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +248: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +249: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +250: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +251: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:56 +252: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:57 +253: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_archiving_and_done_test.dart: Thought Wall Archive UI Integration Tests ThoughtWallScreen displays "History & Archive" segment and archived badge
+00:59 +254: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+00:59 +255: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+00:59 +256: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+00:59 +257: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+00:59 +258: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+01:00 +259: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+01:00 +260: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: course search has a recoverable empty state and retains creation
+01:00 +261: /home/arunsinghvisen/Ascent-Beta/test/ringing_dialog_actions_test.dart: native action failure leaves ringing controls available to retry
+01:01 +262: /home/arunsinghvisen/Ascent-Beta/test/learning_flow_ui_test.dart: learning next step and streak help stay usable at 2x text in both themes
+01:01 +263: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_chat_style_test.dart: Thought Wall Chat-Style UI Tests Even index thought is left-aligned and odd index thought is right-aligned in chat style
+01:01 +264: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_chat_style_test.dart: Thought Wall Chat-Style UI Tests Even index thought is left-aligned and odd index thought is right-aligned in chat style
+01:01 +265: /home/arunsinghvisen/Ascent-Beta/test/thought_wall_chat_style_test.dart: Thought Wall Chat-Style UI Tests Even index thought is left-aligned and odd index thought is right-aligned in chat style
+01:03 +266: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: Chai Break Offline Audio & Custom Music Tests AmbientSoundscapeBar renders preset title and controls
+01:03 +267: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: Chai Break Offline Audio & Custom Music Tests AmbientSoundscapeBar renders preset title and controls
+01:03 +268: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: Chai Break Offline Audio & Custom Music Tests AmbientSoundscapeBar renders preset title and controls
+01:03 +269: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: Chai Break Offline Audio & Custom Music Tests AmbientSoundscapeBar renders preset title and controls
+01:03 +270: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: Chai Break Offline Audio & Custom Music Tests AmbientSoundscapeBar renders preset title and controls
+01:03 +271: /home/arunsinghvisen/Ascent-Beta/test/life_management_test.dart: Medicine Management Module Tests Creates medicine prescription, logs doses, and marks dose taken
+NotificationService initialization failed: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+01:03 +272: /home/arunsinghvisen/Ascent-Beta/test/life_management_test.dart: Medicine Management Module Tests Creates medicine prescription, logs doses, and marks dose taken
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+NotificationService initialization failed: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+Failed to schedule medicine reminder: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+01:04 +273: /home/arunsinghvisen/Ascent-Beta/test/life_management_test.dart: Medicine Management Module Tests Creates medicine prescription, logs doses, and marks dose taken
+01:04 +274: /home/arunsinghvisen/Ascent-Beta/test/life_management_test.dart: Medicine Management Module Tests Creates medicine prescription, logs doses, and marks dose taken
+Failed to cancel notification: LateInitializationError: Field '_instance@1158271368' has not been initialized.
+01:04 +275: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +276: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +277: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +278: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +279: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +280: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +281: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +282: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:04 +283: /home/arunsinghvisen/Ascent-Beta/test/chai_break_audio_and_home_header_test.dart: HomeHeader Resilient Layout Tests HomeHeader handles very long user names gracefully without crashing or squishing
+01:05 +284: /home/arunsinghvisen/Ascent-Beta/test/stylish_boost_notifications_test.dart: Stylish Raw Boost Notifications Tests BoostNotificationCopy generates energetic 5-minute rule prompts for scheduled tasks
+01:05 +285: /home/arunsinghvisen/Ascent-Beta/test/stylish_boost_notifications_test.dart: Stylish Raw Boost Notifications Tests BoostNotificationCopy generates brotherly "Missing you" follow-up nudges
+01:05 +286: /home/arunsinghvisen/Ascent-Beta/test/stylish_boost_notifications_test.dart: Stylish Raw Boost Notifications Tests Mid-day and Evening Streak Guardian copy have non-empty titles and bodies
+01:05 +287: /home/arunsinghvisen/Ascent-Beta/test/stylish_boost_notifications_test.dart: Stylish Raw Boost Notifications Tests Test boost copy is punchy and highlights 5-minute rule
+01:05 +288: /home/arunsinghvisen/Ascent-Beta/test/stylish_boost_notifications_test.dart: Stylish Raw Boost Notifications Tests NotificationService uses consistent follow-up offset for accountability pairing
+01:05 +289: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Grounded Tone & Zero Emojis Tests Expense response is professional, calm and has zero emojis
+01:06 +290: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Grounded Tone & Zero Emojis Tests Hydration response is clean and has zero emojis
+01:06 +291: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Grounded Tone & Zero Emojis Tests Ambiguous activity clarification asks clear questions with zero emojis
+01:06 +292: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Grounded Tone & Zero Emojis Tests Sleep schedule response is calming with zero emojis
+01:06 +293: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Grounded Tone & Zero Emojis Tests Default companion overview provides grounded guidance with zero emojis
+01:06 +294: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Grounded Tone & Zero Emojis Tests Medicine schedule response formats as (medicine) without pill emoji
+01:06 +295: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Chat UI Redesign & Bubble Tests AiAssistantScreen renders atmospheric background, clean input, and emoji-free pills in dark mode
+01:07 +296: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Chat UI Redesign & Bubble Tests AiAssistantScreen renders beautifully in light (day) mode without overflow
+01:07 +297: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Chat UI Redesign & Bubble Tests AiAssistantScreen hides pinned bottom suggestion chips when conversation has messages
+01:07 +298: /home/arunsinghvisen/Ascent-Beta/test/riya_ai_bot_redesign_test.dart: Riya AI Bot: Chat UI Redesign & Bubble Tests AiAssistantScreen input box matches Thought Wall consistent design and activates send
+01:08 +299: All tests passed!

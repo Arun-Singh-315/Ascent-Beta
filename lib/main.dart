@@ -1,8 +1,19 @@
+import 'core/notifications/alarm_lifecycle.dart';
+import 'core/notifications/reminder_alarm_bridge.dart';
+import 'core/providers/database_provider.dart';
+import 'core/notifications/reminder_alert_sync.dart';
+import 'core/ai/riya_alert_effects.dart';
+import 'package:path_provider/path_provider.dart';
+import 'core/database/app_database.dart';
+import 'core/backup/workspace_backup_service.dart';
+import 'core/backup/workspace_restart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app/app.dart';
+import 'app/theme/app_theme.dart';
 import 'app/router.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/providers/settings_provider.dart';
@@ -11,28 +22,128 @@ import 'core/learning_hub/learning_hub_provider.dart';
 import 'core/walk/walk_tracking_service.dart';
 import 'features/chai_break/chai_break_provider.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await NotificationService.instance.initialize();
-  NotificationService.instance.requestPermissions();
+  GoogleFonts.config.allowRuntimeFetching = false;
 
   final prefs = await SharedPreferences.getInstance();
+  final recoveryDb = AppDatabase();
+  try {
+    await WorkspaceBackupService(
+      recoveryDb,
+      SharedBackupPreferences(prefs),
+      await getApplicationDocumentsDirectory(),
+    ).recoverPreferences();
+  } catch (_) {
+    await recoveryDb.close();
+    runApp(
+      MaterialApp(
+        theme: AscentTheme.light(),
+        home: Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Finish restoring settings',
+                      style: TextStyle(fontSize: 24),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Your restored records are safe. Settings could not be synchronized. Free some storage and retry.',
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: main,
+                      child: const Text('Retry recovery'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
+  if (!(prefs.getBool('ascent_restore_alert_sync_v1') ?? false)) {
+    try {
+      await ReminderAlarmBridge.reconcile(recoveryDb);
+    } catch (_) {}
+  }
+  await recoveryDb.close();
+  await NotificationService.instance.initialize();
+  if (prefs.getBool('ascent_restore_alert_sync_v1') ?? false) {
+    final alarmDb = AppDatabase();
+    try {
+      await finishRestoredAlerts(alarmDb, prefs);
+    } catch (_) {
+    } finally {
+      await alarmDb.close();
+    }
+  }
+  final pendingAlertDb = AppDatabase();
+  try {
+    await RiyaAlertEffects.device(pendingAlertDb).syncPending();
+    await ReminderAlertSync.device(pendingAlertDb).sync(onlyPending: true);
+  } catch (_) {
+    // Pending rows remain durable for retry when alerts become available.
+  } finally {
+    await pendingAlertDb.close();
+  }
   await touchLastOpened(prefs);
 
-  final container = ProviderContainer(
+  late ProviderContainer container;
+  ProviderContainer createContainer() => ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
+      restartWorkspaceProvider.overrideWithValue(() async {
+        final previous = container;
+        container = createContainer();
+        ascentRouter.go('/');
+        runApp(
+          UncontrolledProviderScope(
+            key: UniqueKey(),
+            container: container,
+            child: const AscentApp(),
+          ),
+        );
+        await WidgetsBinding.instance.endOfFrame;
+        previous.dispose();
+      }),
     ],
   );
+  container = createContainer();
 
   NotificationService.setNotificationNavigateHandler((route) {
     final destination = NotificationService.destinationForPayload(route);
-    final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri.toString();
+    final currentUri = ascentRouter.routerDelegate.currentConfiguration.uri
+        .toString();
+    if (currentUri == '/' ||
+        currentUri == '/onboarding' ||
+        currentUri == '/login') {
+      NotificationService.deferDestination(destination);
+      return;
+    }
     if (currentUri != destination) {
       ascentRouter.go(destination);
     }
   });
+
+  NotificationService.onNotificationSeek = (route, seconds) {
+    if (route != '/learning') return;
+    final duration = container
+        .read(learningHubProvider)
+        .activeLecture
+        .durationSeconds;
+    if (duration > 0) {
+      container.read(learningHubProvider.notifier).seekTo(seconds / duration);
+    }
+  };
 
   NotificationService.setNotificationActionHandler((actionId, payload) {
     final effectivePayload = payload?.isNotEmpty == true ? payload : null;
@@ -51,12 +162,16 @@ void main() async {
         learningNotifier.play();
       }
     } else if (effectivePayload == '/focus') {
-      final sessionNotifier = container.read(timeTrackingProvider.notifier);
-      if (actionId == NotificationService.actionPause) {
-        sessionNotifier.pauseSession();
-      } else if (actionId == NotificationService.actionResume) {
-        sessionNotifier.resumeSession();
-      }
+      () async {
+        final dao = container.read(timeSessionDaoProvider);
+        final active = await dao.getActiveFocusSession();
+        if (active == null) return;
+        if (actionId == NotificationService.actionPause) {
+          await dao.pauseSession(active.id);
+        } else if (actionId == NotificationService.actionResume) {
+          await dao.resumeSession(active.id);
+        }
+      }();
     } else if (effectivePayload == '/chai-break') {
       final chaiNotifier = container.read(chaiBreakProvider.notifier);
       if (actionId == NotificationService.actionPause) {
@@ -68,15 +183,23 @@ void main() async {
       // Robust fallback if payload was not preserved by OS
       final learning = container.read(learningHubProvider);
       if (learning.isPlaying) {
-        if (actionId == NotificationService.actionPause) container.read(learningHubProvider.notifier).pause();
+        if (actionId == NotificationService.actionPause) {
+          container.read(learningHubProvider.notifier).pause();
+        }
       } else if (learning.currentElapsedSeconds > 0) {
-        if (actionId == NotificationService.actionResume) container.read(learningHubProvider.notifier).play();
+        if (actionId == NotificationService.actionResume) {
+          container.read(learningHubProvider.notifier).play();
+        }
       } else {
         final focusState = container.read(timeTrackingProvider);
         if (focusState.isRunning) {
-          if (actionId == NotificationService.actionPause) container.read(timeTrackingProvider.notifier).pauseSession();
+          if (actionId == NotificationService.actionPause) {
+            container.read(timeTrackingProvider.notifier).pauseSession();
+          }
         } else if (focusState.isPaused) {
-          if (actionId == NotificationService.actionResume) container.read(timeTrackingProvider.notifier).resumeSession();
+          if (actionId == NotificationService.actionResume) {
+            container.read(timeTrackingProvider.notifier).resumeSession();
+          }
         }
       }
     }
@@ -93,8 +216,13 @@ void main() async {
 
   runApp(
     UncontrolledProviderScope(
+      key: UniqueKey(),
       container: container,
       child: const AscentApp(),
     ),
   );
+  AlarmLifecycle(
+    () => container.read(databaseProvider),
+    () => rootNavigatorKey.currentContext,
+  ).start();
 }

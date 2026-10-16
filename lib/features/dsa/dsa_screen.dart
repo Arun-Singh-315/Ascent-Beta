@@ -1,9 +1,11 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
@@ -29,7 +31,7 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => _AddProblemSheet(existing: existing),
     );
@@ -58,8 +60,12 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
       actions: [
         IconButton(
           icon: Icon(
-            _filterNeedsRevisit ? Icons.bookmark_added_rounded : Icons.bookmark_border_rounded,
-            color: _filterNeedsRevisit ? context.accentSecondary : context.textPrimary,
+            _filterNeedsRevisit
+                ? Icons.bookmark_added_rounded
+                : Icons.bookmark_border_rounded,
+            color: _filterNeedsRevisit
+                ? context.accentSecondary
+                : context.textPrimary,
           ),
           tooltip: 'Needs Revisit Filter',
           onPressed: () {
@@ -75,12 +81,12 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
         stream: _filterNeedsRevisit
             ? dsaDao.watchNeedsRevisit()
             : (_selectedTopic != null
-                ? dsaDao.watchLogsByTopic(_selectedTopic!)
-                : dsaDao.watchAllLogs()),
+                  ? dsaDao.watchLogsByTopic(_selectedTopic!)
+                  : dsaDao.watchAllLogs()),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               child: SkeletonShimmer(height: 200),
             );
           }
@@ -92,10 +98,13 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
               // ── Topic Filter Chips ───────────────────────────────────────
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s16,
+                  vertical: AppSpace.s8,
+                ),
                 child: Row(
                   children: [
-                    FilterChip(
+                    AppPill.filter(
                       selected: _selectedTopic == null && !_filterNeedsRevisit,
                       label: const Text('All Topics'),
                       onSelected: (_) => setState(() {
@@ -104,24 +113,29 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
                       }),
                     ),
                     const SizedBox(width: 8),
-                    FilterChip(
+                    AppPill.filter(
                       selected: _filterNeedsRevisit,
                       label: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.bookmark_rounded, size: 14, color: context.accentSecondary),
+                          Icon(
+                            Icons.bookmark_rounded,
+                            size: 14,
+                            color: context.accentSecondary,
+                          ),
                           const SizedBox(width: 4),
                           const Text('Needs Revisit'),
                         ],
                       ),
-                      onSelected: (val) => setState(() => _filterNeedsRevisit = val),
+                      onSelected: (val) =>
+                          setState(() => _filterNeedsRevisit = val),
                     ),
                     const SizedBox(width: 8),
                     ...DsaTopic.values.map((t) {
                       final isSel = _selectedTopic == t && !_filterNeedsRevisit;
                       return Padding(
-                        padding: const EdgeInsets.only(right: 6),
-                        child: FilterChip(
+                        padding: const EdgeInsets.only(right: AppSpace.s6),
+                        child: AppPill.filter(
                           selected: isSel,
                           label: Text(t.name),
                           onSelected: (_) => setState(() {
@@ -142,28 +156,40 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.code_off_rounded, size: 48, color: context.textMuted),
+                            Icon(
+                              Icons.code_off_rounded,
+                              size: 48,
+                              color: context.textMuted,
+                            ),
                             const SizedBox(height: 12),
                             Text(
                               _filterNeedsRevisit
                                   ? 'No problems marked for revisit'
                                   : 'No problems logged yet',
-                              style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                              style: AscentTextStyles.bodyMedium.copyWith(
+                                color: context.textMuted,
+                              ),
                             ),
                           ],
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s16,
+                          vertical: AppSpace.s8,
+                        ),
                         itemCount: problems.length,
                         itemBuilder: (context, index) {
                           final item = problems[index];
-                          final diffColor = _difficultyColor(context, item.difficulty);
+                          final diffColor = _difficultyColor(
+                            context,
+                            item.difficulty,
+                          );
 
                           return AscentCard(
                             onTap: () => _openAddProblemSheet(context, item),
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(14),
+                            margin: const EdgeInsets.only(bottom: AppSpace.s10),
+                            padding: const EdgeInsets.all(AppSpace.s14),
                             child: Row(
                               children: [
                                 // Difficulty Accent Bar
@@ -172,52 +198,67 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
                                   height: 48,
                                   decoration: BoxDecoration(
                                     color: diffColor,
-                                    borderRadius: BorderRadius.circular(2),
+                                    borderRadius: AppGeometry.roundedr2,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item.problemName,
-                                        style: AscentTextStyles.labelLarge.copyWith(
-                                          color: context.textPrimary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                        style: AscentTextStyles.labelLarge
+                                            .copyWith(
+                                              color: context.textPrimary,
+                                            )
+                                            .merge(AppTypeRoles.typeRole2),
                                       ),
                                       const SizedBox(height: 4),
                                       Row(
                                         children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: diffColor.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(6),
+                                          AppTag(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: AppSpace.s6,
+                                              vertical: AppSpace.s2,
+                                            ),
+                                            nightDecoration: BoxDecoration(
+                                              color: diffColor.withValues(
+                                                alpha: 0.15,
+                                              ),
+                                              borderRadius:
+                                                  AppGeometry.roundedr6,
                                             ),
                                             child: Text(
                                               item.difficulty.toUpperCase(),
-                                              style: AscentTextStyles.statSmall.copyWith(
-                                                fontSize: 10,
-                                                color: diffColor,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                              style: AscentTextStyles.statSmall
+                                                  .copyWith(color: diffColor)
+                                                  .merge(
+                                                    AppTypeRoles.typeRole3,
+                                                  ),
                                             ),
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
                                             item.topic,
-                                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                                            style: AscentTextStyles.bodySmall
+                                                .copyWith(
+                                                  color: context.textMuted,
+                                                ),
                                           ),
-                                          if (item.timeTakenMinutes != null) ...[
+                                          if (item.timeTakenMinutes !=
+                                              null) ...[
                                             const SizedBox(width: 8),
                                             Text(
                                               '· ${item.timeTakenMinutes}m',
-                                              style: AscentTextStyles.statSmall.copyWith(
-                                                fontSize: 11,
-                                                color: context.textMuted,
-                                              ),
+                                              style: AscentTextStyles.statSmall
+                                                  .copyWith(
+                                                    color: context.textMuted,
+                                                  )
+                                                  .merge(
+                                                    AppTypeRoles.typeRole4,
+                                                  ),
                                             ),
                                           ],
                                         ],
@@ -227,8 +268,12 @@ class _DsaScreenState extends ConsumerState<DsaScreen> {
                                 ),
                                 IconButton(
                                   icon: Icon(
-                                    item.revisitFlag ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-                                    color: item.revisitFlag ? context.accentSecondary : context.textMuted,
+                                    item.revisitFlag
+                                        ? Icons.bookmark_rounded
+                                        : Icons.bookmark_outline_rounded,
+                                    color: item.revisitFlag
+                                        ? context.accentSecondary
+                                        : context.textMuted,
                                   ),
                                   onPressed: () async {
                                     await dsaDao.toggleRevisit(item.id);
@@ -314,7 +359,11 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
           difficulty: drift.Value(_difficulty.name),
           timeTakenMinutes: drift.Value(minutes),
           revisitFlag: drift.Value(_revisitFlag),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          notes: drift.Value(
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
           dateSolved: drift.Value(widget.existing!.dateSolved),
         ),
       );
@@ -326,7 +375,11 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
           difficulty: _difficulty.name,
           timeTakenMinutes: drift.Value(minutes),
           revisitFlag: drift.Value(_revisitFlag),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          notes: drift.Value(
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
           dateSolved: DateTime.now(),
         ),
       );
@@ -340,7 +393,12 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s20,
+        AppSpace.s20,
+        AppSpace.s20 + bottomInset,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -350,15 +408,22 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
             children: [
               Text(
                 widget.existing != null ? 'Edit Problem' : 'Log Solved Problem',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.displaySmall.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
               if (widget.existing != null)
                 IconButton(
-                  icon: Icon(Icons.delete_outline_rounded, color: context.stateDanger),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    color: context.stateDanger,
+                  ),
                   tooltip: 'Delete Log',
                   onPressed: () async {
                     final navigator = Navigator.of(context);
-                    await ref.read(dsaDaoProvider).deleteLog(widget.existing!.id);
+                    await ref
+                        .read(dsaDaoProvider)
+                        .deleteLog(widget.existing!.id);
                     if (mounted) navigator.pop();
                   },
                 ),
@@ -370,7 +435,7 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
             decoration: InputDecoration(
               labelText: 'Problem Name *',
               hintText: 'e.g. 3Sum, Lowest Common Ancestor',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: AppGeometry.roundedr12),
             ),
           ),
           const SizedBox(height: 12),
@@ -381,7 +446,9 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
                   initialValue: _topic,
                   decoration: InputDecoration(
                     labelText: 'Topic',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
                   items: DsaTopic.values.map((t) {
                     return DropdownMenuItem(value: t, child: Text(t.name));
@@ -395,12 +462,18 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
                   initialValue: _difficulty,
                   decoration: InputDecoration(
                     labelText: 'Difficulty',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
                   items: DsaDifficulty.values.map((d) {
-                    return DropdownMenuItem(value: d, child: Text(d.name.toUpperCase()));
+                    return DropdownMenuItem(
+                      value: d,
+                      child: Text(d.name.toUpperCase()),
+                    );
                   }).toList(),
-                  onChanged: (val) => setState(() => _difficulty = val ?? _difficulty),
+                  onChanged: (val) =>
+                      setState(() => _difficulty = val ?? _difficulty),
                 ),
               ),
             ],
@@ -415,18 +488,24 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
                   decoration: InputDecoration(
                     labelText: 'Time (Minutes)',
                     hintText: '25',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FilterChip(
+                child: AppPill.filter(
                   selected: _revisitFlag,
                   label: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.bookmark_rounded, size: 16, color: context.accentSecondary),
+                      Icon(
+                        Icons.bookmark_rounded,
+                        size: 16,
+                        color: context.accentSecondary,
+                      ),
                       const SizedBox(width: 4),
                       const Text('Revisit Flag'),
                     ],
@@ -443,7 +522,7 @@ class _AddProblemSheetState extends ConsumerState<_AddProblemSheet> {
             decoration: InputDecoration(
               labelText: 'Approach Notes / Time Complexity',
               hintText: 'Two pointers, O(N log N) sort first',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              border: OutlineInputBorder(borderRadius: AppGeometry.roundedr12),
             ),
           ),
           const SizedBox(height: 20),

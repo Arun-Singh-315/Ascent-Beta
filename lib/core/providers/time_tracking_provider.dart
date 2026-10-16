@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../database/app_database.dart';
@@ -73,12 +74,19 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     final dao = ref.watch(timeSessionDaoProvider);
 
     _sessionSubscription?.cancel();
-    _sessionSubscription = dao.watchActiveFocusSession().listen((session) async {
+    _sessionSubscription = dao.watchActiveFocusSession().listen((
+      session,
+    ) async {
+      _timedTaskDeadline?.cancel();
+      _deadlineGeneration++;
       if (session == null) {
         _ticker?.cancel();
         _heartbeatTimer?.cancel();
         NotificationService.instance.cancelOngoingFocusNotification();
-        if (state.activeSession != null || state.isRunning || state.isPaused || state.elapsedSeconds != 0) {
+        if (state.activeSession != null ||
+            state.isRunning ||
+            state.isPaused ||
+            state.elapsedSeconds != 0) {
           state = const TimeTrackingState();
         }
         return;
@@ -89,14 +97,18 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
         category = await dao.getCategoryById(session.categoryId);
       } catch (_) {}
 
+      if (!ref.mounted) return;
+
       final isRunning = session.status == 'running';
       final isPaused = session.status == 'paused';
 
-      final elapsed = TimeSessionDao.computeActiveDurationSeconds(
-        session.startedAt,
-        DateTime.now(),
-        session.pausedIntervals,
-      );
+      final elapsed = isPaused
+          ? session.durationSeconds
+          : TimeSessionDao.computeActiveDurationSeconds(
+              session.startedAt,
+              DateTime.now(),
+              session.pausedIntervals,
+            );
 
       state = state.copyWith(
         activeSession: session,
@@ -107,11 +119,12 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       );
 
       if (isRunning) {
+        unawaited(_armTimedTaskDeadline(session, elapsed).catchError((_) {}));
         _startTicker();
         _startHeartbeat();
         NotificationService.instance.showOngoingSessionNotification(
-          title: 'Focus: ${session.label}',
-          body: '${category?.name ?? "Deep Work"} • Ascent Focus',
+          title: session.label,
+          body: category?.name ?? "Study Focus",
           subText: 'Timer Active',
           elapsedSeconds: elapsed,
           payload: '/focus',
@@ -121,8 +134,8 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
         _heartbeatTimer?.cancel();
         if (isPaused) {
           NotificationService.instance.showOngoingSessionNotification(
-            title: 'Focus: ${session.label}',
-            body: '${category?.name ?? "Deep Work"} • Ascent Focus',
+            title: session.label,
+            body: category?.name ?? "Study Focus",
             subText: 'Focus Paused',
             elapsedSeconds: elapsed,
             isPaused: true,
@@ -135,6 +148,8 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     });
 
     ref.onDispose(() {
+      _timedTaskDeadline?.cancel();
+      _deadlineGeneration++;
       _sessionSubscription?.cancel();
       _ticker?.cancel();
       _heartbeatTimer?.cancel();
@@ -142,6 +157,77 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     });
 
     return const TimeTrackingState();
+  }
+
+  Timer? _timedTaskDeadline;
+  int _deadlineGeneration = 0;
+  Future<void> _armTimedTaskDeadline(TimeSession session, int elapsed) async {
+    final generation = ++_deadlineGeneration;
+    _timedTaskDeadline?.cancel();
+    if (session.status != 'running' ||
+        session.linkedTaskId == null ||
+        session.learningCourseId != null) {
+      return;
+    }
+    final dao = ref.read(timeSessionDaoProvider);
+    final db = ref.read(databaseProvider);
+    final workspaceRevision = db.workspaceRevision;
+    final task = await db.taskDao.getTaskById(session.linkedTaskId!);
+    if (task == null ||
+        task.learningCourseId != null ||
+        (task.estimatedMinutes ?? 0) <= 0) {
+      return;
+    }
+    final dose =
+        await (db.select(db.medicineLogTable)
+              ..where((l) => l.linkedTaskId.equals(task.id))
+              ..limit(1))
+            .getSingleOrNull();
+    if (dose != null) return;
+    final total = db.timeSessionTable.durationSeconds.sum();
+    final history =
+        await (db.selectOnly(db.timeSessionTable)
+              ..addColumns([total])
+              ..where(
+                db.timeSessionTable.linkedTaskId.equals(task.id) &
+                    db.timeSessionTable.status.equals('completed'),
+              ))
+            .getSingle();
+    if (!ref.mounted || generation != _deadlineGeneration) return;
+    final remaining =
+        task.estimatedMinutes! * 60 -
+        elapsed -
+        (history.read(total) ?? 0).toInt();
+    _timedTaskDeadline = Timer(
+      Duration(milliseconds: remaining > 0 ? remaining * 1000 : 1),
+      () async {
+        if (!ref.mounted || generation != _deadlineGeneration) return;
+        if (db.workspaceRevision != workspaceRevision) return;
+        try {
+          if (await dao.completeTimedSessionIfTargetReached(
+            session.id,
+            expectedWorkspaceRevision: workspaceRevision,
+          )) {
+            if (ref.mounted) ref.invalidate(todayFocusTaskProvider);
+          } else if (ref.mounted &&
+              state.activeSession?.id == session.id &&
+              state.isRunning) {
+            // Re-read the target if it was edited while the timer was running.
+            final current = state.activeSession!;
+            await _armTimedTaskDeadline(
+              current,
+              TimeSessionDao.computeActiveDurationSeconds(
+                current.startedAt,
+                DateTime.now(),
+                current.pausedIntervals,
+              ),
+            );
+          }
+        } catch (_) {
+          /* The next durable heartbeat retries this deadline. */
+        }
+      },
+    );
   }
 
   void _startTicker() {
@@ -160,7 +246,9 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
       if ((session.activityType.toLowerCase() == 'study' ||
               state.activeCategory?.name.toLowerCase() == 'study') &&
           session.activityRefType != 'lecture') {
-        ref.read(studyStreakProvider.notifier).addStudySeconds(1);
+        ref
+            .read(studyStreakProvider.notifier)
+            .creditActiveSecond(DateTime.now());
       }
 
       state = state.copyWith(elapsedSeconds: elapsed);
@@ -233,6 +321,36 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     int? categoryId,
     bool autoStart = true,
   }) async {
+    if (taskId != null) {
+      final task = await ref.read(taskDaoProvider).getTaskById(taskId);
+      if (task?.learningCourseId != null && task?.learningLectureId != null) {
+        final learning = ref.read(learningHubProvider.notifier);
+        await learning.ready;
+        final state = ref.read(learningHubProvider);
+        if (!state.courses.any(
+          (c) =>
+              c.id == task!.learningCourseId &&
+              c.modules.any(
+                (m) => m.lectures.any((l) => l.id == task.learningLectureId),
+              ),
+        )) {
+          throw StateError(
+            'This linked lecture no longer exists. Open Learning to review it',
+          );
+        }
+        if (this.state.isRunning && this.state.activeSession != null) {
+          await ref
+              .read(timeSessionDaoProvider)
+              .pauseSession(this.state.activeSession!.id);
+        }
+        if (state.activeCourseId != task!.learningCourseId) {
+          learning.switchCourse(task.learningCourseId!);
+        }
+        learning.selectLecture(task.learningLectureId!, autoPlay: autoStart);
+        await learning.settled;
+        return;
+      }
+    }
     final dao = ref.read(timeSessionDaoProvider);
 
     // 1. If current session is running, pause it and flush elapsed duration immediately
@@ -276,21 +394,28 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
     if (categoryId == null) {
       final categories = await dao.getAllCategories();
       if (categories.isNotEmpty) {
-        if (sourceType.toLowerCase() == 'entertainment' || sourceType.toLowerCase() == 'break') {
-          targetCatId = categories.firstWhere(
-            (c) => c.name.toLowerCase() == 'entertainment',
-            orElse: () => categories.first,
-          ).id;
+        if (sourceType.toLowerCase() == 'entertainment' ||
+            sourceType.toLowerCase() == 'break') {
+          targetCatId = categories
+              .firstWhere(
+                (c) => c.name.toLowerCase() == 'entertainment',
+                orElse: () => categories.first,
+              )
+              .id;
         } else {
-          targetCatId = categories.firstWhere(
-            (c) => c.name.toLowerCase() == 'study',
-            orElse: () => categories.first,
-          ).id;
+          targetCatId = categories
+              .firstWhere(
+                (c) => c.name.toLowerCase() == 'study',
+                orElse: () => categories.first,
+              )
+              .id;
         }
       }
     }
 
-    final activityType = (sourceType.toLowerCase() == 'break' || sourceType.toLowerCase() == 'entertainment')
+    final activityType =
+        (sourceType.toLowerCase() == 'break' ||
+            sourceType.toLowerCase() == 'entertainment')
         ? 'entertainment'
         : 'study';
 
@@ -311,19 +436,25 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
   Future<bool> completeSession() async {
     final session = state.activeSession;
     if (session == null) return false;
-    _heartbeatTimer?.cancel();
     final dao = ref.read(timeSessionDaoProvider);
-    await dao.completeSession(session.id);
+    if (!await dao.completeFocusSession(session.id)) return false;
+    _heartbeatTimer?.cancel();
 
     var linkedTaskCompleted = false;
     if (session.linkedTaskId != null) {
       try {
         final taskDao = ref.read(taskDaoProvider);
         final task = await taskDao.getTaskById(session.linkedTaskId!);
-        if (task != null && task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
-          linkedTaskCompleted = await taskDao.completeTimedTaskAfterFocus(task.id);
+        if (task != null &&
+            task.estimatedMinutes != null &&
+            task.estimatedMinutes! > 0) {
+          linkedTaskCompleted = await taskDao.completeTimedTaskAfterFocus(
+            task.id,
+          );
         } else {
-          linkedTaskCompleted = await taskDao.markComplete(session.linkedTaskId!);
+          linkedTaskCompleted = await taskDao.markComplete(
+            session.linkedTaskId!,
+          );
         }
       } catch (_) {}
     }
@@ -344,20 +475,21 @@ class TimeTrackingNotifier extends Notifier<TimeTrackingState> {
 
 final timeTrackingProvider =
     NotifierProvider<TimeTrackingNotifier, TimeTrackingState>(
-  TimeTrackingNotifier.new,
-);
+      TimeTrackingNotifier.new,
+    );
 
-final activeSessionCategoriesProvider =
-    StreamProvider<List<SessionCategory>>((ref) {
+final activeSessionCategoriesProvider = StreamProvider<List<SessionCategory>>((
+  ref,
+) {
   final dao = ref.watch(timeSessionDaoProvider);
   return dao.watchAllCategories();
 });
 
 final todayTimeSessionsProvider =
     StreamProvider.family<List<TimeSession>, DateTime>((ref, date) {
-  final dao = ref.watch(timeSessionDaoProvider);
-  return dao.watchSessionsForDate(date);
-});
+      final dao = ref.watch(timeSessionDaoProvider);
+      return dao.watchSessionsForDate(date);
+    });
 
 // ---------------------------------------------------------------------------
 // Dismissed Today Activities Provider (prevents swiped items from resurrecting)
@@ -365,8 +497,8 @@ final todayTimeSessionsProvider =
 
 final dismissedTodayActivityIdsProvider =
     NotifierProvider<DismissedTodayActivityIdsNotifier, Set<String>>(
-  DismissedTodayActivityIdsNotifier.new,
-);
+      DismissedTodayActivityIdsNotifier.new,
+    );
 
 class DismissedTodayActivityIdsNotifier extends Notifier<Set<String>> {
   @override
@@ -423,8 +555,8 @@ class DismissedTodayActivityIdsNotifier extends Notifier<Set<String>> {
 
 final dismissedTodayReminderIdsProvider =
     NotifierProvider<DismissedTodayReminderIdsNotifier, Set<int>>(
-  DismissedTodayReminderIdsNotifier.new,
-);
+      DismissedTodayReminderIdsNotifier.new,
+    );
 
 class DismissedTodayReminderIdsNotifier extends Notifier<Set<int>> {
   @override
@@ -452,7 +584,10 @@ class DismissedTodayReminderIdsNotifier extends Notifier<Set<int>> {
     state = next;
     try {
       final prefs = ref.read(sharedPreferencesProvider);
-      await prefs.setStringList(_todayKey(), next.map((e) => e.toString()).toList());
+      await prefs.setStringList(
+        _todayKey(),
+        next.map((e) => e.toString()).toList(),
+      );
     } catch (_) {}
   }
 
@@ -462,7 +597,10 @@ class DismissedTodayReminderIdsNotifier extends Notifier<Set<int>> {
     state = next;
     try {
       final prefs = ref.read(sharedPreferencesProvider);
-      await prefs.setStringList(_todayKey(), next.map((e) => e.toString()).toList());
+      await prefs.setStringList(
+        _todayKey(),
+        next.map((e) => e.toString()).toList(),
+      );
     } catch (_) {}
   }
 }
@@ -492,12 +630,15 @@ final homeVisibleRemindersProvider = Provider<List<Reminder>>((ref) {
 // Unified Today Activities Provider (§2.2, §5.3)
 // ---------------------------------------------------------------------------
 
-final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) async* {
+final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
+  ref,
+) async* {
   final taskDao = ref.watch(taskDaoProvider);
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
+  final learningHub = ref.watch(learningHubProvider);
 
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
@@ -507,13 +648,20 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
   final sessionsStream = sessionDao.watchSessionsForDate(startOfToday);
   final remindersStream = reminderDao.watchAllReminders();
 
-  await for (final (tasks, sessions, reminders) in combineStreams3(tasksStream, sessionsStream, remindersStream)) {
+  await for (final (tasks, sessions, reminders) in combineStreams3(
+    tasksStream,
+    sessionsStream,
+    remindersStream,
+  )) {
     final List<TodayActivityItem> items = [];
     final Set<int> accountedSessionIds = {};
 
     // 1. Process tasks planned for today
     for (final task in tasks) {
-      final taskSessions = sessions.where((s) => s.linkedTaskId == task.id).toList();
+      if (task.learningCourseId != null) continue;
+      final taskSessions = sessions
+          .where((s) => s.linkedTaskId == task.id)
+          .toList();
       accountedSessionIds.addAll(taskSessions.map((s) => s.id));
 
       int taskElapsedSeconds = 0;
@@ -525,20 +673,24 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
               ? s.durationSeconds
               : TimeSessionDao.computeActiveDurationSeconds(
                   s.startedAt,
-                  s.endedAt ?? (s.status == 'running' ? DateTime.now() : s.startedAt),
+                  s.endedAt ??
+                      (s.status == 'running' ? DateTime.now() : s.startedAt),
                   s.pausedIntervals,
                 );
         }
       }
 
       TodayActivityStatus status;
-      if (timeTracking.activeSession?.linkedTaskId == task.id && timeTracking.isRunning) {
+      if (timeTracking.activeSession?.linkedTaskId == task.id &&
+          timeTracking.isRunning) {
         status = TodayActivityStatus.inProgress;
       } else if (taskSessions.any((s) => s.status == 'paused') ||
-          (timeTracking.activeSession?.linkedTaskId == task.id && timeTracking.isPaused)) {
+          (timeTracking.activeSession?.linkedTaskId == task.id &&
+              timeTracking.isPaused)) {
         status = TodayActivityStatus.paused;
       } else if (task.actualCompletedDate != null ||
-          (taskSessions.isNotEmpty && taskSessions.every((s) => s.status == 'completed'))) {
+          (taskSessions.isNotEmpty &&
+              taskSessions.every((s) => s.status == 'completed'))) {
         status = TodayActivityStatus.done;
       } else {
         status = TodayActivityStatus.notStarted;
@@ -558,39 +710,53 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
         kind = ActivityKind.flexible;
       }
 
-      final isOverdue = status != TodayActivityStatus.done &&
+      final isOverdue =
+          status != TodayActivityStatus.done &&
           task.plannedDate != null &&
-          DateTime(task.plannedDate!.year, task.plannedDate!.month, task.plannedDate!.day)
-              .isBefore(startOfToday);
+          DateTime(
+            task.plannedDate!.year,
+            task.plannedDate!.month,
+            task.plannedDate!.day,
+          ).isBefore(startOfToday);
 
-      final hasReminder = reminders.any((r) =>
-          r.isActive &&
-          (r.linkedTaskId == task.id ||
-              (r.linkedTaskId == null && r.title.trim().toLowerCase() == task.title.trim().toLowerCase())));
+      final hasReminder = reminders.any(
+        (r) =>
+            r.isActive &&
+            (r.linkedTaskId == task.id ||
+                (r.linkedTaskId == null &&
+                    r.title.trim().toLowerCase() ==
+                        task.title.trim().toLowerCase())),
+      );
 
-      items.add(TodayActivityItem(
-        id: 'task_${task.id}',
-        title: task.title,
-        sourceType: 'task',
-        status: status,
-        elapsedSecondsToday: taskElapsedSeconds,
-        linkedTaskId: task.id,
-        linkedSessionId: taskSessions.isNotEmpty ? taskSessions.first.id : null,
-        categoryTag: categoryTag,
-        priority: task.priority,
-        kind: kind,
-        targetMinutes: targetMinutes,
-        plannedDate: task.plannedDate,
-        isOverdue: isOverdue,
-        hasReminder: hasReminder,
-        notes: task.notes,
-        completedAt: task.actualCompletedDate,
-      ));
+      items.add(
+        TodayActivityItem(
+          id: 'task_${task.id}',
+          title: task.title,
+          sourceType: 'task',
+          status: status,
+          elapsedSecondsToday: taskElapsedSeconds,
+          linkedTaskId: task.id,
+          linkedSessionId: taskSessions.isNotEmpty
+              ? taskSessions.first.id
+              : null,
+          categoryTag: categoryTag,
+          priority: task.priority,
+          kind: kind,
+          targetMinutes: targetMinutes,
+          plannedDate: task.plannedDate,
+          isOverdue: isOverdue,
+          hasReminder: hasReminder,
+          notes: task.notes,
+          completedAt: task.actualCompletedDate,
+        ),
+      );
     }
 
     // 2. Process standalone sessions (excluding lectures which are kept in Learning Hub)
     for (final session in sessions) {
-      if (accountedSessionIds.contains(session.id) || session.activityRefType == 'lecture') {
+      if (accountedSessionIds.contains(session.id) ||
+          (session.activityRefType == 'lecture' ||
+              session.learningCourseId != null)) {
         continue;
       }
 
@@ -602,71 +768,112 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
             ? session.durationSeconds
             : TimeSessionDao.computeActiveDurationSeconds(
                 session.startedAt,
-                session.endedAt ?? (session.status == 'running' ? DateTime.now() : session.startedAt),
+                session.endedAt ??
+                    (session.status == 'running'
+                        ? DateTime.now()
+                        : session.startedAt),
                 session.pausedIntervals,
               );
       }
 
       TodayActivityStatus status;
-      if (timeTracking.activeSession?.id == session.id && timeTracking.isRunning) {
+      if (timeTracking.activeSession?.id == session.id &&
+          timeTracking.isRunning) {
         status = TodayActivityStatus.inProgress;
       } else if (session.status == 'paused' ||
-          (timeTracking.activeSession?.id == session.id && timeTracking.isPaused)) {
+          (timeTracking.activeSession?.id == session.id &&
+              timeTracking.isPaused)) {
         status = TodayActivityStatus.paused;
       } else if (session.status == 'completed') {
         status = TodayActivityStatus.done;
       } else {
         status = TodayActivityStatus.notStarted;
       }
-      final targetMinutes = (session.durationSeconds > 0) ? (session.durationSeconds / 60).round() : null;
+      final targetMinutes = (session.durationSeconds > 0)
+          ? (session.durationSeconds / 60).round()
+          : null;
 
-      String categoryTag = session.activityType == 'entertainment' ? 'Break' : 'Study';
+      String categoryTag = session.activityType == 'entertainment'
+          ? 'Break'
+          : 'Study';
 
-      items.add(TodayActivityItem(
-        id: 'session_${session.id}',
-        title: session.label,
-        sourceType: session.activityRefType,
-        status: status,
-        elapsedSecondsToday: elapsed,
-        linkedTaskId: session.linkedTaskId,
-        linkedSessionId: session.id,
-        categoryTag: categoryTag,
-        kind: ActivityKind.duration,
-        targetMinutes: targetMinutes,
-        plannedDate: session.startedAt,
-        isOverdue: false,
-        completedAt: session.status == 'completed' ? session.endedAt : null,
-      ));
+      items.add(
+        TodayActivityItem(
+          id: 'session_${session.id}',
+          title: session.label,
+          sourceType: session.activityRefType,
+          status: status,
+          elapsedSecondsToday: elapsed,
+          linkedTaskId: session.linkedTaskId,
+          linkedSessionId: session.id,
+          categoryTag: categoryTag,
+          kind: ActivityKind.duration,
+          targetMinutes: targetMinutes,
+          plannedDate: session.startedAt,
+          isOverdue: false,
+          completedAt: session.status == 'completed' ? session.endedAt : null,
+        ),
+      );
     }
 
-    // 2.6 Guarantee completed lectures from the course remain visible in Completed activities
-    final learningHub = ref.read(learningHubProvider);
-    final curCourse = learningHub.course;
-    for (final mod in curCourse.modules) {
-      for (final lec in mod.lectures) {
-        if (lec.isCompleted) {
-          final lecItemId = 'lecture_${lec.id}';
-          if (!items.any((it) => it.id == lecItemId)) {
-            final targetMins = (lec.durationSeconds > 0)
-                ? (lec.durationSeconds / 60).round()
-                : 5;
-            items.add(TodayActivityItem(
-              id: lecItemId,
-              title: '${curCourse.title}: ${lec.title}',
-              sourceType: 'lecture',
-              status: TodayActivityStatus.done,
-              elapsedSecondsToday: lec.durationSeconds > 0 ? lec.durationSeconds : lec.elapsedSeconds,
-              linkedTaskId: null,
-              linkedSessionId: null,
-              categoryTag: 'Study',
-              kind: ActivityKind.duration,
-              targetMinutes: targetMins,
-              plannedDate: lec.lastPlayedAt ?? DateTime.now(),
-              isOverdue: false,
-              completedAt: lec.lastPlayedAt ?? DateTime.now(),
-            ));
-          }
-        }
+    // A lecture is projected once, with a course-scoped identity and genuine
+    // engagement. It remains in the catalog when dismissed from Today.
+    for (final course in learningHub.courses) {
+      for (final lec in course.modules.expand((m) => m.lectures)) {
+        final related = sessions
+            .where(
+              (s) =>
+                  s.learningCourseId == course.id &&
+                  s.learningLectureId == lec.id &&
+                  s.activityRefType == 'lecture',
+            )
+            .toList();
+        final planned = lec.plannedDate;
+        final plannedToday =
+            planned != null &&
+            planned.year == today.year &&
+            planned.month == today.month &&
+            planned.day == today.day;
+        if (!lec.isCompleted && !plannedToday && related.isEmpty) continue;
+        final active =
+            learningHub.activeCourseId == course.id &&
+            learningHub.activeLectureId == lec.id;
+        final linkedTask = tasks
+            .where(
+              (t) =>
+                  t.learningCourseId == course.id &&
+                  t.learningLectureId == lec.id,
+            )
+            .firstOrNull;
+        final elapsedToday = related.fold<int>(
+          0,
+          (sum, session) => sum + session.durationSeconds,
+        );
+        items.add(
+          TodayActivityItem(
+            id: 'lecture_${Uri.encodeComponent(course.id)}_${lec.id}',
+            title: '${course.title}: ${lec.title}',
+            sourceType: 'lecture',
+            learningCourseId: course.id,
+            learningLectureId: lec.id,
+            status: lec.isCompleted
+                ? TodayActivityStatus.done
+                : active && learningHub.isPlaying
+                ? TodayActivityStatus.inProgress
+                : related.isNotEmpty
+                ? TodayActivityStatus.paused
+                : TodayActivityStatus.notStarted,
+            elapsedSecondsToday: elapsedToday,
+            linkedTaskId: linkedTask?.id,
+            categoryTag: 'Study',
+            kind: ActivityKind.duration,
+            targetMinutes: lec.durationSeconds > 0
+                ? (lec.requiredStudySeconds / 60).ceil()
+                : null,
+            plannedDate: planned ?? lec.lastPlayedAt,
+            completedAt: lec.isCompleted ? lec.lastPlayedAt : null,
+          ),
+        );
       }
     }
 
@@ -676,11 +883,11 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((ref) as
     // 3. Sort items: inProgress first (0), paused second (1), notStarted third (2), done last (3)
     items.sort((a, b) {
       int score(TodayActivityStatus s) => switch (s) {
-            TodayActivityStatus.inProgress => 0,
-            TodayActivityStatus.paused => 1,
-            TodayActivityStatus.notStarted => 2,
-            TodayActivityStatus.done => 3,
-          };
+        TodayActivityStatus.inProgress => 0,
+        TodayActivityStatus.paused => 1,
+        TodayActivityStatus.notStarted => 2,
+        TodayActivityStatus.done => 3,
+      };
       final diff = score(a.status).compareTo(score(b.status));
       if (diff != 0) return diff;
       return b.elapsedSecondsToday.compareTo(a.elapsedSecondsToday);
@@ -701,22 +908,16 @@ Stream<(T1, T2)> combineStreams<T1, T2>(Stream<T1> s1, Stream<T2> s2) {
 
   controller = StreamController<(T1, T2)>(
     onListen: () {
-      sub1 = s1.listen(
-        (data) {
-          val1 = data;
-          hasVal1 = true;
-          if (hasVal2) controller.add((val1 as T1, val2 as T2));
-        },
-        onError: controller.addError,
-      );
-      sub2 = s2.listen(
-        (data) {
-          val2 = data;
-          hasVal2 = true;
-          if (hasVal1) controller.add((val1 as T1, val2 as T2));
-        },
-        onError: controller.addError,
-      );
+      sub1 = s1.listen((data) {
+        val1 = data;
+        hasVal1 = true;
+        if (hasVal2) controller.add((val1 as T1, val2 as T2));
+      }, onError: controller.addError);
+      sub2 = s2.listen((data) {
+        val2 = data;
+        hasVal2 = true;
+        if (hasVal1) controller.add((val1 as T1, val2 as T2));
+      }, onError: controller.addError);
     },
     onCancel: () async {
       await sub1?.cancel();
@@ -745,36 +946,27 @@ Stream<(T1, T2, T3)> combineStreams3<T1, T2, T3>(
 
   controller = StreamController<(T1, T2, T3)>(
     onListen: () {
-      sub1 = s1.listen(
-        (data) {
-          val1 = data;
-          hasVal1 = true;
-          if (hasVal2 && hasVal3) {
-            controller.add((val1 as T1, val2 as T2, val3 as T3));
-          }
-        },
-        onError: controller.addError,
-      );
-      sub2 = s2.listen(
-        (data) {
-          val2 = data;
-          hasVal2 = true;
-          if (hasVal1 && hasVal3) {
-            controller.add((val1 as T1, val2 as T2, val3 as T3));
-          }
-        },
-        onError: controller.addError,
-      );
-      sub3 = s3.listen(
-        (data) {
-          val3 = data;
-          hasVal3 = true;
-          if (hasVal1 && hasVal2) {
-            controller.add((val1 as T1, val2 as T2, val3 as T3));
-          }
-        },
-        onError: controller.addError,
-      );
+      sub1 = s1.listen((data) {
+        val1 = data;
+        hasVal1 = true;
+        if (hasVal2 && hasVal3) {
+          controller.add((val1 as T1, val2 as T2, val3 as T3));
+        }
+      }, onError: controller.addError);
+      sub2 = s2.listen((data) {
+        val2 = data;
+        hasVal2 = true;
+        if (hasVal1 && hasVal3) {
+          controller.add((val1 as T1, val2 as T2, val3 as T3));
+        }
+      }, onError: controller.addError);
+      sub3 = s3.listen((data) {
+        val3 = data;
+        hasVal3 = true;
+        if (hasVal1 && hasVal2) {
+          controller.add((val1 as T1, val2 as T2, val3 as T3));
+        }
+      }, onError: controller.addError);
     },
     onCancel: () async {
       await sub1?.cancel();
@@ -788,94 +980,53 @@ Stream<(T1, T2, T3)> combineStreams3<T1, T2, T3>(
 
 /// Cleanly and completely deletes a task and cascades across all reminders,
 /// local notification alarms, running timers, and child subtasks with zero orphaned state (Rule 8).
-Future<void> deleteTaskAndCleanCascade(dynamic ref, int taskId, {String? taskTitle}) async {
-  // 1. Cancel local notification alarms and delete reminders by linkedTaskId (and title fallback)
-  try {
-    final reminderDao = ref.read(reminderDaoProvider);
-    final linkedReminders = await reminderDao.getRemindersByTaskId(taskId);
-    for (final r in linkedReminders) {
-      await NotificationService.instance.cancel(r.id);
-      await reminderDao.deleteReminder(r.id);
-    }
-    if (taskTitle != null && taskTitle.trim().isNotEmpty) {
-      final all = await reminderDao.watchAllReminders().first;
-      final norm = taskTitle.trim().toLowerCase();
-      for (final r in all) {
-        if (r.title.trim().toLowerCase() == norm) {
-          await NotificationService.instance.cancel(r.id);
-          await reminderDao.deleteReminder(r.id);
-        }
-      }
-    }
-  } catch (_) {}
-
-  // 2. Terminate running time session if currently active
-  try {
-    final tracking = ref.read(timeTrackingProvider);
-    if (tracking.activeSession != null &&
-        (tracking.activeSession?.linkedTaskId == taskId ||
-            (taskTitle != null && tracking.activeSession?.label.trim().toLowerCase() == taskTitle.trim().toLowerCase()))) {
-      await ref.read(timeSessionDaoProvider).deleteSession(tracking.activeSession!.id);
-    }
-  } catch (_) {}
-
-  // 3. Delete any time sessions associated with this task ID
-  try {
-    final sessionDao = ref.read(timeSessionDaoProvider);
-    final sessions = await sessionDao.watchSessionsForDate(DateTime.now()).first;
-    for (final s in sessions) {
-      if (s.linkedTaskId == taskId) {
-        await sessionDao.deleteSession(s.id);
-      }
-    }
-  } catch (_) {}
-
-  // 4. Recursively cascade delete any child subtasks
-  try {
-    final taskDao = ref.read(taskDaoProvider);
-    final allTasks = await taskDao.watchAllTasks().first;
-    final subTasks = allTasks.where((t) => t.parentTaskId == taskId).toList();
-    for (final sub in subTasks) {
-      await deleteTaskAndCleanCascade(ref, sub.id, taskTitle: sub.title);
-    }
-  } catch (_) {}
-
-  // 5. Delete the task itself from SQLite
-  try {
-    await ref.read(taskDaoProvider).deleteTask(taskId);
-  } catch (_) {}
+Future<void> deleteTaskAndCleanCascade(
+  dynamic ref,
+  int taskId, {
+  String? taskTitle,
+}) async {
+  // Shared deletion uses explicit IDs across the entire history and commits
+  // durable native alert cancellation; matching titles never select records.
+  await ref.read(taskDaoProvider).deleteTask(taskId);
 }
 
-Future<void> deleteTodayActivity(dynamic ref, TodayActivityItem activity) async {
+Future<void> deleteTodayActivity(
+  dynamic ref,
+  TodayActivityItem activity,
+) async {
   // 1. Mark as dismissed for today so it will never resurrect in today's activities
-  await ref.read(dismissedTodayActivityIdsProvider.notifier).dismissActivityId(activity.id);
+  await ref
+      .read(dismissedTodayActivityIdsProvider.notifier)
+      .dismissActivityId(activity.id);
 
-  // 2. If it's a lecture, pause playback in Learning Hub and pause any running timer session
+  // Dismissing a lecture never deletes its task, catalog, or timer history.
   if (activity.sourceType == 'lecture' || activity.id.startsWith('lecture_')) {
-    try {
-      final learningState = ref.read(learningHubProvider);
-      if (learningState.isPlaying) {
-        ref.read(learningHubProvider.notifier).pause();
-      }
-      final activeSession = ref.read(timeTrackingProvider).activeSession;
-      if (activeSession != null &&
-          (activeSession.activityRefType == 'lecture' ||
-              activeSession.label.contains(activity.title) ||
-              activity.title.contains(activeSession.label))) {
-        ref.read(timeTrackingProvider.notifier).pauseSession();
-      }
-    } catch (_) {}
+    final learning = ref.read(learningHubProvider);
+    final matches = activity.learningCourseId == null
+        ? activity.id == 'lecture_${learning.activeLectureId}'
+        : activity.learningCourseId == learning.activeCourseId &&
+              activity.learningLectureId == learning.activeLectureId;
+    if (matches && learning.isPlaying) {
+      ref.read(learningHubProvider.notifier).pause();
+    }
+    return;
   }
 
   // 3. If linked to a task, cascade delete
   if (activity.linkedTaskId != null) {
-    await deleteTaskAndCleanCascade(ref, activity.linkedTaskId!, taskTitle: activity.title);
+    await deleteTaskAndCleanCascade(
+      ref,
+      activity.linkedTaskId!,
+      taskTitle: activity.title,
+    );
   }
 
   // 4. If linked to a session, delete session from database
   if (activity.linkedSessionId != null) {
     try {
-      await ref.read(timeSessionDaoProvider).deleteSession(activity.linkedSessionId!);
+      await ref
+          .read(timeSessionDaoProvider)
+          .deleteSession(activity.linkedSessionId!);
     } catch (_) {}
   }
 
@@ -889,4 +1040,3 @@ Future<void> deleteTodayActivity(dynamic ref, TodayActivityItem activity) async 
     }
   }
 }
-

@@ -1,8 +1,9 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
@@ -12,20 +13,24 @@ class BudgetSettingsSheet extends ConsumerStatefulWidget {
 
   const BudgetSettingsSheet({super.key, this.currentBudget});
 
-  static Future<void> show(BuildContext context, {FinanceBudget? currentBudget}) {
+  static Future<void> show(
+    BuildContext context, {
+    FinanceBudget? currentBudget,
+  }) {
     return showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => BudgetSettingsSheet(currentBudget: currentBudget),
     );
   }
 
   @override
-  ConsumerState<BudgetSettingsSheet> createState() => _BudgetSettingsSheetState();
+  ConsumerState<BudgetSettingsSheet> createState() =>
+      _BudgetSettingsSheetState();
 }
 
 class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
@@ -36,9 +41,11 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
   void initState() {
     super.initState();
     if (widget.currentBudget != null) {
-      _monthlyController.text = widget.currentBudget!.monthlyLimit.toStringAsFixed(0);
+      _monthlyController.text = widget.currentBudget!.monthlyLimit
+          .toStringAsFixed(0);
       if (widget.currentBudget!.dailyLimit != null) {
-        _dailyController.text = widget.currentBudget!.dailyLimit!.toStringAsFixed(0);
+        _dailyController.text = widget.currentBudget!.dailyLimit!
+            .toStringAsFixed(0);
       }
     } else {
       _monthlyController.text = '15000';
@@ -64,13 +71,17 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
 
     final daily = double.tryParse(_dailyController.text.trim());
 
-    await ref.read(financeDaoProvider).setOverallBudget(monthly, dailyLimit: daily);
+    await ref
+        .read(financeDaoProvider)
+        .setOverallBudget(monthly, dailyLimit: daily);
 
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Budget updated to ₹${monthly.toStringAsFixed(0)}/month'),
+          content: Text(
+            'Budget updated to ₹${monthly.toStringAsFixed(0)}/month',
+          ),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -83,10 +94,10 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: bottomInset + 24,
+        left: AppSpace.s20,
+        right: AppSpace.s20,
+        top: AppSpace.s20,
+        bottom: bottomInset + AppSpace.s24,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -98,7 +109,7 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
               height: 4,
               decoration: BoxDecoration(
                 color: context.divider,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppGeometry.roundedr2,
               ),
             ),
           ),
@@ -108,10 +119,9 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
             children: [
               Text(
                 'Spending Budget Limits',
-                style: AscentTextStyles.displaySmall.copyWith(
-                  color: context.textPrimary,
-                  fontSize: 18,
-                ),
+                style: AscentTextStyles.displaySmall
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole1),
               ),
               IconButton(
                 icon: const Icon(Icons.close_rounded),
@@ -122,21 +132,25 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
           const SizedBox(height: 16),
           Text(
             'Keep your daily life expenses on track with sensible limits.',
-            style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+            style: AscentTextStyles.bodyMedium.copyWith(
+              color: context.textMuted,
+            ),
           ),
           const SizedBox(height: 20),
 
           TextField(
             controller: _monthlyController,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
-            style: AscentTextStyles.headlineMedium.copyWith(color: context.textPrimary),
+            style: AscentTextStyles.headlineMedium.copyWith(
+              color: context.textPrimary,
+            ),
             decoration: InputDecoration(
               labelText: 'Overall Monthly Budget',
               prefixText: '₹ ',
               filled: true,
               fillColor: context.bgBase,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppGeometry.roundedr12,
                 borderSide: BorderSide(color: context.divider),
               ),
             ),
@@ -146,14 +160,16 @@ class _BudgetSettingsSheetState extends ConsumerState<BudgetSettingsSheet> {
           TextField(
             controller: _dailyController,
             keyboardType: const TextInputType.numberWithOptions(decimal: false),
-            style: AscentTextStyles.headlineMedium.copyWith(color: context.textPrimary),
+            style: AscentTextStyles.headlineMedium.copyWith(
+              color: context.textPrimary,
+            ),
             decoration: InputDecoration(
               labelText: 'Daily Spending Target (Optional)',
               prefixText: '₹ ',
               filled: true,
               fillColor: context.bgBase,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppGeometry.roundedr12,
                 borderSide: BorderSide(color: context.divider),
               ),
             ),

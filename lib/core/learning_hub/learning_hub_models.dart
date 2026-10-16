@@ -1,3 +1,5 @@
+const _unchangedCourseValue = Object();
+
 class Course {
   final String id;
   final String title;
@@ -28,7 +30,9 @@ class Course {
   int get totalLectures => modules.fold(0, (sum, m) => sum + m.lectures.length);
 
   int get completedLectures => modules.fold(
-      0, (sum, m) => sum + m.lectures.where((l) => l.isCompleted).length);
+    0,
+    (sum, m) => sum + m.lectures.where((l) => l.isCompleted).length,
+  );
 
   int get remainingLectures {
     final rem = totalLectures - completedLectures;
@@ -55,16 +59,14 @@ class Course {
 
   String get formattedTotalDuration => _formatDuration(totalDurationSeconds);
   String get formattedWatchedDuration => _formatDuration(totalWatchedSeconds);
-  String get formattedRemainingDuration => _formatDuration(remainingDurationSeconds);
+  String get formattedRemainingDuration =>
+      _formatDuration(remainingDurationSeconds);
 
   Lecture? get nextLecture {
     for (final module in modules) {
       for (final lecture in module.lectures) {
         if (!lecture.isCompleted) return lecture;
       }
-    }
-    if (modules.isNotEmpty && modules.first.lectures.isNotEmpty) {
-      return modules.first.lectures.first;
     }
     return null;
   }
@@ -85,8 +87,8 @@ class Course {
     String? description,
     String? author,
     String? category,
-    String? sourceUrl,
-    DateTime? targetCompletionDate,
+    Object? sourceUrl = _unchangedCourseValue,
+    Object? targetCompletionDate = _unchangedCourseValue,
     int? daysLeft,
     int? targetMinutesPerDay,
     List<CourseModule>? modules,
@@ -98,8 +100,13 @@ class Course {
       description: description ?? this.description,
       author: author ?? this.author,
       category: category ?? this.category,
-      sourceUrl: sourceUrl ?? this.sourceUrl,
-      targetCompletionDate: targetCompletionDate ?? this.targetCompletionDate,
+      sourceUrl: identical(sourceUrl, _unchangedCourseValue)
+          ? this.sourceUrl
+          : sourceUrl as String?,
+      targetCompletionDate:
+          identical(targetCompletionDate, _unchangedCourseValue)
+          ? this.targetCompletionDate
+          : targetCompletionDate as DateTime?,
       daysLeft: daysLeft ?? this.daysLeft,
       targetMinutesPerDay: targetMinutesPerDay ?? this.targetMinutesPerDay,
       modules: modules ?? this.modules,
@@ -125,7 +132,9 @@ class Course {
 
   factory Course.fromJson(Map<String, dynamic> json) {
     return Course(
-      id: json['id']?.toString() ?? 'course_${DateTime.now().millisecondsSinceEpoch}',
+      id:
+          json['id']?.toString() ??
+          'course_${DateTime.now().millisecondsSinceEpoch}',
       title: json['title']?.toString() ?? 'Untitled Course',
       description: json['description']?.toString() ?? '',
       author: json['author']?.toString() ?? 'Instructor',
@@ -136,7 +145,8 @@ class Course {
           : null,
       daysLeft: (json['daysLeft'] as num?)?.toInt() ?? 30,
       targetMinutesPerDay: (json['targetMinutesPerDay'] as num?)?.toInt() ?? 45,
-      modules: (json['modules'] as List<dynamic>?)
+      modules:
+          (json['modules'] as List<dynamic>?)
               ?.map((m) => CourseModule.fromJson(m as Map<String, dynamic>))
               .toList() ??
           [],
@@ -153,6 +163,7 @@ class CourseModule {
   final String description;
   final double durationHours;
   final List<Lecture> lectures;
+  final String? originRequestId;
 
   const CourseModule({
     required this.id,
@@ -160,13 +171,21 @@ class CourseModule {
     this.description = '',
     this.durationHours = 1.0,
     required this.lectures,
+    this.originRequestId,
   });
 
   int get totalDurationSeconds =>
       lectures.fold(0, (sum, l) => sum + l.durationSeconds);
 
-  int get totalWatchedSeconds =>
-      lectures.fold(0, (sum, l) => sum + l.elapsedSeconds);
+  int get totalWatchedSeconds => lectures.fold(
+    0,
+    (sum, l) =>
+        sum +
+        l.studySeconds.clamp(
+          0,
+          l.durationSeconds > 0 ? l.durationSeconds : l.studySeconds,
+        ),
+  );
 
   int get completedCount => lectures.where((l) => l.isCompleted).length;
 
@@ -186,6 +205,7 @@ class CourseModule {
     String? description,
     double? durationHours,
     List<Lecture>? lectures,
+    String? originRequestId,
   }) {
     return CourseModule(
       id: id ?? this.id,
@@ -193,6 +213,7 @@ class CourseModule {
       description: description ?? this.description,
       durationHours: durationHours ?? this.durationHours,
       lectures: lectures ?? this.lectures,
+      originRequestId: originRequestId ?? this.originRequestId,
     );
   }
 
@@ -203,16 +224,19 @@ class CourseModule {
       'description': description,
       'durationHours': durationHours,
       'lectures': lectures.map((l) => l.toJson()).toList(),
+      'originRequestId': originRequestId,
     };
   }
 
   factory CourseModule.fromJson(Map<String, dynamic> json) {
     return CourseModule(
+      originRequestId: json['originRequestId'] as String?,
       id: (json['id'] as num?)?.toInt() ?? 1,
       title: json['title']?.toString() ?? 'Module',
       description: json['description']?.toString() ?? '',
       durationHours: (json['durationHours'] as num?)?.toDouble() ?? 1.0,
-      lectures: (json['lectures'] as List<dynamic>?)
+      lectures:
+          (json['lectures'] as List<dynamic>?)
               ?.map((l) => Lecture.fromJson(l as Map<String, dynamic>))
               .toList() ??
           [],
@@ -229,8 +253,14 @@ class Lecture {
   final String author;
   final int durationSeconds;
   final int elapsedSeconds;
+
+  /// Credited active study time; seeking never changes this evidence.
+  final int studySeconds;
+  final int completionThresholdPercent;
   final bool isCompleted;
   final DateTime? lastPlayedAt;
+  final DateTime? plannedDate;
+  final String? originRequestId;
 
   const Lecture({
     required this.id,
@@ -241,9 +271,23 @@ class Lecture {
     this.author = 'Engineering Digest',
     required this.durationSeconds,
     this.elapsedSeconds = 0,
+    this.studySeconds = 0,
+    this.completionThresholdPercent = 100,
     this.isCompleted = false,
     this.lastPlayedAt,
+    this.plannedDate,
+    this.originRequestId,
   });
+
+  int get requiredStudySeconds =>
+      (durationSeconds * completionThresholdPercent / 100).ceil();
+
+  bool get canComplete =>
+      durationSeconds > 0 && studySeconds >= requiredStudySeconds;
+
+  int get studyProgressPercent => durationSeconds <= 0
+      ? 0
+      : (studySeconds * 100 / durationSeconds).floor().clamp(0, 100);
 
   int get remainingSeconds {
     final rem = durationSeconds - elapsedSeconds;
@@ -285,8 +329,12 @@ class Lecture {
     String? author,
     int? durationSeconds,
     int? elapsedSeconds,
+    int? studySeconds,
+    int? completionThresholdPercent,
     bool? isCompleted,
     DateTime? lastPlayedAt,
+    DateTime? plannedDate,
+    String? originRequestId,
   }) {
     return Lecture(
       id: id ?? this.id,
@@ -297,8 +345,13 @@ class Lecture {
       author: author ?? this.author,
       durationSeconds: durationSeconds ?? this.durationSeconds,
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
+      studySeconds: studySeconds ?? this.studySeconds,
+      completionThresholdPercent:
+          completionThresholdPercent ?? this.completionThresholdPercent,
       isCompleted: isCompleted ?? this.isCompleted,
       lastPlayedAt: lastPlayedAt ?? this.lastPlayedAt,
+      plannedDate: plannedDate ?? this.plannedDate,
+      originRequestId: originRequestId ?? this.originRequestId,
     );
   }
 
@@ -312,13 +365,19 @@ class Lecture {
       'author': author,
       'durationSeconds': durationSeconds,
       'elapsedSeconds': elapsedSeconds,
+      'studySeconds': studySeconds,
+      'completionThresholdPercent': completionThresholdPercent,
       'isCompleted': isCompleted,
       'lastPlayedAt': lastPlayedAt?.toIso8601String(),
+      'plannedDate': plannedDate?.toIso8601String(),
+      'originRequestId': originRequestId,
     };
   }
 
   factory Lecture.fromJson(Map<String, dynamic> json) {
     return Lecture(
+      plannedDate: DateTime.tryParse(json['plannedDate']?.toString() ?? ''),
+      originRequestId: json['originRequestId'] as String?,
       id: (json['id'] as num?)?.toInt() ?? 1,
       moduleId: (json['moduleId'] as num?)?.toInt() ?? 1,
       moduleTitle: json['moduleTitle']?.toString() ?? '',
@@ -326,7 +385,17 @@ class Lecture {
       description: json['description']?.toString() ?? '',
       author: json['author']?.toString() ?? 'Engineering Digest',
       durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? 300,
-      elapsedSeconds: (json['elapsedSeconds'] as num?)?.toInt() ?? 0,
+      elapsedSeconds: ((json['elapsedSeconds'] as num?)?.toInt() ?? 0).clamp(
+        0,
+        31536000,
+      ),
+      studySeconds: ((json['studySeconds'] as num?)?.toInt() ?? 0).clamp(
+        0,
+        31536000,
+      ),
+      completionThresholdPercent: json['completionThresholdPercent'] == 50
+          ? 50
+          : 100,
       isCompleted: json['isCompleted'] == true,
       lastPlayedAt: json['lastPlayedAt'] != null
           ? DateTime.tryParse(json['lastPlayedAt'].toString())

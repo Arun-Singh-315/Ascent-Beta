@@ -43,9 +43,7 @@ void main() {
         startDate: DateTime(2026, 10, 1),
         endDate: DateTime(2026, 10, 10),
         today: DateTime(2026, 10, 2),
-        evidence: [
-          ChallengeEvidence(day: DateTime(2026, 10, 4), amount: 100),
-        ],
+        evidence: [ChallengeEvidence(day: DateTime(2026, 10, 4), amount: 100)],
       );
 
       expect(progress.completedAmount, 0);
@@ -55,7 +53,7 @@ void main() {
 
   group('Challenge persistence', () {
     test(
-      'creates one active challenge with a stable source link and rejects a second',
+      'creates multiple active challenges with independent source links',
       () async {
         final service = ChallengeService(db);
         final challengeId = await service.create(
@@ -77,17 +75,25 @@ void main() {
         expect(active?.startDay, '2026-10-11');
         expect(active?.endDay, '2026-10-30');
 
-        await expectLater(
-          service.create(
-            type: 'learning',
-            title: 'Course',
-            sourceType: 'learning_course',
-            sourceId: 'course-1',
-            targetTotal: 200,
-            dailyMinimum: 10,
-            durationDays: 20,
-          ),
-          throwsStateError,
+        final secondId = await service.create(
+          type: 'learning',
+          title: 'Course',
+          sourceType: 'learning_course',
+          sourceId: 'course-1',
+          targetTotal: 200,
+          dailyMinimum: 10,
+          durationDays: 20,
+        );
+        final challenges = await db.challengeDao.watchActiveChallenges().first;
+        expect(challenges, hasLength(2));
+        expect(
+          (await db.challengeDao.getLinks(secondId)).single.sourceId,
+          'course-1',
+        );
+        await service.archive(secondId);
+        expect(
+          (await db.challengeDao.watchActiveChallenges().first).single.id,
+          challengeId,
         );
       },
     );

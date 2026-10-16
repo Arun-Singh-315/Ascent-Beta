@@ -8,10 +8,22 @@ import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/learning_hub/learning_hub_models.dart';
 import '../../../core/providers/database_provider.dart';
 import '../domain/challenge_pace_engine.dart';
+import '../challenge_providers.dart';
 
 /// Projects evidence from existing modules into Challenge without writing back.
 /// It avoids rebuilding proof rows when only a timer tick changed.
 final challengeProofSyncProvider = Provider<void>((ref) {
+  final challenges =
+      ref.watch(allChallengesProvider).value ?? const <Challenge>[];
+  for (final challenge in challenges.where((c) => c.status == 'active')) {
+    ref.watch(_challengeProofSyncProvider(challenge.id));
+  }
+});
+
+final _challengeProofSyncProvider = Provider.autoDispose.family<void, int>((
+  ref,
+  id,
+) {
   final challengeDao = ref.read(challengeDaoProvider);
   final sessionDao = ref.read(timeSessionDaoProvider);
   final taskDao = ref.read(taskDaoProvider);
@@ -205,9 +217,18 @@ final challengeProofSyncProvider = Provider<void>((ref) {
         );
   }
 
-  activeSubscription = challengeDao.watchActiveChallenge().listen((challenge) {
-    unawaited(attachChallenge(challenge, ref.read(learningHubProvider)));
-  });
+  activeSubscription = challengeDao
+      .watchActiveChallenges()
+      .map((challenges) {
+        for (final challenge in challenges) {
+          if (challenge.id == id) return challenge;
+        }
+        return null;
+      })
+      .distinct()
+      .listen((challenge) {
+        unawaited(attachChallenge(challenge, ref.read(learningHubProvider)));
+      });
 
   ref.listen<LearningHubState>(learningHubProvider, (previous, next) {
     final signature = learningSignature(next);
@@ -220,6 +241,7 @@ final challengeProofSyncProvider = Provider<void>((ref) {
   });
 
   ref.onDispose(() {
+    generation++;
     activeSubscription?.cancel();
     activitySubscription?.cancel();
     taskSubscription?.cancel();

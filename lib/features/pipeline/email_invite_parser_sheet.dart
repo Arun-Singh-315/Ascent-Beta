@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +8,6 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/enums.dart';
 import '../../core/notifications/notification_service.dart';
@@ -17,10 +19,12 @@ class EmailInviteParserSheet extends ConsumerStatefulWidget {
   const EmailInviteParserSheet({super.key});
 
   @override
-  ConsumerState<EmailInviteParserSheet> createState() => _EmailInviteParserSheetState();
+  ConsumerState<EmailInviteParserSheet> createState() =>
+      _EmailInviteParserSheetState();
 }
 
-class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet> {
+class _EmailInviteParserSheetState
+    extends ConsumerState<EmailInviteParserSheet> {
   final _emailTextController = TextEditingController();
   bool _parsed = false;
   bool _isProcessing = false;
@@ -66,11 +70,38 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
 
     // 1. Company Detection
     final knownCompanies = [
-      'Stripe', 'Google', 'Meta', 'Amazon', 'Apple', 'Microsoft', 'Netflix',
-      'Uber', 'Airbnb', 'Salesforce', 'Adobe', 'Oracle', 'Spotify', 'Twitter',
-      'X', 'LinkedIn', 'Atlassian', 'Datadog', 'Coinbase', 'Robinhood',
-      'Palantir', 'Snowflake', 'Figma', 'Notion', 'DoorDash', 'Instacart',
-      'Swiggy', 'Zomato', 'Flipkart', 'Razorpay', 'Cred', 'PhonePe'
+      'Stripe',
+      'Google',
+      'Meta',
+      'Amazon',
+      'Apple',
+      'Microsoft',
+      'Netflix',
+      'Uber',
+      'Airbnb',
+      'Salesforce',
+      'Adobe',
+      'Oracle',
+      'Spotify',
+      'Twitter',
+      'X',
+      'LinkedIn',
+      'Atlassian',
+      'Datadog',
+      'Coinbase',
+      'Robinhood',
+      'Palantir',
+      'Snowflake',
+      'Figma',
+      'Notion',
+      'DoorDash',
+      'Instacart',
+      'Swiggy',
+      'Zomato',
+      'Flipkart',
+      'Razorpay',
+      'Cred',
+      'PhonePe',
     ];
 
     String detectedCompany = 'Target Company';
@@ -95,11 +126,15 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
       detectedRole = 'Backend Engineer';
     } else if (textLower.contains('frontend')) {
       detectedRole = 'Frontend Engineer';
-    } else if (textLower.contains('full stack') || textLower.contains('fullstack')) {
+    } else if (textLower.contains('full stack') ||
+        textLower.contains('fullstack')) {
       detectedRole = 'Full Stack Engineer';
-    } else if (textLower.contains('mobile') || textLower.contains('flutter') || textLower.contains('android')) {
+    } else if (textLower.contains('mobile') ||
+        textLower.contains('flutter') ||
+        textLower.contains('android')) {
       detectedRole = 'Mobile Engineer';
-    } else if (textLower.contains('product manager') || textLower.contains('pm')) {
+    } else if (textLower.contains('product manager') ||
+        textLower.contains('pm')) {
       detectedRole = 'Product Manager';
     }
 
@@ -111,16 +146,21 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
         textLower.contains('coding challenge') ||
         textLower.contains('oa')) {
       detectedStage = ApplicationStage.oaScreen;
-    } else if (textLower.contains('offer') && !textLower.contains('thank you for applying')) {
+    } else if (textLower.contains('offer') &&
+        !textLower.contains('thank you for applying')) {
       detectedStage = ApplicationStage.offer;
-    } else if (textLower.contains('unfortunately') || textLower.contains('other candidates')) {
+    } else if (textLower.contains('unfortunately') ||
+        textLower.contains('other candidates')) {
       detectedStage = ApplicationStage.rejected;
-    } else if (textLower.contains('recruiter screen') || textLower.contains('phone screen')) {
+    } else if (textLower.contains('recruiter screen') ||
+        textLower.contains('phone screen')) {
       detectedStage = ApplicationStage.applied;
     }
 
     // 4. Meeting Link Detection
-    final urlRegex = RegExp(r'(https?:\/\/(?:[a-zA-Z0-9\-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|hackerrank\.com|codesignal\.com)[^\s]*)');
+    final urlRegex = RegExp(
+      r'(https?:\/\/(?:[a-zA-Z0-9\-]+\.)*(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|hackerrank\.com|codesignal\.com)[^\s]*)',
+    );
     final matchUrl = urlRegex.firstMatch(raw);
     String? detectedUrl = matchUrl?.group(0);
 
@@ -143,7 +183,8 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
       _extractedStage = detectedStage;
       _extractedDateTime = scheduled;
       _extractedMeetingUrl = detectedUrl;
-      _extractedNotes = 'Parsed from email invite. ${detectedUrl != null ? 'Meeting link: $detectedUrl' : ''}';
+      _extractedNotes =
+          'Parsed from email invite. ${detectedUrl != null ? 'Meeting link: $detectedUrl' : ''}';
     });
   }
 
@@ -186,7 +227,11 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
     // 3. Create Prep Task
     if (_createPrepTask) {
       final taskDate = _extractedDateTime != null
-          ? DateTime(_extractedDateTime!.year, _extractedDateTime!.month, _extractedDateTime!.day)
+          ? DateTime(
+              _extractedDateTime!.year,
+              _extractedDateTime!.month,
+              _extractedDateTime!.day,
+            )
           : DateTime.now();
 
       await db.taskDao.insertTask(
@@ -194,7 +239,9 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
           title: 'Prepare for $_extractedCompany interview ($_extractedRole)',
           priority: const drift.Value('high'),
           plannedDate: drift.Value(taskDate),
-          notes: drift.Value('Review core concepts and system design questions for $_extractedCompany.'),
+          notes: drift.Value(
+            'Review core concepts and system design questions for $_extractedCompany.',
+          ),
         ),
       );
     }
@@ -208,7 +255,9 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Synced $_extractedCompany invite to Pipeline & Reminders! 🚀'),
+          content: Text(
+            'Synced $_extractedCompany invite to Pipeline & Reminders! 🚀',
+          ),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
         ),
@@ -238,7 +287,12 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomInset + 24),
+      padding: EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s16,
+        AppSpace.s20,
+        bottomInset + AppSpace.s24,
+      ),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -250,20 +304,24 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
                 height: 4,
                 decoration: BoxDecoration(
                   color: context.divider,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppGeometry.roundedr2,
                 ),
               ),
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
+                AppTag(
+                  padding: const EdgeInsets.all(AppSpace.s8),
+                  nightDecoration: BoxDecoration(
                     color: context.accentPrimary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: AppGeometry.roundedr10,
                   ),
-                  child: Icon(Icons.mark_email_read_outlined, color: context.accentPrimary, size: 22),
+                  child: Icon(
+                    Icons.mark_email_read_outlined,
+                    color: context.accentPrimary,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -272,15 +330,15 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
                     children: [
                       Text(
                         'Smart Email & Invite Summarizer',
-                        style: AscentTextStyles.displaySmall.copyWith(
-                          color: context.textPrimary,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AscentTextStyles.displaySmall
+                            .copyWith(color: context.textPrimary)
+                            .merge(AppTypeRoles.typeRole37),
                       ),
                       Text(
                         'Paste recruiter emails or interview invites to auto-sync',
-                        style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: context.textMuted,
+                        ),
                       ),
                     ],
                   ),
@@ -297,13 +355,20 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
               TextField(
                 controller: _emailTextController,
                 maxLines: 6,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textPrimary,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'Paste interview email, OA invite, or recruiter update here...',
-                  hintStyle: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                  hintText:
+                      'Paste interview email, OA invite, or recruiter update here...',
+                  hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textMuted,
+                  ),
                   filled: true,
                   fillColor: context.bgBase,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: AppGeometry.roundedr12,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -315,7 +380,7 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
               ),
             ] else ...[
               AscentCard(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpace.s16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -324,24 +389,25 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
                       children: [
                         Text(
                           _extractedCompany,
-                          style: AscentTextStyles.headlineMedium.copyWith(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: context.accentPrimary,
-                          ),
+                          style: AscentTextStyles.headlineMedium
+                              .copyWith(color: context.accentPrimary)
+                              .merge(AppTypeRoles.typeRole21),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: context.accentSecondary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
+                        AppCard(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s10,
+                            vertical: AppSpace.s4,
+                          ),
+                          nightDecoration: BoxDecoration(
+                            color: context.accentSecondary.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: AppGeometry.roundedr12,
                           ),
                           child: Text(
                             _stageToString(_extractedStage),
-                            style: TextStyle(
+                            style: AppTypeRoles.typeRole24.copyWith(
                               color: context.accentSecondary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
                             ),
                           ),
                         ),
@@ -350,23 +416,27 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
                     const SizedBox(height: 4),
                     Text(
                       _extractedRole,
-                      style: AscentTextStyles.bodyMedium.copyWith(
-                        color: context.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AscentTextStyles.bodyMedium
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole8),
                     ),
-                    const Divider(height: 20),
+                    const AppDivider(height: 20),
                     if (_extractedDateTime != null)
                       Row(
                         children: [
-                          Icon(Icons.event_available_rounded, size: 16, color: context.accentPrimary),
+                          Icon(
+                            Icons.event_available_rounded,
+                            size: 16,
+                            color: context.accentPrimary,
+                          ),
                           const SizedBox(width: 8),
                           Text(
-                            DateFormat('EEE, MMM d • h:mm a').format(_extractedDateTime!),
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            DateFormat(
+                              'EEE, MMM d • h:mm a',
+                            ).format(_extractedDateTime!),
+                            style: AscentTextStyles.bodySmall
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                         ],
                       ),
@@ -374,12 +444,18 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(Icons.video_camera_front_outlined, size: 16, color: context.accentInfo),
+                          Icon(
+                            Icons.video_camera_front_outlined,
+                            size: 16,
+                            color: context.accentInfo,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               _extractedMeetingUrl!,
-                              style: AscentTextStyles.monoCode.copyWith(fontSize: 11, color: context.accentInfo),
+                              style: AscentTextStyles.monoCode
+                                  .copyWith(color: context.accentInfo)
+                                  .merge(AppTypeRoles.typeRole4),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -393,24 +469,36 @@ class _EmailInviteParserSheetState extends ConsumerState<EmailInviteParserSheet>
               const SizedBox(height: 14),
               CheckboxListTile(
                 value: _addToPipeline,
-                onChanged: (val) => setState(() => _addToPipeline = val ?? true),
-                title: const Text('Add to Kanban Pipeline', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                onChanged: (val) =>
+                    setState(() => _addToPipeline = val ?? true),
+                title: const Text(
+                  'Add to Kanban Pipeline',
+                  style: AppTypeRoles.typeRole52,
+                ),
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
               CheckboxListTile(
                 value: _scheduleReminder,
-                onChanged: (val) => setState(() => _scheduleReminder = val ?? true),
-                title: const Text('Schedule Push Reminder Notification', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                onChanged: (val) =>
+                    setState(() => _scheduleReminder = val ?? true),
+                title: const Text(
+                  'Schedule Push Reminder Notification',
+                  style: AppTypeRoles.typeRole52,
+                ),
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,
               ),
               CheckboxListTile(
                 value: _createPrepTask,
-                onChanged: (val) => setState(() => _createPrepTask = val ?? true),
-                title: const Text('Create Study / Prep Task on Task Board', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                onChanged: (val) =>
+                    setState(() => _createPrepTask = val ?? true),
+                title: const Text(
+                  'Create Study / Prep Task on Task Board',
+                  style: AppTypeRoles.typeRole52,
+                ),
                 dense: true,
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,

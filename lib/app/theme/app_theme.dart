@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'color_tokens.dart';
 import 'glass_theme.dart';
 import 'text_styles.dart';
+import 'surface_tokens.dart';
 
 /// Provides the light and dark [ThemeData] for the Ascent app.
 ///
@@ -25,6 +26,14 @@ class AscentTheme {
 
   static ThemeData dark() => _build(brightness: Brightness.dark);
 
+  static ThemeData assistant(ThemeData parent) {
+    if (parent.brightness == Brightness.dark) return parent;
+    final original = _build(brightness: Brightness.light, outlinedDay: false);
+    return original.copyWith(
+      extensions: [AscentGlass.light, AppSurfaces.legacyLight],
+    );
+  }
+
   // ── Utility ────────────────────────────────────────────────────────────────
 
   /// Overlays JetBrains Mono onto any [TextStyle] for use in numeric/stat
@@ -34,35 +43,51 @@ class AscentTheme {
 
   // ── Internal builder ───────────────────────────────────────────────────────
 
-  static ThemeData _build({required Brightness brightness}) {
+  static ThemeData _build({
+    required Brightness brightness,
+    bool outlinedDay = false,
+  }) {
     final isDark = brightness == Brightness.dark;
+    final day = !isDark && outlinedDay;
 
     // Resolve semantic tokens for this brightness.
-    final bgBase =
-        isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
-    final bgSurface =
-        isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface;
+    final bgBase = isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
+    final bgSurface = isDark
+        ? AscentColors.bgSurfaceDark
+        : AscentColors.bgSurface;
     final bgSurfaceElevated = isDark
         ? AscentColors.bgSurfaceElevatedDark
         : AscentColors.bgSurfaceElevated;
-    final accentPrimary =
-        isDark ? AscentColors.accentPrimaryDark : AscentColors.accentPrimary;
+    final accentPrimary = isDark
+        ? AscentColors.accentPrimaryDark
+        : AscentColors.accentPrimary;
     final accentSecondary = isDark
         ? AscentColors.accentSecondaryDark
         : AscentColors.accentSecondary;
-    final accentInfo =
-        isDark ? AscentColors.accentInfoDark : AscentColors.accentInfo;
-    final stateDanger =
-        isDark ? AscentColors.stateDangerDark : AscentColors.stateDanger;
-    final textPrimary =
-        isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary;
-    final textMuted =
-        isDark ? AscentColors.textMutedDark : AscentColors.textMuted;
+    final accentInfo = isDark
+        ? AscentColors.accentInfoDark
+        : AscentColors.accentInfo;
+    final stateDanger = isDark
+        ? AscentColors.stateDangerDark
+        : AscentColors.stateDanger;
+    final textPrimary = day
+        ? AppSurfaces.day.ink
+        : isDark
+        ? AscentColors.textPrimaryDark
+        : AscentColors.textPrimary;
+    final textMuted = day
+        ? AppSurfaces.day.mutedText
+        : isDark
+        ? AscentColors.textMutedDark
+        : AscentColors.textMuted;
     final textOnPrimary = isDark
         ? AscentColors.textOnPrimaryDark
         : AscentColors.textOnPrimary;
-    final divider =
-        isDark ? AscentColors.dividerDark : AscentColors.divider;
+    final divider = day
+        ? AppSurfaces.day.dividerColor
+        : isDark
+        ? AscentColors.dividerDark
+        : AscentColors.divider;
 
     final colorScheme = ColorScheme(
       brightness: brightness,
@@ -96,30 +121,26 @@ class AscentTheme {
     );
 
     final baseTextTheme = TextTheme(
-      displayLarge: AscentTextStyles.displayLarge
-          .copyWith(color: textPrimary),
-      displayMedium: AscentTextStyles.displayMedium
-          .copyWith(color: textPrimary),
-      displaySmall: AscentTextStyles.displaySmall
-          .copyWith(color: textPrimary),
-      headlineLarge: AscentTextStyles.displayLarge
-          .copyWith(color: textPrimary),
-      headlineMedium: AscentTextStyles.displayMedium
-          .copyWith(color: textPrimary),
-      headlineSmall: AscentTextStyles.displaySmall
-          .copyWith(color: textPrimary),
-      titleLarge: AscentTextStyles.labelLarge
-          .copyWith(color: textPrimary),
-      titleMedium: AscentTextStyles.bodyMediumMedium
-          .copyWith(color: textPrimary),
-      titleSmall: AscentTextStyles.labelSmall
-          .copyWith(color: textPrimary),
+      displayLarge: AscentTextStyles.displayLarge.copyWith(color: textPrimary),
+      displayMedium: AscentTextStyles.displayMedium.copyWith(
+        color: textPrimary,
+      ),
+      displaySmall: AscentTextStyles.displaySmall.copyWith(color: textPrimary),
+      headlineLarge: AscentTextStyles.displayLarge.copyWith(color: textPrimary),
+      headlineMedium: AscentTextStyles.displayMedium.copyWith(
+        color: textPrimary,
+      ),
+      headlineSmall: AscentTextStyles.displaySmall.copyWith(color: textPrimary),
+      titleLarge: AscentTextStyles.labelLarge.copyWith(color: textPrimary),
+      titleMedium: AscentTextStyles.bodyMediumMedium.copyWith(
+        color: textPrimary,
+      ),
+      titleSmall: AscentTextStyles.labelSmall.copyWith(color: textPrimary),
       bodyLarge: AscentTextStyles.bodyLarge.copyWith(color: textPrimary),
       bodyMedium: AscentTextStyles.bodyMedium.copyWith(color: textPrimary),
       bodySmall: AscentTextStyles.bodySmall.copyWith(color: textMuted),
       labelLarge: AscentTextStyles.labelLarge.copyWith(color: textPrimary),
-      labelMedium: AscentTextStyles.bodyMediumMedium
-          .copyWith(color: textMuted),
+      labelMedium: AscentTextStyles.bodyMediumMedium.copyWith(color: textMuted),
       labelSmall: AscentTextStyles.labelSmall.copyWith(color: textMuted),
     );
 
@@ -141,23 +162,29 @@ class AscentTheme {
         backgroundColor: bgBase,
         foregroundColor: textPrimary,
         elevation: 0,
-        scrolledUnderElevation: 0.5,
+        scrolledUnderElevation: day ? 0 : 0.5,
         shadowColor: (isDark ? AscentColors.shadowDark : AscentColors.shadow)
             .withValues(alpha: 0.08),
         centerTitle: false,
-        titleTextStyle: AscentTextStyles.displaySmall
-            .copyWith(color: textPrimary),
+        titleTextStyle: AscentTextStyles.displaySmall.copyWith(
+          color: textPrimary,
+        ),
         iconTheme: IconThemeData(color: textPrimary),
         actionsIconTheme: IconThemeData(color: textMuted),
       ),
 
       // ── Card ────────────────────────────────────────────────────────────────
       cardTheme: CardThemeData(
-        color: bgSurface,
+        color: day ? AppSurfaces.day.cardFill : bgSurface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: const BorderRadius.all(cardRadius),
-          side: BorderSide(color: divider, width: 0.8),
+          side: day
+              ? BorderSide(
+                  color: AppSurfaces.day.cardBorderColor,
+                  width: AppSurfaces.day.cardBorderWidth,
+                )
+              : BorderSide(color: divider, width: 0.8),
         ),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
@@ -178,14 +205,20 @@ class AscentTheme {
       // ── Input decoration ────────────────────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: bgSurface,
+        fillColor: day ? AppSurfaces.day.cardFill : bgSurface,
         border: OutlineInputBorder(
           borderRadius: const BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: divider, width: 1.0),
+          borderSide: BorderSide(
+            color: day ? AppSurfaces.day.ink : divider,
+            width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: const BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: divider, width: 1.0),
+          borderSide: BorderSide(
+            color: day ? AppSurfaces.day.ink : divider,
+            width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: const BorderRadius.all(inputRadius),
@@ -199,12 +232,15 @@ class AscentTheme {
           borderRadius: const BorderRadius.all(inputRadius),
           borderSide: BorderSide(color: stateDanger, width: 1.3),
         ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
         hintStyle: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
         labelStyle: AscentTextStyles.bodyMedium.copyWith(color: textMuted),
-        floatingLabelStyle:
-            AscentTextStyles.labelSmall.copyWith(color: accentPrimary),
+        floatingLabelStyle: AscentTextStyles.labelSmall.copyWith(
+          color: accentPrimary,
+        ),
       ),
 
       // ── Elevated button ─────────────────────────────────────────────────────
@@ -212,8 +248,9 @@ class AscentTheme {
         style: ButtonStyle(
           backgroundColor: WidgetStatePropertyAll(accentPrimary),
           foregroundColor: WidgetStatePropertyAll(textOnPrimary),
-          overlayColor:
-              WidgetStatePropertyAll(textOnPrimary.withValues(alpha: 0.12)),
+          overlayColor: WidgetStatePropertyAll(
+            textOnPrimary.withValues(alpha: 0.12),
+          ),
           elevation: const WidgetStatePropertyAll(0),
           shadowColor: const WidgetStatePropertyAll(Colors.transparent),
           shape: const WidgetStatePropertyAll(
@@ -221,11 +258,13 @@ class AscentTheme {
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
-          minimumSize:
-              const WidgetStatePropertyAll(Size(64, 42)),
+          minimumSize: WidgetStatePropertyAll(
+            Size(64, day ? AppSurfaces.day.minTapTarget : 42),
+          ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
-              EdgeInsets.symmetric(horizontal: 18, vertical: 10)),
+            EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          ),
         ),
       ),
 
@@ -233,8 +272,9 @@ class AscentTheme {
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
           foregroundColor: WidgetStatePropertyAll(accentPrimary),
-          overlayColor:
-              WidgetStatePropertyAll(accentPrimary.withValues(alpha: 0.08)),
+          overlayColor: WidgetStatePropertyAll(
+            accentPrimary.withValues(alpha: 0.08),
+          ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
@@ -242,7 +282,8 @@ class AscentTheme {
             ),
           ),
           padding: const WidgetStatePropertyAll(
-              EdgeInsets.symmetric(horizontal: 14, vertical: 8)),
+            EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          ),
         ),
       ),
 
@@ -250,38 +291,45 @@ class AscentTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
           foregroundColor: WidgetStatePropertyAll(accentPrimary),
-          overlayColor:
-              WidgetStatePropertyAll(accentPrimary.withValues(alpha: 0.08)),
+          overlayColor: WidgetStatePropertyAll(
+            accentPrimary.withValues(alpha: 0.08),
+          ),
           side: WidgetStatePropertyAll(
-            BorderSide(color: divider, width: 1.0),
+            BorderSide(
+              color: day ? AppSurfaces.day.ink : divider,
+              width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
+            ),
           ),
           shape: const WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
-          minimumSize:
-              const WidgetStatePropertyAll(Size(64, 42)),
+          minimumSize: WidgetStatePropertyAll(
+            Size(64, day ? AppSurfaces.day.minTapTarget : 42),
+          ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
-              EdgeInsets.symmetric(horizontal: 18, vertical: 10)),
+            EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          ),
         ),
       ),
-
 
       // ── Switch ──────────────────────────────────────────────────────────────
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return accentPrimary;
+            return isDark ? accentPrimary : const Color(0xFFC07360);
           }
-          return isDark ? const Color(0xFF94A3B8) : const Color(0xFFCBD5E1);
+          return isDark ? const Color(0xFFB8A594) : const Color(0xFFD4C8BC);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return accentPrimary.withValues(alpha: 0.38);
+            return isDark
+                ? accentPrimary.withValues(alpha: 0.38)
+                : const Color(0xFFC07360).withValues(alpha: 0.28);
           }
-          return isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
+          return isDark ? const Color(0xFF3B2C1E) : const Color(0xFFEFE8E2);
         }),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -289,14 +337,16 @@ class AscentTheme {
 
       // ── Divider ─────────────────────────────────────────────────────────────
       dividerTheme: DividerThemeData(
-        color: divider,
+        color: day ? AppSurfaces.day.dividerColor : divider,
         thickness: 1,
         space: 1,
       ),
 
       // ── Snack bar ────────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark ? const Color(0xFF1E222D) : const Color(0xFF1B1E2B),
+        backgroundColor: isDark
+            ? const Color(0xFF2D251E)
+            : const Color(0xFF2B221B),
         contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
           color: const Color(0xFFF1F5F9),
           fontWeight: FontWeight.w500,
@@ -310,7 +360,7 @@ class AscentTheme {
         ),
         behavior: SnackBarBehavior.floating,
         actionTextColor: accentPrimary,
-        elevation: 6,
+        elevation: day ? 0 : 6,
       ),
 
       // ── Bottom sheet ─────────────────────────────────────────────────────────
@@ -347,9 +397,15 @@ class AscentTheme {
 
       // ── Chip ─────────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
-        backgroundColor: bgSurfaceElevated,
+        backgroundColor: day ? AppSurfaces.day.cardFill : bgSurfaceElevated,
+        selectedColor: day ? AppSurfaces.day.accent : null,
         labelStyle: AscentTextStyles.labelSmall.copyWith(color: textPrimary),
-        side: BorderSide.none,
+        side: day
+            ? BorderSide(
+                color: AppSurfaces.day.pillBorderColor,
+                width: AppSurfaces.day.pillBorderWidth,
+              )
+            : BorderSide.none,
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
@@ -360,14 +416,33 @@ class AscentTheme {
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
-        titleTextStyle: AscentTextStyles.displaySmall
-            .copyWith(color: textPrimary),
-        contentTextStyle:
-            AscentTextStyles.bodyMedium.copyWith(color: textMuted),
+        titleTextStyle: AscentTextStyles.displaySmall.copyWith(
+          color: textPrimary,
+        ),
+        contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
+          color: textMuted,
+        ),
         elevation: 0,
       ),
       extensions: [
-        isDark ? AscentGlass.dark : AscentGlass.light,
+        isDark
+            ? AscentGlass.dark
+            : !day
+            ? AscentGlass.light
+            : AscentGlass.light.copyWith(
+                fill: AppSurfaces.day.cardFill,
+                line: AppSurfaces.day.dividerColor,
+                clay: AppSurfaces.day.accent,
+                claySoft: AppSurfaces.day.tintFill,
+                ink: AppSurfaces.day.ink,
+                inkMuted: AppSurfaces.day.mutedText,
+                glow1: Colors.transparent,
+                glow2: Colors.transparent,
+                shadow: Colors.transparent,
+              ),
+        isDark
+            ? AppSurfaces.night
+            : (day ? AppSurfaces.day : AppSurfaces.legacyLight),
       ],
     );
   }

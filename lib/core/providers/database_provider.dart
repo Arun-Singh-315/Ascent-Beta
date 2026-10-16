@@ -382,6 +382,8 @@ class TodayActivityItem {
   final int elapsedSecondsToday;
   final int? linkedTaskId;
   final int? linkedSessionId;
+  final String? learningCourseId;
+  final int? learningLectureId;
   final String categoryTag;
   final String? priority;
   final ActivityKind kind;
@@ -400,6 +402,8 @@ class TodayActivityItem {
     required this.elapsedSecondsToday,
     this.linkedTaskId,
     this.linkedSessionId,
+    this.learningCourseId,
+    this.learningLectureId,
     required this.categoryTag,
     this.priority,
     this.kind = ActivityKind.todo,
@@ -419,6 +423,8 @@ class TodayActivityItem {
     int? elapsedSecondsToday,
     int? linkedTaskId,
     int? linkedSessionId,
+    String? learningCourseId,
+    int? learningLectureId,
     String? categoryTag,
     String? priority,
     ActivityKind? kind,
@@ -437,6 +443,8 @@ class TodayActivityItem {
       elapsedSecondsToday: elapsedSecondsToday ?? this.elapsedSecondsToday,
       linkedTaskId: linkedTaskId ?? this.linkedTaskId,
       linkedSessionId: linkedSessionId ?? this.linkedSessionId,
+      learningCourseId: learningCourseId ?? this.learningCourseId,
+      learningLectureId: learningLectureId ?? this.learningLectureId,
       categoryTag: categoryTag ?? this.categoryTag,
       priority: priority ?? this.priority,
       kind: kind ?? this.kind,

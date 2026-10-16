@@ -1,3 +1,5 @@
+import 'theme/app_theme.dart';
+import '../features/backup/workspace_backup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/splash/splash_screen.dart';
@@ -31,6 +33,7 @@ import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
+import '../shared/widgets/feature_guide.dart';
 
 // ── Route name constants ─────────────────────────────────────────────────────
 
@@ -168,7 +171,9 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.aiAssistant,
-      builder: (context, state) => const AiAssistantScreen(),
+      builder: (context, state) =>
+          Theme(data: AscentTheme.assistant(Theme.of(context)),
+            child: const FeatureGuideHost(feature: 'Riya', child: AiAssistantScreen())),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -183,12 +188,19 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.thoughtWall,
-      builder: (context, state) => const ThoughtWallScreen(),
+      builder: (context, state) => ThoughtWallScreen(
+        initialThoughtId: int.tryParse(
+          state.uri.queryParameters['thought'] ?? '',
+        ),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.chaiBreak,
-      builder: (context, state) => const ChaiBreakScreen(),
+      builder: (context, state) => const FeatureGuideHost(
+        feature: 'Chai & Coffee',
+        child: ChaiBreakScreen(),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -274,6 +286,10 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.resumeVault,
       builder: (context, state) => const ResumeVaultScreen(),
+    ),
+    GoRoute(
+      path: '/backup',
+      builder: (context, state) => const WorkspaceBackupScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

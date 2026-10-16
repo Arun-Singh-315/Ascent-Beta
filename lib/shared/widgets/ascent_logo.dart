@@ -1,3 +1,5 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 
 /// The official Ascent logo widget.
@@ -21,21 +23,21 @@ class AscentLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final radius = borderRadius ?? (size * 0.26);
 
-    return Container(
+    return AppCard(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
         border: showBorder
             ? Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
-                width: 1.0,
+                color: AppPalette.white.withValues(alpha: 0.12),
+                width: AppBorderScale.w1point0,
               )
             : null,
         boxShadow: showShadow
             ? [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
+                  color: AppPalette.black.withValues(alpha: 0.35),
                   blurRadius: size * 0.25,
                   offset: Offset(0, size * 0.08),
                 ),

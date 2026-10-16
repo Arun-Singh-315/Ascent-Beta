@@ -8,10 +8,10 @@ import 'study_streak_models.dart';
 export 'study_streak_models.dart';
 
 const String _kStudySecondsPrefix = 'ascent_study_seconds_';
-const String _kPriorStreakKey = 'ascent_prior_streak_days_v1';
 const String _kLongestStreakKey = 'ascent_longest_streak_days_v1';
 const String _kShortestStreakKey = 'ascent_shortest_streak_days_v1';
-const String _kCelebrationShownDateKey = 'ascent_streak_celebration_shown_date_v1';
+const String _kCelebrationShownDateKey =
+    'ascent_streak_celebration_shown_date_v1';
 
 class StudyStreakCalculator {
   static const int defaultDailyTargetSeconds = 7200; // 120 mins = 2 hours
@@ -63,7 +63,7 @@ class StudyStreakCalculator {
 
     final int longestStreakDays = currentStreakDays > historicalLongestStreak
         ? currentStreakDays
-        : (historicalLongestStreak > 0 ? historicalLongestStreak : (currentStreakDays > 0 ? currentStreakDays : 1));
+        : historicalLongestStreak;
 
     final int shortestStreakDays = historicalShortestStreak > 0
         ? historicalShortestStreak
@@ -71,7 +71,10 @@ class StudyStreakCalculator {
 
     // 5. Urgency evaluation (Snapchat-style):
     final int hoursRemainingInDay = (24 - now.hour).clamp(1, 24);
-    final bool isUrgent = !isTodaySecured && (now.hour >= 18 || hoursRemainingInDay <= 6);
+    final bool isUrgent =
+        !isTodaySecured &&
+        displayStreakDays > 0 &&
+        (now.hour >= 18 || hoursRemainingInDay <= 6);
 
     return StudyStreakStatus(
       todaySeconds: todaySeconds,
@@ -91,9 +94,58 @@ class StudyStreakCalculator {
   }
 }
 
+/// Calendar dates, not elapsed 24-hour windows, determine study continuity.
+/// One missed day can be recovered on the next day by making up its deficit.
+int priorStreakFromHistory(SharedPreferences prefs, DateTime now) =>
+    studyHistoryFromPreferences(prefs, now).$1;
+
+(int, int) studyHistoryFromPreferences(SharedPreferences prefs, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+  final records = <DateTime, int>{};
+  for (final key in prefs.getKeys()) {
+    if (!key.startsWith(_kStudySecondsPrefix)) continue;
+    final parts = key.substring(_kStudySecondsPrefix.length).split('_');
+    if (parts.length != 3) continue;
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) continue;
+    final date = DateTime(year, month, day);
+    if (date.isBefore(today)) records[date] = prefs.getInt(key) ?? 0;
+  }
+  if (records.isEmpty) return (0, 0);
+  final dates = records.keys.toList()..sort();
+  var cursor = dates.first;
+  var streak = 0;
+  var longest = 0;
+  int? deficit;
+  while (cursor.isBefore(today)) {
+    final seconds = records[cursor] ?? 0;
+    final target =
+        StudyStreakCalculator.defaultDailyTargetSeconds + (deficit ?? 0);
+    if (seconds >= target) {
+      streak++;
+      if (streak > longest) longest = streak;
+      deficit = null;
+    } else if (streak > 0 && deficit == null) {
+      deficit = (StudyStreakCalculator.defaultDailyTargetSeconds - seconds)
+          .clamp(0, StudyStreakCalculator.defaultDailyTargetSeconds);
+    } else {
+      streak = 0;
+      deficit = null;
+    }
+    cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
+  }
+  return (streak, longest);
+}
+
+final studyClockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
 class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
   final StudyStreakCalculator _calculator = StudyStreakCalculator();
   Timer? _midnightWatcher;
+
+  DateTime _now() => ref.read(studyClockProvider)();
 
   String _dateKey(DateTime dt) {
     return '$_kStudySecondsPrefix${dt.year}_${dt.month.toString().padLeft(2, '0')}_${dt.day.toString().padLeft(2, '0')}';
@@ -101,7 +153,7 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
 
   @override
   StudyStreakStatus build() {
-    final now = DateTime.now();
+    final now = _now();
     SharedPreferences? prefs;
     try {
       prefs = ref.watch(sharedPreferencesProvider);
@@ -120,20 +172,40 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
       );
     }
 
-    final yesterday = now.subtract(const Duration(days: 1));
+    final yesterday = DateTime(now.year, now.month, now.day - 1);
 
     final todayKey = _dateKey(now);
     final yesterdayKey = _dateKey(yesterday);
 
     final todaySecs = prefs.getInt(todayKey) ?? 0;
     final yesterdaySecs = prefs.getInt(yesterdayKey) ?? 0;
-    final priorStreak = prefs.getInt(_kPriorStreakKey) ?? 0;
-    final longestStreak = prefs.getInt(_kLongestStreakKey) ?? 0;
+    final history = studyHistoryFromPreferences(prefs, now);
+    final priorStreak = history.$1;
+    final longestStreak = (prefs.getInt(_kLongestStreakKey) ?? 0) > history.$2
+        ? prefs.getInt(_kLongestStreakKey)!
+        : history.$2;
     final shortestStreak = prefs.getInt(_kShortestStreakKey) ?? 1;
 
-    ref.onDispose(() {
-      _midnightWatcher?.cancel();
+    _midnightWatcher?.cancel();
+    _midnightWatcher = Timer.periodic(const Duration(minutes: 1), (_) {
+      final current = _now();
+      final currentHistory = studyHistoryFromPreferences(prefs!, current);
+      state = _calculator.calculate(
+        todaySeconds: prefs.getInt(_dateKey(current)) ?? 0,
+        yesterdaySeconds:
+            prefs.getInt(
+              _dateKey(DateTime(current.year, current.month, current.day - 1)),
+            ) ??
+            0,
+        priorStreakDays: currentHistory.$1,
+        historicalLongestStreak:
+            ((prefs.getInt(_kLongestStreakKey) ?? 0) > currentHistory.$2)
+            ? prefs.getInt(_kLongestStreakKey)!
+            : currentHistory.$2,
+        now: current,
+      );
     });
+    ref.onDispose(() => _midnightWatcher?.cancel());
 
     return _calculator.calculate(
       todaySeconds: todaySecs,
@@ -146,6 +218,16 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
   }
 
   /// Adds strictly verified study seconds (e.g. from Lecture player tick or active Study session).
+  int? _lastCreditedSecond;
+
+  /// Concurrent Study Focus and Learning credit one real second, once.
+  void creditActiveSecond(DateTime at) {
+    final epoch = at.millisecondsSinceEpoch ~/ 1000;
+    if (_lastCreditedSecond == epoch) return;
+    _lastCreditedSecond = epoch;
+    addStudySeconds(1);
+  }
+
   void addStudySeconds(int deltaSeconds) {
     if (deltaSeconds <= 0) return;
 
@@ -154,16 +236,23 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
       prefs = ref.read(sharedPreferencesProvider);
     } catch (_) {}
 
-    final now = DateTime.now();
+    final now = _now();
     final todayKey = _dateKey(now);
-    final yesterdayKey = _dateKey(now.subtract(const Duration(days: 1)));
+    final yesterdayKey = _dateKey(DateTime(now.year, now.month, now.day - 1));
 
     final currentToday = ((prefs?.getInt(todayKey)) ?? 0) + deltaSeconds;
     prefs?.setInt(todayKey, currentToday);
 
     final yesterdaySecs = prefs?.getInt(yesterdayKey) ?? 0;
-    final priorStreak = prefs?.getInt(_kPriorStreakKey) ?? 0;
-    final longestStreak = prefs?.getInt(_kLongestStreakKey) ?? 0;
+    final history = prefs == null
+        ? (0, 0)
+        : studyHistoryFromPreferences(prefs, now);
+    final priorStreak = history.$1;
+    final longestStreak = prefs == null
+        ? 0
+        : ((prefs.getInt(_kLongestStreakKey) ?? 0) > history.$2
+              ? prefs.getInt(_kLongestStreakKey)!
+              : history.$2);
     final shortestStreak = prefs?.getInt(_kShortestStreakKey) ?? 1;
 
     final newStatus = _calculator.calculate(
@@ -189,11 +278,15 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
         // Persist to Drift ConsistencyDao as present
         Future.microtask(() async {
           try {
-            await ref.read(consistencyDaoProvider).logDay(
+            await ref
+                .read(consistencyDaoProvider)
+                .logDay(
                   now,
                   true,
                   hoursStudied: currentToday / 3600.0,
-                  note: newStatus.isRescuedToday ? 'Streak Rescued! 🛡️' : 'Study Goal Met 🔥',
+                  note: newStatus.isRescuedToday
+                      ? 'Streak Rescued! 🛡️'
+                      : 'Study Goal Met 🔥',
                 );
           } catch (_) {}
         });
@@ -207,9 +300,10 @@ class StudyStreakNotifier extends Notifier<StudyStreakStatus> {
   }
 }
 
-final studyStreakProvider = NotifierProvider<StudyStreakNotifier, StudyStreakStatus>(() {
-  return StudyStreakNotifier();
-});
+final studyStreakProvider =
+    NotifierProvider<StudyStreakNotifier, StudyStreakStatus>(() {
+      return StudyStreakNotifier();
+    });
 
 /// Notifier for one-time celebration events
 class StreakCelebrationEventNotifier extends Notifier<StudyStreakStatus?> {
@@ -227,8 +321,8 @@ class StreakCelebrationEventNotifier extends Notifier<StudyStreakStatus?> {
 
 final streakCelebrationEventProvider =
     NotifierProvider<StreakCelebrationEventNotifier, StudyStreakStatus?>(() {
-  return StreakCelebrationEventNotifier();
-});
+      return StreakCelebrationEventNotifier();
+    });
 
 /// Controls visibility/expansion of the StudyStreakMeterCard on HomeScreen
 class StudyStreakCardVisibilityNotifier extends Notifier<bool> {
@@ -246,5 +340,5 @@ class StudyStreakCardVisibilityNotifier extends Notifier<bool> {
 
 final studyStreakCardVisibleProvider =
     NotifierProvider<StudyStreakCardVisibilityNotifier, bool>(() {
-  return StudyStreakCardVisibilityNotifier();
-});
+      return StudyStreakCardVisibilityNotifier();
+    });

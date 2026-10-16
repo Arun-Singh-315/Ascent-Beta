@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +9,6 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
@@ -41,33 +43,41 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
       context: context,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpace.s24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
+              AppTag(
                 width: 48,
                 height: 48,
-                decoration: BoxDecoration(
+                nightDecoration: BoxDecoration(
                   color: context.stateDanger.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.delete_outline_rounded, color: context.stateDanger, size: 28),
+                child: Icon(
+                  Icons.delete_outline_rounded,
+                  color: context.stateDanger,
+                  size: 28,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
                 'Delete Application?',
-                style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.displaySmall.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'This will permanently delete this application card and its timeline history.',
                 textAlign: TextAlign.center,
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textMuted,
+                ),
               ),
               const SizedBox(height: 24),
               Row(
@@ -108,7 +118,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
     return StreamBuilder<ApplicationRow?>(
       stream: appDao.watchApplicationById(widget.applicationId),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
           return const AscentScaffold(
             title: 'Application Details',
             body: Center(child: CircularProgressIndicator()),
@@ -141,7 +152,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                   isScrollControlled: true,
                   backgroundColor: context.bgSurface,
                   shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                    borderRadius: BorderRadius.vertical(
+                      top: AppGeometry.radiusr24,
+                    ),
                   ),
                   builder: (ctx) => AddApplicationSheet(existing: app),
                 );
@@ -155,11 +168,14 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
             ),
           ],
           body: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s20,
+              vertical: AppSpace.s10,
+            ),
             children: [
               // ── Header Card ──────────────────────────────────────────
               AscentCard(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpace.s20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -183,27 +199,36 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                         color: context.textMuted,
                       ),
                     ),
-                    if (app.salary != null && app.salary!.trim().isNotEmpty) ...[
+                    if (app.salary != null &&
+                        app.salary!.trim().isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(Icons.payments_outlined, size: 16, color: context.accentSecondary),
+                          Icon(
+                            Icons.payments_outlined,
+                            size: 16,
+                            color: context.accentSecondary,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Compensation: ${app.salary}',
-                            style: AscentTextStyles.bodyMedium.copyWith(
-                              color: context.accentSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.bodyMedium
+                                .copyWith(color: context.accentSecondary)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                         ],
                       ),
                     ],
-                    if (app.jobUrl != null && app.jobUrl!.trim().isNotEmpty) ...[
+                    if (app.jobUrl != null &&
+                        app.jobUrl!.trim().isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.link_rounded, size: 16, color: context.accentPrimary),
+                          Icon(
+                            Icons.link_rounded,
+                            size: 16,
+                            color: context.accentPrimary,
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -220,9 +245,13 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                             icon: const Icon(Icons.copy_rounded, size: 16),
                             tooltip: 'Copy Job URL',
                             onPressed: () {
-                              Clipboard.setData(ClipboardData(text: app.jobUrl!));
+                              Clipboard.setData(
+                                ClipboardData(text: app.jobUrl!),
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Job URL copied to clipboard')),
+                                const SnackBar(
+                                  content: Text('Job URL copied to clipboard'),
+                                ),
                               );
                             },
                           ),
@@ -232,11 +261,17 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        Icon(Icons.access_time_rounded, size: 16, color: context.textMuted),
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 16,
+                          color: context.textMuted,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Last updated: ${DateFormat.yMMMd().format(app.updatedAt)}',
-                          style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: context.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -248,11 +283,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               // ── Stage Changer Strip ──────────────────────────────────
               Text(
                 'MOVE STAGE',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: context.textMuted,
-                  letterSpacing: 1.0,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AscentTextStyles.labelSmall
+                    .copyWith(color: context.textMuted, letterSpacing: 1.0)
+                    .merge(AppTypeRoles.typeRole2),
               ),
               const SizedBox(height: 8),
               SingleChildScrollView(
@@ -261,8 +294,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                   children: ApplicationStage.values.map((stage) {
                     final isCurrent = stage.name == app.currentStage;
                     return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
+                      padding: const EdgeInsets.only(right: AppSpace.s8),
+                      child: AppPill.choice(
                         selected: isCurrent,
                         label: Text(stage.name.toUpperCase()),
                         onSelected: (selected) async {
@@ -280,10 +313,13 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
 
               // ── Next Action Date ─────────────────────────────────────
               AscentCard(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpace.s16),
                 child: Row(
                   children: [
-                    Icon(Icons.event_note_rounded, color: context.accentPrimary),
+                    Icon(
+                      Icons.event_note_rounded,
+                      color: context.accentPrimary,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -291,28 +327,35 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                         children: [
                           Text(
                             'Next Action Deadline',
-                            style: AscentTextStyles.labelLarge.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.labelLarge
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                           Text(
                             _nextActionDate != null
                                 ? DateFormat.yMMMd().format(_nextActionDate!)
                                 : 'No action scheduled',
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         ],
                       ),
                     ),
                     TextButton(
-                      child: Text(_nextActionDate == null ? 'Set Date' : 'Change'),
+                      child: Text(
+                        _nextActionDate == null ? 'Set Date' : 'Change',
+                      ),
                       onPressed: () async {
                         final picked = await showDatePicker(
                           context: context,
-                          initialDate: _nextActionDate ?? DateTime.now().add(const Duration(days: 3)),
+                          initialDate:
+                              _nextActionDate ??
+                              DateTime.now().add(const Duration(days: 3)),
                           firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
                         );
                         if (picked != null) {
                           setState(() => _nextActionDate = picked);
@@ -334,13 +377,16 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               // ── Quick Shortcut: Interview Prep ───────────────────────
               AscentCard(
                 color: context.accentPrimary.withValues(alpha: 0.08),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpace.s16),
                 onTap: () {
                   context.push('/interview-prep?applicationId=${app.id}');
                 },
                 child: Row(
                   children: [
-                    Icon(Icons.psychology_rounded, color: context.accentPrimary),
+                    Icon(
+                      Icons.psychology_rounded,
+                      color: context.accentPrimary,
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -348,19 +394,23 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                         children: [
                           Text(
                             'Interview Prep for ${app.company}',
-                            style: AscentTextStyles.labelLarge.copyWith(
-                              color: context.textPrimary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AscentTextStyles.labelLarge
+                                .copyWith(color: context.textPrimary)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
                           Text(
                             'Log expected questions, practice notes & outcomes',
-                            style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: context.textMuted,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    Icon(Icons.chevron_right_rounded, color: context.accentPrimary),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: context.accentPrimary,
+                    ),
                   ],
                 ),
               ),
@@ -368,7 +418,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
 
               // ── Tasks for this Application (§8) ──────────────────────────
               AscentCard(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpace.s16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -377,19 +427,25 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.check_circle_outline_rounded, color: context.accentPrimary, size: 20),
+                            Icon(
+                              Icons.check_circle_outline_rounded,
+                              color: context.accentPrimary,
+                              size: 20,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Tasks for this Application',
-                              style: AscentTextStyles.labelLarge.copyWith(
-                                color: context.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AscentTextStyles.labelLarge
+                                  .copyWith(color: context.textPrimary)
+                                  .merge(AppTypeRoles.typeRole8),
                             ),
                           ],
                         ),
                         IconButton(
-                          icon: Icon(Icons.add_circle_outline_rounded, color: context.accentPrimary),
+                          icon: Icon(
+                            Icons.add_circle_outline_rounded,
+                            color: context.accentPrimary,
+                          ),
                           tooltip: 'Add Task',
                           onPressed: () {
                             AddActivitySheet.show(
@@ -403,15 +459,21 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     StreamBuilder<List<Task>>(
-                      stream: ref.watch(taskDaoProvider).watchTasksForApplication(app.id),
+                      stream: ref
+                          .watch(taskDaoProvider)
+                          .watchTasksForApplication(app.id),
                       builder: (context, taskSnapshot) {
                         final tasks = taskSnapshot.data ?? [];
                         if (tasks.isEmpty) {
                           return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpace.s8,
+                            ),
                             child: Text(
                               'No tasks linked yet. Tap + to create one (e.g. submit resume, send thank you email).',
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                              style: AscentTextStyles.bodySmall.copyWith(
+                                color: context.textMuted,
+                              ),
                             ),
                           );
                         }
@@ -420,63 +482,84 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: tasks.length,
-                          separatorBuilder: (_, _) => const Divider(height: 12),
+                          separatorBuilder: (_, _) =>
+                              const AppDivider(height: 12),
                           itemBuilder: (context, idx) {
                             final task = tasks[idx];
                             final isDone = task.actualCompletedDate != null;
 
-                            return InkWell(
+                            return AppTapArea(
                               onTap: () async {
                                 if (isDone) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Completed tasks stay sealed.'),
+                                      content: Text(
+                                        'Completed tasks stay sealed.',
+                                      ),
                                     ),
                                   );
                                   return;
                                 }
-                                if (task.estimatedMinutes != null && task.estimatedMinutes! > 0) {
+                                if (task.estimatedMinutes != null &&
+                                    task.estimatedMinutes! > 0) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text('Timed activities complete after their focus target is reached.'),
+                                      content: Text(
+                                        'Timed activities complete after their focus target is reached.',
+                                      ),
                                     ),
                                   );
                                   return;
                                 }
                                 final now = DateTime.now();
-                                await ref.read(taskDaoProvider).updateTask(
-                                  TaskTableCompanion(
-                                    id: drift.Value(task.id),
-                                    actualCompletedDate: drift.Value(now),
-                                  ),
-                                );
+                                await ref
+                                    .read(taskDaoProvider)
+                                    .updateTask(
+                                      TaskTableCompanion(
+                                        id: drift.Value(task.id),
+                                        actualCompletedDate: drift.Value(now),
+                                      ),
+                                    );
                               },
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpace.s6,
+                                ),
                                 child: Row(
                                   children: [
                                     Icon(
-                                      isDone ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                                      color: isDone ? context.accentPrimary : context.textMuted,
+                                      isDone
+                                          ? Icons.check_box_rounded
+                                          : Icons
+                                                .check_box_outline_blank_rounded,
+                                      color: isDone
+                                          ? context.accentPrimary
+                                          : context.textMuted,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Text(
                                         task.title,
-                                        style: AscentTextStyles.bodyMedium.copyWith(
-                                          color: isDone ? context.textMuted : context.textPrimary,
-                                          decoration: isDone ? TextDecoration.lineThrough : null,
-                                        ),
+                                        style: AscentTextStyles.bodyMedium
+                                            .copyWith(
+                                              color: isDone
+                                                  ? context.textMuted
+                                                  : context.textPrimary,
+                                              decoration: isDone
+                                                  ? TextDecoration.lineThrough
+                                                  : null,
+                                            ),
                                       ),
                                     ),
                                     if (task.plannedDate != null)
                                       Text(
-                                        DateFormat('MMM d').format(task.plannedDate!),
-                                        style: AscentTextStyles.caption.copyWith(
-                                          color: context.textMuted,
-                                          fontSize: 11,
-                                        ),
+                                        DateFormat(
+                                          'MMM d',
+                                        ).format(task.plannedDate!),
+                                        style: AscentTextStyles.caption
+                                            .copyWith(color: context.textMuted)
+                                            .merge(AppTypeRoles.typeRole4),
                                       ),
                                   ],
                                 ),
@@ -493,7 +576,7 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
 
               // ── Notes Editor ─────────────────────────────────────────
               AscentCard(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(AppSpace.s16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -502,10 +585,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                       children: [
                         Text(
                           'Notes & Context',
-                          style: AscentTextStyles.labelLarge.copyWith(
-                            color: context.textPrimary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AscentTextStyles.labelLarge
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole8),
                         ),
                         if (_isEditingNotes)
                           IconButton(
@@ -516,7 +598,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                               await appDao.updateApplication(
                                 ApplicationTableCompanion(
                                   id: drift.Value(app.id),
-                                  notes: drift.Value(_notesController.text.trim()),
+                                  notes: drift.Value(
+                                    _notesController.text.trim(),
+                                  ),
                                   updatedAt: drift.Value(DateTime.now()),
                                 ),
                               );
@@ -525,7 +609,8 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                         else
                           IconButton(
                             icon: const Icon(Icons.edit_outlined, size: 18),
-                            onPressed: () => setState(() => _isEditingNotes = true),
+                            onPressed: () =>
+                                setState(() => _isEditingNotes = true),
                           ),
                       ],
                     ),
@@ -535,8 +620,11 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                             controller: _notesController,
                             maxLines: 4,
                             decoration: InputDecoration(
-                              hintText: 'Recruiter name, referral info, salary range, interview impressions...',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              hintText:
+                                  'Recruiter name, referral info, salary range, interview impressions...',
+                              border: OutlineInputBorder(
+                                borderRadius: AppGeometry.roundedr10,
+                              ),
                             ),
                           )
                         : Text(
@@ -557,11 +645,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
               // ── Status Journey Timeline (Spec §5.3) ──────────────────
               Text(
                 'STATUS JOURNEY TIMELINE',
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: context.textMuted,
-                  letterSpacing: 1.0,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: AscentTextStyles.labelSmall
+                    .copyWith(color: context.textMuted, letterSpacing: 1.0)
+                    .merge(AppTypeRoles.typeRole2),
               ),
               const SizedBox(height: 12),
               StreamBuilder<List<ApplicationStatusHistory>>(
@@ -571,7 +657,9 @@ class _CardDetailScreenState extends ConsumerState<CardDetailScreen> {
                   if (history.isEmpty) {
                     return Text(
                       'No timeline history recorded yet.',
-                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: context.textMuted,
+                      ),
                     );
                   }
 
@@ -598,18 +686,20 @@ class _StageBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s10,
+        vertical: AppSpace.s4,
+      ),
+      nightDecoration: BoxDecoration(
         color: context.accentPrimary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppGeometry.roundedr12,
       ),
       child: Text(
         stageName.toUpperCase(),
-        style: AscentTextStyles.labelSmall.copyWith(
-          color: context.accentPrimary,
-          fontWeight: FontWeight.w700,
-        ),
+        style: AscentTextStyles.labelSmall
+            .copyWith(color: context.accentPrimary)
+            .merge(AppTypeRoles.typeRole2),
       ),
     );
   }
@@ -627,19 +717,15 @@ class _TimelineTile extends StatelessWidget {
       children: [
         Column(
           children: [
-            Container(
+            AppIndicator(
               width: 12,
               height: 12,
-              decoration: BoxDecoration(
+              nightDecoration: BoxDecoration(
                 color: context.accentPrimary,
                 shape: BoxShape.circle,
               ),
             ),
-            Container(
-              width: 2,
-              height: 48,
-              color: context.divider,
-            ),
+            Container(width: 2, height: 48, color: context.divider),
           ],
         ),
         const SizedBox(width: 14),
@@ -649,21 +735,24 @@ class _TimelineTile extends StatelessWidget {
             children: [
               Text(
                 'Moved to ${item.stage.toUpperCase()}',
-                style: AscentTextStyles.labelLarge.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: context.textPrimary,
-                ),
+                style: AscentTextStyles.labelLarge
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole8),
               ),
               const SizedBox(height: 2),
               Text(
                 DateFormat('MMM d, yyyy · h:mm a').format(item.occurredAt),
-                style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: context.textMuted,
+                ),
               ),
               if (item.notes != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   item.notes!,
-                  style: AscentTextStyles.bodySmall.copyWith(color: context.textPrimary),
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: context.textPrimary,
+                  ),
                 ),
               ],
             ],

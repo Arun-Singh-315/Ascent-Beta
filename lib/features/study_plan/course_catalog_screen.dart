@@ -1,8 +1,11 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'learning_next_step_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/glass_theme.dart';
 import '../../core/learning_hub/learning_hub_models.dart';
@@ -13,19 +16,43 @@ import 'add_course_sheet.dart';
 import 'lecture_focus_player_sheet.dart';
 import 'study_plan_screen.dart';
 
-class CourseCatalogScreen extends ConsumerWidget {
+class CourseCatalogScreen extends ConsumerStatefulWidget {
   const CourseCatalogScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CourseCatalogScreen> createState() =>
+      _CourseCatalogScreenState();
+}
+
+class _CourseCatalogScreenState extends ConsumerState<CourseCatalogScreen> {
+  final _search = TextEditingController();
+  String _filter = 'All';
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(learningHubProvider);
     final notifier = ref.read(learningHubProvider.notifier);
     final courses = state.courses;
     final g = context.glass;
+    final query = _search.text.trim().toLowerCase();
+    final visibleCourses = courses.where((c) {
+      final completed =
+          c.totalLectures > 0 && c.completedLectures == c.totalLectures;
+      return ('${c.title} ${c.author} ${c.category}').toLowerCase().contains(
+            query,
+          ) &&
+          (_filter == 'All' ||
+              (_filter == 'Completed' ? completed : !completed));
+    }).toList();
 
     return AscentScaffold(
       title: 'Learning Hub',
-      subtitle: '${courses.length} Active Course${courses.length == 1 ? "" : "s"} · Structured Syllabus',
+      subtitle: '${courses.length} courses · Choose your next step',
       glow2: g.slate,
       actions: [
         IconButton(
@@ -48,67 +75,37 @@ class CourseCatalogScreen extends ConsumerWidget {
         ),
       ],
       body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s18,
+          vertical: AppSpace.s12,
+        ),
         children: [
-          // Top Summary Hero
-          GlassSurface(
-            padding: const EdgeInsets.all(16),
-            radius: 20,
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: g.slateSoft,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: g.slate.withValues(alpha: 0.25), width: 0.9),
-                  ),
-                  child: Icon(Icons.school_rounded, color: g.slate, size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Your Learning Curriculum',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: g.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Pick a course to explore its modules, track lectures, or resume your player.',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: g.inkMuted,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          LearningNextStepCard(
+            course: state.course,
+            activeLecture: state.activeLecture,
+            elapsed: state.currentElapsedSeconds,
+            playing: state.isPlaying,
+            onPlayer: () {
+              if (state.activeLecture.isCompleted &&
+                  state.course.nextLecture != null) {
+                notifier.selectLecture(state.course.nextLecture!.id);
+              }
+              LectureFocusPlayerSheet.show(context);
+            },
+            onSyllabus: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => StudyPlanScreen(courseId: state.activeCourseId),
+              ),
             ),
           ),
-
-          const SizedBox(height: 18),
-
+          const SizedBox(height: 20),
           // Section Title
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ENROLLED COURSES',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
-                  color: g.inkMuted,
-                ),
+                'YOUR COURSES',
+                style: AppTypography.jetBrainsMono11W80046(color: g.inkMuted),
               ),
               TextButton.icon(
                 onPressed: () {
@@ -116,18 +113,70 @@ class CourseCatalogScreen extends ConsumerWidget {
                   AddCourseSheet.show(context);
                 },
                 icon: const Icon(Icons.add, size: 14),
-                label: const Text('Add Course', style: TextStyle(fontSize: 11.5)),
-                style: TextButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  foregroundColor: g.clay,
+                label: const Text('Add Course', style: AppTypeRoles.typeRole23),
+                style: context.surfaces.buttonStyle(
+                  TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: g.clay,
+                  ),
+                  filled: false,
+                  icon: false,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
 
+          TextField(
+            key: const ValueKey('course-search'),
+            controller: _search,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              labelText: 'Search courses',
+              hintText: 'Title, instructor or topic',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.close),
+                      onPressed: () => setState(() => _search.clear()),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ['All', 'In progress', 'Completed']
+                .map(
+                  (label) => AppPill.choice(
+                    label: Text(label),
+                    selected: _filter == label,
+                    onSelected: (_) => setState(() => _filter = label),
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 12),
+          if (visibleCourses.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpace.s24),
+              child: Column(
+                children: [
+                  const Text('No courses match your search.'),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _search.clear();
+                      _filter = 'All';
+                    }),
+                    child: const Text('Clear filters'),
+                  ),
+                ],
+              ),
+            ),
           // Courses List
-          ...courses.map((course) {
+          ...visibleCourses.map((course) {
             final isCurrent = course.id == state.activeCourseId;
 
             return _CourseHubCard(
@@ -157,17 +206,24 @@ class CourseCatalogScreen extends ConsumerWidget {
               context.push('/book-reader');
             },
             radius: 18,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpace.s16),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
+                AppCard(
+                  padding: const EdgeInsets.all(AppSpace.s10),
+                  nightDecoration: BoxDecoration(
                     color: g.amberSoft,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: g.amber.withValues(alpha: 0.25), width: 0.8),
+                    borderRadius: AppGeometry.roundedr12,
+                    border: Border.all(
+                      color: g.amber.withValues(alpha: 0.25),
+                      width: AppBorderScale.w0point8,
+                    ),
                   ),
-                  child: Icon(Icons.menu_book_rounded, color: g.amber, size: 22),
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    color: g.amber,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -176,21 +232,25 @@ class CourseCatalogScreen extends ConsumerWidget {
                     children: [
                       Text(
                         'Kindle-Style Notes & Book Reader',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.plusJakartaSans135W70047(
                           color: g.ink,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Read local PDF cheat sheets in Sepia, Dark OLED, or Day mode.',
-                        style: TextStyle(fontSize: 11, color: g.inkMuted),
+                        style: AppTypeRoles.typeRole4.copyWith(
+                          color: g.inkMuted,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                Icon(Icons.arrow_forward_ios_rounded, size: 14, color: g.inkMuted),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 14,
+                  color: g.inkMuted,
+                ),
               ],
             ),
           ),
@@ -220,17 +280,15 @@ class _CourseHubCard extends StatelessWidget {
     final g = context.glass;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: AppSpace.s14),
       child: GlassSurface(
         onTap: onSelectCourse,
         radius: 20,
         customBorder: Border.all(
-          color: isActiveCourse
-              ? g.slate.withValues(alpha: 0.5)
-              : g.edge,
+          color: isActiveCourse ? g.slate.withValues(alpha: 0.5) : g.edge,
           width: isActiveCourse ? 1.2 : 0.9,
         ),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpace.s16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -239,14 +297,17 @@ class _CourseHubCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 if (isActiveCourse)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
+                  AppTag(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s8,
+                      vertical: AppSpace.s3,
+                    ),
+                    nightDecoration: BoxDecoration(
                       color: g.slateSoft,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: AppGeometry.roundedr8,
                       border: Border.all(
                         color: g.slate.withValues(alpha: 0.35),
-                        width: 0.8,
+                        width: AppBorderScale.w0point8,
                       ),
                     ),
                     child: Row(
@@ -263,38 +324,37 @@ class _CourseHubCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Text(
                           'CURRENTLY STUDYING',
-                          style: GoogleFonts.jetBrainsMono(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w700,
+                          style: AppTypography.jetBrainsMono95W70048(
                             color: g.slate,
-                            letterSpacing: 0.6,
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
+                  AppTag(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s8,
+                      vertical: AppSpace.s3,
+                    ),
+                    nightDecoration: BoxDecoration(
                       color: g.fill,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: g.edge, width: 0.8),
+                      borderRadius: AppGeometry.roundedr8,
+                      border: Border.all(
+                        color: g.edge,
+                        width: AppBorderScale.w0point8,
+                      ),
                     ),
                     child: Text(
                       '${course.modules.length} MODULES',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
+                      style: AppTypography.jetBrainsMono95W60049(
                         color: g.inkMuted,
                       ),
                     ),
                   ),
                 Text(
                   '${course.daysLeft}d left · ${course.targetMinutesPerDay}m/day',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
+                  style: AppTypography.jetBrainsMono105W60041(
                     color: g.inkMuted,
                   ),
                 ),
@@ -305,28 +365,20 @@ class _CourseHubCard extends StatelessWidget {
             // Course Title
             Text(
               course.title,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: g.ink,
-                height: 1.25,
-              ),
+              style: AppTypography.plusJakartaSans16W70050(color: g.ink),
             ),
             const SizedBox(height: 4),
 
             // Instructor & curriculum meta
             Text(
               'By ${course.author} • ${course.totalLectures} lectures (${(course.totalDurationSeconds / 3600).toStringAsFixed(1)} hrs total)',
-              style: TextStyle(
-                fontSize: 12,
-                color: g.inkMuted,
-              ),
+              style: AppTypeRoles.typeRole27.copyWith(color: g.inkMuted),
             ),
             const SizedBox(height: 14),
 
             // Progress Bar & Stats
             ClipRRect(
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: AppGeometry.roundedr6,
               child: LinearProgressIndicator(
                 value: course.progressFraction,
                 minHeight: 6,
@@ -340,18 +392,13 @@ class _CourseHubCard extends StatelessWidget {
               children: [
                 Text(
                   '${course.completedLectures} of ${course.totalLectures} completed',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
+                  style: AppTypography.jetBrainsMono11Regular36(
                     color: g.inkMuted,
                   ),
                 ),
                 Text(
                   '${course.progressPercent}%',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: g.slate,
-                  ),
+                  style: AppTypography.jetBrainsMono12W80051(color: g.slate),
                 ),
               ],
             ),
@@ -362,36 +409,51 @@ class _CourseHubCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: g.edge),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      foregroundColor: g.ink,
+                    style: context.surfaces.buttonStyle(
+                      OutlinedButton.styleFrom(
+                        side: BorderSide(color: g.edge),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
+                        foregroundColor: g.ink,
+                      ),
+                      filled: false,
+                      icon: false,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
                       onSelectCourse();
                     },
-                    icon: const Icon(Icons.format_list_bulleted_rounded, size: 16),
+                    icon: const Icon(
+                      Icons.format_list_bulleted_rounded,
+                      size: 16,
+                    ),
                     label: Text(
                       'View Syllabus',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: g.ink,
-                      ),
+                      style: AppTypeRoles.typeRole42.copyWith(color: g.ink),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: g.clay,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    style: context.surfaces.buttonStyle(
+                      ElevatedButton.styleFrom(
+                        backgroundColor: g.clay,
+                        foregroundColor: AppPalette.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpace.s10,
+                        ),
+                      ),
+                      filled: true,
+                      icon: false,
                     ),
                     onPressed: () {
                       HapticFeedback.lightImpact();
@@ -400,10 +462,7 @@ class _CourseHubCard extends StatelessWidget {
                     icon: const Icon(Icons.play_arrow_rounded, size: 18),
                     label: const Text(
                       'Start / Resume',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AppTypeRoles.typeRole38,
                     ),
                   ),
                 ),

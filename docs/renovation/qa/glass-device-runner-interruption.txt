@@ -1,0 +1,46 @@
+
+Building Linux applications requires some tools that are not included
+in the Flutter snap and need to be installed on your system:
+
+  - GTK 3 development files
+
+To install them, run:
+
+  sudo apt install clang cmake ninja-build g++ pkg-config libgtk-3-dev
+
+00:00 +0: loading /home/arunsinghvisen/Ascent-Beta/integration_test/alarm_device_test.dart
+Running Gradle task 'assembleDebug'...                          
+WARNING: A restricted method in java.lang.System has been called
+WARNING: java.lang.System::load has been called by net.rubygrapefruit.platform.internal.NativeLibraryLoader in an unnamed module (file:/home/arunsinghvisen/.gradle/wrapper/dists/gradle-9.3.1-all/9ot9r568e8zfvvd4mn8rbu1j0/gradle-9.3.1/lib/native-platform-0.22-milestone-29.jar)
+WARNING: Use --enable-native-access=ALL-UNNAMED to avoid a warning for callers in this module
+WARNING: Restricted methods will be blocked in a future release unless native access is enabled
+
+Running Gradle task 'assembleDebug'...                            208.3s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          11.8s
+00:00 +0: background ringing, native Snooze, in-app Done and recovery
+QA: ready for alarm permissions
+QA: alarm scheduled; background app
+00:13 +0: background ringing, native Snooze, in-app Done and recovery - did not complete [E]
+00:13 +0: (tearDownAll) - did not complete [E]
+00:13 +0: Some tests failed.
+
+Failing tests:
+  /home/arunsinghvisen/Ascent-Beta/integration_test/alarm_device_test.dart: (tearDownAll) (did not complete)
+  /home/arunsinghvisen/Ascent-Beta/integration_test/alarm_device_test.dart: background ringing, native Snooze, in-app Done and recovery (did not complete)
+No tests were found.
+unhandled error during finalization of test:
+/home/arunsinghvisen/Ascent-Beta/integration_test/alarm_device_test.dart
+PathNotFoundException: Deletion failed, path = '/tmp/flutter_tools.AZYFXW/flutter_test_listener.MKYERA' (OS Error: No such file or directory, errno = 2)
+#0      _Directory._deleteSync (dart:io/directory_impl.dart:216:7)
+#1      FileSystemEntity.deleteSync (dart:io/file_system_entity.dart:425:7)
+#2      ForwardingFileSystemEntity.deleteSync (package:file/src/forwarding/forwarding_file_system_entity.dart:70:16)
+#3      ErrorHandlingDirectory.deleteSync.<anonymous closure> (package:flutter_tools/src/base/error_handling_io.dart:717:22)
+#4      _runSync (package:flutter_tools/src/base/error_handling_io.dart:1118:16)
+#5      ErrorHandlingDirectory.deleteSync (package:flutter_tools/src/base/error_handling_io.dart:716:12)
+#6      FlutterPlatform._createListenerDart.<anonymous closure> (package:flutter_tools/src/test/flutter_platform.dart:786:15)
+#7      FlutterPlatform._startTest.finalize (package:flutter_tools/src/test/flutter_platform.dart:591:26)
+<asynchronous suspension>
+#8      FlutterPlatform._startTest (package:flutter_tools/src/test/flutter_platform.dart:762:7)
+<asynchronous suspension>
+

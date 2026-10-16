@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'support/returning_user_guides.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +14,7 @@ void main() {
   late ThoughtDao dao;
 
   setUp(() {
+    SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
     db = AppDatabase.forTesting(NativeDatabase.memory());
     dao = ThoughtDao(db);
   });
@@ -21,95 +24,103 @@ void main() {
   });
 
   group('Thought Wall Archiving & Done Status Logic Tests', () {
-    test('Active thoughts stream excludes archived thoughts and sorts active before completed', () async {
-      final now = DateTime.now();
+    test(
+      'Active thoughts stream excludes archived thoughts and keeps pinned/newest order independent of completion',
+      () async {
+        final now = DateTime.now();
 
-      // 1. Insert an active incomplete thought
-      final id1 = await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Active thought 1',
-          createdAt: drift.Value(now.subtract(const Duration(minutes: 10))),
-        ),
-      );
+        // 1. Insert an active incomplete thought
+        final id1 = await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Active thought 1',
+            createdAt: drift.Value(now.subtract(const Duration(minutes: 10))),
+          ),
+        );
 
-      // 2. Insert another active thought and mark it completed
-      final id2 = await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Completed thought 2',
-          createdAt: drift.Value(now.subtract(const Duration(minutes: 5))),
-        ),
-      );
-      await dao.toggleCompleted(id2);
+        // 2. Insert another active thought and mark it completed
+        final id2 = await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Completed thought 2',
+            createdAt: drift.Value(now.subtract(const Duration(minutes: 5))),
+          ),
+        );
+        await dao.toggleCompleted(id2);
 
-      // 3. Insert an archived thought
-      final id3 = await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Archived thought 3',
-          createdAt: drift.Value(now.subtract(const Duration(minutes: 2))),
-        ),
-      );
-      await dao.archiveThought(id3);
+        // 3. Insert an archived thought
+        final id3 = await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Archived thought 3',
+            createdAt: drift.Value(now.subtract(const Duration(minutes: 2))),
+          ),
+        );
+        await dao.archiveThought(id3);
 
-      final active = await dao.watchActiveThoughts().first;
-      expect(active.length, 2);
-      expect(active.any((t) => t.id == id3), isFalse);
+        final active = await dao.watchActiveThoughts().first;
+        expect(active.length, 2);
+        expect(active.any((t) => t.id == id3), isFalse);
 
-      // Uncompleted thought must appear before completed thought
-      expect(active.first.id, id1);
-      expect(active.first.isCompleted, isFalse);
-      expect(active.last.id, id2);
-      expect(active.last.isCompleted, isTrue);
+        // Completion does not reorder a note out of its chronological section.
+        expect(active.first.id, id2);
+        expect(active.first.isCompleted, isTrue);
+        expect(active.last.id, id1);
+        expect(active.last.isCompleted, isFalse);
 
-      final archived = await dao.watchArchivedThoughts().first;
-      expect(archived.length, 1);
-      expect(archived.first.id, id3);
-      expect(archived.first.isArchived, isTrue);
-    });
+        final archived = await dao.watchArchivedThoughts().first;
+        expect(archived.length, 1);
+        expect(archived.first.id, id3);
+        expect(archived.first.isArchived, isTrue);
+      },
+    );
 
-    test('watchTodayThoughtsCount counts only today non-archived thoughts', () async {
-      final now = DateTime.now();
-      final yesterday = now.subtract(const Duration(days: 1));
+    test(
+      'watchTodayThoughtsCount counts only today non-archived thoughts',
+      () async {
+        final now = DateTime.now();
+        final yesterday = now.subtract(const Duration(days: 1));
 
-      // Yesterday thought
-      await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Yesterday reflection',
-          createdAt: drift.Value(yesterday),
-        ),
-      );
+        // Yesterday thought
+        await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Yesterday reflection',
+            createdAt: drift.Value(yesterday),
+          ),
+        );
 
-      // Today thought 1
-      await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Today reflection 1',
-          createdAt: drift.Value(now),
-        ),
-      );
+        // Today thought 1
+        await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Today reflection 1',
+            createdAt: drift.Value(now),
+          ),
+        );
 
-      // Today thought 2 (archived)
-      final idArchived = await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Today archived',
-          createdAt: drift.Value(now),
-        ),
-      );
-      await dao.archiveThought(idArchived);
+        // Today thought 2 (archived)
+        final idArchived = await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Today archived',
+            createdAt: drift.Value(now),
+          ),
+        );
+        await dao.archiveThought(idArchived);
 
-      // Today thought 3
-      await dao.insertThought(
-        ThoughtTableCompanion.insert(
-          content: 'Today reflection 2',
-          createdAt: drift.Value(now),
-        ),
-      );
+        // Today thought 3
+        await dao.insertThought(
+          ThoughtTableCompanion.insert(
+            content: 'Today reflection 2',
+            createdAt: drift.Value(now),
+          ),
+        );
 
-      final count = await dao.watchTodayThoughtsCount().first;
-      expect(count, 2);
-    });
+        final count = await dao.watchTodayThoughtsCount().first;
+        expect(count, 2);
+      },
+    );
 
     test('Unarchiving restores thought to active stream', () async {
       final id = await dao.insertThought(
-        const ThoughtTableCompanion(content: drift.Value('Temporary archive test')),
+        const ThoughtTableCompanion(
+          content: drift.Value('Temporary archive test'),
+        ),
       );
 
       await dao.archiveThought(id);
@@ -124,50 +135,51 @@ void main() {
   });
 
   group('Thought Wall Archive UI Integration Tests', () {
-    testWidgets('ThoughtWallScreen displays "History & Archive" segment and archived badge', (tester) async {
-      tester.view.physicalSize = const Size(1080, 2400);
-      tester.view.devicePixelRatio = 2.0;
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'ThoughtWallScreen displays "History & Archive" segment and archived badge',
+      (tester) async {
+        tester.view.physicalSize = const Size(1080, 2400);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
 
-      // Seed an archived thought
-      final id = await dao.insertThought(
-        const ThoughtTableCompanion(
-          content: drift.Value('Deep personal reflection'),
-          mood: drift.Value('me_to_me'),
-        ),
-      );
-      await dao.archiveThought(id);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            thoughtDaoProvider.overrideWithValue(dao),
-          ],
-          child: const MaterialApp(
-            home: ThoughtWallScreen(),
+        // Seed an archived thought
+        final id = await dao.insertThought(
+          const ThoughtTableCompanion(
+            content: drift.Value('Deep personal reflection'),
+            mood: drift.Value('me_to_me'),
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        );
+        await dao.archiveThought(id);
 
-      // 1. Check segment header has "History & Archive"
-      expect(find.text('History & Archive'), findsOneWidget);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              thoughtDaoProvider.overrideWithValue(dao),
+            ],
+            child: const MaterialApp(home: ThoughtWallScreen()),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // 2. Switch to "History & Archive" tab
-      await tester.tap(find.text('History & Archive'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        // 1. Check segment header has "History & Archive"
+        expect(find.text('History & Archive'), findsOneWidget);
 
-      // 3. Verify archived card is visible with ARCHIVED badge and 1-tap unarchive button
-      expect(find.text('Deep personal reflection'), findsOneWidget);
-      expect(find.text('ARCHIVED'), findsOneWidget);
-      expect(find.byTooltip('Unarchive thought'), findsOneWidget);
+        // 2. Switch to "History & Archive" tab
+        await tester.tap(find.text('History & Archive'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Clean unmount
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        // 3. Verify archived card is visible with ARCHIVED badge and 1-tap unarchive button
+        expect(find.text('“Deep personal reflection”'), findsOneWidget);
+        expect(find.text('ARCHIVED'), findsOneWidget);
+        expect(find.byTooltip('Unarchive thought'), findsOneWidget);
+
+        // Clean unmount
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
   });
 }

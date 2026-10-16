@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/text_styles.dart';
@@ -27,9 +28,10 @@ void showUndoSnackbar(
   messenger.showSnackBar(
     SnackBar(
       duration: duration,
+      persist: false,
       content: Text(
         message,
-        style: AscentTextStyles.bodyMedium.copyWith(color: Colors.white),
+        style: AscentTextStyles.bodyMedium.copyWith(color: AppPalette.white),
       ),
       action: SnackBarAction(
         label: 'Undo',

@@ -67,15 +67,41 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       assistantName = ref.read(assistantNameProvider);
     } catch (_) {}
 
+    final conversation = tryConversation(prompt, assistantName);
+    if (conversation != null) return conversation;
+    if ((lower.contains('prepare for') || lower.contains('prep for')) &&
+        lower.contains('interview') &&
+        !RegExp(r'^(add|create|remind|schedule)\b').hasMatch(lower)) {
+      return const AiResponse(
+        text:
+            'Would a preparation task, reminder, focused timer or checklist help? Choose a task below, or open the matching screen. I have not created anything.',
+        clarifyingOptions: [
+          'Add a task to prepare for an interview',
+          'Open Reminders',
+          'Open Focus',
+          'Open Interview Prep',
+        ],
+      );
+    }
+    if (lower.startsWith('remind me') &&
+        !RegExp(r'\b(?:at|morning|evening|tonight)\b').hasMatch(lower)) {
+      return const AiResponse(
+        text:
+            'When should I remind you? Include a time with your request, such as “Remind me to call tomorrow at 7 PM”.',
+      );
+    }
+
     // 1. Natural Language Expense Logging ("spent ₹150 on coffee", "₹45 chai and snacks")
     final expenseMatch = tryParseExpense(prompt);
     if (expenseMatch != null) {
       return AiResponse(
-        text: 'Got it. Logged an expense of ₹${expenseMatch['amount']} for "${expenseMatch['title']}". Tap below to save it to your financial records.',
+        text:
+            'Review this ₹${expenseMatch['amount']} expense for ${expenseMatch['title']} before saving.',
         proposedAction: AiProposedAction(
           type: AiActionType.expenseLogged,
           title: 'Log Expense: ₹${expenseMatch['amount']}',
-          summary: 'Category: ${expenseMatch['category']} • Account: ${expenseMatch['account']}',
+          summary:
+              'Category: ${expenseMatch['category']} • Account: ${expenseMatch['account']}',
           payload: expenseMatch,
         ),
       );
@@ -86,11 +112,11 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     if (waterMatch != null) {
       final ml = waterMatch['amountMl'] as int;
       return AiResponse(
-        text: 'Logged +$ml mL of water. Hydration progress updated.',
+        text: 'Ready to log $ml mL of water. Confirm to save it.',
         proposedAction: AiProposedAction(
           type: AiActionType.waterLogged,
           title: 'Log Water: +$ml mL',
-          summary: 'Recorded to SQLite • Progress updates immediately',
+          summary: 'Add $ml mL to today’s water log',
           payload: waterMatch,
         ),
       );
@@ -103,7 +129,12 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     // 4. Free Time & Contextual Guidance ("I have 45 minutes free. What should I work on?")
-    if (lower.contains('free') && (lower.contains('minute') || lower.contains('min') || lower.contains('hour') || lower.contains('what should i') || lower.contains('work on'))) {
+    if (lower.contains('free') &&
+        (lower.contains('minute') ||
+            lower.contains('min') ||
+            lower.contains('hour') ||
+            lower.contains('what should i') ||
+            lower.contains('work on'))) {
       return _generateFreeTimeGuidance(lower, ref);
     }
 
@@ -114,7 +145,11 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     // 6. Sleep Schedule ("I want to sleep by 11 PM", "sleep at 10 pm")
-    if (lower.contains('sleep') && (lower.contains('by') || lower.contains('at') || lower.contains('pm') || lower.contains('tonight'))) {
+    if (lower.contains('sleep') &&
+        (lower.contains('by') ||
+            lower.contains('at') ||
+            lower.contains('pm') ||
+            lower.contains('tonight'))) {
       return _handleSleepSchedule(prompt);
     }
 
@@ -144,35 +179,46 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final taskMatch = tryParseActivityOrTask(prompt);
     if (taskMatch != null) {
       final dateStr = taskMatch['plannedDate'] != null
-          ? DateFormat('EEE, MMM d').format(DateTime.parse(taskMatch['plannedDate']))
+          ? DateFormat(
+              'EEE, MMM d',
+            ).format(DateTime.parse(taskMatch['plannedDate']))
           : 'Today';
       final kindStr = taskMatch['kind'] == 'duration'
           ? 'Timed Activity (${taskMatch['estimatedMinutes']}m)'
           : taskMatch['kind'] == 'flexible'
-              ? 'Flexible Activity'
-              : 'To-do';
+          ? 'Flexible Activity'
+          : 'To-do';
       final reminderInfo = taskMatch['reminderTime'] != null
           ? ' • Reminder at ${DateFormat('HH:mm').format(DateTime.parse(taskMatch['reminderTime']))}'
           : '';
 
       return AiResponse(
-        text: 'I have organized that for you. Added $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Tap below to save it to your Activity Hub.',
+        text:
+            'Ready to add $kindStr: "${taskMatch['title']}" for $dateStr$reminderInfo. Confirm to save it to your Activity Hub.',
         proposedAction: AiProposedAction(
           type: AiActionType.activityCreated,
           title: 'Add $kindStr: ${taskMatch['title']}',
-          summary: 'Scheduled: $dateStr • Priority: ${taskMatch['priority']}$reminderInfo',
+          summary:
+              'Scheduled: $dateStr • Priority: ${taskMatch['priority']}$reminderInfo',
           payload: taskMatch,
         ),
       );
     }
 
     // 9. Smart Daily Planner ("plan my day", "daily plan", "schedule my study", "what should i do today")
-    if (lower.contains('plan my day') || lower.contains('daily plan') || lower.contains('schedule my day') || lower.contains('what should i do')) {
+    if (lower.contains('plan my day') ||
+        lower.contains('daily plan') ||
+        lower.contains('schedule my day') ||
+        lower.contains('what should i do')) {
       return await _generateDailyPlan(ref);
     }
 
     // 10. Personal Insights ("how am i doing", "insights", "my spending", "weekly summary", "progress")
-    if (lower.contains('insight') || lower.contains('summary') || lower.contains('progress') || lower.contains('how am i doing') || lower.contains('spending status')) {
+    if (lower.contains('insight') ||
+        lower.contains('summary') ||
+        lower.contains('progress') ||
+        lower.contains('how am i doing') ||
+        lower.contains('spending status')) {
       return await _generatePersonalInsights(ref);
     }
 
@@ -184,32 +230,60 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         proposedAction: const AiProposedAction(
           type: AiActionType.conceptExplained,
           title: 'Study Concept Card',
-          summary: 'Review key principles, time complexity, and practical tips.',
+          summary:
+              'Review key principles, time complexity, and practical tips.',
           payload: {},
         ),
       );
     }
 
-    // 12. Contextual Help & Guidance
     return AiResponse(
-      text: "Hi there, I'm $assistantName, your personal assistant. Here is what we can do together:\n\n"
-          "• Plan your day & deep focus blocks\n"
-          "• Organize tasks, routines & reminders\n"
-          "• Track hydration & daily physical walks\n"
-          "• Master concepts & study lectures\n"
-          "• Log expenses and stay on budget\n\n"
-          "Everything runs 100% on your device, private and offline. What would you like to work on?",
+      text:
+          'I use local rules to help with today’s tasks, upcoming reminders, expenses and water logs. I could not match that request. Try an example below, or use the feature screen.',
       clarifyingOptions: const [
-        'Plan my day',
-        'What are my medicines today?',
         'What are my tasks today?',
+        'Show my reminders',
+        'Spent 80 rupees on coffee',
       ],
     );
   }
 
+  AiResponse? tryConversation(String prompt, String name) {
+    final lower = prompt.trim().toLowerCase().replaceAll(
+      RegExp(r'[!?.]+$'),
+      '',
+    );
+    if (const [
+      'hi',
+      'hello',
+      'hey',
+      'good morning',
+      'good evening',
+    ].contains(lower)) {
+      return AiResponse(
+        text: '$prompt! I’m $name. What would you like help with today?',
+      );
+    }
+    if (const ['thanks', 'thank you', 'thankyou'].contains(lower)) {
+      return const AiResponse(text: 'You’re welcome.');
+    }
+    if (lower == 'how are you' || lower == 'how are you doing') {
+      return const AiResponse(text: 'Ready to help. How’s your day going?');
+    }
+    if (lower == 'tell me a joke' || lower == 'make me laugh') {
+      return const AiResponse(
+        text: 'My to-do list asked for a break. I told it to get in line.',
+      );
+    }
+    return null;
+  }
+
   /// Parses Expenses with Indian Rupee and Category detection
   Map<String, dynamic>? tryParseExpense(String input) {
-    final amountReg = RegExp(r'(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{1,2})?)\s*(?:₹|rs\.?|inr|rupees)?', caseSensitive: false);
+    final amountReg = RegExp(
+      r'(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{1,2})?)\s*(?:₹|rs\.?|inr|rupees)?',
+      caseSensitive: false,
+    );
     final match = amountReg.firstMatch(input);
     if (match == null) return null;
 
@@ -219,7 +293,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     if (amount == null || amount <= 0) return null;
 
     final lower = input.toLowerCase();
-    final isExpenseKeyword = lower.contains('spent') ||
+    final isExpenseKeyword =
+        lower.contains('spent') ||
         lower.contains('bought') ||
         lower.contains('expense') ||
         lower.contains('paid') ||
@@ -227,36 +302,82 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         lower.contains('lunch') ||
         lower.contains('dinner') ||
         lower.contains('₹') ||
-        lower.contains('rs');
+        lower.contains('rs') ||
+        lower.contains('rupees') ||
+        lower.contains('coffee');
 
     if (!isExpenseKeyword && !lower.startsWith(amountStr)) return null;
 
     String cleanTitle = input
-        .replaceAll(RegExp(r'(?:spent|paid|bought|add expense|expense of|for|on|₹|rs\.?|rupees|inr|[0-9]+(?:\.[0-9]+)?)', caseSensitive: false), ' ')
+        .replaceAll(
+          RegExp(
+            r'\b(?:spent|paid|bought|add(?:\s+expense)?|expense\s+of|for|on|rupees|inr|rs)\b|₹|[0-9]+(?:\.[0-9]+)?',
+            caseSensitive: false,
+          ),
+          ' ',
+        )
+        .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (cleanTitle.isEmpty) cleanTitle = 'Quick Expense';
 
     String category = 'Other';
     final tLower = cleanTitle.toLowerCase();
-    if (tLower.contains('tea') || tLower.contains('chai') || tLower.contains('coffee') || tLower.contains('lunch') || tLower.contains('dinner') || tLower.contains('food') || tLower.contains('grocer') || tLower.contains('snack') || tLower.contains('swiggy') || tLower.contains('zomato')) {
+    if (tLower.contains('tea') ||
+        tLower.contains('chai') ||
+        tLower.contains('coffee') ||
+        tLower.contains('lunch') ||
+        tLower.contains('dinner') ||
+        tLower.contains('food') ||
+        tLower.contains('grocer') ||
+        tLower.contains('snack') ||
+        tLower.contains('swiggy') ||
+        tLower.contains('zomato')) {
       category = 'Food & Groceries';
-    } else if (tLower.contains('uber') || tLower.contains('ola') || tLower.contains('metro') || tLower.contains('bus') || tLower.contains('auto') || tLower.contains('fuel') || tLower.contains('petrol') || tLower.contains('cab')) {
+    } else if (tLower.contains('uber') ||
+        tLower.contains('ola') ||
+        tLower.contains('metro') ||
+        tLower.contains('bus') ||
+        tLower.contains('auto') ||
+        tLower.contains('fuel') ||
+        tLower.contains('petrol') ||
+        tLower.contains('cab')) {
       category = 'Transport';
-    } else if (tLower.contains('book') || tLower.contains('course') || tLower.contains('exam') || tLower.contains('tutor') || tLower.contains('study')) {
+    } else if (tLower.contains('book') ||
+        tLower.contains('course') ||
+        tLower.contains('exam') ||
+        tLower.contains('tutor') ||
+        tLower.contains('study')) {
       category = 'Education';
-    } else if (tLower.contains('movie') || tLower.contains('netflix') || tLower.contains('game') || tLower.contains('hotstar') || tLower.contains('show')) {
+    } else if (tLower.contains('movie') ||
+        tLower.contains('netflix') ||
+        tLower.contains('game') ||
+        tLower.contains('hotstar') ||
+        tLower.contains('show')) {
       category = 'Entertainment';
-    } else if (tLower.contains('recharge') || tLower.contains('wifi') || tLower.contains('electric') || tLower.contains('rent') || tLower.contains('bill')) {
+    } else if (tLower.contains('recharge') ||
+        tLower.contains('wifi') ||
+        tLower.contains('electric') ||
+        tLower.contains('rent') ||
+        tLower.contains('bill')) {
       category = 'Bills & Subscriptions';
-    } else if (tLower.contains('doctor') || tLower.contains('medicine') || tLower.contains('gym') || tLower.contains('health')) {
+    } else if (tLower.contains('doctor') ||
+        tLower.contains('medicine') ||
+        tLower.contains('gym') ||
+        tLower.contains('health')) {
       category = 'Health';
-    } else if (tLower.contains('shirt') || tLower.contains('shoes') || tLower.contains('amazon') || tLower.contains('myntra') || tLower.contains('flipkart')) {
+    } else if (tLower.contains('shirt') ||
+        tLower.contains('shoes') ||
+        tLower.contains('amazon') ||
+        tLower.contains('myntra') ||
+        tLower.contains('flipkart')) {
       category = 'Shopping';
     }
 
     return {
       'amount': amount,
-      'title': cleanTitle.length > 50 ? cleanTitle.substring(0, 50) : cleanTitle,
+      'title': cleanTitle.length > 50
+          ? cleanTitle.substring(0, 50)
+          : cleanTitle,
       'category': category,
       'account': 'UPI',
       'date': DateTime.now().toIso8601String(),
@@ -266,11 +387,17 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   /// Parses Water intake in ml, glasses, or bottles
   Map<String, dynamic>? tryParseWater(String input) {
     final lower = input.toLowerCase();
-    if (!lower.contains('water') && !lower.contains('hydrat') && !lower.contains('drank') && !lower.contains('drink')) {
+    if (!lower.contains('water') &&
+        !lower.contains('hydrat') &&
+        !lower.contains('drank') &&
+        !lower.contains('drink')) {
       return null;
     }
 
-    final mlReg = RegExp(r'([0-9]+)\s*(?:ml|milliliters?|millilitres?)', caseSensitive: false);
+    final mlReg = RegExp(
+      r'([0-9]+)\s*(?:ml|milliliters?|millilitres?)',
+      caseSensitive: false,
+    );
     final match = mlReg.firstMatch(input);
     int ml = 250;
     if (match != null && match.group(1) != null) {
@@ -281,17 +408,23 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     } else if (lower.contains('bottle')) {
       final countReg = RegExp(r'([0-9]+)\s*bottle');
       final cMatch = countReg.firstMatch(lower);
-      final count = cMatch != null ? int.tryParse(cMatch.group(1) ?? '1') ?? 1 : 1;
+      final count = cMatch != null
+          ? int.tryParse(cMatch.group(1) ?? '1') ?? 1
+          : 1;
       ml = 500 * count;
     } else if (lower.contains('glass')) {
       final countReg = RegExp(r'([0-9]+)\s*glass');
       final cMatch = countReg.firstMatch(lower);
-      final count = cMatch != null ? int.tryParse(cMatch.group(1) ?? '1') ?? 1 : 1;
+      final count = cMatch != null
+          ? int.tryParse(cMatch.group(1) ?? '1') ?? 1
+          : 1;
       ml = 250 * count;
     } else if (lower.contains('cup')) {
       final countReg = RegExp(r'([0-9]+)\s*cup');
       final cMatch = countReg.firstMatch(lower);
-      final count = cMatch != null ? int.tryParse(cMatch.group(1) ?? '1') ?? 1 : 1;
+      final count = cMatch != null
+          ? int.tryParse(cMatch.group(1) ?? '1') ?? 1
+          : 1;
       ml = 150 * count;
     }
 
@@ -303,7 +436,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final lower = input.toLowerCase().trim();
 
     // Trigger patterns
-    final isExplicitIntent = RegExp(
+    final isExplicitIntent =
+        RegExp(
           r'^(?:i\s+)?(?:need to|have to|want to|plan to|must|remind me|add\s+(?:a\s+)?(?:task|todo)|create\s+(?:a\s+)?task|todo|complete|finish|call|buy|pay|submit|study|exercise|workout|meditate|walk)\b',
           caseSensitive: false,
         ).hasMatch(lower) ||
@@ -317,9 +451,18 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     // 1. Extract duration if mentioned
     int? durationMinutes;
-    final minMatch = RegExp(r'(?:for\s+)?(\d+)\s*(?:minutes?|mins?|m\b)', caseSensitive: false).firstMatch(lower);
-    final hrMatch = RegExp(r'(?:for\s+)?(\d+)\s*(?:hours?|hrs?|h\b)', caseSensitive: false).firstMatch(lower);
-    final wordHrMatch = RegExp(r'(?:for\s+)?(one|two|three|four|half(?:\s+an)?)\s*(?:hours?|hr)', caseSensitive: false).firstMatch(lower);
+    final minMatch = RegExp(
+      r'(?:for\s+)?(\d+)\s*(?:minutes?|mins?|m\b)',
+      caseSensitive: false,
+    ).firstMatch(lower);
+    final hrMatch = RegExp(
+      r'(?:for\s+)?(\d+)\s*(?:hours?|hrs?|h\b)',
+      caseSensitive: false,
+    ).firstMatch(lower);
+    final wordHrMatch = RegExp(
+      r'(?:for\s+)?(one|two|three|four|half(?:\s+an)?)\s*(?:hours?|hr)',
+      caseSensitive: false,
+    ).firstMatch(lower);
 
     if (minMatch != null) {
       durationMinutes = int.tryParse(minMatch.group(1) ?? '');
@@ -351,7 +494,10 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     // 3. Extract time / reminder
     DateTime? reminderTime;
-    final timeMatch = RegExp(r'at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', caseSensitive: false).firstMatch(lower);
+    final timeMatch = RegExp(
+      r'at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?',
+      caseSensitive: false,
+    ).firstMatch(lower);
     if (timeMatch != null) {
       int hour = int.tryParse(timeMatch.group(1) ?? '') ?? 9;
       final minute = int.tryParse(timeMatch.group(2) ?? '0') ?? 0;
@@ -371,20 +517,47 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         minute,
       );
       // If time already passed today, push to tomorrow
-      if (reminderTime.isBefore(DateTime.now()) && !lower.contains('tomorrow')) {
+      if (reminderTime.isBefore(DateTime.now()) &&
+          !lower.contains('tomorrow')) {
         reminderTime = reminderTime.add(const Duration(days: 1));
         plannedDate = reminderTime;
       }
-    } else if (lower.contains('tomorrow morning') || lower.contains('after waking up') || lower.contains('in the morning')) {
-      reminderTime = DateTime(plannedDate.year, plannedDate.month, plannedDate.day, 9, 0);
+    } else if (lower.contains('tomorrow morning') ||
+        lower.contains('after waking up') ||
+        lower.contains('in the morning')) {
+      reminderTime = DateTime(
+        plannedDate.year,
+        plannedDate.month,
+        plannedDate.day,
+        9,
+        0,
+      );
     } else if (lower.contains('tonight') || lower.contains('this evening')) {
-      reminderTime = DateTime(plannedDate.year, plannedDate.month, plannedDate.day, 20, 0);
+      reminderTime = DateTime(
+        plannedDate.year,
+        plannedDate.month,
+        plannedDate.day,
+        20,
+        0,
+      );
     }
 
     // 4. Clean title
     String cleanTitle = input
-        .replaceAll(RegExp(r'^(?:i\s+)?(?:need to|have to|want to|plan to|must|remind me to|remind me|add\s+(?:a\s+)?(?:task|todo)(?:\s+to)?|create\s+(?:a\s+)?task|todo:?)\s*', caseSensitive: false), '')
-        .replaceAll(RegExp(r'\s*(?:for\s+\d+\s*(?:minutes?|mins?|hours?|hrs?)|for\s+(?:one|two|three|half(?:\s+an)?)\s*hours?|tomorrow\s+morning|tomorrow|today|tonight|this\s+evening|after\s+waking\s+up|in\s+the\s+morning|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b', caseSensitive: false), ' ')
+        .replaceAll(
+          RegExp(
+            r'^(?:i\s+)?(?:need to|have to|want to|plan to|must|remind me to|remind me|add\s+(?:a\s+)?(?:task|todo)(?:\s+to)?|create\s+(?:a\s+)?task|todo:?)\s*',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(
+          RegExp(
+            r'\s*(?:for\s+\d+\s*(?:minutes?|mins?|hours?|hrs?)|for\s+(?:one|two|three|half(?:\s+an)?)\s*hours?|tomorrow\s+morning|tomorrow|today|tonight|this\s+evening|after\s+waking\s+up|in\s+the\s+morning|at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b',
+            caseSensitive: false,
+          ),
+          ' ',
+        )
         .trim();
 
     if (cleanTitle.isEmpty) cleanTitle = 'Focus Activity';
@@ -395,7 +568,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       kind = 'duration';
     } else {
       final tLower = cleanTitle.toLowerCase();
-      final isToDotask = tLower.startsWith('call') ||
+      final isToDotask =
+          tLower.startsWith('call') ||
           tLower.startsWith('buy') ||
           tLower.startsWith('pay') ||
           tLower.startsWith('submit') ||
@@ -405,19 +579,27 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
           lower.contains('todo') ||
           lower.contains('remind me');
 
-      if (!isToDotask && (tLower.contains('exercise') || tLower.contains('workout') || tLower.contains('study') || tLower.contains('meditate') || tLower.contains('walk'))) {
+      if (!isToDotask &&
+          (tLower.contains('exercise') ||
+              tLower.contains('workout') ||
+              tLower.contains('study') ||
+              tLower.contains('meditate') ||
+              tLower.contains('walk'))) {
         kind = 'flexible';
       }
     }
 
-    final isHighPriority = lower.contains('urgent') ||
+    final isHighPriority =
+        lower.contains('urgent') ||
         lower.contains('priority') ||
         lower.contains('important') ||
         lower.contains('must') ||
         lower.contains('today');
 
     return {
-      'title': cleanTitle.length > 100 ? cleanTitle.substring(0, 100) : cleanTitle,
+      'title': cleanTitle.length > 100
+          ? cleanTitle.substring(0, 100)
+          : cleanTitle,
       'kind': kind,
       'estimatedMinutes': durationMinutes ?? (kind == 'flexible' ? -1 : null),
       'plannedDate': plannedDate.toIso8601String(),
@@ -427,19 +609,28 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   }
 
   /// Backward-compatible alias for task parsing
-  Map<String, dynamic>? tryParseTask(String input) => tryParseActivityOrTask(input);
+  Map<String, dynamic>? tryParseTask(String input) =>
+      tryParseActivityOrTask(input);
 
   /// Parses Lecture Completion commands
   AiResponse? _tryParseLectureCompletion(String lower, WidgetRef ref) {
     if (!lower.contains('lecture') && !lower.contains('lectures')) return null;
-    if (!lower.contains('finish') && !lower.contains('completed') && !lower.contains('done')) return null;
+    if (!lower.contains('finish') &&
+        !lower.contains('completed') &&
+        !lower.contains('done')) {
+      return null;
+    }
 
     final learningState = ref.read(learningHubProvider);
     final activeCourse = learningState.course;
 
     int countToMark = 1;
-    final numMatch = RegExp(r'(?:first\s+)?(\d+)\s*lectures?').firstMatch(lower);
-    final wordMatch = RegExp(r'(?:first\s+)?(one|two|three|four)\s*lectures?').firstMatch(lower);
+    final numMatch = RegExp(
+      r'(?:first\s+)?(\d+)\s*lectures?',
+    ).firstMatch(lower);
+    final wordMatch = RegExp(
+      r'(?:first\s+)?(one|two|three|four)\s*lectures?',
+    ).firstMatch(lower);
 
     if (numMatch != null) {
       countToMark = int.tryParse(numMatch.group(1) ?? '1') ?? 1;
@@ -470,7 +661,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (unfinishedLectures.isEmpty) {
       return AiResponse(
-        text: 'All lectures in "${activeCourse.title}" are already completed. Outstanding progress.',
+        text:
+            'All lectures in "${activeCourse.title}" are already completed. Outstanding progress.',
       );
     }
 
@@ -478,11 +670,13 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final lectureIds = unfinishedLectures.map((l) => l.id).toList();
 
     return AiResponse(
-      text: 'Great consistency. I can mark ${unfinishedLectures.length} lecture(s) completed in "${activeCourse.title}": $titles. Tap below to confirm and update your course progress.',
+      text:
+          'Great consistency. I can mark ${unfinishedLectures.length} lecture(s) completed in "${activeCourse.title}": $titles. Tap below to confirm and update your course progress.',
       proposedAction: AiProposedAction(
         type: AiActionType.lectureMarkedComplete,
         title: 'Complete ${unfinishedLectures.length} Lecture(s)',
-        summary: 'Course: ${activeCourse.title} • Updates course completion immediately',
+        summary:
+            'Course: ${activeCourse.title} • Updates course completion immediately',
         payload: {
           'courseId': activeCourse.id,
           'lectureIds': lectureIds,
@@ -495,7 +689,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   /// Handles "I have 45 minutes free. What should I work on?"
   AiResponse _generateFreeTimeGuidance(String lower, WidgetRef ref) {
     int availableMins = 45;
-    final minMatch = RegExp(r'(\d+)\s*(?:minutes?|mins?|m\b)').firstMatch(lower);
+    final minMatch = RegExp(
+      r'(\d+)\s*(?:minutes?|mins?|m\b)',
+    ).firstMatch(lower);
     if (minMatch != null) {
       availableMins = int.tryParse(minMatch.group(1) ?? '45') ?? 45;
     }
@@ -515,18 +711,28 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     }
 
     final buffer = StringBuffer();
-    buffer.writeln("With **$availableMins minutes free**, here is your optimal focus plan:\n");
+    buffer.writeln(
+      "With **$availableMins minutes free**, here is your optimal focus plan:\n",
+    );
 
     if (recommendedLecture != null) {
       final lecMins = (recommendedLecture.durationSeconds / 60).round();
       buffer.writeln("**Recommended Study Session:**");
-      buffer.writeln("• **${recommendedLecture.title}** in *${activeCourse.title}*");
-      buffer.writeln("• Estimated: ~$lecMins mins. Fits smoothly into your window.");
+      buffer.writeln(
+        "• **${recommendedLecture.title}** in *${activeCourse.title}*",
+      );
+      buffer.writeln(
+        "• Estimated: ~$lecMins mins. Fits smoothly into your window.",
+      );
     } else {
-      buffer.writeln("**Study Status:** All lectures in ${activeCourse.title} are up to date.");
+      buffer.writeln(
+        "**Study Status:** All lectures in ${activeCourse.title} are up to date.",
+      );
     }
 
-    buffer.writeln("\n**Action:** Tap below to start your study focus session or open your Activity Hub.");
+    buffer.writeln(
+      "\n**Action:** Tap below to start your study focus session or open your Activity Hub.",
+    );
 
     return AiResponse(
       text: buffer.toString(),
@@ -534,7 +740,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
           ? AiProposedAction(
               type: AiActionType.generalResponse,
               title: 'Study: ${recommendedLecture.title}',
-              summary: '${activeCourse.title} • ${(recommendedLecture.durationSeconds / 60).round()} mins',
+              summary:
+                  '${activeCourse.title} • ${(recommendedLecture.durationSeconds / 60).round()} mins',
               payload: {
                 'action': 'open_study',
                 'lectureId': recommendedLecture.id,
@@ -551,7 +758,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
   /// Handles Rescheduling / Rearranging
   Future<AiResponse?> _tryParseReschedule(String lower, WidgetRef ref) async {
-    final isReschedule = lower.contains('rearrange') ||
+    final isReschedule =
+        lower.contains('rearrange') ||
         lower.contains('reschedule') ||
         lower.contains('move my') ||
         lower.contains('couldn\'t complete') ||
@@ -562,19 +770,32 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     List<Task> pending = [];
     try {
       final taskDao = ref.read(taskDaoProvider);
-      final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first.timeout(
-        const Duration(milliseconds: 600),
-        onTimeout: () => <Task>[],
-      );
+      final todayTasks = await taskDao
+          .watchTasksByDate(DateTime.now())
+          .first
+          .timeout(
+            const Duration(milliseconds: 600),
+            onTimeout: () => <Task>[],
+          );
       pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
     } catch (_) {}
 
     if (lower.contains('workout') || lower.contains('exercise')) {
-      final workoutTask = pending.where((t) =>
-          t.title.toLowerCase().contains('workout') ||
-          t.title.toLowerCase().contains('exercise')).firstOrNull;
+      final workoutTask = pending
+          .where(
+            (t) =>
+                t.title.toLowerCase().contains('workout') ||
+                t.title.toLowerCase().contains('exercise'),
+          )
+          .firstOrNull;
 
-      final evening = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day, 18, 0);
+      final evening = DateTime(
+        DateTime.now().year,
+        DateTime.now().month,
+        DateTime.now().day,
+        18,
+        0,
+      );
 
       return AiResponse(
         text: workoutTask != null
@@ -583,7 +804,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         proposedAction: AiProposedAction(
           type: AiActionType.scheduleRearranged,
           title: 'Reschedule Workout: 6:00 PM',
-          summary: 'Moved to this evening (18:00) • Reminder set',
+          summary:
+              'Move an existing task to this evening (18:00); reminders stay unchanged',
           payload: {
             'taskId': workoutTask?.id,
             'title': workoutTask?.title ?? 'Workout',
@@ -595,14 +817,22 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     if (lower.contains('study plan') || lower.contains('study')) {
       final tomorrowMorning = DateTime.now().add(const Duration(days: 1));
-      final newDate = DateTime(tomorrowMorning.year, tomorrowMorning.month, tomorrowMorning.day, 9, 0);
+      final newDate = DateTime(
+        tomorrowMorning.year,
+        tomorrowMorning.month,
+        tomorrowMorning.day,
+        9,
+        0,
+      );
 
       return AiResponse(
-        text: 'Consistency means adapting. I found ${pending.length} pending items today. I can rollover your remaining study tasks to tomorrow morning starting at 9:00 AM.',
+        text:
+            'Consistency means adapting. I found ${pending.length} pending items today. I can rollover your remaining study tasks to tomorrow morning starting at 9:00 AM.',
         proposedAction: AiProposedAction(
           type: AiActionType.scheduleRearranged,
           title: 'Rollover Study Plan to Tomorrow',
-          summary: 'Re-allocates ${pending.length} pending tasks to tomorrow morning (09:00)',
+          summary:
+              'Re-allocates ${pending.length} pending tasks to tomorrow morning (09:00)',
           payload: {
             'taskIds': pending.map((t) => t.id).toList(),
             'newDate': newDate.toIso8601String(),
@@ -620,7 +850,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final sleepTime = DateTime(now.year, now.month, now.day, 23, 0);
 
     return AiResponse(
-      text: 'Rest is the foundation of peak focus. I can set a Sleep Schedule for 11:00 PM tonight with an 8-hour target and a wind-down reminder at 10:30 PM.',
+      text:
+          'Rest is the foundation of peak focus. I can set a Sleep Schedule for 11:00 PM tonight with an 8-hour target and a wind-down reminder at 10:30 PM.',
       proposedAction: AiProposedAction(
         type: AiActionType.activityCreated,
         title: 'Schedule Sleep Routine (11:00 PM)',
@@ -630,7 +861,9 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
           'kind': 'duration',
           'estimatedMinutes': 480,
           'plannedDate': sleepTime.toIso8601String(),
-          'reminderTime': sleepTime.subtract(const Duration(minutes: 30)).toIso8601String(),
+          'reminderTime': sleepTime
+              .subtract(const Duration(minutes: 30))
+              .toIso8601String(),
           'priority': 'high',
         },
       ),
@@ -639,7 +872,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
   /// Intelligent clarifying questions for ambiguous duration activities
   AiResponse? _checkAmbiguousClarification(String input, String lower) {
-    final isAmbiguousWorkout = (lower == 'i want to exercise tomorrow' ||
+    final isAmbiguousWorkout =
+        (lower == 'i want to exercise tomorrow' ||
         lower == 'exercise tomorrow' ||
         lower == 'workout tomorrow' ||
         lower == 'i want to workout tomorrow' ||
@@ -652,7 +886,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final activityName = lower.contains('study') ? 'Study Session' : 'Workout';
 
     return AiResponse(
-      text: 'I can organize that for you. Do you want to add $activityName as a simple to-do, or track it with a timer? And roughly how long should I schedule for it?',
+      text:
+          'I can organize that for you. Do you want to add $activityName as a simple to-do, or track it with a timer? And roughly how long should I schedule for it?',
       clarifyingOptions: [
         'Track 30m $activityName',
         'Track 45m $activityName',
@@ -732,36 +967,45 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     try {
       tasks = await taskDao.watchTodayTasks().first.timeout(
         const Duration(milliseconds: 600),
-        onTimeout: () => <Task>[],
       );
-    } catch (_) {}
-
-    if (tasks.isEmpty) {
+    } catch (_) {
       return const AiResponse(
-        text: "Your slate is clean today. You don't have any tasks scheduled.\n\n"
-            "Tell me what you would like to work on and I'll organize it for you.",
-        clarifyingOptions: [
-          'Plan my day',
-          'What are my medicines today?',
-        ],
+        text: 'I could not load your tasks. Please try again.',
       );
     }
 
-    final completed = tasks.where((t) => t.actualCompletedDate != null).toList();
+    if (tasks.isEmpty) {
+      return const AiResponse(
+        text:
+            "Your slate is clean today. You don't have any tasks scheduled.\n\n"
+            "Tell me what you would like to work on and I'll organize it for you.",
+        clarifyingOptions: ['Plan my day', 'What are my medicines today?'],
+      );
+    }
+
+    final completed = tasks
+        .where((t) => t.actualCompletedDate != null)
+        .toList();
     final pending = tasks.where((t) => t.actualCompletedDate == null).toList();
 
     final buffer = StringBuffer();
-    buffer.writeln("Here is your task breakdown for today (${tasks.length} total):\n");
+    buffer.writeln(
+      "Here is your task breakdown for today (${tasks.length} total):\n",
+    );
 
     if (pending.isNotEmpty) {
       buffer.writeln("Pending (${pending.length}):");
       for (final t in pending) {
-        final prioTag = t.priority.isNotEmpty ? " [${t.priority.toUpperCase()}]" : "";
+        final prioTag = t.priority.isNotEmpty
+            ? " [${t.priority.toUpperCase()}]"
+            : "";
         final cleanTitle = t.title.replaceAll('💊', '(medicine)');
         buffer.writeln("• $cleanTitle$prioTag");
       }
     } else {
-      buffer.writeln("All today's tasks are completed. Incredible consistency.");
+      buffer.writeln(
+        "All today's tasks are completed. Incredible consistency.",
+      );
     }
 
     if (completed.isNotEmpty) {
@@ -775,10 +1019,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     return AiResponse(
       text: buffer.toString().trim(),
-      clarifyingOptions: [
-        'Plan my day',
-        'What are my medicines today?',
-      ],
+      clarifyingOptions: ['Plan my day', 'What are my medicines today?'],
     );
   }
 
@@ -788,20 +1029,21 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     try {
       reminders = await reminderDao.watchUpcomingReminders().first.timeout(
         const Duration(milliseconds: 600),
-        onTimeout: () => <Reminder>[],
       );
-    } catch (_) {}
+    } catch (_) {
+      return const AiResponse(
+        text: 'I could not load your reminders. Please try again.',
+      );
+    }
 
     if (reminders.isEmpty) {
       return const AiResponse(
-        text: "All clear. You don't have any upcoming reminders set right now.\n\n"
+        text:
+            "All clear. You don't have any upcoming reminders set right now.\n\n"
             "Tell me whenever you need a nudge, like:\n"
             "• \"Remind me to drink water in 30 minutes\"\n"
             "• \"Remind me to review notes at 5 PM\"",
-        clarifyingOptions: [
-          'Plan my day',
-          'What are my tasks today?',
-        ],
+        clarifyingOptions: ['Plan my day', 'What are my tasks today?'],
       );
     }
 
@@ -814,10 +1056,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     return AiResponse(
       text: buffer.toString().trim(),
-      clarifyingOptions: [
-        'Plan my day',
-        'What are my tasks today?',
-      ],
+      clarifyingOptions: ['Plan my day', 'What are my tasks today?'],
     );
   }
 
@@ -847,32 +1086,30 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     List<Medicine> meds = [];
     try {
       logs = await dao.watchTodayMedicineLogs().first.timeout(
-            const Duration(milliseconds: 600),
-            onTimeout: () => <MedicineLog>[],
-          );
+        const Duration(milliseconds: 600),
+      );
       meds = await dao.watchActiveMedicines().first.timeout(
-            const Duration(milliseconds: 600),
-            onTimeout: () => <Medicine>[],
-          );
-    } catch (_) {}
+        const Duration(milliseconds: 600),
+      );
+    } catch (_) {
+      return const AiResponse(
+        text: 'I could not load your medicine schedule. Please try again.',
+      );
+    }
 
     if (logs.isEmpty) {
       if (meds.isEmpty) {
         return const AiResponse(
-          text: "You don't have any active prescriptions or medicines scheduled today.\n\n"
-              "You can add one in the Medicine tab or ask me to schedule one anytime.",
-          clarifyingOptions: [
-            'Plan my day',
-            'What are my tasks today?',
-          ],
+          text:
+              "You don't have any active prescriptions or medicines scheduled today.\n\n"
+              "You can add one in the Medicine tab there.",
+          clarifyingOptions: ['Plan my day', 'What are my tasks today?'],
         );
       } else {
         return AiResponse(
-          text: "You have ${meds.length} active prescription(s), but no doses are scheduled for today. All good.",
-          clarifyingOptions: [
-            'Plan my day',
-            'What are my tasks today?',
-          ],
+          text:
+              "You have ${meds.length} active prescription(s), but no doses are scheduled for today. All good.",
+          clarifyingOptions: ['Plan my day', 'What are my tasks today?'],
         );
       }
     }
@@ -881,12 +1118,16 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final taken = logs.where((l) => l.isTaken).length;
 
     final buffer = StringBuffer();
-    buffer.writeln("Here is your medicine schedule for today ($taken of $total doses completed):\n");
+    buffer.writeln(
+      "Here is your medicine schedule for today ($taken of $total doses completed):\n",
+    );
 
     for (final log in logs) {
       final med = meds.where((m) => m.id == log.medicineId).firstOrNull;
       final medName = (med?.name ?? 'Prescription').replaceAll('💊', '').trim();
-      final medDosage = med?.dosage != null && med!.dosage.isNotEmpty ? " (${med.dosage})" : "";
+      final medDosage = med?.dosage != null && med!.dosage.isNotEmpty
+          ? " (${med.dosage})"
+          : "";
       final timeStr = MedicineService.formatTimeSlot(log.timeSlot);
       final status = log.isTaken ? "Taken" : "Pending";
       buffer.writeln("• $timeStr — $medName$medDosage (medicine) [$status]");
@@ -894,10 +1135,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     return AiResponse(
       text: buffer.toString().trim(),
-      clarifyingOptions: [
-        'Plan my day',
-        'What are my tasks today?',
-      ],
+      clarifyingOptions: ['Plan my day', 'What are my tasks today?'],
     );
   }
 
@@ -909,16 +1147,20 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     List<Task> pending = [];
     try {
       final taskDao = ref.read(taskDaoProvider);
-      final todayTasks = await taskDao.watchTasksByDate(DateTime.now()).first.timeout(
-        const Duration(milliseconds: 600),
-        onTimeout: () => <Task>[],
-      );
+      final todayTasks = await taskDao
+          .watchTasksByDate(DateTime.now())
+          .first
+          .timeout(
+            const Duration(milliseconds: 600),
+            onTimeout: () => <Task>[],
+          );
       pending = todayTasks.where((t) => t.actualCompletedDate == null).toList();
     } catch (_) {}
 
     // 2. Walk status & distance
     final walkState = ref.read(walkTrackingProvider);
-    final todayDistanceMeters = ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final todayDistanceMeters =
+        ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
     final kmWalked = (todayDistanceMeters / 1000.0).toStringAsFixed(1);
     final isWalkActive = walkState.status == WalkTrackingStatus.tracking;
 
@@ -948,13 +1190,19 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final nextReminder = ref.read(nextUpcomingReminderProvider).value;
 
     final buffer = StringBuffer();
-    buffer.writeln("Hi $userName. Here is your situation and daily plan for today:\n");
+    buffer.writeln(
+      "Hi $userName. Here is your situation and daily plan for today:\n",
+    );
 
     // Critical Focus Areas
     if (waterMl < 1000) {
-      buffer.writeln("**Hydration Alert:** You've only logged $waterMl / $waterGoal mL. Drink a glass of water now.");
+      buffer.writeln(
+        "**Hydration Alert:** You've only logged $waterMl / $waterGoal mL. Drink a glass of water now.",
+      );
     } else {
-      buffer.writeln("**Hydration:** $waterMl / $waterGoal mL consumed — stay hydrated.");
+      buffer.writeln(
+        "**Hydration:** $waterMl / $waterGoal mL consumed — stay hydrated.",
+      );
     }
 
     final todayMedLogs = ref.read(todayMedicineLogsStreamProvider).value ?? [];
@@ -962,44 +1210,66 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final takenMeds = todayMedLogs.where((l) => l.isTaken).length;
     if (totalMeds > 0) {
       if (takenMeds == totalMeds) {
-        buffer.writeln("**Medication:** All $totalMeds doses taken today. Great consistency.");
+        buffer.writeln(
+          "**Medication:** All $totalMeds doses taken today. Great consistency.",
+        );
       } else {
-        buffer.writeln("**Medication:** $takenMeds of $totalMeds doses taken today. Stay on track with your prescription.");
+        buffer.writeln(
+          "**Medication:** $takenMeds of $totalMeds doses taken today. Stay on track with your prescription.",
+        );
       }
     }
 
     if (isWalkActive) {
-      buffer.writeln("**Walk Tracker:** Active outdoor session running (${(walkState.distanceKm).toStringAsFixed(2)} km). Pace: ${walkState.formattedPace}/km.");
+      buffer.writeln(
+        "**Walk Tracker:** Active outdoor session running (${(walkState.distanceKm).toStringAsFixed(2)} km). Pace: ${walkState.formattedPace}/km.",
+      );
     } else if (todayDistanceMeters < 2500) {
-      buffer.writeln("**Physical Routine:** ${kmWalked}km walked today. Plan an evening walk to hit your 5.0km goal.");
+      buffer.writeln(
+        "**Physical Routine:** ${kmWalked}km walked today. Plan an evening walk to hit your 5.0km goal.",
+      );
     } else {
-      buffer.writeln("**Physical Routine:** Great job — ${kmWalked}km covered today.");
+      buffer.writeln(
+        "**Physical Routine:** Great job — ${kmWalked}km covered today.",
+      );
     }
 
     if (nextReminder != null) {
       final dueTime = DateFormat('h:mm a').format(nextReminder.scheduledAt);
-      buffer.writeln("**Upcoming Reminder:** \"${nextReminder.title}\" scheduled for $dueTime.");
+      buffer.writeln(
+        "**Upcoming Reminder:** \"${nextReminder.title}\" scheduled for $dueTime.",
+      );
     }
 
     buffer.writeln("");
     if (pending.isNotEmpty) {
-      buffer.writeln("**Priority Activities (${pending.length} pending today):**");
+      buffer.writeln(
+        "**Priority Activities (${pending.length} pending today):**",
+      );
       for (int i = 0; i < pending.take(3).length; i++) {
         final p = pending[i];
-        final dur = p.estimatedMinutes != null && p.estimatedMinutes! > 0 ? " (${p.estimatedMinutes}m timer)" : "";
+        final dur = p.estimatedMinutes != null && p.estimatedMinutes! > 0
+            ? " (${p.estimatedMinutes}m timer)"
+            : "";
         final cleanTitle = p.title.replaceAll('💊', '(medicine)');
         buffer.writeln("  ${i + 1}. $cleanTitle$dur");
       }
     } else {
-      buffer.writeln("**Activities:** All today's activities are finished. Zero backlog.");
+      buffer.writeln(
+        "**Activities:** All today's activities are finished. Zero backlog.",
+      );
     }
 
     if (nextLecture != null) {
-      buffer.writeln("\n**Study Target:** Next in \"${course.title}\" is \"${nextLecture.title}\" (${(nextLecture.durationSeconds ~/ 60)}m).");
+      buffer.writeln(
+        "\n**Study Target:** Next in \"${course.title}\" is \"${nextLecture.title}\" (${(nextLecture.durationSeconds ~/ 60)}m).",
+      );
     }
 
-    buffer.writeln("\n**Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
-        "${budget != null && budget.monthlyLimit > 0 ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.");
+    buffer.writeln(
+      "\n**Daily Budget:** ₹${todaySpend.toStringAsFixed(0)} spent today"
+      "${budget != null && budget.monthlyLimit > 0 ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.",
+    );
 
     return AiResponse(
       text: buffer.toString(),
@@ -1012,10 +1282,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
         type: AiActionType.dailyPlanSuggested,
         title: 'Apply Daily Game Plan',
         summary: '${pending.length} tasks organized • Water & Walk monitored',
-        payload: {
-          'taskCount': pending.length,
-          'walkTargetKm': 5.0,
-        },
+        payload: {'taskCount': pending.length, 'walkTargetKm': 5.0},
       ),
     );
   }
@@ -1030,7 +1297,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
       );
     } catch (_) {}
 
-    final todayDistanceMeters = ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
+    final todayDistanceMeters =
+        ref.read(todayWalkDistanceStreamProvider).value ?? 0.0;
     final weekKm = (todayDistanceMeters / 1000.0).toStringAsFixed(1);
 
     final todaySpend = ref.read(todaySpendingStreamProvider).value ?? 0.0;
@@ -1044,23 +1312,29 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
     final buffer = StringBuffer();
     buffer.writeln("**Your Personal Growth Insights:**\n");
     final pct = (course.progressFraction * 100).round();
-    buffer.writeln("• **Course Progress:** $pct% completed in \"${course.title}\" (${course.completedLectures}/${course.totalLectures} lectures).");
+    buffer.writeln(
+      "• **Course Progress:** $pct% completed in \"${course.title}\" (${course.completedLectures}/${course.totalLectures} lectures).",
+    );
     if (dsaSolved > 0) {
-      buffer.writeln("• **Study & Practice:** $dsaSolved algorithm problems mastered this week.");
+      buffer.writeln(
+        "• **Study & Practice:** $dsaSolved algorithm problems mastered this week.",
+      );
     }
     buffer.writeln("• **Physical Wellness:** $weekKm km active walk recorded.");
     buffer.writeln(
       '• **Financial Health:** ₹${todaySpend.toStringAsFixed(0)} spent today'
       '${budget != null ? " (Monthly limit: ₹${budget.monthlyLimit.toStringAsFixed(0)})" : ""}.',
     );
-    buffer.writeln("• **Streak Consistency:** $streak-day continuous momentum active.");
+    buffer.writeln(
+      "• **Streak Consistency:** $streak-day continuous momentum active.",
+    );
 
     return AiResponse(
       text: buffer.toString(),
       proposedAction: const AiProposedAction(
         type: AiActionType.personalInsight,
-        title: 'Weekly Life Health Card',
-        summary: 'Cross-module metrics updated in real-time from SQLite database.',
+        title: 'Current Activity Summary',
+        summary: 'Current learning, activity and finance information',
         payload: {},
       ),
     );

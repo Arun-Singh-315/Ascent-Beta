@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../database/app_database.dart';
+
+bool canEnterWorkspace(UserProfile? profile, SharedPreferences preferences) =>
+    (preferences.getBool('ascent_quick_start_v1') ?? false) ||
+    (profile != null &&
+        profile.onboardingComplete &&
+        profile.name.trim().isNotEmpty);
 
 // ── SharedPreferences provider ───────────────────────────────────────────────
 
@@ -142,9 +149,8 @@ class RawBoostToneNotifier extends Notifier<bool> {
   }
 }
 
-final rawBoostToneEnabledProvider = NotifierProvider<RawBoostToneNotifier, bool>(
-  RawBoostToneNotifier.new,
-);
+final rawBoostToneEnabledProvider =
+    NotifierProvider<RawBoostToneNotifier, bool>(RawBoostToneNotifier.new);
 
 class AccountabilityFollowUpNotifier extends Notifier<bool> {
   @override
@@ -168,6 +174,5 @@ class AccountabilityFollowUpNotifier extends Notifier<bool> {
 
 final accountabilityFollowUpEnabledProvider =
     NotifierProvider<AccountabilityFollowUpNotifier, bool>(
-  AccountabilityFollowUpNotifier.new,
-);
-
+      AccountabilityFollowUpNotifier.new,
+    );

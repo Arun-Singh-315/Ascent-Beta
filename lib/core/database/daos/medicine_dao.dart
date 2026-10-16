@@ -1,12 +1,10 @@
 part of '../app_database.dart';
 
-@DriftAccessor(tables: [
-  MedicineTable,
-  MedicineLogTable,
-  TaskTable,
-  ReminderTable,
-])
-class MedicineDao extends DatabaseAccessor<AppDatabase> with _$MedicineDaoMixin {
+@DriftAccessor(
+  tables: [MedicineTable, MedicineLogTable, TaskTable, ReminderTable],
+)
+class MedicineDao extends DatabaseAccessor<AppDatabase>
+    with _$MedicineDaoMixin {
   MedicineDao(super.db);
 
   /// Watch all active medicines ordered by creation time descending.
@@ -19,14 +17,16 @@ class MedicineDao extends DatabaseAccessor<AppDatabase> with _$MedicineDaoMixin 
 
   /// Watch all medicines (both active and completed).
   Stream<List<Medicine>> watchAllMedicines() {
-    return (select(medicineTable)
-          ..orderBy([(m) => OrderingTerm.desc(m.createdAt)]))
-        .watch();
+    return (select(
+      medicineTable,
+    )..orderBy([(m) => OrderingTerm.desc(m.createdAt)])).watch();
   }
 
   /// Single fetch medicine by ID.
   Future<Medicine?> getMedicineById(int id) {
-    return (select(medicineTable)..where((m) => m.id.equals(id))).getSingleOrNull();
+    return (select(
+      medicineTable,
+    )..where((m) => m.id.equals(id))).getSingleOrNull();
   }
 
   /// Insert a new medicine.
@@ -75,28 +75,47 @@ class MedicineDao extends DatabaseAccessor<AppDatabase> with _$MedicineDaoMixin 
   }
 
   /// Mark or unmark a dose as taken, syncing with the linked Task in TaskTable.
-  Future<void> setDoseTaken(int logId, bool taken) async {
-    final now = DateTime.now();
+  Future<void> setDoseTaken(int logId, bool taken) => db.transaction(() async {
+    final log = await (select(
+      medicineLogTable,
+    )..where((l) => l.id.equals(logId))).getSingleOrNull();
+    if (log == null) throw StateError('This dose no longer exists');
+    if (log.isTaken == taken) return;
     await (update(medicineLogTable)..where((l) => l.id.equals(logId))).write(
       MedicineLogTableCompanion(
         isTaken: Value(taken),
-        takenAt: Value(taken ? now : null),
+        takenAt: Value(taken ? DateTime.now() : null),
       ),
     );
-
-    // Sync with linked TaskTable if present
-    final log = await (select(medicineLogTable)..where((l) => l.id.equals(logId))).getSingleOrNull();
-    if (log != null && log.linkedTaskId != null) {
-      await db.taskDao.syncCompletionFromMedicineDose(
+    if (log.linkedTaskId != null) {
+      if (!await db.taskDao.syncCompletionFromMedicineDose(
         log.linkedTaskId!,
         completed: taken,
-      );
+      )) {
+        throw StateError('The linked dose task cannot be updated');
+      }
     }
+    await _syncDoseAlert(log, taken);
+  });
+
+  Future<void> _syncDoseAlert(MedicineLog log, bool taken) async {
+    if (log.linkedReminderId == null) return;
+    final medicine = await getMedicineById(log.medicineId);
+    await (db.update(
+      db.reminderTable,
+    )..where((r) => r.id.equals(log.linkedReminderId!))).write(
+      ReminderTableCompanion(
+        isActive: Value(!taken && medicine?.isActive == true),
+        alertSyncPending: const Value(true),
+      ),
+    );
   }
 
   /// Sync dose status when task is updated from outside.
   Future<void> syncDoseFromTask(int taskId, bool completed) async {
-    final log = await (select(medicineLogTable)..where((l) => l.linkedTaskId.equals(taskId))).getSingleOrNull();
+    final log = await (select(
+      medicineLogTable,
+    )..where((l) => l.linkedTaskId.equals(taskId))).getSingleOrNull();
     if (log != null && log.isTaken != completed) {
       await (update(medicineLogTable)..where((l) => l.id.equals(log.id))).write(
         MedicineLogTableCompanion(
@@ -104,25 +123,28 @@ class MedicineDao extends DatabaseAccessor<AppDatabase> with _$MedicineDaoMixin 
           takenAt: Value(completed ? DateTime.now() : null),
         ),
       );
+      await _syncDoseAlert(log, completed);
     }
   }
 
   /// Cascading Deletion (User Rule 8):
   /// Deleting a medicine cancels all scheduled notifications, deletes linked reminders,
   /// deletes linked tasks, deletes all medicine logs, and deletes the medicine record.
-  Future<void> deleteMedicine(int id) async {
-    final logs = await (select(medicineLogTable)..where((l) => l.medicineId.equals(id))).get();
-
+  Future<void> deleteMedicine(int id) => db.transaction(() async {
+    final logs = await (select(
+      medicineLogTable,
+    )..where((l) => l.medicineId.equals(id))).get();
+    await (delete(
+      medicineLogTable,
+    )..where((l) => l.medicineId.equals(id))).go();
     for (final log in logs) {
       if (log.linkedReminderId != null) {
-        await (delete(db.reminderTable)..where((r) => r.id.equals(log.linkedReminderId!))).go();
+        await db.reminderDao.deleteReminder(log.linkedReminderId!);
       }
       if (log.linkedTaskId != null) {
-        await (delete(db.taskTable)..where((t) => t.id.equals(log.linkedTaskId!))).go();
+        await db.taskDao.deleteTask(log.linkedTaskId!);
       }
     }
-
-    await (delete(medicineLogTable)..where((l) => l.medicineId.equals(id))).go();
     await (delete(medicineTable)..where((m) => m.id.equals(id))).go();
-  }
+  });
 }

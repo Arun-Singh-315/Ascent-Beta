@@ -1,0 +1,207 @@
+[
+  {
+    "file": "PlusJakartaSans-Regular.ttf",
+    "sha256": "1306435ed883e4a1e6dad370e6d035955da71f4df9c07ca192833f7cb58a18d7",
+    "bytes": 63312
+  },
+  {
+    "file": "PlusJakartaSans-Medium.ttf",
+    "sha256": "d4478b49f18c5b0db7bd8fbbb033595061dea8c03a86246710035d750e515130",
+    "bytes": 63380
+  },
+  {
+    "file": "PlusJakartaSans-SemiBold.ttf",
+    "sha256": "8590ab94f96850ab246d5795a9ba442e42f64036673bc329573dfe93efbc7c87",
+    "bytes": 63388
+  },
+  {
+    "file": "PlusJakartaSans-Bold.ttf",
+    "sha256": "5b6d946cf820c9851ff7b4776425ee43f5cf405c6f891a4a7fcb4a74d5e32d52",
+    "bytes": 63312
+  },
+  {
+    "file": "PlusJakartaSans-ExtraBold.ttf",
+    "sha256": "9ab901a45e6afa0c663def7606b753bbdfb60fc73bf3277e8110c167ddb6bbc3",
+    "bytes": 63348
+  },
+  {
+    "file": "PlusJakartaSans-Italic.ttf",
+    "sha256": "14903fca938022aedf08d6a058799acce99a141639bbdd956bfe370f65d27846",
+    "bytes": 64824
+  },
+  {
+    "file": "Inter-Regular.ttf",
+    "sha256": "15b294b67f2f8bbc04d990023ef4aec66502b87dc9040d84abe5f896ccb693de",
+    "bytes": 324796
+  },
+  {
+    "file": "Inter-Medium.ttf",
+    "sha256": "36a36ff7ac46dc2aeceac3a80a87a67e7b844b8fc936699259aac8fba9bcf734",
+    "bytes": 325280
+  },
+  {
+    "file": "Inter-SemiBold.ttf",
+    "sha256": "334bb2c51aeba5f566abac8d03a7e75ab3234d6926b52e92a85dc704129258b5",
+    "bytes": 326024
+  },
+  {
+    "file": "Inter-Bold.ttf",
+    "sha256": "76121a34a606cc8a0e1ef5a47d2b9ba9678c41f5c852d63eb28f62069373bfad",
+    "bytes": 326444
+  },
+  {
+    "file": "Inter-ExtraBold.ttf",
+    "sha256": "6af943899936fd3fd15a5889db4a384cec311c9bfe33d74bcfd3e0ae56f1b1d1",
+    "bytes": 327300
+  },
+  {
+    "file": "Inter-Italic.ttf",
+    "sha256": "0e6e7a16caca2f42fb4966bf550abe48a84dc8de32d326797c8c03e6357c0133",
+    "bytes": 328228
+  },
+  {
+    "file": "BricolageGrotesque-Regular.ttf",
+    "sha256": "939dc04e2f37d72dcd6616a48c6545c5f357b89084766a9ee28bd3dfea161ddf",
+    "bytes": 82168
+  },
+  {
+    "file": "BricolageGrotesque-Medium.ttf",
+    "sha256": "9a13292c84d3d6d6cdc2aed28340bde9db24865ec0e5e9b49fd03a4a8ada6d43",
+    "bytes": 82220
+  },
+  {
+    "file": "BricolageGrotesque-SemiBold.ttf",
+    "sha256": "ea506831d0960376a1d3895ea68fd70fd93dd5a6d464c927898a6743e9c1a188",
+    "bytes": 82280
+  },
+  {
+    "file": "BricolageGrotesque-Bold.ttf",
+    "sha256": "441dfdf87403d13d21f818dbba584ea5c49021ae8479863ef8d983c94f89e5f9",
+    "bytes": 82180
+  },
+  {
+    "file": "BricolageGrotesque-ExtraBold.ttf",
+    "sha256": "9d6e6be444efda1fd2d8af9e289b8c09c3ab441b8006bddb2b49c96f97841d07",
+    "bytes": 82308
+  },
+  {
+    "file": "DMSans-Regular.ttf",
+    "sha256": "6fd5773a637cb4a7c36839eeca3106dcd1a8d92b138d1652e60fd4b2e31f74ab",
+    "bytes": 48256
+  },
+  {
+    "file": "DMSans-Medium.ttf",
+    "sha256": "2e9fd260f8833152c4b6066527d1b9591e1afb50a341a2eac825c9b4d29ba414",
+    "bytes": 48284
+  },
+  {
+    "file": "DMSans-SemiBold.ttf",
+    "sha256": "ab86961acdc191ac6c41bea55b4a5dbc4b2930918bfdbe8150a813c03aa59529",
+    "bytes": 48256
+  },
+  {
+    "file": "DMSans-Bold.ttf",
+    "sha256": "37e0c64412c4bc4238d29a8f2efe99d52201747f206a3600f36cd228b1168f55",
+    "bytes": 48176
+  },
+  {
+    "file": "DMSans-ExtraBold.ttf",
+    "sha256": "8fdc879a693658a3b8d9fa63a066e1c744a3b7ef3aedb32cf8a15ba89281c574",
+    "bytes": 48248
+  },
+  {
+    "file": "DMSans-Italic.ttf",
+    "sha256": "8eba278be309d122c8408c17fc776294ad3ab4bc3b2bafb1f9f247516d764696",
+    "bytes": 51120
+  },
+  {
+    "file": "JetBrainsMono-Regular.ttf",
+    "sha256": "fc34426314d00825ccc768a0c4b1178fe704f04bd947882ef10c2b71b7e355e7",
+    "bytes": 112148
+  },
+  {
+    "file": "JetBrainsMono-Medium.ttf",
+    "sha256": "ba10286722bd7dc2274b817575046e39ee816d6ba1e2ace48e22bcd068576941",
+    "bytes": 112180
+  },
+  {
+    "file": "JetBrainsMono-SemiBold.ttf",
+    "sha256": "f833596d98e0e021dd43d993254658d0f32318f82f08afee0fc2e41c16ce9571",
+    "bytes": 112136
+  },
+  {
+    "file": "JetBrainsMono-Bold.ttf",
+    "sha256": "b43a7dfebfb8816fb3859f6a7932824f594e115538ccd3f1ebc0ffc231b0acab",
+    "bytes": 112068
+  },
+  {
+    "file": "JetBrainsMono-ExtraBold.ttf",
+    "sha256": "98ea78a2337e1ef2274f247c857a63e40e975c6907a7baff9209033fa42142ac",
+    "bytes": 112064
+  },
+  {
+    "file": "JetBrainsMono-Italic.ttf",
+    "sha256": "93f2f2d90bcd64e35bf1b7bd90149b168df727499667b5d2fde1758ed0297da5",
+    "bytes": 114936
+  },
+  {
+    "file": "Merriweather-Regular.ttf",
+    "sha256": "a05a93f3e8c90b815dbecae2f7cc3973dd5100a2494d3f2546cb4d3ef4f94c8a",
+    "bytes": 585952
+  },
+  {
+    "file": "Merriweather-Medium.ttf",
+    "sha256": "49945dd5c14d52a34bcfcb07f7f9f4638d4f1be4a994aebe0155e5d3878076c1",
+    "bytes": 585996
+  },
+  {
+    "file": "Merriweather-SemiBold.ttf",
+    "sha256": "c2427c08282955164796ecf059dc120d79f623ccdd5cd0b37578beda5073694d",
+    "bytes": 585996
+  },
+  {
+    "file": "Merriweather-Bold.ttf",
+    "sha256": "f0b820b40d7da5bc762a3e7fcf1b719666a8091c07dcff8a29121d378d6f3cf2",
+    "bytes": 586028
+  },
+  {
+    "file": "Merriweather-ExtraBold.ttf",
+    "sha256": "8075f6c64bebff94b1ee64c1fa5ac9f17a11218359cd470292cd0fabe72f301f",
+    "bytes": 586060
+  },
+  {
+    "file": "Merriweather-Italic.ttf",
+    "sha256": "3873f318261d58b606dba94e33a6367462f009553f054e0f6d2746cb67715548",
+    "bytes": 595628
+  },
+  {
+    "file": "SourceSerif4-Regular.ttf",
+    "sha256": "444d1df62a9693f8ff54dcb9fca4da2d4da7ccbce5c39c91644d0d983cf4cd0d",
+    "bytes": 194440
+  },
+  {
+    "file": "SourceSerif4-Medium.ttf",
+    "sha256": "0bf8089ceff9125fe74e101b322c936bd3c66ed336f8f02cddcd978759153db8",
+    "bytes": 194692
+  },
+  {
+    "file": "SourceSerif4-SemiBold.ttf",
+    "sha256": "532158a64c3ff8cf4c71ea05ac5bdd9d3a067287061634f513aab275af942db1",
+    "bytes": 194776
+  },
+  {
+    "file": "SourceSerif4-Bold.ttf",
+    "sha256": "bb37bf8029423d8045d0f4d39730f68297ef7167d9510f0eca7d7c6c111bc40b",
+    "bytes": 194736
+  },
+  {
+    "file": "SourceSerif4-ExtraBold.ttf",
+    "sha256": "0b91ff909f063d670aab6ac7d72c695d4c33ac7a95c7ed654795d2818d6b69d7",
+    "bytes": 194772
+  },
+  {
+    "file": "SourceSerif4-Italic.ttf",
+    "sha256": "6f6fb5229f3c5356779bf1ea3d78847c640160b4a2dd94906543fb5b94a09d85",
+    "bytes": 183528
+  }
+]

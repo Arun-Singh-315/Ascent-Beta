@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
@@ -16,10 +19,26 @@ class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key, required this.shell});
 
   static const _tabs = [
-    _TabItem(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-    _TabItem(icon: Icons.notifications_none_rounded, activeIcon: Icons.notifications_rounded, label: 'Reminders'),
-    _TabItem(icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet_rounded, label: 'Money'),
-    _TabItem(icon: Icons.grid_view_outlined, activeIcon: Icons.grid_view_rounded, label: 'More'),
+    _TabItem(
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    _TabItem(
+      icon: Icons.notifications_none_rounded,
+      activeIcon: Icons.notifications_rounded,
+      label: 'Reminders',
+    ),
+    _TabItem(
+      icon: Icons.account_balance_wallet_outlined,
+      activeIcon: Icons.account_balance_wallet_rounded,
+      label: 'Money',
+    ),
+    _TabItem(
+      icon: Icons.grid_view_outlined,
+      activeIcon: Icons.grid_view_rounded,
+      label: 'More',
+    ),
   ];
 
   @override
@@ -61,35 +80,44 @@ class _MainScaffoldState extends State<MainScaffold> {
           messenger.removeCurrentSnackBar();
           messenger.showSnackBar(
             SnackBar(
-              content: const Row(
+              content: Row(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.touch_app_rounded, size: 16, color: Colors.white70),
+                  Icon(
+                    Icons.touch_app_rounded,
+                    size: 16,
+                    color: AppPalette.white70,
+                  ),
                   SizedBox(width: 8),
                   Text(
                     'Press back again to exit',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                    style: AppTypeRoles.typeRole76.copyWith(
+                      color: AppPalette.white,
                     ),
                   ),
                 ],
               ),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: const Color(0xFF1E222D).withValues(alpha: 0.95),
+              backgroundColor: AppPalette.colorFF2D251E.withValues(alpha: 0.95),
               elevation: 4,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: AppGeometry.roundedr20,
                 side: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.12),
-                  width: 0.8,
+                  color: AppPalette.white.withValues(alpha: 0.12),
+                  width: AppBorderScale.w0point8,
                 ),
               ),
-              margin: const EdgeInsets.only(bottom: 74, left: 60, right: 60),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.only(
+                bottom: AppSpace.s74,
+                left: AppSpace.s60,
+                right: AppSpace.s60,
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s8,
+              ),
             ),
           );
           return;
@@ -103,21 +131,20 @@ class _MainScaffoldState extends State<MainScaffold> {
         drawer: const AscentDrawer(),
         body: widget.shell,
         bottomNavigationBar: _AscentBottomNav(
-              currentIndex: widget.shell.currentIndex,
-              onTap: (index) {
-                HapticFeedback.selectionClick();
-                widget.shell.goBranch(
-                  index,
-                  initialLocation: index == widget.shell.currentIndex,
-                );
-              },
-              tabs: MainScaffold._tabs,
-            ),
+          currentIndex: widget.shell.currentIndex,
+          onTap: (index) {
+            HapticFeedback.selectionClick();
+            widget.shell.goBranch(
+              index,
+              initialLocation: index == widget.shell.currentIndex,
+            );
+          },
+          tabs: MainScaffold._tabs,
+        ),
       ),
     );
   }
 }
-
 
 class _AscentBottomNav extends StatelessWidget {
   final int currentIndex;
@@ -140,10 +167,7 @@ class _AscentBottomNav extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         border: Border(
-          top: BorderSide(
-            color: divider,
-            width: 0.8,
-          ),
+          top: BorderSide(color: divider, width: AppBorderScale.w0point8),
         ),
       ),
       child: SafeArea(
@@ -156,11 +180,11 @@ class _AscentBottomNav extends StatelessWidget {
               final isActive = index == currentIndex;
               return Expanded(
                 child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
+                  color: AppPalette.transparent,
+                  child: AppTapArea(
                     onTap: () => onTap(index),
                     splashColor: context.divider.withValues(alpha: 0.2),
-                    highlightColor: Colors.transparent,
+                    highlightColor: AppPalette.transparent,
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -168,28 +192,39 @@ class _AscentBottomNav extends StatelessWidget {
                           AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
                             curve: Curves.easeOutCubic,
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? context.glass.claySoft
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s14,
+                              vertical: AppSpace.s3,
+                            ),
+                            decoration: AppCard.decoration(
+                              context,
+                              night: BoxDecoration(
+                                color: isActive
+                                    ? context.glass.claySoft
+                                    : AppPalette.transparent,
+                                borderRadius: AppGeometry.roundedr16,
+                              ),
                             ),
                             child: Icon(
                               isActive ? tab.activeIcon : tab.icon,
-                              color: isActive ? context.glass.clay : inactiveColor,
+                              color: isActive
+                                  ? context.glass.clay
+                                  : inactiveColor,
                               size: 19,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             tab.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                              color: isActive ? context.glass.ink : inactiveColor,
-                              height: 1.1,
-                            ),
+                            style:
+                                AppStateTypography.stateType26(
+                                  state0: isActive,
+                                ).copyWith(
+                                  color: isActive
+                                      ? context.glass.ink
+                                      : inactiveColor,
+                                  height: 1.1,
+                                ),
                           ),
                         ],
                       ),

@@ -1,3 +1,5 @@
+import 'support/learning_fixtures.dart';
+import 'support/returning_user_guides.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,7 +16,9 @@ import 'package:drift/drift.dart' as drift;
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/features/today/task_board_screen.dart';
 
-Future<List<TodayActivityItem>> readTodayActivities(ProviderContainer container) async {
+Future<List<TodayActivityItem>> readTodayActivities(
+  ProviderContainer container,
+) async {
   final current = container.read(todayActivitiesProvider);
   if (current.hasValue) {
     return current.value!;
@@ -39,7 +43,7 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(returningUserGuidePrefs);
     prefs = await SharedPreferences.getInstance();
 
     container = ProviderContainer(
@@ -48,315 +52,423 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
+    await container.read(learningHubProvider.notifier).ready;
   });
 
   tearDown(() async {
+    await container.read(learningHubProvider.notifier).settled;
     container.dispose();
     await db.close();
   });
 
+  test(
+    'A converted task opens its scoped lecture instead of a generic timer',
+    () async {
+      final state = container.read(learningHubProvider);
+      final lecture = state.activeLecture;
+      final task = await db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Converted study activity',
+          learningCourseId: drift.Value(state.activeCourseId),
+          learningLectureId: drift.Value(lecture.id),
+        ),
+      );
+      await container
+          .read(timeTrackingProvider.notifier)
+          .switchToTask(
+            title: 'Converted study activity',
+            taskId: task,
+            autoStart: false,
+          );
+      expect(
+        container.read(learningHubProvider).activeCourseId,
+        state.activeCourseId,
+      );
+      expect(container.read(learningHubProvider).activeLectureId, lecture.id);
+      expect(container.read(learningHubProvider).isPlaying, false);
+      expect(await db.select(db.timeSessionTable).get(), isEmpty);
+      expect(await db.taskDao.markComplete(task), false);
+      db.markWorkspaceReplaced();
+      await expectLater(
+        container.read(learningHubProvider.notifier).ready,
+        throwsStateError,
+      );
+    },
+  );
+
   group('Lecture Activity Lifecycle & Dismissal Guarantee Tests', () {
-    test('Swiping lecture removes it from today activities without deleting from course catalog', () async {
-      final hubNotifier = container.read(learningHubProvider.notifier);
-      hubNotifier.startLearning();
+    test(
+      'Swiping lecture removes it from today activities without deleting from course catalog',
+      () async {
+        final hubNotifier = container.read(learningHubProvider.notifier);
+        hubNotifier.startLearning();
 
-      final learningState = container.read(learningHubProvider);
-      final activeLec = learningState.activeLecture;
-      final course = learningState.course;
+        final learningState = container.read(learningHubProvider);
+        final activeLec = learningState.activeLecture;
+        final course = learningState.course;
 
-      // Verify active lecture exists in the course
-      expect(activeLec.id, isNotNull);
-      final totalLecturesBefore = course.modules.expand((m) => m.lectures).length;
+        // Verify active lecture exists in the course
+        expect(activeLec.id, isNotNull);
+        final totalLecturesBefore = course.modules
+            .expand((m) => m.lectures)
+            .length;
 
-      // Construct TodayActivityItem corresponding to active lecture
-      final lectureActivity = TodayActivityItem(
-        id: 'lecture_${activeLec.id}',
-        title: '${course.title}: ${activeLec.title}',
-        sourceType: 'lecture',
-        status: TodayActivityStatus.notStarted,
-        elapsedSecondsToday: 0,
-        linkedTaskId: null,
-        linkedSessionId: null,
-        categoryTag: 'Study',
-        kind: ActivityKind.duration,
-        targetMinutes: 5,
-        plannedDate: DateTime.now(),
-        isOverdue: false,
-      );
+        // Construct TodayActivityItem corresponding to active lecture
+        final lectureActivity = TodayActivityItem(
+          id: 'lecture_${activeLec.id}',
+          title: '${course.title}: ${activeLec.title}',
+          sourceType: 'lecture',
+          status: TodayActivityStatus.notStarted,
+          elapsedSecondsToday: 0,
+          linkedTaskId: null,
+          linkedSessionId: null,
+          categoryTag: 'Study',
+          kind: ActivityKind.duration,
+          targetMinutes: 5,
+          plannedDate: DateTime.now(),
+          isOverdue: false,
+        );
 
-      // Perform dismissal via deleteTodayActivity
-      await deleteTodayActivity(container, lectureActivity);
+        // Perform dismissal via deleteTodayActivity
+        await deleteTodayActivity(container, lectureActivity);
 
-      // 1. Verify lecture ID is marked as dismissed for today
-      final dismissedSet = container.read(dismissedTodayActivityIdsProvider);
-      expect(dismissedSet.contains('lecture_${activeLec.id}'), isTrue);
+        // 1. Verify lecture ID is marked as dismissed for today
+        final dismissedSet = container.read(dismissedTodayActivityIdsProvider);
+        expect(dismissedSet.contains('lecture_${activeLec.id}'), isTrue);
 
-      // 2. Verify lecture was NOT deleted from the course catalog
-      final learningStateAfter = container.read(learningHubProvider);
-      final totalLecturesAfter = learningStateAfter.course.modules.expand((m) => m.lectures).length;
-      expect(totalLecturesAfter, equals(totalLecturesBefore));
-      final stillExists = learningStateAfter.course.modules
-          .expand((m) => m.lectures)
-          .any((l) => l.id == activeLec.id);
-      expect(stillExists, isTrue, reason: 'Course lecture must never be deleted from course catalog');
-    });
+        // 2. Verify lecture was NOT deleted from the course catalog
+        final learningStateAfter = container.read(learningHubProvider);
+        final totalLecturesAfter = learningStateAfter.course.modules
+            .expand((m) => m.lectures)
+            .length;
+        expect(totalLecturesAfter, equals(totalLecturesBefore));
+        final stillExists = learningStateAfter.course.modules
+            .expand((m) => m.lectures)
+            .any((l) => l.id == activeLec.id);
+        expect(
+          stillExists,
+          isTrue,
+          reason: 'Course lecture must never be deleted from course catalog',
+        );
+      },
+    );
 
-    test('Dismissed lecture does NOT resurrect upon stream rebuild or update', () async {
-      final hubNotifier = container.read(learningHubProvider.notifier);
-      hubNotifier.startLearning();
+    test(
+      'Dismissed lecture does NOT resurrect upon stream rebuild or update',
+      () async {
+        final hubNotifier = container.read(learningHubProvider.notifier);
+        hubNotifier.startLearning();
 
-      final activeLec = container.read(learningHubProvider).activeLecture;
-      final lectureActivityId = 'lecture_${activeLec.id}';
+        final activeLec = container.read(learningHubProvider).activeLecture;
+        final lectureActivityId = 'lecture_${activeLec.id}';
 
-      // Dismiss the lecture activity
-      await container.read(dismissedTodayActivityIdsProvider.notifier).dismissActivityId(lectureActivityId);
+        // Dismiss the lecture activity
+        await container
+            .read(dismissedTodayActivityIdsProvider.notifier)
+            .dismissActivityId(lectureActivityId);
 
-      // Read today activities stream
-      final todayList = await readTodayActivities(container);
+        // Read today activities stream
+        final todayList = await readTodayActivities(container);
 
-      // Verify it is not present in Today's list
-      expect(todayList.any((it) => it.id == lectureActivityId), isFalse);
-    });
+        // Verify it is not present in Today's list
+        expect(todayList.any((it) => it.id == lectureActivityId), isFalse);
+      },
+    );
 
-    test('User explicit play or selection un-dismisses lecture from today list', () async {
-      final hubNotifier = container.read(learningHubProvider.notifier);
-      hubNotifier.startLearning();
+    test(
+      'User explicit play or selection un-dismisses lecture from today list',
+      () async {
+        final hubNotifier = container.read(learningHubProvider.notifier);
+        hubNotifier.startLearning();
 
-      final activeLec = container.read(learningHubProvider).activeLecture;
-      final lectureActivityId = 'lecture_${activeLec.id}';
+        final activeLec = container.read(learningHubProvider).activeLecture;
+        final lectureActivityId = 'lecture_${activeLec.id}';
 
-      // Dismiss it
-      await container.read(dismissedTodayActivityIdsProvider.notifier).dismissActivityId(lectureActivityId);
-      expect(container.read(dismissedTodayActivityIdsProvider).contains(lectureActivityId), isTrue);
+        // Dismiss it
+        await container
+            .read(dismissedTodayActivityIdsProvider.notifier)
+            .dismissActivityId(lectureActivityId);
+        expect(
+          container
+              .read(dismissedTodayActivityIdsProvider)
+              .contains(lectureActivityId),
+          isTrue,
+        );
 
-      // User explicitly starts playback or selects lecture
-      hubNotifier.play();
+        // User explicitly starts playback or selects lecture
+        hubNotifier.play();
 
-      // Verify it was un-dismissed
-      expect(container.read(dismissedTodayActivityIdsProvider).contains(lectureActivityId), isFalse);
-      hubNotifier.pause();
-    });
+        // Verify it was un-dismissed
+        expect(
+          container
+              .read(dismissedTodayActivityIdsProvider)
+              .contains(lectureActivityId),
+          isFalse,
+        );
+        hubNotifier.pause();
+      },
+    );
 
-    test('Completed lecture remains visible in Completed activities for the day', () async {
-      final hubNotifier = container.read(learningHubProvider.notifier);
-      hubNotifier.startLearning();
+    test(
+      'Completed lecture remains visible in Completed activities for the day',
+      () async {
+        final hubNotifier = container.read(learningHubProvider.notifier);
+        hubNotifier.startLearning();
 
-      final activeLec = container.read(learningHubProvider).activeLecture;
+        final activeLec = container.read(learningHubProvider).activeLecture;
 
-      // Mark lecture completed
-      hubNotifier.markLectureCompleted(activeLec.id, completed: true);
+        // Mark lecture completed
+        await seedLectureStudyEvidence(container, activeLec.id);
+        await container
+            .read(learningHubProvider.notifier)
+            .markLectureCompleted(activeLec.id, completed: true);
 
-      // Fetch today's activities
-      final todayList = await readTodayActivities(container);
+        // Fetch today's activities
+        final todayList = await readTodayActivities(container);
 
-      final completedItem = todayList.firstWhere(
-        (it) => it.id == 'lecture_${activeLec.id}',
-        orElse: () => throw Exception('Completed lecture not found in today activities'),
-      );
+        final completedItem = todayList.firstWhere(
+          (it) =>
+              it.learningLectureId == activeLec.id &&
+              it.learningCourseId ==
+                  container.read(learningHubProvider).activeCourseId,
+          orElse: () => throw Exception(
+            'Completed lecture not found in today activities',
+          ),
+        );
 
-      expect(completedItem.status, equals(TodayActivityStatus.done));
-    });
+        expect(completedItem.status, equals(TodayActivityStatus.done));
+      },
+    );
   });
 
   group('One-Way Completion & Non-Dismissible Completed Items Widget Tests', () {
-    testWidgets('Active activity has endToStart swipe direction; completed activity has none', (tester) async {
-      final activeActivity = TodayActivityItem(
-        id: 'lecture_101',
-        title: 'Spring Boot: Architecture Overview',
-        sourceType: 'lecture',
-        status: TodayActivityStatus.notStarted,
-        elapsedSecondsToday: 0,
-        linkedTaskId: null,
-        linkedSessionId: null,
-        categoryTag: 'Study',
-        kind: ActivityKind.duration,
-        targetMinutes: 10,
-        plannedDate: DateTime.now(),
-        isOverdue: false,
-      );
+    testWidgets(
+      'Active activity has endToStart swipe direction; completed activity has none',
+      (tester) async {
+        final activeActivity = TodayActivityItem(
+          id: 'lecture_101',
+          title: 'Spring Boot: Architecture Overview',
+          sourceType: 'lecture',
+          status: TodayActivityStatus.notStarted,
+          elapsedSecondsToday: 0,
+          linkedTaskId: null,
+          linkedSessionId: null,
+          categoryTag: 'Study',
+          kind: ActivityKind.duration,
+          targetMinutes: 10,
+          plannedDate: DateTime.now(),
+          isOverdue: false,
+        );
 
-      final completedActivity = TodayActivityItem(
-        id: 'lecture_102',
-        title: 'Spring Boot: Initial Setup',
-        sourceType: 'lecture',
-        status: TodayActivityStatus.done,
-        elapsedSecondsToday: 600,
-        linkedTaskId: null,
-        linkedSessionId: null,
-        categoryTag: 'Study',
-        kind: ActivityKind.duration,
-        targetMinutes: 10,
-        plannedDate: DateTime.now(),
-        isOverdue: false,
-      );
+        final completedActivity = TodayActivityItem(
+          id: 'lecture_102',
+          title: 'Spring Boot: Initial Setup',
+          sourceType: 'lecture',
+          status: TodayActivityStatus.done,
+          elapsedSecondsToday: 600,
+          linkedTaskId: null,
+          linkedSessionId: null,
+          categoryTag: 'Study',
+          kind: ActivityKind.duration,
+          targetMinutes: 10,
+          plannedDate: DateTime.now(),
+          isOverdue: false,
+        );
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: Column(
-                children: [
-                  ActivityRowItem(activity: activeActivity),
-                  ActivityRowItem(activity: completedActivity),
-                ],
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Scaffold(
+                body: Column(
+                  children: [
+                    ActivityRowItem(activity: activeActivity),
+                    ActivityRowItem(activity: completedActivity),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      final dismissibles = tester.widgetList<Dismissible>(find.byType(Dismissible)).toList();
-      expect(dismissibles.length, 2);
+        final dismissibles = tester
+            .widgetList<Dismissible>(find.byType(Dismissible))
+            .toList();
+        expect(dismissibles.length, 2);
 
-      // Active activity can be dismissed (endToStart)
-      expect(dismissibles[0].direction, equals(DismissDirection.endToStart));
+        // Active activity can be dismissed (endToStart)
+        expect(dismissibles[0].direction, equals(DismissDirection.endToStart));
 
-      // Completed activity CANNOT be dismissed (none) - must remain visible full day
-      expect(dismissibles[1].direction, equals(DismissDirection.none));
-    });
+        // Completed activity CANNOT be dismissed (none) - must remain visible full day
+        expect(dismissibles[1].direction, equals(DismissDirection.none));
+      },
+    );
 
-    testWidgets('Tapping completed activity does not un-complete it (one-way only)', (tester) async {
-      final completedActivity = TodayActivityItem(
-        id: 'lecture_103',
-        title: 'Spring Boot: Dependency Injection',
-        sourceType: 'lecture',
-        status: TodayActivityStatus.done,
-        elapsedSecondsToday: 300,
-        linkedTaskId: null,
-        linkedSessionId: null,
-        categoryTag: 'Study',
-        kind: ActivityKind.duration,
-        targetMinutes: 5,
-        plannedDate: DateTime.now(),
-        isOverdue: false,
-      );
+    testWidgets(
+      'Tapping completed activity does not un-complete it (one-way only)',
+      (tester) async {
+        final completedActivity = TodayActivityItem(
+          id: 'lecture_103',
+          title: 'Spring Boot: Dependency Injection',
+          sourceType: 'lecture',
+          status: TodayActivityStatus.done,
+          elapsedSecondsToday: 300,
+          linkedTaskId: null,
+          linkedSessionId: null,
+          categoryTag: 'Study',
+          kind: ActivityKind.duration,
+          targetMinutes: 5,
+          plannedDate: DateTime.now(),
+          isOverdue: false,
+        );
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: ActivityRowItem(activity: completedActivity),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Scaffold(
+                body: ActivityRowItem(activity: completedActivity),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Find the circular check target
-      final checkIcon = find.byIcon(Icons.check_rounded);
-      expect(checkIcon, findsOneWidget);
+        // Find the circular check target
+        final checkIcon = find.byIcon(Icons.check_rounded);
+        expect(checkIcon, findsOneWidget);
 
-      // Tap the completed check target
-      await tester.tap(checkIcon);
-      await tester.pumpAndSettle();
+        // Tap the completed check target
+        await tester.tap(checkIcon);
+        await tester.pumpAndSettle();
 
-      // Verify that it remains checked
-      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-    });
+        // Verify that it remains checked
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      },
+    );
 
-    testWidgets('Swiping active lecture displays "Removed from today\'s activities" snackbar', (tester) async {
-      final activeLectureActivity = TodayActivityItem(
-        id: 'lecture_1',
-        title: 'Spring Boot: Intro',
-        sourceType: 'lecture',
-        status: TodayActivityStatus.notStarted,
-        elapsedSecondsToday: 0,
-        linkedTaskId: null,
-        linkedSessionId: null,
-        categoryTag: 'Study',
-        kind: ActivityKind.duration,
-        targetMinutes: 5,
-        plannedDate: DateTime.now(),
-        isOverdue: false,
-      );
+    testWidgets(
+      'Swiping active lecture displays "Removed from today\'s activities" snackbar',
+      (tester) async {
+        final activeLectureActivity = TodayActivityItem(
+          id: 'lecture_1',
+          title: 'Spring Boot: Intro',
+          sourceType: 'lecture',
+          status: TodayActivityStatus.notStarted,
+          elapsedSecondsToday: 0,
+          linkedTaskId: null,
+          linkedSessionId: null,
+          categoryTag: 'Study',
+          kind: ActivityKind.duration,
+          targetMinutes: 5,
+          plannedDate: DateTime.now(),
+          isOverdue: false,
+        );
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            home: Scaffold(
-              body: ActivityRowItem(activity: activeLectureActivity),
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              home: Scaffold(
+                body: ActivityRowItem(activity: activeLectureActivity),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Swipe from right to left
-      await tester.drag(find.text('Spring Boot: Intro'), const Offset(-500, 0));
-      await tester.pumpAndSettle();
+        // Swipe from right to left
+        await tester.drag(
+          find.text('Spring Boot: Intro'),
+          const Offset(-500, 0),
+        );
+        await tester.pumpAndSettle();
 
-      // Verify SnackBar text says "Removed from today's activities" (never "deleted")
-      expect(find.text('Removed from today\'s activities'), findsOneWidget);
-      expect(find.textContaining('deleted'), findsNothing);
+        // Verify SnackBar text says "Removed from today's activities" (never "deleted")
+        expect(find.text('Removed from today\'s activities'), findsOneWidget);
+        expect(find.textContaining('deleted'), findsNothing);
 
-      // Advance clock past SnackBar duration (2s) so pending timer clears cleanly
-      await tester.pump(const Duration(seconds: 3));
-    });
+        // Advance clock past SnackBar duration (2s) so pending timer clears cleanly
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
 
-    testWidgets('TaskBoardScreen enforces one-way completion and prevents dismissing completed tasks', (tester) async {
-      // Insert one active task and one completed task
-      final activeId = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Active Task 1',
-          plannedDate: drift.Value(DateTime.now()),
-          priority: const drift.Value('medium'),
-        ),
-      );
-
-      final completedId = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: 'Completed Task 2',
-          plannedDate: drift.Value(DateTime.now()),
-          actualCompletedDate: drift.Value(DateTime.now()),
-          priority: const drift.Value('low'),
-        ),
-      );
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: TaskBoardScreen(),
+    testWidgets(
+      'TaskBoardScreen enforces one-way completion and prevents dismissing completed tasks',
+      (tester) async {
+        // Insert one active task and one completed task
+        final activeId = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: 'Active Task 1',
+            plannedDate: drift.Value(DateTime.now()),
+            priority: const drift.Value('medium'),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        final completedId = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: 'Completed Task 2',
+            plannedDate: drift.Value(DateTime.now()),
+            actualCompletedDate: drift.Value(DateTime.now()),
+            priority: const drift.Value('low'),
+          ),
+        );
 
-      expect(find.text('Active Task 1'), findsOneWidget);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: TaskBoardScreen()),
+          ),
+        );
 
-      // Verify DismissDirection on active Task item tile
-      final activeDismissible = tester.widget<Dismissible>(find.byKey(ValueKey('task_$activeId')));
-      expect(activeDismissible.direction, equals(DismissDirection.horizontal));
+        await tester.pumpAndSettle();
 
-      // Switch to Completed tab to verify completed task
-      await tester.tap(find.text('Completed'));
-      await tester.pumpAndSettle();
+        expect(find.text('Active Task 1'), findsOneWidget);
 
-      expect(find.text('Completed Task 2'), findsOneWidget);
+        // Verify DismissDirection on active Task item tile
+        final activeDismissible = tester.widget<Dismissible>(
+          find.byKey(ValueKey('task_$activeId')),
+        );
+        expect(
+          activeDismissible.direction,
+          equals(DismissDirection.horizontal),
+        );
 
-      final completedDismissible = tester.widget<Dismissible>(find.byKey(ValueKey('task_$completedId')));
-      expect(completedDismissible.direction, equals(DismissDirection.none),
-          reason: 'Completed task cannot be swiped away from completed view');
+        // Switch to Completed tab to verify completed task
+        await tester.tap(find.text('Completed'));
+        await tester.pumpAndSettle();
 
-      // Tap on completed task check icon
-      final completedCheck = find.descendant(
-        of: find.byKey(ValueKey('task_$completedId')),
-        matching: find.byIcon(Icons.check_rounded),
-      );
-      expect(completedCheck, findsOneWidget);
+        expect(find.text('Completed Task 2'), findsOneWidget);
 
-      await tester.tap(completedCheck);
-      await tester.pumpAndSettle();
+        final completedDismissible = tester.widget<Dismissible>(
+          find.byKey(ValueKey('task_$completedId')),
+        );
+        expect(
+          completedDismissible.direction,
+          equals(DismissDirection.none),
+          reason: 'Completed task cannot be swiped away from completed view',
+        );
 
-      // Verify task in DB remains completed (one-way only)
-      final taskInDb = await db.taskDao.getTaskById(completedId);
-      expect(taskInDb?.actualCompletedDate, isNotNull, reason: 'Completed task cannot be undone back to active');
+        // Tap on completed task check icon
+        final completedCheck = find.descendant(
+          of: find.byKey(ValueKey('task_$completedId')),
+          matching: find.byIcon(Icons.check_rounded),
+        );
+        expect(completedCheck, findsOneWidget);
 
-      // Unmount TaskBoardScreen and flush zero-delay Drift cancel timers
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.tap(completedCheck);
+        await tester.pumpAndSettle();
+
+        // Verify task in DB remains completed (one-way only)
+        final taskInDb = await db.taskDao.getTaskById(completedId);
+        expect(
+          taskInDb?.actualCompletedDate,
+          isNotNull,
+          reason: 'Completed task cannot be undone back to active',
+        );
+
+        // Unmount TaskBoardScreen and flush zero-delay Drift cancel timers
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 }

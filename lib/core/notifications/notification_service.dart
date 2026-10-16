@@ -2,10 +2,13 @@ import 'dart:isolate';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'boost_notification_copy.dart';
+import 'notification_presentation.dart';
+import 'reminder_alarm_bridge.dart';
 
 /// Top-level background notification response callback required by flutter_local_notifications.
 @pragma('vm:entry-point')
@@ -13,7 +16,9 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
   // If an action button was tapped in the background with showsUserInterface: false,
   // relay it to the main running isolate via IsolateNameServer port so Riverpod notifiers
   // execute silently in memory without opening the app or causing screen flicker.
-  final port = IsolateNameServer.lookupPortByName(NotificationService.isolatePortName);
+  final port = IsolateNameServer.lookupPortByName(
+    NotificationService.isolatePortName,
+  );
   if (port != null) {
     port.send({
       'actionId': notificationResponse.actionId,
@@ -21,7 +26,9 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
     });
   } else {
     // If main isolate is unavailable (e.g. app terminated), handle via service instance
-    NotificationService.instance.handleNotificationResponse(notificationResponse);
+    NotificationService.instance.handleNotificationResponse(
+      notificationResponse,
+    );
   }
 }
 
@@ -32,7 +39,8 @@ class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
 
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
   // Offset used to pair a task reminder with its 20-minute follow-up nudge
@@ -49,16 +57,20 @@ class NotificationService {
   static const String channelTimerName = 'Live Session & Timer Alerts';
   static const String channelMomentumWakeId = 'ascent_momentum_wake';
   static const String channelMomentumWakeName = 'Momentum Wake-Up Alert';
-  static const String channelMomentumCommitmentId = 'ascent_momentum_commitments';
-  static const String channelMomentumCommitmentName = 'Momentum Scheduled Sessions';
+  static const String channelMomentumCommitmentId =
+      'ascent_momentum_commitments';
+  static const String channelMomentumCommitmentName =
+      'Momentum Scheduled Sessions';
   static const String channelMomentumWindDownId = 'ascent_momentum_winddown';
-  static const String channelMomentumWindDownName = 'Momentum Evening Wind-Down';
+  static const String channelMomentumWindDownName =
+      'Momentum Evening Wind-Down';
   static const String channelMedicineId = 'ascent_medicine_reminders';
   static const String channelMedicineName = 'Medicine & Prescription Reminders';
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
   static const String channelOngoingSessionName = 'Ongoing Timers & Sessions';
   static const int ongoingLectureNotificationId = 888800;
-  static const int ongoingSessionNotificationId = 888800; // backwards-compatible alias for ongoingLectureNotificationId
+  static const int ongoingSessionNotificationId =
+      888800; // backwards-compatible alias for ongoingLectureNotificationId
   static const int ongoingWalkNotificationId = 888801;
   static const int ongoingChaiBreakNotificationId = 888802;
   static const int ongoingFocusNotificationId = 888803;
@@ -68,14 +80,35 @@ class NotificationService {
   /// Unknown or stale payloads safely return users to Home.
   static String destinationForPayload(String? payload) {
     const destinations = {
-      '/home', '/reminders', '/money', '/focus', '/learning', '/medicine',
-      '/walk', '/chai-break', '/hydration', '/thought-wall', '/pipeline',
-      '/analytics', '/settings', '/study-plan', '/dsa', '/interview-prep',
-      '/consistency', '/resume-vault', '/momentum', '/more',
+      '/home',
+      '/reminders',
+      '/money',
+      '/focus',
+      '/learning',
+      '/medicine',
+      '/walk',
+      '/chai-break',
+      '/hydration',
+      '/thought-wall',
+      '/pipeline',
+      '/analytics',
+      '/settings',
+      '/study-plan',
+      '/dsa',
+      '/interview-prep',
+      '/consistency',
+      '/resume-vault',
+      '/momentum',
+      '/more',
     };
     if (payload != null && destinations.contains(payload)) return payload;
-    if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) return payload;
-    if (payload != null && RegExp(r'^/analytics/series/\d+$').hasMatch(payload)) return payload;
+    if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) {
+      return payload;
+    }
+    if (payload != null &&
+        RegExp(r'^/analytics/series/\d+$').hasMatch(payload)) {
+      return payload;
+    }
     return '/home';
   }
 
@@ -85,13 +118,25 @@ class NotificationService {
   static const String isolatePortName = 'ascent_notification_actions_port';
   static ReceivePort? _actionReceivePort;
 
+  static const liveSessionChannel = MethodChannel('ascent/live-sessions');
   static String? _pendingRoute;
+  static void deferDestination(String route) =>
+      _pendingRoute = destinationForPayload(route);
+  static String? consumePendingDestination() {
+    final route = _pendingRoute;
+    _pendingRoute = null;
+    return route;
+  }
+
   static String? _pendingActionId;
   static String? _pendingActionPayload;
   static void Function(String route)? onNotificationNavigate;
+  static void Function(String route, int seconds)? onNotificationSeek;
   static void Function(String actionId, String? payload)? onNotificationAction;
 
-  static void setNotificationNavigateHandler(void Function(String route) handler) {
+  static void setNotificationNavigateHandler(
+    void Function(String route) handler,
+  ) {
     onNotificationNavigate = handler;
     if (_pendingRoute != null) {
       final route = _pendingRoute!;
@@ -100,7 +145,9 @@ class NotificationService {
     }
   }
 
-  static void setNotificationActionHandler(void Function(String actionId, String? payload) handler) {
+  static void setNotificationActionHandler(
+    void Function(String actionId, String? payload) handler,
+  ) {
     onNotificationAction = handler;
     if (_pendingActionId != null) {
       final actionId = _pendingActionId!;
@@ -128,17 +175,92 @@ class NotificationService {
     }
   }
 
+  /// Refresh the IANA zone from the OS; no location permission is needed.
+  /// Unsupported platforms can still schedule absolute one-off instants.
+  static Future<bool> refreshLocalTimeZone() async {
+    try {
+      final name = await const MethodChannel(
+        'ascent/device-timezone',
+      ).invokeMethod<String>('getTimeZone');
+      if (name == null) return false;
+      tz.setLocalLocation(tz.getLocation(name));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    try {
+      liveSessionChannel.setMethodCallHandler((call) async {
+        if (call.method == 'seek') {
+          final args = Map<String, dynamic>.from(call.arguments as Map);
+          if (args['route'] == '/learning' && args['seconds'] is int) {
+            onNotificationSeek?.call('/learning', args['seconds']);
+          }
+        }
+        if (call.method == 'action' || call.method == 'open') {
+          final args = Map<String, dynamic>.from(call.arguments as Map);
+          final action = args['action'] as String?;
+          if (action != null) {
+            handleNotificationResponse(
+              NotificationResponse(
+                notificationResponseType:
+                    NotificationResponseType.selectedNotificationAction,
+                actionId: action,
+                payload: args['route'],
+              ),
+            );
+          }
+          if (call.method == 'open') {
+            handleNotificationResponse(
+              NotificationResponse(
+                notificationResponseType:
+                    NotificationResponseType.selectedNotification,
+                payload: args['route'],
+              ),
+            );
+          }
+        }
+      });
+    } catch (_) {
+      /* No binary messenger in database-only tests. */
+    }
+    try {
+      final args = await liveSessionChannel.invokeMapMethod<String, dynamic>(
+        'consumeIntent',
+      );
+      if (args?['route'] != null) {
+        final action = args?['action'] as String?;
+        if (action != null) {
+          handleNotificationResponse(
+            NotificationResponse(
+              notificationResponseType:
+                  NotificationResponseType.selectedNotificationAction,
+              actionId: action,
+              payload: args!['route'],
+            ),
+          );
+        }
+        deferDestination(args!['route']);
+      }
+    } catch (_) {
+      /* Native launch metadata is unavailable outside Android. */
+    }
 
     // Initialize timezones
     try {
       tz.initializeTimeZones();
+      await refreshLocalTimeZone();
     } catch (e) {
       debugPrint('Error initializing timezone: $e');
     }
 
-    const androidSettings = AndroidInitializationSettings('@drawable/ic_launcher_foreground');
+    const androidSettings = AndroidInitializationSettings(
+      '@drawable/ic_launcher_foreground',
+    );
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -168,7 +290,10 @@ class NotificationService {
       if (_actionReceivePort == null) {
         _actionReceivePort = ReceivePort();
         IsolateNameServer.removePortNameMapping(isolatePortName);
-        IsolateNameServer.registerPortWithName(_actionReceivePort!.sendPort, isolatePortName);
+        IsolateNameServer.registerPortWithName(
+          _actionReceivePort!.sendPort,
+          isolatePortName,
+        );
         _actionReceivePort!.listen((dynamic message) {
           if (message is Map) {
             final actionId = message['actionId'] as String?;
@@ -186,19 +311,22 @@ class NotificationService {
       }
 
       // Create Android Notification Channels
-      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidImpl != null) {
         await androidImpl.createNotificationChannel(
           const AndroidNotificationChannel(
             channelBoostNudgesId,
             channelBoostNudgesName,
-            description: 'Raw brotherly momentum nudges, 5-minute rule, and streak guardian',
+            description:
+                'Raw brotherly momentum nudges, 5-minute rule, and streak guardian',
             importance: Importance.max,
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            ledColor: Color(0xFF00B4D8),
+            ledColor: Color(0xFFD86500),
           ),
         );
         await androidImpl.createNotificationChannel(
@@ -215,7 +343,8 @@ class NotificationService {
           const AndroidNotificationChannel(
             channelCatchUpId,
             channelCatchUpName,
-            description: 'Evening reminder to log your daily study and consistency',
+            description:
+                'Evening reminder to log your daily study and consistency',
             importance: Importance.defaultImportance,
           ),
         );
@@ -231,19 +360,21 @@ class NotificationService {
           const AndroidNotificationChannel(
             channelMomentumWakeId,
             channelMomentumWakeName,
-            description: 'Alarms for target wake-up times and circadian entrainment',
+            description:
+                'Alarms for target wake-up times and circadian entrainment',
             importance: Importance.max,
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            ledColor: Color(0xFF00B4D8),
+            ledColor: Color(0xFFD86500),
           ),
         );
         await androidImpl.createNotificationChannel(
           const AndroidNotificationChannel(
             channelMomentumCommitmentId,
             channelMomentumCommitmentName,
-            description: 'Reminders for scheduled gym workouts, outdoor walks, and supporting habits',
+            description:
+                'Reminders for scheduled gym workouts, outdoor walks, and supporting habits',
             importance: Importance.high,
             playSound: true,
             enableVibration: true,
@@ -253,7 +384,8 @@ class NotificationService {
           const AndroidNotificationChannel(
             channelMomentumWindDownId,
             channelMomentumWindDownName,
-            description: 'Evening wind-down notifications to protect your 8-hour sleep recovery window',
+            description:
+                'Evening wind-down notifications to protect your 8-hour sleep recovery window',
             importance: Importance.high,
             playSound: true,
             enableVibration: true,
@@ -263,7 +395,8 @@ class NotificationService {
           const AndroidNotificationChannel(
             channelMedicineId,
             channelMedicineName,
-            description: 'Timely reminders for prescribed medicines, tablets, and doses',
+            description:
+                'Timely reminders for prescribed medicines, tablets, and doses',
             importance: Importance.max,
             playSound: true,
             enableVibration: true,
@@ -273,7 +406,8 @@ class NotificationService {
           const AndroidNotificationChannel(
             channelOngoingSessionId,
             channelOngoingSessionName,
-            description: 'Ongoing background lecture playback and active focus session timers',
+            description:
+                'Ongoing background lecture playback and active focus session timers',
             importance: Importance.low,
             playSound: false,
             enableVibration: false,
@@ -298,8 +432,10 @@ class NotificationService {
   /// Checks if notifications are currently permitted by the OS.
   Future<bool> areNotificationsEnabled() async {
     try {
-      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidImpl != null) {
         final enabled = await androidImpl.areNotificationsEnabled();
         return enabled ?? false;
@@ -313,8 +449,10 @@ class NotificationService {
   /// Requests exact alarms access on Android 12+.
   Future<bool> requestExactAlarmsPermission() async {
     try {
-      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidImpl != null) {
         await androidImpl.requestExactAlarmsPermission();
         return true;
@@ -328,8 +466,10 @@ class NotificationService {
   /// Request permissions on Android 13+ (POST_NOTIFICATIONS) and iOS.
   Future<bool> requestPermissions() async {
     try {
-      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidImpl != null) {
         final granted = await androidImpl.requestNotificationsPermission();
         try {
@@ -337,8 +477,10 @@ class NotificationService {
         } catch (_) {}
         return granted ?? false;
       }
-      final iosImpl = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final iosImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
       if (iosImpl != null) {
         final granted = await iosImpl.requestPermissions(
           alert: true,
@@ -372,9 +514,9 @@ class NotificationService {
       importance: importance,
       priority: priority,
       icon: '@drawable/ic_launcher_foreground',
-      color: const Color(0xFF00B4D8),
+      color: const Color(0xFFD86500),
       enableLights: true,
-      ledColor: const Color(0xFF00B4D8),
+      ledColor: const Color(0xFFD86500),
       ledOnMs: 500,
       ledOffMs: 500,
       enableVibration: true,
@@ -427,7 +569,9 @@ class NotificationService {
     if (!enabled) {
       final granted = await requestPermissions();
       if (!granted) {
-        debugPrint('Cannot show instant notification: permissions denied by user.');
+        debugPrint(
+          'Cannot show instant notification: permissions denied by user.',
+        );
         return false;
       }
     }
@@ -464,8 +608,12 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
-  }) =>
-      showInstantNotification(id: id, title: title, body: body, payload: payload);
+  }) => showInstantNotification(
+    id: id,
+    title: title,
+    body: body,
+    payload: payload,
+  );
 
   /// Fires an instant raw brotherly boost preview for user testing.
   Future<bool> sendTestBoostNotification() async {
@@ -577,7 +725,8 @@ class NotificationService {
     await scheduleDailyReminder(
       time: time,
       title: 'Keep Your Streak Alive! ⚡',
-      body: 'Take 25 minutes to log your focus session or record your progress for today.',
+      body:
+          'Take 25 minutes to log your focus session or record your progress for today.',
       id: id,
     );
   }
@@ -604,9 +753,27 @@ class NotificationService {
     required int id,
     required String title,
     required DateTime scheduledAt,
-    bool scheduleFollowUp = true,
+    bool scheduleFollowUp = false,
+    bool alarmEnabled = false,
+  }) async {
+    await scheduleReminderNotificationChecked(
+      id: id,
+      title: title,
+      scheduledAt: scheduledAt,
+      scheduleFollowUp: scheduleFollowUp,
+      alarmEnabled: alarmEnabled,
+    );
+  }
+
+  Future<bool> scheduleReminderNotificationChecked({
+    required int id,
+    required String title,
+    required DateTime scheduledAt,
+    bool scheduleFollowUp = false,
+    bool alarmEnabled = false,
   }) async {
     if (!_isInitialized) await initialize();
+    await refreshLocalTimeZone();
 
     final nowTz = tz.TZDateTime.now(tz.local);
     var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
@@ -616,47 +783,95 @@ class NotificationService {
       if (nowTz.difference(scheduledTz).inSeconds < 45) {
         scheduledTz = nowTz.add(const Duration(seconds: 10));
       } else {
-        debugPrint('Cannot schedule reminder in the past: $scheduledTz (now: $nowTz)');
-        return;
+        debugPrint(
+          'Cannot schedule reminder in the past: $scheduledTz (now: $nowTz)',
+        );
+        return false;
       }
     }
 
-    final boostMsg = BoostNotificationCopy.forScheduledTask(title);
-    final notificationDetails = _buildModernNotificationDetails(
-      channelId: channelBoostNudgesId,
-      channelName: channelBoostNudgesName,
-      channelDescription: 'Ascent raw momentum reminders and 5-min rule',
-      title: boostMsg.title,
-      body: boostMsg.body,
-      summaryText: boostMsg.summary,
+    if (alarmEnabled) {
+      // Changing modes replaces the old delivery path, including legacy nudges.
+      try {
+        await _plugin.cancel(id: id);
+        await _plugin.cancel(id: id + followUpIdOffset);
+      } catch (_) {
+        return false;
+      }
+      try {
+        return await ReminderAlarmBridge.schedule(
+          id: id,
+          title: title,
+          at: scheduledTz,
+        );
+      } catch (_) {
+        return false;
+      }
+    }
+    await ReminderAlarmBridge.cancel(id);
+    if (!scheduleFollowUp) {
+      try {
+        await _plugin.cancel(id: id + followUpIdOffset);
+      } catch (_) {
+        return false;
+      }
+    }
+    if (!await areNotificationsEnabled()) return false;
+    final copy = ReminderNotificationCopy(title);
+    final notificationDetails = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'ascent_quiet_reminders_v2',
+        'Reminder notifications',
+        channelDescription: 'Simple reminders with expandable full content',
+        importance: Importance.high,
+        priority: Priority.high,
+        color: const Color(0xFFA95235),
+        category: AndroidNotificationCategory.reminder,
+        styleInformation: BigTextStyleInformation(
+          copy.expandedBody,
+          contentTitle: copy.title,
+          summaryText: 'Tap to open Reminders',
+        ),
+      ),
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentSound: true,
+      ),
     );
 
     try {
       await _plugin.zonedSchedule(
         id: id,
-        title: boostMsg.title,
-        body: boostMsg.body,
+        title: copy.title,
+        body: copy.body,
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: remindersDestination,
       );
-      debugPrint('Successfully scheduled exact reminder id=$id at $scheduledTz');
+      debugPrint(
+        'Successfully scheduled exact reminder id=$id at $scheduledTz',
+      );
     } catch (exactErr) {
-      debugPrint('Exact alarm failed ($exactErr), falling back to inexactAllowWhileIdle for id=$id');
+      debugPrint(
+        'Exact alarm failed ($exactErr), falling back to inexactAllowWhileIdle for id=$id',
+      );
       try {
         await _plugin.zonedSchedule(
           id: id,
-          title: boostMsg.title,
-          body: boostMsg.body,
+          title: copy.title,
+          body: copy.body,
           scheduledDate: scheduledTz,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           payload: remindersDestination,
         );
-        debugPrint('Successfully scheduled inexact reminder fallback id=$id at $scheduledTz');
+        debugPrint(
+          'Successfully scheduled inexact reminder fallback id=$id at $scheduledTz',
+        );
       } catch (e) {
         debugPrint('Failed to schedule reminder notification fallback: $e');
+        return false;
       }
     }
 
@@ -683,9 +898,13 @@ class NotificationService {
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
           payload: remindersDestination,
         );
-        debugPrint('Scheduled exact accountability follow-up nudge id=${id + followUpIdOffset} at $followUpTz');
+        debugPrint(
+          'Scheduled exact accountability follow-up nudge id=${id + followUpIdOffset} at $followUpTz',
+        );
       } catch (exactErr) {
-        debugPrint('Exact follow-up failed ($exactErr), falling back to inexactAllowWhileIdle for id=${id + followUpIdOffset}');
+        debugPrint(
+          'Exact follow-up failed ($exactErr), falling back to inexactAllowWhileIdle for id=${id + followUpIdOffset}',
+        );
         try {
           await _plugin.zonedSchedule(
             id: id + followUpIdOffset,
@@ -696,12 +915,15 @@ class NotificationService {
             androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
             payload: remindersDestination,
           );
-          debugPrint('Scheduled inexact follow-up fallback id=${id + followUpIdOffset} at $followUpTz');
+          debugPrint(
+            'Scheduled inexact follow-up fallback id=${id + followUpIdOffset} at $followUpTz',
+          );
         } catch (e) {
           debugPrint('Failed to schedule follow-up nudge: $e');
         }
       }
     }
+    return true;
   }
 
   /// Schedules a 6:00 AM (or target time) wake alarm for Momentum with persistent vibration and alarm sound.
@@ -726,16 +948,17 @@ class NotificationService {
     final androidDetails = AndroidNotificationDetails(
       channelMomentumWakeId,
       channelMomentumWakeName,
-      channelDescription: 'Alarms for target wake-up times and circadian entrainment',
+      channelDescription:
+          'Alarms for target wake-up times and circadian entrainment',
       importance: Importance.max,
       priority: Priority.max,
       icon: '@drawable/ic_launcher_foreground',
-      color: const Color(0xFF00B4D8),
+      color: const Color(0xFFD86500),
       category: AndroidNotificationCategory.alarm,
       fullScreenIntent: true,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       enableLights: true,
-      ledColor: const Color(0xFF00B4D8),
+      ledColor: const Color(0xFFD86500),
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 1000]),
       subText: 'Ascent • Momentum Wake Alert',
@@ -772,7 +995,9 @@ class NotificationService {
       );
       debugPrint('Scheduled exact Momentum wake alarm id=$id at $scheduledTz');
     } catch (e) {
-      debugPrint('Exact wake alarm failed ($e), falling back to inexactAllowWhileIdle for id=$id');
+      debugPrint(
+        'Exact wake alarm failed ($e), falling back to inexactAllowWhileIdle for id=$id',
+      );
       try {
         await _plugin.zonedSchedule(
           id: id,
@@ -812,7 +1037,8 @@ class NotificationService {
     final details = _buildModernNotificationDetails(
       channelId: channelMomentumCommitmentId,
       channelName: channelMomentumCommitmentName,
-      channelDescription: 'Reminders for scheduled gym workouts and outdoor walks',
+      channelDescription:
+          'Reminders for scheduled gym workouts and outdoor walks',
       title: title,
       body: body,
       summaryText: summaryText ?? '⚡ Momentum Session',
@@ -832,7 +1058,9 @@ class NotificationService {
       );
       debugPrint('Scheduled exact Momentum commitment id=$id at $scheduledTz');
     } catch (e) {
-      debugPrint('Exact commitment failed ($e), falling back to inexact for id=$id');
+      debugPrint(
+        'Exact commitment failed ($e), falling back to inexact for id=$id',
+      );
       try {
         await _plugin.zonedSchedule(
           id: id,
@@ -871,7 +1099,8 @@ class NotificationService {
     final details = _buildModernNotificationDetails(
       channelId: channelMomentumWindDownId,
       channelName: channelMomentumWindDownName,
-      channelDescription: 'Evening wind-down reminder to protect your 8-hour sleep opportunity',
+      channelDescription:
+          'Evening wind-down reminder to protect your 8-hour sleep opportunity',
       title: title,
       body: body,
       summaryText: '🌙 Wind-Down & Recovery',
@@ -915,7 +1144,25 @@ class NotificationService {
     required String instructions,
     required DateTime scheduledAt,
   }) async {
+    await scheduleMedicineReminderChecked(
+      id: id,
+      medicineName: medicineName,
+      dosage: dosage,
+      instructions: instructions,
+      scheduledAt: scheduledAt,
+    );
+  }
+
+  Future<bool> scheduleMedicineReminderChecked({
+    required int id,
+    required String medicineName,
+    required String dosage,
+    required String instructions,
+    required DateTime scheduledAt,
+  }) async {
     if (!_isInitialized) await initialize();
+    if (!await areNotificationsEnabled()) return false;
+    await refreshLocalTimeZone();
 
     final nowTz = tz.TZDateTime.now(tz.local);
     var scheduledTz = tz.TZDateTime.from(scheduledAt, tz.local);
@@ -925,12 +1172,13 @@ class NotificationService {
         scheduledTz = nowTz.add(const Duration(seconds: 10));
       } else {
         debugPrint('Cannot schedule medicine in past: $scheduledTz');
-        return;
+        return false;
       }
     }
 
     final title = 'Time for your medicine: $medicineName';
-    final body = 'Please take $dosage ($instructions). Health is your greatest momentum!';
+    final body =
+        'Please take $dosage ($instructions). Health is your greatest momentum!';
 
     final details = _buildModernNotificationDetails(
       channelId: channelMedicineId,
@@ -952,6 +1200,7 @@ class NotificationService {
         payload: '/medicine',
       );
       debugPrint('Scheduled exact medicine reminder id=$id at $scheduledTz');
+      return true;
     } catch (e) {
       try {
         await _plugin.zonedSchedule(
@@ -963,15 +1212,20 @@ class NotificationService {
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           payload: '/medicine',
         );
-        debugPrint('Scheduled fallback medicine reminder id=$id at $scheduledTz');
+        debugPrint(
+          'Scheduled fallback medicine reminder id=$id at $scheduledTz',
+        );
+        return true;
       } catch (err) {
         debugPrint('Failed to schedule medicine reminder: $err');
+        return false;
       }
     }
   }
 
   /// Cancels a notification by id and also cancels any linked follow-up accountability nudge.
   Future<void> cancel(int id) async {
+    await ReminderAlarmBridge.cancel(id);
     try {
       await _plugin.cancel(id: id);
       await _plugin.cancel(id: id + followUpIdOffset);
@@ -980,12 +1234,36 @@ class NotificationService {
     }
   }
 
+  Future<bool> cancelChecked(int id) async {
+    try {
+      await ReminderAlarmBridge.cancel(id);
+      await _plugin.cancel(id: id);
+      await _plugin.cancel(id: id + followUpIdOffset);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Cancels all notifications.
   Future<void> cancelAll() async {
+    await cancelAllChecked();
+  }
+
+  Future<bool> cancelAllChecked() async {
     try {
+      await ReminderAlarmBridge.cancelAll();
+      for (final route in ['/focus', '/learning']) {
+        try {
+          await liveSessionChannel.invokeMethod('cancel', {'route': route});
+        } on MissingPluginException {
+          /* No native session service on this platform. */
+        }
+      }
       await _plugin.cancelAll();
-    } catch (e) {
-      debugPrint('Failed to cancel all notifications: $e');
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -997,8 +1275,25 @@ class NotificationService {
     int? elapsedSeconds,
     bool isPaused = false,
     String payload = '/focus',
+    int? totalSeconds,
   }) async {
     if (!_isInitialized) await initialize();
+    try {
+      final native = await liveSessionChannel.invokeMethod<bool>('update', {
+        'route': payload,
+        'title': title,
+        'body': body,
+        'elapsed': elapsedSeconds ?? 0,
+        'paused': isPaused,
+        'total': totalSeconds ?? 0,
+      });
+      if (native == true) return;
+    } on MissingPluginException {
+      /* Use platform notification fallback. */
+    } on PlatformException {
+      /* Retain controls if foreground service cannot start. */
+    }
+
     try {
       final nowMillis = DateTime.now().millisecondsSinceEpoch;
       final chronometerStart = elapsedSeconds != null
@@ -1008,18 +1303,21 @@ class NotificationService {
       final actions = <AndroidNotificationAction>[
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
-          isPaused ? 'Resume ▶️' : 'Pause ⏸️',
+          isPaused ? 'Resume' : 'Pause',
           showsUserInterface: false,
         ),
       ];
 
       final isLecture = payload == '/learning';
-      final notificationId = isLecture ? ongoingLectureNotificationId : ongoingFocusNotificationId;
+      final notificationId = isLecture
+          ? ongoingLectureNotificationId
+          : ongoingFocusNotificationId;
 
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
         channelOngoingSessionName,
-        channelDescription: 'Ongoing background lecture playback and active focus session timers',
+        channelDescription:
+            'Ongoing background lecture playback and active focus session timers',
         importance: Importance.low,
         priority: Priority.low,
         ongoing: !isPaused,
@@ -1028,8 +1326,14 @@ class NotificationService {
         showWhen: true,
         usesChronometer: !isPaused,
         when: chronometerStart,
-        color: const Color(0xFF00B4D8),
-        subText: subText ?? (isPaused ? 'Session Paused' : (isLecture ? 'Ascent • Learning Hub' : 'Ascent • Active Focus')),
+        color: const Color(0xFFD86500),
+        subText:
+            subText ??
+            (isPaused
+                ? 'Session Paused'
+                : (isLecture
+                      ? 'Ascent • Learning Hub'
+                      : 'Ascent • Active Focus')),
         category: AndroidNotificationCategory.status,
         actions: actions,
       );
@@ -1042,7 +1346,10 @@ class NotificationService {
         title: isPaused ? '⏸️ $title' : title,
         body: body,
         payload: payload,
-        notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
+        notificationDetails: NotificationDetails(
+          android: androidDetails,
+          iOS: darwinDetails,
+        ),
       );
     } catch (e) {
       debugPrint('Failed to show ongoing session notification: $e');
@@ -1051,6 +1358,8 @@ class NotificationService {
 
   /// Cancels ongoing session notification (cancels both lecture and focus by default).
   Future<void> cancelOngoingSessionNotification() async {
+    await cancelOngoingFocusNotification();
+    await cancelOngoingLectureNotification();
     try {
       await _plugin.cancel(id: ongoingLectureNotificationId);
       await _plugin.cancel(id: ongoingFocusNotificationId);
@@ -1062,6 +1371,9 @@ class NotificationService {
   /// Cancels focus session notification.
   Future<void> cancelOngoingFocusNotification() async {
     try {
+      await liveSessionChannel.invokeMethod('cancel', {'route': '/focus'});
+    } catch (_) {}
+    try {
       await _plugin.cancel(id: ongoingFocusNotificationId);
     } catch (e) {
       debugPrint('Failed to cancel ongoing focus notification: $e');
@@ -1070,6 +1382,9 @@ class NotificationService {
 
   /// Cancels ongoing lecture playback notification.
   Future<void> cancelOngoingLectureNotification() async {
+    try {
+      await liveSessionChannel.invokeMethod('cancel', {'route': '/learning'});
+    } catch (_) {}
     try {
       await _plugin.cancel(id: ongoingLectureNotificationId);
     } catch (e) {
@@ -1092,7 +1407,7 @@ class NotificationService {
       final actions = <AndroidNotificationAction>[
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
-          isPaused ? 'Resume ▶️' : 'Pause ⏸️',
+          isPaused ? 'Resume' : 'Pause',
           showsUserInterface: false,
         ),
       ];
@@ -1123,7 +1438,10 @@ class NotificationService {
         title: isPaused ? 'Walking Paused ⏸️' : 'Walking in Progress 🚶',
         body: '${distanceKm.toStringAsFixed(2)} km • Pace: $pace /km',
         payload: '/walk',
-        notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
+        notificationDetails: NotificationDetails(
+          android: androidDetails,
+          iOS: darwinDetails,
+        ),
       );
     } catch (e) {
       debugPrint('Failed to show ongoing walk notification: $e');
@@ -1150,14 +1468,15 @@ class NotificationService {
       final actions = <AndroidNotificationAction>[
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
-          isPaused ? 'Resume ▶️' : 'Pause ⏸️',
+          isPaused ? 'Resume' : 'Pause',
           showsUserInterface: false,
         ),
       ];
 
       final m = remainingSeconds ~/ 60;
       final s = remainingSeconds % 60;
-      final timeStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+      final timeStr =
+          '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
 
       final androidDetails = AndroidNotificationDetails(
         channelOngoingSessionId,
@@ -1183,7 +1502,10 @@ class NotificationService {
         title: isPaused ? '☕ Chai Break Paused' : '☕ Chai & Coffee Sanctuary',
         body: '$soundscapeTitle • $timeStr remaining',
         payload: '/chai-break',
-        notificationDetails: NotificationDetails(android: androidDetails, iOS: darwinDetails),
+        notificationDetails: NotificationDetails(
+          android: androidDetails,
+          iOS: darwinDetails,
+        ),
       );
     } catch (e) {
       debugPrint('Failed to show ongoing chai break notification: $e');

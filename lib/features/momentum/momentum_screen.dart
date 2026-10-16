@@ -1,9 +1,12 @@
+import '../../shared/widgets/date_range_calendar.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../challenge/challenge_providers.dart';
@@ -11,18 +14,37 @@ import '../challenge/domain/challenge_pace_engine.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 import '../challenge/presentation/challenge_create_sheet.dart';
 
-class MomentumScreen extends ConsumerWidget {
+class MomentumScreen extends ConsumerStatefulWidget {
   const MomentumScreen({super.key, this.linkedPromise});
 
   final Thought? linkedPromise;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MomentumScreen> createState() => _MomentumScreenState();
+}
+
+class _MomentumScreenState extends ConsumerState<MomentumScreen> {
+  int? _detailId;
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(challengeProofSyncProvider);
-    final active = ref.watch(activeChallengeProvider);
+    final active = ref.watch(allChallengesProvider);
+    final viewingDetail = active.value?.any((c) => c.id == _detailId) ?? false;
     return AscentScaffold(
       title: 'Challenge Partner',
       subtitle: 'A clear plan, measured by real progress',
+      actions: [
+        if (viewingDetail)
+          IconButton(
+            tooltip: 'Add challenge',
+            icon: const Icon(Icons.add_rounded),
+            onPressed: () => ChallengeCreateSheet.show(
+              context,
+              linkedPromise: widget.linkedPromise,
+            ),
+          ),
+      ],
       body: active.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => _MessageCard(
@@ -30,43 +52,99 @@ class MomentumScreen extends ConsumerWidget {
           body:
               'Your saved challenge is safe. Return to this screen to try again.',
           action: TextButton.icon(
-            onPressed: () => ref.invalidate(activeChallengeProvider),
+            onPressed: () => ref.invalidate(allChallengesProvider),
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Retry'),
           ),
         ),
-        data: (challenge) => challenge == null
-            ? _EmptyChallenge(
-                linkedPromise: linkedPromise,
+        data: (challenges) {
+          Challenge? challenge;
+          for (final item in challenges) {
+            if (item.id == _detailId) challenge = item;
+          }
+          if (challenge == null) {
+            if (challenges.isEmpty) {
+              return _EmptyChallenge(
+                linkedPromise: widget.linkedPromise,
                 onCreate: () => ChallengeCreateSheet.show(
                   context,
-                  linkedPromise: linkedPromise,
+                  linkedPromise: widget.linkedPromise,
                 ),
-              )
-            : ref
-                  .watch(challengeProofsProvider(challenge.id))
-                  .when(
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
-                    error: (_, _) => _MessageCard(
-                      title: 'Progress could not load',
-                      body:
-                          'Your challenge is still saved. Try refreshing the screen.',
-                      action: TextButton.icon(
-                        onPressed: () => ref.invalidate(
-                          challengeProofsProvider(challenge.id),
+              );
+            }
+            final home = ref.watch(activeChallengeProvider).value;
+            return ListView(
+              padding: const EdgeInsets.all(AppSpace.s20),
+              children: [
+                Text(
+                  'Choose a challenge',
+                  style: AscentTextStyles.headlineMedium,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Tap to see its status. Use the home icon to choose your Home preview.',
+                ),
+                const SizedBox(height: 16),
+                for (final item in challenges)
+                  _ChallengePickerCard(
+                    challenge: item,
+                    isHome: home?.id == item.id,
+                    onOpen: () => setState(() => _detailId = item.id),
+                    onHome: () => ref
+                        .read(homeChallengeIdProvider.notifier)
+                        .select(item.id),
+                  ),
+                FilledButton.icon(
+                  onPressed: () => ChallengeCreateSheet.show(
+                    context,
+                    linkedPromise: widget.linkedPromise,
+                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add another challenge'),
+                ),
+              ],
+            );
+          }
+          final selected = challenge;
+          return Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _detailId = null),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('All challenges'),
+                ),
+              ),
+              Expanded(
+                child: ref
+                    .watch(challengeProofsProvider(challenge.id))
+                    .when(
+                      loading: () =>
+                          const Center(child: CircularProgressIndicator()),
+                      error: (_, _) => _MessageCard(
+                        title: 'Progress could not load',
+                        body:
+                            'Your challenge is still saved. Try refreshing the screen.',
+                        action: TextButton.icon(
+                          onPressed: () => ref.invalidate(
+                            challengeProofsProvider(selected.id),
+                          ),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Retry'),
                         ),
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Retry'),
+                      ),
+                      data: (proofs) => _ChallengeDetail(
+                        challenge: selected,
+                        proofs: proofs,
+                        onDelete: () => _confirmDelete(context, ref, selected),
+                        onArchive: () => _archive(context, ref, selected),
                       ),
                     ),
-                    data: (proofs) => _ChallengeDetail(
-                      challenge: challenge,
-                      proofs: proofs,
-                      onDelete: () => _confirmDelete(context, ref, challenge),
-                      onArchive: () => _archive(context, ref, challenge),
-                    ),
-                  ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -114,6 +192,53 @@ class MomentumScreen extends ConsumerWidget {
   }
 }
 
+class _ChallengePickerCard extends ConsumerWidget {
+  const _ChallengePickerCard({
+    required this.challenge,
+    required this.isHome,
+    required this.onOpen,
+    required this.onHome,
+  });
+  final Challenge challenge;
+  final bool isHome;
+  final VoidCallback onOpen;
+  final VoidCallback onHome;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final proofs = ref.watch(challengeProofsProvider(challenge.id));
+    final progress = proofs.value == null
+        ? null
+        : progressForChallenge(challenge, proofs.value!);
+    final g = context.glass;
+    return AppCard.material(
+      margin: const EdgeInsets.only(bottom: AppSpace.s12),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpace.s16,
+          vertical: AppSpace.s8,
+        ),
+        onTap: onOpen,
+        leading: Icon(Icons.flag_outlined, color: g.clay),
+        title: Text(challenge.title),
+        subtitle: Text(
+          '${challenge.status == 'archived' ? 'History' : 'Active'} · ${progress == null ? 'Loading progress' : '${progress.percent}% complete · ${progress.daysLeft} days left'}',
+        ),
+        trailing: challenge.status == 'active'
+            ? IconButton(
+                tooltip: isHome ? 'Shown on Home' : 'Show on Home',
+                onPressed: onHome,
+                icon: Icon(
+                  isHome ? Icons.home_rounded : Icons.home_outlined,
+                  color: g.clay,
+                ),
+              )
+            : const Icon(Icons.chevron_right_rounded),
+      ),
+    );
+  }
+}
+
 class _EmptyChallenge extends StatelessWidget {
   const _EmptyChallenge({required this.onCreate, this.linkedPromise});
 
@@ -124,22 +249,27 @@ class _EmptyChallenge extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 40),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s32,
+        AppSpace.s20,
+        AppSpace.s40,
+      ),
       children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s22),
+          nightDecoration: BoxDecoration(
             color: g.fill,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppGeometry.roundedr24,
             border: Border.all(color: g.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
+              AppTag(
                 width: 54,
                 height: 54,
-                decoration: BoxDecoration(
+                nightDecoration: BoxDecoration(
                   color: g.clay.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
@@ -204,9 +334,9 @@ class _ChallengeDetail extends StatelessWidget {
     final statusColor = switch (progress.status) {
       ChallengePaceStatus.ahead ||
       ChallengePaceStatus.onTrack ||
-      ChallengePaceStatus.complete => const Color(0xFF4E9B6B),
-      ChallengePaceStatus.atRisk => const Color(0xFFD99A37),
-      ChallengePaceStatus.failed => const Color(0xFFCA5C54),
+      ChallengePaceStatus.complete => AppPalette.colorFF4E9B6B,
+      ChallengePaceStatus.atRisk => AppPalette.colorFFD99A37,
+      ChallengePaceStatus.failed => AppPalette.colorFFCA5C54,
     };
     final totalDays =
         parseChallengeDay(
@@ -223,7 +353,12 @@ class _ChallengeDetail extends StatelessWidget {
     };
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 40),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpace.s20,
+        AppSpace.s18,
+        AppSpace.s20,
+        AppSpace.s40,
+      ),
       children: [
         Row(
           children: [
@@ -248,12 +383,17 @@ class _ChallengeDetail extends StatelessWidget {
           '${challenge.type == 'learning' ? 'Learning Hub' : 'Activity Hub'} · Day $elapsedDays of $totalDays',
           style: AscentTextStyles.bodySmall.copyWith(color: g.inkMuted),
         ),
+        const SizedBox(height: 14),
+        DateRangeCalendar(
+          start: parseChallengeDay(challenge.startDay),
+          end: parseChallengeDay(challenge.endDay),
+        ),
         const SizedBox(height: 18),
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
+        AppCard(
+          padding: const EdgeInsets.all(AppSpace.s22),
+          nightDecoration: BoxDecoration(
             color: g.fill,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: AppGeometry.roundedr24,
             border: Border.all(color: g.line),
           ),
           child: Column(
@@ -277,10 +417,9 @@ class _ChallengeDetail extends StatelessWidget {
                       children: [
                         Text(
                           '${progress.percent}%',
-                          style: AscentTextStyles.displayLarge.copyWith(
-                            color: g.ink,
-                            fontWeight: FontWeight.w800,
-                          ),
+                          style: AscentTextStyles.displayLarge
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole20),
                         ),
                         Text(
                           'complete',
@@ -294,21 +433,20 @@ class _ChallengeDetail extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 14),
-              Container(
+              AppCard(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: AppSpace.s12,
+                  vertical: AppSpace.s6,
                 ),
-                decoration: BoxDecoration(
+                nightDecoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.13),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: AppGeometry.roundedr20,
                 ),
                 child: Text(
                   label,
-                  style: AscentTextStyles.labelMedium.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: AscentTextStyles.labelMedium
+                      .copyWith(color: statusColor)
+                      .merge(AppTypeRoles.typeRole2),
                 ),
               ),
               const SizedBox(height: 8),
@@ -382,11 +520,11 @@ class _MetricCard extends StatelessWidget {
   final AscentGlass g;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
+  Widget build(BuildContext context) => AppCard(
+    padding: const EdgeInsets.all(AppSpace.s14),
+    nightDecoration: BoxDecoration(
       color: g.fill,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppGeometry.roundedr16,
       border: Border.all(color: g.line),
     ),
     child: Column(
@@ -399,10 +537,9 @@ class _MetricCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           value,
-          style: AscentTextStyles.headlineMedium.copyWith(
-            color: g.ink,
-            fontSize: 18,
-          ),
+          style: AscentTextStyles.headlineMedium
+              .copyWith(color: g.ink)
+              .merge(AppTypeRoles.typeRole1),
         ),
       ],
     ),
@@ -419,11 +556,11 @@ class _MessageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpace.s16),
+      nightDecoration: BoxDecoration(
         color: g.fill,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppGeometry.roundedr18,
         border: Border.all(color: g.line),
       ),
       child: Column(
@@ -431,10 +568,9 @@ class _MessageCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: AscentTextStyles.labelLarge.copyWith(
-              color: g.ink,
-              fontWeight: FontWeight.w700,
-            ),
+            style: AscentTextStyles.labelLarge
+                .copyWith(color: g.ink)
+                .merge(AppTypeRoles.typeRole2),
           ),
           const SizedBox(height: 5),
           Text(

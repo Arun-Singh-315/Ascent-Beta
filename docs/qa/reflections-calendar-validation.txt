@@ -1,0 +1,23 @@
+15 October 2026
+
+flutter test --no-pub --reporter compact: 448 passed
+
+Analyzing Ascent-Beta...                                        
+No issues found! (ran in 20.1s)
+
+
+Building Linux applications requires some tools that are not included
+in the Flutter snap and need to be installed on your system:
+
+  - GTK 3 development files
+
+To install them, run:
+
+  sudo apt install clang cmake ninja-build g++ pkg-config libgtk-3-dev
+
+00:00 +0: loading /home/arunsinghvisen/Ascent-Beta/test/reflections_calendar_test.dart
+00:00 +0: Single-day calendar fits narrow dark UI with large text
+00:01 +1: Calendar marks elapsed dates, today and inclusive endpoints
+00:02 +2: Calendar navigates year boundaries and resets for a new range
+00:03 +3: Long grouped conversion keeps Cancel visible above keyboard without writing
+00:05 +4: All tests passed!

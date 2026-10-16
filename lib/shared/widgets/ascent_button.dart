@@ -1,8 +1,10 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 
 /// The core button variants in the Ascent design system.
 enum AscentButtonType {
@@ -96,21 +98,21 @@ class AscentButton extends StatelessWidget {
     required IconData this.icon,
     this.onPressed,
     this.compact = false,
-  })  : type = AscentButtonType.icon,
-        label = null,
-        loading = false,
-        expanded = false;
+  }) : type = AscentButtonType.icon,
+       label = null,
+       loading = false,
+       expanded = false;
 
   /// Floating action button with subtle diffuse shadow.
   const AscentButton.fab({
     super.key,
     required IconData this.icon,
     this.onPressed,
-  })  : type = AscentButtonType.fab,
-        label = null,
-        loading = false,
-        expanded = false,
-        compact = false;
+  }) : type = AscentButtonType.fab,
+       label = null,
+       loading = false,
+       expanded = false,
+       compact = false;
 
   /// Destructive action button.
   const AscentButton.destructive({
@@ -151,53 +153,50 @@ class AscentButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final child = switch (type) {
       AscentButtonType.primary => _PrimaryButton(
-          label: label!,
-          icon: icon,
-          onPressed: loading ? null : onPressed,
-          loading: loading,
-          expanded: expanded,
-          compact: compact,
-        ),
+        label: label!,
+        icon: icon,
+        onPressed: loading ? null : onPressed,
+        loading: loading,
+        expanded: expanded,
+        compact: compact,
+      ),
       AscentButtonType.secondary => _SecondaryButton(
-          label: label!,
-          icon: icon,
-          onPressed: loading ? null : onPressed,
-          loading: loading,
-          expanded: expanded,
-          compact: compact,
-        ),
+        label: label!,
+        icon: icon,
+        onPressed: loading ? null : onPressed,
+        loading: loading,
+        expanded: expanded,
+        compact: compact,
+      ),
       AscentButtonType.outlined => _OutlinedSignatureButton(
-          label: label!,
-          icon: icon,
-          onPressed: loading ? null : onPressed,
-          loading: loading,
-          expanded: expanded,
-          compact: compact,
-        ),
+        label: label!,
+        icon: icon,
+        onPressed: loading ? null : onPressed,
+        loading: loading,
+        expanded: expanded,
+        compact: compact,
+      ),
       AscentButtonType.ghost => _GhostButton(
-          label: label!,
-          icon: icon,
-          onPressed: loading ? null : onPressed,
-          loading: loading,
-          compact: compact,
-        ),
+        label: label!,
+        icon: icon,
+        onPressed: loading ? null : onPressed,
+        loading: loading,
+        compact: compact,
+      ),
       AscentButtonType.icon => _IconButton(
-          icon: icon!,
-          onPressed: onPressed,
-          compact: compact,
-        ),
-      AscentButtonType.fab => _FabButton(
-          icon: icon!,
-          onPressed: onPressed,
-        ),
+        icon: icon!,
+        onPressed: onPressed,
+        compact: compact,
+      ),
+      AscentButtonType.fab => _FabButton(icon: icon!, onPressed: onPressed),
       AscentButtonType.destructive => _DestructiveButton(
-          label: label!,
-          icon: icon,
-          onPressed: loading ? null : onPressed,
-          loading: loading,
-          expanded: expanded,
-          compact: compact,
-        ),
+        label: label!,
+        icon: icon,
+        onPressed: loading ? null : onPressed,
+        loading: loading,
+        expanded: expanded,
+        compact: compact,
+      ),
     };
 
     return _TapScaleWrapper(
@@ -210,10 +209,7 @@ class AscentButton extends StatelessWidget {
 // ── Tap Micro-Interaction ───────────────────────────────────────────────────
 
 class _TapScaleWrapper extends StatefulWidget {
-  const _TapScaleWrapper({
-    required this.child,
-    this.enabled = true,
-  });
+  const _TapScaleWrapper({required this.child, this.enabled = true});
 
   final Widget child;
   final bool enabled;
@@ -271,14 +267,16 @@ class _PrimaryButton extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = isEnabled
         ? (isDark
-            ? context.bgSurfaceElevated.withValues(alpha: 0.92)
-            : const Color(0xFF1E293B).withValues(alpha: 0.94))
+              ? context.bgSurfaceElevated.withValues(alpha: 0.92)
+              : AppPalette.colorFF3B2C1E.withValues(alpha: 0.94))
         : context.bgSurfaceElevated.withValues(alpha: 0.4);
-    final fg = isDark ? context.textPrimary : Colors.white;
+    final fg = isDark ? context.textPrimary : AppPalette.white;
     final borderColor = isDark
         ? context.textPrimary.withValues(alpha: 0.25)
-        : const Color(0xFF0F172A).withValues(alpha: 0.7);
-    final height = compact ? 34.0 : 42.0;
+        : AppPalette.colorFF2A1C0F.withValues(alpha: 0.7);
+    final height =
+        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
+            .clamp(48.0, 100.0);
     final radius = compact ? 8.0 : 10.0;
 
     Widget content = loading
@@ -295,34 +293,50 @@ class _PrimaryButton extends StatelessWidget {
                 Icon(icon, size: compact ? 15 : 17, color: fg),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: (compact ? AscentTextStyles.labelSmall : AscentTextStyles.labelMedium)
-                    .copyWith(color: fg, fontWeight: FontWeight.w700),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style:
+                      (compact
+                              ? AscentTextStyles.labelSmall
+                              : AscentTextStyles.labelMedium)
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole2),
+                ),
               ),
             ],
           );
 
-    Widget button = SizedBox(
-      height: height,
+    Widget button = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
       child: ElevatedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          disabledBackgroundColor: context.bgSurfaceElevated.withValues(alpha: 0.4),
-          disabledForegroundColor: fg.withValues(alpha: 0.4),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
-            side: BorderSide(
-              color: isEnabled ? borderColor : context.divider,
-              width: 1.1,
+        style: context.surfaces.buttonStyle(
+          ElevatedButton.styleFrom(
+            backgroundColor: bg,
+            foregroundColor: fg,
+            disabledBackgroundColor: context.bgSurfaceElevated.withValues(
+              alpha: 0.4,
             ),
+            disabledForegroundColor: fg.withValues(alpha: 0.4),
+            elevation: 0,
+            shadowColor: AppPalette.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+              side: BorderSide(
+                color: isEnabled ? borderColor : context.divider,
+                width: AppBorderScale.w1point1,
+              ),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
+              vertical: AppSpace.s10,
+            ),
+            minimumSize: Size(compact ? 60 : 90, height),
           ),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
-          minimumSize: Size(compact ? 60 : 90, height),
+          filled: true,
+          icon: false,
         ),
         child: content,
       ),
@@ -361,7 +375,9 @@ class _SecondaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEnabled = onPressed != null && !loading;
     final accent = isEnabled ? context.accentPrimary : context.textMuted;
-    final height = compact ? 34.0 : 42.0;
+    final height =
+        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
+            .clamp(48.0, 100.0);
     final radius = compact ? 8.0 : 10.0;
 
     Widget content = loading
@@ -378,27 +394,44 @@ class _SecondaryButton extends StatelessWidget {
                 Icon(icon, size: compact ? 15 : 17, color: accent),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: (compact ? AscentTextStyles.labelSmall : AscentTextStyles.labelMedium)
-                    .copyWith(color: accent, fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style:
+                      (compact
+                              ? AscentTextStyles.labelSmall
+                              : AscentTextStyles.labelMedium)
+                          .copyWith(color: accent)
+                          .merge(AppTypeRoles.typeRole8),
+                ),
               ),
             ],
           );
 
-    Widget button = SizedBox(
-      height: height,
+    Widget button = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
       child: OutlinedButton(
         onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: accent,
-          backgroundColor: Colors.transparent,
-          side: BorderSide(color: accent.withValues(alpha: 0.5), width: 1.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+        style: context.surfaces.buttonStyle(
+          OutlinedButton.styleFrom(
+            foregroundColor: accent,
+            backgroundColor: AppPalette.transparent,
+            side: BorderSide(
+              color: accent.withValues(alpha: 0.5),
+              width: AppBorderScale.w1point0,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
+              vertical: AppSpace.s10,
+            ),
+            minimumSize: Size(compact ? 60 : 90, height),
           ),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
-          minimumSize: Size(compact ? 60 : 90, height),
+          filled: false,
+          icon: false,
         ),
         child: content,
       ),
@@ -437,7 +470,9 @@ class _OutlinedSignatureButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final fg = context.textPrimary;
     final border = context.divider;
-    final height = compact ? 34.0 : 42.0;
+    final height =
+        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
+            .clamp(48.0, 100.0);
     final radius = compact ? 8.0 : 10.0;
 
     Widget content = loading
@@ -454,27 +489,40 @@ class _OutlinedSignatureButton extends StatelessWidget {
                 Icon(icon, size: compact ? 15 : 17, color: fg),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: (compact ? AscentTextStyles.labelSmall : AscentTextStyles.labelMedium)
-                    .copyWith(color: fg, fontWeight: FontWeight.w500),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style:
+                      (compact
+                              ? AscentTextStyles.labelSmall
+                              : AscentTextStyles.labelMedium)
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole15),
+                ),
               ),
             ],
           );
 
-    Widget button = SizedBox(
-      height: height,
+    Widget button = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
       child: OutlinedButton(
         onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: fg,
-          backgroundColor: context.bgSurface.withValues(alpha: 0.4),
-          side: BorderSide(color: border, width: 1.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+        style: context.surfaces.buttonStyle(
+          OutlinedButton.styleFrom(
+            foregroundColor: fg,
+            backgroundColor: context.bgSurface.withValues(alpha: 0.4),
+            side: BorderSide(color: border, width: AppBorderScale.w1point0),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+            ),
+            minimumSize: Size(compact ? 50 : 80, height),
           ),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16),
-          minimumSize: Size(compact ? 50 : 80, height),
+          filled: false,
+          icon: false,
         ),
         child: content,
       ),
@@ -510,7 +558,9 @@ class _GhostButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = context.textSecondary;
-    final height = compact ? 32.0 : 38.0;
+    final height =
+        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
+            .clamp(48.0, 100.0);
 
     Widget content = loading
         ? SizedBox(
@@ -526,24 +576,36 @@ class _GhostButton extends StatelessWidget {
                 Icon(icon, size: compact ? 14 : 16, color: fg),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: (compact ? AscentTextStyles.labelSmall : AscentTextStyles.labelMedium)
-                    .copyWith(color: fg, fontWeight: FontWeight.w500),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style:
+                      (compact
+                              ? AscentTextStyles.labelSmall
+                              : AscentTextStyles.labelMedium)
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole15),
+                ),
               ),
             ],
           );
 
-    return SizedBox(
-      height: height,
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
       child: TextButton(
         onPressed: onPressed,
-        style: TextButton.styleFrom(
-          foregroundColor: fg,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+        style: context.surfaces.buttonStyle(
+          TextButton.styleFrom(
+            foregroundColor: fg,
+            shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr8),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s10 : AppSpace.s14,
+              vertical: AppSpace.s10,
+            ),
           ),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 14),
+          filled: false,
+          icon: false,
         ),
         child: content,
       ),
@@ -570,19 +632,22 @@ class _IconButton extends StatelessWidget {
     final size = compact ? 34.0 : 40.0;
     final iconSize = compact ? 18.0 : 20.0;
 
-    return Container(
+    return AppCard(
       width: size,
       height: size,
-      decoration: BoxDecoration(
+      nightDecoration: BoxDecoration(
         color: context.bgSurface.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(compact ? 8 : 10),
-        border: Border.all(color: context.divider, width: 0.9),
+        border: Border.all(
+          color: context.divider,
+          width: AppBorderScale.w0point9,
+        ),
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppPalette.transparent,
         borderRadius: BorderRadius.circular(compact ? 8 : 10),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
+        child: AppTapArea(
           onTap: onPressed,
           child: Center(
             child: Icon(icon, color: fg, size: iconSize),
@@ -617,17 +682,17 @@ class _FabButtonState extends State<_FabButton> {
         ? AscentColors.shadowDark
         : AscentColors.shadow;
 
-    return GestureDetector(
+    return AppGestureTap(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: widget.onPressed,
-      child: Container(
+      child: AppCard(
         width: 48,
         height: 48,
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppGeometry.roundedr14,
           boxShadow: [
             BoxShadow(
               color: shadow.withValues(alpha: 0.16),
@@ -637,7 +702,7 @@ class _FabButtonState extends State<_FabButton> {
           ],
         ),
         child: Center(
-          child: Icon(widget.icon, color: Colors.white, size: 22),
+          child: Icon(widget.icon, color: AppPalette.white, size: 22),
         ),
       ),
     );
@@ -666,8 +731,10 @@ class _DestructiveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = context.stateDanger;
-    const fg = Colors.white;
-    final height = compact ? 34.0 : 42.0;
+    const fg = AppPalette.white;
+    final height =
+        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
+            .clamp(48.0, 100.0);
     final radius = compact ? 8.0 : 10.0;
 
     Widget content = loading
@@ -684,28 +751,42 @@ class _DestructiveButton extends StatelessWidget {
                 Icon(icon, size: compact ? 15 : 17, color: fg),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: (compact ? AscentTextStyles.labelSmall : AscentTextStyles.labelMedium)
-                    .copyWith(color: fg, fontWeight: FontWeight.w600),
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style:
+                      (compact
+                              ? AscentTextStyles.labelSmall
+                              : AscentTextStyles.labelMedium)
+                          .copyWith(color: fg)
+                          .merge(AppTypeRoles.typeRole8),
+                ),
               ),
             ],
           );
 
-    Widget button = SizedBox(
-      height: height,
+    Widget button = ConstrainedBox(
+      constraints: BoxConstraints(minHeight: height),
       child: ElevatedButton(
         onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+        style: context.surfaces.buttonStyle(
+          ElevatedButton.styleFrom(
+            backgroundColor: bg,
+            foregroundColor: fg,
+            elevation: 0,
+            shadowColor: AppPalette.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
+              vertical: AppSpace.s10,
+            ),
+            minimumSize: Size(compact ? 60 : 90, height),
           ),
-          padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 18),
-          minimumSize: Size(compact ? 60 : 90, height),
+          filled: true,
+          icon: false,
         ),
         child: content,
       ),

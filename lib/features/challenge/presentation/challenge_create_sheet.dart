@@ -1,10 +1,13 @@
+import '../../../shared/widgets/date_range_calendar.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/text_styles.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/learning_hub/learning_hub_models.dart';
 import '../../../core/providers/database_provider.dart';
@@ -20,7 +23,7 @@ class ChallengeCreateSheet extends ConsumerStatefulWidget {
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppPalette.transparent,
         builder: (_) => ChallengeCreateSheet(linkedPromise: linkedPromise),
       );
 
@@ -211,24 +214,25 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
         : !_tasksLoaded || _tasks.isEmpty;
     final learningTarget = _learningTarget(selectedCourse);
     final durationDays = int.tryParse(_daysController.text.trim()) ?? 0;
+    final startDay = DateUtils.dateOnly(DateTime.now());
     final daily = _type == 'activity'
         ? (int.tryParse(_dailyMinutesController.text.trim()) ?? 0).toDouble()
         : (durationDays > 0 ? learningTarget / durationDays : 0);
 
     return SafeArea(
-      child: Container(
+      child: AppCard(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.9,
         ),
         padding: EdgeInsets.fromLTRB(
-          20,
-          16,
-          20,
-          MediaQuery.viewInsetsOf(context).bottom + 24,
+          AppSpace.s20,
+          AppSpace.s16,
+          AppSpace.s20,
+          MediaQuery.viewInsetsOf(context).bottom + AppSpace.s24,
         ),
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: context.bgSurface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+          borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr26),
           border: Border.all(color: g.line),
         ),
         child: SingleChildScrollView(
@@ -242,7 +246,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: g.line,
-                    borderRadius: BorderRadius.circular(5),
+                    borderRadius: AppGeometry.roundedr5,
                   ),
                 ),
               ),
@@ -258,14 +262,14 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
               ),
               if (widget.linkedPromise != null) ...[
                 const SizedBox(height: 12),
-                Container(
+                AppCard(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(14),
+                  padding: const EdgeInsets.all(AppSpace.s12),
+                  nightDecoration: BoxDecoration(
+                    color: AppPalette.colorFFB46824.withValues(alpha: 0.1),
+                    borderRadius: AppGeometry.roundedr14,
                     border: Border.all(
-                      color: const Color(0xFF7C3AED).withValues(alpha: 0.24),
+                      color: AppPalette.colorFFB46824.withValues(alpha: 0.24),
                     ),
                   ),
                   child: Row(
@@ -273,7 +277,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                     children: [
                       const Icon(
                         Icons.handshake_rounded,
-                        color: Color(0xFF7C3AED),
+                        color: AppPalette.colorFFB46824,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
@@ -314,12 +318,12 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
               ),
               const SizedBox(height: 14),
               if (sourceMissing)
-                Container(
+                AppCard(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
+                  padding: const EdgeInsets.all(AppSpace.s14),
+                  nightDecoration: BoxDecoration(
                     color: g.fill,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppGeometry.roundedr14,
                   ),
                   child: Text(
                     _type == 'learning'
@@ -342,7 +346,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                         ? 'Learning Hub course'
                         : 'Timed Todo activity',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppGeometry.roundedr12,
                     ),
                   ),
                   items: sources
@@ -370,7 +374,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                 decoration: InputDecoration(
                   labelText: 'Challenge name',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                   ),
                 ),
               ),
@@ -386,7 +390,7 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                   labelText: 'Duration',
                   suffixText: 'days',
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppGeometry.roundedr12,
                   ),
                 ),
               ),
@@ -404,18 +408,18 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                     labelText: 'Daily verified Focus target',
                     suffixText: 'minutes',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppGeometry.roundedr12,
                     ),
                   ),
                 ),
               ],
               const SizedBox(height: 14),
-              Container(
+              AppCard(
                 width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
+                padding: const EdgeInsets.all(AppSpace.s14),
+                nightDecoration: BoxDecoration(
                   color: g.fill,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppGeometry.roundedr14,
                   border: Border.all(color: g.line),
                 ),
                 child: Column(
@@ -433,10 +437,9 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                       _type == 'learning'
                           ? '${learningTarget.ceil()} min across $durationDays days · about ${daily.ceil()} min/day'
                           : '${daily * durationDays.toDouble()} min total · $daily min/day',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.ink,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: g.ink)
+                          .merge(AppTypeRoles.typeRole2),
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -448,12 +451,23 @@ class _ChallengeCreateSheetState extends ConsumerState<ChallengeCreateSheet> {
                   ],
                 ),
               ),
+              if (durationDays >= 1 && durationDays <= 365) ...[
+                const SizedBox(height: 14),
+                DateRangeCalendar(
+                  start: startDay,
+                  end: DateTime(
+                    startDay.year,
+                    startDay.month,
+                    startDay.day + durationDays - 1,
+                  ),
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 10),
                 Text(
                   _error!,
                   style: AscentTextStyles.bodySmall.copyWith(
-                    color: Colors.redAccent,
+                    color: AppPalette.redAccent,
                   ),
                 ),
               ],

@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -8,7 +9,7 @@ class SteamingCupWidget extends StatefulWidget {
   const SteamingCupWidget({
     super.key,
     required this.isRunning,
-    this.accentColor = const Color(0xFFE28B57),
+    this.accentColor = AppPalette.colorFF6B3A1C,
   });
 
   @override
@@ -25,16 +26,17 @@ class _SteamingCupWidgetState extends State<SteamingCupWidget>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3200),
-    )..repeat();
+    );
   }
 
   @override
-  void didUpdateWidget(covariant SteamingCupWidget oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isRunning && !_controller.isAnimating) {
-      _controller.repeat();
-    } else if (!widget.isRunning && _controller.isAnimating) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
       _controller.stop();
+      _controller.value = 0;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
     }
   }
 
@@ -80,20 +82,23 @@ class _SteamingCupPainter extends CustomPainter {
     final cy = size.height * 0.65;
 
     // 1. Warm breathing radial glow behind cup
-    final glowRadius = 55.0 + (isRunning ? math.sin(animationValue * 2 * math.pi) * 8.0 : 0.0);
+    final glowRadius = 55.0 + math.sin(animationValue * 2 * math.pi) * 6.0;
     final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          accentColor.withValues(alpha: 0.28),
-          accentColor.withValues(alpha: 0.08),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.55, 1.0],
-      ).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: glowRadius));
+      ..shader =
+          RadialGradient(
+            colors: [
+              accentColor.withValues(alpha: 0.28),
+              accentColor.withValues(alpha: 0.08),
+              AppPalette.transparent,
+            ],
+            stops: const [0.0, 0.55, 1.0],
+          ).createShader(
+            Rect.fromCircle(center: Offset(cx, cy), radius: glowRadius),
+          );
     canvas.drawCircle(Offset(cx, cy), glowRadius, glowPaint);
 
     // 2. Rising steam wisps (3 separate sine-wave paths)
-    if (isRunning) {
+    {
       final steamPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
@@ -107,7 +112,9 @@ class _SteamingCupPainter extends CustomPainter {
         final phase = (animationValue + phaseOffsets[i]) % 1.0;
         final alpha = (math.sin(phase * math.pi) * 0.7).clamp(0.0, 0.85);
 
-        steamPaint.color = Colors.white.withValues(alpha: alpha);
+        steamPaint.color = AppPalette.white.withValues(
+          alpha: alpha * (isRunning ? 1 : 0.35),
+        );
 
         final path = Path();
         final startY = cy - 26;
@@ -126,14 +133,17 @@ class _SteamingCupPainter extends CustomPainter {
 
     // 3. Saucer / Plate at base
     final saucerPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.18)
+      ..color = AppPalette.white.withValues(alpha: 0.18)
       ..style = PaintingStyle.fill;
     final saucerRect = Rect.fromCenter(
       center: Offset(cx, cy + 28),
       width: 76,
       height: 10,
     );
-    canvas.drawRRect(RRect.fromRectAndRadius(saucerRect, const Radius.circular(5)), saucerPaint);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(saucerRect, AppGeometry.radiusr5),
+      saucerPaint,
+    );
 
     // 4. Mug Body
     final cupPath = Path();
@@ -149,19 +159,22 @@ class _SteamingCupPainter extends CustomPainter {
     cupPath.close();
 
     final cupPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          accentColor.withValues(alpha: 0.95),
-          accentColor.withValues(alpha: 0.75),
-        ],
-      ).createShader(Rect.fromLTWH(cx - topWidth, topY, topWidth * 2, bottomY - topY));
+      ..shader =
+          LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accentColor.withValues(alpha: 0.95),
+              accentColor.withValues(alpha: 0.75),
+            ],
+          ).createShader(
+            Rect.fromLTWH(cx - topWidth, topY, topWidth * 2, bottomY - topY),
+          );
     canvas.drawPath(cupPath, cupPaint);
 
     // Mug rim border
     final rimPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.35)
+      ..color = AppPalette.white.withValues(alpha: 0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     canvas.drawPath(cupPath, rimPaint);
@@ -186,10 +199,14 @@ class _SteamingCupPainter extends CustomPainter {
 
     // 6. Tea/Coffee warm liquid rim
     final liquidPaint = Paint()
-      ..color = const Color(0xFF6B3A1C)
+      ..color = AppPalette.colorFF6B3A1C
       ..style = PaintingStyle.fill;
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(cx, topY), width: topWidth * 1.85, height: 8),
+      Rect.fromCenter(
+        center: Offset(cx, topY),
+        width: topWidth * 1.85,
+        height: 8,
+      ),
       liquidPaint,
     );
   }

@@ -1,11 +1,13 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import 'ascent_atmosphere.dart';
+import 'feature_guide.dart';
 
 /// The unified Liquid Glass page scaffold for Ascent.
 ///
@@ -60,13 +62,31 @@ class AscentScaffold extends StatelessWidget {
       floatingActionButton: floatingActionButton,
       floatingActionButtonLocation: floatingActionButtonLocation,
       bottomNavigationBar: bottomNavigationBar,
-      appBar: (title != null || titleWidget != null || leading != null || (actions != null && actions!.isNotEmpty))
+      appBar:
+          (title != null ||
+              titleWidget != null ||
+              leading != null ||
+              (actions != null && actions!.isNotEmpty))
           ? AscentAppBar(
               title: title,
               titleWidget: titleWidget,
               subtitle: subtitle,
               leading: leading,
-              actions: actions,
+              actions: [
+                ...?actions,
+                if (title == 'Settings')
+                  IconButton(
+                    tooltip: 'Replay guided tour',
+                    icon: const Icon(Icons.tour_outlined),
+                    onPressed: () => showAscentTour(context),
+                  ),
+                if (guideFor(title) != null)
+                  IconButton(
+                    tooltip: 'How this works',
+                    icon: const Icon(Icons.help_outline_rounded),
+                    onPressed: () => showFeatureGuide(context, title!),
+                  ),
+              ],
               showBackButton: showBackButton,
               onBack: onBack,
               bottom: bottom,
@@ -78,7 +98,7 @@ class AscentScaffold extends StatelessWidget {
         child: AscentAtmosphereBackground(
           glow1: glow1,
           glow2: glow2,
-          child: body,
+          child: FeatureGuideHost(feature: title, child: body),
         ),
       ),
     );
@@ -110,9 +130,8 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(
-        kToolbarHeight + (bottom?.preferredSize.height ?? 0.0),
-      );
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0));
 
   @override
   Widget build(BuildContext context) {
@@ -131,22 +150,15 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
         children: [
           Text(
             title!,
-            style: AscentTextStyles.displaySmall.copyWith(
-              color: g.ink,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.3,
-            ),
+            style: AscentTextStyles.displaySmall
+                .copyWith(color: g.ink, letterSpacing: -0.3)
+                .merge(AppTypeRoles.typeRole69),
           ),
           if (subtitle != null && subtitle!.isNotEmpty) ...[
             const SizedBox(height: 1),
             Text(
               subtitle!,
-              style: GoogleFonts.jetBrainsMono(
-                color: g.inkMuted,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w500,
-              ),
+              style: AppTypography.jetBrainsMono105W500120(color: g.inkMuted),
             ),
           ],
         ],
@@ -160,10 +172,7 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: leadingWidget,
       leadingWidth: 54,
       title: headerTitle,
-      actions: [
-        ...?actions,
-        const SizedBox(width: 8),
-      ],
+      actions: [...?actions, const SizedBox(width: 8)],
       bottom: bottom,
       centerTitle: false,
     );
@@ -180,17 +189,17 @@ class _LiquidBackButton extends StatelessWidget {
     final g = context.glass;
 
     return Center(
-      child: Container(
+      child: AppTag(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
+        nightDecoration: BoxDecoration(
           color: g.fill,
           shape: BoxShape.circle,
-          border: Border.all(color: g.edge, width: 0.9),
+          border: Border.all(color: g.edge, width: AppBorderScale.w0point9),
         ),
         child: Material(
-          color: Colors.transparent,
-          child: InkWell(
+          color: AppPalette.transparent,
+          child: AppTapArea(
             customBorder: const CircleBorder(),
             onTap: () {
               HapticFeedback.lightImpact();
@@ -203,11 +212,7 @@ class _LiquidBackButton extends StatelessWidget {
               }
             },
             child: Center(
-              child: Icon(
-                Icons.arrow_back_rounded,
-                size: 18,
-                color: g.ink,
-              ),
+              child: Icon(Icons.arrow_back_rounded, size: 18, color: g.ink),
             ),
           ),
         ),

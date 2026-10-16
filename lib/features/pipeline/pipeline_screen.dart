@@ -1,3 +1,6 @@
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +9,6 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/enums.dart';
 import '../../core/providers/database_provider.dart';
@@ -78,7 +80,7 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => const AddApplicationSheet(),
     );
@@ -91,7 +93,7 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
       isScrollControlled: true,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
       ),
       builder: (ctx) => const EmailInviteParserSheet(),
     );
@@ -130,7 +132,7 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(AppSpace.s20),
               child: SkeletonShimmer(height: 240),
             );
           }
@@ -144,16 +146,21 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
             children: [
               // ── Filter Bar ───────────────────────────────────────────────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s16,
+                  vertical: AppSpace.s8,
+                ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      FilterChip(
+                      AppPill.filter(
                         selected: _filterStage == null,
                         label: Text('All (${allApps.length})'),
                         onSelected: (_) => setState(() => _filterStage = null),
-                        selectedColor: context.accentPrimary.withValues(alpha: 0.2),
+                        selectedColor: context.accentPrimary.withValues(
+                          alpha: 0.2,
+                        ),
                         checkmarkColor: context.accentPrimary,
                       ),
                       const SizedBox(width: 8),
@@ -163,14 +170,17 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
                             .length;
                         final isSelected = _filterStage == stage;
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
+                          padding: const EdgeInsets.only(right: AppSpace.s8),
+                          child: AppPill.filter(
                             selected: isSelected,
                             label: Text('${_stageLabel(stage)} ($count)'),
                             onSelected: (_) => setState(() {
                               _filterStage = isSelected ? null : stage;
                             }),
-                            selectedColor: _stageColor(context, stage).withValues(alpha: 0.2),
+                            selectedColor: _stageColor(
+                              context,
+                              stage,
+                            ).withValues(alpha: 0.2),
                             checkmarkColor: _stageColor(context, stage),
                           ),
                         );
@@ -183,7 +193,10 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
               // ── Stacked Collapsible Stage Sections ───────────────────────
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s16,
+                    vertical: AppSpace.s8,
+                  ),
                   itemCount: visibleStages.length,
                   itemBuilder: (context, index) {
                     final stage = visibleStages[index];
@@ -209,7 +222,9 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Moved to ${_stageLabel(targetStage)}'),
+                              content: Text(
+                                'Moved to ${_stageLabel(targetStage)}',
+                              ),
                               duration: const Duration(seconds: 2),
                             ),
                           );
@@ -255,16 +270,19 @@ class _CollapsibleStageSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AscentCard(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: AppSpace.s12),
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(16),
+          AppTapArea(
+            borderRadius: AppGeometry.roundedr16,
             onTap: onToggleCollapse,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s14,
+              ),
               child: Row(
                 children: [
                   Container(
@@ -278,31 +296,32 @@ class _CollapsibleStageSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     title,
-                    style: AscentTextStyles.headlineMedium.copyWith(
-                      color: context.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: AscentTextStyles.headlineMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole49),
                   ),
                   const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
+                  AppTag(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s8,
+                      vertical: AppSpace.s2,
+                    ),
+                    nightDecoration: BoxDecoration(
                       color: color.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: AppGeometry.roundedr10,
                     ),
                     child: Text(
                       '${applications.length}',
-                      style: AscentTextStyles.statSmall.copyWith(
-                        fontSize: 12,
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: AscentTextStyles.statSmall
+                          .copyWith(color: color)
+                          .merge(AppTypeRoles.typeRole14),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Icon(
-                    isCollapsed ? Icons.keyboard_arrow_down_rounded : Icons.keyboard_arrow_up_rounded,
+                    isCollapsed
+                        ? Icons.keyboard_arrow_down_rounded
+                        : Icons.keyboard_arrow_up_rounded,
                     color: context.textMuted,
                     size: 20,
                   ),
@@ -311,14 +330,19 @@ class _CollapsibleStageSection extends StatelessWidget {
             ),
           ),
           if (!isCollapsed) ...[
-            const Divider(height: 1, thickness: 1),
+            const AppDivider(height: 1, thickness: 1),
             if (applications.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppSpace.s20,
+                  horizontal: AppSpace.s16,
+                ),
                 child: Center(
                   child: Text(
                     'No applications in $title',
-                    style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                    style: AscentTextStyles.bodySmall.copyWith(
+                      color: context.textMuted,
+                    ),
                   ),
                 ),
               )
@@ -326,7 +350,7 @@ class _CollapsibleStageSection extends StatelessWidget {
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpace.s12),
                 itemCount: applications.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 8),
                 itemBuilder: (context, idx) {
@@ -383,13 +407,14 @@ class _ApplicationStageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final nextActionDate = app.nextActionDate;
-    final isUrgent = nextActionDate != null &&
+    final isUrgent =
+        nextActionDate != null &&
         nextActionDate.isBefore(DateTime.now().add(const Duration(days: 3)));
 
     return AscentCard(
       color: context.bgBase.withValues(alpha: 0.6),
       margin: EdgeInsets.zero,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(AppSpace.s14),
       onTap: () => context.push('/pipeline/${app.id}'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -403,18 +428,18 @@ class _ApplicationStageCard extends StatelessWidget {
                   children: [
                     Text(
                       app.company,
-                      style: AscentTextStyles.labelLarge.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: context.textPrimary,
-                        fontSize: 15,
-                      ),
+                      style: AscentTextStyles.labelLarge
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole50),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       app.role,
-                      style: AscentTextStyles.bodySmall.copyWith(color: context.textMuted),
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: context.textMuted,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -424,40 +449,54 @@ class _ApplicationStageCard extends StatelessWidget {
               const SizedBox(width: 8),
               PopupMenuButton<ApplicationStage>(
                 tooltip: 'Move to stage',
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppGeometry.roundedr12,
+                ),
                 color: context.bgSurface,
                 onSelected: onMoveTo,
                 itemBuilder: (context) {
                   return allStages
                       .where((s) => s != currentStage)
-                      .map((s) => PopupMenuItem(
-                            value: s,
-                            child: Text(
-                              _stageLabel(s),
-                              style: AscentTextStyles.bodySmall.copyWith(color: context.textPrimary),
+                      .map(
+                        (s) => PopupMenuItem(
+                          value: s,
+                          child: Text(
+                            _stageLabel(s),
+                            style: AscentTextStyles.bodySmall.copyWith(
+                              color: context.textPrimary,
                             ),
-                          ))
+                          ),
+                        ),
+                      )
                       .toList();
                 },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
+                child: AppTag(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s8,
+                    vertical: AppSpace.s4,
+                  ),
+                  nightDecoration: BoxDecoration(
                     color: context.accentPrimary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: context.accentPrimary.withValues(alpha: 0.2)),
+                    borderRadius: AppGeometry.roundedr8,
+                    border: Border.all(
+                      color: context.accentPrimary.withValues(alpha: 0.2),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         'Move',
-                        style: AscentTextStyles.caption.copyWith(
-                          color: context.accentPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: AscentTextStyles.caption
+                            .copyWith(color: context.accentPrimary)
+                            .merge(AppTypeRoles.typeRole8),
                       ),
                       const SizedBox(width: 2),
-                      Icon(Icons.arrow_drop_down_rounded, size: 16, color: context.accentPrimary),
+                      Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 16,
+                        color: context.accentPrimary,
+                      ),
                     ],
                   ),
                 ),
@@ -466,19 +505,20 @@ class _ApplicationStageCard extends StatelessWidget {
           ),
           if (app.salary != null && app.salary!.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
+            AppTag(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s8,
+                vertical: AppSpace.s3,
+              ),
+              nightDecoration: BoxDecoration(
                 color: context.accentSecondary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: AppGeometry.roundedr6,
               ),
               child: Text(
                 app.salary!,
-                style: AscentTextStyles.monoCode.copyWith(
-                  fontSize: 10,
-                  color: context.accentSecondary,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AscentTextStyles.monoCode
+                    .copyWith(color: context.accentSecondary)
+                    .merge(AppTypeRoles.typeRole51),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -496,11 +536,13 @@ class _ApplicationStageCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   'Action: ${DateFormat('MMM d').format(nextActionDate)}',
-                  style: AscentTextStyles.bodySmall.copyWith(
-                    color: isUrgent ? context.stateDanger : context.textMuted,
-                    fontWeight: isUrgent ? FontWeight.w600 : FontWeight.w400,
-                    fontSize: 11,
-                  ),
+                  style: AscentTextStyles.bodySmall
+                      .copyWith(
+                        color: isUrgent
+                            ? context.stateDanger
+                            : context.textMuted,
+                      )
+                      .merge(AppStateTypography.stateType20(state0: isUrgent)),
                 ),
               ],
             ),
@@ -579,9 +621,21 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
           company: drift.Value(company),
           role: drift.Value(role),
           currentStage: drift.Value(_stage.name),
-          salary: drift.Value(_salaryController.text.trim().isEmpty ? null : _salaryController.text.trim()),
-          jobUrl: drift.Value(_jobUrlController.text.trim().isEmpty ? null : _jobUrlController.text.trim()),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          salary: drift.Value(
+            _salaryController.text.trim().isEmpty
+                ? null
+                : _salaryController.text.trim(),
+          ),
+          jobUrl: drift.Value(
+            _jobUrlController.text.trim().isEmpty
+                ? null
+                : _jobUrlController.text.trim(),
+          ),
+          notes: drift.Value(
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
           nextActionDate: drift.Value(_nextActionDate),
           updatedAt: drift.Value(DateTime.now()),
         ),
@@ -599,13 +653,29 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
           company: company,
           role: role,
           currentStage: drift.Value(_stage.name),
-          salary: drift.Value(_salaryController.text.trim().isEmpty ? null : _salaryController.text.trim()),
-          jobUrl: drift.Value(_jobUrlController.text.trim().isEmpty ? null : _jobUrlController.text.trim()),
-          notes: drift.Value(_notesController.text.trim().isEmpty ? null : _notesController.text.trim()),
+          salary: drift.Value(
+            _salaryController.text.trim().isEmpty
+                ? null
+                : _salaryController.text.trim(),
+          ),
+          jobUrl: drift.Value(
+            _jobUrlController.text.trim().isEmpty
+                ? null
+                : _jobUrlController.text.trim(),
+          ),
+          notes: drift.Value(
+            _notesController.text.trim().isEmpty
+                ? null
+                : _notesController.text.trim(),
+          ),
           nextActionDate: drift.Value(_nextActionDate),
         ),
       );
-      await appDao.recordStatusChange(newId, _stage, notes: 'Application tracked');
+      await appDao.recordStatusChange(
+        newId,
+        _stage,
+        notes: 'Application tracked',
+      );
     }
 
     if (mounted) nav.pop();
@@ -618,14 +688,21 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+        padding: EdgeInsets.fromLTRB(
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20,
+          AppSpace.s20 + bottomInset,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               isEditing ? 'Edit Application' : 'Track New Application',
-              style: AscentTextStyles.displaySmall.copyWith(color: context.textPrimary),
+              style: AscentTextStyles.displaySmall.copyWith(
+                color: context.textPrimary,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -633,7 +710,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
               decoration: InputDecoration(
                 labelText: 'Company *',
                 hintText: 'e.g. Stripe, Google, Figma',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: AppGeometry.roundedr12,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -642,7 +721,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
               decoration: InputDecoration(
                 labelText: 'Role *',
                 hintText: 'e.g. Senior Backend Engineer',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: AppGeometry.roundedr12,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -654,7 +735,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
                     decoration: InputDecoration(
                       labelText: 'Salary / Compensation',
                       hintText: 'e.g. \$180k - \$210k or 25 LPA',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: AppGeometry.roundedr12,
+                      ),
                     ),
                   ),
                 ),
@@ -664,7 +747,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
                     initialValue: _stage,
                     decoration: InputDecoration(
                       labelText: 'Stage',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      border: OutlineInputBorder(
+                        borderRadius: AppGeometry.roundedr12,
+                      ),
                     ),
                     items: ApplicationStage.values.map((s) {
                       return DropdownMenuItem(
@@ -685,13 +770,15 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
               decoration: InputDecoration(
                 labelText: 'Job Posting URL',
                 hintText: 'https://...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: AppGeometry.roundedr12,
+                ),
               ),
             ),
             const SizedBox(height: 12),
             ListTile(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppGeometry.roundedr12,
                 side: BorderSide(color: context.divider),
               ),
               leading: Icon(Icons.event_rounded, color: context.accentPrimary),
@@ -699,7 +786,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
                 _nextActionDate == null
                     ? 'Set Next Action Date'
                     : 'Action: ${DateFormat.yMMMd().format(_nextActionDate!)}',
-                style: AscentTextStyles.bodyMedium.copyWith(color: context.textPrimary),
+                style: AscentTextStyles.bodyMedium.copyWith(
+                  color: context.textPrimary,
+                ),
               ),
               trailing: _nextActionDate != null
                   ? IconButton(
@@ -710,7 +799,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
               onTap: () async {
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: _nextActionDate ?? DateTime.now().add(const Duration(days: 3)),
+                  initialDate:
+                      _nextActionDate ??
+                      DateTime.now().add(const Duration(days: 3)),
                   firstDate: DateTime.now().subtract(const Duration(days: 30)),
                   lastDate: DateTime.now().add(const Duration(days: 365)),
                 );
@@ -724,7 +815,9 @@ class _AddApplicationSheetState extends ConsumerState<AddApplicationSheet> {
               decoration: InputDecoration(
                 labelText: 'Notes',
                 hintText: 'Referral link, recruiter info, job spec notes',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                border: OutlineInputBorder(
+                  borderRadius: AppGeometry.roundedr12,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -767,13 +860,15 @@ class _ApplicationSearchDelegate extends SearchDelegate {
 
   @override
   List<Widget>? buildActions(BuildContext context) => [
-        if (query.isNotEmpty)
-          IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
-      ];
+    if (query.isNotEmpty)
+      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+  ];
 
   @override
-  Widget? buildLeading(BuildContext context) =>
-      IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => close(context, null));
+  Widget? buildLeading(BuildContext context) => IconButton(
+    icon: const Icon(Icons.arrow_back),
+    onPressed: () => close(context, null),
+  );
 
   @override
   Widget buildResults(BuildContext context) => _buildList(context);
@@ -789,9 +884,11 @@ class _ApplicationSearchDelegate extends SearchDelegate {
       builder: (context, snapshot) {
         final all = snapshot.data ?? [];
         final filtered = all
-            .where((a) =>
-                a.company.toLowerCase().contains(query.toLowerCase()) ||
-                a.role.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (a) =>
+                  a.company.toLowerCase().contains(query.toLowerCase()) ||
+                  a.role.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
 
         return ListView.builder(

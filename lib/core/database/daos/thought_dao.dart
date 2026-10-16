@@ -1,19 +1,26 @@
 part of '../app_database.dart';
 
-@DriftAccessor(tables: [
-  ThoughtTable,
-])
+class _DeletedThoughtLinks {
+  const _DeletedThoughtLinks(this.tasks, this.reminders, this.merges);
+  final List<Task> tasks;
+  final List<ThoughtReminderLink> reminders;
+  final List<ThoughtMergeSource> merges;
+}
+
+@DriftAccessor(tables: [ThoughtTable])
 class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   ThoughtDao(super.db);
+  final _recentlyDeleted = <int, _DeletedThoughtLinks>{};
+  void clearDeletionUndo() => _recentlyDeleted.clear();
 
-  /// Watch active (non-archived) thoughts sorted by incomplete first, then pinned, then newest.
+  /// Watch active (non-archived) thoughts sorted by pinned first, then newest with stable ID ties.
   Stream<List<Thought>> watchActiveThoughts() {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false))
           ..orderBy([
-            (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
           ]))
         .watch();
   }
@@ -22,9 +29,7 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   Stream<List<Thought>> watchArchivedThoughts() {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(true))
-          ..orderBy([
-            (t) => OrderingTerm.desc(t.createdAt),
-          ]))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .watch();
   }
 
@@ -38,8 +43,8 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
       ..addColumns([countExp])
       ..where(
         thoughtTable.isArchived.equals(false) &
-        thoughtTable.createdAt.isBiggerOrEqualValue(dayStart) &
-        thoughtTable.createdAt.isSmallerThanValue(dayEnd),
+            thoughtTable.createdAt.isBiggerOrEqualValue(dayStart) &
+            thoughtTable.createdAt.isSmallerThanValue(dayEnd),
       );
     return query.map((row) => row.read(countExp) ?? 0).watchSingle();
   }
@@ -47,14 +52,14 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   /// Watch all thoughts (legacy helper).
   Stream<List<Thought>> watchAllThoughts() => watchActiveThoughts();
 
-  /// Watch recent thoughts for Home screen preview.
-  Stream<List<Thought>> watchRecentThoughts({int limit = 5}) {
+  /// Watch recent thoughts for Home screen preview (pinned first, then newest with stable ID ties).
+  Stream<List<Thought>> watchRecentThoughts({int limit = 10}) {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false))
           ..orderBy([
-            (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
+            (t) => OrderingTerm.desc(t.id),
           ])
           ..limit(limit))
         .watch();
@@ -62,7 +67,9 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
 
   /// Get a single thought by ID.
   Future<Thought?> getThoughtById(int id) {
-    return (select(thoughtTable)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return (select(
+      thoughtTable,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Insert a new thought.
@@ -70,66 +77,37 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     return into(thoughtTable).insert(entry);
   }
 
-  /// Toggle pinned state of a thought.
-  Future<void> togglePin(int id) async {
+  /// Partial, serialized updates preserve concurrent content edits.
+  Future<void> togglePin(int id) => db.transaction(() async {
     final thought = await getThoughtById(id);
     if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isPinned: !thought.isPinned),
+      await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
+        ThoughtTableCompanion(isPinned: Value(!thought.isPinned)),
       );
     }
-  }
+  });
 
-  /// Toggle completed state of a thought (double-tap action).
-  Future<void> toggleCompleted(int id) async {
+  Future<void> toggleCompleted(int id) => db.transaction(() async {
     final thought = await getThoughtById(id);
-    if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isCompleted: !thought.isCompleted),
-      );
-    }
-  }
+    if (thought != null) await setCompleted(id, !thought.isCompleted);
+  });
 
-  /// Explicitly set completed state of a thought.
   Future<void> setCompleted(int id, bool completed) async {
-    final thought = await getThoughtById(id);
-    if (thought != null && thought.isCompleted != completed) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isCompleted: completed),
-      );
-    }
+    await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
+      ThoughtTableCompanion(isCompleted: Value(completed)),
+    );
   }
 
-  /// Explicitly set completed state on any thoughts matching the given text content.
-  Future<void> setCompletedByContent(String content, bool completed) async {
-    final trimmed = content.trim();
-    if (trimmed.isEmpty) return;
-    final matches = await (select(thoughtTable)..where((t) => t.content.equals(trimmed))).get();
-    for (final t in matches) {
-      if (t.isCompleted != completed) {
-        await update(thoughtTable).replace(t.copyWith(isCompleted: completed));
-      }
-    }
-  }
-
-  /// Archive a thought.
   Future<void> archiveThought(int id) async {
-    final thought = await getThoughtById(id);
-    if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isArchived: true),
-      );
-    }
+    await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
+      const ThoughtTableCompanion(isArchived: Value(true)),
+    );
   }
 
-  /// Unarchive a thought.
   Future<void> unarchiveThought(int id) async {
-    final thought = await getThoughtById(id);
-    if (thought != null) {
-      await update(thoughtTable).replace(
-        thought.copyWith(isArchived: false),
-      );
-    }
+    await (update(thoughtTable)..where((t) => t.id.equals(id))).write(
+      const ThoughtTableCompanion(isArchived: Value(false)),
+    );
   }
 
   /// Update an existing thought.
@@ -138,7 +116,79 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   }
 
   /// Delete a thought.
-  Future<int> deleteThought(int id) {
-    return (delete(thoughtTable)..where((t) => t.id.equals(id))).go();
-  }
+  Future<int> deleteThought(int id) => db.transaction(() async {
+    final tasks = await (db.select(
+      db.taskTable,
+    )..where((t) => t.linkedThoughtId.equals(id))).get();
+    final reminders = await (db.select(
+      db.thoughtReminderLinkTable,
+    )..where((l) => l.thoughtId.equals(id))).get();
+    final merges =
+        await (db.select(db.thoughtMergeSourceTable)..where(
+              (l) =>
+                  l.mergedThoughtId.equals(id) | l.sourceThoughtId.equals(id),
+            ))
+            .get();
+    await (db.update(db.taskTable)..where((t) => t.linkedThoughtId.equals(id)))
+        .write(const TaskTableCompanion(linkedThoughtId: Value(null)));
+    await (db.delete(
+      db.thoughtReminderLinkTable,
+    )..where((l) => l.thoughtId.equals(id))).go();
+    await (db.delete(
+      db.thoughtMergeSourceTable,
+    )..where((l) => l.mergedThoughtId.equals(id))).go();
+    await (db.update(
+      db.thoughtMergeSourceTable,
+    )..where((l) => l.sourceThoughtId.equals(id))).write(
+      const ThoughtMergeSourceTableCompanion(sourceThoughtId: Value(null)),
+    );
+    final count = await (delete(
+      thoughtTable,
+    )..where((t) => t.id.equals(id))).go();
+    if (count == 1) {
+      _recentlyDeleted[id] = _DeletedThoughtLinks(tasks, reminders, merges);
+      if (_recentlyDeleted.length > 20) {
+        _recentlyDeleted.remove(_recentlyDeleted.keys.first);
+      }
+    }
+    return count;
+  });
+
+  Future<void> restoreDeletedThought(Thought thought) => db.transaction(
+    () async {
+      if (await getThoughtById(thought.id) != null) return;
+      final links = _recentlyDeleted[thought.id];
+      if (links == null) return;
+      await into(thoughtTable).insert(thought.toCompanion(true));
+      for (final task in links.tasks) {
+        final current = await db.taskDao.getTaskById(task.id);
+        if (current != null && current.linkedThoughtId == null) {
+          await (db.update(db.taskTable)..where((t) => t.id.equals(task.id)))
+              .write(TaskTableCompanion(linkedThoughtId: Value(thought.id)));
+        }
+      }
+      for (final link in links.reminders) {
+        if (await db.reminderDao.getReminderById(link.reminderId) != null) {
+          await db
+              .into(db.thoughtReminderLinkTable)
+              .insertOnConflictUpdate(link.toCompanion(true));
+        }
+      }
+      for (final link in links.merges) {
+        final otherId = link.mergedThoughtId == thought.id
+            ? link.sourceThoughtId
+            : link.mergedThoughtId;
+        if (otherId != null && await getThoughtById(otherId) == null) continue;
+        final current = await (db.select(
+          db.thoughtMergeSourceTable,
+        )..where((l) => l.id.equals(link.id))).getSingleOrNull();
+        if (current == null || current.sourceThoughtId == null) {
+          await db
+              .into(db.thoughtMergeSourceTable)
+              .insertOnConflictUpdate(link.toCompanion(true));
+        }
+      }
+      _recentlyDeleted.remove(thought.id);
+    },
+  );
 }

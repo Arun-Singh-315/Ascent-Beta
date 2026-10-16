@@ -1,8 +1,10 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
@@ -19,13 +21,14 @@ class HydrationPopupDialog extends ConsumerStatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: true,
-      barrierColor: Colors.black.withValues(alpha: 0.65),
+      barrierColor: AppPalette.black.withValues(alpha: 0.65),
       builder: (ctx) => const HydrationPopupDialog(),
     );
   }
 
   @override
-  ConsumerState<HydrationPopupDialog> createState() => _HydrationPopupDialogState();
+  ConsumerState<HydrationPopupDialog> createState() =>
+      _HydrationPopupDialogState();
 }
 
 class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
@@ -55,7 +58,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
             const SizedBox(width: 8),
             Text(
               'Hydrated! Added +$ml mL to your daily log',
-              style: const TextStyle(fontWeight: FontWeight.w600),
+              style: AppTypeRoles.typeRole8,
             ),
           ],
         ),
@@ -76,27 +79,34 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
 
     final g = context.glass;
 
-    return BackdropFilter(
+    return AppSurfaceBlur(
       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpace.s20,
+            vertical: AppSpace.s24,
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 380),
             child: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: context.bgSurface.withValues(alpha: context.isDark ? 0.85 : 0.95),
-                  borderRadius: BorderRadius.circular(28),
+              color: AppPalette.transparent,
+              child: AppCard(
+                padding: const EdgeInsets.all(AppSpace.s24),
+                nightDecoration: BoxDecoration(
+                  color: context.bgSurface.withValues(
+                    alpha: context.isDark ? 0.85 : 0.95,
+                  ),
+                  borderRadius: AppGeometry.roundedr28,
                   border: Border.all(
                     color: g.line,
-                    width: 1.2,
+                    width: AppBorderScale.w1point2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: context.isDark ? 0.35 : 0.08),
+                      color: AppPalette.black.withValues(
+                        alpha: context.isDark ? 0.35 : 0.08,
+                      ),
                       blurRadius: 32,
                       offset: const Offset(0, 8),
                     ),
@@ -128,7 +138,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                         child: Icon(
                           Icons.water_drop_rounded,
                           size: 34,
-                          color: Colors.white,
+                          color: AppPalette.white,
                         ),
                       ),
                     ),
@@ -137,9 +147,7 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                     // Title
                     Text(
                       'Hydration Alert',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                      style: AppTypography.plusJakartaSans20W80064(
                         color: context.textPrimary,
                       ),
                     ),
@@ -147,23 +155,24 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                     Text(
                       'Pause for a second and take a sip! Your brain and body run on hydration.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12.5,
+                      style: AppTypography.plusJakartaSans125Regular65(
                         color: context.textMuted,
-                        height: 1.35,
                       ),
                     ),
                     const SizedBox(height: 16),
 
                     // Progress Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
+                    AppCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s8,
+                      ),
+                      nightDecoration: BoxDecoration(
                         color: context.bgBase,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppGeometry.roundedr16,
                         border: Border.all(
                           color: context.divider.withValues(alpha: 0.8),
-                          width: 0.8,
+                          width: AppBorderScale.w0point8,
                         ),
                       ),
                       child: Row(
@@ -171,24 +180,23 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                         children: [
                           Text(
                             '$currentMl / $targetMl mL',
-                            style: GoogleFonts.jetBrainsMono(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
+                            style: AppTypography.jetBrainsMono13W70066(
                               color: context.textPrimary,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
+                          AppTag(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s6,
+                              vertical: AppSpace.s2,
+                            ),
+                            nightDecoration: BoxDecoration(
                               color: g.claySoft,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: AppGeometry.roundedr8,
                             ),
                             child: Text(
                               '$percent%',
-                              style: GoogleFonts.jetBrainsMono(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 11,
+                              style: AppTypography.jetBrainsMono11W80067(
                                 color: g.clay,
                               ),
                             ),
@@ -203,11 +211,8 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                       alignment: Alignment.centerLeft,
                       child: Text(
                         'HOW MUCH DID YOU DRINK?',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
+                        style: AppTypography.jetBrainsMono105W70068(
                           color: context.textMuted,
-                          letterSpacing: 0.8,
                         ),
                       ),
                     ),
@@ -268,35 +273,51 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                               controller: _customController,
                               keyboardType: TextInputType.number,
                               autofocus: true,
-                              style: GoogleFonts.jetBrainsMono(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
+                              style: AppTypography.jetBrainsMono14W70069(
                                 color: context.textPrimary,
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Enter mL (e.g. 400)',
-                                hintStyle: TextStyle(color: context.textMuted, fontSize: 12),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                hintStyle: AppTypeRoles.typeRole27.copyWith(
+                                  color: context.textMuted,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s12,
+                                  vertical: AppSpace.s10,
+                                ),
                                 filled: true,
                                 fillColor: context.bgBase,
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide(color: context.divider),
+                                  borderRadius: AppGeometry.roundedr12,
+                                  borderSide: BorderSide(
+                                    color: context.divider,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: g.clay,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                            style: context.surfaces.buttonStyle(
+                              ElevatedButton.styleFrom(
+                                backgroundColor: g.clay,
+                                foregroundColor: AppPalette.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppGeometry.roundedr12,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s14,
+                                  vertical: AppSpace.s11,
+                                ),
+                              ),
+                              filled: true,
+                              icon: false,
                             ),
                             onPressed: () {
-                              final val = int.tryParse(_customController.text.trim()) ?? 0;
+                              final val =
+                                  int.tryParse(_customController.text.trim()) ??
+                                  0;
                               _logIntake(val);
                             },
                             child: const Text('Add'),
@@ -314,10 +335,8 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                         icon: Icon(Icons.tune_rounded, size: 14, color: g.clay),
                         label: Text(
                           'Custom Amount',
-                          style: TextStyle(
-                            fontSize: 12,
+                          style: AppTypeRoles.typeRole17.copyWith(
                             color: g.clay,
-                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -333,13 +352,19 @@ class _HydrationPopupDialogState extends ConsumerState<HydrationPopupDialog> {
                           HapticFeedback.lightImpact();
                           Navigator.of(context).pop();
                         },
-                        style: TextButton.styleFrom(
-                          foregroundColor: context.textMuted,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        style: context.surfaces.buttonStyle(
+                          TextButton.styleFrom(
+                            foregroundColor: context.textMuted,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpace.s10,
+                            ),
+                          ),
+                          filled: false,
+                          icon: false,
                         ),
                         child: const Text(
                           'Remind me later',
-                          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                          style: AppTypeRoles.typeRole43,
                         ),
                       ),
                     ),
@@ -370,18 +395,21 @@ class _DrinkOptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
-      child: InkWell(
+      color: AppPalette.transparent,
+      child: AppTapArea(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-          decoration: BoxDecoration(
+        borderRadius: AppGeometry.roundedr16,
+        child: AppCard(
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpace.s12,
+            horizontal: AppSpace.s10,
+          ),
+          nightDecoration: BoxDecoration(
             color: context.bgBase,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppGeometry.roundedr16,
             border: Border.all(
               color: context.divider.withValues(alpha: 0.8),
-              width: 1,
+              width: AppBorderScale.w1,
             ),
           ),
           child: Column(
@@ -390,19 +418,15 @@ class _DrinkOptionButton extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 '+$amountMl mL',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                style: AppTypography.jetBrainsMono13W80070(
                   color: context.textPrimary,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 10,
+                style: AppTypeRoles.typeRole44.copyWith(
                   color: context.textMuted,
-                  fontWeight: FontWeight.w500,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

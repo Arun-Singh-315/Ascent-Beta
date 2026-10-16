@@ -16,26 +16,37 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('1. Switch / Toggle Global Theme Consistency', () {
-    test('AscentTheme defines unified switchTheme for light and dark modes', () {
-      final lightTheme = AscentTheme.light();
-      final darkTheme = AscentTheme.dark();
+    test(
+      'AscentTheme defines unified switchTheme for light and dark modes',
+      () {
+        final lightTheme = AscentTheme.light();
+        final darkTheme = AscentTheme.dark();
 
-      expect(lightTheme.switchTheme, isNotNull);
-      expect(darkTheme.switchTheme, isNotNull);
+        expect(lightTheme.switchTheme, isNotNull);
+        expect(darkTheme.switchTheme, isNotNull);
 
-      // Verify thumb and track colors are specified and consistent
-      final lightThumb = lightTheme.switchTheme.thumbColor?.resolve({WidgetState.selected});
-      final darkThumb = darkTheme.switchTheme.thumbColor?.resolve({WidgetState.selected});
+        // Verify thumb and track colors are specified and consistent
+        final lightThumb = lightTheme.switchTheme.thumbColor?.resolve({
+          WidgetState.selected,
+        });
+        final darkThumb = darkTheme.switchTheme.thumbColor?.resolve({
+          WidgetState.selected,
+        });
 
-      expect(lightThumb, isNotNull);
-      expect(darkThumb, isNotNull);
+        expect(lightThumb, isNotNull);
+        expect(darkThumb, isNotNull);
 
-      final lightTrack = lightTheme.switchTheme.trackColor?.resolve({WidgetState.selected});
-      final darkTrack = darkTheme.switchTheme.trackColor?.resolve({WidgetState.selected});
+        final lightTrack = lightTheme.switchTheme.trackColor?.resolve({
+          WidgetState.selected,
+        });
+        final darkTrack = darkTheme.switchTheme.trackColor?.resolve({
+          WidgetState.selected,
+        });
 
-      expect(lightTrack, isNotNull);
-      expect(darkTrack, isNotNull);
-    });
+        expect(lightTrack, isNotNull);
+        expect(darkTrack, isNotNull);
+      },
+    );
   });
 
   group('2. Today Activity Reminders Indicator', () {
@@ -56,50 +67,61 @@ void main() {
   });
 
   group('3. Home Visible Reminders Capping & Single Day Filtering', () {
-    test('homeVisibleRemindersProvider filters to only today or overdue today', () {
-      final now = DateTime.now();
-      final todayMorning = DateTime(now.year, now.month, now.day, 9, 0);
-      final tomorrow = DateTime(now.year, now.month, now.day + 1, 10, 0);
-      final nextWeek = DateTime(now.year, now.month, now.day + 7, 10, 0);
+    test(
+      'homeVisibleRemindersProvider filters to only today or overdue today',
+      () {
+        final now = DateTime.now();
+        final todayMorning = DateTime(now.year, now.month, now.day, 9, 0);
+        final tomorrow = DateTime(now.year, now.month, now.day + 1, 10, 0);
+        final nextWeek = DateTime(now.year, now.month, now.day + 7, 10, 0);
 
-      final reminders = [
-        Reminder(
-          id: 1,
-          title: 'Morning Standup',
-          scheduledAt: todayMorning,
-          isActive: true,
-          createdAt: now,
-          linkedTaskId: null,
-        ),
-        Reminder(
-          id: 2,
-          title: 'Tomorrow Review',
-          scheduledAt: tomorrow,
-          isActive: true,
-          createdAt: now,
-          linkedTaskId: null,
-        ),
-        Reminder(
-          id: 3,
-          title: 'Next Week Planning',
-          scheduledAt: nextWeek,
-          isActive: true,
-          createdAt: now,
-          linkedTaskId: null,
-        ),
-      ];
+        final reminders = [
+          Reminder(
+            alarmEnabled: false,
+            id: 1,
+            title: 'Morning Standup',
+            scheduledAt: todayMorning,
+            isActive: true,
+            createdAt: now,
+            linkedTaskId: null,
+            alertSyncPending: false,
+          ),
+          Reminder(
+            alarmEnabled: false,
+            id: 2,
+            title: 'Tomorrow Review',
+            scheduledAt: tomorrow,
+            isActive: true,
+            createdAt: now,
+            linkedTaskId: null,
+            alertSyncPending: false,
+          ),
+          Reminder(
+            alarmEnabled: false,
+            id: 3,
+            title: 'Next Week Planning',
+            scheduledAt: nextWeek,
+            isActive: true,
+            createdAt: now,
+            linkedTaskId: null,
+            alertSyncPending: false,
+          ),
+        ];
 
-      final container = ProviderContainer(
-        overrides: [
-          allRemindersProvider.overrideWithValue(AsyncValue.data(reminders)),
-          dismissedTodayReminderIdsProvider.overrideWith(() => _MockDismissedNotifier()),
-        ],
-      );
+        final container = ProviderContainer(
+          overrides: [
+            allRemindersProvider.overrideWithValue(AsyncValue.data(reminders)),
+            dismissedTodayReminderIdsProvider.overrideWith(
+              () => _MockDismissedNotifier(),
+            ),
+          ],
+        );
 
-      final visible = container.read(homeVisibleRemindersProvider);
-      expect(visible.length, 1);
-      expect(visible.first.id, 1);
-      expect(visible.first.title, 'Morning Standup');
-    });
+        final visible = container.read(homeVisibleRemindersProvider);
+        expect(visible.length, 1);
+        expect(visible.first.id, 1);
+        expect(visible.first.title, 'Morning Standup');
+      },
+    );
   });
 }

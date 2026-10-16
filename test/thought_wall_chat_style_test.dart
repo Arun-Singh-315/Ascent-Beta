@@ -7,81 +7,97 @@ import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 
 void main() {
   group('Thought Wall Chat-Style UI Tests', () {
-    testWidgets('Even index thought is left-aligned and odd index thought is right-aligned in chat style', (tester) async {
-      final thought1 = Thought(
-        id: 1,
-        content: 'Note to myself: Keep pushing steady today.',
-        mood: 'me_to_me',
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-        colorHex: '#6366F1',
-        createdAt: DateTime.now(),
-      );
+    testWidgets(
+      'Even index thought is left-aligned and odd index thought is right-aligned in chat style',
+      (tester) async {
+        final thought1 = Thought(
+          id: 1,
+          content: 'Note to myself: Keep pushing steady today.',
+          mood: 'me_to_me',
+          isPinned: false,
+          isArchived: false,
+          isCompleted: false,
+          colorHex: '#6366F1',
+          createdAt: DateTime.now(),
+        );
 
-      final thought2 = Thought(
-        id: 2,
-        content: 'Future me: You built something durable.',
-        mood: 'future',
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-        colorHex: '#6366F1',
-        createdAt: DateTime.now(),
-      );
+        final thought2 = Thought(
+          id: 2,
+          content: 'Future me: You built something durable.',
+          mood: 'future',
+          isPinned: false,
+          isArchived: false,
+          isCompleted: false,
+          colorHex: '#6366F1',
+          createdAt: DateTime.now(),
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: ThemeData.dark().copyWith(
-              extensions: const [AscentGlass.dark],
-            ),
-            home: Scaffold(
-              body: Column(
-                children: [
-                  ThoughtCardBubble(
-                    thought: thought1,
-                    index: 0,
-                  ),
-                  ThoughtCardBubble(
-                    thought: thought2,
-                    index: 1,
-                  ),
-                ],
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: ThemeData.dark().copyWith(
+                extensions: const [AscentGlass.dark],
+              ),
+              home: Scaffold(
+                body: Column(
+                  children: [
+                    ThoughtCardBubble(thought: thought1, index: 0),
+                    ThoughtCardBubble(thought: thought2, index: 1),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Verify thought contents rendered
-      expect(find.text('Note to myself: Keep pushing steady today.'), findsOneWidget);
-      expect(find.text('Future me: You built something durable.'), findsOneWidget);
+        // Verify thought contents rendered
+        expect(
+          find.text('Note to myself: Keep pushing steady today.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Future me: You built something durable.'),
+          findsOneWidget,
+        );
 
-      // Verify asymmetric padding/margins (index 0 left-aligned, index 1 right-aligned)
-      final paddings = tester.widgetList<Padding>(find.byType(Padding)).toList();
-      bool foundLeftAligned = false;
-      bool foundRightAligned = false;
+        // Verify asymmetric padding/margins (index 0 left-aligned, index 1 right-aligned)
+        final paddings = tester
+            .widgetList<Padding>(find.byType(Padding))
+            .toList();
+        bool foundLeftAligned = false;
+        bool foundRightAligned = false;
 
-      for (final p in paddings) {
-        if (p.padding is EdgeInsets) {
-          final edge = p.padding as EdgeInsets;
-          if (edge.right >= 32 && edge.left <= 8) {
-            foundLeftAligned = true;
-          }
-          if (edge.left >= 32 && edge.right <= 8) {
-            foundRightAligned = true;
+        for (final p in paddings) {
+          if (p.padding is EdgeInsets) {
+            final edge = p.padding as EdgeInsets;
+            if (edge.right >= 32 && edge.left <= 8) {
+              foundLeftAligned = true;
+            }
+            if (edge.left >= 32 && edge.right <= 8) {
+              foundRightAligned = true;
+            }
           }
         }
-      }
 
-      expect(foundLeftAligned, isTrue, reason: 'Even thought should have right inset creating left-alignment');
-      expect(foundRightAligned, isTrue, reason: 'Odd thought should have left inset creating right-alignment');
-    });
+        expect(
+          foundLeftAligned,
+          isTrue,
+          reason:
+              'Even thought should have right inset creating left-alignment',
+        );
+        expect(
+          foundRightAligned,
+          isTrue,
+          reason: 'Odd thought should have left inset creating right-alignment',
+        );
+      },
+    );
 
-    testWidgets('Thought card uses glass theme in night/dark mode', (tester) async {
+    testWidgets('Thought card uses glass theme in night/dark mode', (
+      tester,
+    ) async {
       final thought = Thought(
         id: 1,
         content: 'Night glass reflection.',
@@ -99,19 +115,16 @@ void main() {
             theme: ThemeData.dark().copyWith(
               extensions: const [AscentGlass.dark],
             ),
-            home: Scaffold(
-              body: ThoughtCardBubble(
-                thought: thought,
-                index: 0,
-              ),
-            ),
+            home: Scaffold(body: ThoughtCardBubble(thought: thought, index: 0)),
           ),
         ),
       );
 
       await tester.pumpAndSettle();
 
-      final animatedContainers = tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
+      final animatedContainers = tester.widgetList<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
       bool foundGlassCard = false;
 
       for (final ac in animatedContainers) {
@@ -123,103 +136,111 @@ void main() {
         }
       }
 
-      expect(foundGlassCard, isTrue, reason: 'Thought card container must use Ascent glass theme in night mode');
-    });
-
-    testWidgets('Thought card has black border and transparent styling in day/light mode', (tester) async {
-      final thought = Thought(
-        id: 1,
-        content: 'Day transparent reflection with black border.',
-        mood: 'thought',
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-        colorHex: '#6366F1',
-        createdAt: DateTime.now(),
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: ThemeData.light().copyWith(
-              extensions: const [AscentGlass.light],
-            ),
-            home: Scaffold(
-              body: ThoughtCardBubble(
-                thought: thought,
-                index: 0,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final animatedContainers = tester.widgetList<AnimatedContainer>(find.byType(AnimatedContainer));
-      bool foundBlackBorder = false;
-
-      for (final ac in animatedContainers) {
-        if (ac.decoration is BoxDecoration) {
-          final box = ac.decoration as BoxDecoration;
-          if (box.color == Colors.transparent && box.border != null && box.border is Border) {
-            final border = box.border as Border;
-            if (border.top.color.r < 0.15 && border.top.color.g < 0.15 && border.top.color.b < 0.15) {
-              foundBlackBorder = true;
-            }
-          }
-        }
-      }
-
-      expect(foundBlackBorder, isTrue, reason: 'Thought card container must have crisp black border in day mode');
-    });
-
-    testWidgets('Thought card displays timestamp at the top header above thought content', (tester) async {
-      final testDate = DateTime(2026, 10, 11, 14, 30);
-      final thought = Thought(
-        id: 1,
-        content: 'Deep reflective insight on architecture.',
-        mood: 'idea',
-        isPinned: false,
-        isArchived: false,
-        isCompleted: false,
-        colorHex: '#6366F1',
-        createdAt: testDate,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            theme: ThemeData.dark().copyWith(
-              extensions: const [AscentGlass.dark],
-            ),
-            home: Scaffold(
-              body: ThoughtCardBubble(
-                thought: thought,
-                index: 0,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final timeFinder = find.text('Oct 11 • 2:30 PM');
-      final contentFinder = find.text('Deep reflective insight on architecture.');
-
-      expect(timeFinder, findsOneWidget);
-      expect(contentFinder, findsOneWidget);
-
-      final timeTop = tester.getTopLeft(timeFinder).dy;
-      final contentTop = tester.getTopLeft(contentFinder).dy;
-
       expect(
-        timeTop < contentTop,
+        foundGlassCard,
         isTrue,
-        reason: 'Timestamp ($timeTop) must be positioned above thought content ($contentTop) at the top of the card',
+        reason:
+            'Thought card container must use Ascent glass theme in night mode',
       );
     });
+
+    testWidgets(
+      'Thought card has a visible rounded outline and inset header separator in day mode',
+      (tester) async {
+        final thought = Thought(
+          id: 1,
+          content: 'Day transparent reflection with black border.',
+          mood: 'thought',
+          isPinned: false,
+          isArchived: false,
+          isCompleted: false,
+          colorHex: '#6366F1',
+          createdAt: DateTime.now(),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: ThemeData.light().copyWith(
+                extensions: const [AscentGlass.light],
+              ),
+              home: Scaffold(
+                body: ThoughtCardBubble(thought: thought, index: 0),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final surfaces = tester
+            .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+            .where((c) => c.decoration is BoxDecoration)
+            .map((c) => c.decoration as BoxDecoration);
+        expect(
+          surfaces.any(
+            (surface) =>
+                surface.color == const Color(0x1AFFFFFF) &&
+                surface.border is Border &&
+                (surface.border! as Border).top.width == 1.2,
+          ),
+          isTrue,
+        );
+        expect(
+          find.byKey(ValueKey('thought_header_divider_${thought.id}')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Thought card displays timestamp at the top header above thought content',
+      (tester) async {
+        final testDate = DateTime(2026, 10, 11, 14, 30);
+        final thought = Thought(
+          id: 1,
+          content: 'Deep reflective insight on architecture.',
+          mood: 'idea',
+          isPinned: false,
+          isArchived: false,
+          isCompleted: false,
+          colorHex: '#6366F1',
+          createdAt: testDate,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: ThemeData.dark().copyWith(
+                extensions: const [AscentGlass.dark],
+              ),
+              home: Scaffold(
+                body: ThoughtCardBubble(thought: thought, index: 0),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final timeFinder = find.text('Oct 11 • 2:30 PM');
+        final contentFinder = find.text(
+          'Deep reflective insight on architecture.',
+        );
+
+        expect(timeFinder, findsOneWidget);
+        expect(contentFinder, findsOneWidget);
+
+        final timeTop = tester.getTopLeft(timeFinder).dy;
+        final contentTop = tester.getTopLeft(contentFinder).dy;
+
+        expect(
+          timeTop < contentTop,
+          isTrue,
+          reason:
+              'Timestamp ($timeTop) must be positioned above thought content ($contentTop) at the top of the card',
+        );
+      },
+    );
   });
 }
-

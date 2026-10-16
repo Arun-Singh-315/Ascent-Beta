@@ -1,11 +1,14 @@
+import 'package:ascent/app/theme/surface_tokens.dart';
+import 'package:ascent/app/theme/text_styles.dart';
+import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/text_styles.dart';
 import 'ascent_button.dart';
+import 'glass_surface.dart';
 
 /// Standardized modal dialog utility for Ascent.
 ///
@@ -122,69 +125,72 @@ class AscentDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final isDark = context.isDark;
 
     return Dialog(
-      backgroundColor: context.bgSurface,
+      backgroundColor: AppPalette.transparent,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AscentDimensions.radiusXl),
-        side: BorderSide(
-          color: g.edge.withValues(alpha: isDark ? 0.4 : 0.8),
-          width: 1.0,
-        ),
+        side: BorderSide(color: g.edge, width: AppBorderScale.w1point0),
       ),
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-      child: Padding(
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpace.s24,
+        vertical: AppSpace.s24,
+      ),
+      child: GlassSurface(
+        radius: AscentDimensions.radiusXl,
         padding: const EdgeInsets.all(AscentDimensions.spaceXl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (icon != null) ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: (iconColor ?? context.accentPrimary).withValues(alpha: 0.14),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    icon,
-                    size: 24,
-                    color: iconColor ?? context.accentPrimary,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (icon != null) ...[
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppTag(
+                    padding: const EdgeInsets.all(AppSpace.s8),
+                    nightDecoration: BoxDecoration(
+                      color: (iconColor ?? context.accentPrimary).withValues(
+                        alpha: 0.14,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 24,
+                      color: iconColor ?? context.accentPrimary,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AscentDimensions.spaceMd),
-            ],
-            Text(
-              title,
-              style: AscentTextStyles.displaySmall.copyWith(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            if (content != null && content!.isNotEmpty) ...[
-              const SizedBox(height: AscentDimensions.spaceSm),
+                const SizedBox(height: AscentDimensions.spaceMd),
+              ],
               Text(
-                content!,
-                style: AscentTextStyles.bodyMedium.copyWith(
-                  color: context.textMuted,
-                  height: 1.45,
-                ),
+                title,
+                style: AscentTextStyles.displaySmall
+                    .copyWith(color: context.textPrimary)
+                    .merge(AppTypeRoles.typeRole2),
               ),
+              if (content != null && content!.isNotEmpty) ...[
+                const SizedBox(height: AscentDimensions.spaceSm),
+                Text(
+                  content!,
+                  style: AscentTextStyles.bodyMedium.copyWith(
+                    color: context.textMuted,
+                    height: 1.45,
+                  ),
+                ),
+              ],
+              if (contentWidget != null) ...[
+                const SizedBox(height: AscentDimensions.spaceSm),
+                contentWidget!,
+              ],
+              if (actions != null && actions!.isNotEmpty) ...[
+                const SizedBox(height: AscentDimensions.spaceXl),
+                ...actions!,
+              ],
             ],
-            if (contentWidget != null) ...[
-              const SizedBox(height: AscentDimensions.spaceSm),
-              contentWidget!,
-            ],
-            if (actions != null && actions!.isNotEmpty) ...[
-              const SizedBox(height: AscentDimensions.spaceXl),
-              ...actions!,
-            ],
-          ],
+          ),
         ),
       ),
     );
