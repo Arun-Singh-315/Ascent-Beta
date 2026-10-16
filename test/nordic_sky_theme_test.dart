@@ -121,7 +121,7 @@ void main() {
     );
 
     test(
-      'outlined and text buttons have high contrast neutral charcoal text without blue',
+      'outlined and text buttons have Clear Sky action interactive blue foreground',
       () {
         final theme = AscentTheme.light(preset: DayThemePreset.nordicSky);
         final outlinedFg = theme.outlinedButtonTheme.style?.foregroundColor
@@ -130,8 +130,8 @@ void main() {
           {},
         );
 
-        expect(outlinedFg, FrozenPalette.ink);
-        expect(textFg, FrozenPalette.ink);
+        expect(outlinedFg, FrozenPalette.action);
+        expect(textFg, FrozenPalette.action);
       },
     );
   });

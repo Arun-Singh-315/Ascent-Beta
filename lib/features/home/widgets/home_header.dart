@@ -122,10 +122,14 @@ class HomeHeader extends ConsumerWidget {
                         Icon(
                           Icons.local_fire_department_rounded,
                           size: 15,
-                          color: context.surfaces.pillForeground(
-                            isStreakCardVisible,
-                            g.clay,
-                          ),
+                          color: g.frozen
+                              ? (isDark
+                                  ? FrozenPalette.darkSpark
+                                  : FrozenPalette.spark)
+                              : context.surfaces.pillForeground(
+                                  isStreakCardVisible,
+                                  g.clay,
+                                ),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -162,12 +166,42 @@ class HomeHeader extends ConsumerWidget {
                     width: 48,
                     height: 48,
                     nightDecoration: BoxDecoration(
-                      color: g.claySoft,
+                      gradient: g.frozen
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                isDark
+                                    ? FrozenPalette.darkActionBright
+                                    : FrozenPalette.actionBright,
+                                isDark
+                                    ? FrozenPalette.darkAction
+                                    : FrozenPalette.action,
+                              ],
+                            )
+                          : null,
+                      color: g.frozen ? null : g.claySoft,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: g.edge,
+                        color: g.frozen
+                            ? (isDark
+                                ? FrozenPalette.darkLine
+                                : FrozenPalette.line)
+                            : g.edge,
                         width: AppBorderScale.w1point0,
                       ),
+                      boxShadow: g.frozen
+                          ? [
+                              BoxShadow(
+                                color: (isDark
+                                        ? FrozenPalette.darkAction
+                                        : FrozenPalette.action)
+                                    .withValues(alpha: 0.20),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Center(
                       child: Text(
@@ -177,7 +211,7 @@ class HomeHeader extends ConsumerWidget {
                               ).toUpperCase()
                             : 'A',
                         style: AppTypography.bricolageGrotesque15W70099(
-                          color: g.ink,
+                          color: g.frozen ? Colors.white : g.ink,
                         ),
                       ),
                     ),
@@ -301,11 +335,17 @@ class HomeHeader extends ConsumerWidget {
                   vertical: 9,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.transparent,
+                  color: g.frozen
+                      ? (isDark
+                          ? FrozenPalette.darkSurface.withValues(alpha: 0.6)
+                          : FrozenPalette.surface.withValues(alpha: 0.8))
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: g.frozen
-                        ? FrozenPalette.line
+                        ? (isDark
+                            ? FrozenPalette.darkAction
+                            : FrozenPalette.action)
                         : isDark
                         ? g.clay.withValues(alpha: .2)
                         : g.edge,
@@ -314,10 +354,25 @@ class HomeHeader extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      color: g.frozen ? FrozenPalette.action : g.clay,
-                      size: 18,
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: g.frozen
+                            ? (isDark
+                                ? FrozenPalette.darkTint
+                                : FrozenPalette.tint)
+                            : Colors.transparent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: g.frozen
+                            ? (isDark
+                                ? FrozenPalette.darkAction
+                                : FrozenPalette.action)
+                            : g.clay,
+                        size: 16,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -333,7 +388,15 @@ class HomeHeader extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.chevron_right_rounded, color: g.clay, size: 18),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: g.frozen
+                          ? (isDark
+                              ? FrozenPalette.darkAction
+                              : FrozenPalette.action)
+                          : g.clay,
+                      size: 18,
+                    ),
                   ],
                 ),
               ),

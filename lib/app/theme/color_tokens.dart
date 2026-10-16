@@ -124,52 +124,53 @@ extension AscentColorsX on BuildContext {
   bool get isFrozen => Theme.of(this).extension<AscentGlass>()?.frozen == true;
 
   Color get bgBase => isFrozen
-      ? FrozenPalette.canvas
+      ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
       : isDark
       ? AscentColors.bgBaseDark
       : AscentColors.bgBase;
 
   Color get bgSurface => isFrozen
-      ? FrozenPalette.surface
+      ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
       : isDark
       ? AscentColors.bgSurfaceDark
       : AscentColors.bgSurface;
 
   Color get bgSurfaceElevated => isFrozen
-      ? FrozenPalette.elevated
+      ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
       : isDark
       ? AscentColors.bgSurfaceElevatedDark
       : AscentColors.bgSurfaceElevated;
 
-  Color get accentPrimary =>
-      isFrozen ? FrozenPalette.accent : Theme.of(this).colorScheme.primary;
+  Color get accentPrimary => isFrozen
+      ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+      : Theme.of(this).colorScheme.primary;
 
   Color get accentSecondary => isFrozen
-      ? FrozenPalette.secondary
+      ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
       : isDark
       ? AscentColors.accentSecondaryDark
       : AscentColors.accentSecondary;
 
   Color get accentInfo => isFrozen
-      ? FrozenPalette.warning
+      ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
       : isDark
       ? AscentColors.accentInfoDark
       : AscentColors.accentInfo;
 
   Color get stateDanger => isFrozen
-      ? FrozenPalette.danger
+      ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
       : isDark
       ? AscentColors.stateDangerDark
       : AscentColors.stateDanger;
 
   Color get stateSuccess => isFrozen
-      ? FrozenPalette.success
+      ? (isDark ? FrozenPalette.darkSuccess : FrozenPalette.success)
       : isDark
       ? AscentColors.stateSuccessDark
       : AscentColors.stateSuccess;
 
   Color get stateWarning => isFrozen
-      ? FrozenPalette.warning
+      ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
       : isDark
       ? AscentColors.stateWarningDark
       : AscentColors.stateWarning;
@@ -177,7 +178,7 @@ extension AscentColorsX on BuildContext {
   Color get textPrimary => Theme.of(this).colorScheme.onSurface;
 
   Color get textSecondary => isFrozen
-      ? FrozenPalette.secondaryInk
+      ? (isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk)
       : isDark
       ? AscentColors.textSecondaryDark
       : AscentColors.textSecondary;
@@ -191,26 +192,37 @@ extension AscentColorsX on BuildContext {
       (isDark ? AscentColors.dividerDark : AscentColors.divider);
 
   Color get accentPrimaryBright => isFrozen
-      ? FrozenPalette.accent
+      ? (isDark ? FrozenPalette.darkActionBright : FrozenPalette.actionBright)
       : isDark
       ? AscentColors.accentPrimaryBrightDark
       : AscentColors.accentPrimaryBright;
 
   Color get accentPrimaryDim => isFrozen
-      ? FrozenPalette.aqua
+      ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
       : isDark
       ? AscentColors.accentPrimaryDimDark
       : AscentColors.accentPrimaryDim;
 
   Color get accentSecondaryBright => isFrozen
-      ? FrozenPalette.secondary
+      ? (isDark ? FrozenPalette.darkActionBright : FrozenPalette.actionBright)
       : isDark
       ? AscentColors.accentSecondaryBrightDark
       : AscentColors.accentSecondaryBright;
 
   Color get stateDangerBright => isFrozen
-      ? FrozenPalette.danger
+      ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
       : isDark
       ? AscentColors.stateDangerBrightDark
       : AscentColors.stateDangerBright;
+
+  Color get spark => isFrozen
+      ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
+      : (isDark ? const Color(0xFFECA361) : const Color(0xFFB06822));
+
+  Color get sparkTint => isFrozen
+      ? (isDark ? FrozenPalette.darkSparkTint : FrozenPalette.sparkTint)
+      : (isDark
+          ? const Color.fromRGBO(236, 163, 97, 0.14)
+          : const Color.fromRGBO(176, 104, 34, 0.11));
 }
+

@@ -96,7 +96,7 @@ void main() {
         );
         expect(
           theme.textButtonTheme.style!.foregroundColor!.resolve({}),
-          FrozenPalette.ink,
+          FrozenPalette.action,
         );
         expect(tester.takeException(), isNull);
       },
