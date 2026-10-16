@@ -58,9 +58,7 @@ class AscentTheme {
     final bgSurfaceElevated = isDark
         ? AscentColors.bgSurfaceElevatedDark
         : AscentColors.bgSurfaceElevated;
-    final accentPrimary = day
-        ? AppSurfaces.day.greenAction
-        : isDark
+    final accentPrimary = isDark
         ? AscentColors.accentPrimaryDark
         : AscentColors.accentPrimary;
     final accentSecondary = isDark
@@ -321,15 +319,17 @@ class AscentTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return accentPrimary;
+            return isDark ? accentPrimary : const Color(0xFFC07360);
           }
-          return isDark ? const Color(0xFFB8A594) : const Color(0xFFCBD5E1);
+          return isDark ? const Color(0xFFB8A594) : const Color(0xFFD4C8BC);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return accentPrimary.withValues(alpha: 0.38);
+            return isDark
+                ? accentPrimary.withValues(alpha: 0.38)
+                : const Color(0xFFC07360).withValues(alpha: 0.28);
           }
-          return isDark ? const Color(0xFF3B2C1E) : const Color(0xFFE2E8F0);
+          return isDark ? const Color(0xFF3B2C1E) : const Color(0xFFEFE8E2);
         }),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,

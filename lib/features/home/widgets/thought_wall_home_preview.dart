@@ -174,9 +174,24 @@ class _ThoughtWallHomePreviewState
               return const SizedBox.shrink();
             }
 
-            final previewThoughts = thoughts
-                .take(_expanded ? widget.previewLimit.clamp(1, 4) : 1)
-                .toList();
+            final List<Thought> previewThoughts;
+            if (_expanded) {
+              previewThoughts = thoughts
+                  .take(widget.previewLimit.clamp(1, 4))
+                  .toList();
+            } else {
+              final pinned = thoughts.where((t) => t.isPinned).firstOrNull;
+              final latest =
+                  thoughts.where((t) => t.id != pinned?.id).firstOrNull;
+              if (pinned != null) {
+                previewThoughts = [
+                  pinned,
+                  ?latest,
+                ];
+              } else {
+                previewThoughts = thoughts.take(2).toList();
+              }
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,7 +201,9 @@ class _ThoughtWallHomePreviewState
                   children: [
                     Expanded(
                       child: Text(
-                        _expanded ? 'Recent thoughts' : 'Recent thought',
+                        _expanded || previewThoughts.length > 1
+                            ? 'Recent thoughts'
+                            : 'Recent thought',
                         style: AscentTextStyles.homeCaption.copyWith(
                           color: g.inkMuted,
                         ),
@@ -257,7 +274,36 @@ class _ThoughtWallHomePreviewState
                                 : CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (thought.mood == 'promise') ...[
+                              if (thought.isPinned) ...[
+                                AppTag(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpace.s8,
+                                    vertical: AppSpace.s3,
+                                  ),
+                                  nightDecoration: BoxDecoration(
+                                    color: g.clay.withValues(alpha: 0.14),
+                                    borderRadius: AppGeometry.roundedr10,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.push_pin_rounded,
+                                        size: 11,
+                                        color: g.clay,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'PINNED TO HOME',
+                                        style: AscentTextStyles.homeCaption
+                                            .copyWith(color: g.clay)
+                                            .merge(AppTypeRoles.typeRole65),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                              ] else if (thought.mood == 'promise') ...[
                                 AppTag(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpace.s8,

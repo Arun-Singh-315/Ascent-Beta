@@ -18,14 +18,14 @@ class AscentColors {
   /// Slightly elevated surface for nested cards and chips.
   static const Color bgSurfaceElevated = Color(0xFFF1F3F6);
 
-  /// Deep calm forest sage — primary accent.
-  static const Color accentPrimary = Color(0xFF38664D);
+  /// Ascent signature terracotta clay — primary accent.
+  static const Color accentPrimary = Color(0xFFA4523A);
 
-  /// Matte punchy sage for active/interactive buttons and rings.
-  static const Color accentPrimaryBright = Color(0xFF2C553E);
+  /// Matte punchy clay for active/interactive buttons and rings.
+  static const Color accentPrimaryBright = Color(0xFF904530);
 
   /// Subtle soft tint for primary backgrounds and badges.
-  static const Color accentPrimaryDim = Color(0xFFD6E8DC);
+  static const Color accentPrimaryDim = Color(0xFFF6E7E2);
 
   /// Calm composed terracotta / amber cedar — secondary accent (soothing in day mode).
   static const Color accentSecondary = Color(0xFF8A513E);
@@ -77,10 +77,10 @@ class AscentColors {
   /// Elevated dark surface for nested items and chips.
   static const Color bgSurfaceElevatedDark = Color(0xFF322922);
 
-  /// Soft luminous sage — primary accent.
-  static const Color accentPrimaryDark = Color(0xFF63BA8B);
-  static const Color accentPrimaryBrightDark = Color(0xFF78CCA0);
-  static const Color accentPrimaryDimDark = Color(0xFF233E30);
+  /// Warm luminous clay / terracotta — primary accent in dark mode.
+  static const Color accentPrimaryDark = Color(0xFFE6A088);
+  static const Color accentPrimaryBrightDark = Color(0xFFF0B39F);
+  static const Color accentPrimaryDimDark = Color(0xFF3A241D);
 
   /// Warm clay / terracotta — secondary accent.
   static const Color accentSecondaryDark = Color(0xFFE88168);

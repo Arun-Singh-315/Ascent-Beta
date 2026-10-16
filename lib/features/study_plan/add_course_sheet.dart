@@ -13,8 +13,8 @@ import '../../shared/widgets/ascent_button.dart';
 class AddCourseSheet extends ConsumerStatefulWidget {
   const AddCourseSheet({super.key});
 
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet(
+  static Future<Course?> show(BuildContext context) {
+    return showModalBottomSheet<Course>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -171,7 +171,7 @@ class _AddCourseSheetState extends ConsumerState<AddCourseSheet> {
     if (!mounted) return;
     HapticFeedback.mediumImpact();
 
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(newCourse);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Course "$title" created! Switched as active course.'),

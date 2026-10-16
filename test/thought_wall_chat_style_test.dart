@@ -54,11 +54,11 @@ void main() {
 
         // Verify thought contents rendered
         expect(
-          find.text('“Note to myself: Keep pushing steady today.”'),
+          find.text('Note to myself: Keep pushing steady today.'),
           findsOneWidget,
         );
         expect(
-          find.text('“Future me: You built something durable.”'),
+          find.text('Future me: You built something durable.'),
           findsOneWidget,
         );
 
@@ -225,7 +225,7 @@ void main() {
 
         final timeFinder = find.text('Oct 11 • 2:30 PM');
         final contentFinder = find.text(
-          '“Deep reflective insight on architecture.”',
+          'Deep reflective insight on architecture.',
         );
 
         expect(timeFinder, findsOneWidget);

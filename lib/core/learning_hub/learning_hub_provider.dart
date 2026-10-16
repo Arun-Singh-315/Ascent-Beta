@@ -1221,8 +1221,20 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
           );
         }
       });
-      state = state.copyWith(courses: courses);
+      state = state.copyWith(
+        courses: courses,
+        activeCourseId: courseId,
+        activeLectureId: chosen.id,
+        currentElapsedSeconds: chosen.elapsedSeconds,
+        sessionBaseElapsed: chosen.elapsedSeconds,
+      );
       await catalog.cache(courses);
+      ref
+          .read(sharedPreferencesProvider)
+          .setString(_kActiveCourseIdKey, courseId);
+      ref
+          .read(sharedPreferencesProvider)
+          .setInt(_kActiveLectureIdKey, chosen.id);
       return chosen;
     } finally {
       _completionPending = false;

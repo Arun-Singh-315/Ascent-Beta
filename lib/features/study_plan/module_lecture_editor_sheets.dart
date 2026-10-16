@@ -11,7 +11,7 @@ import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 
 /// Bottom sheet dialog to add a new module to a course.
-Future<void> showAddModuleSheet(
+Future<int?> showAddModuleSheet(
   BuildContext context,
   WidgetRef ref,
   String courseId, {
@@ -21,7 +21,7 @@ Future<void> showAddModuleSheet(
   final descController = TextEditingController();
   final durationController = TextEditingController(text: '1.5');
 
-  await showModalBottomSheet(
+  return await showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -121,7 +121,7 @@ Future<void> showAddModuleSheet(
                         .addModule(courseId, newModule),
                   );
                   if (!saved || !ctx.mounted || !context.mounted) return;
-                  Navigator.pop(ctx);
+                  Navigator.pop(ctx, nextModuleId);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('Module "$title" added successfully!'),

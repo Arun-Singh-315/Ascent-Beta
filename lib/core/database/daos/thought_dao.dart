@@ -52,11 +52,12 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   /// Watch all thoughts (legacy helper).
   Stream<List<Thought>> watchAllThoughts() => watchActiveThoughts();
 
-  /// Watch recent thoughts for Home screen preview.
-  Stream<List<Thought>> watchRecentThoughts({int limit = 5}) {
+  /// Watch recent thoughts for Home screen preview (pinned first, then newest with stable ID ties).
+  Stream<List<Thought>> watchRecentThoughts({int limit = 10}) {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false))
           ..orderBy([
+            (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
             (t) => OrderingTerm.desc(t.id),
           ])

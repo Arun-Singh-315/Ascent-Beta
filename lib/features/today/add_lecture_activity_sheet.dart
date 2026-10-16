@@ -209,7 +209,18 @@ class _AddLectureActivitySheetState
                       }),
               ),
               TextButton.icon(
-                onPressed: _saving ? null : () => AddCourseSheet.show(context),
+                onPressed: _saving
+                    ? null
+                    : () async {
+                        final created = await AddCourseSheet.show(context);
+                        if (created != null && mounted) {
+                          setState(() {
+                            _courseId = created.id;
+                            _moduleId = created.modules.firstOrNull?.id;
+                            _lectureId = null;
+                          });
+                        }
+                      },
                 icon: const Icon(Icons.add),
                 label: const Text('Add course'),
               ),
@@ -237,17 +248,24 @@ class _AddLectureActivitySheetState
                 TextButton.icon(
                   onPressed: _saving
                       ? null
-                      : () => showAddModuleSheet(
-                          context,
-                          ref,
-                          course.id,
-                          nextModuleId:
-                              course.modules.fold<int>(
-                                0,
-                                (n, m) => m.id > n ? m.id : n,
-                              ) +
-                              1,
-                        ),
+                      : () async {
+                          final newModuleId = await showAddModuleSheet(
+                            context,
+                            ref,
+                            course.id,
+                            nextModuleId: course.modules.fold<int>(
+                                  0,
+                                  (n, m) => m.id > n ? m.id : n,
+                                ) +
+                                1,
+                          );
+                          if (newModuleId != null && mounted) {
+                            setState(() {
+                              _moduleId = newModuleId;
+                              _lectureId = null;
+                            });
+                          }
+                        },
                   icon: const Icon(Icons.add),
                   label: const Text('Add module'),
                 ),

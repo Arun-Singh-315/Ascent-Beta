@@ -3,7 +3,6 @@ import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../core/providers/settings_provider.dart';
-import '../../shared/widgets/thought_presentation.dart';
 import '../../shared/widgets/message_composer.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
@@ -385,13 +384,17 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
           curve: Curves.easeOutCubic,
           padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
           alignment: Alignment.center,
-          decoration: AppPill.decoration(
-            context,
-            selected: isSelected,
-            night: BoxDecoration(
-              color: isSelected ? g.clay : AppPalette.transparent,
-              borderRadius: AppGeometry.roundedr10,
-            ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (context.isDark ? g.clay : g.claySoft)
+                : AppPalette.transparent,
+            borderRadius: AppGeometry.roundedr10,
+            border: isSelected && !context.isDark
+                ? Border.all(
+                    color: g.clay.withValues(alpha: 0.28),
+                    width: AppBorderScale.w1point0,
+                  )
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -400,7 +403,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               Icon(
                 icon,
                 size: 13,
-                color: isSelected ? AppPalette.white : g.inkMuted,
+                color: isSelected
+                    ? (context.isDark ? AppPalette.white : g.clay)
+                    : g.inkMuted,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -410,7 +415,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: AppStateTypography.stateType12(
                     state0: isSelected,
-                    color: isSelected ? AppPalette.white : g.inkMuted,
+                    color: isSelected
+                        ? (context.isDark ? AppPalette.white : g.clay)
+                        : g.inkMuted,
                   ),
                 ),
               ),
@@ -1563,7 +1570,7 @@ class ThoughtCardBubble extends ConsumerWidget {
 
                     // Content
                     Text(
-                      quotedThought(thought.content),
+                      thought.content,
                       style: AppTypography.plusJakartaSans14W60071(
                         color: thought.isCompleted
                             ? (context.isDark
