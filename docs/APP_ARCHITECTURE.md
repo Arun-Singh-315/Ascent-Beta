@@ -1,6 +1,6 @@
 # Ascent application architecture
 
-Current source reference · reviewed 12 October 2026. Release baseline: `1.0.9+10`; database schema 15. Proposed changes belong in the [planning documents](README.md), not in this description of current behavior.
+Current source reference · reviewed 16 October 2026. Release baseline: `1.0.16+17`; database schema 16. Proposed changes belong in the [planning documents](README.md), not in this description of current behavior.
 
 ## Application and navigation
 
