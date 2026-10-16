@@ -59,7 +59,7 @@ void main() {
         await settleDb(tester);
         await tester.longPress(find.textContaining('Selection note A'));
         await tester.pumpAndSettle();
-        for (final label in ['Todo', 'Reminder', 'Both', 'Merge']) {
+        for (final label in ['Plan', 'Todo', 'Reminder', 'Both', 'Merge']) {
           expect(find.widgetWithText(ActionChip, label), findsOneWidget);
         }
         await tester.tap(find.widgetWithText(ActionChip, 'Todo'));

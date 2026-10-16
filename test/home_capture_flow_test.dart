@@ -77,7 +77,7 @@ void main() {
   }
 
   testWidgets(
-    'ordinary capture stays a thought and persistent Plan survives time',
+    'ordinary capture stays a thought and transient Plan auto-dismisses',
     (tester) async {
       await mount(tester, theme: AscentTheme.light());
       await tester.enterText(
@@ -93,9 +93,14 @@ void main() {
       expect(await db.select(db.thoughtTable).get(), hasLength(1));
       expect(await db.select(db.taskTable).get(), isEmpty);
       expect(await db.select(db.reminderTable).get(), isEmpty);
-      await tester.pump(const Duration(seconds: 9));
+      // Immediately after capture, transient Plan is visible
       expect(find.text('Plan'), findsOneWidget);
-      expect(find.text('Ask Riya'), findsOneWidget);
+      expect(find.text('Ask Riya'), findsNothing);
+      // After transient duration, options auto-dismiss
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pumpAndSettle();
+      expect(find.text('Plan'), findsNothing);
+      expect(find.text('Ask Riya'), findsNothing);
       await tester.pumpWidget(const SizedBox());
     },
   );
@@ -115,6 +120,11 @@ void main() {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 150)),
       );
+      await tester.pumpAndSettle();
+      // Does NOT show plan automatically. User selects Plan manually:
+      expect(find.byType(HomeScheduleSheet), findsNothing);
+      expect(find.text('Plan'), findsOneWidget);
+      await tester.tap(find.text('Plan'));
       await tester.pumpAndSettle();
       expect(find.text('Make a plan'), findsOneWidget);
       expect(await db.select(db.taskTable).get(), isEmpty);
@@ -150,6 +160,9 @@ void main() {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 150)),
       );
+      await tester.pumpAndSettle();
+      // User selects Plan
+      await tester.tap(find.text('Plan'));
       await tester.pumpAndSettle();
       Navigator.of(tester.element(find.byType(HomeScheduleSheet))).pop();
       await tester.pumpAndSettle();
@@ -192,6 +205,9 @@ void main() {
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 150)),
         );
+        await tester.pumpAndSettle();
+        // User selects Plan
+        await tester.tap(find.text('Plan'));
         await tester.pumpAndSettle();
         // Missing time must open an editable review, never guess a schedule.
         expect(find.text('Choose date and time'), findsOneWidget);

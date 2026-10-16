@@ -105,13 +105,7 @@ class HomeHeader extends ConsumerWidget {
                       vertical: AppSpace.s8,
                     ),
                     nightDecoration: BoxDecoration(
-                      color: g.frozen
-                          ? FrozenPalette.mint
-                          : isDark
-                          ? (isStreakCardVisible ? g.claySoft : g.fill)
-                          : g.clay.withValues(
-                              alpha: isStreakCardVisible ? .025 : 0,
-                            ),
+                      color: Colors.transparent,
                       borderRadius: AppGeometry.roundedr99,
                       border: Border.all(
                         color: g.frozen
@@ -282,7 +276,7 @@ class HomeHeader extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -290,23 +284,22 @@ class HomeHeader extends ConsumerWidget {
                 HapticFeedback.lightImpact();
                 context.push('/ai-assistant');
               },
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: 14,
+                  vertical: 9,
                 ),
                 decoration: BoxDecoration(
-                  color: g.frozen
-                      ? FrozenPalette.lavender
-                      : g.claySoft.withValues(alpha: isDark ? .12 : 0),
-                  borderRadius: BorderRadius.circular(22),
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: g.frozen
-                        ? const Color(0xFFCFC3E3)
+                        ? FrozenPalette.line
                         : isDark
                         ? g.clay.withValues(alpha: .2)
-                        : Colors.black,
+                        : g.edge,
+                    width: AppBorderScale.w1point0,
                   ),
                 ),
                 child: Row(
@@ -314,40 +307,29 @@ class HomeHeader extends ConsumerWidget {
                     Icon(
                       Icons.auto_awesome_rounded,
                       color: g.frozen ? FrozenPalette.action : g.clay,
-                      size: 22,
+                      size: 18,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Ask $assistantName',
-                            style: AscentTextStyles.homeHeadline.copyWith(
-                              color: g.ink,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Plan your day or capture a thought',
-                            style: AscentTextStyles.homeSecondary.copyWith(
-                              color: g.inkSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Ask $assistantName',
+                        style: AscentTextStyles.homeHeadline.copyWith(
+                          color: g.ink,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Icon(Icons.chevron_right_rounded, color: g.clay, size: 20),
+                    Icon(Icons.chevron_right_rounded, color: g.clay, size: 18),
                   ],
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
         ],
       ),
     );

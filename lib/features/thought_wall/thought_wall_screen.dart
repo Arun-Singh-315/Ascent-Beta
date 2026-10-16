@@ -19,6 +19,7 @@ import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
 import 'thought_quick_actions.dart';
@@ -240,6 +241,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       HapticFeedback.selectionClick();
       setState(() => _applyingSelection = true);
       try {
+        if (action == 'plan') {
+          await showHomeSchedule(context, selected.first);
+          if (mounted) _exitSelectionMode();
+          return;
+        }
         final saved = await applyThoughtAction(
           context,
           ref.read(databaseProvider),
@@ -269,6 +275,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         runSpacing: 6,
         children: [
           for (final item in const [
+            ('plan', 'Plan', Icons.edit_calendar_outlined),
             ('todo', 'Todo', Icons.checklist_rounded),
             ('reminder', 'Reminder', Icons.notifications_none_rounded),
             ('both', 'Both', Icons.add_task_rounded),
