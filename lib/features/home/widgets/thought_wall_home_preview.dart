@@ -14,7 +14,10 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
-import '../../thought_wall/thought_quick_actions.dart';
+import '../../thought_wall/thought_action_ui.dart';
+import '../../../core/services/home_capture_service.dart';
+import 'home_schedule_sheet.dart';
+import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space
 /// Redesigned according to Ascent Home Redesign spec:
@@ -40,7 +43,7 @@ class _ThoughtWallHomePreviewState
   final _controller = TextEditingController();
   bool _saving = false;
   bool _expanded = false;
-  int? _lastSavedThoughtId;
+
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
 
@@ -88,11 +91,16 @@ class _ThoughtWallHomePreviewState
             ),
           );
       if (mounted) {
-        setState(() {
-          _lastSavedThoughtId = id;
-        });
+        setState(() => _saving = false);
         if (_controller.text.trim() == content) _controller.clear();
         FocusScope.of(context).unfocus();
+        if (HomeCaptureProposal.parse(
+          content,
+          DateTime.now(),
+        ).scheduledIntent) {
+          final thought = await ref.read(thoughtDaoProvider).getThoughtById(id);
+          if (mounted && thought != null) await _plan(thought);
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -104,6 +112,44 @@ class _ThoughtWallHomePreviewState
       }
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _plan(Thought thought) async {
+    await showHomeSchedule(context, thought);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _resume() async {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final raw = prefs.getString(homePendingScheduleKey);
+      if (raw == null) return;
+      final id = (jsonDecode(raw) as Map)['thoughtId'] as int;
+      final thought = await ref.read(thoughtDaoProvider).getThoughtById(id);
+      if (mounted && thought != null) await _plan(thought);
+      if (thought == null) {
+        await prefs.remove(homePendingScheduleKey);
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not reopen the draft. Please retry.'),
+          ),
+        );
+      }
+    }
+  }
+
+  bool get _hasPendingDraft {
+    try {
+      return ref
+          .read(sharedPreferencesProvider)
+          .containsKey(homePendingScheduleKey);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -137,7 +183,7 @@ class _ThoughtWallHomePreviewState
                     textCapitalization: TextCapitalization.sentences,
                     style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                     decoration: const InputDecoration(
-                      hintText: "What's on your mind?",
+                      hintText: "A thought, a task, or something to remember…",
                       filled: false,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -149,7 +195,7 @@ class _ThoughtWallHomePreviewState
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Send thought',
+                  tooltip: 'Send capture',
                   onPressed: _saving || _controller.text.trim().isEmpty
                       ? null
                       : _send,
@@ -165,10 +211,20 @@ class _ThoughtWallHomePreviewState
             ),
           ),
 
+        if (_hasPendingDraft)
+          TextButton.icon(
+            onPressed: _saving ? null : _resume,
+            icon: const Icon(Icons.edit_calendar_outlined),
+            label: const Text('Finish scheduling'),
+          ),
+
         // ── THOUGHTS BUBBLE PREVIEW (ALTERNATING LEFT/RIGHT) ───────────
         recentThoughtsAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
+          error: (_, _) => TextButton(
+            onPressed: () => ref.invalidate(recentThoughtsStreamProvider),
+            child: const Text('Could not load thoughts. Retry'),
+          ),
           data: (thoughts) {
             if (thoughts.isEmpty) {
               return const SizedBox.shrink();
@@ -181,13 +237,11 @@ class _ThoughtWallHomePreviewState
                   .toList();
             } else {
               final pinned = thoughts.where((t) => t.isPinned).firstOrNull;
-              final latest =
-                  thoughts.where((t) => t.id != pinned?.id).firstOrNull;
+              final latest = thoughts
+                  .where((t) => t.id != pinned?.id)
+                  .firstOrNull;
               if (pinned != null) {
-                previewThoughts = [
-                  pinned,
-                  ?latest,
-                ];
+                previewThoughts = [pinned, ?latest];
               } else {
                 previewThoughts = thoughts.take(1).toList();
               }
@@ -333,6 +387,26 @@ class _ThoughtWallHomePreviewState
                                 ),
                                 const SizedBox(height: 7),
                               ],
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.format_quote_rounded,
+                                    size: 18,
+                                    color: g.inkMuted,
+                                  ),
+                                  const Spacer(),
+                                  IconButton(
+                                    tooltip: 'Open thought',
+                                    icon: const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 18,
+                                    ),
+                                    onPressed: () => context.push(
+                                      '/thought-wall?thought=${thought.id}',
+                                    ),
+                                  ),
+                                ],
+                              ),
                               ThoughtExcerpt(
                                 content: thought.content,
                                 onReadMore: () => context.push(
@@ -347,13 +421,40 @@ class _ThoughtWallHomePreviewState
                                       : null,
                                 ),
                               ),
-                              if (thought.id == _lastSavedThoughtId)
-                                ThoughtQuickActions(
-                                  key: ValueKey(
-                                    'home_thought_quick_${thought.id}',
-                                  ),
-                                  thought: thought,
-                                  db: ref.read(databaseProvider),
+                              if (!thought.isCompleted)
+                                Wrap(
+                                  spacing: 4,
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () => _plan(thought),
+                                      icon: const Icon(
+                                        Icons.edit_calendar_outlined,
+                                        size: 18,
+                                      ),
+                                      label: const Text('Plan'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => applyThoughtAction(
+                                        context,
+                                        ref.read(databaseProvider),
+                                        [thought],
+                                        'todo',
+                                      ),
+                                      child: const Text('Todo'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => context.push(
+                                        Uri(
+                                          path: '/ai-assistant',
+                                          queryParameters: {
+                                            'prompt': thought.content,
+                                            'thought': '${thought.id}',
+                                          },
+                                        ).toString(),
+                                      ),
+                                      child: const Text('Ask Riya'),
+                                    ),
+                                  ],
                                 ),
                               const SizedBox(height: 5),
                               Row(

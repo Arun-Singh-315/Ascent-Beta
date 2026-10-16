@@ -1,4 +1,5 @@
 import '../database/app_database.dart';
+import '../services/home_capture_service.dart';
 import 'notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,12 +23,21 @@ Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
       );
     }
   }
+  final plan = await HomeCaptureService(db).planForReminder(r.id);
+  final checkIn = plan?.checkIn?.id == r.id;
+  final payload = plan == null
+      ? NotificationService.remindersDestination
+      : checkIn
+      ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}'
+      : '/home';
   return NotificationService.instance.scheduleReminderNotificationChecked(
     id: r.id,
     title: r.title,
     scheduledAt: r.scheduledAt,
     alarmEnabled: r.alarmEnabled,
     scheduleFollowUp: false,
+    destination: payload,
+    checkIn: checkIn,
   );
 }
 

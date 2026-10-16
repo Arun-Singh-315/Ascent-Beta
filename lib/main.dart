@@ -147,6 +147,14 @@ Future<void> main() async {
 
   NotificationService.setNotificationActionHandler((actionId, payload) {
     final effectivePayload = payload?.isNotEmpty == true ? payload : null;
+    if ({'home_done', 'home_later', 'home_skip'}.contains(actionId) &&
+        effectivePayload != null &&
+        RegExp(r'^/home\?checkin=\d+&at=\d+$').hasMatch(effectivePayload)) {
+      NotificationService.onNotificationNavigate?.call(
+        '$effectivePayload&answer=${actionId.substring(5)}',
+      );
+      return;
+    }
     if (effectivePayload == '/walk') {
       final walkNotifier = container.read(walkTrackingProvider.notifier);
       if (actionId == NotificationService.actionPause) {

@@ -13,6 +13,8 @@ import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/ai/riya_learning_actions.dart';
+import '../../core/services/home_capture_service.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
 import '../../core/ai/riya_intents.dart';
@@ -25,7 +27,13 @@ import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 
 class AiAssistantScreen extends ConsumerStatefulWidget {
-  const AiAssistantScreen({super.key});
+  const AiAssistantScreen({
+    super.key,
+    this.initialPrompt,
+    this.sourceThoughtId,
+  });
+  final String? initialPrompt;
+  final int? sourceThoughtId;
 
   @override
   ConsumerState<AiAssistantScreen> createState() => _AiAssistantScreenState();
@@ -42,6 +50,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   @override
   void initState() {
     super.initState();
+    _textController.text = widget.initialPrompt ?? '';
+    _hasInputText = _textController.text.trim().isNotEmpty;
     _textController.addListener(_onTextChanged);
     _messagesStream = ref.read(aiAssistantDaoProvider).watchRecentMessages();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -100,6 +110,43 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       _scrollToBottom();
 
       final db = ref.read(databaseProvider);
+      final homeProposal = HomeCaptureProposal.parse(prompt, DateTime.now());
+      if (homeProposal.scheduledIntent &&
+          (homeProposal.at != null ||
+              homeProposal.followUp ||
+              RegExp(
+                r'\bremind me\b',
+                caseSensitive: false,
+              ).hasMatch(prompt))) {
+        Thought? source;
+        if (widget.sourceThoughtId != null) {
+          final selected = await db.thoughtDao.getThoughtById(
+            widget.sourceThoughtId!,
+          );
+          if (selected?.content.trim() == prompt) source = selected;
+        }
+        final sourceId =
+            source?.id ??
+            await db.thoughtDao.insertThought(
+              ThoughtTableCompanion.insert(content: prompt),
+            );
+        source ??= await db.thoughtDao.getThoughtById(sourceId);
+        if (!mounted || source == null) return;
+        await showHomeSchedule(context, source);
+        final plan = (await HomeCaptureService(db).plans())
+            .where((p) => p.requestId == 'home.schedule:$sourceId')
+            .firstOrNull;
+        await aiDao.insertMessage(
+          AiChatMessageTableCompanion.insert(
+            sender: 'assistant',
+            message: plan == null
+                ? 'Your thought is saved. Finish scheduling from Home when ready.'
+                : 'Your plan is saved and linked on Home. Check its alert status there.',
+          ),
+        );
+        if (mounted) _textController.clear();
+        return;
+      }
       final resolution = await (_resolver ??= RiyaIntentResolver(
         db,
       )).resolve(prompt).timeout(const Duration(seconds: 5));

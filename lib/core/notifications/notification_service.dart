@@ -102,6 +102,12 @@ class NotificationService {
       '/more',
     };
     if (payload != null && destinations.contains(payload)) return payload;
+    if (payload != null &&
+        RegExp(
+          r'^/home\?checkin=\d+&at=\d+(?:&answer=(?:done|later|skip))?$',
+        ).hasMatch(payload)) {
+      return payload;
+    }
     if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) {
       return payload;
     }
@@ -261,16 +267,38 @@ class NotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@drawable/ic_launcher_foreground',
     );
-    const darwinSettings = DarwinInitializationSettings(
+    final darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      notificationCategories: [
+        DarwinNotificationCategory(
+          'home_checkin',
+          actions: [
+            DarwinNotificationAction.plain(
+              'home_done',
+              'Done',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+            DarwinNotificationAction.plain(
+              'home_later',
+              'Later (30 min)',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+            DarwinNotificationAction.plain(
+              'home_skip',
+              'Skip check-in',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+          ],
+        ),
+      ],
     );
     const linuxSettings = LinuxInitializationSettings(
       defaultActionName: 'Open Ascent',
     );
 
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
@@ -771,6 +799,8 @@ class NotificationService {
     required DateTime scheduledAt,
     bool scheduleFollowUp = false,
     bool alarmEnabled = false,
+    String destination = remindersDestination,
+    bool checkIn = false,
   }) async {
     if (!_isInitialized) await initialize();
     await refreshLocalTimeZone();
@@ -827,13 +857,35 @@ class NotificationService {
         priority: Priority.high,
         color: const Color(0xFFA95235),
         category: AndroidNotificationCategory.reminder,
+        actions: checkIn
+            ? const [
+                AndroidNotificationAction(
+                  'home_done',
+                  'Done',
+                  showsUserInterface: true,
+                ),
+                AndroidNotificationAction(
+                  'home_later',
+                  'Later (30 min)',
+                  showsUserInterface: true,
+                ),
+                AndroidNotificationAction(
+                  'home_skip',
+                  'Skip check-in',
+                  showsUserInterface: true,
+                ),
+              ]
+            : null,
         styleInformation: BigTextStyleInformation(
           copy.expandedBody,
           contentTitle: copy.title,
-          summaryText: 'Tap to open Reminders',
+          summaryText: checkIn
+              ? 'Tap to answer on Home'
+              : 'Tap to open your plan',
         ),
       ),
-      iOS: const DarwinNotificationDetails(
+      iOS: DarwinNotificationDetails(
+        categoryIdentifier: checkIn ? 'home_checkin' : null,
         presentAlert: true,
         presentSound: true,
       ),
@@ -847,7 +899,7 @@ class NotificationService {
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: remindersDestination,
+        payload: destination,
       );
       debugPrint(
         'Successfully scheduled exact reminder id=$id at $scheduledTz',
@@ -864,7 +916,7 @@ class NotificationService {
           scheduledDate: scheduledTz,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: remindersDestination,
+          payload: destination,
         );
         debugPrint(
           'Successfully scheduled inexact reminder fallback id=$id at $scheduledTz',

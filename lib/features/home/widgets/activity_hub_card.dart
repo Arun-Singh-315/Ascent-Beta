@@ -20,7 +20,12 @@ import 'activity_row_item.dart';
 /// - 44dp hit-area task items.
 /// - Inline "Add activity" action row.
 class ActivityHubCard extends ConsumerStatefulWidget {
-  const ActivityHubCard({super.key, this.previewLimit = 4});
+  const ActivityHubCard({
+    super.key,
+    this.previewLimit = 4,
+    this.excludedTaskIds = const {},
+  });
+  final Set<int> excludedTaskIds;
   final int previewLimit;
 
   @override
@@ -46,7 +51,14 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           style: TextStyle(color: g.inkMuted),
         ),
       ),
-      data: (activities) {
+      data: (allActivities) {
+        final activities = allActivities
+            .where(
+              (a) =>
+                  a.status == TodayActivityStatus.done ||
+                  !widget.excludedTaskIds.contains(a.linkedTaskId),
+            )
+            .toList();
         final doneActivities = activities
             .where((a) => a.status == TodayActivityStatus.done)
             .toList();
@@ -54,7 +66,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             .where((a) => a.status != TodayActivityStatus.done)
             .toList();
         final doneCount = doneActivities.length;
-        final totalCount = activities.length;
+        final totalCount = allActivities.length;
         final progressFraction = totalCount > 0
             ? (doneCount / totalCount).clamp(0.0, 1.0)
             : 0.0;

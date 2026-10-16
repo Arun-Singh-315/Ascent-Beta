@@ -217,7 +217,7 @@ void main() {
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'My direct Home note');
     await tester.pump();
-    await tester.tap(find.byTooltip('Send thought'));
+    await tester.tap(find.byTooltip('Send capture'));
     await tester.runAsync(() async {
       await Future<void>.delayed(const Duration(milliseconds: 150));
       final thoughts = await db.thoughtDao.watchAllThoughts().first;

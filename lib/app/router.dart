@@ -104,8 +104,9 @@ final ascentRouter = GoRouter(
           routes: [
             GoRoute(
               path: AscentRoutes.home,
-              pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: HomeScreen()),
+              pageBuilder: (context, state) => NoTransitionPage(
+                child: HomeScreen(notificationUri: state.uri),
+              ),
             ),
           ],
         ),
@@ -171,9 +172,18 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.aiAssistant,
-      builder: (context, state) =>
-          Theme(data: AscentTheme.assistant(Theme.of(context)),
-            child: const FeatureGuideHost(feature: 'Riya', child: AiAssistantScreen())),
+      builder: (context, state) => Theme(
+        data: AscentTheme.assistant(Theme.of(context)),
+        child: FeatureGuideHost(
+          feature: 'Riya',
+          child: AiAssistantScreen(
+            initialPrompt: state.uri.queryParameters['prompt'],
+            sourceThoughtId: int.tryParse(
+              state.uri.queryParameters['thought'] ?? '',
+            ),
+          ),
+        ),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
