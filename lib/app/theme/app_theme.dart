@@ -5,6 +5,7 @@ import 'color_tokens.dart';
 import 'glass_theme.dart';
 import 'text_styles.dart';
 import 'surface_tokens.dart';
+import '../../core/providers/settings_provider.dart';
 
 /// Provides the light and dark [ThemeData] for the Ascent app.
 ///
@@ -20,7 +21,8 @@ class AscentTheme {
 
   // ── Light ──────────────────────────────────────────────────────────────────
 
-  static ThemeData light() => _build(brightness: Brightness.light);
+  static ThemeData light({DayThemePreset preset = DayThemePreset.classicClay}) =>
+      _build(brightness: Brightness.light, preset: preset);
 
   // ── Dark ───────────────────────────────────────────────────────────────────
 
@@ -28,9 +30,18 @@ class AscentTheme {
 
   static ThemeData assistant(ThemeData parent) {
     if (parent.brightness == Brightness.dark) return parent;
-    final original = _build(brightness: Brightness.light, outlinedDay: false);
+    final parentGlass = parent.extension<AscentGlass>() ?? AscentGlass.light;
+    final isNordic = parentGlass.clay == const Color(0xFF2563EB);
+    final original = _build(
+      brightness: Brightness.light,
+      preset: isNordic ? DayThemePreset.nordicSky : DayThemePreset.classicClay,
+      outlinedDay: false,
+    );
     return original.copyWith(
-      extensions: [AscentGlass.light, AppSurfaces.legacyLight],
+      extensions: [
+        isNordic ? AscentGlass.nordicSky : AscentGlass.light,
+        isNordic ? AppSurfaces.legacyNordicSky : AppSurfaces.legacyLight,
+      ],
     );
   }
 
@@ -45,49 +56,53 @@ class AscentTheme {
 
   static ThemeData _build({
     required Brightness brightness,
+    DayThemePreset preset = DayThemePreset.classicClay,
     bool outlinedDay = false,
   }) {
     final isDark = brightness == Brightness.dark;
+    final isNordicSky = !isDark && preset == DayThemePreset.nordicSky;
     final day = !isDark && outlinedDay;
 
     // Resolve semantic tokens for this brightness.
-    final bgBase = isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
+    final bgBase = isDark
+        ? AscentColors.bgBaseDark
+        : (isNordicSky ? const Color(0xFFF0F4F9) : AscentColors.bgBase);
     final bgSurface = isDark
         ? AscentColors.bgSurfaceDark
         : AscentColors.bgSurface;
     final bgSurfaceElevated = isDark
         ? AscentColors.bgSurfaceElevatedDark
-        : AscentColors.bgSurfaceElevated;
+        : (isNordicSky ? const Color(0xFFE8EEF5) : AscentColors.bgSurfaceElevated);
     final accentPrimary = isDark
         ? AscentColors.accentPrimaryDark
-        : AscentColors.accentPrimary;
+        : (isNordicSky ? const Color(0xFF2563EB) : AscentColors.accentPrimary);
     final accentSecondary = isDark
         ? AscentColors.accentSecondaryDark
-        : AscentColors.accentSecondary;
+        : (isNordicSky ? const Color(0xFF0284C7) : AscentColors.accentSecondary);
     final accentInfo = isDark
         ? AscentColors.accentInfoDark
-        : AscentColors.accentInfo;
+        : (isNordicSky ? const Color(0xFF0284C7) : AscentColors.accentInfo);
     final stateDanger = isDark
         ? AscentColors.stateDangerDark
-        : AscentColors.stateDanger;
+        : (isNordicSky ? const Color(0xFFDC2626) : AscentColors.stateDanger);
     final textPrimary = day
-        ? AppSurfaces.day.ink
+        ? (isNordicSky ? AppSurfaces.nordicSky.ink : AppSurfaces.day.ink)
         : isDark
         ? AscentColors.textPrimaryDark
-        : AscentColors.textPrimary;
+        : (isNordicSky ? const Color(0xFF0F172A) : AscentColors.textPrimary);
     final textMuted = day
-        ? AppSurfaces.day.mutedText
+        ? (isNordicSky ? AppSurfaces.nordicSky.mutedText : AppSurfaces.day.mutedText)
         : isDark
         ? AscentColors.textMutedDark
-        : AscentColors.textMuted;
+        : (isNordicSky ? const Color(0xFF64748B) : AscentColors.textMuted);
     final textOnPrimary = isDark
         ? AscentColors.textOnPrimaryDark
         : AscentColors.textOnPrimary;
     final divider = day
-        ? AppSurfaces.day.dividerColor
+        ? (isNordicSky ? AppSurfaces.nordicSky.dividerColor : AppSurfaces.day.dividerColor)
         : isDark
         ? AscentColors.dividerDark
-        : AscentColors.divider;
+        : (isNordicSky ? const Color(0xFFE2E8F0) : AscentColors.divider);
 
     final colorScheme = ColorScheme(
       brightness: brightness,
@@ -319,16 +334,20 @@ class AscentTheme {
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
+            if (isNordicSky) return const Color(0xFFFFFFFF);
             return isDark ? accentPrimary : const Color(0xFFC07360);
           }
+          if (isNordicSky) return const Color(0xFF475569);
           return isDark ? const Color(0xFFB8A594) : const Color(0xFFD4C8BC);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
+            if (isNordicSky) return const Color(0xFF2563EB);
             return isDark
                 ? accentPrimary.withValues(alpha: 0.38)
                 : const Color(0xFFC07360).withValues(alpha: 0.28);
           }
+          if (isNordicSky) return const Color(0xFFCBD5E1);
           return isDark ? const Color(0xFF3B2C1E) : const Color(0xFFEFE8E2);
         }),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -427,6 +446,20 @@ class AscentTheme {
       extensions: [
         isDark
             ? AscentGlass.dark
+            : isNordicSky
+            ? (!day
+                ? AscentGlass.nordicSky
+                : AscentGlass.nordicSky.copyWith(
+                    fill: AppSurfaces.nordicSky.cardFill,
+                    line: AppSurfaces.nordicSky.dividerColor,
+                    clay: AppSurfaces.nordicSky.accent,
+                    claySoft: AppSurfaces.nordicSky.tintFill,
+                    ink: AppSurfaces.nordicSky.ink,
+                    inkMuted: AppSurfaces.nordicSky.mutedText,
+                    glow1: Colors.transparent,
+                    glow2: Colors.transparent,
+                    shadow: Colors.transparent,
+                  ))
             : !day
             ? AscentGlass.light
             : AscentGlass.light.copyWith(
@@ -442,6 +475,8 @@ class AscentTheme {
               ),
         isDark
             ? AppSurfaces.night
+            : isNordicSky
+            ? (day ? AppSurfaces.nordicSky : AppSurfaces.legacyNordicSky)
             : (day ? AppSurfaces.day : AppSurfaces.legacyLight),
       ],
     );

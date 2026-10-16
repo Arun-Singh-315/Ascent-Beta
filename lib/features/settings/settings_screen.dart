@@ -400,6 +400,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final dayPreset = ref.watch(dayThemePresetProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
       _initFromProfile(profileAsync.value);
@@ -626,6 +627,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ref
                               .read(themeModeProvider.notifier)
                               .setThemeMode(ThemeMode.system);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Divider(color: g.line, height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Daylight Style',
+                        style: AscentTextStyles.labelMedium
+                            .copyWith(color: g.ink)
+                            .merge(AppTypeRoles.typeRole2),
+                      ),
+                      Text(
+                        dayPreset == DayThemePreset.nordicSky
+                            ? 'Nordic Sky'
+                            : 'Classic Clay (Default)',
+                        style: AscentTextStyles.captionMedium
+                            .copyWith(
+                              color: dayPreset == DayThemePreset.nordicSky
+                                  ? const Color(0xFF2563EB)
+                                  : g.clay,
+                            )
+                            .merge(AppTypeRoles.typeRole8),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _DayPresetOption(
+                        label: 'Classic Clay',
+                        subtitle: 'Terracotta & Linen',
+                        colorSwatch: const Color(0xFFA4523A),
+                        icon: Icons.wb_sunny_outlined,
+                        isSelected: dayPreset == DayThemePreset.classicClay,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(dayThemePresetProvider.notifier)
+                              .setPreset(DayThemePreset.classicClay);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DayPresetOption(
+                        label: 'Nordic Sky',
+                        subtitle: 'Ice, Glass & Slate',
+                        colorSwatch: const Color(0xFF2563EB),
+                        icon: Icons.cloud_outlined,
+                        isSelected: dayPreset == DayThemePreset.nordicSky,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(dayThemePresetProvider.notifier)
+                              .setPreset(DayThemePreset.nordicSky);
                         },
                       ),
                     ],
@@ -1163,6 +1222,99 @@ class _ThemeOption extends StatelessWidget {
                 style: AscentTextStyles.labelSmall
                     .copyWith(color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : g.ink))
                     .merge(AppStateTypography.stateType1(state0: isSelected)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DayPresetOption extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final Color colorSwatch;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _DayPresetOption({
+    required this.label,
+    required this.subtitle,
+    required this.colorSwatch,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+
+    return Expanded(
+      child: AppTapArea(
+        onTap: onTap,
+        borderRadius: AppGeometry.roundedr12,
+        child: AppCard(
+          selected: isSelected,
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpace.s12,
+            horizontal: AppSpace.s8,
+          ),
+          nightDecoration: BoxDecoration(
+            color: isSelected ? colorSwatch : g.fill,
+            borderRadius: AppGeometry.roundedr12,
+            border: Border.all(
+              color: isSelected ? colorSwatch : g.edge,
+              width: isSelected ? 1.5 : 1.0,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: isSelected ? Colors.white : colorSwatch,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(
+                    icon,
+                    color: isSelected ? AppPalette.white : g.inkSecondary,
+                    size: 18,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: AscentTextStyles.labelSmall
+                    .copyWith(
+                      color: context.surfaces.contentForeground(
+                        isSelected,
+                        isSelected ? AppPalette.white : g.ink,
+                      ),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: AscentTextStyles.captionMedium
+                    .copyWith(
+                      color: isSelected
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : g.inkMuted,
+                      fontSize: 10,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

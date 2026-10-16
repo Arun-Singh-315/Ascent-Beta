@@ -90,6 +90,32 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     inkMuted: Color(0xFF74695F),
   );
 
+  static const nordicSky = AscentGlass(
+    bg: Color(0xFFF0F4F9),
+    fill: Color.fromRGBO(255, 255, 255, 0.72),
+    edge: Color.fromRGBO(15, 23, 42, 0.08),
+    highlight: Color.fromRGBO(255, 255, 255, 0.95),
+    line: Color.fromRGBO(15, 23, 42, 0.08),
+    glow1: Color.fromRGBO(56, 189, 248, 0.22),
+    glow2: Color.fromRGBO(96, 165, 250, 0.18),
+    track: Color.fromRGBO(15, 23, 42, 0.10),
+    nav: Color.fromRGBO(240, 244, 249, 0.85),
+    shadow: Color.fromRGBO(15, 23, 42, 0.12),
+    clay: Color(0xFF2563EB),
+    claySoft: Color.fromRGBO(37, 99, 235, 0.12),
+    slate: Color(0xFF0284C7),
+    slateSoft: Color.fromRGBO(2, 132, 199, 0.12),
+    sage: Color(0xFF16A34A),
+    sageSoft: Color.fromRGBO(22, 163, 74, 0.12),
+    amber: Color(0xFFD97706),
+    amberSoft: Color.fromRGBO(217, 119, 6, 0.12),
+    coral: Color(0xFFDC2626),
+    coralSoft: Color.fromRGBO(220, 38, 38, 0.12),
+    ink: Color(0xFF0F172A),
+    inkSecondary: Color(0xFF334155),
+    inkMuted: Color(0xFF64748B),
+  );
+
   static const dark = AscentGlass(
     bg: Color(0xFF16110D),
     fill: Color.fromRGBO(255, 255, 255, 0.055),

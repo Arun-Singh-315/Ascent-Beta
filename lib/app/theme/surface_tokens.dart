@@ -93,6 +93,39 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     shadow: AscentGlass.light.shadow,
   );
 
+  static const nordicSky = AppSurfaces(
+    outlined: true,
+    ink: Color(0xFF0F172A),
+    mutedText: Color(0xFF64748B),
+    accent: Color(0xFF2563EB),
+    greenAction: Color(0xFF2563EB),
+    cardFill: Colors.transparent,
+    cardBorderColor: Color(0xFF0F172A),
+    pillBorderColor: Color(0xFF0F172A),
+    dividerColor: Color(0x330F172A),
+    tintFill: Color(0x242563EB),
+    tintBorder: Color(0x4D2563EB),
+    onAccent: Colors.white,
+    cardBorderWidth: 1.5,
+    pillBorderWidth: 1,
+    shadow: Colors.transparent,
+    blur: 0,
+  );
+
+  static final legacyNordicSky = night.copyWith(
+    ink: AscentGlass.nordicSky.ink,
+    mutedText: AscentGlass.nordicSky.inkMuted,
+    accent: AscentGlass.nordicSky.clay,
+    greenAction: const Color(0xFF2563EB),
+    cardFill: AscentGlass.nordicSky.fill,
+    cardBorderColor: AscentGlass.nordicSky.edge,
+    pillBorderColor: AscentGlass.nordicSky.edge,
+    dividerColor: AscentGlass.nordicSky.line,
+    tintFill: AscentGlass.nordicSky.claySoft,
+    tintBorder: AscentGlass.nordicSky.clay.withValues(alpha: .25),
+    shadow: AscentGlass.nordicSky.shadow,
+  );
+
   static final night = AppSurfaces(
     outlined: false,
     ink: AscentGlass.dark.ink,
