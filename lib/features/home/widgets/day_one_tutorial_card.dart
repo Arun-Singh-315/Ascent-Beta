@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -47,6 +48,8 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
     if (_dismissed) return const SizedBox.shrink();
 
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryButtonFg = isDark ? context.textOnPrimary : AppPalette.white;
     final firstName = widget.userName.trim().split(' ').first;
 
     return Padding(
@@ -159,7 +162,10 @@ class _DayOneTutorialCardState extends ConsumerState<DayOneTutorialCard> {
                     style: context.surfaces.buttonStyle(
                       ElevatedButton.styleFrom(
                         backgroundColor: g.clay,
-                        foregroundColor: AppPalette.white,
+                        foregroundColor: primaryButtonFg,
+                        disabledBackgroundColor: g.clay.withValues(alpha: 0.38),
+                        disabledForegroundColor:
+                            primaryButtonFg.withValues(alpha: 0.4),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr12,
