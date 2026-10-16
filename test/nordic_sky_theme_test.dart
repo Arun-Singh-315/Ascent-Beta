@@ -65,11 +65,11 @@ void main() {
       expect(glass!.clay, const Color(0xFFA4523A));
     });
 
-    test('nordicSky preset applies ice blue, cobalt accent, and midnight slate ink', () {
+    test('nordicSky preset applies ice blue, calm sky blue accent, and midnight slate ink', () {
       final theme = AscentTheme.light(preset: DayThemePreset.nordicSky);
 
       expect(theme.brightness, Brightness.light);
-      expect(theme.colorScheme.primary, const Color(0xFF2563EB));
+      expect(theme.colorScheme.primary, const Color(0xFF0EA5E9));
       expect(theme.scaffoldBackgroundColor, const Color(0xFFF0F4F9));
       expect(theme.colorScheme.onSurface, const Color(0xFF0F172A));
       expect(theme.colorScheme.onSurfaceVariant, const Color(0xFF64748B));
@@ -77,7 +77,7 @@ void main() {
       final glass = theme.extension<AscentGlass>();
       expect(glass, isNotNull);
       expect(glass!.bg, const Color(0xFFF0F4F9));
-      expect(glass.clay, const Color(0xFF2563EB));
+      expect(glass.clay, const Color(0xFF0EA5E9));
       expect(glass.ink, const Color(0xFF0F172A));
     });
 
@@ -94,7 +94,7 @@ void main() {
       final unselectedTrack = switchTheme.trackColor!.resolve({});
 
       expect(selectedThumb, const Color(0xFFFFFFFF));
-      expect(selectedTrack, const Color(0xFF2563EB));
+      expect(selectedTrack, const Color(0xFF38BDF8));
       expect(unselectedThumb, const Color(0xFF475569));
       expect(unselectedTrack, const Color(0xFFCBD5E1));
     });

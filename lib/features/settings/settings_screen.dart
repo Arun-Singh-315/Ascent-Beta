@@ -650,7 +650,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: AscentTextStyles.captionMedium
                             .copyWith(
                               color: dayPreset == DayThemePreset.nordicSky
-                                  ? const Color(0xFF2563EB)
+                                  ? const Color(0xFF0EA5E9)
                                   : g.clay,
                             )
                             .merge(AppTypeRoles.typeRole8),
@@ -677,7 +677,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _DayPresetOption(
                         label: 'Nordic Sky',
                         subtitle: 'Ice, Glass & Slate',
-                        colorSwatch: const Color(0xFF2563EB),
+                        colorSwatch: const Color(0xFF0EA5E9),
                         icon: Icons.cloud_outlined,
                         isSelected: dayPreset == DayThemePreset.nordicSky,
                         onTap: () {

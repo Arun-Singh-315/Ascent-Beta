@@ -9,7 +9,7 @@ class HomeTheme {
     if (parent.brightness == Brightness.dark) return parent;
     final parentGlass = parent.extension<AscentGlass>() ?? AscentGlass.light;
     final isNordic =
-        parentGlass.clay == const Color(0xFF2563EB) ||
+        parentGlass.clay == const Color(0xFF0EA5E9) ||
         parentGlass.bg == const Color(0xFFF0F4F9);
 
     final glass = isNordic

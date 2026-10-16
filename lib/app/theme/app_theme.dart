@@ -31,7 +31,8 @@ class AscentTheme {
   static ThemeData assistant(ThemeData parent) {
     if (parent.brightness == Brightness.dark) return parent;
     final parentGlass = parent.extension<AscentGlass>() ?? AscentGlass.light;
-    final isNordic = parentGlass.clay == const Color(0xFF2563EB);
+    final isNordic = parentGlass.clay == const Color(0xFF0EA5E9) ||
+        parentGlass.bg == const Color(0xFFF0F4F9);
     final original = _build(
       brightness: Brightness.light,
       preset: isNordic ? DayThemePreset.nordicSky : DayThemePreset.classicClay,
@@ -75,13 +76,13 @@ class AscentTheme {
         : (isNordicSky ? const Color(0xFFE8EEF5) : AscentColors.bgSurfaceElevated);
     final accentPrimary = isDark
         ? AscentColors.accentPrimaryDark
-        : (isNordicSky ? const Color(0xFF2563EB) : AscentColors.accentPrimary);
+        : (isNordicSky ? const Color(0xFF0EA5E9) : AscentColors.accentPrimary);
     final accentSecondary = isDark
         ? AscentColors.accentSecondaryDark
-        : (isNordicSky ? const Color(0xFF0284C7) : AscentColors.accentSecondary);
+        : (isNordicSky ? const Color(0xFF38BDF8) : AscentColors.accentSecondary);
     final accentInfo = isDark
         ? AscentColors.accentInfoDark
-        : (isNordicSky ? const Color(0xFF0284C7) : AscentColors.accentInfo);
+        : (isNordicSky ? const Color(0xFF38BDF8) : AscentColors.accentInfo);
     final stateDanger = isDark
         ? AscentColors.stateDangerDark
         : (isNordicSky ? const Color(0xFFDC2626) : AscentColors.stateDanger);
@@ -342,7 +343,7 @@ class AscentTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            if (isNordicSky) return const Color(0xFF2563EB);
+            if (isNordicSky) return const Color(0xFF38BDF8);
             return isDark
                 ? accentPrimary.withValues(alpha: 0.38)
                 : const Color(0xFFC07360).withValues(alpha: 0.28);
