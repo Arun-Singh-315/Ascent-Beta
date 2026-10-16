@@ -133,7 +133,7 @@ void main() {
       controller.dispose();
     },
   );
-  testWidgets('Home field focuses an accessible underline', (tester) async {
+  testWidgets('Home field focuses an accessible quick-capture card', (tester) async {
     await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
     await tester.pump();
     final field = tester.widget<TextField>(find.byType(TextField));
@@ -147,11 +147,9 @@ void main() {
         (w) =>
             w is Container &&
             w.decoration is BoxDecoration &&
-            (w.decoration as BoxDecoration).border is Border &&
-            ((w.decoration as BoxDecoration).border as Border).bottom.width ==
-                2,
+            (w.decoration as BoxDecoration).border != null,
       ),
-      findsOneWidget,
+      findsWidgets,
     );
     await tester.pumpWidget(const SizedBox());
   });

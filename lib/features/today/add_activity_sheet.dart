@@ -189,7 +189,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           id: drift.Value(taskId),
           title: drift.Value(title),
           notes: drift.Value(
-            _notesController.text.trim().isEmpty
+            _notesController.text.trim().isEmpty ||
+                    _notesController.text.trim() == title
                 ? null
                 : _notesController.text.trim(),
           ),
@@ -211,7 +212,8 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
         TaskTableCompanion.insert(
           title: title,
           notes: drift.Value(
-            _notesController.text.trim().isEmpty
+            _notesController.text.trim().isEmpty ||
+                    _notesController.text.trim() == title
                 ? null
                 : _notesController.text.trim(),
           ),

@@ -16,8 +16,26 @@ class ThoughtActions {
   final DateTime Function() clock;
   final AppDatabase db;
 
-  String _title(String text) =>
-      text.length <= 300 ? text : '${text.substring(0, 297)}…';
+  static String extractTitle(String text) {
+    final firstLine = text.trim().split(RegExp(r'\r?\n')).first.trim();
+    final candidate = firstLine.isNotEmpty ? firstLine : text.trim();
+    return candidate.length <= 300 ? candidate : '${candidate.substring(0, 297)}…';
+  }
+
+  static String? extractNotes(String title, String content) {
+    final cleanTitle = title.trim();
+    final cleanContent = content.trim();
+    if (cleanTitle.toLowerCase() == cleanContent.toLowerCase()) {
+      return null;
+    }
+    if (cleanContent.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
+      final remainder = cleanContent.substring(cleanTitle.length).trim();
+      return remainder.isNotEmpty ? remainder : null;
+    }
+    return cleanContent.isNotEmpty ? cleanContent : null;
+  }
+
+  String _title(String text) => extractTitle(text);
 
   Future<List<Thought>> _sources(
     List<Thought> requested, {
@@ -130,12 +148,14 @@ class ThoughtActions {
           if (old != null && old.actualCompletedDate != null) {
             throw StateError('A linked Todo is already complete.');
           }
+          final cleanTitle = _title(source.content.trim());
+          final cleanNotes = extractNotes(cleanTitle, source.content);
           final id =
               old?.id ??
               await db.taskDao.insertTask(
                 TaskTableCompanion.insert(
-                  title: _title(source.content.trim()),
-                  notes: drift.Value(source.content),
+                  title: cleanTitle,
+                  notes: drift.Value(cleanNotes),
                   linkedThoughtId: drift.Value(source.id),
                   parentTaskId: drift.Value(parentId),
                   plannedDate: drift.Value(now ?? clock()),
@@ -181,15 +201,17 @@ class ThoughtActions {
                 ? await db.taskDao.getTaskLinkedToThought(group.single.id)
                 : null;
             final title = group.length == 1
-                ? group.single.content
+                ? _title(group.single.content)
                 : group
                       .asMap()
                       .entries
                       .map((e) => '${e.key + 1}. ${e.value.content}')
                       .join('\n');
+            final finalTitle =
+                title.length <= 300 ? title : '${title.substring(0, 297)}…';
             final id = await db.reminderDao.insertReminder(
               ReminderTableCompanion.insert(
-                title: _title(title),
+                title: finalTitle,
                 scheduledAt: at!,
                 alertSyncPending: const drift.Value(true),
                 linkedTaskId: drift.Value(parentId ?? task?.id),

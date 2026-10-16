@@ -33,7 +33,6 @@ class ActivityHubCard extends ConsumerStatefulWidget {
 }
 
 class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
-  int _selectedTabIndex = 0; // 0: Up Next, 1: Completed, 2: All
   bool _showAll = false;
 
   @override
@@ -97,14 +96,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             return 0;
           });
 
-        List<TodayActivityItem> filteredList;
-        if (_selectedTabIndex == 0) {
-          filteredList = sortedPending;
-        } else if (_selectedTabIndex == 1) {
-          filteredList = doneActivities;
-        } else {
-          filteredList = sortedAll;
-        }
+        final filteredList = sortedPending;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,76 +206,63 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               ],
             ),
 
-            const SizedBox(height: 14),
-
-            // ── TABS: UP NEXT / COMPLETED / ALL ───────────────────────────
-            AppCard(
-              height: 48,
-              nightDecoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: g.line,
-                    width: AppBorderScale.w1point0,
-                  ),
-                ),
-              ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _HomeTabItem(
-                      label: 'Up next',
-                      count: pendingActivities.length,
-                      isSelected: _selectedTabIndex == 0,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _selectedTabIndex = 0;
-                          _showAll = false;
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 20),
-                    _HomeTabItem(
-                      label: 'Completed',
-                      count: doneCount,
-                      isSelected: _selectedTabIndex == 1,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _selectedTabIndex = 1;
-                          _showAll = false;
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 20),
-                    _HomeTabItem(
-                      label: 'All',
-                      count: totalCount,
-                      isSelected: _selectedTabIndex == 2,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _selectedTabIndex = 2;
-                          _showAll = false;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const SizedBox(height: 12),
 
             // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
             if (filteredList.isEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: AppSpace.s20),
-                child: Center(
-                  child: Text(
-                    'No activities in this view',
-                    style: AscentTextStyles.homeSecondary.copyWith(
-                      color: g.inkMuted,
-                    ),
+                padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s14,
+                    vertical: AppSpace.s12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.fill,
+                    borderRadius: AppGeometry.roundedr16,
+                    border: Border.all(color: g.edge),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        totalCount > 0
+                            ? Icons.task_alt_rounded
+                            : Icons.wb_sunny_outlined,
+                        size: 20,
+                        color: g.clay,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          totalCount > 0
+                              ? 'All caught up! All $doneCount activities finished.'
+                              : 'No activities scheduled for today.',
+                          style: AscentTextStyles.homeSecondary.copyWith(
+                            color: g.inkSecondary,
+                          ),
+                        ),
+                      ),
+                      if (totalCount == 0)
+                        AppTapArea(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            AddActivitySheet.show(context);
+                          },
+                          borderRadius: AppGeometry.roundedr8,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s6,
+                              vertical: AppSpace.s4,
+                            ),
+                            child: Text(
+                              '+ Add',
+                              style: AscentTextStyles.homeSecondary
+                                  .copyWith(color: g.clay)
+                                  .merge(AppTypeRoles.typeRole8),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               )
@@ -408,69 +387,3 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   }
 }
 
-class _HomeTabItem extends StatelessWidget {
-  final String label;
-  final int count;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _HomeTabItem({
-    required this.label,
-    required this.count,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-
-    return Semantics(
-      selected: isSelected,
-      button: true,
-      child: AppTapArea(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-          child: Stack(
-            alignment: Alignment.bottomCenter,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: AscentTextStyles.homeSecondary
-                          .copyWith(color: isSelected ? g.ink : g.inkMuted)
-                          .merge(
-                            AppStateTypography.stateType1(state0: isSelected),
-                          ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      '$count',
-                      style: AscentTextStyles.homeCaption
-                          .copyWith(color: g.inkMuted)
-                          .merge(AppTypeRoles.typeRole4),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Container(
-                  height: 2,
-                  width: 40,
-                  decoration: BoxDecoration(
-                    color: g.clay,
-                    borderRadius: AppGeometry.roundedr2,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

@@ -283,16 +283,23 @@ class _ThoughtWallHomePreviewState
       children: [
         if (widget.showComposer)
           AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             nightDecoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: _focusNode.hasFocus ? g.clay : g.line,
-                  width: _focusNode.hasFocus ? 2 : 1,
-                ),
+              color: g.fill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _focusNode.hasFocus ? g.clay : g.edge,
+                width: AppBorderScale.w1point0,
               ),
             ),
             child: Row(
               children: [
+                Icon(
+                  Icons.edit_note_rounded,
+                  size: 20,
+                  color: _focusNode.hasFocus ? g.clay : g.inkMuted,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _controller,
@@ -302,8 +309,9 @@ class _ThoughtWallHomePreviewState
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
                     style: AppTypography.plusJakartaSans14W60080(color: g.ink),
-                    decoration: const InputDecoration(
-                      hintText: "A thought, a task, or something to remember…",
+                    decoration: InputDecoration(
+                      hintText: "Capture a thought…",
+                      hintStyle: TextStyle(color: g.inkMuted),
                       filled: false,
                       enabledBorder: InputBorder.none,
                       focusedBorder: InputBorder.none,
@@ -325,13 +333,13 @@ class _ThoughtWallHomePreviewState
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Icon(Icons.send_rounded, color: g.clay),
+                      : Icon(Icons.arrow_upward_rounded, color: g.clay),
                 ),
               ],
             ),
           ),
 
-        // ── THOUGHTS BUBBLE PREVIEW (ALTERNATING LEFT/RIGHT) ───────────
+        // ── THOUGHTS MESSAGE PREVIEW ──────────────────────────────────
         recentThoughtsAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => TextButton(
@@ -381,7 +389,6 @@ class _ThoughtWallHomePreviewState
                 const SizedBox(height: 8),
                 ...List.generate(previewThoughts.length, (index) {
                   final thought = previewThoughts[index];
-                  final isEven = index % 2 == 0;
                   final timeAgo = _formatTimeAgo(thought.createdAt);
                   final isDraftSource =
                       pendingDraft?['thoughtId'] == thought.id;
@@ -391,53 +398,34 @@ class _ThoughtWallHomePreviewState
                       !thought.isCompleted;
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpace.s8),
-                    child: Align(
-                      alignment: isEven
-                          ? Alignment.centerLeft
-                          : Alignment.centerRight,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 320),
-                        child: GlassSurface(
-                          key: ValueKey('home_thought_${thought.id}'),
-                          enableBlur: false,
-                          customBorder: Border.all(
-                            color: g.inkMuted.withValues(
-                              alpha:
-                                  Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? 0.35
-                                      : 0.15,
-                            ),
-                            width: AppBorderScale.w1point0,
-                          ),
-                          radius: 16,
-                          borderRadius: BorderRadius.only(
-                            topLeft: AppGeometry.radiusr18,
-                            topRight: AppGeometry.radiusr18,
-                            bottomLeft: AppGeometry.bubbleTail(isEven),
-                            bottomRight: AppGeometry.bubbleTail(!isEven),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s14,
-                            vertical: AppSpace.s10,
-                          ),
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            if (_transientThoughtId == thought.id) {
-                              context.push(
-                                '/thought-wall?thought=${thought.id}',
-                              );
-                            } else {
-                              _activateTransient(thought.id);
-                            }
-                          },
-                          child: Column(
-                            crossAxisAlignment: isEven
-                                ? CrossAxisAlignment.start
-                                : CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
+                    padding: const EdgeInsets.only(bottom: AppSpace.s10),
+                    child: GlassSurface(
+                      key: ValueKey('home_thought_${thought.id}'),
+                      enableBlur: false,
+                      customBorder: Border.all(
+                        color: g.edge,
+                        width: AppBorderScale.w1point0,
+                      ),
+                      radius: 16,
+                      borderRadius: BorderRadius.circular(16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s16,
+                        vertical: AppSpace.s12,
+                      ),
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        if (_transientThoughtId == thought.id) {
+                          context.push(
+                            '/thought-wall?thought=${thought.id}',
+                          );
+                        } else {
+                          _activateTransient(thought.id);
+                        }
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                               if (thought.isPinned) ...[
                                 AppTag(
                                   padding: const EdgeInsets.symmetric(
@@ -571,26 +559,31 @@ class _ThoughtWallHomePreviewState
                               ],
                               const SizedBox(height: 6),
                               Row(
-                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  if (thought.isCompleted) ...[
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      size: 12,
-                                      color: g.clay,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  Text(
-                                    timeAgo,
-                                    style: AscentTextStyles.homeCaption
-                                        .copyWith(
-                                          color: g.inkMuted,
-                                          letterSpacing: 0.5,
-                                        )
-                                        .merge(AppTypeRoles.typeRole66),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (thought.isCompleted) ...[
+                                        Icon(
+                                          Icons.check_circle_rounded,
+                                          size: 12,
+                                          color: g.clay,
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      Text(
+                                        timeAgo,
+                                        style: AscentTextStyles.homeCaption
+                                            .copyWith(
+                                              color: g.inkMuted,
+                                              letterSpacing: 0.5,
+                                            )
+                                            .merge(AppTypeRoles.typeRole66),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 6),
                                   GestureDetector(
                                     onTap: () {
                                       HapticFeedback.lightImpact();
@@ -600,7 +593,7 @@ class _ThoughtWallHomePreviewState
                                     },
                                     child: Icon(
                                       Icons.arrow_outward_rounded,
-                                      size: 12,
+                                      size: 13,
                                       color: g.inkMuted,
                                     ),
                                   ),
@@ -609,10 +602,8 @@ class _ThoughtWallHomePreviewState
                             ],
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                }),
+                      );
+                    }),
               ],
             );
           },

@@ -796,6 +796,22 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     return AscentScaffold(
       title: 'Reminders & Alerts',
       subtitle: 'Scheduled notifications & deadlines',
+      actions: [
+        IconButton(
+          tooltip: 'Sync reminder alerts',
+          icon: _syncingAlerts
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: g.clay,
+                  ),
+                )
+              : const Icon(Icons.sync_rounded),
+          onPressed: _syncingAlerts ? null : _syncAlerts,
+        ),
+      ],
       floatingActionButton: remindersAsync.value?.isNotEmpty == true
           ? AscentButton.fab(
               icon: Icons.add_rounded,
@@ -803,7 +819,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             )
           : null,
       body: remindersAsync.when(
-        data: (reminders) {
+        data: (allReminders) {
+          final reminders = allReminders
+              .where((r) => !r.title.startsWith('Did you do it?'))
+              .toList();
           if (reminders.isEmpty) {
             return EmptyState(
               icon: Icons.notifications_none_rounded,
@@ -896,16 +915,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               bottom: AppSpace.s80,
             ),
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _syncingAlerts ? null : _syncAlerts,
-                  icon: const Icon(Icons.sync_rounded),
-                  label: Text(
-                    _syncingAlerts ? 'Scheduling…' : 'Sync reminder alerts',
-                  ),
-                ),
-              ),
               if (!_notificationsEnabled) ...[
                 AppCard(
                   margin: const EdgeInsets.only(bottom: AppSpace.s16),
@@ -1303,7 +1312,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '$formattedTime · ${reminder.alarmEnabled ? "Alarm" : "Notification"}',
+                    reminder.alarmEnabled
+                        ? '$formattedTime · Alarm'
+                        : formattedTime,
                     style: AscentTextStyles.bodySmall.copyWith(
                       color: isUpcoming
                           ? g.inkMuted
