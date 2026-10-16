@@ -488,52 +488,56 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     runSpacing: 8,
                     children: [
                       for (final mins in [15, 30, 45, 60, 90])
-                        AppPill.choice(
-                          label: Text('$mins min'),
-                          selected:
-                              !_isCustomDuration && _targetMinutes == mins,
-                          selectedColor: context.accentPrimary.withValues(
-                            alpha: 0.15,
-                          ),
-                          side: BorderSide(
-                            color:
-                                (!_isCustomDuration && _targetMinutes == mins)
-                                ? context.accentPrimary
-                                : context.divider,
-                          ),
-                          labelStyle: AppTypeRoles.typeRole17.copyWith(
-                            color:
-                                (!_isCustomDuration && _targetMinutes == mins)
-                                ? context.accentPrimary
-                                : context.textPrimary,
-                          ),
-                          onSelected: (_) {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _isCustomDuration = false;
-                              _targetMinutes = mins;
-                            });
+                        Builder(
+                          builder: (context) {
+                            final isSel = !_isCustomDuration && _targetMinutes == mins;
+                            return AppPill.choice(
+                              label: Text('$mins min'),
+                              selected: isSel,
+                              selectedColor: context.accentPrimary,
+                              side: BorderSide(
+                                color: isSel
+                                    ? context.accentPrimary
+                                    : context.divider,
+                              ),
+                              labelStyle: AppTypeRoles.typeRole17.copyWith(
+                                color: isSel
+                                    ? AppPalette.white
+                                    : context.textPrimary,
+                                fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                              ),
+                              onSelected: (_) {
+                                HapticFeedback.selectionClick();
+                                setState(() {
+                                  _isCustomDuration = false;
+                                  _targetMinutes = mins;
+                                });
+                              },
+                            );
                           },
                         ),
-                      AppPill.choice(
-                        label: const Text('Custom'),
-                        selected: _isCustomDuration,
-                        selectedColor: context.accentPrimary.withValues(
-                          alpha: 0.15,
-                        ),
-                        side: BorderSide(
-                          color: _isCustomDuration
-                              ? context.accentPrimary
-                              : context.divider,
-                        ),
-                        labelStyle: AppTypeRoles.typeRole17.copyWith(
-                          color: _isCustomDuration
-                              ? context.accentPrimary
-                              : context.textPrimary,
-                        ),
-                        onSelected: (_) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _isCustomDuration = true);
+                      Builder(
+                        builder: (context) {
+                          return AppPill.choice(
+                            label: const Text('Custom'),
+                            selected: _isCustomDuration,
+                            selectedColor: context.accentPrimary,
+                            side: BorderSide(
+                              color: _isCustomDuration
+                                  ? context.accentPrimary
+                                  : context.divider,
+                            ),
+                            labelStyle: AppTypeRoles.typeRole17.copyWith(
+                              color: _isCustomDuration
+                                  ? AppPalette.white
+                                  : context.textPrimary,
+                              fontWeight: _isCustomDuration ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                            onSelected: (_) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _isCustomDuration = true);
+                            },
+                          );
                         },
                       ),
                     ],
@@ -978,7 +982,7 @@ class _TypeSelectChip extends StatelessWidget {
           ),
           nightDecoration: BoxDecoration(
             color: isSelected
-                ? context.accentPrimary.withValues(alpha: 0.12)
+                ? context.accentPrimary
                 : context.bgBase,
             borderRadius: AppGeometry.roundedr14,
             border: Border.all(
@@ -993,16 +997,17 @@ class _TypeSelectChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? context.accentPrimary : context.textMuted,
+                color: isSelected ? AppPalette.white : context.textMuted,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: AscentTextStyles.labelMedium
                     .copyWith(
-                      color: context.surfaces.contentForeground(isSelected, isSelected
-                          ? context.textPrimary
-                          : context.textMuted),
+                      color: isSelected
+                          ? AppPalette.white
+                          : context.textPrimary,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     )
                     .merge(AppTypeRoles.typeRole9),
               ),
@@ -1010,7 +1015,9 @@ class _TypeSelectChip extends StatelessWidget {
               Text(
                 subtitle,
                 style: AppStateTypography.stateType4.copyWith(
-                  color: context.surfaces.contentForeground(isSelected, AppPalette.grey),
+                  color: isSelected
+                      ? AppPalette.white.withValues(alpha: 0.85)
+                      : context.textMuted,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

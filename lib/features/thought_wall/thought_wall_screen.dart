@@ -386,15 +386,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected
-                ? (context.isDark ? g.clay : g.claySoft)
+                ? (context.isDark ? g.clay : context.accentPrimary)
                 : AppPalette.transparent,
             borderRadius: AppGeometry.roundedr10,
-            border: isSelected && !context.isDark
-                ? Border.all(
-                    color: g.clay.withValues(alpha: 0.28),
-                    width: AppBorderScale.w1point0,
-                  )
-                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -403,9 +397,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               Icon(
                 icon,
                 size: 13,
-                color: isSelected
-                    ? (context.isDark ? AppPalette.white : g.clay)
-                    : g.inkMuted,
+                color: isSelected ? AppPalette.white : g.inkMuted,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -415,9 +407,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: AppStateTypography.stateType12(
                     state0: isSelected,
-                    color: isSelected
-                        ? (context.isDark ? AppPalette.white : g.clay)
-                        : g.inkMuted,
+                    color: isSelected ? AppPalette.white : g.inkMuted,
                   ),
                 ),
               ),
@@ -1396,7 +1386,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 vertical: AppSpace.s2,
                               ),
                               nightDecoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(
+                                color: g.sage.withValues(
                                   alpha: 0.14,
                                 ),
                                 borderRadius: AppGeometry.roundedr6,
@@ -1404,7 +1394,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                               child: Text(
                                 '✓ Done',
                                 style: AppTypeRoles.typeRole55.copyWith(
-                                  color: context.accentPrimary,
+                                  color: g.sage,
                                 ),
                               ),
                             ),
@@ -1415,8 +1405,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 vertical: AppSpace.s2,
                               ),
                               nightDecoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(
-                                  alpha: 0.12,
+                                color: g.amber.withValues(
+                                  alpha: 0.14,
                                 ),
                                 borderRadius: AppGeometry.roundedr6,
                               ),
@@ -1426,13 +1416,13 @@ class ThoughtCardBubble extends ConsumerWidget {
                                   Icon(
                                     Icons.push_pin_rounded,
                                     size: 9,
-                                    color: context.accentPrimary,
+                                    color: g.amber,
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
                                     'PINNED',
                                     style: AscentTextStyles.labelSmall
-                                        .copyWith(color: context.accentPrimary)
+                                        .copyWith(color: g.amber)
                                         .merge(AppTypeRoles.typeRole56),
                                   ),
                                 ],

@@ -386,13 +386,15 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                   nightDecoration: BoxDecoration(
                     color: isSelected
                         ? AppPalette.white.withValues(alpha: 0.25)
-                        : g.claySoft,
+                        : (context.isDark
+                            ? g.claySoft
+                            : context.divider.withValues(alpha: 0.5)),
                     borderRadius: AppGeometry.roundedr8,
                   ),
                   child: Text(
                     '$count',
                     style: AppTypography.jetBrainsMono11W7002(
-                      color: isSelected ? AppPalette.white : g.clay,
+                      color: isSelected ? AppPalette.white : g.ink,
                     ),
                   ),
                 ),

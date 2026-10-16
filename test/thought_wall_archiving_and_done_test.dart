@@ -172,7 +172,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         // 3. Verify archived card is visible with ARCHIVED badge and 1-tap unarchive button
-        expect(find.text('“Deep personal reflection”'), findsOneWidget);
+        expect(find.text('Deep personal reflection'), findsOneWidget);
         expect(find.text('ARCHIVED'), findsOneWidget);
         expect(find.byTooltip('Unarchive thought'), findsOneWidget);
 

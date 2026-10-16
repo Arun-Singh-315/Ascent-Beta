@@ -31,7 +31,8 @@ class AscentTheme {
   static ThemeData assistant(ThemeData parent) {
     if (parent.brightness == Brightness.dark) return parent;
     final parentGlass = parent.extension<AscentGlass>() ?? AscentGlass.light;
-    final isNordic = parentGlass.clay == const Color(0xFF0EA5E9) ||
+    final isNordic = parentGlass.clay == const Color(0xFFC05621) ||
+        parentGlass.slate == const Color(0xFF0284C7) ||
         parentGlass.bg == const Color(0xFFF0F4F9);
     final original = _build(
       brightness: Brightness.light,
@@ -76,13 +77,13 @@ class AscentTheme {
         : (isNordicSky ? const Color(0xFFE8EEF5) : AscentColors.bgSurfaceElevated);
     final accentPrimary = isDark
         ? AscentColors.accentPrimaryDark
-        : (isNordicSky ? const Color(0xFF0EA5E9) : AscentColors.accentPrimary);
+        : (isNordicSky ? const Color(0xFF0284C7) : AscentColors.accentPrimary);
     final accentSecondary = isDark
         ? AscentColors.accentSecondaryDark
-        : (isNordicSky ? const Color(0xFF38BDF8) : AscentColors.accentSecondary);
+        : (isNordicSky ? const Color(0xFF0369A1) : AscentColors.accentSecondary);
     final accentInfo = isDark
         ? AscentColors.accentInfoDark
-        : (isNordicSky ? const Color(0xFF38BDF8) : AscentColors.accentInfo);
+        : (isNordicSky ? const Color(0xFFD97706) : AscentColors.accentInfo);
     final stateDanger = isDark
         ? AscentColors.stateDangerDark
         : (isNordicSky ? const Color(0xFFDC2626) : AscentColors.stateDanger);
@@ -287,9 +288,12 @@ class AscentTheme {
       // ── Text button ─────────────────────────────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: WidgetStatePropertyAll(accentPrimary),
+          foregroundColor: WidgetStatePropertyAll(
+            isNordicSky ? const Color(0xFF0369A1) : accentPrimary,
+          ),
           overlayColor: WidgetStatePropertyAll(
-            accentPrimary.withValues(alpha: 0.08),
+            (isNordicSky ? const Color(0xFF0369A1) : accentPrimary)
+                .withValues(alpha: 0.08),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           shape: const WidgetStatePropertyAll(
@@ -306,13 +310,17 @@ class AscentTheme {
       // ── Outlined button ─────────────────────────────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: WidgetStatePropertyAll(accentPrimary),
+          foregroundColor: WidgetStatePropertyAll(
+            isNordicSky ? const Color(0xFF0F172A) : accentPrimary,
+          ),
           overlayColor: WidgetStatePropertyAll(
             accentPrimary.withValues(alpha: 0.08),
           ),
           side: WidgetStatePropertyAll(
             BorderSide(
-              color: day ? AppSurfaces.day.ink : divider,
+              color: day
+                  ? AppSurfaces.day.ink
+                  : (isNordicSky ? const Color(0xFFCBD5E1) : divider),
               width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
             ),
           ),
@@ -343,7 +351,7 @@ class AscentTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            if (isNordicSky) return const Color(0xFF38BDF8);
+            if (isNordicSky) return const Color(0xFF0284C7);
             return isDark
                 ? accentPrimary.withValues(alpha: 0.38)
                 : const Color(0xFFC07360).withValues(alpha: 0.28);

@@ -158,10 +158,13 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
                         selected: _filterStage == null,
                         label: Text('All (${allApps.length})'),
                         onSelected: (_) => setState(() => _filterStage = null),
-                        selectedColor: context.accentPrimary.withValues(
-                          alpha: 0.2,
+                        selectedColor: context.accentPrimary,
+                        checkmarkColor: AppPalette.white,
+                        labelStyle: AscentTextStyles.labelSmall.copyWith(
+                          color: _filterStage == null
+                              ? AppPalette.white
+                              : context.textPrimary,
                         ),
-                        checkmarkColor: context.accentPrimary,
                       ),
                       const SizedBox(width: 8),
                       ..._stages.map((stage) {
@@ -177,11 +180,13 @@ class _PipelineScreenState extends ConsumerState<PipelineScreen> {
                             onSelected: (_) => setState(() {
                               _filterStage = isSelected ? null : stage;
                             }),
-                            selectedColor: _stageColor(
-                              context,
-                              stage,
-                            ).withValues(alpha: 0.2),
-                            checkmarkColor: _stageColor(context, stage),
+                            selectedColor: _stageColor(context, stage),
+                            checkmarkColor: AppPalette.white,
+                            labelStyle: AscentTextStyles.labelSmall.copyWith(
+                              color: isSelected
+                                  ? AppPalette.white
+                                  : context.textPrimary,
+                            ),
                           ),
                         );
                       }),

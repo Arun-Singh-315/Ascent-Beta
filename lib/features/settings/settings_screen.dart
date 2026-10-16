@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
+import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -650,7 +651,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: AscentTextStyles.captionMedium
                             .copyWith(
                               color: dayPreset == DayThemePreset.nordicSky
-                                  ? const Color(0xFF0EA5E9)
+                                  ? const Color(0xFF0284C7)
                                   : g.clay,
                             )
                             .merge(AppTypeRoles.typeRole8),
@@ -677,7 +678,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _DayPresetOption(
                         label: 'Nordic Sky',
                         subtitle: 'Ice, Glass & Slate',
-                        colorSwatch: const Color(0xFF0EA5E9),
+                        colorSwatch: const Color(0xFF0284C7),
                         icon: Icons.cloud_outlined,
                         isSelected: dayPreset == DayThemePreset.nordicSky,
                         onTap: () {
@@ -1030,7 +1031,7 @@ class _SectionHeader extends StatelessWidget {
           Text(
             title,
             style: AscentTextStyles.labelSmall
-                .copyWith(color: g.inkMuted, letterSpacing: 0.8)
+                .copyWith(color: g.ink, letterSpacing: 0.8, fontWeight: FontWeight.w600)
                 .merge(AppTypeRoles.typeRole31),
           ),
         ],
@@ -1205,9 +1206,11 @@ class _ThemeOption extends StatelessWidget {
           selected: isSelected,
           padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
           nightDecoration: BoxDecoration(
-            color: isSelected ? g.clay : g.fill,
+            color: isSelected ? context.accentPrimary : g.fill,
             borderRadius: AppGeometry.roundedr12,
-            border: Border.all(color: isSelected ? g.clay : g.edge),
+            border: Border.all(
+              color: isSelected ? context.accentPrimary : g.edge,
+            ),
           ),
           child: Column(
             children: [
@@ -1220,7 +1223,10 @@ class _ThemeOption extends StatelessWidget {
               Text(
                 label,
                 style: AscentTextStyles.labelSmall
-                    .copyWith(color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : g.ink))
+                    .copyWith(
+                      color: isSelected ? AppPalette.white : g.ink,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    )
                     .merge(AppStateTypography.stateType1(state0: isSelected)),
               ),
             ],
@@ -1296,10 +1302,7 @@ class _DayPresetOption extends StatelessWidget {
                 label,
                 style: AscentTextStyles.labelSmall
                     .copyWith(
-                      color: context.surfaces.contentForeground(
-                        isSelected,
-                        isSelected ? AppPalette.white : g.ink,
-                      ),
+                      color: isSelected ? AppPalette.white : g.ink,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -1309,7 +1312,7 @@ class _DayPresetOption extends StatelessWidget {
                 style: AscentTextStyles.captionMedium
                     .copyWith(
                       color: isSelected
-                          ? Colors.white.withValues(alpha: 0.85)
+                          ? Colors.white.withValues(alpha: 0.90)
                           : g.inkMuted,
                       fontSize: 10,
                     ),

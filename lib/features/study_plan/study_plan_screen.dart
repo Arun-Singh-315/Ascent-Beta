@@ -976,7 +976,7 @@ class _FilterChipItem extends StatelessWidget {
           label,
           style: AppStateTypography.stateType12(
             state0: isSelected,
-            color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : context.textPrimary),
+            color: isSelected ? AppPalette.white : context.textPrimary,
           ),
         ),
       ),

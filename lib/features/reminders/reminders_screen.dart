@@ -989,12 +989,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           alignment: Alignment.center,
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 0
-                                ? g.claySoft
+                                ? (context.isDark ? g.clay : context.accentPrimary)
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 0
-                                  ? g.clay
+                                  ? (context.isDark ? g.clay : context.accentPrimary)
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1003,7 +1003,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                             'Upcoming (${todayReminders.length + tomorrowReminders.length + thisWeekReminders.length + laterReminders.length})',
                             style: AppStateTypography.stateType8(
                               state0: _selectedTab == 0,
-                              color: _selectedTab == 0 ? g.ink : g.inkMuted,
+                              color: _selectedTab == 0
+                                  ? AppPalette.white
+                                  : g.inkMuted,
                             ),
                           ),
                         ),
@@ -1024,12 +1026,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           alignment: Alignment.center,
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 1
-                                ? g.claySoft
+                                ? (context.isDark ? g.clay : context.accentPrimary)
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 1
-                                  ? g.clay
+                                  ? (context.isDark ? g.clay : context.accentPrimary)
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1038,7 +1040,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                             'Completed (${pastReminders.length})',
                             style: AppStateTypography.stateType8(
                               state0: _selectedTab == 1,
-                              color: _selectedTab == 1 ? g.ink : g.inkMuted,
+                              color: _selectedTab == 1
+                                  ? AppPalette.white
+                                  : g.inkMuted,
                             ),
                           ),
                         ),

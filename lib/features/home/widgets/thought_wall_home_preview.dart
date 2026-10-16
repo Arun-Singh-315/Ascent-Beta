@@ -189,7 +189,7 @@ class _ThoughtWallHomePreviewState
                   ?latest,
                 ];
               } else {
-                previewThoughts = thoughts.take(2).toList();
+                previewThoughts = thoughts.take(1).toList();
               }
             }
 
