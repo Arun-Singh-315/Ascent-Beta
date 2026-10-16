@@ -50,7 +50,6 @@ class HomeHeader extends ConsumerWidget {
     final studyStreak = ref.watch(studyStreakProvider);
     final isStreakCardVisible = ref.watch(homeStreakVisibleProvider);
     final streak = studyStreak.displayStreakDays;
-    final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.s8),
@@ -320,89 +319,7 @@ class HomeHeader extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.push('/ai-assistant');
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: g.frozen
-                      ? (isDark
-                          ? FrozenPalette.darkSurface.withValues(alpha: 0.6)
-                          : FrozenPalette.surface.withValues(alpha: 0.8))
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: g.frozen
-                        ? (isDark
-                            ? FrozenPalette.darkAction
-                            : FrozenPalette.action)
-                        : isDark
-                        ? g.clay.withValues(alpha: .2)
-                        : g.edge,
-                    width: AppBorderScale.w1point0,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: g.frozen
-                            ? (isDark
-                                ? FrozenPalette.darkTint
-                                : FrozenPalette.tint)
-                            : Colors.transparent,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.auto_awesome_rounded,
-                        color: g.frozen
-                            ? (isDark
-                                ? FrozenPalette.darkAction
-                                : FrozenPalette.action)
-                            : g.clay,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Ask $assistantName',
-                        style: AscentTextStyles.homeHeadline.copyWith(
-                          color: g.ink,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: g.frozen
-                          ? (isDark
-                              ? FrozenPalette.darkAction
-                              : FrozenPalette.action)
-                          : g.clay,
-                      size: 18,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
         ],
       ),
     );

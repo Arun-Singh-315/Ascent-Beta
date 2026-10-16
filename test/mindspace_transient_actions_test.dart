@@ -127,7 +127,7 @@ void main() {
 
   group('HomeHeader Transparent and Compact Styling', () {
     testWidgets(
-      'HomeHeader Ask Riya and Start streak pill are transparent inside and compact',
+      'HomeHeader has Start streak pill and does not render Ask Riya banner above thoughts',
       (tester) async {
         await tester.pumpWidget(
           wrap(
@@ -137,27 +137,12 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Check Ask Riya is rendered and responsive to assistant name
-        expect(find.text('Ask Riya'), findsOneWidget);
+        // Check Ask Riya is NOT rendered in HomeHeader (moved to floating pill)
+        expect(find.text('Ask Riya'), findsNothing);
 
         // Check Start streak pill is present
         expect(find.text('Start'), findsOneWidget);
 
-        // Verify transparent background inside containers
-        final inkWellFinder = find.ancestor(
-          of: find.text('Ask Riya'),
-          matching: find.byType(Container),
-        );
-        expect(inkWellFinder, findsWidgets);
-        final askRiyaContainer = tester.widget<Container>(inkWellFinder.first);
-        final askRiyaDec = askRiyaContainer.decoration as BoxDecoration?;
-        expect(
-          askRiyaDec?.color == Colors.transparent ||
-              askRiyaDec?.color == const Color(0x00000000) ||
-              (askRiyaDec?.color?.a ?? 1.0) == 0.0,
-          isTrue,
-          reason: 'Ask Riya must be transparent inside',
-        );
         await tester.pumpWidget(const SizedBox());
       },
     );

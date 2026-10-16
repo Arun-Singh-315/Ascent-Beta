@@ -21,6 +21,19 @@ class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   TimeTrackingState build() => const TimeTrackingState();
 }
 
+class _FakeStudyStreakNotifier extends StudyStreakNotifier {
+  @override
+  StudyStreakStatus build() {
+    return const StudyStreakStatus(
+      todaySeconds: 1200,
+      targetSeconds: 7200,
+      priorStreakDays: 3,
+      currentStreakDays: 3,
+      displayStreakDays: 3,
+    );
+  }
+}
+
 final _testUserProfile = UserProfile(
   id: 1,
   name: 'Arun Singh',
@@ -39,7 +52,7 @@ final _testUserProfile = UserProfile(
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  group('Home Plan Pill & Chat Style Thought Wall Tests', () {
+  group('Home Assistant Pill & Chat Style Thought Wall Tests', () {
     late AppDatabase db;
     late SharedPreferences prefs;
 
@@ -133,7 +146,7 @@ void main() {
     );
 
     testWidgets(
-      'HomeScreen contains floating Plan pill at bottom right',
+      'HomeScreen contains floating Ask Riya pill at bottom right and removes banner from above thoughts',
       (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -141,6 +154,7 @@ void main() {
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
               timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
+              studyStreakProvider.overrideWith(() => _FakeStudyStreakNotifier()),
               currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
               todayWaterMlStreamProvider.overrideWith((ref) => Stream.value(1000)),
               dailyWaterGoalStreamProvider.overrideWith((ref) => Stream.value(2000)),
@@ -166,16 +180,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        // Verify Floating Plan pill exists
-        expect(find.text('Plan'), findsOneWidget);
-        expect(find.byIcon(Icons.edit_calendar_rounded), findsOneWidget);
-
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
         expect(scaffold.floatingActionButtonLocation, FloatingActionButtonLocation.endFloat);
         expect(scaffold.floatingActionButton, isNotNull);
 
-        // Flush remaining timers and teardown
-        await tester.pump(const Duration(milliseconds: 500));
+        // Verify Floating Ask Riya pill exists inside floatingActionButton
+        final fabFinder = find.byWidget(scaffold.floatingActionButton!);
+        expect(find.descendant(of: fabFinder, matching: find.text('Ask Riya')), findsOneWidget);
+        expect(find.descendant(of: fabFinder, matching: find.byIcon(Icons.auto_awesome_rounded)), findsOneWidget);
+
+        // Tear down cleanly
         await tester.pumpWidget(const SizedBox());
         await tester.pump(Duration.zero);
       },

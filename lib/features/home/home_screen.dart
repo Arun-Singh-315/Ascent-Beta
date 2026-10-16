@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
-import 'widgets/home_schedule_sheet.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
@@ -125,7 +124,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
     return Scaffold(
       backgroundColor: g.bg,
-      floatingActionButton: _buildFloatingPlanPill(context),
+      floatingActionButton: _buildFloatingAssistantPill(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: HomeAtmosphereBackground(
@@ -243,22 +242,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
     );
   }
 
-  Widget _buildFloatingPlanPill(BuildContext context) {
+  Widget _buildFloatingAssistantPill(BuildContext context) {
     final isDark = context.isDark;
+    final assistantName = ref.watch(assistantNameProvider);
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () async {
+          onTap: () {
             HapticFeedback.lightImpact();
-            final thoughts = ref.read(recentThoughtsStreamProvider).value;
-            final latest = thoughts?.firstOrNull;
-            if (latest != null) {
-              await showHomeSchedule(context, latest);
-            } else {
-              context.push('/thought-wall');
-            }
+            context.push('/ai-assistant');
           },
           borderRadius: BorderRadius.circular(24),
           child: Container(
@@ -285,14 +279,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
-                  Icons.edit_calendar_rounded,
+                  Icons.auto_awesome_rounded,
                   size: 18,
                   color: Colors.white,
                 ),
                 const SizedBox(width: 8),
-                const Text(
-                  'Plan',
-                  style: TextStyle(
+                Text(
+                  'Ask $assistantName',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
