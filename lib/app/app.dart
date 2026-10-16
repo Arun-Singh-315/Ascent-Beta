@@ -22,7 +22,7 @@ class AscentApp extends ConsumerWidget {
 
       // Theme
       theme: AscentTheme.light(preset: dayPreset),
-      darkTheme: AscentTheme.dark(),
+      darkTheme: AscentTheme.dark(preset: dayPreset),
       themeMode: themeMode,
 
       // Router

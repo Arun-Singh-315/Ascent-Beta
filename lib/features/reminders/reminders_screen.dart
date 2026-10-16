@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
@@ -978,9 +979,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 margin: const EdgeInsets.only(bottom: AppSpace.s16),
                 padding: const EdgeInsets.all(AppSpace.s4),
                 nightDecoration: BoxDecoration(
-                  color: g.fill,
+                  color: context.isFrozen
+                      ? (context.isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+                      : g.fill,
                   borderRadius: AppGeometry.roundedr16,
-                  border: Border.all(color: g.edge),
+                  border: Border.all(
+                    color: context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                        : g.edge,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -998,12 +1005,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           alignment: Alignment.center,
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 0
-                                ? (context.isDark ? g.clay : context.accentPrimary)
+                                ? (context.isFrozen
+                                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                    : (context.isDark ? g.clay : context.accentPrimary))
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 0
-                                  ? (context.isDark ? g.clay : context.accentPrimary)
+                                  ? (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                      : (context.isDark ? g.clay : context.accentPrimary))
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1014,7 +1025,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                               state0: _selectedTab == 0,
                               color: _selectedTab == 0
                                   ? AppPalette.white
-                                  : g.inkMuted,
+                                  : (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+                                      : g.inkMuted),
                             ),
                           ),
                         ),
@@ -1035,12 +1048,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           alignment: Alignment.center,
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 1
-                                ? (context.isDark ? g.clay : context.accentPrimary)
+                                ? (context.isFrozen
+                                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                    : (context.isDark ? g.clay : context.accentPrimary))
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 1
-                                  ? (context.isDark ? g.clay : context.accentPrimary)
+                                  ? (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                      : (context.isDark ? g.clay : context.accentPrimary))
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1051,7 +1068,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                               state0: _selectedTab == 1,
                               color: _selectedTab == 1
                                   ? AppPalette.white
-                                  : g.inkMuted,
+                                  : (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+                                      : g.inkMuted),
                             ),
                           ),
                         ),
@@ -1090,7 +1109,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   _buildSectionHeader(
                     'Tomorrow',
                     tomorrowReminders.length,
-                    g.inkSecondary,
+                    context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                        : g.inkSecondary,
                     Icons.event_rounded,
                   ),
                   ...tomorrowReminders.map(
@@ -1232,12 +1253,24 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               vertical: AppSpace.s2,
             ),
             nightDecoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: context.isFrozen
+                  ? (context.isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
+                  : color.withValues(alpha: 0.12),
               borderRadius: AppGeometry.roundedr10,
+              border: context.isFrozen
+                  ? Border.all(
+                      color: context.isDark ? FrozenPalette.darkLine : FrozenPalette.line,
+                      width: 1.0,
+                    )
+                  : null,
             ),
             child: Text(
               '$count',
-              style: AppTypeRoles.typeRole34.copyWith(color: color),
+              style: AppTypeRoles.typeRole34.copyWith(
+                color: context.isFrozen
+                    ? (context.isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk)
+                    : color,
+              ),
             ),
           ),
         ],
@@ -1277,11 +1310,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             AppTag(
               padding: const EdgeInsets.all(AppSpace.s10),
               nightDecoration: BoxDecoration(
-                color: isUpcoming ? g.claySoft : g.fill,
+                color: isUpcoming
+                    ? (context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+                        : g.claySoft)
+                    : g.fill,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isUpcoming ? g.clay.withValues(alpha: 0.25) : g.edge,
-                  width: AppBorderScale.w0point8,
+                  color: isUpcoming
+                      ? (context.isFrozen
+                          ? (context.isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                          : g.clay.withValues(alpha: 0.25))
+                      : g.edge,
+                  width: AppBorderScale.w1,
                 ),
               ),
               child: Icon(
@@ -1291,7 +1332,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           : Icons.notifications_active_rounded)
                     : Icons.notifications_off_outlined,
                 size: 20,
-                color: isUpcoming ? g.clay : g.inkMuted,
+                color: isUpcoming
+                    ? (context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                        : g.clay)
+                    : g.inkMuted,
               ),
             ),
             const SizedBox(width: 14),

@@ -28,7 +28,8 @@ class AscentTheme {
 
   // ── Dark ───────────────────────────────────────────────────────────────────
 
-  static ThemeData dark() => _build(brightness: Brightness.dark);
+  static ThemeData dark({DayThemePreset preset = DayThemePreset.classicClay}) =>
+      _build(brightness: Brightness.dark, preset: preset);
 
   static ThemeData assistant(ThemeData parent) {
     if (parent.brightness == Brightness.dark) return parent;
@@ -62,47 +63,49 @@ class AscentTheme {
     bool outlinedDay = false,
   }) {
     final isDark = brightness == Brightness.dark;
-    final isNordicSky = !isDark && preset == DayThemePreset.nordicSky;
+    final isNordicSky = preset == DayThemePreset.nordicSky;
     final day = !isDark && outlinedDay;
 
     // Resolve semantic tokens for this brightness.
-    final bgBase = isDark
-        ? AscentColors.bgBaseDark
-        : (isNordicSky ? FrozenPalette.canvas : AscentColors.bgBase);
-    final bgSurface = isDark
-        ? AscentColors.bgSurfaceDark
-        : (isNordicSky ? FrozenPalette.surface : AscentColors.bgSurface);
-    final bgSurfaceElevated = isDark
-        ? AscentColors.bgSurfaceElevatedDark
-        : (isNordicSky
-              ? FrozenPalette.elevated
+    final bgBase = isNordicSky
+        ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
+        : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase);
+    final bgSurface = isNordicSky
+        ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+        : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface);
+    final bgSurfaceElevated = isNordicSky
+        ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+        : (isDark
+              ? AscentColors.bgSurfaceElevatedDark
               : AscentColors.bgSurfaceElevated);
-    final accentPrimary = isDark
-        ? AscentColors.accentPrimaryDark
-        : (isNordicSky ? FrozenPalette.action : AscentColors.accentPrimary);
-    final accentSecondary = isDark
-        ? AscentColors.accentSecondaryDark
-        : (isNordicSky
-              ? FrozenPalette.secondary
+    final accentPrimary = isNordicSky
+        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+        : (isDark
+              ? AscentColors.accentPrimaryDark
+              : AscentColors.accentPrimary);
+    final accentSecondary = isNordicSky
+        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+        : (isDark
+              ? AscentColors.accentSecondaryDark
               : AscentColors.accentSecondary);
-    final accentInfo = isDark
-        ? AscentColors.accentInfoDark
-        : (isNordicSky ? FrozenPalette.warning : AscentColors.accentInfo);
-    final stateDanger = isDark
-        ? AscentColors.stateDangerDark
-        : (isNordicSky ? FrozenPalette.danger : AscentColors.stateDanger);
+    final accentInfo = isNordicSky
+        ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
+        : (isDark ? AscentColors.accentInfoDark : AscentColors.accentInfo);
+    final stateDanger = isNordicSky
+        ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
+        : (isDark ? AscentColors.stateDangerDark : AscentColors.stateDanger);
     final textPrimary = day
         ? (isNordicSky ? AppSurfaces.nordicSky.ink : AppSurfaces.day.ink)
-        : isDark
-        ? AscentColors.textPrimaryDark
-        : (isNordicSky ? FrozenPalette.ink : AscentColors.textPrimary);
+        : isNordicSky
+        ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
+        : (isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary);
     final textMuted = day
         ? (isNordicSky
               ? AppSurfaces.nordicSky.mutedText
               : AppSurfaces.day.mutedText)
-        : isDark
-        ? AscentColors.textMutedDark
-        : (isNordicSky ? FrozenPalette.mutedInk : AscentColors.textMuted);
+        : isNordicSky
+        ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+        : (isDark ? AscentColors.textMutedDark : AscentColors.textMuted);
     final textOnPrimary = isDark
         ? AscentColors.textOnPrimaryDark
         : AscentColors.textOnPrimary;
@@ -110,9 +113,9 @@ class AscentTheme {
         ? (isNordicSky
               ? AppSurfaces.nordicSky.dividerColor
               : AppSurfaces.day.dividerColor)
-        : isDark
-        ? AscentColors.dividerDark
-        : (isNordicSky ? FrozenPalette.line : AscentColors.divider);
+        : isNordicSky
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : (isDark ? AscentColors.dividerDark : AscentColors.divider);
 
     final colorScheme = ColorScheme(
       brightness: brightness,
@@ -169,9 +172,9 @@ class AscentTheme {
       labelSmall: AscentTextStyles.labelSmall.copyWith(color: textMuted),
     );
 
-    final cardRadius = Radius.circular(isNordicSky ? 18 : 14);
-    final inputRadius = Radius.circular(isNordicSky ? 14 : 10);
-    const buttonRadius = Radius.circular(10);
+    final cardRadius = Radius.circular(isNordicSky ? 16 : 14);
+    final inputRadius = Radius.circular(isNordicSky ? 12 : 10);
+    final buttonRadius = Radius.circular(isNordicSky ? 24 : 10);
     final sheetRadius = Radius.circular(isNordicSky ? 24 : 20);
 
     return ThemeData(
@@ -200,7 +203,13 @@ class AscentTheme {
 
       // ── Card ────────────────────────────────────────────────────────────────
       cardTheme: CardThemeData(
-        color: day ? AppSurfaces.day.cardFill : bgSurface,
+        color: day
+            ? AppSurfaces.day.cardFill
+            : (isNordicSky
+                ? (isDark
+                    ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
+                    : FrozenPalette.surface.withValues(alpha: 0.94))
+                : bgSurface),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(cardRadius),
@@ -209,7 +218,7 @@ class AscentTheme {
                   color: AppSurfaces.day.cardBorderColor,
                   width: AppSurfaces.day.cardBorderWidth,
                 )
-              : BorderSide(color: divider, width: 0.8),
+              : BorderSide(color: divider, width: isNordicSky ? 1.0 : 0.8),
         ),
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
@@ -217,9 +226,15 @@ class AscentTheme {
 
       // ── Bottom navigation bar ───────────────────────────────────────────────
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: bgBase,
+        backgroundColor: isNordicSky
+            ? (isDark
+                ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
+                : FrozenPalette.surface.withValues(alpha: 0.96))
+            : bgBase,
         selectedItemColor: accentPrimary,
-        unselectedItemColor: textMuted,
+        unselectedItemColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+            : textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
         showUnselectedLabels: true,
@@ -230,24 +245,39 @@ class AscentTheme {
       // ── Input decoration ────────────────────────────────────────────────────
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: day ? AppSurfaces.day.cardFill : bgSurface,
+        fillColor: day
+            ? AppSurfaces.day.cardFill
+            : (isNordicSky
+                ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+                : bgSurface),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
           borderSide: BorderSide(
-            color: day ? AppSurfaces.day.ink : divider,
+            color: day
+                ? AppSurfaces.day.ink
+                : (isNordicSky
+                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                    : divider),
             width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
           ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
           borderSide: BorderSide(
-            color: day ? AppSurfaces.day.ink : divider,
+            color: day
+                ? AppSurfaces.day.ink
+                : (isNordicSky
+                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                    : divider),
             width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
-          borderSide: BorderSide(color: accentPrimary, width: 1.3),
+          borderSide: BorderSide(
+            color: accentPrimary,
+            width: isNordicSky ? 2.0 : 1.3,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
@@ -271,20 +301,37 @@ class AscentTheme {
       // ── Elevated button ─────────────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ButtonStyle(
-          backgroundColor: WidgetStatePropertyAll(accentPrimary),
-          foregroundColor: WidgetStatePropertyAll(textOnPrimary),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return isNordicSky
+                  ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+                  : bgSurfaceElevated.withValues(alpha: 0.4);
+            }
+            return accentPrimary;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return isNordicSky
+                  ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+                  : textPrimary.withValues(alpha: 0.4);
+            }
+            return textOnPrimary;
+          }),
           overlayColor: WidgetStatePropertyAll(
             textOnPrimary.withValues(alpha: 0.12),
           ),
           elevation: const WidgetStatePropertyAll(0),
           shadowColor: const WidgetStatePropertyAll(Colors.transparent),
-          shape: const WidgetStatePropertyAll(
+          shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
           minimumSize: WidgetStatePropertyAll(
-            Size(64, day ? AppSurfaces.day.minTapTarget : 42),
+            Size(
+              64,
+              isNordicSky ? 48 : (day ? AppSurfaces.day.minTapTarget : 42),
+            ),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
@@ -296,16 +343,12 @@ class AscentTheme {
       // ── Text button ─────────────────────────────────────────────────────────
       textButtonTheme: TextButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: WidgetStatePropertyAll(
-            isNordicSky ? FrozenPalette.ink : accentPrimary,
-          ),
+          foregroundColor: WidgetStatePropertyAll(accentPrimary),
           overlayColor: WidgetStatePropertyAll(
-            (isNordicSky ? FrozenPalette.ink : accentPrimary).withValues(
-              alpha: 0.08,
-            ),
+            accentPrimary.withValues(alpha: 0.08),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
-          shape: const WidgetStatePropertyAll(
+          shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
@@ -319,9 +362,7 @@ class AscentTheme {
       // ── Outlined button ─────────────────────────────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: ButtonStyle(
-          foregroundColor: WidgetStatePropertyAll(
-            isNordicSky ? FrozenPalette.ink : accentPrimary,
-          ),
+          foregroundColor: WidgetStatePropertyAll(accentPrimary),
           overlayColor: WidgetStatePropertyAll(
             accentPrimary.withValues(alpha: 0.08),
           ),
@@ -329,17 +370,22 @@ class AscentTheme {
             BorderSide(
               color: day
                   ? AppSurfaces.day.ink
-                  : (isNordicSky ? FrozenPalette.line : divider),
+                  : (isNordicSky
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : divider),
               width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
             ),
           ),
-          shape: const WidgetStatePropertyAll(
+          shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
               borderRadius: BorderRadius.all(buttonRadius),
             ),
           ),
           minimumSize: WidgetStatePropertyAll(
-            Size(64, day ? AppSurfaces.day.minTapTarget : 42),
+            Size(
+              64,
+              isNordicSky ? 48 : (day ? AppSurfaces.day.minTapTarget : 42),
+            ),
           ),
           textStyle: WidgetStatePropertyAll(AscentTextStyles.labelMedium),
           padding: const WidgetStatePropertyAll(
@@ -355,17 +401,25 @@ class AscentTheme {
             if (isNordicSky) return const Color(0xFFFFFFFF);
             return isDark ? accentPrimary : const Color(0xFFC07360);
           }
-          if (isNordicSky) return FrozenPalette.secondaryInk;
+          if (isNordicSky) {
+            return isDark
+                ? FrozenPalette.darkSecondaryInk
+                : FrozenPalette.secondaryInk;
+          }
           return isDark ? const Color(0xFFB8A594) : const Color(0xFFD4C8BC);
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            if (isNordicSky) return FrozenPalette.action;
+            if (isNordicSky) {
+              return isDark ? FrozenPalette.darkAction : FrozenPalette.action;
+            }
             return isDark
                 ? accentPrimary.withValues(alpha: 0.38)
                 : const Color(0xFFC07360).withValues(alpha: 0.28);
           }
-          if (isNordicSky) return FrozenPalette.line;
+          if (isNordicSky) {
+            return isDark ? FrozenPalette.darkLine : FrozenPalette.line;
+          }
           return isDark ? const Color(0xFF3B2C1E) : const Color(0xFFEFE8E2);
         }),
         trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
@@ -382,28 +436,34 @@ class AscentTheme {
       // ── Snack bar ────────────────────────────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         backgroundColor: isDark
-            ? const Color(0xFF2D251E)
+            ? (isNordicSky ? FrozenPalette.darkInk : const Color(0xFF2D251E))
             : (isNordicSky ? FrozenPalette.ink : const Color(0xFF2B221B)),
         contentTextStyle: AscentTextStyles.bodyMedium.copyWith(
           color: const Color(0xFFF1F5F9),
           fontWeight: FontWeight.w500,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: const BorderRadius.all(Radius.circular(14)),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(14)),
           side: BorderSide(
-            color: isDark ? const Color(0x33FFFFFF) : const Color(0x1F000000),
+            color: Color(0x33FFFFFF),
             width: 0.9,
           ),
         ),
         behavior: SnackBarBehavior.floating,
-        actionTextColor: isNordicSky ? FrozenPalette.mist : accentPrimary,
+        actionTextColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+            : accentPrimary,
         elevation: day ? 0 : 6,
       ),
 
       // ── Bottom sheet ─────────────────────────────────────────────────────────
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: bgSurface,
-        modalBackgroundColor: bgSurface,
+        backgroundColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+            : bgSurface,
+        modalBackgroundColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+            : bgSurface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: sheetRadius,
@@ -412,7 +472,9 @@ class AscentTheme {
         ),
         modalElevation: 0,
         elevation: 0,
-        dragHandleColor: divider,
+        dragHandleColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+            : divider,
         dragHandleSize: const Size(40, 4),
       ),
 
@@ -434,24 +496,37 @@ class AscentTheme {
 
       // ── Chip ─────────────────────────────────────────────────────────────────
       chipTheme: ChipThemeData(
-        backgroundColor: day ? AppSurfaces.day.cardFill : bgSurfaceElevated,
-        selectedColor: day ? AppSurfaces.day.accent : null,
-        labelStyle: AscentTextStyles.labelSmall.copyWith(color: textPrimary),
-        side: day
+        backgroundColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+            : (day ? AppSurfaces.day.cardFill : bgSurfaceElevated),
+        selectedColor: isNordicSky
+            ? accentPrimary
+            : (day ? AppSurfaces.day.accent : null),
+        labelStyle: AscentTextStyles.labelSmall.copyWith(
+          color: isNordicSky ? accentPrimary : textPrimary,
+        ),
+        side: isNordicSky
             ? BorderSide(
-                color: AppSurfaces.day.pillBorderColor,
-                width: AppSurfaces.day.pillBorderWidth,
+                color: isDark ? FrozenPalette.darkLine : FrozenPalette.line,
+                width: 1.0,
               )
-            : BorderSide.none,
+            : (day
+                ? BorderSide(
+                    color: AppSurfaces.day.pillBorderColor,
+                    width: AppSurfaces.day.pillBorderWidth,
+                  )
+                : BorderSide.none),
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
 
       // ── Dialog ───────────────────────────────────────────────────────────────
       dialogTheme: DialogThemeData(
-        backgroundColor: bgSurface,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(20)),
+        backgroundColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+            : bgSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(sheetRadius),
         ),
         titleTextStyle: AscentTextStyles.displaySmall.copyWith(
           color: textPrimary,
@@ -463,7 +538,7 @@ class AscentTheme {
       ),
       extensions: [
         isDark
-            ? AscentGlass.dark
+            ? (isNordicSky ? AscentGlass.nordicSkyDark : AscentGlass.dark)
             : isNordicSky
             ? (!day
                   ? AscentGlass.nordicSky

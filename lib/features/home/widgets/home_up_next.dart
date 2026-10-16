@@ -7,6 +7,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/services/home_capture_service.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../shared/widgets/app_surfaces.dart';
+import '../../../shared/widgets/ascent_button.dart';
 
 final homePlansProvider = StreamProvider<List<HomePlan>>(
   (ref) => HomeCaptureService(ref.watch(databaseProvider)).watchPlans(),
@@ -330,17 +331,22 @@ class _HomeUpNextState extends ConsumerState<HomeUpNext> {
                         ),
                       Wrap(
                         spacing: 8,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           if (plan.reminder.isActive &&
                               plan.reminder.id != plan.checkIn?.id)
-                            TextButton(
+                            AscentButton.ghost(
+                              label: 'Change time',
+                              compact: true,
                               onPressed: _busy.contains(plan.reminder.id)
                                   ? null
                                   : () => _move(plan),
-                              child: const Text('Change time'),
                             ),
                           if (plan.checkIn?.isActive != true)
-                            TextButton(
+                            AscentButton.tonal(
+                              label: 'Done',
+                              compact: true,
                               onPressed: _busy.contains(plan.reminder.id)
                                   ? null
                                   : () async {
@@ -376,15 +382,18 @@ class _HomeUpNextState extends ConsumerState<HomeUpNext> {
                                         }
                                       }
                                     },
-                              child: const Text('Done'),
                             ),
                         ],
                       ),
                       if (plan.checkIn?.isActive == true)
                         Wrap(
                           spacing: 8,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            TextButton(
+                            AscentButton.tonal(
+                              label: 'Done',
+                              compact: true,
                               onPressed: _busy.contains(plan.checkIn!.id)
                                   ? null
                                   : () => _answer(
@@ -392,13 +401,13 @@ class _HomeUpNextState extends ConsumerState<HomeUpNext> {
                                       plan.checkIn!.scheduledAt,
                                       'done',
                                     ),
-                              child: const Text('Done'),
                             ),
-                            TextButton(
+                            AscentButton.ghost(
+                              label: 'Later',
+                              compact: true,
                               onPressed: _busy.contains(plan.checkIn!.id)
                                   ? null
                                   : () => _later(plan),
-                              child: const Text('Later'),
                             ),
                             TextButton(
                               onPressed: _busy.contains(plan.checkIn!.id)
@@ -408,6 +417,16 @@ class _HomeUpNextState extends ConsumerState<HomeUpNext> {
                                       plan.checkIn!.scheduledAt,
                                       'skip',
                                     ),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                minimumSize: const Size(40, 32),
+                              ),
                               child: const Text('Skip check-in'),
                             ),
                           ],

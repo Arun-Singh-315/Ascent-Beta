@@ -4,6 +4,7 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../../core/streak/streak_explanation.dart';
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/streak/study_streak_models.dart';
 
@@ -68,6 +69,7 @@ class StudyStreakMeterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final streakTitle = status.displayStreakDays == 0
         ? (status.phase == StudyStreakPhase.broken
@@ -79,46 +81,73 @@ class StudyStreakMeterCard extends StatelessWidget {
       onTap: onTap ?? () => _showExplanation(context),
       child: Container(
         decoration: BoxDecoration(
-          color: g.fill,
+          color: g.frozen
+              ? (isDark
+                  ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
+                  : FrozenPalette.surface.withValues(alpha: 0.94))
+              : g.fill,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: status.isRescueMode
-                ? AppPalette.amber.withValues(alpha: 0.35)
-                : (status.isUrgent
-                    ? AppPalette.redAccent.withValues(alpha: 0.35)
-                    : g.edge),
+            color: g.frozen
+                ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                : (status.isRescueMode
+                    ? AppPalette.amber.withValues(alpha: 0.35)
+                    : (status.isUrgent
+                        ? AppPalette.redAccent.withValues(alpha: 0.35)
+                        : g.edge)),
             width: AppBorderScale.w1,
           ),
+          boxShadow: g.frozen
+              ? [
+                  BoxShadow(
+                    color: (isDark ? Colors.black : const Color(0xFF1D64B4))
+                        .withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (g.frozen)
+              Container(
+                height: 3,
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? FrozenPalette.darkSparkTint
+                      : FrozenPalette.sparkTint,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
             // Top Row: Streak Flame + Today study stats + Info action
             Row(
               children: [
                 Icon(
-                  status.isTodaySecured
-                      ? Icons.local_fire_department_rounded
-                      : (status.isRescueMode
-                          ? Icons.bolt_rounded
-                          : Icons.local_fire_department_rounded),
+                  Icons.local_fire_department_rounded,
                   size: 18,
-                  color: status.isTodaySecured
-                      ? AppPalette.deepOrangeAccent
-                      : (status.isRescueMode ? AppPalette.amber : g.clay),
+                  color: g.frozen
+                      ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
+                      : (status.isTodaySecured
+                          ? AppPalette.deepOrangeAccent
+                          : (status.isRescueMode ? AppPalette.amber : g.clay)),
                 ),
                 const SizedBox(width: 6),
                 Flexible(
                   child: Text(
                     streakTitle,
                     style: AppTypography.plusJakartaSans13W70044(
-                      color: status.isTodaySecured
-                          ? AppPalette.deepOrangeAccent
-                          : (status.isRescueMode
-                              ? AppPalette.amberAccent
-                              : g.ink),
+                      color: g.frozen
+                          ? g.ink
+                          : (status.isTodaySecured
+                              ? AppPalette.deepOrangeAccent
+                              : (status.isRescueMode
+                                  ? AppPalette.amberAccent
+                                  : g.ink)),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -175,13 +204,25 @@ class StudyStreakMeterCard extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: status.progressFraction,
                 minHeight: 5,
-                backgroundColor: g.bg.withValues(alpha: 0.5),
+                backgroundColor: g.frozen
+                    ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+                    : g.bg.withValues(alpha: 0.5),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  status.isTodaySecured
-                      ? AppPalette.deepOrangeAccent
-                      : (status.isRescueMode
-                          ? AppPalette.amber
-                          : (status.isUrgent ? AppPalette.redAccent : g.clay)),
+                  g.frozen
+                      ? (status.isTodaySecured
+                          ? (isDark
+                              ? FrozenPalette.darkSpark
+                              : FrozenPalette.spark)
+                          : (isDark
+                              ? FrozenPalette.darkAction
+                              : FrozenPalette.action))
+                      : (status.isTodaySecured
+                          ? AppPalette.deepOrangeAccent
+                          : (status.isRescueMode
+                              ? AppPalette.amber
+                              : (status.isUrgent
+                                  ? AppPalette.redAccent
+                                  : g.clay))),
                 ),
               ),
             ),
