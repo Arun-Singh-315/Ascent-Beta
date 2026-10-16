@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -46,9 +47,33 @@ class _ThoughtWallHomePreviewState
 
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
+  int? _transientThoughtId;
+  Timer? _transientTimer;
+
+  void _activateTransient(int id) {
+    _transientTimer?.cancel();
+    setState(() => _transientThoughtId = id);
+    final accessible =
+        MediaQuery.maybeOf(context)?.accessibleNavigation ?? false;
+    if (!accessible) {
+      _transientTimer = Timer(const Duration(seconds: 7), () {
+        if (mounted && _transientThoughtId == id) {
+          setState(() => _transientThoughtId = null);
+        }
+      });
+    }
+  }
+
+  void _dismissTransient() {
+    _transientTimer?.cancel();
+    if (mounted && _transientThoughtId != null) {
+      setState(() => _transientThoughtId = null);
+    }
+  }
 
   @override
   void dispose() {
+    _transientTimer?.cancel();
     _draft?.dispose();
     _focusNode.dispose();
     _controller.dispose();
@@ -94,13 +119,9 @@ class _ThoughtWallHomePreviewState
         setState(() => _saving = false);
         if (_controller.text.trim() == content) _controller.clear();
         FocusScope.of(context).unfocus();
-        if (HomeCaptureProposal.parse(
-          content,
-          DateTime.now(),
-        ).scheduledIntent) {
-          final thought = await ref.read(thoughtDaoProvider).getThoughtById(id);
-          if (mounted && thought != null) await _plan(thought);
-        }
+        // Do NOT show plan automatically.
+        // Instead, show transient actions (Plan, Todo, Reminder) for a few seconds.
+        _activateTransient(id);
       }
     } catch (_) {
       if (mounted) {
@@ -365,14 +386,18 @@ class _ThoughtWallHomePreviewState
                   final isDraftSource =
                       pendingDraft?['thoughtId'] == thought.id;
 
+                  final isTransientActive =
+                      _transientThoughtId == thought.id &&
+                      !thought.isCompleted;
+
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSpace.s10),
+                    padding: const EdgeInsets.only(bottom: AppSpace.s8),
                     child: Align(
                       alignment: isEven
                           ? Alignment.centerLeft
                           : Alignment.centerRight,
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 300),
+                        constraints: const BoxConstraints(maxWidth: 320),
                         child: GlassSurface(
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
@@ -380,13 +405,13 @@ class _ThoughtWallHomePreviewState
                             color: g.inkMuted.withValues(
                               alpha:
                                   Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? 0.4
-                                  : 0.18,
+                                          Brightness.dark
+                                      ? 0.35
+                                      : 0.15,
                             ),
-                            width: AppBorderScale.w1point2,
+                            width: AppBorderScale.w1point0,
                           ),
-                          radius: 18,
+                          radius: 16,
                           borderRadius: BorderRadius.only(
                             topLeft: AppGeometry.radiusr18,
                             topRight: AppGeometry.radiusr18,
@@ -394,12 +419,18 @@ class _ThoughtWallHomePreviewState
                             bottomRight: AppGeometry.bubbleTail(!isEven),
                           ),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s16,
-                            vertical: AppSpace.s12,
+                            horizontal: AppSpace.s14,
+                            vertical: AppSpace.s10,
                           ),
                           onTap: () {
                             HapticFeedback.lightImpact();
-                            context.push('/thought-wall?thought=${thought.id}');
+                            if (_transientThoughtId == thought.id) {
+                              context.push(
+                                '/thought-wall?thought=${thought.id}',
+                              );
+                            } else {
+                              _activateTransient(thought.id);
+                            }
                           },
                           child: Column(
                             crossAxisAlignment: isEven
@@ -411,7 +442,7 @@ class _ThoughtWallHomePreviewState
                                 AppTag(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpace.s8,
-                                    vertical: AppSpace.s3,
+                                    vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
                                     color: g.clay.withValues(alpha: 0.14),
@@ -435,12 +466,12 @@ class _ThoughtWallHomePreviewState
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 7),
+                                const SizedBox(height: 6),
                               ] else if (thought.mood == 'promise') ...[
                                 AppTag(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: AppSpace.s8,
-                                    vertical: AppSpace.s3,
+                                    vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
                                     color: g.clay.withValues(alpha: 0.14),
@@ -451,7 +482,7 @@ class _ThoughtWallHomePreviewState
                                     children: [
                                       Icon(
                                         Icons.handshake_rounded,
-                                        size: 12,
+                                        size: 11,
                                         color: g.clay,
                                       ),
                                       const SizedBox(width: 4),
@@ -464,28 +495,8 @@ class _ThoughtWallHomePreviewState
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 7),
+                                const SizedBox(height: 6),
                               ],
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.format_quote_rounded,
-                                    size: 18,
-                                    color: g.inkMuted,
-                                  ),
-                                  const Spacer(),
-                                  IconButton(
-                                    tooltip: 'Open thought',
-                                    icon: const Icon(
-                                      Icons.arrow_forward_rounded,
-                                      size: 18,
-                                    ),
-                                    onPressed: () => context.push(
-                                      '/thought-wall?thought=${thought.id}',
-                                    ),
-                                  ),
-                                ],
-                              ),
                               ThoughtExcerpt(
                                 content: thought.content,
                                 onReadMore: () => context.push(
@@ -501,47 +512,64 @@ class _ThoughtWallHomePreviewState
                                 ),
                               ),
                               if (isDraftSource) ...[
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 8),
                                 Divider(color: g.line),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 6),
                                 _draftActions(pendingDraft!, showTitle: false),
                               ],
-                              if (!thought.isCompleted && !isDraftSource)
+                              if (isTransientActive && !isDraftSource) ...[
+                                const SizedBox(height: 8),
                                 Wrap(
-                                  spacing: 4,
+                                  spacing: 6,
+                                  runSpacing: 4,
                                   children: [
-                                    TextButton.icon(
-                                      onPressed: () => _plan(thought),
-                                      icon: const Icon(
+                                    AppPill.action(
+                                      avatar: const Icon(
                                         Icons.edit_calendar_outlined,
-                                        size: 18,
+                                        size: 14,
                                       ),
                                       label: const Text('Plan'),
+                                      onPressed: () {
+                                        _dismissTransient();
+                                        _plan(thought);
+                                      },
                                     ),
-                                    TextButton(
-                                      onPressed: () => applyThoughtAction(
-                                        context,
-                                        ref.read(databaseProvider),
-                                        [thought],
-                                        'todo',
+                                    AppPill.action(
+                                      avatar: const Icon(
+                                        Icons.checklist_rounded,
+                                        size: 14,
                                       ),
-                                      child: const Text('Todo'),
+                                      label: const Text('Todo'),
+                                      onPressed: () {
+                                        _dismissTransient();
+                                        applyThoughtAction(
+                                          context,
+                                          ref.read(databaseProvider),
+                                          [thought],
+                                          'todo',
+                                        );
+                                      },
                                     ),
-                                    TextButton(
-                                      onPressed: () => context.push(
-                                        Uri(
-                                          path: '/ai-assistant',
-                                          queryParameters: {
-                                            'prompt': thought.content,
-                                            'thought': '${thought.id}',
-                                          },
-                                        ).toString(),
+                                    AppPill.action(
+                                      avatar: const Icon(
+                                        Icons.notifications_none_rounded,
+                                        size: 14,
                                       ),
-                                      child: const Text('Ask Riya'),
+                                      label: const Text('Reminder'),
+                                      onPressed: () {
+                                        _dismissTransient();
+                                        applyThoughtAction(
+                                          context,
+                                          ref.read(databaseProvider),
+                                          [thought],
+                                          'reminder',
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
-                              const SizedBox(height: 5),
+                              ],
+                              const SizedBox(height: 6),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -561,6 +589,20 @@ class _ThoughtWallHomePreviewState
                                           letterSpacing: 0.5,
                                         )
                                         .merge(AppTypeRoles.typeRole66),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  GestureDetector(
+                                    onTap: () {
+                                      HapticFeedback.lightImpact();
+                                      context.push(
+                                        '/thought-wall?thought=${thought.id}',
+                                      );
+                                    },
+                                    child: Icon(
+                                      Icons.arrow_outward_rounded,
+                                      size: 12,
+                                      color: g.inkMuted,
+                                    ),
                                   ),
                                 ],
                               ),

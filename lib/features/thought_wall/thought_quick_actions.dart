@@ -3,6 +3,7 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/database/app_database.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 import 'thought_action_ui.dart';
 
 /// A temporary invitation; the same actions always remain in the note menu.
@@ -42,6 +43,17 @@ class _ThoughtQuickActionsState extends State<ThoughtQuickActions> {
     }
   }
 
+  Future<void> _plan() async {
+    if (_interacting) return;
+    _interacting = true;
+    _timer?.cancel();
+    await showHomeSchedule(context, widget.thought);
+    if (mounted) {
+      _interacting = false;
+      _arm();
+    }
+  }
+
   Future<void> _act(String action) async {
     if (_interacting) return;
     _interacting = true;
@@ -69,14 +81,22 @@ class _ThoughtQuickActionsState extends State<ThoughtQuickActions> {
             runSpacing: 6,
             children: [
               AppPill.action(
+                avatar: const Icon(Icons.edit_calendar_outlined, size: 14),
+                label: const Text('Plan'),
+                onPressed: _plan,
+              ),
+              AppPill.action(
+                avatar: const Icon(Icons.checklist_rounded, size: 14),
                 label: const Text('Todo'),
                 onPressed: () => _act('todo'),
               ),
               AppPill.action(
+                avatar: const Icon(Icons.notifications_none_rounded, size: 14),
                 label: const Text('Reminder'),
                 onPressed: () => _act('reminder'),
               ),
               AppPill.action(
+                avatar: const Icon(Icons.add_task_rounded, size: 14),
                 label: const Text('Both'),
                 onPressed: () => _act('both'),
               ),
@@ -84,3 +104,4 @@ class _ThoughtQuickActionsState extends State<ThoughtQuickActions> {
           ),
         );
 }
+
