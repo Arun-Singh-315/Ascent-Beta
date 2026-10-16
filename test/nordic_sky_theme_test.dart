@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
 import 'support/returning_user_guides.dart';
