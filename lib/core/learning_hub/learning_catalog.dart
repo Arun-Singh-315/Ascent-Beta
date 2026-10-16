@@ -20,11 +20,48 @@ class LearningCatalog {
         db.aiCommandTable,
       )..where((r) => r.requestId.equals(_catalogIdentity))).getSingleOrNull();
       final entries = await db.courseDao.getAllCourses();
+      final hasTestLecturesInDb = entries.any((entry) {
+        try {
+          final List modules = jsonDecode(entry.modulesJson) as List;
+          return modules.any((m) {
+            final lectures = (m['lectures'] as List? ?? []);
+            return lectures.any((l) => isTargetTestLecture(
+                Lecture.fromJson(Map<String, dynamic>.from(l as Map))));
+          });
+        } catch (_) {
+          return false;
+        }
+      });
+
+      if (hasTestLecturesInDb) {
+        await (db.delete(db.timeSessionTable)
+          ..where((s) =>
+              s.learningLectureId.equals(38) |
+              s.label.like('%test )(%') |
+              s.label.like('%lecture 38%') |
+              (s.durationSeconds.equals(5400) & (s.label.like('%test%') | s.label.like('%)%')))))
+          .go();
+
+        await (db.delete(db.taskTable)
+          ..where((t) =>
+              t.learningLectureId.equals(38) |
+              t.title.like('%test )(%') |
+              t.title.like('%lecture 38%') |
+              (t.estimatedMinutes.equals(90) & (t.title.like('%test%') | t.title.like('%)%')))))
+          .go();
+
+        if (preferences.getInt('ascent_active_lecture_id') == 38) {
+          await preferences.remove('ascent_active_lecture_id');
+        }
+      }
+
       if (marker == null &&
           (entries.isEmpty ||
               preferences.getString(learningCatalogPreferenceKey) != null)) {
-        await _replace(legacy);
-        return legacy;
+        final sanitizedLegacy =
+            legacy.map((c) => c.sanitizeTestLectures()).toList();
+        await _replace(sanitizedLegacy);
+        return sanitizedLegacy;
       }
       if (marker == null) {
         await db
@@ -38,7 +75,7 @@ class LearningCatalog {
               ),
             );
       }
-      return entries
+      final courses = entries
           .map(
             (entry) => Course.fromJson({
               'id': entry.id,
@@ -53,9 +90,16 @@ class LearningCatalog {
               'targetMinutesPerDay': entry.targetMinutesPerDay,
               'modules': jsonDecode(entry.modulesJson),
               'createdAt': entry.createdAt.toIso8601String(),
-            }),
+            }).sanitizeTestLectures(),
           )
           .toList();
+
+      if (hasTestLecturesInDb) {
+        await _replace(courses);
+        await cache(courses);
+      }
+
+      return courses;
     },
   );
 
