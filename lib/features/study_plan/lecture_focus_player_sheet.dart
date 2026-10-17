@@ -1,3 +1,4 @@
+import '../../shared/widgets/music_companion_card.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -438,7 +439,12 @@ class _LectureFocusPlayerSheetState
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
+
+                  // Study Soundtrack Companion Deck
+                  const MusicCompanionCard(),
+
+                  const SizedBox(height: 18),
 
                   // Swift Lecture Switcher Card
                   AppCard.materialSurface(
