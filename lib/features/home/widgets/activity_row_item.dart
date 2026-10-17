@@ -16,6 +16,8 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../today/add_activity_sheet.dart';
+import '../../plans/widgets/plan_protection_dialog.dart';
+import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 
 /// Redesigned task row matching Ascent Home Redesign:
@@ -39,10 +41,28 @@ class ActivityRowItem extends ConsumerWidget {
         activity.kind == ActivityKind.duration ||
         (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
         activity.sourceType == 'lecture';
+    final dueCheckIn = activity.linkedTaskId != null
+        ? ref.watch(dueCheckInForTaskProvider(activity.linkedTaskId!)).value
+        : null;
 
     return Dismissible(
       key: ValueKey(activity.id),
       direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        if (activity.linkedTaskId != null) {
+          final taskDao = ref.read(taskDaoProvider);
+          final protection =
+              await taskDao.getTaskProtection(activity.linkedTaskId!);
+          if (protection != null) {
+            HapticFeedback.mediumImpact();
+            if (context.mounted) {
+              await showPlanProtectionDialog(context, ref, protection);
+            }
+            return false;
+          }
+        }
+        return true;
+      },
       onDismissed: (_) async {
         HapticFeedback.mediumImpact();
         final taskDao = ref.read(taskDaoProvider);
@@ -123,8 +143,12 @@ class ActivityRowItem extends ConsumerWidget {
           horizontal: (isRunning || isPaused) ? AppSpace.s12 : AppSpace.s0,
           vertical: AppSpace.s10,
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
             // ── 1. CIRCULAR CHECK TARGET (44dp hit area, 28dp visual circle) ────
             SizedBox(
               width: 44,
@@ -387,9 +411,187 @@ class ActivityRowItem extends ConsumerWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
+        if (dueCheckIn != null)
+          _buildCheckInResponseBar(context, ref, g, dueCheckIn),
+      ],
+    ),
+  ),
+);
+}
+
+Widget _buildCheckInResponseBar(
+  BuildContext context,
+  WidgetRef ref,
+  AscentGlass g,
+  DueCheckInItem dueCheckIn,
+) {
+  return Container(
+    margin: const EdgeInsets.only(top: 8, bottom: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    decoration: BoxDecoration(
+      color: g.claySoft,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: g.clay.withValues(alpha: 0.3)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.help_outline_rounded, size: 14, color: g.clay),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Did you finish: ${activity.title}?',
+                style: AscentTextStyles.bodySmall.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: g.ink,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            AppPill.action(
+              label: const Text('Done'),
+              onPressed: () async {
+                HapticFeedback.mediumImpact();
+                if (dueCheckIn.isRoutine) {
+                  await ref
+                      .read(planServiceProvider)
+                      .answerCheckIn(dueCheckIn.occurrenceId!, 'done');
+                } else {
+                  await ref.read(homeCaptureServiceProvider).answer(
+                        dueCheckIn.reminderId,
+                        dueCheckIn.scheduledAt,
+                        'done',
+                      );
+                }
+                try {
+                  await ReminderAlertSync.device(ref.read(databaseProvider))
+                      .sync(onlyPending: true);
+                } catch (_) {}
+                if (context.mounted) {
+                  AscentSnackBar.show(
+                    context,
+                    message: 'Done. Session marked finished.',
+                  );
+                }
+              },
+            ),
+            AppPill.action(
+              label: const Text('Later'),
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                final delay = await showModalBottomSheet<Duration>(
+                  context: context,
+                  builder: (ctx) => SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const ListTile(title: Text('Ask me again in…')),
+                        for (final minutes in [15, 30, 60])
+                          ListTile(
+                            title: Text('$minutes minutes'),
+                            onTap: () =>
+                                Navigator.pop(ctx, Duration(minutes: minutes)),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+                if (delay != null && context.mounted) {
+                  if (dueCheckIn.isRoutine) {
+                    await ref.read(planServiceProvider).answerCheckIn(
+                          dueCheckIn.occurrenceId!,
+                          'later',
+                          delay: delay,
+                        );
+                  } else {
+                    await ref.read(homeCaptureServiceProvider).answer(
+                          dueCheckIn.reminderId,
+                          dueCheckIn.scheduledAt,
+                          'later',
+                          delay: delay,
+                        );
+                  }
+                  try {
+                    await ReminderAlertSync.device(ref.read(databaseProvider))
+                        .sync(onlyPending: true);
+                  } catch (_) {}
+                  if (context.mounted) {
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Check-in moved by ${delay.inMinutes} minutes.',
+                    );
+                  }
+                }
+              },
+            ),
+            AppPill.action(
+              label: const Text('Skip this time'),
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                if (dueCheckIn.isRoutine) {
+                  await ref
+                      .read(planServiceProvider)
+                      .answerCheckIn(dueCheckIn.occurrenceId!, 'skip_this_time');
+                } else {
+                  await ref.read(homeCaptureServiceProvider).answer(
+                        dueCheckIn.reminderId,
+                        dueCheckIn.scheduledAt,
+                        'skip',
+                      );
+                }
+                try {
+                  await ReminderAlertSync.device(ref.read(databaseProvider))
+                      .sync(onlyPending: true);
+                } catch (_) {}
+                if (context.mounted) {
+                  AscentSnackBar.show(
+                    context,
+                    message: 'Session skipped. Todo stays unfinished.',
+                  );
+                }
+              },
+            ),
+            AppPill.action(
+              label: const Text('Skip check-in'),
+              onPressed: () async {
+                HapticFeedback.lightImpact();
+                if (dueCheckIn.isRoutine) {
+                  await ref
+                      .read(planServiceProvider)
+                      .answerCheckIn(dueCheckIn.occurrenceId!, 'skip_check_in');
+                } else {
+                  await ref.read(homeCaptureServiceProvider).answer(
+                        dueCheckIn.reminderId,
+                        dueCheckIn.scheduledAt,
+                        'skip',
+                      );
+                }
+                try {
+                  await ReminderAlertSync.device(ref.read(databaseProvider))
+                      .sync(onlyPending: true);
+                } catch (_) {}
+                if (context.mounted) {
+                  AscentSnackBar.show(
+                    context,
+                    message: 'Check-in stopped for this session.',
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
 
   String _runningTimerText(TodayActivityItem act) {
     final elapsed = act.elapsedSecondsToday;

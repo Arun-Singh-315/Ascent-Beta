@@ -10,30 +10,170 @@ class HomeCaptureProposal {
     this.minutes,
     this.followUp = false,
     this.scheduledIntent = false,
+    this.isRecurring = false,
+    this.recurrenceRule = 'once',
+    this.localTime,
+    this.startDate,
+    this.endDate,
+    this.checkInPolicy = 'off',
+    this.needsEndClarification = false,
+    this.needsTimeClarification = false,
   });
   final String title;
   final DateTime? at;
   final int? minutes;
   final bool followUp, scheduledIntent;
+  final bool isRecurring;
+  final String recurrenceRule;
+  final String? localTime;
+  final String? startDate;
+  final String? endDate;
+  final String checkInPolicy;
+  final bool needsEndClarification;
+  final bool needsTimeClarification;
 
   static HomeCaptureProposal parse(String text, DateTime now) {
-    final scheduled = RegExp(
+    final lower = text.toLowerCase();
+    final recurringMatch = RegExp(
+      r'\b(every\s+(?:day|morning|evening|night|afternoon|weekday|mon|tue|wed|thu|fri|sat|sun)|daily|weekdays)\b',
+      caseSensitive: false,
+    ).firstMatch(text);
+    final isRecurring = recurringMatch != null;
+
+    var recurrenceRule = 'once';
+    if (isRecurring) {
+      final recWord = recurringMatch.group(1)!.toLowerCase();
+      if (recWord.contains('weekday')) {
+        recurrenceRule = 'weekdays';
+      } else {
+        recurrenceRule = 'daily';
+      }
+    }
+
+    final scheduled = isRecurring || RegExp(
       r'\b(remind me|reminder|schedule|add (?:it |this )?to (?:my )?todo|ask (?:me )?(?:after(?:wards)?|latter|later)|check in)\b',
       caseSensitive: false,
     ).hasMatch(text);
-    final follow = RegExp(
+
+    final keepAsking = RegExp(
+      r'\b(keep asking|ask repeatedly|nudge me|keep reminding)\b',
+      caseSensitive: false,
+    ).hasMatch(text);
+    final followMatch = RegExp(
       r'\b(ask (?:me )?(?:after(?:wards)?|latter|later)|follow.?up|check in)\b',
       caseSensitive: false,
     ).hasMatch(text);
+
+    final follow = keepAsking || followMatch;
+    final checkInPolicy = keepAsking ? 'gentle' : (follow ? 'once' : 'off');
+
     final duration = RegExp(
       r'\bfor (\d{1,3}) (?:minutes?|mins?)\b',
       caseSensitive: false,
     ).firstMatch(text);
     final minutes = duration == null ? null : int.tryParse(duration.group(1)!);
-    final clock = RegExp(
+
+    // Clock extraction: explicit am/pm
+    final clockWithMeridiem = RegExp(
       r'\b(?:at )?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b',
       caseSensitive: false,
     ).firstMatch(text);
+
+    // Ambiguous clock: e.g. "at 7" without am/pm
+    final bareClock = RegExp(
+      r'\b(?:at )?(\d{1,2})(?::(\d{2}))?\b',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    int? resolvedHour;
+    int? resolvedMinute;
+    bool needsTimeClarification = false;
+
+    if (clockWithMeridiem != null) {
+      final h = int.parse(clockWithMeridiem.group(1)!);
+      final m = int.parse(clockWithMeridiem.group(2) ?? '0');
+      final isPm = clockWithMeridiem.group(3)!.toLowerCase() == 'pm';
+      if (h >= 1 && h <= 12 && m <= 59) {
+        resolvedHour = (h % 12) + (isPm ? 12 : 0);
+        resolvedMinute = m;
+      }
+    } else if (bareClock != null && scheduled) {
+      final h = int.parse(bareClock.group(1)!);
+      final m = int.parse(bareClock.group(2) ?? '0');
+      if (h >= 1 && h <= 24 && m <= 59) {
+        if (lower.contains('morning')) {
+          resolvedHour = h % 12;
+          resolvedMinute = m;
+        } else if (lower.contains('evening') || lower.contains('night')) {
+          resolvedHour = (h % 12) + 12;
+          resolvedMinute = m;
+        } else if (h > 12) {
+          resolvedHour = h;
+          resolvedMinute = m;
+        } else {
+          needsTimeClarification = true;
+          resolvedHour = h;
+          resolvedMinute = m;
+        }
+      }
+    }
+
+    String? localTime;
+    if (resolvedHour != null && resolvedMinute != null) {
+      localTime =
+          '${resolvedHour.toString().padLeft(2, '0')}:${resolvedMinute.toString().padLeft(2, '0')}';
+    }
+
+    // End date extraction: "until YYYY-MM-DD" or "until 31 October" or "until Nov 15"
+    String? resolvedEndDate;
+    bool needsEndClarification = false;
+    final isoEnd = RegExp(r'\buntil\s+(\d{4})-(\d{2})-(\d{2})\b', caseSensitive: false)
+        .firstMatch(text);
+    final monthNames = {
+      'jan': 1, 'january': 1,
+      'feb': 2, 'february': 2,
+      'mar': 3, 'march': 3,
+      'apr': 4, 'april': 4,
+      'may': 5,
+      'jun': 6, 'june': 6,
+      'jul': 7, 'july': 7,
+      'aug': 8, 'august': 8,
+      'sep': 9, 'september': 9,
+      'oct': 10, 'october': 10,
+      'nov': 11, 'november': 11,
+      'dec': 12, 'december': 12,
+    };
+    final namedEndDayFirst = RegExp(
+      r'\buntil\s+(\d{1,2})(?:st|nd|rd|th)?\s+([a-z]+)\b',
+      caseSensitive: false,
+    ).firstMatch(text);
+    final namedEndMonthFirst = RegExp(
+      r'\buntil\s+([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\b',
+      caseSensitive: false,
+    ).firstMatch(text);
+
+    if (isoEnd != null) {
+      resolvedEndDate =
+          '${isoEnd.group(1)}-${isoEnd.group(2)}-${isoEnd.group(3)}';
+    } else if (namedEndDayFirst != null &&
+        monthNames.containsKey(namedEndDayFirst.group(2)!.toLowerCase())) {
+      final day = int.parse(namedEndDayFirst.group(1)!);
+      final month = monthNames[namedEndDayFirst.group(2)!.toLowerCase()]!;
+      final year = now.year;
+      resolvedEndDate =
+          '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+    } else if (namedEndMonthFirst != null &&
+        monthNames.containsKey(namedEndMonthFirst.group(1)!.toLowerCase())) {
+      final month = monthNames[namedEndMonthFirst.group(1)!.toLowerCase()]!;
+      final day = int.parse(namedEndMonthFirst.group(2)!);
+      final year = now.year;
+      resolvedEndDate =
+          '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}';
+    } else if (isRecurring) {
+      needsEndClarification = true;
+    }
+
+    // Start date / single day resolution
     final iso = RegExp(r'\b(\d{4})-(\d{2})-(\d{2})\b').firstMatch(text);
     DateTime? day;
     if (iso != null) {
@@ -48,27 +188,42 @@ class HomeCaptureProposal {
       day = DateTime(now.year, now.month, now.day + 1);
     } else if (RegExp(r'\btoday\b', caseSensitive: false).hasMatch(text)) {
       day = DateTime(now.year, now.month, now.day);
+    } else if (isRecurring) {
+      // Routines default start date to today or tomorrow depending on current time
+      day = DateTime(now.year, now.month, now.day);
     }
+
     DateTime? at;
-    if (day != null && clock != null) {
-      final hour = int.parse(clock.group(1)!);
-      final minute = int.parse(clock.group(2) ?? '0');
-      if (hour >= 1 && hour <= 12 && minute <= 59) {
-        at = DateTime(
-          day.year,
-          day.month,
-          day.day,
-          hour % 12 + (clock.group(3)!.toLowerCase() == 'pm' ? 12 : 0),
-          minute,
-        );
-      }
+    if (day != null && resolvedHour != null && resolvedMinute != null) {
+      at = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        resolvedHour,
+        resolvedMinute,
+      );
     }
+
     // Only strip known framing from explicit planning requests.
     var title = text.trim();
-    if (scheduled || (day != null && clock != null)) {
+    if (scheduled || (day != null && resolvedHour != null)) {
       title = title.replaceAll(
         RegExp(
-          r'\b(?:tomorrow|today|\d{4}-\d{2}-\d{2})\b|\b(?:at )?\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\bfor \d{1,3} (?:minutes?|mins?)\b',
+          r'\buntil\s+(?:\d{4}-\d{2}-\d{2}|\d{1,2}(?:st|nd|rd|th)?\s+[a-z]+|[a-z]+\s+\d{1,2}(?:st|nd|rd|th)?)\b',
+          caseSensitive: false,
+        ),
+        '',
+      );
+      title = title.replaceAll(
+        RegExp(
+          r'\b(?:every\s+(?:day|morning|evening|night|afternoon|weekday)|daily|weekdays)\b',
+          caseSensitive: false,
+        ),
+        '',
+      );
+      title = title.replaceAll(
+        RegExp(
+          r'\b(?:tomorrow|today|\d{4}-\d{2}-\d{2})\b|\b(?:at )?\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b|\bfor \d{1,3} (?:minutes?|mins?)\b',
           caseSensitive: false,
         ),
         '',
@@ -79,7 +234,7 @@ class HomeCaptureProposal {
       );
       title = title.replaceAll(
         RegExp(
-          r'(?:[.!]\s*|\s+and\s+)?(?:remind me|ask (?:me )?(?:afterwards|after|later)|check in|follow.?up).*$',
+          r'(?:[.!]\s*|\s+and\s+)?(?:remind me|keep asking|ask (?:me )?(?:afterwards|after|later|repeatedly)|nudge me|check in|follow.?up).*$',
           caseSensitive: false,
         ),
         '',
@@ -101,15 +256,29 @@ class HomeCaptureProposal {
       r'^(?:i (?:want|need) to )?(?:practi[cs]e|study|call|buy|meet|pay|review|read|exercise|walk|attend|send|finish|submit|prepare|take|drink|work|learn|book|pick|write|clean)\b',
       caseSensitive: false,
     ).hasMatch(title);
+
+    final String? startDateStr = day != null
+        ? '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}'
+        : null;
+
     return HomeCaptureProposal(
       title: title,
       at: at,
       minutes: minutes != null && minutes > 0 ? minutes : null,
       followUp: follow,
-      scheduledIntent: scheduled || (day != null && clock != null && action),
+      scheduledIntent: scheduled || (day != null && resolvedHour != null && action),
+      isRecurring: isRecurring,
+      recurrenceRule: recurrenceRule,
+      localTime: localTime,
+      startDate: startDateStr,
+      endDate: resolvedEndDate,
+      checkInPolicy: checkInPolicy,
+      needsEndClarification: needsEndClarification,
+      needsTimeClarification: needsTimeClarification,
     );
   }
 }
+
 
 class HomePlan {
   const HomePlan(this.requestId, this.task, this.reminder, this.checkIn);

@@ -32,6 +32,7 @@ import '../features/medicine/medicine_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
+import '../features/plans/plans_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../shared/widgets/feature_guide.dart';
 
@@ -67,6 +68,7 @@ class AscentRoutes {
   static const focus = '/focus';
   static const learning = '/learning';
   static const reminders = '/reminders';
+  static const plans = '/plans';
 }
 
 // ── Navigator key ─────────────────────────────────────────────────────────────
@@ -216,6 +218,13 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.learning,
       builder: (context, state) => const LectureFocusPlayerScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.plans,
+      builder: (context, state) => PlansScreen(
+        initialPlanId: state.uri.queryParameters['id'],
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

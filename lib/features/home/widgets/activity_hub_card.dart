@@ -119,35 +119,78 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    AppTapArea(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        context.push('/today');
-                      },
-                      borderRadius: AppGeometry.roundedr6,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s4,
-                          vertical: AppSpace.s2,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'View board',
-                              style: AscentTextStyles.homeSecondary
-                                  .copyWith(color: g.clay)
-                                  .merge(AppTypeRoles.typeRole8),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppTapArea(
+                          onTap: () {
+                            HapticFeedback.lightImpact();
+                            context.push('/today');
+                          },
+                          borderRadius: AppGeometry.roundedr6,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpace.s4,
+                              vertical: AppSpace.s2,
                             ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 16,
-                              color: g.clay,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View board',
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(color: g.clay)
+                                      .merge(AppTypeRoles.typeRole8),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: g.clay,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert_rounded,
+                            size: 18,
+                            color: g.inkMuted,
+                          ),
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Plans & Options',
+                          onSelected: (val) {
+                            if (val == 'plans') {
+                              context.push('/plans');
+                            } else if (val == 'board') {
+                              context.push('/today');
+                            }
+                          },
+                          itemBuilder: (ctx) => [
+                            const PopupMenuItem(
+                              value: 'plans',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.event_repeat_rounded, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Routines & Plans'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'board',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.dashboard_outlined, size: 18),
+                                  SizedBox(width: 8),
+                                  Text('Open Board'),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),

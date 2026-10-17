@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
@@ -16,6 +17,10 @@ import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'add_lecture_activity_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../core/services/plan_child_protection.dart';
+import '../plans/widgets/plan_protection_dialog.dart';
+import '../plans/widgets/plan_detail_sheet.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 
 class AddActivitySheet extends ConsumerStatefulWidget {
   final Task? existingTask;
@@ -80,6 +85,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   bool _saving = false;
   bool _reminderEdited = false;
   bool _loadingReminder = false;
+  PlanChildRestriction? _protection;
 
   @override
   void initState() {
@@ -111,6 +117,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       }
 
       _loadingReminder = true;
+      Future.microtask(() async {
+        try {
+          final protection =
+              await ref.read(taskDaoProvider).getTaskProtection(t.id);
+          if (mounted) setState(() => _protection = protection);
+        } catch (_) {}
+      });
       // Check if existing task has an active reminder
       Future.microtask(() async {
         try {
@@ -285,6 +298,79 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       ),
                     ],
                   ),
+                  if (_protection != null) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        showPlanDetailSheet(context, _protection!.planId);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.glass.claySoft,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: context.glass.clay.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.event_repeat_rounded,
+                              size: 14,
+                              color: context.glass.clay,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Part of ${_protection!.planTitle} · Open routine',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.glass.clay,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else if (widget.existingTask != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          icon: const Icon(
+                            Icons.event_repeat_rounded,
+                            size: 16,
+                          ),
+                          label: const Text('Make repeating routine'),
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            final db = ref.read(databaseProvider);
+                            final thoughtId = await db.thoughtDao.insertThought(
+                              ThoughtTableCompanion.insert(
+                                content:
+                                    'Routine: ${_titleController.text.trim()}',
+                              ),
+                            );
+                            final thought =
+                                await db.thoughtDao.getThoughtById(thoughtId);
+                            if (context.mounted && thought != null) {
+                              showHomeSchedule(
+                                context,
+                                thought,
+                                initialText:
+                                    '${_titleController.text.trim()} every day at ${_selectedTime.format(context)}',
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 14),
 
                   // 1. What do you want to do?
@@ -808,6 +894,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         onPressed: () async {
                           HapticFeedback.mediumImpact();
                           final nav = Navigator.of(context);
+                          if (_protection != null) {
+                            await showPlanProtectionDialog(
+                              context,
+                              ref,
+                              _protection!,
+                            );
+                            nav.pop();
+                            return;
+                          }
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
@@ -885,12 +980,16 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           filled: false,
                           icon: false,
                         ),
-                        icon: const Icon(
-                          Icons.delete_outline_rounded,
+                        icon: Icon(
+                          _protection != null
+                              ? Icons.event_busy_rounded
+                              : Icons.delete_outline_rounded,
                           size: 18,
                         ),
-                        label: const Text(
-                          'Delete Activity',
+                        label: Text(
+                          _protection != null
+                              ? 'Skip session or manage routine'
+                              : 'Delete Activity',
                           style: AppTypeRoles.typeRole8,
                         ),
                       ),

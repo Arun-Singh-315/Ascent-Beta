@@ -360,7 +360,10 @@ void main() {
     'deleting just the initial reminder leaves its check-in answerable',
     () async {
       final plan = await schedule(await note());
-      await db.reminderDao.deleteReminder(plan.reminder.id);
+      await db.reminderDao.deleteReminder(
+        plan.reminder.id,
+        bypassProtection: true,
+      );
       expect(await service.plans(), hasLength(1));
       expect(
         await service.answer(

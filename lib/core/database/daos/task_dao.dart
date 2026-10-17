@@ -351,6 +351,18 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         ),
       );
     }
+
+    final occ = await db.planDao.getOccurrenceByTaskId(id);
+    if (occ != null) {
+      await db.planDao.updateOccurrence(
+        PlanOccurrenceTableCompanion(
+          id: Value(occ.id),
+          outcome: const Value('done'),
+          completedAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+    }
   }
 
   /// Completed tasks stay sealed; use the explicit medicine-dose sync method
@@ -449,17 +461,74 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     },
   );
 
-  /// Deletes the task with [id].  Returns the number of deleted rows (0 or 1).
-  Future<int> deleteTask(int id) => db.transaction(() async {
-    if (await getTaskById(id) == null) return 0;
-    await deleteTaskWithDependents(id);
-    return 1;
-  });
+  /// Checks if a task is protected by a managed plan or recurring routine.
+  Future<PlanChildRestriction?> getTaskProtection(int taskId) async {
+    // 1. Check if linked to PlanOccurrenceTable
+    final occ = await db.planDao.getOccurrenceByTaskId(taskId);
+    if (occ != null) {
+      final plan = await db.planDao.getPlanById(occ.planId);
+      if (plan != null && plan.status != 'ended') {
+        final isRoutine = plan.recurrenceRule != 'once';
+        return PlanChildRestriction(
+          planId: plan.id,
+          planTitle: plan.title,
+          occurrenceId: occ.id,
+          targetType: 'task',
+          isRoutine: isRoutine,
+          allowedActions: isRoutine
+              ? const ['skip_session', 'open_routine']
+              : const ['skip_plan', 'open_plan'],
+          occurrenceDate: occ.eligibleLocalDate,
+        );
+      }
+    }
+
+    // 2. Check if linked to a one-time managed plan via AiCommandTable
+    final receipts = await (db.select(db.aiCommandTable)
+          ..where((r) => r.capability.equals(HomeCaptureService.capability)))
+        .get();
+    for (final receipt in receipts) {
+      try {
+        final args = jsonDecode(receipt.argumentsJson) as Map;
+        if (args['taskId'] == taskId) {
+          final plans = await HomeCaptureService(db).plans();
+          if (plans.any((p) => p.task?.id == taskId)) {
+            return PlanChildRestriction(
+              planId: receipt.requestId,
+              planTitle: (args['title'] as String?) ?? 'Managed Plan',
+              targetType: 'task',
+              isRoutine: false,
+              allowedActions: const ['skip_plan', 'open_plan'],
+            );
+          }
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  /// Deletes the task with [id]. Returns the number of deleted rows (0 or 1).
+  /// Plan-owned tasks reject raw deletion and throw [PlanChildProtectionException].
+  Future<int> deleteTask(int id, {bool bypassProtection = false}) =>
+      db.transaction(() async {
+        if (await getTaskById(id) == null) return 0;
+        await deleteTaskWithDependents(id, bypassProtection: bypassProtection);
+        return 1;
+      });
 
   /// All descendants, linked reminders and sessions are removed atomically.
   /// Reminder deletion records durable native cancellation work in this commit.
-  Future<List<int>> deleteTaskWithDependents(int id) =>
+  Future<List<int>> deleteTaskWithDependents(
+    int id, {
+    bool bypassProtection = false,
+  }) =>
       db.transaction(() async {
+        if (!bypassProtection) {
+          final protection = await getTaskProtection(id);
+          if (protection != null) {
+            throw PlanChildProtectionException(protection);
+          }
+        }
         final cancelled = <int>[];
         final captured = _DeletedTaskTree([], [], [], []);
         final visiting = <int>{};

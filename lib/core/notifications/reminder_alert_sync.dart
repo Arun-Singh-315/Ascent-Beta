@@ -23,9 +23,17 @@ Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
       );
     }
   }
-  final plan = await HomeCaptureService(db).planForReminder(r.id);
-  final checkIn = plan?.checkIn?.id == r.id;
-  final payload = plan == null
+  final routineAlertLink = await db.planDao.getAlertLinkForReminder(r.id);
+  final isRoutineCheckIn = routineAlertLink?.role == 'check_in';
+  final plan = routineAlertLink == null
+      ? await HomeCaptureService(db).planForReminder(r.id)
+      : null;
+  final checkIn = isRoutineCheckIn || plan?.checkIn?.id == r.id;
+  final payload = routineAlertLink != null
+      ? (isRoutineCheckIn
+          ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}&occ=${routineAlertLink.occurrenceId}'
+          : '/home?session=${routineAlertLink.occurrenceId}')
+      : plan == null
       ? NotificationService.remindersDestination
       : checkIn
       ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}'

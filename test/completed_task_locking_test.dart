@@ -7,6 +7,9 @@ import 'package:ascent/features/home/widgets/activity_row_item.dart';
 void main() {
   Widget buildTestableWidget(Widget child) {
     return ProviderScope(
+      overrides: [
+        dueCheckInForTaskProvider.overrideWith((ref, taskId) => Stream.value(null)),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: child,

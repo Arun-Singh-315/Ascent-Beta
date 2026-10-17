@@ -22,6 +22,9 @@ import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import 'package:go_router/go_router.dart';
+import '../plans/widgets/plan_protection_dialog.dart';
+import '../plans/widgets/plan_detail_sheet.dart';
 
 enum _ReminderRepeatMode {
   none('One-time', 'Specific date only', Icons.event_rounded),
@@ -710,6 +713,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   }
 
   Future<void> _confirmDeleteReminder(Reminder reminder) async {
+    final dao = ref.read(reminderDaoProvider);
+    final protection = await dao.getReminderProtection(reminder.id);
+    if (!mounted) return;
+    if (protection != null) {
+      await showPlanProtectionDialog(context, ref, protection);
+      ref.invalidate(allRemindersProvider);
+      ref.invalidate(nextUpcomingReminderProvider);
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -798,6 +811,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       title: 'Reminders & Alerts',
       subtitle: 'Scheduled notifications & deadlines',
       actions: [
+        IconButton(
+          tooltip: 'Routines & Plans',
+          icon: const Icon(Icons.event_repeat_rounded),
+          onPressed: () => context.push('/plans'),
+        ),
         IconButton(
           tooltip: 'Sync reminder alerts',
           icon: _syncingAlerts
@@ -1283,6 +1301,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final formattedTime = DateFormat(
       'EEE, MMM d • h:mm a',
     ).format(reminder.scheduledAt);
+    final protection =
+        ref.watch(reminderProtectionProvider(reminder.id)).value;
 
     return Dismissible(
       key: ValueKey(reminder.id),
@@ -1303,7 +1323,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       child: AscentCard(
         margin: const EdgeInsets.only(bottom: AppSpace.s10),
         padding: const EdgeInsets.all(AppSpace.s14),
-        onTap: () => _openAddEditReminderSheet(reminder),
+        onTap: () {
+          if (protection != null) {
+            showPlanDetailSheet(context, protection.planId);
+          } else {
+            _openAddEditReminderSheet(reminder);
+          }
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -1356,15 +1382,41 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    reminder.alarmEnabled
-                        ? '$formattedTime · Alarm'
-                        : formattedTime,
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: isUpcoming
-                          ? g.inkMuted
-                          : g.inkMuted.withValues(alpha: 0.6),
-                    ),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (protection != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: g.claySoft,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Part of ${protection.planTitle}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: g.clay,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      Text(
+                        reminder.alarmEnabled
+                            ? '$formattedTime · Alarm'
+                            : formattedTime,
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: isUpcoming
+                              ? g.inkMuted
+                              : g.inkMuted.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1382,7 +1434,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   return;
                 }
                 if (val == 'edit') {
-                  _openAddEditReminderSheet(reminder);
+                  if (protection != null) {
+                    showPlanDetailSheet(context, protection.planId);
+                  } else {
+                    _openAddEditReminderSheet(reminder);
+                  }
                 } else if (val == 'delete') {
                   _confirmDeleteReminder(reminder);
                 }

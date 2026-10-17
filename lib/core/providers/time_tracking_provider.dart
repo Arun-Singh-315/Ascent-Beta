@@ -659,6 +659,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
     // 1. Process tasks planned for today
     for (final task in tasks) {
       if (task.learningCourseId != null) continue;
+      final occ = await ref.read(planDaoProvider).getOccurrenceByTaskId(task.id);
+      if (occ != null) {
+        if (occ.outcome == 'skipped') continue;
+        final plan = await ref.read(planDaoProvider).getPlanById(occ.planId);
+        if (plan != null &&
+            (plan.status == 'paused' || plan.status == 'ended') &&
+            task.actualCompletedDate == null) {
+          continue;
+        }
+      }
       final taskSessions = sessions
           .where((s) => s.linkedTaskId == task.id)
           .toList();

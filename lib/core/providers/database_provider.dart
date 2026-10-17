@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../database/app_database.dart';
 import '../services/promise_service.dart';
 import '../medicine/medicine_service.dart';
+import '../services/plan_service.dart';
+import '../services/home_capture_service.dart';
+import '../services/plan_child_protection.dart';
 
 // ---------------------------------------------------------------------------
 // Database singleton
@@ -112,9 +115,106 @@ final medicineDaoProvider = Provider<MedicineDao>(
   (ref) => MedicineDao(ref.watch(databaseProvider)),
 );
 
+final planDaoProvider = Provider<PlanDao>(
+  (ref) => PlanDao(ref.watch(databaseProvider)),
+);
+
+final planServiceProvider = Provider<PlanService>(
+  (ref) => PlanService(ref.watch(databaseProvider)),
+);
+
 final medicineServiceProvider = Provider<MedicineService>(
   (ref) => MedicineService(ref.watch(databaseProvider)),
 );
+
+final homeCaptureServiceProvider = Provider<HomeCaptureService>(
+  (ref) => HomeCaptureService(ref.watch(databaseProvider)),
+);
+
+class DueCheckInItem {
+  final int taskId;
+  final String title;
+  final int reminderId;
+  final String? occurrenceId;
+  final DateTime scheduledAt;
+  final bool isRoutine;
+
+  const DueCheckInItem({
+    required this.taskId,
+    required this.title,
+    required this.reminderId,
+    this.occurrenceId,
+    required this.scheduledAt,
+    required this.isRoutine,
+  });
+}
+
+final dueCheckInForTaskProvider =
+    StreamProvider.family<DueCheckInItem?, int>((ref, taskId) async* {
+  final db = ref.watch(databaseProvider);
+  final planDao = ref.watch(planDaoProvider);
+
+  final remindersStream = db.reminderDao.watchAllReminders();
+  await for (final reminders in remindersStream) {
+    // 1. Check routine occurrences
+    final occ = await planDao.getOccurrenceByTaskId(taskId);
+    if (occ != null && occ.outcome == 'scheduled') {
+      final links = await planDao.getAlertLinksForOccurrence(occ.id);
+      final checkLinks = links.where((l) => l.role == 'check_in').toList();
+      DueCheckInItem? found;
+      for (final link in checkLinks) {
+        final rem = reminders
+            .where((r) => r.id == link.reminderId && r.isActive)
+            .firstOrNull;
+        if (rem != null && !rem.scheduledAt.isAfter(DateTime.now())) {
+          found = DueCheckInItem(
+            taskId: taskId,
+            title: rem.title,
+            reminderId: rem.id,
+            occurrenceId: occ.id,
+            scheduledAt: rem.scheduledAt,
+            isRoutine: true,
+          );
+          break;
+        }
+      }
+      if (found != null) {
+        yield found;
+        continue;
+      }
+    }
+
+    // 2. Check one-time HomePlans
+    final plans = await HomeCaptureService(db).watchPlans().first;
+    final homePlan =
+        plans.where((p) => p.task?.id == taskId && p.needsAnswer).firstOrNull;
+    if (homePlan != null && homePlan.checkIn != null) {
+      yield DueCheckInItem(
+        taskId: taskId,
+        title: homePlan.task?.title ?? homePlan.reminder.title,
+        reminderId: homePlan.checkIn!.id,
+        occurrenceId: null,
+        scheduledAt: homePlan.checkIn!.scheduledAt,
+        isRoutine: false,
+      );
+      continue;
+    }
+
+    yield null;
+  }
+});
+
+final reminderProtectionProvider =
+    FutureProvider.family<PlanChildRestriction?, int>((ref, reminderId) async {
+  return ref.watch(reminderDaoProvider).getReminderProtection(reminderId);
+});
+
+final taskProtectionProvider =
+    FutureProvider.family<PlanChildRestriction?, int>((ref, taskId) async {
+  return ref.watch(taskDaoProvider).getTaskProtection(taskId);
+});
+
+
 
 // ── Medicine Reactive Stream Providers ─────────────────────────────────────────
 

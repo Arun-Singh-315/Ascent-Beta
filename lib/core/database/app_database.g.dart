@@ -20396,6 +20396,2488 @@ class MedicineLogTableCompanion extends UpdateCompanion<MedicineLog> {
   }
 }
 
+class $PlanDefinitionTableTable extends PlanDefinitionTable
+    with TableInfo<$PlanDefinitionTableTable, PlanDefinition> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlanDefinitionTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 300,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceThoughtIdMeta = const VerificationMeta(
+    'sourceThoughtId',
+  );
+  @override
+  late final GeneratedColumn<int> sourceThoughtId = GeneratedColumn<int>(
+    'source_thought_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES thoughts (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _sourceTaskIdMeta = const VerificationMeta(
+    'sourceTaskId',
+  );
+  @override
+  late final GeneratedColumn<int> sourceTaskId = GeneratedColumn<int>(
+    'source_task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tasks (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _activityTypeMeta = const VerificationMeta(
+    'activityType',
+  );
+  @override
+  late final GeneratedColumn<String> activityType = GeneratedColumn<String>(
+    'activity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('todo'),
+  );
+  static const VerificationMeta _targetMinutesMeta = const VerificationMeta(
+    'targetMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> targetMinutes = GeneratedColumn<int>(
+    'target_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _expectedDurationMinutesMeta =
+      const VerificationMeta('expectedDurationMinutes');
+  @override
+  late final GeneratedColumn<int> expectedDurationMinutes =
+      GeneratedColumn<int>(
+        'expected_duration_minutes',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<String> startDate = GeneratedColumn<String>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<String> endDate = GeneratedColumn<String>(
+    'end_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recurrenceRuleMeta = const VerificationMeta(
+    'recurrenceRule',
+  );
+  @override
+  late final GeneratedColumn<String> recurrenceRule = GeneratedColumn<String>(
+    'recurrence_rule',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('once'),
+  );
+  static const VerificationMeta _customDaysJsonMeta = const VerificationMeta(
+    'customDaysJson',
+  );
+  @override
+  late final GeneratedColumn<String> customDaysJson = GeneratedColumn<String>(
+    'custom_days_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localTimeMeta = const VerificationMeta(
+    'localTime',
+  );
+  @override
+  late final GeneratedColumn<String> localTime = GeneratedColumn<String>(
+    'local_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timezonePolicyMeta = const VerificationMeta(
+    'timezonePolicy',
+  );
+  @override
+  late final GeneratedColumn<String> timezonePolicy = GeneratedColumn<String>(
+    'timezone_policy',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('device_local'),
+  );
+  static const VerificationMeta _reminderPolicyMeta = const VerificationMeta(
+    'reminderPolicy',
+  );
+  @override
+  late final GeneratedColumn<String> reminderPolicy = GeneratedColumn<String>(
+    'reminder_policy',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('at_start'),
+  );
+  static const VerificationMeta _checkInPolicyMeta = const VerificationMeta(
+    'checkInPolicy',
+  );
+  @override
+  late final GeneratedColumn<String> checkInPolicy = GeneratedColumn<String>(
+    'check_in_policy',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('off'),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _revisionMeta = const VerificationMeta(
+    'revision',
+  );
+  @override
+  late final GeneratedColumn<int> revision = GeneratedColumn<int>(
+    'revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    sourceThoughtId,
+    sourceTaskId,
+    activityType,
+    targetMinutes,
+    expectedDurationMinutes,
+    startDate,
+    endDate,
+    recurrenceRule,
+    customDaysJson,
+    localTime,
+    timezonePolicy,
+    reminderPolicy,
+    checkInPolicy,
+    status,
+    revision,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'plan_definitions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PlanDefinition> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('source_thought_id')) {
+      context.handle(
+        _sourceThoughtIdMeta,
+        sourceThoughtId.isAcceptableOrUnknown(
+          data['source_thought_id']!,
+          _sourceThoughtIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_task_id')) {
+      context.handle(
+        _sourceTaskIdMeta,
+        sourceTaskId.isAcceptableOrUnknown(
+          data['source_task_id']!,
+          _sourceTaskIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('activity_type')) {
+      context.handle(
+        _activityTypeMeta,
+        activityType.isAcceptableOrUnknown(
+          data['activity_type']!,
+          _activityTypeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_minutes')) {
+      context.handle(
+        _targetMinutesMeta,
+        targetMinutes.isAcceptableOrUnknown(
+          data['target_minutes']!,
+          _targetMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('expected_duration_minutes')) {
+      context.handle(
+        _expectedDurationMinutesMeta,
+        expectedDurationMinutes.isAcceptableOrUnknown(
+          data['expected_duration_minutes']!,
+          _expectedDurationMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endDateMeta);
+    }
+    if (data.containsKey('recurrence_rule')) {
+      context.handle(
+        _recurrenceRuleMeta,
+        recurrenceRule.isAcceptableOrUnknown(
+          data['recurrence_rule']!,
+          _recurrenceRuleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('custom_days_json')) {
+      context.handle(
+        _customDaysJsonMeta,
+        customDaysJson.isAcceptableOrUnknown(
+          data['custom_days_json']!,
+          _customDaysJsonMeta,
+        ),
+      );
+    }
+    if (data.containsKey('local_time')) {
+      context.handle(
+        _localTimeMeta,
+        localTime.isAcceptableOrUnknown(data['local_time']!, _localTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_localTimeMeta);
+    }
+    if (data.containsKey('timezone_policy')) {
+      context.handle(
+        _timezonePolicyMeta,
+        timezonePolicy.isAcceptableOrUnknown(
+          data['timezone_policy']!,
+          _timezonePolicyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_policy')) {
+      context.handle(
+        _reminderPolicyMeta,
+        reminderPolicy.isAcceptableOrUnknown(
+          data['reminder_policy']!,
+          _reminderPolicyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('check_in_policy')) {
+      context.handle(
+        _checkInPolicyMeta,
+        checkInPolicy.isAcceptableOrUnknown(
+          data['check_in_policy']!,
+          _checkInPolicyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('revision')) {
+      context.handle(
+        _revisionMeta,
+        revision.isAcceptableOrUnknown(data['revision']!, _revisionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlanDefinition map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlanDefinition(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      sourceThoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_thought_id'],
+      ),
+      sourceTaskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_task_id'],
+      ),
+      activityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}activity_type'],
+      )!,
+      targetMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_minutes'],
+      ),
+      expectedDurationMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expected_duration_minutes'],
+      ),
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}end_date'],
+      )!,
+      recurrenceRule: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recurrence_rule'],
+      )!,
+      customDaysJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}custom_days_json'],
+      ),
+      localTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}local_time'],
+      )!,
+      timezonePolicy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}timezone_policy'],
+      )!,
+      reminderPolicy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reminder_policy'],
+      )!,
+      checkInPolicy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}check_in_policy'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      revision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revision'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PlanDefinitionTableTable createAlias(String alias) {
+    return $PlanDefinitionTableTable(attachedDatabase, alias);
+  }
+}
+
+class PlanDefinition extends DataClass implements Insertable<PlanDefinition> {
+  /// Stable unique identifier (e.g. 'plan_...').
+  final String id;
+
+  /// Short title for the plan / routine (1 to 300 characters).
+  final String title;
+
+  /// Optional source thought FK.
+  final int? sourceThoughtId;
+
+  /// Optional source task FK if promoted from an existing standalone activity.
+  final int? sourceTaskId;
+
+  /// Activity classification: 'todo', 'timer', 'flexible'.
+  final String activityType;
+
+  /// Target timer duration in minutes if [activityType] == 'timer'.
+  final int? targetMinutes;
+
+  /// Expected duration in minutes (used for calculating check-in window without forcing a timer).
+  final int? expectedDurationMinutes;
+
+  /// Start date in 'YYYY-MM-DD'.
+  final String startDate;
+
+  /// Inclusive end date in 'YYYY-MM-DD'.
+  final String endDate;
+
+  /// Recurrence rule: 'once', 'daily', 'weekdays', 'custom_days'.
+  final String recurrenceRule;
+
+  /// JSON array of integer weekdays (1=Mon..7=Sun) for 'custom_days'.
+  final String? customDaysJson;
+
+  /// Local time of day in 'HH:mm' format (e.g. '07:00').
+  final String localTime;
+
+  /// Timezone policy: 'device_local' (recommended) or specific IANA timezone identifier.
+  final String timezonePolicy;
+
+  /// Reminder policy: 'at_start', 'none'.
+  final String reminderPolicy;
+
+  /// Check-in follow-up policy: 'off', 'once', 'gentle'.
+  final String checkInPolicy;
+
+  /// Lifecycle status: 'active', 'paused', 'ended'.
+  final String status;
+
+  /// Revision counter for optimistic concurrency and cache invalidation.
+  final int revision;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const PlanDefinition({
+    required this.id,
+    required this.title,
+    this.sourceThoughtId,
+    this.sourceTaskId,
+    required this.activityType,
+    this.targetMinutes,
+    this.expectedDurationMinutes,
+    required this.startDate,
+    required this.endDate,
+    required this.recurrenceRule,
+    this.customDaysJson,
+    required this.localTime,
+    required this.timezonePolicy,
+    required this.reminderPolicy,
+    required this.checkInPolicy,
+    required this.status,
+    required this.revision,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || sourceThoughtId != null) {
+      map['source_thought_id'] = Variable<int>(sourceThoughtId);
+    }
+    if (!nullToAbsent || sourceTaskId != null) {
+      map['source_task_id'] = Variable<int>(sourceTaskId);
+    }
+    map['activity_type'] = Variable<String>(activityType);
+    if (!nullToAbsent || targetMinutes != null) {
+      map['target_minutes'] = Variable<int>(targetMinutes);
+    }
+    if (!nullToAbsent || expectedDurationMinutes != null) {
+      map['expected_duration_minutes'] = Variable<int>(expectedDurationMinutes);
+    }
+    map['start_date'] = Variable<String>(startDate);
+    map['end_date'] = Variable<String>(endDate);
+    map['recurrence_rule'] = Variable<String>(recurrenceRule);
+    if (!nullToAbsent || customDaysJson != null) {
+      map['custom_days_json'] = Variable<String>(customDaysJson);
+    }
+    map['local_time'] = Variable<String>(localTime);
+    map['timezone_policy'] = Variable<String>(timezonePolicy);
+    map['reminder_policy'] = Variable<String>(reminderPolicy);
+    map['check_in_policy'] = Variable<String>(checkInPolicy);
+    map['status'] = Variable<String>(status);
+    map['revision'] = Variable<int>(revision);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PlanDefinitionTableCompanion toCompanion(bool nullToAbsent) {
+    return PlanDefinitionTableCompanion(
+      id: Value(id),
+      title: Value(title),
+      sourceThoughtId: sourceThoughtId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceThoughtId),
+      sourceTaskId: sourceTaskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceTaskId),
+      activityType: Value(activityType),
+      targetMinutes: targetMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetMinutes),
+      expectedDurationMinutes: expectedDurationMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(expectedDurationMinutes),
+      startDate: Value(startDate),
+      endDate: Value(endDate),
+      recurrenceRule: Value(recurrenceRule),
+      customDaysJson: customDaysJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customDaysJson),
+      localTime: Value(localTime),
+      timezonePolicy: Value(timezonePolicy),
+      reminderPolicy: Value(reminderPolicy),
+      checkInPolicy: Value(checkInPolicy),
+      status: Value(status),
+      revision: Value(revision),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PlanDefinition.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlanDefinition(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      sourceThoughtId: serializer.fromJson<int?>(json['sourceThoughtId']),
+      sourceTaskId: serializer.fromJson<int?>(json['sourceTaskId']),
+      activityType: serializer.fromJson<String>(json['activityType']),
+      targetMinutes: serializer.fromJson<int?>(json['targetMinutes']),
+      expectedDurationMinutes: serializer.fromJson<int?>(
+        json['expectedDurationMinutes'],
+      ),
+      startDate: serializer.fromJson<String>(json['startDate']),
+      endDate: serializer.fromJson<String>(json['endDate']),
+      recurrenceRule: serializer.fromJson<String>(json['recurrenceRule']),
+      customDaysJson: serializer.fromJson<String?>(json['customDaysJson']),
+      localTime: serializer.fromJson<String>(json['localTime']),
+      timezonePolicy: serializer.fromJson<String>(json['timezonePolicy']),
+      reminderPolicy: serializer.fromJson<String>(json['reminderPolicy']),
+      checkInPolicy: serializer.fromJson<String>(json['checkInPolicy']),
+      status: serializer.fromJson<String>(json['status']),
+      revision: serializer.fromJson<int>(json['revision']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'sourceThoughtId': serializer.toJson<int?>(sourceThoughtId),
+      'sourceTaskId': serializer.toJson<int?>(sourceTaskId),
+      'activityType': serializer.toJson<String>(activityType),
+      'targetMinutes': serializer.toJson<int?>(targetMinutes),
+      'expectedDurationMinutes': serializer.toJson<int?>(
+        expectedDurationMinutes,
+      ),
+      'startDate': serializer.toJson<String>(startDate),
+      'endDate': serializer.toJson<String>(endDate),
+      'recurrenceRule': serializer.toJson<String>(recurrenceRule),
+      'customDaysJson': serializer.toJson<String?>(customDaysJson),
+      'localTime': serializer.toJson<String>(localTime),
+      'timezonePolicy': serializer.toJson<String>(timezonePolicy),
+      'reminderPolicy': serializer.toJson<String>(reminderPolicy),
+      'checkInPolicy': serializer.toJson<String>(checkInPolicy),
+      'status': serializer.toJson<String>(status),
+      'revision': serializer.toJson<int>(revision),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PlanDefinition copyWith({
+    String? id,
+    String? title,
+    Value<int?> sourceThoughtId = const Value.absent(),
+    Value<int?> sourceTaskId = const Value.absent(),
+    String? activityType,
+    Value<int?> targetMinutes = const Value.absent(),
+    Value<int?> expectedDurationMinutes = const Value.absent(),
+    String? startDate,
+    String? endDate,
+    String? recurrenceRule,
+    Value<String?> customDaysJson = const Value.absent(),
+    String? localTime,
+    String? timezonePolicy,
+    String? reminderPolicy,
+    String? checkInPolicy,
+    String? status,
+    int? revision,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => PlanDefinition(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    sourceThoughtId: sourceThoughtId.present
+        ? sourceThoughtId.value
+        : this.sourceThoughtId,
+    sourceTaskId: sourceTaskId.present ? sourceTaskId.value : this.sourceTaskId,
+    activityType: activityType ?? this.activityType,
+    targetMinutes: targetMinutes.present
+        ? targetMinutes.value
+        : this.targetMinutes,
+    expectedDurationMinutes: expectedDurationMinutes.present
+        ? expectedDurationMinutes.value
+        : this.expectedDurationMinutes,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate ?? this.endDate,
+    recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+    customDaysJson: customDaysJson.present
+        ? customDaysJson.value
+        : this.customDaysJson,
+    localTime: localTime ?? this.localTime,
+    timezonePolicy: timezonePolicy ?? this.timezonePolicy,
+    reminderPolicy: reminderPolicy ?? this.reminderPolicy,
+    checkInPolicy: checkInPolicy ?? this.checkInPolicy,
+    status: status ?? this.status,
+    revision: revision ?? this.revision,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PlanDefinition copyWithCompanion(PlanDefinitionTableCompanion data) {
+    return PlanDefinition(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      sourceThoughtId: data.sourceThoughtId.present
+          ? data.sourceThoughtId.value
+          : this.sourceThoughtId,
+      sourceTaskId: data.sourceTaskId.present
+          ? data.sourceTaskId.value
+          : this.sourceTaskId,
+      activityType: data.activityType.present
+          ? data.activityType.value
+          : this.activityType,
+      targetMinutes: data.targetMinutes.present
+          ? data.targetMinutes.value
+          : this.targetMinutes,
+      expectedDurationMinutes: data.expectedDurationMinutes.present
+          ? data.expectedDurationMinutes.value
+          : this.expectedDurationMinutes,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      recurrenceRule: data.recurrenceRule.present
+          ? data.recurrenceRule.value
+          : this.recurrenceRule,
+      customDaysJson: data.customDaysJson.present
+          ? data.customDaysJson.value
+          : this.customDaysJson,
+      localTime: data.localTime.present ? data.localTime.value : this.localTime,
+      timezonePolicy: data.timezonePolicy.present
+          ? data.timezonePolicy.value
+          : this.timezonePolicy,
+      reminderPolicy: data.reminderPolicy.present
+          ? data.reminderPolicy.value
+          : this.reminderPolicy,
+      checkInPolicy: data.checkInPolicy.present
+          ? data.checkInPolicy.value
+          : this.checkInPolicy,
+      status: data.status.present ? data.status.value : this.status,
+      revision: data.revision.present ? data.revision.value : this.revision,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanDefinition(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('sourceThoughtId: $sourceThoughtId, ')
+          ..write('sourceTaskId: $sourceTaskId, ')
+          ..write('activityType: $activityType, ')
+          ..write('targetMinutes: $targetMinutes, ')
+          ..write('expectedDurationMinutes: $expectedDurationMinutes, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('recurrenceRule: $recurrenceRule, ')
+          ..write('customDaysJson: $customDaysJson, ')
+          ..write('localTime: $localTime, ')
+          ..write('timezonePolicy: $timezonePolicy, ')
+          ..write('reminderPolicy: $reminderPolicy, ')
+          ..write('checkInPolicy: $checkInPolicy, ')
+          ..write('status: $status, ')
+          ..write('revision: $revision, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    sourceThoughtId,
+    sourceTaskId,
+    activityType,
+    targetMinutes,
+    expectedDurationMinutes,
+    startDate,
+    endDate,
+    recurrenceRule,
+    customDaysJson,
+    localTime,
+    timezonePolicy,
+    reminderPolicy,
+    checkInPolicy,
+    status,
+    revision,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlanDefinition &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.sourceThoughtId == this.sourceThoughtId &&
+          other.sourceTaskId == this.sourceTaskId &&
+          other.activityType == this.activityType &&
+          other.targetMinutes == this.targetMinutes &&
+          other.expectedDurationMinutes == this.expectedDurationMinutes &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.recurrenceRule == this.recurrenceRule &&
+          other.customDaysJson == this.customDaysJson &&
+          other.localTime == this.localTime &&
+          other.timezonePolicy == this.timezonePolicy &&
+          other.reminderPolicy == this.reminderPolicy &&
+          other.checkInPolicy == this.checkInPolicy &&
+          other.status == this.status &&
+          other.revision == this.revision &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PlanDefinitionTableCompanion extends UpdateCompanion<PlanDefinition> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<int?> sourceThoughtId;
+  final Value<int?> sourceTaskId;
+  final Value<String> activityType;
+  final Value<int?> targetMinutes;
+  final Value<int?> expectedDurationMinutes;
+  final Value<String> startDate;
+  final Value<String> endDate;
+  final Value<String> recurrenceRule;
+  final Value<String?> customDaysJson;
+  final Value<String> localTime;
+  final Value<String> timezonePolicy;
+  final Value<String> reminderPolicy;
+  final Value<String> checkInPolicy;
+  final Value<String> status;
+  final Value<int> revision;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PlanDefinitionTableCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.sourceThoughtId = const Value.absent(),
+    this.sourceTaskId = const Value.absent(),
+    this.activityType = const Value.absent(),
+    this.targetMinutes = const Value.absent(),
+    this.expectedDurationMinutes = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.recurrenceRule = const Value.absent(),
+    this.customDaysJson = const Value.absent(),
+    this.localTime = const Value.absent(),
+    this.timezonePolicy = const Value.absent(),
+    this.reminderPolicy = const Value.absent(),
+    this.checkInPolicy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlanDefinitionTableCompanion.insert({
+    required String id,
+    required String title,
+    this.sourceThoughtId = const Value.absent(),
+    this.sourceTaskId = const Value.absent(),
+    this.activityType = const Value.absent(),
+    this.targetMinutes = const Value.absent(),
+    this.expectedDurationMinutes = const Value.absent(),
+    required String startDate,
+    required String endDate,
+    this.recurrenceRule = const Value.absent(),
+    this.customDaysJson = const Value.absent(),
+    required String localTime,
+    this.timezonePolicy = const Value.absent(),
+    this.reminderPolicy = const Value.absent(),
+    this.checkInPolicy = const Value.absent(),
+    this.status = const Value.absent(),
+    this.revision = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       title = Value(title),
+       startDate = Value(startDate),
+       endDate = Value(endDate),
+       localTime = Value(localTime);
+  static Insertable<PlanDefinition> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<int>? sourceThoughtId,
+    Expression<int>? sourceTaskId,
+    Expression<String>? activityType,
+    Expression<int>? targetMinutes,
+    Expression<int>? expectedDurationMinutes,
+    Expression<String>? startDate,
+    Expression<String>? endDate,
+    Expression<String>? recurrenceRule,
+    Expression<String>? customDaysJson,
+    Expression<String>? localTime,
+    Expression<String>? timezonePolicy,
+    Expression<String>? reminderPolicy,
+    Expression<String>? checkInPolicy,
+    Expression<String>? status,
+    Expression<int>? revision,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (sourceThoughtId != null) 'source_thought_id': sourceThoughtId,
+      if (sourceTaskId != null) 'source_task_id': sourceTaskId,
+      if (activityType != null) 'activity_type': activityType,
+      if (targetMinutes != null) 'target_minutes': targetMinutes,
+      if (expectedDurationMinutes != null)
+        'expected_duration_minutes': expectedDurationMinutes,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (recurrenceRule != null) 'recurrence_rule': recurrenceRule,
+      if (customDaysJson != null) 'custom_days_json': customDaysJson,
+      if (localTime != null) 'local_time': localTime,
+      if (timezonePolicy != null) 'timezone_policy': timezonePolicy,
+      if (reminderPolicy != null) 'reminder_policy': reminderPolicy,
+      if (checkInPolicy != null) 'check_in_policy': checkInPolicy,
+      if (status != null) 'status': status,
+      if (revision != null) 'revision': revision,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlanDefinitionTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<int?>? sourceThoughtId,
+    Value<int?>? sourceTaskId,
+    Value<String>? activityType,
+    Value<int?>? targetMinutes,
+    Value<int?>? expectedDurationMinutes,
+    Value<String>? startDate,
+    Value<String>? endDate,
+    Value<String>? recurrenceRule,
+    Value<String?>? customDaysJson,
+    Value<String>? localTime,
+    Value<String>? timezonePolicy,
+    Value<String>? reminderPolicy,
+    Value<String>? checkInPolicy,
+    Value<String>? status,
+    Value<int>? revision,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return PlanDefinitionTableCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      sourceThoughtId: sourceThoughtId ?? this.sourceThoughtId,
+      sourceTaskId: sourceTaskId ?? this.sourceTaskId,
+      activityType: activityType ?? this.activityType,
+      targetMinutes: targetMinutes ?? this.targetMinutes,
+      expectedDurationMinutes:
+          expectedDurationMinutes ?? this.expectedDurationMinutes,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      recurrenceRule: recurrenceRule ?? this.recurrenceRule,
+      customDaysJson: customDaysJson ?? this.customDaysJson,
+      localTime: localTime ?? this.localTime,
+      timezonePolicy: timezonePolicy ?? this.timezonePolicy,
+      reminderPolicy: reminderPolicy ?? this.reminderPolicy,
+      checkInPolicy: checkInPolicy ?? this.checkInPolicy,
+      status: status ?? this.status,
+      revision: revision ?? this.revision,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (sourceThoughtId.present) {
+      map['source_thought_id'] = Variable<int>(sourceThoughtId.value);
+    }
+    if (sourceTaskId.present) {
+      map['source_task_id'] = Variable<int>(sourceTaskId.value);
+    }
+    if (activityType.present) {
+      map['activity_type'] = Variable<String>(activityType.value);
+    }
+    if (targetMinutes.present) {
+      map['target_minutes'] = Variable<int>(targetMinutes.value);
+    }
+    if (expectedDurationMinutes.present) {
+      map['expected_duration_minutes'] = Variable<int>(
+        expectedDurationMinutes.value,
+      );
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<String>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<String>(endDate.value);
+    }
+    if (recurrenceRule.present) {
+      map['recurrence_rule'] = Variable<String>(recurrenceRule.value);
+    }
+    if (customDaysJson.present) {
+      map['custom_days_json'] = Variable<String>(customDaysJson.value);
+    }
+    if (localTime.present) {
+      map['local_time'] = Variable<String>(localTime.value);
+    }
+    if (timezonePolicy.present) {
+      map['timezone_policy'] = Variable<String>(timezonePolicy.value);
+    }
+    if (reminderPolicy.present) {
+      map['reminder_policy'] = Variable<String>(reminderPolicy.value);
+    }
+    if (checkInPolicy.present) {
+      map['check_in_policy'] = Variable<String>(checkInPolicy.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (revision.present) {
+      map['revision'] = Variable<int>(revision.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanDefinitionTableCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('sourceThoughtId: $sourceThoughtId, ')
+          ..write('sourceTaskId: $sourceTaskId, ')
+          ..write('activityType: $activityType, ')
+          ..write('targetMinutes: $targetMinutes, ')
+          ..write('expectedDurationMinutes: $expectedDurationMinutes, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('recurrenceRule: $recurrenceRule, ')
+          ..write('customDaysJson: $customDaysJson, ')
+          ..write('localTime: $localTime, ')
+          ..write('timezonePolicy: $timezonePolicy, ')
+          ..write('reminderPolicy: $reminderPolicy, ')
+          ..write('checkInPolicy: $checkInPolicy, ')
+          ..write('status: $status, ')
+          ..write('revision: $revision, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlanOccurrenceTableTable extends PlanOccurrenceTable
+    with TableInfo<$PlanOccurrenceTableTable, PlanOccurrence> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlanOccurrenceTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _planIdMeta = const VerificationMeta('planId');
+  @override
+  late final GeneratedColumn<String> planId = GeneratedColumn<String>(
+    'plan_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plan_definitions (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _eligibleLocalDateMeta = const VerificationMeta(
+    'eligibleLocalDate',
+  );
+  @override
+  late final GeneratedColumn<String> eligibleLocalDate =
+      GeneratedColumn<String>(
+        'eligible_local_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _slotIndexMeta = const VerificationMeta(
+    'slotIndex',
+  );
+  @override
+  late final GeneratedColumn<int> slotIndex = GeneratedColumn<int>(
+    'slot_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _definitionRevisionMeta =
+      const VerificationMeta('definitionRevision');
+  @override
+  late final GeneratedColumn<int> definitionRevision = GeneratedColumn<int>(
+    'definition_revision',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _scheduledStartTimeMeta =
+      const VerificationMeta('scheduledStartTime');
+  @override
+  late final GeneratedColumn<DateTime> scheduledStartTime =
+      GeneratedColumn<DateTime>(
+        'scheduled_start_time',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _scheduledEndTimeMeta = const VerificationMeta(
+    'scheduledEndTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> scheduledEndTime =
+      GeneratedColumn<DateTime>(
+        'scheduled_end_time',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _closeTimeMeta = const VerificationMeta(
+    'closeTime',
+  );
+  @override
+  late final GeneratedColumn<DateTime> closeTime = GeneratedColumn<DateTime>(
+    'close_time',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _linkedTaskIdMeta = const VerificationMeta(
+    'linkedTaskId',
+  );
+  @override
+  late final GeneratedColumn<int> linkedTaskId = GeneratedColumn<int>(
+    'linked_task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tasks (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _outcomeMeta = const VerificationMeta(
+    'outcome',
+  );
+  @override
+  late final GeneratedColumn<String> outcome = GeneratedColumn<String>(
+    'outcome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('scheduled'),
+  );
+  static const VerificationMeta _answeredAtMeta = const VerificationMeta(
+    'answeredAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> answeredAt = GeneratedColumn<DateTime>(
+    'answered_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _completedAtMeta = const VerificationMeta(
+    'completedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> completedAt = GeneratedColumn<DateTime>(
+    'completed_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    planId,
+    eligibleLocalDate,
+    slotIndex,
+    definitionRevision,
+    scheduledStartTime,
+    scheduledEndTime,
+    closeTime,
+    linkedTaskId,
+    outcome,
+    answeredAt,
+    completedAt,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'plan_occurrences';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PlanOccurrence> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('plan_id')) {
+      context.handle(
+        _planIdMeta,
+        planId.isAcceptableOrUnknown(data['plan_id']!, _planIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_planIdMeta);
+    }
+    if (data.containsKey('eligible_local_date')) {
+      context.handle(
+        _eligibleLocalDateMeta,
+        eligibleLocalDate.isAcceptableOrUnknown(
+          data['eligible_local_date']!,
+          _eligibleLocalDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_eligibleLocalDateMeta);
+    }
+    if (data.containsKey('slot_index')) {
+      context.handle(
+        _slotIndexMeta,
+        slotIndex.isAcceptableOrUnknown(data['slot_index']!, _slotIndexMeta),
+      );
+    }
+    if (data.containsKey('definition_revision')) {
+      context.handle(
+        _definitionRevisionMeta,
+        definitionRevision.isAcceptableOrUnknown(
+          data['definition_revision']!,
+          _definitionRevisionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scheduled_start_time')) {
+      context.handle(
+        _scheduledStartTimeMeta,
+        scheduledStartTime.isAcceptableOrUnknown(
+          data['scheduled_start_time']!,
+          _scheduledStartTimeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_scheduledStartTimeMeta);
+    }
+    if (data.containsKey('scheduled_end_time')) {
+      context.handle(
+        _scheduledEndTimeMeta,
+        scheduledEndTime.isAcceptableOrUnknown(
+          data['scheduled_end_time']!,
+          _scheduledEndTimeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('close_time')) {
+      context.handle(
+        _closeTimeMeta,
+        closeTime.isAcceptableOrUnknown(data['close_time']!, _closeTimeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_closeTimeMeta);
+    }
+    if (data.containsKey('linked_task_id')) {
+      context.handle(
+        _linkedTaskIdMeta,
+        linkedTaskId.isAcceptableOrUnknown(
+          data['linked_task_id']!,
+          _linkedTaskIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('outcome')) {
+      context.handle(
+        _outcomeMeta,
+        outcome.isAcceptableOrUnknown(data['outcome']!, _outcomeMeta),
+      );
+    }
+    if (data.containsKey('answered_at')) {
+      context.handle(
+        _answeredAtMeta,
+        answeredAt.isAcceptableOrUnknown(data['answered_at']!, _answeredAtMeta),
+      );
+    }
+    if (data.containsKey('completed_at')) {
+      context.handle(
+        _completedAtMeta,
+        completedAt.isAcceptableOrUnknown(
+          data['completed_at']!,
+          _completedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {planId, eligibleLocalDate, slotIndex},
+  ];
+  @override
+  PlanOccurrence map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlanOccurrence(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      planId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plan_id'],
+      )!,
+      eligibleLocalDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}eligible_local_date'],
+      )!,
+      slotIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}slot_index'],
+      )!,
+      definitionRevision: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}definition_revision'],
+      )!,
+      scheduledStartTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_start_time'],
+      )!,
+      scheduledEndTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}scheduled_end_time'],
+      ),
+      closeTime: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}close_time'],
+      )!,
+      linkedTaskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}linked_task_id'],
+      ),
+      outcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outcome'],
+      )!,
+      answeredAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}answered_at'],
+      ),
+      completedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}completed_at'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PlanOccurrenceTableTable createAlias(String alias) {
+    return $PlanOccurrenceTableTable(attachedDatabase, alias);
+  }
+}
+
+class PlanOccurrence extends DataClass implements Insertable<PlanOccurrence> {
+  /// Stable unique occurrence ID (e.g. 'occ_<planId>_<date>_<slotIndex>').
+  final String id;
+
+  /// Parent plan reference.
+  final String planId;
+
+  /// Eligible calendar date string 'YYYY-MM-DD'.
+  final String eligibleLocalDate;
+
+  /// Slot index for daily multi-slot routines (default 0).
+  final int slotIndex;
+
+  /// Definition revision snapshot under which this occurrence was generated.
+  final int definitionRevision;
+
+  /// Exact scheduled start timestamp.
+  final DateTime scheduledStartTime;
+
+  /// Optional scheduled end timestamp.
+  final DateTime? scheduledEndTime;
+
+  /// Cutoff timestamp after which the session is marked 'not_confirmed'.
+  final DateTime closeTime;
+
+  /// Optional linked Todo task for this occurrence.
+  final int? linkedTaskId;
+
+  /// Outcome: 'scheduled', 'done', 'skipped', 'not_confirmed'.
+  final String outcome;
+
+  /// Timestamp when check-in or user action answered this occurrence.
+  final DateTime? answeredAt;
+
+  /// Timestamp when the task or occurrence was completed.
+  final DateTime? completedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const PlanOccurrence({
+    required this.id,
+    required this.planId,
+    required this.eligibleLocalDate,
+    required this.slotIndex,
+    required this.definitionRevision,
+    required this.scheduledStartTime,
+    this.scheduledEndTime,
+    required this.closeTime,
+    this.linkedTaskId,
+    required this.outcome,
+    this.answeredAt,
+    this.completedAt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['plan_id'] = Variable<String>(planId);
+    map['eligible_local_date'] = Variable<String>(eligibleLocalDate);
+    map['slot_index'] = Variable<int>(slotIndex);
+    map['definition_revision'] = Variable<int>(definitionRevision);
+    map['scheduled_start_time'] = Variable<DateTime>(scheduledStartTime);
+    if (!nullToAbsent || scheduledEndTime != null) {
+      map['scheduled_end_time'] = Variable<DateTime>(scheduledEndTime);
+    }
+    map['close_time'] = Variable<DateTime>(closeTime);
+    if (!nullToAbsent || linkedTaskId != null) {
+      map['linked_task_id'] = Variable<int>(linkedTaskId);
+    }
+    map['outcome'] = Variable<String>(outcome);
+    if (!nullToAbsent || answeredAt != null) {
+      map['answered_at'] = Variable<DateTime>(answeredAt);
+    }
+    if (!nullToAbsent || completedAt != null) {
+      map['completed_at'] = Variable<DateTime>(completedAt);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PlanOccurrenceTableCompanion toCompanion(bool nullToAbsent) {
+    return PlanOccurrenceTableCompanion(
+      id: Value(id),
+      planId: Value(planId),
+      eligibleLocalDate: Value(eligibleLocalDate),
+      slotIndex: Value(slotIndex),
+      definitionRevision: Value(definitionRevision),
+      scheduledStartTime: Value(scheduledStartTime),
+      scheduledEndTime: scheduledEndTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scheduledEndTime),
+      closeTime: Value(closeTime),
+      linkedTaskId: linkedTaskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkedTaskId),
+      outcome: Value(outcome),
+      answeredAt: answeredAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(answeredAt),
+      completedAt: completedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(completedAt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PlanOccurrence.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlanOccurrence(
+      id: serializer.fromJson<String>(json['id']),
+      planId: serializer.fromJson<String>(json['planId']),
+      eligibleLocalDate: serializer.fromJson<String>(json['eligibleLocalDate']),
+      slotIndex: serializer.fromJson<int>(json['slotIndex']),
+      definitionRevision: serializer.fromJson<int>(json['definitionRevision']),
+      scheduledStartTime: serializer.fromJson<DateTime>(
+        json['scheduledStartTime'],
+      ),
+      scheduledEndTime: serializer.fromJson<DateTime?>(
+        json['scheduledEndTime'],
+      ),
+      closeTime: serializer.fromJson<DateTime>(json['closeTime']),
+      linkedTaskId: serializer.fromJson<int?>(json['linkedTaskId']),
+      outcome: serializer.fromJson<String>(json['outcome']),
+      answeredAt: serializer.fromJson<DateTime?>(json['answeredAt']),
+      completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'planId': serializer.toJson<String>(planId),
+      'eligibleLocalDate': serializer.toJson<String>(eligibleLocalDate),
+      'slotIndex': serializer.toJson<int>(slotIndex),
+      'definitionRevision': serializer.toJson<int>(definitionRevision),
+      'scheduledStartTime': serializer.toJson<DateTime>(scheduledStartTime),
+      'scheduledEndTime': serializer.toJson<DateTime?>(scheduledEndTime),
+      'closeTime': serializer.toJson<DateTime>(closeTime),
+      'linkedTaskId': serializer.toJson<int?>(linkedTaskId),
+      'outcome': serializer.toJson<String>(outcome),
+      'answeredAt': serializer.toJson<DateTime?>(answeredAt),
+      'completedAt': serializer.toJson<DateTime?>(completedAt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PlanOccurrence copyWith({
+    String? id,
+    String? planId,
+    String? eligibleLocalDate,
+    int? slotIndex,
+    int? definitionRevision,
+    DateTime? scheduledStartTime,
+    Value<DateTime?> scheduledEndTime = const Value.absent(),
+    DateTime? closeTime,
+    Value<int?> linkedTaskId = const Value.absent(),
+    String? outcome,
+    Value<DateTime?> answeredAt = const Value.absent(),
+    Value<DateTime?> completedAt = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => PlanOccurrence(
+    id: id ?? this.id,
+    planId: planId ?? this.planId,
+    eligibleLocalDate: eligibleLocalDate ?? this.eligibleLocalDate,
+    slotIndex: slotIndex ?? this.slotIndex,
+    definitionRevision: definitionRevision ?? this.definitionRevision,
+    scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
+    scheduledEndTime: scheduledEndTime.present
+        ? scheduledEndTime.value
+        : this.scheduledEndTime,
+    closeTime: closeTime ?? this.closeTime,
+    linkedTaskId: linkedTaskId.present ? linkedTaskId.value : this.linkedTaskId,
+    outcome: outcome ?? this.outcome,
+    answeredAt: answeredAt.present ? answeredAt.value : this.answeredAt,
+    completedAt: completedAt.present ? completedAt.value : this.completedAt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PlanOccurrence copyWithCompanion(PlanOccurrenceTableCompanion data) {
+    return PlanOccurrence(
+      id: data.id.present ? data.id.value : this.id,
+      planId: data.planId.present ? data.planId.value : this.planId,
+      eligibleLocalDate: data.eligibleLocalDate.present
+          ? data.eligibleLocalDate.value
+          : this.eligibleLocalDate,
+      slotIndex: data.slotIndex.present ? data.slotIndex.value : this.slotIndex,
+      definitionRevision: data.definitionRevision.present
+          ? data.definitionRevision.value
+          : this.definitionRevision,
+      scheduledStartTime: data.scheduledStartTime.present
+          ? data.scheduledStartTime.value
+          : this.scheduledStartTime,
+      scheduledEndTime: data.scheduledEndTime.present
+          ? data.scheduledEndTime.value
+          : this.scheduledEndTime,
+      closeTime: data.closeTime.present ? data.closeTime.value : this.closeTime,
+      linkedTaskId: data.linkedTaskId.present
+          ? data.linkedTaskId.value
+          : this.linkedTaskId,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      answeredAt: data.answeredAt.present
+          ? data.answeredAt.value
+          : this.answeredAt,
+      completedAt: data.completedAt.present
+          ? data.completedAt.value
+          : this.completedAt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanOccurrence(')
+          ..write('id: $id, ')
+          ..write('planId: $planId, ')
+          ..write('eligibleLocalDate: $eligibleLocalDate, ')
+          ..write('slotIndex: $slotIndex, ')
+          ..write('definitionRevision: $definitionRevision, ')
+          ..write('scheduledStartTime: $scheduledStartTime, ')
+          ..write('scheduledEndTime: $scheduledEndTime, ')
+          ..write('closeTime: $closeTime, ')
+          ..write('linkedTaskId: $linkedTaskId, ')
+          ..write('outcome: $outcome, ')
+          ..write('answeredAt: $answeredAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    planId,
+    eligibleLocalDate,
+    slotIndex,
+    definitionRevision,
+    scheduledStartTime,
+    scheduledEndTime,
+    closeTime,
+    linkedTaskId,
+    outcome,
+    answeredAt,
+    completedAt,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlanOccurrence &&
+          other.id == this.id &&
+          other.planId == this.planId &&
+          other.eligibleLocalDate == this.eligibleLocalDate &&
+          other.slotIndex == this.slotIndex &&
+          other.definitionRevision == this.definitionRevision &&
+          other.scheduledStartTime == this.scheduledStartTime &&
+          other.scheduledEndTime == this.scheduledEndTime &&
+          other.closeTime == this.closeTime &&
+          other.linkedTaskId == this.linkedTaskId &&
+          other.outcome == this.outcome &&
+          other.answeredAt == this.answeredAt &&
+          other.completedAt == this.completedAt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PlanOccurrenceTableCompanion extends UpdateCompanion<PlanOccurrence> {
+  final Value<String> id;
+  final Value<String> planId;
+  final Value<String> eligibleLocalDate;
+  final Value<int> slotIndex;
+  final Value<int> definitionRevision;
+  final Value<DateTime> scheduledStartTime;
+  final Value<DateTime?> scheduledEndTime;
+  final Value<DateTime> closeTime;
+  final Value<int?> linkedTaskId;
+  final Value<String> outcome;
+  final Value<DateTime?> answeredAt;
+  final Value<DateTime?> completedAt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const PlanOccurrenceTableCompanion({
+    this.id = const Value.absent(),
+    this.planId = const Value.absent(),
+    this.eligibleLocalDate = const Value.absent(),
+    this.slotIndex = const Value.absent(),
+    this.definitionRevision = const Value.absent(),
+    this.scheduledStartTime = const Value.absent(),
+    this.scheduledEndTime = const Value.absent(),
+    this.closeTime = const Value.absent(),
+    this.linkedTaskId = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.answeredAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlanOccurrenceTableCompanion.insert({
+    required String id,
+    required String planId,
+    required String eligibleLocalDate,
+    this.slotIndex = const Value.absent(),
+    this.definitionRevision = const Value.absent(),
+    required DateTime scheduledStartTime,
+    this.scheduledEndTime = const Value.absent(),
+    required DateTime closeTime,
+    this.linkedTaskId = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.answeredAt = const Value.absent(),
+    this.completedAt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       planId = Value(planId),
+       eligibleLocalDate = Value(eligibleLocalDate),
+       scheduledStartTime = Value(scheduledStartTime),
+       closeTime = Value(closeTime);
+  static Insertable<PlanOccurrence> custom({
+    Expression<String>? id,
+    Expression<String>? planId,
+    Expression<String>? eligibleLocalDate,
+    Expression<int>? slotIndex,
+    Expression<int>? definitionRevision,
+    Expression<DateTime>? scheduledStartTime,
+    Expression<DateTime>? scheduledEndTime,
+    Expression<DateTime>? closeTime,
+    Expression<int>? linkedTaskId,
+    Expression<String>? outcome,
+    Expression<DateTime>? answeredAt,
+    Expression<DateTime>? completedAt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (planId != null) 'plan_id': planId,
+      if (eligibleLocalDate != null) 'eligible_local_date': eligibleLocalDate,
+      if (slotIndex != null) 'slot_index': slotIndex,
+      if (definitionRevision != null) 'definition_revision': definitionRevision,
+      if (scheduledStartTime != null)
+        'scheduled_start_time': scheduledStartTime,
+      if (scheduledEndTime != null) 'scheduled_end_time': scheduledEndTime,
+      if (closeTime != null) 'close_time': closeTime,
+      if (linkedTaskId != null) 'linked_task_id': linkedTaskId,
+      if (outcome != null) 'outcome': outcome,
+      if (answeredAt != null) 'answered_at': answeredAt,
+      if (completedAt != null) 'completed_at': completedAt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlanOccurrenceTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? planId,
+    Value<String>? eligibleLocalDate,
+    Value<int>? slotIndex,
+    Value<int>? definitionRevision,
+    Value<DateTime>? scheduledStartTime,
+    Value<DateTime?>? scheduledEndTime,
+    Value<DateTime>? closeTime,
+    Value<int?>? linkedTaskId,
+    Value<String>? outcome,
+    Value<DateTime?>? answeredAt,
+    Value<DateTime?>? completedAt,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return PlanOccurrenceTableCompanion(
+      id: id ?? this.id,
+      planId: planId ?? this.planId,
+      eligibleLocalDate: eligibleLocalDate ?? this.eligibleLocalDate,
+      slotIndex: slotIndex ?? this.slotIndex,
+      definitionRevision: definitionRevision ?? this.definitionRevision,
+      scheduledStartTime: scheduledStartTime ?? this.scheduledStartTime,
+      scheduledEndTime: scheduledEndTime ?? this.scheduledEndTime,
+      closeTime: closeTime ?? this.closeTime,
+      linkedTaskId: linkedTaskId ?? this.linkedTaskId,
+      outcome: outcome ?? this.outcome,
+      answeredAt: answeredAt ?? this.answeredAt,
+      completedAt: completedAt ?? this.completedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (planId.present) {
+      map['plan_id'] = Variable<String>(planId.value);
+    }
+    if (eligibleLocalDate.present) {
+      map['eligible_local_date'] = Variable<String>(eligibleLocalDate.value);
+    }
+    if (slotIndex.present) {
+      map['slot_index'] = Variable<int>(slotIndex.value);
+    }
+    if (definitionRevision.present) {
+      map['definition_revision'] = Variable<int>(definitionRevision.value);
+    }
+    if (scheduledStartTime.present) {
+      map['scheduled_start_time'] = Variable<DateTime>(
+        scheduledStartTime.value,
+      );
+    }
+    if (scheduledEndTime.present) {
+      map['scheduled_end_time'] = Variable<DateTime>(scheduledEndTime.value);
+    }
+    if (closeTime.present) {
+      map['close_time'] = Variable<DateTime>(closeTime.value);
+    }
+    if (linkedTaskId.present) {
+      map['linked_task_id'] = Variable<int>(linkedTaskId.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(outcome.value);
+    }
+    if (answeredAt.present) {
+      map['answered_at'] = Variable<DateTime>(answeredAt.value);
+    }
+    if (completedAt.present) {
+      map['completed_at'] = Variable<DateTime>(completedAt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanOccurrenceTableCompanion(')
+          ..write('id: $id, ')
+          ..write('planId: $planId, ')
+          ..write('eligibleLocalDate: $eligibleLocalDate, ')
+          ..write('slotIndex: $slotIndex, ')
+          ..write('definitionRevision: $definitionRevision, ')
+          ..write('scheduledStartTime: $scheduledStartTime, ')
+          ..write('scheduledEndTime: $scheduledEndTime, ')
+          ..write('closeTime: $closeTime, ')
+          ..write('linkedTaskId: $linkedTaskId, ')
+          ..write('outcome: $outcome, ')
+          ..write('answeredAt: $answeredAt, ')
+          ..write('completedAt: $completedAt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $OccurrenceAlertLinkTableTable extends OccurrenceAlertLinkTable
+    with TableInfo<$OccurrenceAlertLinkTableTable, OccurrenceAlertLink> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OccurrenceAlertLinkTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _occurrenceIdMeta = const VerificationMeta(
+    'occurrenceId',
+  );
+  @override
+  late final GeneratedColumn<String> occurrenceId = GeneratedColumn<String>(
+    'occurrence_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plan_occurrences (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _reminderIdMeta = const VerificationMeta(
+    'reminderId',
+  );
+  @override
+  late final GeneratedColumn<int> reminderId = GeneratedColumn<int>(
+    'reminder_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES reminders (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+    'role',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _attemptIndexMeta = const VerificationMeta(
+    'attemptIndex',
+  );
+  @override
+  late final GeneratedColumn<int> attemptIndex = GeneratedColumn<int>(
+    'attempt_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _expectedVersionMeta = const VerificationMeta(
+    'expectedVersion',
+  );
+  @override
+  late final GeneratedColumn<int> expectedVersion = GeneratedColumn<int>(
+    'expected_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    occurrenceId,
+    reminderId,
+    role,
+    attemptIndex,
+    expectedVersion,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'occurrence_alert_links';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OccurrenceAlertLink> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('occurrence_id')) {
+      context.handle(
+        _occurrenceIdMeta,
+        occurrenceId.isAcceptableOrUnknown(
+          data['occurrence_id']!,
+          _occurrenceIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_occurrenceIdMeta);
+    }
+    if (data.containsKey('reminder_id')) {
+      context.handle(
+        _reminderIdMeta,
+        reminderId.isAcceptableOrUnknown(data['reminder_id']!, _reminderIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reminderIdMeta);
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+        _roleMeta,
+        role.isAcceptableOrUnknown(data['role']!, _roleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_roleMeta);
+    }
+    if (data.containsKey('attempt_index')) {
+      context.handle(
+        _attemptIndexMeta,
+        attemptIndex.isAcceptableOrUnknown(
+          data['attempt_index']!,
+          _attemptIndexMeta,
+        ),
+      );
+    }
+    if (data.containsKey('expected_version')) {
+      context.handle(
+        _expectedVersionMeta,
+        expectedVersion.isAcceptableOrUnknown(
+          data['expected_version']!,
+          _expectedVersionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OccurrenceAlertLink map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OccurrenceAlertLink(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      occurrenceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}occurrence_id'],
+      )!,
+      reminderId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_id'],
+      )!,
+      role: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}role'],
+      )!,
+      attemptIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}attempt_index'],
+      )!,
+      expectedVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}expected_version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $OccurrenceAlertLinkTableTable createAlias(String alias) {
+    return $OccurrenceAlertLinkTableTable(attachedDatabase, alias);
+  }
+}
+
+class OccurrenceAlertLink extends DataClass
+    implements Insertable<OccurrenceAlertLink> {
+  final int id;
+
+  /// Linked occurrence ID.
+  final String occurrenceId;
+
+  /// Linked reminder ID in ReminderTable.
+  final int reminderId;
+
+  /// Alert role: 'start', 'check_in'.
+  final String role;
+
+  /// Attempt index for gentle retries (0 = initial, 1 = +30m, 2 = +90m).
+  final int attemptIndex;
+
+  /// Revision version expected at scheduling time.
+  final int expectedVersion;
+  final DateTime createdAt;
+  const OccurrenceAlertLink({
+    required this.id,
+    required this.occurrenceId,
+    required this.reminderId,
+    required this.role,
+    required this.attemptIndex,
+    required this.expectedVersion,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['occurrence_id'] = Variable<String>(occurrenceId);
+    map['reminder_id'] = Variable<int>(reminderId);
+    map['role'] = Variable<String>(role);
+    map['attempt_index'] = Variable<int>(attemptIndex);
+    map['expected_version'] = Variable<int>(expectedVersion);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  OccurrenceAlertLinkTableCompanion toCompanion(bool nullToAbsent) {
+    return OccurrenceAlertLinkTableCompanion(
+      id: Value(id),
+      occurrenceId: Value(occurrenceId),
+      reminderId: Value(reminderId),
+      role: Value(role),
+      attemptIndex: Value(attemptIndex),
+      expectedVersion: Value(expectedVersion),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory OccurrenceAlertLink.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OccurrenceAlertLink(
+      id: serializer.fromJson<int>(json['id']),
+      occurrenceId: serializer.fromJson<String>(json['occurrenceId']),
+      reminderId: serializer.fromJson<int>(json['reminderId']),
+      role: serializer.fromJson<String>(json['role']),
+      attemptIndex: serializer.fromJson<int>(json['attemptIndex']),
+      expectedVersion: serializer.fromJson<int>(json['expectedVersion']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'occurrenceId': serializer.toJson<String>(occurrenceId),
+      'reminderId': serializer.toJson<int>(reminderId),
+      'role': serializer.toJson<String>(role),
+      'attemptIndex': serializer.toJson<int>(attemptIndex),
+      'expectedVersion': serializer.toJson<int>(expectedVersion),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  OccurrenceAlertLink copyWith({
+    int? id,
+    String? occurrenceId,
+    int? reminderId,
+    String? role,
+    int? attemptIndex,
+    int? expectedVersion,
+    DateTime? createdAt,
+  }) => OccurrenceAlertLink(
+    id: id ?? this.id,
+    occurrenceId: occurrenceId ?? this.occurrenceId,
+    reminderId: reminderId ?? this.reminderId,
+    role: role ?? this.role,
+    attemptIndex: attemptIndex ?? this.attemptIndex,
+    expectedVersion: expectedVersion ?? this.expectedVersion,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  OccurrenceAlertLink copyWithCompanion(
+    OccurrenceAlertLinkTableCompanion data,
+  ) {
+    return OccurrenceAlertLink(
+      id: data.id.present ? data.id.value : this.id,
+      occurrenceId: data.occurrenceId.present
+          ? data.occurrenceId.value
+          : this.occurrenceId,
+      reminderId: data.reminderId.present
+          ? data.reminderId.value
+          : this.reminderId,
+      role: data.role.present ? data.role.value : this.role,
+      attemptIndex: data.attemptIndex.present
+          ? data.attemptIndex.value
+          : this.attemptIndex,
+      expectedVersion: data.expectedVersion.present
+          ? data.expectedVersion.value
+          : this.expectedVersion,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OccurrenceAlertLink(')
+          ..write('id: $id, ')
+          ..write('occurrenceId: $occurrenceId, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('role: $role, ')
+          ..write('attemptIndex: $attemptIndex, ')
+          ..write('expectedVersion: $expectedVersion, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    occurrenceId,
+    reminderId,
+    role,
+    attemptIndex,
+    expectedVersion,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OccurrenceAlertLink &&
+          other.id == this.id &&
+          other.occurrenceId == this.occurrenceId &&
+          other.reminderId == this.reminderId &&
+          other.role == this.role &&
+          other.attemptIndex == this.attemptIndex &&
+          other.expectedVersion == this.expectedVersion &&
+          other.createdAt == this.createdAt);
+}
+
+class OccurrenceAlertLinkTableCompanion
+    extends UpdateCompanion<OccurrenceAlertLink> {
+  final Value<int> id;
+  final Value<String> occurrenceId;
+  final Value<int> reminderId;
+  final Value<String> role;
+  final Value<int> attemptIndex;
+  final Value<int> expectedVersion;
+  final Value<DateTime> createdAt;
+  const OccurrenceAlertLinkTableCompanion({
+    this.id = const Value.absent(),
+    this.occurrenceId = const Value.absent(),
+    this.reminderId = const Value.absent(),
+    this.role = const Value.absent(),
+    this.attemptIndex = const Value.absent(),
+    this.expectedVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  OccurrenceAlertLinkTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String occurrenceId,
+    required int reminderId,
+    required String role,
+    this.attemptIndex = const Value.absent(),
+    this.expectedVersion = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : occurrenceId = Value(occurrenceId),
+       reminderId = Value(reminderId),
+       role = Value(role);
+  static Insertable<OccurrenceAlertLink> custom({
+    Expression<int>? id,
+    Expression<String>? occurrenceId,
+    Expression<int>? reminderId,
+    Expression<String>? role,
+    Expression<int>? attemptIndex,
+    Expression<int>? expectedVersion,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (occurrenceId != null) 'occurrence_id': occurrenceId,
+      if (reminderId != null) 'reminder_id': reminderId,
+      if (role != null) 'role': role,
+      if (attemptIndex != null) 'attempt_index': attemptIndex,
+      if (expectedVersion != null) 'expected_version': expectedVersion,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  OccurrenceAlertLinkTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? occurrenceId,
+    Value<int>? reminderId,
+    Value<String>? role,
+    Value<int>? attemptIndex,
+    Value<int>? expectedVersion,
+    Value<DateTime>? createdAt,
+  }) {
+    return OccurrenceAlertLinkTableCompanion(
+      id: id ?? this.id,
+      occurrenceId: occurrenceId ?? this.occurrenceId,
+      reminderId: reminderId ?? this.reminderId,
+      role: role ?? this.role,
+      attemptIndex: attemptIndex ?? this.attemptIndex,
+      expectedVersion: expectedVersion ?? this.expectedVersion,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (occurrenceId.present) {
+      map['occurrence_id'] = Variable<String>(occurrenceId.value);
+    }
+    if (reminderId.present) {
+      map['reminder_id'] = Variable<int>(reminderId.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (attemptIndex.present) {
+      map['attempt_index'] = Variable<int>(attemptIndex.value);
+    }
+    if (expectedVersion.present) {
+      map['expected_version'] = Variable<int>(expectedVersion.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OccurrenceAlertLinkTableCompanion(')
+          ..write('id: $id, ')
+          ..write('occurrenceId: $occurrenceId, ')
+          ..write('reminderId: $reminderId, ')
+          ..write('role: $role, ')
+          ..write('attemptIndex: $attemptIndex, ')
+          ..write('expectedVersion: $expectedVersion, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -20468,6 +22950,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MedicineLogTableTable medicineLogTable = $MedicineLogTableTable(
     this,
   );
+  late final $PlanDefinitionTableTable planDefinitionTable =
+      $PlanDefinitionTableTable(this);
+  late final $PlanOccurrenceTableTable planOccurrenceTable =
+      $PlanOccurrenceTableTable(this);
+  late final $OccurrenceAlertLinkTableTable occurrenceAlertLinkTable =
+      $OccurrenceAlertLinkTableTable(this);
   late final UserProfileDao userProfileDao = UserProfileDao(
     this as AppDatabase,
   );
@@ -20506,6 +22994,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final MomentumDao momentumDao = MomentumDao(this as AppDatabase);
   late final ChallengeDao challengeDao = ChallengeDao(this as AppDatabase);
   late final MedicineDao medicineDao = MedicineDao(this as AppDatabase);
+  late final PlanDao planDao = PlanDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -20548,6 +23037,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     challengeAmendmentTable,
     medicineTable,
     medicineLogTable,
+    planDefinitionTable,
+    planOccurrenceTable,
+    occurrenceAlertLinkTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -20585,6 +23077,48 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('thought_merge_sources', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'thoughts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_definitions', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tasks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_definitions', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'plan_definitions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_occurrences', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tasks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_occurrences', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'plan_occurrences',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('occurrence_alert_links', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'reminders',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('occurrence_alert_links', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -22003,6 +24537,27 @@ final class $$ThoughtTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PlanDefinitionTableTable, List<PlanDefinition>>
+  _planDefinitionTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planDefinitionTable,
+        aliasName: 'thoughts__id__plan_definitions__source_thought_id',
+      );
+
+  $$PlanDefinitionTableTableProcessedTableManager get planDefinitionTableRefs {
+    final manager = $$PlanDefinitionTableTableTableManager(
+      $_db,
+      $_db.planDefinitionTable,
+    ).filter((f) => f.sourceThoughtId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planDefinitionTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ThoughtTableTableFilterComposer
@@ -22160,6 +24715,31 @@ class $$ThoughtTableTableFilterComposer
                     $removeJoinBuilderFromRootComposer,
               ),
         );
+    return f(composer);
+  }
+
+  Expression<bool> planDefinitionTableRefs(
+    Expression<bool> Function($$PlanDefinitionTableTableFilterComposer f) f,
+  ) {
+    final $$PlanDefinitionTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.planDefinitionTable,
+      getReferencedColumn: (t) => t.sourceThoughtId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanDefinitionTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planDefinitionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
     return f(composer);
   }
 }
@@ -22366,6 +24946,32 @@ class $$ThoughtTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> planDefinitionTableRefs<T extends Object>(
+    Expression<T> Function($$PlanDefinitionTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlanDefinitionTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planDefinitionTable,
+          getReferencedColumn: (t) => t.sourceThoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanDefinitionTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planDefinitionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ThoughtTableTableTableManager
@@ -22386,6 +24992,7 @@ class $$ThoughtTableTableTableManager
             bool thoughtReminderLinkTableRefs,
             bool mergedNoteSources,
             bool sourceNoteMerges,
+            bool planDefinitionTableRefs,
           })
         > {
   $$ThoughtTableTableTableManager(_$AppDatabase db, $ThoughtTableTable table)
@@ -22457,6 +25064,7 @@ class $$ThoughtTableTableTableManager
                 thoughtReminderLinkTableRefs = false,
                 mergedNoteSources = false,
                 sourceNoteMerges = false,
+                planDefinitionTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -22466,6 +25074,7 @@ class $$ThoughtTableTableTableManager
                       db.thoughtReminderLinkTable,
                     if (mergedNoteSources) db.thoughtMergeSourceTable,
                     if (sourceNoteMerges) db.thoughtMergeSourceTable,
+                    if (planDefinitionTableRefs) db.planDefinitionTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -22554,6 +25163,27 @@ class $$ThoughtTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (planDefinitionTableRefs)
+                        await $_getPrefetchedData<
+                          Thought,
+                          $ThoughtTableTable,
+                          PlanDefinition
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ThoughtTableTableReferences
+                              ._planDefinitionTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ThoughtTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planDefinitionTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sourceThoughtId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -22579,6 +25209,7 @@ typedef $$ThoughtTableTableProcessedTableManager =
         bool thoughtReminderLinkTableRefs,
         bool mergedNoteSources,
         bool sourceNoteMerges,
+        bool planDefinitionTableRefs,
       })
     >;
 typedef $$ApplicationTableTableCreateCompanionBuilder =
@@ -23513,6 +26144,48 @@ final class $$TaskTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PlanDefinitionTableTable, List<PlanDefinition>>
+  _planDefinitionTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planDefinitionTable,
+        aliasName: 'tasks__id__plan_definitions__source_task_id',
+      );
+
+  $$PlanDefinitionTableTableProcessedTableManager get planDefinitionTableRefs {
+    final manager = $$PlanDefinitionTableTableTableManager(
+      $_db,
+      $_db.planDefinitionTable,
+    ).filter((f) => f.sourceTaskId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planDefinitionTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$PlanOccurrenceTableTable, List<PlanOccurrence>>
+  _planOccurrenceTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planOccurrenceTable,
+        aliasName: 'tasks__id__plan_occurrences__linked_task_id',
+      );
+
+  $$PlanOccurrenceTableTableProcessedTableManager get planOccurrenceTableRefs {
+    final manager = $$PlanOccurrenceTableTableTableManager(
+      $_db,
+      $_db.planOccurrenceTable,
+    ).filter((f) => f.linkedTaskId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planOccurrenceTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$TaskTableTableFilterComposer
@@ -23780,6 +26453,56 @@ class $$TaskTableTableFilterComposer
           }) => $$MedicineLogTableTableFilterComposer(
             $db: $db,
             $table: $db.medicineLogTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> planDefinitionTableRefs(
+    Expression<bool> Function($$PlanDefinitionTableTableFilterComposer f) f,
+  ) {
+    final $$PlanDefinitionTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.planDefinitionTable,
+      getReferencedColumn: (t) => t.sourceTaskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanDefinitionTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planDefinitionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> planOccurrenceTableRefs(
+    Expression<bool> Function($$PlanOccurrenceTableTableFilterComposer f) f,
+  ) {
+    final $$PlanOccurrenceTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.planOccurrenceTable,
+      getReferencedColumn: (t) => t.linkedTaskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanOccurrenceTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planOccurrenceTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -24251,6 +26974,58 @@ class $$TaskTableTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> planDefinitionTableRefs<T extends Object>(
+    Expression<T> Function($$PlanDefinitionTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlanDefinitionTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planDefinitionTable,
+          getReferencedColumn: (t) => t.sourceTaskId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanDefinitionTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planDefinitionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> planOccurrenceTableRefs<T extends Object>(
+    Expression<T> Function($$PlanOccurrenceTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlanOccurrenceTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planOccurrenceTable,
+          getReferencedColumn: (t) => t.linkedTaskId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanOccurrenceTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planOccurrenceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$TaskTableTableTableManager
@@ -24275,6 +27050,8 @@ class $$TaskTableTableTableManager
             bool timeSessionTableRefs,
             bool reminderTableRefs,
             bool medicineLogTableRefs,
+            bool planDefinitionTableRefs,
+            bool planOccurrenceTableRefs,
           })
         > {
   $$TaskTableTableTableManager(_$AppDatabase db, $TaskTableTable table)
@@ -24394,6 +27171,8 @@ class $$TaskTableTableTableManager
                 timeSessionTableRefs = false,
                 reminderTableRefs = false,
                 medicineLogTableRefs = false,
+                planDefinitionTableRefs = false,
+                planOccurrenceTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -24401,6 +27180,8 @@ class $$TaskTableTableTableManager
                     if (timeSessionTableRefs) db.timeSessionTable,
                     if (reminderTableRefs) db.reminderTable,
                     if (medicineLogTableRefs) db.medicineLogTable,
+                    if (planDefinitionTableRefs) db.planDefinitionTable,
+                    if (planOccurrenceTableRefs) db.planOccurrenceTable,
                   ],
                   addJoins:
                       <
@@ -24551,6 +27332,48 @@ class $$TaskTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (planDefinitionTableRefs)
+                        await $_getPrefetchedData<
+                          Task,
+                          $TaskTableTable,
+                          PlanDefinition
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TaskTableTableReferences
+                              ._planDefinitionTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TaskTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planDefinitionTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sourceTaskId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (planOccurrenceTableRefs)
+                        await $_getPrefetchedData<
+                          Task,
+                          $TaskTableTable,
+                          PlanOccurrence
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TaskTableTableReferences
+                              ._planOccurrenceTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TaskTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planOccurrenceTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.linkedTaskId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -24580,6 +27403,8 @@ typedef $$TaskTableTableProcessedTableManager =
         bool timeSessionTableRefs,
         bool reminderTableRefs,
         bool medicineLogTableRefs,
+        bool planDefinitionTableRefs,
+        bool planOccurrenceTableRefs,
       })
     >;
 typedef $$DsaLogTableTableCreateCompanionBuilder =
@@ -27722,6 +30547,31 @@ final class $$ReminderTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $OccurrenceAlertLinkTableTable,
+    List<OccurrenceAlertLink>
+  >
+  _occurrenceAlertLinkTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.occurrenceAlertLinkTable,
+        aliasName: 'reminders__id__occurrence_alert_links__reminder_id',
+      );
+
+  $$OccurrenceAlertLinkTableTableProcessedTableManager
+  get occurrenceAlertLinkTableRefs {
+    final manager = $$OccurrenceAlertLinkTableTableTableManager(
+      $_db,
+      $_db.occurrenceAlertLinkTable,
+    ).filter((f) => f.reminderId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _occurrenceAlertLinkTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ReminderTableTableFilterComposer
@@ -27840,6 +30690,33 @@ class $$ReminderTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> occurrenceAlertLinkTableRefs(
+    Expression<bool> Function($$OccurrenceAlertLinkTableTableFilterComposer f)
+    f,
+  ) {
+    final $$OccurrenceAlertLinkTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.occurrenceAlertLinkTable,
+          getReferencedColumn: (t) => t.reminderId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$OccurrenceAlertLinkTableTableFilterComposer(
+                $db: $db,
+                $table: $db.occurrenceAlertLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -28022,6 +30899,33 @@ class $$ReminderTableTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> occurrenceAlertLinkTableRefs<T extends Object>(
+    Expression<T> Function($$OccurrenceAlertLinkTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$OccurrenceAlertLinkTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.occurrenceAlertLinkTable,
+          getReferencedColumn: (t) => t.reminderId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$OccurrenceAlertLinkTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.occurrenceAlertLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ReminderTableTableTableManager
@@ -28041,6 +30945,7 @@ class $$ReminderTableTableTableManager
             bool linkedTaskId,
             bool thoughtReminderLinkTableRefs,
             bool medicineLogTableRefs,
+            bool occurrenceAlertLinkTableRefs,
           })
         > {
   $$ReminderTableTableTableManager(_$AppDatabase db, $ReminderTableTable table)
@@ -28107,6 +31012,7 @@ class $$ReminderTableTableTableManager
                 linkedTaskId = false,
                 thoughtReminderLinkTableRefs = false,
                 medicineLogTableRefs = false,
+                occurrenceAlertLinkTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -28114,6 +31020,8 @@ class $$ReminderTableTableTableManager
                     if (thoughtReminderLinkTableRefs)
                       db.thoughtReminderLinkTable,
                     if (medicineLogTableRefs) db.medicineLogTable,
+                    if (occurrenceAlertLinkTableRefs)
+                      db.occurrenceAlertLinkTable,
                   ],
                   addJoins:
                       <
@@ -28193,6 +31101,27 @@ class $$ReminderTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (occurrenceAlertLinkTableRefs)
+                        await $_getPrefetchedData<
+                          Reminder,
+                          $ReminderTableTable,
+                          OccurrenceAlertLink
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ReminderTableTableReferences
+                              ._occurrenceAlertLinkTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ReminderTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).occurrenceAlertLinkTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.reminderId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -28217,6 +31146,7 @@ typedef $$ReminderTableTableProcessedTableManager =
         bool linkedTaskId,
         bool thoughtReminderLinkTableRefs,
         bool medicineLogTableRefs,
+        bool occurrenceAlertLinkTableRefs,
       })
     >;
 typedef $$FinanceTransactionTableTableCreateCompanionBuilder =
@@ -35765,6 +38695,2021 @@ typedef $$MedicineLogTableTableProcessedTableManager =
         bool linkedReminderId,
       })
     >;
+typedef $$PlanDefinitionTableTableCreateCompanionBuilder =
+    PlanDefinitionTableCompanion Function({
+      required String id,
+      required String title,
+      Value<int?> sourceThoughtId,
+      Value<int?> sourceTaskId,
+      Value<String> activityType,
+      Value<int?> targetMinutes,
+      Value<int?> expectedDurationMinutes,
+      required String startDate,
+      required String endDate,
+      Value<String> recurrenceRule,
+      Value<String?> customDaysJson,
+      required String localTime,
+      Value<String> timezonePolicy,
+      Value<String> reminderPolicy,
+      Value<String> checkInPolicy,
+      Value<String> status,
+      Value<int> revision,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$PlanDefinitionTableTableUpdateCompanionBuilder =
+    PlanDefinitionTableCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<int?> sourceThoughtId,
+      Value<int?> sourceTaskId,
+      Value<String> activityType,
+      Value<int?> targetMinutes,
+      Value<int?> expectedDurationMinutes,
+      Value<String> startDate,
+      Value<String> endDate,
+      Value<String> recurrenceRule,
+      Value<String?> customDaysJson,
+      Value<String> localTime,
+      Value<String> timezonePolicy,
+      Value<String> reminderPolicy,
+      Value<String> checkInPolicy,
+      Value<String> status,
+      Value<int> revision,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$PlanDefinitionTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PlanDefinitionTableTable,
+          PlanDefinition
+        > {
+  $$PlanDefinitionTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ThoughtTableTable _sourceThoughtIdTable(_$AppDatabase db) => db
+      .thoughtTable
+      .createAlias('plan_definitions__source_thought_id__thoughts__id');
+
+  $$ThoughtTableTableProcessedTableManager? get sourceThoughtId {
+    final $_column = $_itemColumn<int>('source_thought_id');
+    if ($_column == null) return null;
+    final manager = $$ThoughtTableTableTableManager(
+      $_db,
+      $_db.thoughtTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sourceThoughtIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TaskTableTable _sourceTaskIdTable(_$AppDatabase db) =>
+      db.taskTable.createAlias('plan_definitions__source_task_id__tasks__id');
+
+  $$TaskTableTableProcessedTableManager? get sourceTaskId {
+    final $_column = $_itemColumn<int>('source_task_id');
+    if ($_column == null) return null;
+    final manager = $$TaskTableTableTableManager(
+      $_db,
+      $_db.taskTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sourceTaskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$PlanOccurrenceTableTable, List<PlanOccurrence>>
+  _planOccurrenceTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planOccurrenceTable,
+        aliasName: 'plan_definitions__id__plan_occurrences__plan_id',
+      );
+
+  $$PlanOccurrenceTableTableProcessedTableManager get planOccurrenceTableRefs {
+    final manager = $$PlanOccurrenceTableTableTableManager(
+      $_db,
+      $_db.planOccurrenceTable,
+    ).filter((f) => f.planId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planOccurrenceTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PlanDefinitionTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PlanDefinitionTableTable> {
+  $$PlanDefinitionTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get activityType => $composableBuilder(
+    column: $table.activityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetMinutes => $composableBuilder(
+    column: $table.targetMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expectedDurationMinutes => $composableBuilder(
+    column: $table.expectedDurationMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recurrenceRule => $composableBuilder(
+    column: $table.recurrenceRule,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customDaysJson => $composableBuilder(
+    column: $table.customDaysJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localTime => $composableBuilder(
+    column: $table.localTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get timezonePolicy => $composableBuilder(
+    column: $table.timezonePolicy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reminderPolicy => $composableBuilder(
+    column: $table.reminderPolicy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get checkInPolicy => $composableBuilder(
+    column: $table.checkInPolicy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ThoughtTableTableFilterComposer get sourceThoughtId {
+    final $$ThoughtTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableFilterComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TaskTableTableFilterComposer get sourceTaskId {
+    final $$TaskTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableFilterComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> planOccurrenceTableRefs(
+    Expression<bool> Function($$PlanOccurrenceTableTableFilterComposer f) f,
+  ) {
+    final $$PlanOccurrenceTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.planOccurrenceTable,
+      getReferencedColumn: (t) => t.planId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanOccurrenceTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planOccurrenceTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$PlanDefinitionTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlanDefinitionTableTable> {
+  $$PlanDefinitionTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get activityType => $composableBuilder(
+    column: $table.activityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetMinutes => $composableBuilder(
+    column: $table.targetMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expectedDurationMinutes => $composableBuilder(
+    column: $table.expectedDurationMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recurrenceRule => $composableBuilder(
+    column: $table.recurrenceRule,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customDaysJson => $composableBuilder(
+    column: $table.customDaysJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get localTime => $composableBuilder(
+    column: $table.localTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get timezonePolicy => $composableBuilder(
+    column: $table.timezonePolicy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reminderPolicy => $composableBuilder(
+    column: $table.reminderPolicy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get checkInPolicy => $composableBuilder(
+    column: $table.checkInPolicy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revision => $composableBuilder(
+    column: $table.revision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ThoughtTableTableOrderingComposer get sourceThoughtId {
+    final $$ThoughtTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TaskTableTableOrderingComposer get sourceTaskId {
+    final $$TaskTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlanDefinitionTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlanDefinitionTableTable> {
+  $$PlanDefinitionTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get activityType => $composableBuilder(
+    column: $table.activityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetMinutes => $composableBuilder(
+    column: $table.targetMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get expectedDurationMinutes => $composableBuilder(
+    column: $table.expectedDurationMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<String> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get recurrenceRule => $composableBuilder(
+    column: $table.recurrenceRule,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get customDaysJson => $composableBuilder(
+    column: $table.customDaysJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get localTime =>
+      $composableBuilder(column: $table.localTime, builder: (column) => column);
+
+  GeneratedColumn<String> get timezonePolicy => $composableBuilder(
+    column: $table.timezonePolicy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reminderPolicy => $composableBuilder(
+    column: $table.reminderPolicy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get checkInPolicy => $composableBuilder(
+    column: $table.checkInPolicy,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<int> get revision =>
+      $composableBuilder(column: $table.revision, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$ThoughtTableTableAnnotationComposer get sourceThoughtId {
+    final $$ThoughtTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TaskTableTableAnnotationComposer get sourceTaskId {
+    final $$TaskTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> planOccurrenceTableRefs<T extends Object>(
+    Expression<T> Function($$PlanOccurrenceTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlanOccurrenceTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planOccurrenceTable,
+          getReferencedColumn: (t) => t.planId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanOccurrenceTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planOccurrenceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$PlanDefinitionTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlanDefinitionTableTable,
+          PlanDefinition,
+          $$PlanDefinitionTableTableFilterComposer,
+          $$PlanDefinitionTableTableOrderingComposer,
+          $$PlanDefinitionTableTableAnnotationComposer,
+          $$PlanDefinitionTableTableCreateCompanionBuilder,
+          $$PlanDefinitionTableTableUpdateCompanionBuilder,
+          (PlanDefinition, $$PlanDefinitionTableTableReferences),
+          PlanDefinition,
+          PrefetchHooks Function({
+            bool sourceThoughtId,
+            bool sourceTaskId,
+            bool planOccurrenceTableRefs,
+          })
+        > {
+  $$PlanDefinitionTableTableTableManager(
+    _$AppDatabase db,
+    $PlanDefinitionTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlanDefinitionTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlanDefinitionTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PlanDefinitionTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int?> sourceThoughtId = const Value.absent(),
+                Value<int?> sourceTaskId = const Value.absent(),
+                Value<String> activityType = const Value.absent(),
+                Value<int?> targetMinutes = const Value.absent(),
+                Value<int?> expectedDurationMinutes = const Value.absent(),
+                Value<String> startDate = const Value.absent(),
+                Value<String> endDate = const Value.absent(),
+                Value<String> recurrenceRule = const Value.absent(),
+                Value<String?> customDaysJson = const Value.absent(),
+                Value<String> localTime = const Value.absent(),
+                Value<String> timezonePolicy = const Value.absent(),
+                Value<String> reminderPolicy = const Value.absent(),
+                Value<String> checkInPolicy = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanDefinitionTableCompanion(
+                id: id,
+                title: title,
+                sourceThoughtId: sourceThoughtId,
+                sourceTaskId: sourceTaskId,
+                activityType: activityType,
+                targetMinutes: targetMinutes,
+                expectedDurationMinutes: expectedDurationMinutes,
+                startDate: startDate,
+                endDate: endDate,
+                recurrenceRule: recurrenceRule,
+                customDaysJson: customDaysJson,
+                localTime: localTime,
+                timezonePolicy: timezonePolicy,
+                reminderPolicy: reminderPolicy,
+                checkInPolicy: checkInPolicy,
+                status: status,
+                revision: revision,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String title,
+                Value<int?> sourceThoughtId = const Value.absent(),
+                Value<int?> sourceTaskId = const Value.absent(),
+                Value<String> activityType = const Value.absent(),
+                Value<int?> targetMinutes = const Value.absent(),
+                Value<int?> expectedDurationMinutes = const Value.absent(),
+                required String startDate,
+                required String endDate,
+                Value<String> recurrenceRule = const Value.absent(),
+                Value<String?> customDaysJson = const Value.absent(),
+                required String localTime,
+                Value<String> timezonePolicy = const Value.absent(),
+                Value<String> reminderPolicy = const Value.absent(),
+                Value<String> checkInPolicy = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> revision = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanDefinitionTableCompanion.insert(
+                id: id,
+                title: title,
+                sourceThoughtId: sourceThoughtId,
+                sourceTaskId: sourceTaskId,
+                activityType: activityType,
+                targetMinutes: targetMinutes,
+                expectedDurationMinutes: expectedDurationMinutes,
+                startDate: startDate,
+                endDate: endDate,
+                recurrenceRule: recurrenceRule,
+                customDaysJson: customDaysJson,
+                localTime: localTime,
+                timezonePolicy: timezonePolicy,
+                reminderPolicy: reminderPolicy,
+                checkInPolicy: checkInPolicy,
+                status: status,
+                revision: revision,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PlanDefinitionTableTable, PlanDefinition>(table),
+                  $$PlanDefinitionTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                sourceThoughtId = false,
+                sourceTaskId = false,
+                planOccurrenceTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (planOccurrenceTableRefs) db.planOccurrenceTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (sourceThoughtId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sourceThoughtId,
+                                    referencedTable:
+                                        $$PlanDefinitionTableTableReferences
+                                            ._sourceThoughtIdTable(db),
+                                    referencedColumn:
+                                        $$PlanDefinitionTableTableReferences
+                                            ._sourceThoughtIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (sourceTaskId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sourceTaskId,
+                                    referencedTable:
+                                        $$PlanDefinitionTableTableReferences
+                                            ._sourceTaskIdTable(db),
+                                    referencedColumn:
+                                        $$PlanDefinitionTableTableReferences
+                                            ._sourceTaskIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (planOccurrenceTableRefs)
+                        await $_getPrefetchedData<
+                          PlanDefinition,
+                          $PlanDefinitionTableTable,
+                          PlanOccurrence
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PlanDefinitionTableTableReferences
+                              ._planOccurrenceTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PlanDefinitionTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planOccurrenceTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.planId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PlanDefinitionTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlanDefinitionTableTable,
+      PlanDefinition,
+      $$PlanDefinitionTableTableFilterComposer,
+      $$PlanDefinitionTableTableOrderingComposer,
+      $$PlanDefinitionTableTableAnnotationComposer,
+      $$PlanDefinitionTableTableCreateCompanionBuilder,
+      $$PlanDefinitionTableTableUpdateCompanionBuilder,
+      (PlanDefinition, $$PlanDefinitionTableTableReferences),
+      PlanDefinition,
+      PrefetchHooks Function({
+        bool sourceThoughtId,
+        bool sourceTaskId,
+        bool planOccurrenceTableRefs,
+      })
+    >;
+typedef $$PlanOccurrenceTableTableCreateCompanionBuilder =
+    PlanOccurrenceTableCompanion Function({
+      required String id,
+      required String planId,
+      required String eligibleLocalDate,
+      Value<int> slotIndex,
+      Value<int> definitionRevision,
+      required DateTime scheduledStartTime,
+      Value<DateTime?> scheduledEndTime,
+      required DateTime closeTime,
+      Value<int?> linkedTaskId,
+      Value<String> outcome,
+      Value<DateTime?> answeredAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$PlanOccurrenceTableTableUpdateCompanionBuilder =
+    PlanOccurrenceTableCompanion Function({
+      Value<String> id,
+      Value<String> planId,
+      Value<String> eligibleLocalDate,
+      Value<int> slotIndex,
+      Value<int> definitionRevision,
+      Value<DateTime> scheduledStartTime,
+      Value<DateTime?> scheduledEndTime,
+      Value<DateTime> closeTime,
+      Value<int?> linkedTaskId,
+      Value<String> outcome,
+      Value<DateTime?> answeredAt,
+      Value<DateTime?> completedAt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+final class $$PlanOccurrenceTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PlanOccurrenceTableTable,
+          PlanOccurrence
+        > {
+  $$PlanOccurrenceTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PlanDefinitionTableTable _planIdTable(_$AppDatabase db) => db
+      .planDefinitionTable
+      .createAlias('plan_occurrences__plan_id__plan_definitions__id');
+
+  $$PlanDefinitionTableTableProcessedTableManager get planId {
+    final $_column = $_itemColumn<String>('plan_id')!;
+
+    final manager = $$PlanDefinitionTableTableTableManager(
+      $_db,
+      $_db.planDefinitionTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_planIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TaskTableTable _linkedTaskIdTable(_$AppDatabase db) =>
+      db.taskTable.createAlias('plan_occurrences__linked_task_id__tasks__id');
+
+  $$TaskTableTableProcessedTableManager? get linkedTaskId {
+    final $_column = $_itemColumn<int>('linked_task_id');
+    if ($_column == null) return null;
+    final manager = $$TaskTableTableTableManager(
+      $_db,
+      $_db.taskTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_linkedTaskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $OccurrenceAlertLinkTableTable,
+    List<OccurrenceAlertLink>
+  >
+  _occurrenceAlertLinkTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.occurrenceAlertLinkTable,
+        aliasName:
+            'plan_occurrences__id__occurrence_alert_links__occurrence_id',
+      );
+
+  $$OccurrenceAlertLinkTableTableProcessedTableManager
+  get occurrenceAlertLinkTableRefs {
+    final manager = $$OccurrenceAlertLinkTableTableTableManager(
+      $_db,
+      $_db.occurrenceAlertLinkTable,
+    ).filter((f) => f.occurrenceId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _occurrenceAlertLinkTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PlanOccurrenceTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PlanOccurrenceTableTable> {
+  $$PlanOccurrenceTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eligibleLocalDate => $composableBuilder(
+    column: $table.eligibleLocalDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get slotIndex => $composableBuilder(
+    column: $table.slotIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get definitionRevision => $composableBuilder(
+    column: $table.definitionRevision,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledStartTime => $composableBuilder(
+    column: $table.scheduledStartTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get scheduledEndTime => $composableBuilder(
+    column: $table.scheduledEndTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get closeTime => $composableBuilder(
+    column: $table.closeTime,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get answeredAt => $composableBuilder(
+    column: $table.answeredAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PlanDefinitionTableTableFilterComposer get planId {
+    final $$PlanDefinitionTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.planId,
+      referencedTable: $db.planDefinitionTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanDefinitionTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planDefinitionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TaskTableTableFilterComposer get linkedTaskId {
+    final $$TaskTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableFilterComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> occurrenceAlertLinkTableRefs(
+    Expression<bool> Function($$OccurrenceAlertLinkTableTableFilterComposer f)
+    f,
+  ) {
+    final $$OccurrenceAlertLinkTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.occurrenceAlertLinkTable,
+          getReferencedColumn: (t) => t.occurrenceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$OccurrenceAlertLinkTableTableFilterComposer(
+                $db: $db,
+                $table: $db.occurrenceAlertLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$PlanOccurrenceTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlanOccurrenceTableTable> {
+  $$PlanOccurrenceTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eligibleLocalDate => $composableBuilder(
+    column: $table.eligibleLocalDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get slotIndex => $composableBuilder(
+    column: $table.slotIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get definitionRevision => $composableBuilder(
+    column: $table.definitionRevision,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledStartTime => $composableBuilder(
+    column: $table.scheduledStartTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get scheduledEndTime => $composableBuilder(
+    column: $table.scheduledEndTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get closeTime => $composableBuilder(
+    column: $table.closeTime,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get answeredAt => $composableBuilder(
+    column: $table.answeredAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PlanDefinitionTableTableOrderingComposer get planId {
+    final $$PlanDefinitionTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.planId,
+          referencedTable: $db.planDefinitionTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanDefinitionTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.planDefinitionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$TaskTableTableOrderingComposer get linkedTaskId {
+    final $$TaskTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlanOccurrenceTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlanOccurrenceTableTable> {
+  $$PlanOccurrenceTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get eligibleLocalDate => $composableBuilder(
+    column: $table.eligibleLocalDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get slotIndex =>
+      $composableBuilder(column: $table.slotIndex, builder: (column) => column);
+
+  GeneratedColumn<int> get definitionRevision => $composableBuilder(
+    column: $table.definitionRevision,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get scheduledStartTime => $composableBuilder(
+    column: $table.scheduledStartTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get scheduledEndTime => $composableBuilder(
+    column: $table.scheduledEndTime,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get closeTime =>
+      $composableBuilder(column: $table.closeTime, builder: (column) => column);
+
+  GeneratedColumn<String> get outcome =>
+      $composableBuilder(column: $table.outcome, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get answeredAt => $composableBuilder(
+    column: $table.answeredAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get completedAt => $composableBuilder(
+    column: $table.completedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$PlanDefinitionTableTableAnnotationComposer get planId {
+    final $$PlanDefinitionTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.planId,
+          referencedTable: $db.planDefinitionTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanDefinitionTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planDefinitionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$TaskTableTableAnnotationComposer get linkedTaskId {
+    final $$TaskTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.linkedTaskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> occurrenceAlertLinkTableRefs<T extends Object>(
+    Expression<T> Function($$OccurrenceAlertLinkTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$OccurrenceAlertLinkTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.occurrenceAlertLinkTable,
+          getReferencedColumn: (t) => t.occurrenceId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$OccurrenceAlertLinkTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.occurrenceAlertLinkTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$PlanOccurrenceTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlanOccurrenceTableTable,
+          PlanOccurrence,
+          $$PlanOccurrenceTableTableFilterComposer,
+          $$PlanOccurrenceTableTableOrderingComposer,
+          $$PlanOccurrenceTableTableAnnotationComposer,
+          $$PlanOccurrenceTableTableCreateCompanionBuilder,
+          $$PlanOccurrenceTableTableUpdateCompanionBuilder,
+          (PlanOccurrence, $$PlanOccurrenceTableTableReferences),
+          PlanOccurrence,
+          PrefetchHooks Function({
+            bool planId,
+            bool linkedTaskId,
+            bool occurrenceAlertLinkTableRefs,
+          })
+        > {
+  $$PlanOccurrenceTableTableTableManager(
+    _$AppDatabase db,
+    $PlanOccurrenceTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlanOccurrenceTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlanOccurrenceTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PlanOccurrenceTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> planId = const Value.absent(),
+                Value<String> eligibleLocalDate = const Value.absent(),
+                Value<int> slotIndex = const Value.absent(),
+                Value<int> definitionRevision = const Value.absent(),
+                Value<DateTime> scheduledStartTime = const Value.absent(),
+                Value<DateTime?> scheduledEndTime = const Value.absent(),
+                Value<DateTime> closeTime = const Value.absent(),
+                Value<int?> linkedTaskId = const Value.absent(),
+                Value<String> outcome = const Value.absent(),
+                Value<DateTime?> answeredAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanOccurrenceTableCompanion(
+                id: id,
+                planId: planId,
+                eligibleLocalDate: eligibleLocalDate,
+                slotIndex: slotIndex,
+                definitionRevision: definitionRevision,
+                scheduledStartTime: scheduledStartTime,
+                scheduledEndTime: scheduledEndTime,
+                closeTime: closeTime,
+                linkedTaskId: linkedTaskId,
+                outcome: outcome,
+                answeredAt: answeredAt,
+                completedAt: completedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String planId,
+                required String eligibleLocalDate,
+                Value<int> slotIndex = const Value.absent(),
+                Value<int> definitionRevision = const Value.absent(),
+                required DateTime scheduledStartTime,
+                Value<DateTime?> scheduledEndTime = const Value.absent(),
+                required DateTime closeTime,
+                Value<int?> linkedTaskId = const Value.absent(),
+                Value<String> outcome = const Value.absent(),
+                Value<DateTime?> answeredAt = const Value.absent(),
+                Value<DateTime?> completedAt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanOccurrenceTableCompanion.insert(
+                id: id,
+                planId: planId,
+                eligibleLocalDate: eligibleLocalDate,
+                slotIndex: slotIndex,
+                definitionRevision: definitionRevision,
+                scheduledStartTime: scheduledStartTime,
+                scheduledEndTime: scheduledEndTime,
+                closeTime: closeTime,
+                linkedTaskId: linkedTaskId,
+                outcome: outcome,
+                answeredAt: answeredAt,
+                completedAt: completedAt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PlanOccurrenceTableTable, PlanOccurrence>(table),
+                  $$PlanOccurrenceTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                planId = false,
+                linkedTaskId = false,
+                occurrenceAlertLinkTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (occurrenceAlertLinkTableRefs)
+                      db.occurrenceAlertLinkTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (planId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.planId,
+                                    referencedTable:
+                                        $$PlanOccurrenceTableTableReferences
+                                            ._planIdTable(db),
+                                    referencedColumn:
+                                        $$PlanOccurrenceTableTableReferences
+                                            ._planIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (linkedTaskId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.linkedTaskId,
+                                    referencedTable:
+                                        $$PlanOccurrenceTableTableReferences
+                                            ._linkedTaskIdTable(db),
+                                    referencedColumn:
+                                        $$PlanOccurrenceTableTableReferences
+                                            ._linkedTaskIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (occurrenceAlertLinkTableRefs)
+                        await $_getPrefetchedData<
+                          PlanOccurrence,
+                          $PlanOccurrenceTableTable,
+                          OccurrenceAlertLink
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PlanOccurrenceTableTableReferences
+                              ._occurrenceAlertLinkTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PlanOccurrenceTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).occurrenceAlertLinkTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.occurrenceId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PlanOccurrenceTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlanOccurrenceTableTable,
+      PlanOccurrence,
+      $$PlanOccurrenceTableTableFilterComposer,
+      $$PlanOccurrenceTableTableOrderingComposer,
+      $$PlanOccurrenceTableTableAnnotationComposer,
+      $$PlanOccurrenceTableTableCreateCompanionBuilder,
+      $$PlanOccurrenceTableTableUpdateCompanionBuilder,
+      (PlanOccurrence, $$PlanOccurrenceTableTableReferences),
+      PlanOccurrence,
+      PrefetchHooks Function({
+        bool planId,
+        bool linkedTaskId,
+        bool occurrenceAlertLinkTableRefs,
+      })
+    >;
+typedef $$OccurrenceAlertLinkTableTableCreateCompanionBuilder =
+    OccurrenceAlertLinkTableCompanion Function({
+      Value<int> id,
+      required String occurrenceId,
+      required int reminderId,
+      required String role,
+      Value<int> attemptIndex,
+      Value<int> expectedVersion,
+      Value<DateTime> createdAt,
+    });
+typedef $$OccurrenceAlertLinkTableTableUpdateCompanionBuilder =
+    OccurrenceAlertLinkTableCompanion Function({
+      Value<int> id,
+      Value<String> occurrenceId,
+      Value<int> reminderId,
+      Value<String> role,
+      Value<int> attemptIndex,
+      Value<int> expectedVersion,
+      Value<DateTime> createdAt,
+    });
+
+final class $$OccurrenceAlertLinkTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $OccurrenceAlertLinkTableTable,
+          OccurrenceAlertLink
+        > {
+  $$OccurrenceAlertLinkTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PlanOccurrenceTableTable _occurrenceIdTable(_$AppDatabase db) =>
+      db.planOccurrenceTable.createAlias(
+        'occurrence_alert_links__occurrence_id__plan_occurrences__id',
+      );
+
+  $$PlanOccurrenceTableTableProcessedTableManager get occurrenceId {
+    final $_column = $_itemColumn<String>('occurrence_id')!;
+
+    final manager = $$PlanOccurrenceTableTableTableManager(
+      $_db,
+      $_db.planOccurrenceTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_occurrenceIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ReminderTableTable _reminderIdTable(_$AppDatabase db) => db
+      .reminderTable
+      .createAlias('occurrence_alert_links__reminder_id__reminders__id');
+
+  $$ReminderTableTableProcessedTableManager get reminderId {
+    final $_column = $_itemColumn<int>('reminder_id')!;
+
+    final manager = $$ReminderTableTableTableManager(
+      $_db,
+      $_db.reminderTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_reminderIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$OccurrenceAlertLinkTableTableFilterComposer
+    extends Composer<_$AppDatabase, $OccurrenceAlertLinkTableTable> {
+  $$OccurrenceAlertLinkTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get attemptIndex => $composableBuilder(
+    column: $table.attemptIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get expectedVersion => $composableBuilder(
+    column: $table.expectedVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PlanOccurrenceTableTableFilterComposer get occurrenceId {
+    final $$PlanOccurrenceTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.occurrenceId,
+      referencedTable: $db.planOccurrenceTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanOccurrenceTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planOccurrenceTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ReminderTableTableFilterComposer get reminderId {
+    final $$ReminderTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reminderId,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableFilterComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$OccurrenceAlertLinkTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $OccurrenceAlertLinkTableTable> {
+  $$OccurrenceAlertLinkTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get role => $composableBuilder(
+    column: $table.role,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get attemptIndex => $composableBuilder(
+    column: $table.attemptIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get expectedVersion => $composableBuilder(
+    column: $table.expectedVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PlanOccurrenceTableTableOrderingComposer get occurrenceId {
+    final $$PlanOccurrenceTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.occurrenceId,
+          referencedTable: $db.planOccurrenceTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanOccurrenceTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.planOccurrenceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ReminderTableTableOrderingComposer get reminderId {
+    final $$ReminderTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reminderId,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$OccurrenceAlertLinkTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OccurrenceAlertLinkTableTable> {
+  $$OccurrenceAlertLinkTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<int> get attemptIndex => $composableBuilder(
+    column: $table.attemptIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get expectedVersion => $composableBuilder(
+    column: $table.expectedVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$PlanOccurrenceTableTableAnnotationComposer get occurrenceId {
+    final $$PlanOccurrenceTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.occurrenceId,
+          referencedTable: $db.planOccurrenceTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanOccurrenceTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planOccurrenceTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$ReminderTableTableAnnotationComposer get reminderId {
+    final $$ReminderTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.reminderId,
+      referencedTable: $db.reminderTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ReminderTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.reminderTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$OccurrenceAlertLinkTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $OccurrenceAlertLinkTableTable,
+          OccurrenceAlertLink,
+          $$OccurrenceAlertLinkTableTableFilterComposer,
+          $$OccurrenceAlertLinkTableTableOrderingComposer,
+          $$OccurrenceAlertLinkTableTableAnnotationComposer,
+          $$OccurrenceAlertLinkTableTableCreateCompanionBuilder,
+          $$OccurrenceAlertLinkTableTableUpdateCompanionBuilder,
+          (OccurrenceAlertLink, $$OccurrenceAlertLinkTableTableReferences),
+          OccurrenceAlertLink,
+          PrefetchHooks Function({bool occurrenceId, bool reminderId})
+        > {
+  $$OccurrenceAlertLinkTableTableTableManager(
+    _$AppDatabase db,
+    $OccurrenceAlertLinkTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OccurrenceAlertLinkTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$OccurrenceAlertLinkTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$OccurrenceAlertLinkTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> occurrenceId = const Value.absent(),
+                Value<int> reminderId = const Value.absent(),
+                Value<String> role = const Value.absent(),
+                Value<int> attemptIndex = const Value.absent(),
+                Value<int> expectedVersion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => OccurrenceAlertLinkTableCompanion(
+                id: id,
+                occurrenceId: occurrenceId,
+                reminderId: reminderId,
+                role: role,
+                attemptIndex: attemptIndex,
+                expectedVersion: expectedVersion,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String occurrenceId,
+                required int reminderId,
+                required String role,
+                Value<int> attemptIndex = const Value.absent(),
+                Value<int> expectedVersion = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => OccurrenceAlertLinkTableCompanion.insert(
+                id: id,
+                occurrenceId: occurrenceId,
+                reminderId: reminderId,
+                role: role,
+                attemptIndex: attemptIndex,
+                expectedVersion: expectedVersion,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $OccurrenceAlertLinkTableTable,
+                    OccurrenceAlertLink
+                  >(table),
+                  $$OccurrenceAlertLinkTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({occurrenceId = false, reminderId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (occurrenceId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.occurrenceId,
+                                referencedTable:
+                                    $$OccurrenceAlertLinkTableTableReferences
+                                        ._occurrenceIdTable(db),
+                                referencedColumn:
+                                    $$OccurrenceAlertLinkTableTableReferences
+                                        ._occurrenceIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (reminderId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.reminderId,
+                                referencedTable:
+                                    $$OccurrenceAlertLinkTableTableReferences
+                                        ._reminderIdTable(db),
+                                referencedColumn:
+                                    $$OccurrenceAlertLinkTableTableReferences
+                                        ._reminderIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$OccurrenceAlertLinkTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $OccurrenceAlertLinkTableTable,
+      OccurrenceAlertLink,
+      $$OccurrenceAlertLinkTableTableFilterComposer,
+      $$OccurrenceAlertLinkTableTableOrderingComposer,
+      $$OccurrenceAlertLinkTableTableAnnotationComposer,
+      $$OccurrenceAlertLinkTableTableCreateCompanionBuilder,
+      $$OccurrenceAlertLinkTableTableUpdateCompanionBuilder,
+      (OccurrenceAlertLink, $$OccurrenceAlertLinkTableTableReferences),
+      OccurrenceAlertLink,
+      PrefetchHooks Function({bool occurrenceId, bool reminderId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -35874,6 +40819,15 @@ class $AppDatabaseManager {
       $$MedicineTableTableTableManager(_db, _db.medicineTable);
   $$MedicineLogTableTableTableManager get medicineLogTable =>
       $$MedicineLogTableTableTableManager(_db, _db.medicineLogTable);
+  $$PlanDefinitionTableTableTableManager get planDefinitionTable =>
+      $$PlanDefinitionTableTableTableManager(_db, _db.planDefinitionTable);
+  $$PlanOccurrenceTableTableTableManager get planOccurrenceTable =>
+      $$PlanOccurrenceTableTableTableManager(_db, _db.planOccurrenceTable);
+  $$OccurrenceAlertLinkTableTableTableManager get occurrenceAlertLinkTable =>
+      $$OccurrenceAlertLinkTableTableTableManager(
+        _db,
+        _db.occurrenceAlertLinkTable,
+      );
 }
 
 mixin _$UserProfileDaoMixin on DatabaseAccessor<AppDatabase> {
@@ -36408,5 +41362,60 @@ class MedicineDaoManager {
       $$MedicineLogTableTableTableManager(
         _db.attachedDatabase,
         _db.medicineLogTable,
+      );
+}
+
+mixin _$PlanDaoMixin on DatabaseAccessor<AppDatabase> {
+  $ThoughtTableTable get thoughtTable => attachedDatabase.thoughtTable;
+  $StudyPhaseTableTable get studyPhaseTable => attachedDatabase.studyPhaseTable;
+  $SeriesTableTable get seriesTable => attachedDatabase.seriesTable;
+  $ApplicationTableTable get applicationTable =>
+      attachedDatabase.applicationTable;
+  $TaskTableTable get taskTable => attachedDatabase.taskTable;
+  $PlanDefinitionTableTable get planDefinitionTable =>
+      attachedDatabase.planDefinitionTable;
+  $PlanOccurrenceTableTable get planOccurrenceTable =>
+      attachedDatabase.planOccurrenceTable;
+  $ReminderTableTable get reminderTable => attachedDatabase.reminderTable;
+  $OccurrenceAlertLinkTableTable get occurrenceAlertLinkTable =>
+      attachedDatabase.occurrenceAlertLinkTable;
+  PlanDaoManager get managers => PlanDaoManager(this);
+}
+
+class PlanDaoManager {
+  final _$PlanDaoMixin _db;
+  PlanDaoManager(this._db);
+  $$ThoughtTableTableTableManager get thoughtTable =>
+      $$ThoughtTableTableTableManager(_db.attachedDatabase, _db.thoughtTable);
+  $$StudyPhaseTableTableTableManager get studyPhaseTable =>
+      $$StudyPhaseTableTableTableManager(
+        _db.attachedDatabase,
+        _db.studyPhaseTable,
+      );
+  $$SeriesTableTableTableManager get seriesTable =>
+      $$SeriesTableTableTableManager(_db.attachedDatabase, _db.seriesTable);
+  $$ApplicationTableTableTableManager get applicationTable =>
+      $$ApplicationTableTableTableManager(
+        _db.attachedDatabase,
+        _db.applicationTable,
+      );
+  $$TaskTableTableTableManager get taskTable =>
+      $$TaskTableTableTableManager(_db.attachedDatabase, _db.taskTable);
+  $$PlanDefinitionTableTableTableManager get planDefinitionTable =>
+      $$PlanDefinitionTableTableTableManager(
+        _db.attachedDatabase,
+        _db.planDefinitionTable,
+      );
+  $$PlanOccurrenceTableTableTableManager get planOccurrenceTable =>
+      $$PlanOccurrenceTableTableTableManager(
+        _db.attachedDatabase,
+        _db.planOccurrenceTable,
+      );
+  $$ReminderTableTableTableManager get reminderTable =>
+      $$ReminderTableTableTableManager(_db.attachedDatabase, _db.reminderTable);
+  $$OccurrenceAlertLinkTableTableTableManager get occurrenceAlertLinkTable =>
+      $$OccurrenceAlertLinkTableTableTableManager(
+        _db.attachedDatabase,
+        _db.occurrenceAlertLinkTable,
       );
 }
