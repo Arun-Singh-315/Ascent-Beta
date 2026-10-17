@@ -3,7 +3,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/life_checkin_popup_dialog.dart';
 import 'package:ascent/features/splash/splash_screen.dart';

@@ -5,7 +5,6 @@ import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
-import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/activity_composer.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/home_theme.dart';

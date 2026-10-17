@@ -37,10 +37,11 @@ class ActivityRowItem extends ConsumerWidget {
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
+    final isLecture = activity.sourceType == 'lecture';
     final isTimed =
-        activity.kind == ActivityKind.duration ||
-        (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
-        activity.sourceType == 'lecture';
+        (activity.kind == ActivityKind.duration ||
+        (activity.targetMinutes != null && activity.targetMinutes! > 0)) &&
+        !isLecture;
     final dueCheckIn = activity.linkedTaskId != null
         ? ref.watch(dueCheckInForTaskProvider(activity.linkedTaskId!)).value
         : null;
@@ -156,31 +157,33 @@ class ActivityRowItem extends ConsumerWidget {
               child: Material(
                 color: AppPalette.transparent,
                 child: AppTapArea(
-                  onTap: () async {
-                    if (isDone) {
-                      // Once completed, it cannot be undone or brought to active (one way only).
-                      AscentSnackBar.show(
-                        context,
-                        message:
-                            'Completed items are finished and cannot be reopened.',
-                      );
-                      return;
-                    }
-                    HapticFeedback.mediumImpact();
-                    if (isTimed) {
-                      AscentSnackBar.show(
-                        context,
-                        message:
-                            'Timed activities complete automatically when the focus timer ends.',
-                      );
-                      return;
-                    }
-                    if (activity.linkedTaskId != null) {
-                      await ref
-                          .read(taskDaoProvider)
-                          .toggleTaskCompletion(activity.linkedTaskId!, true);
-                    }
-                  },
+                  onTap: (isDone || isLecture)
+                      ? null
+                      : () async {
+                          if (isDone) {
+                            // Once completed, it cannot be undone or brought to active (one way only).
+                            AscentSnackBar.show(
+                              context,
+                              message:
+                                  'Completed items are finished and cannot be reopened.',
+                            );
+                            return;
+                          }
+                          HapticFeedback.mediumImpact();
+                          if (isTimed) {
+                            AscentSnackBar.show(
+                              context,
+                              message:
+                                  'Timed activities complete automatically when the focus timer ends.',
+                            );
+                            return;
+                          }
+                          if (activity.linkedTaskId != null) {
+                            await ref
+                                .read(taskDaoProvider)
+                                .toggleTaskCompletion(activity.linkedTaskId!, true);
+                          }
+                        },
                   borderRadius: AppGeometry.roundedr22,
                   child: Center(
                     child: AppTag(
@@ -202,13 +205,21 @@ class ActivityRowItem extends ConsumerWidget {
                               size: 16,
                               color: AppPalette.white,
                             )
-                          : (isTimed
-                                ? Icon(
-                                    Icons.timer_outlined,
-                                    size: 13,
-                                    color: isRunning ? g.clay : g.inkMuted,
-                                  )
-                                : null),
+                          : (isLecture
+                              ? Icon(
+                                  isRunning
+                                      ? Icons.headphones_rounded
+                                      : Icons.school_outlined,
+                                  size: 14,
+                                  color: isRunning ? g.clay : g.inkMuted,
+                                )
+                              : (isTimed
+                                  ? Icon(
+                                      Icons.timer_outlined,
+                                      size: 13,
+                                      color: isRunning ? g.clay : g.inkMuted,
+                                    )
+                                  : null)),
                     ),
                   ),
                 ),
@@ -220,32 +231,16 @@ class ActivityRowItem extends ConsumerWidget {
             // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
             Expanded(
               child: AppTapArea(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  if (isDone) {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Completed activities are sealed and cannot be edited.',
-                        ),
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    return;
-                  }
-                  if (isRunning || isPaused) {
-                    context.push('/focus');
-                    return;
-                  }
-                  if (activity.sourceType == 'lecture') {
-                    if (!_selectLecture(ref, activity)) return;
-                    LectureFocusPlayerSheet.show(context);
-                    return;
-                  }
-                  _showActivityDetailDialog(context, ref, activity);
-                },
+                onTap: (isDone || isLecture)
+                    ? null
+                    : () async {
+                        HapticFeedback.lightImpact();
+                        if (isRunning || isPaused) {
+                          context.push('/focus');
+                          return;
+                        }
+                        _showActivityDetailDialog(context, ref, activity);
+                      },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -271,7 +266,15 @@ class ActivityRowItem extends ConsumerWidget {
                     Wrap(
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        if (isRunning) ...[
+                        if (isLecture) ...[
+                          Text(
+                            _subtitleText(activity),
+                            style: AscentTextStyles.homeSecondary.copyWith(
+                              color: isRunning ? g.clay : g.inkMuted,
+                              fontWeight: isRunning ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ] else if (isRunning) ...[
                           Text(
                             _runningTimerText(activity),
                             style: AppTypography.jetBrainsMono12W600109(
@@ -320,8 +323,8 @@ class ActivityRowItem extends ConsumerWidget {
             const SizedBox(width: 8),
 
             // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
-            if (isDone) ...[
-              // Completed activities are immutable and cannot be edited
+            if (isDone || isLecture) ...[
+              // Completed and lecture activities have no edit or timer play buttons on the row
               const SizedBox(width: 8),
             ] else if (activity.kind == ActivityKind.todo) ...[
               SizedBox(
@@ -611,6 +614,12 @@ Widget _buildCheckInResponseBar(
         return '✓ Done at ${DateFormat('h:mm a').format(act.completedAt!)}';
       }
       return '✓ Completed';
+    }
+    if (act.sourceType == 'lecture') {
+      if (act.status == TodayActivityStatus.inProgress) {
+        return 'Lecture in progress';
+      }
+      return 'Lecture';
     }
     if (act.kind == ActivityKind.todo) {
       final p = (act.priority != null && act.priority!.isNotEmpty)

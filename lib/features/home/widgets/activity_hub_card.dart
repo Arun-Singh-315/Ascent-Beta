@@ -42,16 +42,21 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
     final g = context.glass;
     final activitiesAsync = ref.watch(todayActivitiesProvider);
 
-    return activitiesAsync.when(
-      loading: () => SkeletonShimmer.card(height: 140),
-      error: (err, _) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
-        child: Text(
-          'Error loading activities: $err',
-          style: TextStyle(color: g.inkMuted),
-        ),
-      ),
-      data: (allActivities) {
+    final allActivities =
+        activitiesAsync.asData?.value ?? activitiesAsync.value;
+
+    if (allActivities == null) {
+      if (activitiesAsync.hasError) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+          child: Text(
+            'Error loading activities: ${activitiesAsync.error}',
+            style: TextStyle(color: g.inkMuted),
+          ),
+        );
+      }
+      return SkeletonShimmer.card(height: 140);
+    }
         final activities = allActivities
             .where(
               (a) =>
@@ -372,8 +377,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             ),
           ],
         );
-      },
-    );
   }
 }
 

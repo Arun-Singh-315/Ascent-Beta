@@ -9,7 +9,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/frozen_palette.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';

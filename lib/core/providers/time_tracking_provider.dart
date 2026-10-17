@@ -638,7 +638,18 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final reminderDao = ref.watch(reminderDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
-  final learningHub = ref.watch(learningHubProvider);
+  final activeCourseId = ref.watch(
+    learningHubProvider.select((s) => s.activeCourseId),
+  );
+  final activeLectureId = ref.watch(
+    learningHubProvider.select((s) => s.activeLectureId),
+  );
+  final isLecturePlaying = ref.watch(
+    learningHubProvider.select((s) => s.isPlaying),
+  );
+  final courses = ref.watch(
+    learningHubProvider.select((s) => s.courses),
+  );
 
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
@@ -826,7 +837,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
 
     // A lecture is projected once, with a course-scoped identity and genuine
     // engagement. It remains in the catalog when dismissed from Today.
-    for (final course in learningHub.courses) {
+    for (final course in courses) {
       for (final lec in course.modules.expand((m) => m.lectures)) {
         final related = sessions
             .where(
@@ -844,8 +855,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             planned.day == today.day;
         if (!lec.isCompleted && !plannedToday && related.isEmpty) continue;
         final active =
-            learningHub.activeCourseId == course.id &&
-            learningHub.activeLectureId == lec.id;
+            activeCourseId == course.id &&
+            activeLectureId == lec.id;
         final linkedTask = tasks
             .where(
               (t) =>
@@ -853,10 +864,6 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
                   t.learningLectureId == lec.id,
             )
             .firstOrNull;
-        final elapsedToday = related.fold<int>(
-          0,
-          (sum, session) => sum + session.durationSeconds,
-        );
         items.add(
           TodayActivityItem(
             id: 'lecture_${Uri.encodeComponent(course.id)}_${lec.id}',
@@ -866,18 +873,16 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             learningLectureId: lec.id,
             status: lec.isCompleted
                 ? TodayActivityStatus.done
-                : active && learningHub.isPlaying
+                : active && isLecturePlaying
                 ? TodayActivityStatus.inProgress
                 : related.isNotEmpty
                 ? TodayActivityStatus.paused
                 : TodayActivityStatus.notStarted,
-            elapsedSecondsToday: elapsedToday,
+            elapsedSecondsToday: 0,
             linkedTaskId: linkedTask?.id,
             categoryTag: 'Study',
             kind: ActivityKind.duration,
-            targetMinutes: lec.durationSeconds > 0
-                ? (lec.requiredStudySeconds / 60).ceil()
-                : null,
+            targetMinutes: null,
             plannedDate: planned ?? lec.lastPlayedAt,
             completedAt: lec.isCompleted ? lec.lastPlayedAt : null,
           ),
