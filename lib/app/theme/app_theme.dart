@@ -554,6 +554,41 @@ class AscentTheme {
         ),
         elevation: 0,
       ),
+
+      // ── Popup Menu ────────────────────────────────────────────────────────────
+      popupMenuTheme: PopupMenuThemeData(
+        color: day
+            ? AppSurfaces.day.cardFill
+            : (isNordicSky
+                ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+                : bgSurface),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(
+            color: day
+                ? AppSurfaces.day.cardBorderColor
+                : (isNordicSky
+                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                    : divider),
+            width: 1.0,
+          ),
+        ),
+        elevation: 8,
+        shadowColor:
+            (isDark ? Colors.black : Colors.black54).withValues(alpha: 0.18),
+        surfaceTintColor: Colors.transparent,
+        menuPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        textStyle: AscentTextStyles.bodyMedium.copyWith(
+          color: textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        labelTextStyle: WidgetStateProperty.all(
+          AscentTextStyles.bodyMedium.copyWith(
+            color: textPrimary,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
       extensions: [
         isDark
             ? (isNordicSky ? AscentGlass.nordicSkyDark : AscentGlass.dark)

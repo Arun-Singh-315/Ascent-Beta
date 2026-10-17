@@ -4,6 +4,7 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' as drift;
 
 import 'package:flutter/services.dart';
@@ -34,6 +35,7 @@ import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/home_up_next.dart';
 import 'widgets/welcome_back_banner.dart';
+import 'widgets/life_checkin_popup_dialog.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
@@ -80,12 +82,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
       if (!_hasCheckedOverdueReminders) {
         _hasCheckedOverdueReminders = true;
-        _checkAndPromptOverdueReminder();
+        final promptedReminder = await _checkAndPromptOverdueReminder();
+        if (!promptedReminder && mounted) {
+          await _checkAndPromptLifeNudge(preferences);
+        }
       }
     });
   }
 
-  Future<void> _checkAndPromptOverdueReminder() async {
+  Future<bool> _checkAndPromptOverdueReminder() async {
     try {
       final overdueReminders = await ref
           .read(reminderDaoProvider)
@@ -95,7 +100,40 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
           .toList();
       if (quietReminders.isNotEmpty && mounted) {
         await InAppReminderDialog.show(context, quietReminders.first);
+        return true;
       }
+    } catch (_) {}
+    return false;
+  }
+
+  Future<void> _checkAndPromptLifeNudge(SharedPreferences preferences) async {
+    try {
+      final openCount =
+          (preferences.getInt('ascent_life_nudge_open_count') ?? 0) + 1;
+      await preferences.setInt('ascent_life_nudge_open_count', openCount);
+
+      // Ask 4 out of 10 times: cycle indices 1, 3, 6, 8 (40% frequency)
+      final cycleIndex = openCount % 10;
+      final isEligible = cycleIndex == 1 ||
+          cycleIndex == 3 ||
+          cycleIndex == 6 ||
+          cycleIndex == 8;
+      if (!isEligible) return;
+
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final lastNudgeMs =
+          preferences.getInt('ascent_last_life_nudge_ms') ?? 0;
+      // Minimum 15-minute gap so navigating between tabs does not trigger it repeatedly
+      if (nowMs - lastNudgeMs < const Duration(minutes: 15).inMilliseconds) {
+        return;
+      }
+      await preferences.setInt('ascent_last_life_nudge_ms', nowMs);
+
+      if (!mounted) return;
+      final initialTab = (cycleIndex == 1 || cycleIndex == 6)
+          ? LifeCheckInTab.hydration
+          : LifeCheckInTab.money;
+      await LifeCheckInPopupDialog.show(context, initialTab: initialTab);
     } catch (_) {}
   }
 

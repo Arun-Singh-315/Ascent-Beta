@@ -35,12 +35,12 @@ class ActivityHubCard extends ConsumerStatefulWidget {
 
 class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   bool _showAll = false;
+  bool _showCompleted = false;
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
     final activitiesAsync = ref.watch(todayActivitiesProvider);
-    final streak = ref.watch(currentStreakStreamProvider).value ?? 0;
 
     return activitiesAsync.when(
       loading: () => SkeletonShimmer.card(height: 140),
@@ -67,9 +67,6 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             .toList();
         final doneCount = doneActivities.length;
         final totalCount = allActivities.length;
-        final progressFraction = totalCount > 0
-            ? (doneCount / totalCount).clamp(0.0, 1.0)
-            : 0.0;
 
         // Sort so that any currently active running activity is prioritised at the top
         final sortedPending = <TodayActivityItem>[...pendingActivities]
@@ -84,7 +81,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             }
             return 0;
           });
-        final filteredList = sortedPending;
+        final currentList = _showCompleted ? doneActivities : sortedPending;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,11 +89,9 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
             // ── HEADING ROW: THINGS HUB + VIEW BOARD CTA (OUTSIDE CARD) ──────
             SizedBox(
               width: double.infinity,
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 16,
-                runSpacing: 4,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     'Things hub',
@@ -106,78 +101,35 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppTapArea(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          context.push('/today');
-                        },
-                        borderRadius: AppGeometry.roundedr6,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s4,
-                            vertical: AppSpace.s2,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'View board',
-                                style: AscentTextStyles.homeSecondary
-                                    .copyWith(color: g.clay)
-                                    .merge(AppTypeRoles.typeRole8),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 16,
-                                color: g.clay,
-                              ),
-                            ],
-                          ),
-                        ),
+                  AppTapArea(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/today');
+                    },
+                    borderRadius: AppGeometry.roundedr6,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s4,
+                        vertical: AppSpace.s2,
                       ),
-                      PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.more_vert_rounded,
-                          size: 18,
-                          color: g.inkMuted,
-                        ),
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Plans & Options',
-                        onSelected: (val) {
-                          if (val == 'plans') {
-                            context.push('/plans');
-                          } else if (val == 'board') {
-                            context.push('/today');
-                          }
-                        },
-                        itemBuilder: (ctx) => [
-                          const PopupMenuItem(
-                            value: 'plans',
-                            child: Row(
-                              children: [
-                                Icon(Icons.event_repeat_rounded, size: 18),
-                                SizedBox(width: 8),
-                                Text('Routines & Plans'),
-                              ],
-                            ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'View board',
+                            style: AscentTextStyles.homeSecondary
+                                .copyWith(color: g.clay)
+                                .merge(AppTypeRoles.typeRole8),
                           ),
-                          const PopupMenuItem(
-                            value: 'board',
-                            child: Row(
-                              children: [
-                                Icon(Icons.dashboard_outlined, size: 18),
-                                SizedBox(width: 8),
-                                Text('Open Board'),
-                              ],
-                            ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: g.clay,
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -198,174 +150,301 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Keep the progress track full-width, with readable counts below.
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: progressFraction,
-                      minHeight: 4,
-                      color: g.clay,
-                      backgroundColor: g.track,
-                      semanticsLabel: 'Things hub activity progress',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 4,
-                  children: [
-                    Text(
-                      '$doneCount of $totalCount done',
-                      style: AscentTextStyles.homeSecondary
-                          .copyWith(color: g.inkSecondary)
-                          .merge(AppTypeRoles.typeRole40),
-                    ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                  // ── CARD HEADER ROW: TODAY & COMPLETED TABS + ROUTINES & PLANS CTA ──────
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
                       children: [
-                        Icon(
-                          Icons.local_fire_department_rounded,
-                          size: 15,
-                          color: g.inkMuted,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '$streak',
-                          style: AscentTextStyles.homeSecondary
-                              .copyWith(color: g.inkMuted)
-                              .merge(AppTypeRoles.typeRole63),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
-              if (filteredList.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s14,
-                      vertical: AppSpace.s12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.fill,
-                      borderRadius: AppGeometry.roundedr16,
-                      border: Border.all(color: g.edge),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          totalCount > 0
-                              ? Icons.task_alt_rounded
-                              : Icons.wb_sunny_outlined,
-                          size: 20,
-                          color: g.clay,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            totalCount > 0
-                                ? 'All caught up! All $doneCount activities finished.'
-                                : 'No activities scheduled for today.',
-                            style: AscentTextStyles.homeSecondary.copyWith(
-                              color: g.inkSecondary,
-                            ),
+                        // Today & Completed segmented pills
+                        Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: g.fill,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: g.edge),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _HubTabPill(
+                                label: 'Today',
+                                count: pendingActivities.length,
+                                isSelected: !_showCompleted,
+                                activeColor: g.clay,
+                                activeTextColor: Colors.white,
+                                inactiveTextColor: g.inkSecondary,
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _showCompleted = false;
+                                    _showAll = false;
+                                  });
+                                },
+                              ),
+                              const SizedBox(width: 4),
+                              _HubTabPill(
+                                label: 'Completed',
+                                count: doneCount,
+                                isSelected: _showCompleted,
+                                activeColor: g.clay,
+                                activeTextColor: Colors.white,
+                                inactiveTextColor: g.inkSecondary,
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _showCompleted = true;
+                                    _showAll = false;
+                                  });
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                )
-              else ...[
-                // Render either capped items (max 4) or all if expanded
-                for (final act
-                    in (_showAll
-                        ? filteredList
-                        : filteredList.take(widget.previewLimit.clamp(1, 4))))
-                  ActivityRowItem(activity: act),
 
-                // Show more / Show less toggle when count exceeds 4
-                if (filteredList.length > 4)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
+                        // Routines & Plans shortcut
                         AppTapArea(
                           onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _showAll = !_showAll);
+                            HapticFeedback.lightImpact();
+                            context.push('/plans');
                           },
-                          borderRadius: AppGeometry.roundedr8,
-                          child: Padding(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s6,
-                              vertical: AppSpace.s4,
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: g.fill,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: g.edge),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
-                                  _showAll
-                                      ? Icons.keyboard_arrow_up_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
-                                  size: 18,
+                                  Icons.event_repeat_rounded,
+                                  size: 14,
                                   color: g.clay,
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 5),
                                 Text(
-                                  _showAll
-                                      ? 'Show less'
-                                      : 'Show ${filteredList.length - 4} more',
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(color: g.clay)
-                                      .merge(AppTypeRoles.typeRole8),
+                                  'Routines & plans',
+                                  style:
+                                      AscentTextStyles.homeSecondary.copyWith(
+                                    color: g.inkSecondary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
-                            ),
-                          ),
-                        ),
-                        AppTapArea(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push('/today');
-                          },
-                          borderRadius: AppGeometry.roundedr8,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s6,
-                              vertical: AppSpace.s4,
-                            ),
-                            child: Text(
-                              'Open Board ›',
-                              style: AscentTextStyles.homeSecondary
-                                  .copyWith(color: g.inkMuted)
-                                  .merge(AppTypeRoles.typeRole15),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-              ],
 
-              // Quick entry defaults to a To-do today, without a reminder.
-              const ActivityComposer(),
-            ],
-          ),
-        ),
-      ],
-    );
+                  // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
+                  if (currentList.isEmpty)
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpace.s12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s14,
+                          vertical: AppSpace.s12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: g.fill,
+                          borderRadius: AppGeometry.roundedr16,
+                          border: Border.all(color: g.edge),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _showCompleted
+                                  ? Icons.task_alt_rounded
+                                  : (totalCount > 0
+                                      ? Icons.task_alt_rounded
+                                      : Icons.wb_sunny_outlined),
+                              size: 20,
+                              color: g.clay,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                _showCompleted
+                                    ? 'No completed activities yet today.'
+                                    : (totalCount > 0
+                                        ? 'All caught up! All $doneCount activities finished.'
+                                        : 'No activities scheduled for today.'),
+                                style:
+                                    AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.inkSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else ...[
+                    // Render either capped items (max 4) or all if expanded
+                    for (final act in (_showAll
+                        ? currentList
+                        : currentList.take(widget.previewLimit.clamp(1, 4))))
+                      ActivityRowItem(activity: act),
+
+                    // Show more / Show less toggle when count exceeds 4
+                    if (currentList.length > 4)
+                      Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpace.s6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            AppTapArea(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _showAll = !_showAll);
+                              },
+                              borderRadius: AppGeometry.roundedr8,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s6,
+                                  vertical: AppSpace.s4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _showAll
+                                          ? Icons.keyboard_arrow_up_rounded
+                                          : Icons.keyboard_arrow_down_rounded,
+                                      size: 18,
+                                      color: g.clay,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _showAll
+                                          ? 'Show less'
+                                          : 'Show ${currentList.length - 4} more',
+                                      style: AscentTextStyles.homeSecondary
+                                          .copyWith(color: g.clay)
+                                          .merge(AppTypeRoles.typeRole8),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            AppTapArea(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                context.push('/today');
+                              },
+                              borderRadius: AppGeometry.roundedr8,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpace.s6,
+                                  vertical: AppSpace.s4,
+                                ),
+                                child: Text(
+                                  'Open Board ›',
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(color: g.inkMuted)
+                                      .merge(AppTypeRoles.typeRole15),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+
+                  // Quick entry defaults to a To-do today, without a reminder.
+                  const ActivityComposer(),
+                ],
+              ),
+            ),
+          ],
+        );
       },
+    );
+  }
+}
+
+class _HubTabPill extends StatelessWidget {
+  final String label;
+  final int count;
+  final bool isSelected;
+  final Color activeColor;
+  final Color activeTextColor;
+  final Color inactiveTextColor;
+  final VoidCallback onTap;
+
+  const _HubTabPill({
+    required this.label,
+    required this.count,
+    required this.isSelected,
+    required this.activeColor,
+    required this.activeTextColor,
+    required this.inactiveTextColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppTapArea(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: AscentTextStyles.homeSecondary.copyWith(
+                color: isSelected ? activeTextColor : inactiveTextColor,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+            if (count > 0) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 5,
+                  vertical: 1,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.25)
+                      : inactiveTextColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '$count',
+                  style: TextStyle(
+                    color: isSelected ? activeTextColor : inactiveTextColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
+import 'package:ascent/features/home/widgets/activity_composer.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -263,7 +264,13 @@ void main() {
 
         // Options chips rendered cleanly
         expect(find.text('To-do'), findsOneWidget);
-        expect(find.text('Today'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(ActivityComposer),
+            matching: find.text('Today'),
+          ),
+          findsOneWidget,
+        );
         expect(find.text('Reminder off'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
