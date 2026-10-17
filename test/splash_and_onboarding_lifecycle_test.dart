@@ -52,7 +52,7 @@ void main() {
 
         // Verify emblem and titles
         expect(find.text('Ascent'), findsOneWidget);
-        expect(find.text('Job Prep & Search Operating System'), findsOneWidget);
+        expect(find.text('Personal Clarity, Focus & Rhythm'), findsOneWidget);
         expect(find.byType(AscentLogo), findsOneWidget);
 
         await tester.pump(const Duration(milliseconds: 1500));

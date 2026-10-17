@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/providers/database_provider.dart';
+import '../home/widgets/life_checkin_popup_dialog.dart';
 
 /// Interactive Freeze-Screen Hydration Pop-up Dialog
 /// Displays a frosted glass blur overlay freezing the background,
@@ -17,12 +18,9 @@ class HydrationPopupDialog extends ConsumerStatefulWidget {
   const HydrationPopupDialog({super.key});
 
   static Future<void> show(BuildContext context) {
-    HapticFeedback.mediumImpact();
-    return showDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierColor: AppPalette.black.withValues(alpha: 0.65),
-      builder: (ctx) => const HydrationPopupDialog(),
+    return LifeCheckInPopupDialog.show(
+      context,
+      initialTab: LifeCheckInTab.hydration,
     );
   }
 

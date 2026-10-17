@@ -144,7 +144,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
               // Subtitle Tagline
               Text(
-                'Job Prep & Search Operating System',
+                'Personal Clarity, Focus & Rhythm',
                 style: AscentTextStyles.bodyMedium
                     .copyWith(color: textMuted)
                     .merge(AppTypeRoles.typeRole26),
