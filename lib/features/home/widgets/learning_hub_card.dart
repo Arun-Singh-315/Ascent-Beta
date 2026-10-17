@@ -73,10 +73,10 @@ class LearningHubCard extends ConsumerWidget {
         GlassSurface(
           radius: 22,
           enableBlur: false,
-          fillColor: dark ? g.fill : Colors.white,
-          customBorder: Border.all(
-            color: g.edge.withValues(alpha: dark ? 1 : .45),
-          ),
+          fillColor: dark ? null : Colors.white,
+          customBorder: dark
+              ? null
+              : Border.all(color: g.edge.withValues(alpha: .45), width: 1),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

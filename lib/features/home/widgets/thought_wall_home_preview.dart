@@ -294,7 +294,9 @@ class _ThoughtWallHomePreviewState
               border: Border.all(
                 color: _focusNode.hasFocus
                     ? g.clay
-                    : g.edge.withValues(alpha: context.isDark ? 1 : .45),
+                    : (context.isDark
+                        ? g.edge
+                        : g.edge.withValues(alpha: .45)),
                 width: 1.0,
               ),
             ),
@@ -398,16 +400,16 @@ class _ThoughtWallHomePreviewState
                 radius: 20,
                 enableBlur: false,
                 fillColor: context.isDark
-                    ? g.fill
+                    ? null
                     : (g.frozen
                           ? const Color(0xEBF7FAFD)
-                          : const Color(0xF7FFFFFF)),
-                customBorder: Border.all(
-                  color: g.edge.withValues(
-                    alpha: context.isDark ? 0.8 : 0.45,
-                  ),
-                  width: 1.0,
-                ),
+                          : Colors.white),
+                customBorder: context.isDark
+                    ? null
+                    : Border.all(
+                        color: g.edge.withValues(alpha: 0.45),
+                        width: 1.0,
+                      ),
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -462,13 +464,13 @@ class _ThoughtWallHomePreviewState
                         child: GlassSurface(
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
-                          fillColor: context.isDark ? const Color(0x1EFFFFFF) : Colors.white,
-                          customBorder: Border.all(
-                            color: context.isDark
-                                ? const Color(0x38FFFFFF)
-                                : g.edge.withValues(alpha: .45),
-                            width: 1.0,
-                          ),
+                          fillColor: context.isDark ? const Color(0x18FFFFFF) : Colors.white,
+                          customBorder: context.isDark
+                              ? null
+                              : Border.all(
+                                  color: g.edge.withValues(alpha: .45),
+                                  width: 1.0,
+                                ),
                           radius: 16,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),

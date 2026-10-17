@@ -188,14 +188,12 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               key: const ValueKey('home_activity_card'),
               radius: 22,
               enableBlur: false,
-              fillColor: Theme.of(context).brightness == Brightness.dark
-                  ? g.fill
-                  : Colors.white,
-              customBorder: Border.all(
-                color: g.edge.withValues(
-                  alpha: Theme.of(context).brightness == Brightness.dark ? 1 : .45,
-                ),
-              ),
+              fillColor: Theme.of(context).brightness == Brightness.light
+                  ? Colors.white
+                  : null,
+              customBorder: Theme.of(context).brightness == Brightness.light
+                  ? Border.all(color: g.edge.withValues(alpha: .45), width: 1)
+                  : null,
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

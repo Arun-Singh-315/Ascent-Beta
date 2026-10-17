@@ -244,7 +244,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isDark
-                  ? const Color(0x30FFFFFF)
+                  ? g.edge
                   : g.edge.withValues(alpha: 0.35),
               width: 1.0,
             ),
