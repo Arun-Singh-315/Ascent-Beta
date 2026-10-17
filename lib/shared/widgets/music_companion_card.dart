@@ -28,6 +28,11 @@ class _MusicCompanionCardState extends State<MusicCompanionCard>
   bool _reading = false;
   bool _foreground = true;
   String? _error;
+  String? _cachedTitle;
+  String? _cachedArtist;
+  String? _cachedSource;
+  String? _cachedPackage;
+  bool? _optimisticPlaying;
 
   late final AnimationController _eqController;
 
@@ -68,11 +73,27 @@ class _MusicCompanionCardState extends State<MusicCompanionCard>
     try {
       final value = await _channel.invokeMapMethod<String, dynamic>('status');
       if (mounted) {
-        final isPlaying = value?['playing'] == true;
+        if (value != null) {
+          if (value['access'] == false) {
+            _cachedTitle = null;
+            _cachedArtist = null;
+            _cachedSource = null;
+            _cachedPackage = null;
+            _optimisticPlaying = null;
+          } else if (value['title'] != null) {
+            _cachedTitle = value['title'] as String?;
+            _cachedArtist = value['artist'] as String?;
+            _cachedSource = value['source'] as String?;
+            _cachedPackage = value['package'] as String?;
+            _optimisticPlaying = null;
+          }
+        }
+        final effectivePlaying =
+            _optimisticPlaying ?? (value?['playing'] == true);
         if (!_isTesting) {
-          if (isPlaying && !_eqController.isAnimating) {
+          if (effectivePlaying && !_eqController.isAnimating) {
             _eqController.repeat();
-          } else if (!isPlaying && _eqController.isAnimating) {
+          } else if (!effectivePlaying && _eqController.isAnimating) {
             _eqController.stop();
           }
         }
@@ -141,12 +162,29 @@ class _MusicCompanionCardState extends State<MusicCompanionCard>
   Future<void> _control(String action) async {
     if (_busy) return;
     HapticFeedback.selectionClick();
-    setState(() {
-      _busy = true;
-    });
+    final targetPackage = _status?['package'] ?? _cachedPackage;
+    final currentPlaying = _optimisticPlaying ?? (_status?['playing'] == true);
+    if (action == 'toggle') {
+      final nextPlaying = !currentPlaying;
+      setState(() {
+        _busy = true;
+        _optimisticPlaying = nextPlaying;
+      });
+      if (!_isTesting) {
+        if (nextPlaying && !_eqController.isAnimating) {
+          _eqController.repeat();
+        } else if (!nextPlaying && _eqController.isAnimating) {
+          _eqController.stop();
+        }
+      }
+    } else {
+      setState(() {
+        _busy = true;
+      });
+    }
     try {
       final sent = await _channel.invokeMethod<bool>('control', {
-        'package': _status?['package'],
+        'package': targetPackage,
         'action': action,
       });
       if (sent != true && mounted) {
@@ -189,10 +227,11 @@ class _MusicCompanionCardState extends State<MusicCompanionCard>
     if (!_supported) return const SizedBox.shrink();
 
     final access = _status?['access'] == true;
-    final title = _status?['title'] as String?;
-    final playing = _status?['playing'] == true;
-    final artist = _status?['artist'] as String?;
-    final source = _status?['source'] as String? ?? 'Media Player';
+    final title = (_status?['title'] as String?) ?? _cachedTitle;
+    final playing = _optimisticPlaying ?? (_status?['playing'] == true);
+    final artist = (_status?['artist'] as String?) ?? _cachedArtist;
+    final source =
+        (_status?['source'] as String?) ?? _cachedSource ?? 'Media Player';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
@@ -419,7 +458,8 @@ class _MusicCompanionCardState extends State<MusicCompanionCard>
           children: [
             IconButton(
               tooltip: playing ? 'Pause music' : 'Play music',
-              onPressed: !_busy && _status?['toggle'] == true
+              onPressed: !_busy &&
+                      (_status?['toggle'] == true || _cachedTitle != null)
                   ? () => _control('toggle')
                   : null,
               icon: Icon(

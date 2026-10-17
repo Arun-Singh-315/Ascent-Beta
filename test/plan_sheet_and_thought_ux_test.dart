@@ -7,7 +7,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_schedule_sheet.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
