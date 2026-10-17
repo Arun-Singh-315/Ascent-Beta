@@ -109,8 +109,8 @@ void main() {
         expect(find.text('Todo'), findsNothing);
         expect(find.text('Reminder'), findsNothing);
 
-        // 5. Tapping thought card reveals transient options again
-        await tester.tap(find.textContaining('Tomorrow at 5 pm'));
+        // 5. Tapping chevron reveals transient options again
+        await tester.tap(find.byTooltip('Expand actions'));
         await tester.pumpAndSettle();
         expect(find.text('Plan'), findsOneWidget);
         expect(find.text('Todo'), findsOneWidget);

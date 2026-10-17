@@ -110,7 +110,7 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   /// Returns the Todo created for a Thought Wall Promise, if it still exists.
   Future<Task?> getTaskLinkedToThought(int thoughtId) => (select(
     taskTable,
-  )..where((t) => t.linkedThoughtId.equals(thoughtId))).getSingleOrNull();
+  )..where((t) => t.linkedThoughtId.equals(thoughtId))..limit(1)).getSingleOrNull();
 
   /// Returns the task with the highest [seriesItemIndex] in [seriesId].
   /// Useful when auto-generating the next item in a series.

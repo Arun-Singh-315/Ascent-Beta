@@ -312,23 +312,27 @@ class HomeCaptureService {
     )..where((r) => r.requestId.equals(requestId))).getSingleOrNull();
     if (receipt != null) {
       final saved = jsonDecode(receipt.argumentsJson) as Map;
-      if (saved['title'] != title.trim() ||
-          saved['at'] != at.toIso8601String() ||
-          saved['checkAt'] != checkInAt?.toIso8601String() ||
-          saved['linkedTodo'] != linkedTodo) {
-        throw StateError(
-          'Already scheduled. Change this plan from Up next on Home.',
-        );
+      if (saved['title'] == title.trim() &&
+          saved['at'] == at.toIso8601String() &&
+          saved['checkAt'] == checkInAt?.toIso8601String() &&
+          saved['linkedTodo'] == linkedTodo) {
+        final plan = await _plan(receipt);
+        if (plan != null &&
+            plan.task?.actualCompletedDate == null &&
+            (plan.reminder.isActive || plan.checkIn?.isActive == true)) {
+          return plan;
+        }
       }
-      final plan = await _plan(receipt);
-      if (plan == null ||
-          plan.task?.actualCompletedDate != null ||
-          (!plan.reminder.isActive && plan.checkIn?.isActive != true)) {
-        throw StateError(
-          'This schedule was removed or finished. Create a new capture.',
-        );
+      // Re-scheduling or updating: clean up the prior alerts and command receipt
+      final oldRemId = saved['reminderId'] as int?;
+      final oldCheckId = saved['checkInId'] as int?;
+      if (oldRemId != null) {
+        await (db.delete(db.reminderTable)..where((r) => r.id.equals(oldRemId))).go();
       }
-      return plan;
+      if (oldCheckId != null) {
+        await (db.delete(db.reminderTable)..where((r) => r.id.equals(oldCheckId))).go();
+      }
+      await (db.delete(db.aiCommandTable)..where((r) => r.requestId.equals(requestId))).go();
     }
     final current = await db.thoughtDao.getThoughtById(source.id);
     if (current == null ||
@@ -351,30 +355,35 @@ class HomeCaptureService {
     }
     if (linkedTodo) {
       if (task != null) {
-        throw StateError(
-          'This thought already has a Todo. Use its existing planning controls.',
+        await (db.update(db.taskTable)..where((t) => t.id.equals(task!.id))).write(
+          TaskTableCompanion(
+            title: Value(title.trim()),
+            plannedDate: Value(at),
+          ),
         );
-      }
-      final cleanTitle = title.trim();
-      final cleanContent = source.content.trim();
-      String? taskNotes;
-      if (cleanTitle.toLowerCase() != cleanContent.toLowerCase()) {
-        if (cleanContent.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
-          final remainder = cleanContent.substring(cleanTitle.length).trim();
-          taskNotes = remainder.isNotEmpty ? remainder : null;
-        } else {
-          taskNotes = cleanContent.isNotEmpty ? cleanContent : null;
+        task = await db.taskDao.getTaskById(task.id);
+      } else {
+        final cleanTitle = title.trim();
+        final cleanContent = source.content.trim();
+        String? taskNotes;
+        if (cleanTitle.toLowerCase() != cleanContent.toLowerCase()) {
+          if (cleanContent.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
+            final remainder = cleanContent.substring(cleanTitle.length).trim();
+            taskNotes = remainder.isNotEmpty ? remainder : null;
+          } else {
+            taskNotes = cleanContent.isNotEmpty ? cleanContent : null;
+          }
         }
+        final id = await db.taskDao.insertTask(
+          TaskTableCompanion.insert(
+            title: cleanTitle,
+            notes: Value(taskNotes),
+            linkedThoughtId: Value(source.id),
+            plannedDate: Value(at),
+          ),
+        );
+        task = await db.taskDao.getTaskById(id);
       }
-      final id = await db.taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: cleanTitle,
-          notes: Value(taskNotes),
-          linkedThoughtId: Value(source.id),
-          plannedDate: Value(at),
-        ),
-      );
-      task = await db.taskDao.getTaskById(id);
     }
     Future<Reminder> add(String text, DateTime time) async {
       final id = await db.reminderDao.insertReminder(
@@ -428,6 +437,7 @@ class HomeCaptureService {
               'alertEffectsPending': true,
             }),
           ),
+          mode: InsertMode.insertOrReplace,
         );
     return HomePlan(requestId, task, reminder, check);
   });

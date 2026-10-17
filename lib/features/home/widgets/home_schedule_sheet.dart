@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:drift/drift.dart' show InsertMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -174,6 +175,10 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
       _at = DateTime(now.year, now.month, now.day + 1, 7, 0);
     }
 
+    if (_follow && (_checkAt == null || !_checkAt!.isAfter(_at!))) {
+      _checkAt = _at!.add(Duration(minutes: (_minutes ?? 30) + 10));
+    }
+
     if (_at == null ||
         !_at!.isAfter(DateTime.now()) ||
         (_follow && (_checkAt == null || !_checkAt!.isAfter(_at!)))) {
@@ -198,7 +203,22 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
 
       if (isRecurring) {
         final planService = ref.read(planServiceProvider);
-        final startDateStr = PlanRecurrenceEngine.formatDate(_startDate);
+
+        DateTime effectiveStartDate = _startDate;
+        final scheduledToday = DateTime(
+          _startDate.year,
+          _startDate.month,
+          _startDate.day,
+          _at!.hour,
+          _at!.minute,
+        );
+        if (scheduledToday.isBefore(DateTime.now())) {
+          effectiveStartDate = _startDate.add(const Duration(days: 1));
+          if (_endDate.isBefore(effectiveStartDate)) {
+            _endDate = effectiveStartDate.add(const Duration(days: 14));
+          }
+        }
+        final startDateStr = PlanRecurrenceEngine.formatDate(effectiveStartDate);
         final endDateStr = PlanRecurrenceEngine.formatDate(_endDate);
         final localTimeStr =
             '${_at!.hour.toString().padLeft(2, '0')}:${_at!.minute.toString().padLeft(2, '0')}';
@@ -247,6 +267,7 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                 'alertEffectsPending': true,
               }),
             ),
+            mode: InsertMode.insertOrReplace,
           );
         }
 
@@ -263,7 +284,7 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
             ),
           ),
         );
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) Navigator.pop(context);
       } else {
         // One-time plan
         final plan = await HomeCaptureService(db).schedule(
@@ -293,9 +314,10 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
             ),
           ),
         );
-        Navigator.pop(context);
+        if (Navigator.canPop(context)) Navigator.pop(context);
       }
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('Schedule failed: $e\n$s');
       if (mounted) {
         setState(
           () => _error = e is StateError || e is ArgumentError
@@ -303,7 +325,7 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                   RegExp(r'^(Bad state|Invalid argument\(s\)): '),
                   '',
                 )
-              : 'Could not schedule. Your draft is still here.',
+              : 'Could not schedule: ${e.toString().split('\n').first}',
         );
       }
     } finally {
@@ -364,24 +386,54 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                 runSpacing: 8,
                 children: [
                   ChoiceChip(
-                    label: const Text('Once'),
+                    label: Text(
+                      'Once',
+                      style: TextStyle(
+                        color: _recurrenceRule == 'once'
+                            ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
+                            : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                        fontWeight: _recurrenceRule == 'once' ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
                     selected: _recurrenceRule == 'once',
+                    selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
+                    checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
                     onSelected: (selected) {
                       if (selected) setState(() => _recurrenceRule = 'once');
                       _persist();
                     },
                   ),
                   ChoiceChip(
-                    label: const Text('Every day'),
+                    label: Text(
+                      'Every day',
+                      style: TextStyle(
+                        color: _recurrenceRule == 'daily'
+                            ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
+                            : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                        fontWeight: _recurrenceRule == 'daily' ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
                     selected: _recurrenceRule == 'daily',
+                    selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
+                    checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
                     onSelected: (selected) {
                       if (selected) setState(() => _recurrenceRule = 'daily');
                       _persist();
                     },
                   ),
                   ChoiceChip(
-                    label: const Text('Weekdays'),
+                    label: Text(
+                      'Weekdays',
+                      style: TextStyle(
+                        color: _recurrenceRule == 'weekdays'
+                            ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
+                            : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                        fontWeight: _recurrenceRule == 'weekdays' ? FontWeight.w600 : FontWeight.w500,
+                      ),
+                    ),
                     selected: _recurrenceRule == 'weekdays',
+                    selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
+                    checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
                     onSelected: (selected) {
                       if (selected) setState(() => _recurrenceRule = 'weekdays');
                       _persist();
@@ -557,20 +609,41 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
               if (_follow) ...[
                 Padding(
                   padding: const EdgeInsets.only(top: 4, bottom: 8),
-                  child: Row(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       ChoiceChip(
-                        label: const Text('Once'),
+                        label: Text(
+                          'Once',
+                          style: TextStyle(
+                            color: _checkInPolicy == 'once'
+                                ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
+                                : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                            fontWeight: _checkInPolicy == 'once' ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
                         selected: _checkInPolicy == 'once',
+                        selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
+                        checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
                         onSelected: (selected) {
                           if (selected) setState(() => _checkInPolicy = 'once');
                           _persist();
                         },
                       ),
-                      const SizedBox(width: 8),
                       ChoiceChip(
-                        label: const Text('Gentle (Retries)'),
+                        label: Text(
+                          'Gentle (Retries)',
+                          style: TextStyle(
+                            color: _checkInPolicy == 'gentle'
+                                ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
+                                : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                            fontWeight: _checkInPolicy == 'gentle' ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
                         selected: _checkInPolicy == 'gentle',
+                        selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
+                        checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
                         onSelected: (selected) {
                           if (selected) setState(() => _checkInPolicy = 'gentle');
                           _persist();

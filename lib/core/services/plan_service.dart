@@ -72,6 +72,11 @@ class PlanService {
 
         await db.planDao.insertPlan(planCompanion);
 
+        final existingLinkedTask = sourceThoughtId != null
+            ? await db.taskDao.getTaskLinkedToThought(sourceThoughtId)
+            : null;
+        var thoughtIdClaimed = existingLinkedTask != null;
+
         // Materialize occurrences and atomic child links for each eligible date
         for (final dateStr in dates) {
           final occId = 'occ_${planId}_${dateStr}_0';
@@ -93,12 +98,16 @@ class PlanService {
 
           int? linkedTaskId;
           if (addTodo) {
+            final shouldLinkThought = sourceThoughtId != null && !thoughtIdClaimed;
+            if (shouldLinkThought) {
+              thoughtIdClaimed = true;
+            }
             linkedTaskId = await db.taskDao.insertTask(
               TaskTableCompanion.insert(
                 title: cleanTitle,
                 plannedDate: Value(startTime),
                 estimatedMinutes: Value(targetMinutes),
-                linkedThoughtId: Value(sourceThoughtId),
+                linkedThoughtId: Value(shouldLinkThought ? sourceThoughtId : null),
               ),
             );
           }
