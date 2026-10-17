@@ -121,6 +121,9 @@ class NotificationService {
   // Interactive Notification Actions
   static const String actionPause = 'action_pause';
   static const String actionResume = 'action_resume';
+  static const String actionRewind = 'action_rewind';
+  static const String actionForward = 'action_forward';
+  static const String actionDone = 'action_done';
   static const String isolatePortName = 'ascent_notification_actions_port';
   static ReceivePort? _actionReceivePort;
 
@@ -1353,9 +1356,24 @@ class NotificationService {
           : nowMillis;
 
       final actions = <AndroidNotificationAction>[
+        const AndroidNotificationAction(
+          actionRewind,
+          '-10s',
+          showsUserInterface: false,
+        ),
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume' : 'Pause',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionForward,
+          '+30s',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionDone,
+          'Done',
           showsUserInterface: false,
         ),
       ];
@@ -1388,6 +1406,9 @@ class NotificationService {
                       : 'Ascent • Active Focus')),
         category: AndroidNotificationCategory.status,
         actions: actions,
+        showProgress: totalSeconds != null && totalSeconds > 0,
+        maxProgress: totalSeconds ?? 0,
+        progress: elapsedSeconds ?? 0,
       );
       const darwinDetails = DarwinNotificationDetails(
         presentSound: false,

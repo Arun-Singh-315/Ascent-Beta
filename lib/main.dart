@@ -168,6 +168,13 @@ Future<void> main() async {
         learningNotifier.pause();
       } else if (actionId == NotificationService.actionResume) {
         learningNotifier.play();
+      } else if (actionId == NotificationService.actionRewind) {
+        learningNotifier.seekBy(-10);
+      } else if (actionId == NotificationService.actionForward) {
+        learningNotifier.seekBy(30);
+      } else if (actionId == NotificationService.actionDone) {
+        learningNotifier.pause(updateNotification: false);
+        NotificationService.instance.cancelOngoingLectureNotification();
       }
     } else if (effectivePayload == '/focus') {
       () async {
@@ -178,6 +185,9 @@ Future<void> main() async {
           await dao.pauseSession(active.id);
         } else if (actionId == NotificationService.actionResume) {
           await dao.resumeSession(active.id);
+        } else if (actionId == NotificationService.actionDone) {
+          await dao.completeSession(active.id);
+          NotificationService.instance.cancelOngoingFocusNotification();
         }
       }();
     } else if (effectivePayload == '/chai-break') {
