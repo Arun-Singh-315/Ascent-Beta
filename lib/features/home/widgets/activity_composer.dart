@@ -237,15 +237,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         Container(
           decoration: BoxDecoration(
             color: isDark
-                ? g.fill
+                ? const Color(0x18FFFFFF)
                 : (context.glass.frozen
                       ? const Color(0xFFF0F5FA)
                       : const Color(0xFFF7F6F9)),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: g.edge.withValues(
-                alpha: isDark ? 0.75 : 0.35,
-              ),
+              color: isDark
+                  ? const Color(0x30FFFFFF)
+                  : g.edge.withValues(alpha: 0.35),
               width: 1.0,
             ),
           ),

@@ -462,11 +462,11 @@ class _ThoughtWallHomePreviewState
                         child: GlassSurface(
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
-                          fillColor: context.isDark ? g.fill : Colors.white,
+                          fillColor: context.isDark ? const Color(0x1EFFFFFF) : Colors.white,
                           customBorder: Border.all(
-                            color: g.edge.withValues(
-                              alpha: context.isDark ? 1 : .45,
-                            ),
+                            color: context.isDark
+                                ? const Color(0x38FFFFFF)
+                                : g.edge.withValues(alpha: .45),
                             width: 1.0,
                           ),
                           radius: 16,
