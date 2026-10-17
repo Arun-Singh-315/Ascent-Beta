@@ -688,9 +688,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           (timeTracking.activeSession?.linkedTaskId == task.id &&
               timeTracking.isPaused)) {
         status = TodayActivityStatus.paused;
-      } else if (task.actualCompletedDate != null ||
-          (taskSessions.isNotEmpty &&
-              taskSessions.every((s) => s.status == 'completed'))) {
+      } else if (task.actualCompletedDate != null) {
         status = TodayActivityStatus.done;
       } else {
         status = TodayActivityStatus.notStarted;

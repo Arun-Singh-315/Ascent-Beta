@@ -289,12 +289,14 @@ class _ThoughtWallHomePreviewState
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             nightDecoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
+              color: context.isDark ? g.fill : Colors.white,
+              borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: _focusNode.hasFocus
-                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                    : (context.isDark ? FrozenPalette.darkLine : const Color(0xFF1E293B)),
+                    ? (context.isDark
+                          ? FrozenPalette.darkAction
+                          : FrozenPalette.action)
+                    : g.edge.withValues(alpha: context.isDark ? 1 : .45),
                 width: 1.0,
               ),
             ),
@@ -304,20 +306,28 @@ class _ThoughtWallHomePreviewState
                   Icons.edit_note_rounded,
                   size: 20,
                   color: _focusNode.hasFocus
-                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                      : (context.isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk),
+                      ? (context.isDark
+                            ? FrozenPalette.darkAction
+                            : FrozenPalette.action)
+                      : (context.isDark
+                            ? FrozenPalette.darkSecondaryInk
+                            : FrozenPalette.secondaryInk),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
-                    cursorColor: context.isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                    cursorColor: context.isDark
+                        ? FrozenPalette.darkAction
+                        : FrozenPalette.action,
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
                     style: AppTypography.plusJakartaSans14W60080(
-                      color: context.isDark ? FrozenPalette.darkInk : FrozenPalette.ink,
+                      color: context.isDark
+                          ? FrozenPalette.darkInk
+                          : FrozenPalette.ink,
                     ),
                     decoration: InputDecoration(
                       hintText: "Capture a thought…",
@@ -338,8 +348,19 @@ class _ThoughtWallHomePreviewState
                     ),
                   ),
                 ),
-                IconButton(
+                IconButton.filled(
                   tooltip: 'Send capture',
+                  style: IconButton.styleFrom(
+                    backgroundColor: context.isDark
+                        ? FrozenPalette.darkAction
+                        : FrozenPalette.action,
+                    disabledBackgroundColor: context.isDark
+                        ? FrozenPalette.darkAction
+                        : FrozenPalette.action,
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white,
+                    minimumSize: const Size(44, 44),
+                  ),
                   onPressed: _saving || _controller.text.trim().isEmpty
                       ? null
                       : _send,
@@ -347,12 +368,12 @@ class _ThoughtWallHomePreviewState
                       ? const SizedBox(
                           width: 18,
                           height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
-                      : Icon(
-                          Icons.arrow_upward_rounded,
-                          color: context.isDark ? FrozenPalette.darkAction : FrozenPalette.action,
-                        ),
+                      : Icon(Icons.arrow_upward_rounded, color: Colors.white),
                 ),
               ],
             ),
@@ -413,8 +434,7 @@ class _ThoughtWallHomePreviewState
                       pendingDraft?['thoughtId'] == thought.id;
 
                   final isTransientActive =
-                      _transientThoughtId == thought.id &&
-                      !thought.isCompleted;
+                      _transientThoughtId == thought.id && !thought.isCompleted;
 
                   final isRight = (index % 2 == 1);
 
@@ -427,11 +447,11 @@ class _ThoughtWallHomePreviewState
                     child: GlassSurface(
                       key: ValueKey('home_thought_${thought.id}'),
                       enableBlur: false,
-                      fillColor: Colors.transparent,
+                      fillColor: context.isDark ? g.fill : Colors.white,
                       customBorder: Border.all(
-                        color: context.isDark
-                            ? FrozenPalette.darkLine
-                            : const Color(0xFF1E293B),
+                        color: g.edge.withValues(
+                          alpha: context.isDark ? 1 : .45,
+                        ),
                         width: 1.0,
                       ),
                       radius: 16,
@@ -448,9 +468,7 @@ class _ThoughtWallHomePreviewState
                       onTap: () {
                         HapticFeedback.lightImpact();
                         if (_transientThoughtId == thought.id) {
-                          context.push(
-                            '/thought-wall?thought=${thought.id}',
-                          );
+                          context.push('/thought-wall?thought=${thought.id}');
                         } else {
                           _activateTransient(thought.id);
                         }
@@ -459,184 +477,181 @@ class _ThoughtWallHomePreviewState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                              if (thought.isPinned) ...[
-                                AppTag(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpace.s8,
-                                    vertical: AppSpace.s2,
-                                  ),
-                                  nightDecoration: BoxDecoration(
-                                    color: g.clay.withValues(alpha: 0.14),
-                                    borderRadius: AppGeometry.roundedr10,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.push_pin_rounded,
-                                        size: 11,
-                                        color: g.clay,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'PINNED TO HOME',
-                                        style: AscentTextStyles.homeCaption
-                                            .copyWith(color: g.clay)
-                                            .merge(AppTypeRoles.typeRole65),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                              ] else if (thought.mood == 'promise') ...[
-                                AppTag(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpace.s8,
-                                    vertical: AppSpace.s2,
-                                  ),
-                                  nightDecoration: BoxDecoration(
-                                    color: g.clay.withValues(alpha: 0.14),
-                                    borderRadius: AppGeometry.roundedr10,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.handshake_rounded,
-                                        size: 11,
-                                        color: g.clay,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        'PROMISE',
-                                        style: AscentTextStyles.homeCaption
-                                            .copyWith(color: g.clay)
-                                            .merge(AppTypeRoles.typeRole65),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                              ],
-                              ThoughtExcerpt(
-                                content: thought.content,
-                                onReadMore: () => context.push(
-                                  '/thought-wall?thought=${thought.id}',
-                                ),
-                                style: AppTypography.plusJakartaSans14W600116(
-                                  color: thought.isCompleted
-                                      ? g.inkMuted
-                                      : g.ink,
-                                  decoration: thought.isCompleted
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
+                          if (thought.isPinned) ...[
+                            AppTag(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s8,
+                                vertical: AppSpace.s2,
                               ),
-                              if (isDraftSource) ...[
-                                const SizedBox(height: 8),
-                                Divider(color: g.line),
-                                const SizedBox(height: 6),
-                                _draftActions(pendingDraft!, showTitle: false),
-                              ],
-                              if (isTransientActive && !isDraftSource) ...[
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children: [
-                                    AppPill.action(
-                                      avatar: const Icon(
-                                        Icons.edit_calendar_outlined,
-                                        size: 14,
-                                      ),
-                                      label: const Text('Plan'),
-                                      onPressed: () {
-                                        _dismissTransient();
-                                        _plan(thought);
-                                      },
-                                    ),
-                                    AppPill.action(
-                                      avatar: const Icon(
-                                        Icons.checklist_rounded,
-                                        size: 14,
-                                      ),
-                                      label: const Text('Todo'),
-                                      onPressed: () {
-                                        _dismissTransient();
-                                        applyThoughtAction(
-                                          context,
-                                          ref.read(databaseProvider),
-                                          [thought],
-                                          'todo',
-                                        );
-                                      },
-                                    ),
-                                    AppPill.action(
-                                      avatar: const Icon(
-                                        Icons.notifications_none_rounded,
-                                        size: 14,
-                                      ),
-                                      label: const Text('Reminder'),
-                                      onPressed: () {
-                                        _dismissTransient();
-                                        applyThoughtAction(
-                                          context,
-                                          ref.read(databaseProvider),
-                                          [thought],
-                                          'reminder',
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              const SizedBox(height: 6),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              nightDecoration: BoxDecoration(
+                                color: g.clay.withValues(alpha: 0.14),
+                                borderRadius: AppGeometry.roundedr10,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      if (thought.isCompleted) ...[
-                                        Icon(
-                                          Icons.check_circle_rounded,
-                                          size: 12,
-                                          color: g.clay,
-                                        ),
-                                        const SizedBox(width: 4),
-                                      ],
-                                      Text(
-                                        timeAgo,
-                                        style: AscentTextStyles.homeCaption
-                                            .copyWith(
-                                              color: g.inkMuted,
-                                              letterSpacing: 0.5,
-                                            )
-                                            .merge(AppTypeRoles.typeRole66),
-                                      ),
-                                    ],
+                                  Icon(
+                                    Icons.push_pin_rounded,
+                                    size: 11,
+                                    color: g.clay,
                                   ),
-                                  GestureDetector(
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      context.push(
-                                        '/thought-wall?thought=${thought.id}',
-                                      );
-                                    },
-                                    child: Icon(
-                                      Icons.arrow_outward_rounded,
-                                      size: 13,
-                                      color: g.inkMuted,
-                                    ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'PINNED TO HOME',
+                                    style: AscentTextStyles.homeCaption
+                                        .copyWith(color: g.clay)
+                                        .merge(AppTypeRoles.typeRole65),
                                   ),
                                 ],
                               ),
+                            ),
+                            const SizedBox(height: 6),
+                          ] else if (thought.mood == 'promise') ...[
+                            AppTag(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s8,
+                                vertical: AppSpace.s2,
+                              ),
+                              nightDecoration: BoxDecoration(
+                                color: g.clay.withValues(alpha: 0.14),
+                                borderRadius: AppGeometry.roundedr10,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.handshake_rounded,
+                                    size: 11,
+                                    color: g.clay,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'PROMISE',
+                                    style: AscentTextStyles.homeCaption
+                                        .copyWith(color: g.clay)
+                                        .merge(AppTypeRoles.typeRole65),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+                          ThoughtExcerpt(
+                            content: thought.content,
+                            onReadMore: () => context.push(
+                              '/thought-wall?thought=${thought.id}',
+                            ),
+                            style: AppTypography.plusJakartaSans14W600116(
+                              color: thought.isCompleted ? g.inkMuted : g.ink,
+                              decoration: thought.isCompleted
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                          if (isDraftSource) ...[
+                            const SizedBox(height: 8),
+                            Divider(color: g.line),
+                            const SizedBox(height: 6),
+                            _draftActions(pendingDraft!, showTitle: false),
+                          ],
+                          if (isTransientActive && !isDraftSource) ...[
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                AppPill.action(
+                                  avatar: const Icon(
+                                    Icons.edit_calendar_outlined,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Plan'),
+                                  onPressed: () {
+                                    _dismissTransient();
+                                    _plan(thought);
+                                  },
+                                ),
+                                AppPill.action(
+                                  avatar: const Icon(
+                                    Icons.checklist_rounded,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Todo'),
+                                  onPressed: () {
+                                    _dismissTransient();
+                                    applyThoughtAction(
+                                      context,
+                                      ref.read(databaseProvider),
+                                      [thought],
+                                      'todo',
+                                    );
+                                  },
+                                ),
+                                AppPill.action(
+                                  avatar: const Icon(
+                                    Icons.notifications_none_rounded,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Reminder'),
+                                  onPressed: () {
+                                    _dismissTransient();
+                                    applyThoughtAction(
+                                      context,
+                                      ref.read(databaseProvider),
+                                      [thought],
+                                      'reminder',
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 6),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (thought.isCompleted) ...[
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      size: 12,
+                                      color: g.clay,
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                  Text(
+                                    timeAgo,
+                                    style: AscentTextStyles.homeCaption
+                                        .copyWith(
+                                          color: g.inkMuted,
+                                          letterSpacing: 0.5,
+                                        )
+                                        .merge(AppTypeRoles.typeRole66),
+                                  ),
+                                ],
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.lightImpact();
+                                  context.push(
+                                    '/thought-wall?thought=${thought.id}',
+                                  );
+                                },
+                                child: Icon(
+                                  Icons.arrow_outward_rounded,
+                                  size: 13,
+                                  color: g.inkMuted,
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      );
-                    }),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
               ],
             );
           },

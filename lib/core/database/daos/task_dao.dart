@@ -165,6 +165,37 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return into(taskTable).insert(companion);
   }
 
+  /// Type/target edits cannot mutate live timers or rewrite completed work.
+  Future<String?> activityTypeChangeError(int id, int? minutes) async {
+    final task = await getTaskById(id);
+    if (task == null) return 'This activity no longer exists.';
+    if (task.estimatedMinutes == minutes) return null;
+    if (minutes != null && minutes != -1 && (minutes < 1 || minutes > 1440)) {
+      return 'Choose a timer from 1 to 1440 minutes.';
+    }
+    if (task.actualCompletedDate != null) {
+      return 'Completed activities keep their original type.';
+    }
+    if (task.learningCourseId != null || task.learningLectureId != null) {
+      return 'Course lectures keep their learning timer. Edit them in Learning.';
+    }
+    final sessions = await (select(
+      db.timeSessionTable,
+    )..where((s) => s.linkedTaskId.equals(id))).get();
+    if (sessions.any((s) => s.status == 'running' || s.status == 'paused')) {
+      return 'End the running or paused timer before changing its type or target.';
+    }
+    if (minutes != null && minutes > 0) {
+      final logged = sessions
+          .where((s) => s.status == 'completed')
+          .fold<int>(0, (sum, s) => sum + s.durationSeconds);
+      if (minutes * 60 <= logged || minutes <= (task.actualMinutes ?? 0)) {
+        return 'Choose a timer longer than the time already logged.';
+      }
+    }
+    return null;
+  }
+
   /// Updates the task identified by [companion.id].
   /// Returns true if exactly one row was affected.
   Future<bool> updateTask(TaskTableCompanion companion) async {
@@ -172,6 +203,14 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     return db.transaction(() async {
       final task = await getTaskById(companion.id.value);
       if (task == null) return false;
+      if (companion.estimatedMinutes.present &&
+          await activityTypeChangeError(
+                task.id,
+                companion.estimatedMinutes.value,
+              ) !=
+              null) {
+        return false;
+      }
       if (companion.actualCompletedDate.present) {
         if (companion.actualCompletedDate.value == null) {
           if (task.actualCompletedDate != null) return false;

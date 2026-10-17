@@ -123,8 +123,8 @@ class HomeHeader extends ConsumerWidget {
                           size: 15,
                           color: g.frozen
                               ? (isDark
-                                  ? FrozenPalette.darkSpark
-                                  : FrozenPalette.spark)
+                                    ? FrozenPalette.darkSpark
+                                    : FrozenPalette.spark)
                               : context.surfaces.pillForeground(
                                   isStreakCardVisible,
                                   g.clay,
@@ -184,18 +184,19 @@ class HomeHeader extends ConsumerWidget {
                       border: Border.all(
                         color: g.frozen
                             ? (isDark
-                                ? FrozenPalette.darkLine
-                                : FrozenPalette.line)
+                                  ? FrozenPalette.darkLine
+                                  : FrozenPalette.line)
                             : g.edge,
                         width: AppBorderScale.w1point0,
                       ),
                       boxShadow: g.frozen
                           ? [
                               BoxShadow(
-                                color: (isDark
-                                        ? FrozenPalette.darkAction
-                                        : FrozenPalette.action)
-                                    .withValues(alpha: 0.20),
+                                color:
+                                    (isDark
+                                            ? FrozenPalette.darkAction
+                                            : FrozenPalette.action)
+                                        .withValues(alpha: 0.20),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
                               ),
@@ -282,44 +283,19 @@ class HomeHeader extends ConsumerWidget {
                   ),
                 ),
 
-              // Home customization stays beside the profession label.
-              AppTapArea(
-                onTap: () {
+              // A quiet icon keeps personalization reachable without a second label.
+              IconButton(
+                tooltip: 'Customize Home',
+                onPressed: () {
                   HapticFeedback.lightImpact();
                   showHomeCustomization(context);
                 },
-                borderRadius: AppGeometry.roundedr6,
-                child: AppPill(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s8,
-                    vertical: AppSpace.s2point5,
-                  ),
-                  nightDecoration: BoxDecoration(
-                    color: g.fill,
-                    borderRadius: AppGeometry.roundedr6,
-                    border: Border.all(
-                      color: g.edge,
-                      width: AppBorderScale.w0point8,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.tune_rounded, size: 13, color: g.inkSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Customize Home',
-                        style: AppTypography.plusJakartaSans105W60010(
-                          color: g.inkSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                icon: Icon(Icons.tune_rounded, size: 19, color: g.inkSecondary),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
         ],
       ),
     );

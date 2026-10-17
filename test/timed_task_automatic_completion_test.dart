@@ -170,15 +170,19 @@ void main() {
     },
   );
   test(
-    'Paused sessions and edited larger targets do not auto-complete; failed writes roll back',
+    'Live target edits are rejected, paused sessions do not auto-complete and failed writes roll back',
     () async {
-      final (task, id) = await session();
-      await db.taskDao.updateTask(
-        TaskTableCompanion(
-          id: drift.Value(task),
-          estimatedMinutes: const drift.Value(2),
+      final (task, id) = await session(minutes: 2);
+      expect(
+        await db.taskDao.updateTask(
+          TaskTableCompanion(
+            id: drift.Value(task),
+            estimatedMinutes: const drift.Value(3),
+          ),
         ),
+        false,
       );
+      expect((await db.taskDao.getTaskById(task))!.estimatedMinutes, 2);
       expect(
         await db.timeSessionDao.completeTimedSessionIfTargetReached(
           id,
