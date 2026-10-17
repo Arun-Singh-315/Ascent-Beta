@@ -86,130 +86,132 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           });
         final filteredList = sortedPending;
 
-        return GlassSurface(
-          key: const ValueKey('home_activity_card'),
-          radius: 22,
-          enableBlur: false,
-          fillColor: Theme.of(context).brightness == Brightness.dark
-              ? g.fill
-              : Colors.white,
-          customBorder: Border.all(
-            color: g.edge.withValues(
-              alpha: Theme.of(context).brightness == Brightness.dark ? 1 : .45,
-            ),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── HEADING ROW: TODAY + VIEW BOARD CTA ───────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 16,
-                  runSpacing: 4,
-                  children: [
-                    Text(
-                      'Today',
-                      style: AscentTextStyles.homeTitle.copyWith(
-                        color: g.ink,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── HEADING ROW: THINGS HUB + VIEW BOARD CTA (OUTSIDE CARD) ──────
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    'Things hub',
+                    style: AscentTextStyles.homeTitle.copyWith(
+                      color: g.ink,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AppTapArea(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AppTapArea(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push('/today');
+                        },
+                        borderRadius: AppGeometry.roundedr6,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s4,
+                            vertical: AppSpace.s2,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'View board',
+                                style: AscentTextStyles.homeSecondary
+                                    .copyWith(color: g.clay)
+                                    .merge(AppTypeRoles.typeRole8),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 16,
+                                color: g.clay,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert_rounded,
+                          size: 18,
+                          color: g.inkMuted,
+                        ),
+                        padding: EdgeInsets.zero,
+                        tooltip: 'Plans & Options',
+                        onSelected: (val) {
+                          if (val == 'plans') {
+                            context.push('/plans');
+                          } else if (val == 'board') {
                             context.push('/today');
-                          },
-                          borderRadius: AppGeometry.roundedr6,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s4,
-                              vertical: AppSpace.s2,
-                            ),
+                          }
+                        },
+                        itemBuilder: (ctx) => [
+                          const PopupMenuItem(
+                            value: 'plans',
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  'View board',
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(color: g.clay)
-                                      .merge(AppTypeRoles.typeRole8),
-                                ),
-                                const SizedBox(width: 2),
-                                Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 16,
-                                  color: g.clay,
-                                ),
+                                Icon(Icons.event_repeat_rounded, size: 18),
+                                SizedBox(width: 8),
+                                Text('Routines & Plans'),
                               ],
                             ),
                           ),
-                        ),
-                        PopupMenuButton<String>(
-                          icon: Icon(
-                            Icons.more_vert_rounded,
-                            size: 18,
-                            color: g.inkMuted,
+                          const PopupMenuItem(
+                            value: 'board',
+                            child: Row(
+                              children: [
+                                Icon(Icons.dashboard_outlined, size: 18),
+                                SizedBox(width: 8),
+                                Text('Open Board'),
+                              ],
+                            ),
                           ),
-                          padding: EdgeInsets.zero,
-                          tooltip: 'Plans & Options',
-                          onSelected: (val) {
-                            if (val == 'plans') {
-                              context.push('/plans');
-                            } else if (val == 'board') {
-                              context.push('/today');
-                            }
-                          },
-                          itemBuilder: (ctx) => [
-                            const PopupMenuItem(
-                              value: 'plans',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.event_repeat_rounded, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('Routines & Plans'),
-                                ],
-                              ),
-                            ),
-                            const PopupMenuItem(
-                              value: 'board',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.dashboard_outlined, size: 18),
-                                  SizedBox(width: 8),
-                                  Text('Open Board'),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            GlassSurface(
+              key: const ValueKey('home_activity_card'),
+              radius: 22,
+              enableBlur: false,
+              fillColor: Theme.of(context).brightness == Brightness.dark
+                  ? g.fill
+                  : Colors.white,
+              customBorder: Border.all(
+                color: g.edge.withValues(
+                  alpha: Theme.of(context).brightness == Brightness.dark ? 1 : .45,
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Keep the progress track full-width, with readable counts below.
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progressFraction,
+                      minHeight: 4,
+                      color: g.clay,
+                      backgroundColor: g.track,
+                      semanticsLabel: 'Things hub activity progress',
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Keep the progress track full-width, with readable counts below.
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progressFraction,
-                  minHeight: 4,
-                  color: g.clay,
-                  backgroundColor: g.track,
-                  semanticsLabel: 'Today’s activity progress',
-                ),
-              ),
-              const SizedBox(height: 8),
+                  ),
+                  const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
                 child: Wrap(
@@ -362,7 +364,9 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               const ActivityComposer(),
             ],
           ),
-        );
+        ),
+      ],
+    );
       },
     );
   }

@@ -193,9 +193,10 @@ void main() {
 
         // The actionable task is visible
         expect(find.text('Review architecture diagram'), findsOneWidget);
-        // Header has "Today" and "View board"
-        // Heading plus the composer's default date control.
-        expect(find.text('Today'), findsNWidgets(2));
+        // Header has "Things hub" and "View board"
+        expect(find.text('Things hub'), findsOneWidget);
+        // Composer date control has "Today"
+        expect(find.text('Today'), findsOneWidget);
         expect(find.text('View board'), findsOneWidget);
       },
     );

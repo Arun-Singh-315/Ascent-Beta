@@ -244,7 +244,19 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
   Widget _buildFloatingAssistantPill(BuildContext context) {
     final isDark = context.isDark;
+    final g = context.glass;
     final assistantName = ref.watch(assistantNameProvider);
+    final accentColors = g.frozen
+        ? (isDark
+            ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
+            : [FrozenPalette.actionBright, FrozenPalette.action])
+        : (isDark
+            ? [g.clay, g.clay.withValues(alpha: 0.82)]
+            : [g.clay.withValues(alpha: 0.88), g.clay]);
+    final shadowColor = g.frozen
+        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+        : g.clay;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Material(
@@ -259,17 +271,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: isDark
-                    ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
-                    : [FrozenPalette.actionBright, FrozenPalette.action],
+                colors: accentColors,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                      .withValues(alpha: 0.28),
+                  color: shadowColor.withValues(alpha: 0.28),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),

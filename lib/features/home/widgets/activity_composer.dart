@@ -200,20 +200,33 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final now = DateTime.now();
     final label = _date == null || DateUtils.isSameDay(_day, now)
         ? 'Today'
         : DateUtils.isSameDay(_day, DateTime(now.year, now.month, now.day + 1))
         ? 'Tomorrow'
         : DateFormat('d MMM').format(_day);
-    Widget option(String text, IconData icon) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+    Widget option(String text, IconData icon) => Container(
+      margin: const EdgeInsets.only(right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: g.clay.withValues(alpha: isDark ? 0.16 : 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: g.inkSecondary),
+          Icon(icon, size: 14, color: g.clay),
           const SizedBox(width: 4),
-          Text(text, style: TextStyle(color: g.inkSecondary, fontSize: 12)),
+          Text(
+            text,
+            style: TextStyle(
+              color: g.inkSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -223,118 +236,186 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: g.claySoft.withValues(alpha: .45),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const ValueKey('activity_quick_input'),
-                  controller: _text,
-                  enabled: !_saving,
-                  minLines: 1,
-                  maxLines: 3,
-                  maxLength: 300,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: TextStyle(color: g.ink, fontSize: 14),
-                  decoration: const InputDecoration(
-                    hintText: 'Add an activity…',
-                    counterText: '',
-                    filled: false,
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                  ),
-                ),
+            color: isDark
+                ? g.fill
+                : (context.glass.frozen
+                      ? const Color(0xFFF0F5FA)
+                      : const Color(0xFFF7F6F9)),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: g.edge.withValues(
+                alpha: isDark ? 0.75 : 0.35,
               ),
-              IconButton.filled(
-                tooltip: 'Add activity',
-                style: IconButton.styleFrom(
-                  backgroundColor: g.clay,
-                  disabledBackgroundColor: g.clay,
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: Colors.white,
-                  minimumSize: const Size(44, 44),
-                ),
-                onPressed: _saving || _text.text.trim().isEmpty ? null : _send,
-                icon: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+              width: 1.0,
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const ValueKey('activity_quick_input'),
+                      controller: _text,
+                      enabled: !_saving,
+                      minLines: 1,
+                      maxLines: 3,
+                      maxLength: 300,
+                      textCapitalization: TextCapitalization.sentences,
+                      style: TextStyle(color: g.ink, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Add an activity…',
+                        hintStyle: TextStyle(
+                          color: g.inkMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
                         ),
-                      )
-                    : const Icon(Icons.arrow_upward_rounded),
+                        counterText: '',
+                        filled: false,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  IconButton.filled(
+                    tooltip: 'Add activity',
+                    style: IconButton.styleFrom(
+                      backgroundColor: g.clay,
+                      disabledBackgroundColor: g.clay.withValues(alpha: 0.45),
+                      foregroundColor: Colors.white,
+                      disabledForegroundColor:
+                          Colors.white.withValues(alpha: 0.7),
+                      minimumSize: const Size(40, 40),
+                    ),
+                    onPressed: _saving || _text.text.trim().isEmpty ? null : _send,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.arrow_upward_rounded, size: 20),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    PopupMenuButton<ActivityKind>(
+                      tooltip: 'Activity type',
+                      enabled: !_saving,
+                      onSelected: (kind) => setState(() => _kind = kind),
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: ActivityKind.todo,
+                          child: Text('To-do'),
+                        ),
+                        PopupMenuItem(
+                          value: ActivityKind.duration,
+                          child: Text('Timer'),
+                        ),
+                        PopupMenuItem(
+                          value: ActivityKind.flexible,
+                          child: Text('Flexible timer'),
+                        ),
+                      ],
+                      child: option(
+                        _kind == ActivityKind.todo
+                            ? 'To-do'
+                            : _kind == ActivityKind.duration
+                            ? 'Timer'
+                            : 'Flexible',
+                        _kind == ActivityKind.todo
+                            ? Icons.check_circle_outline
+                            : Icons.timer_outlined,
+                      ),
+                    ),
+                    if (_kind == ActivityKind.duration)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: _saving ? null : _duration,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: g.clay.withValues(
+                                alpha: isDark ? 0.2 : 0.1,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$_minutes min',
+                              style: TextStyle(
+                                color: g.clay,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    PopupMenuButton<String>(
+                      tooltip: 'Activity date',
+                      enabled: !_saving,
+                      onSelected: _pickDate,
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(value: 'today', child: Text('Today')),
+                        PopupMenuItem(
+                          value: 'tomorrow',
+                          child: Text('Tomorrow'),
+                        ),
+                        PopupMenuItem(value: 'pick', child: Text('Pick date')),
+                      ],
+                      child: option(label, Icons.calendar_today_outlined),
+                    ),
+                    PopupMenuButton<String>(
+                      tooltip: 'Activity reminder',
+                      enabled: !_saving,
+                      onSelected: _pickReminder,
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: 'off',
+                          child: Text('Reminder off'),
+                        ),
+                        PopupMenuItem(
+                          value: 'time',
+                          child: Text('Choose time'),
+                        ),
+                      ],
+                      child: option(
+                        _reminder == null
+                            ? 'Reminder off'
+                            : _reminder!.format(context),
+                        Icons.notifications_none,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-        ),
-        Wrap(
-          spacing: 4,
-          runSpacing: 0,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            PopupMenuButton<ActivityKind>(
-              tooltip: 'Activity type',
-              enabled: !_saving,
-              onSelected: (kind) => setState(() => _kind = kind),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: ActivityKind.todo, child: Text('To-do')),
-                PopupMenuItem(
-                  value: ActivityKind.duration,
-                  child: Text('Timer'),
-                ),
-                PopupMenuItem(
-                  value: ActivityKind.flexible,
-                  child: Text('Flexible timer'),
-                ),
-              ],
-              child: option(
-                _kind == ActivityKind.todo
-                    ? 'To-do'
-                    : _kind == ActivityKind.duration
-                    ? 'Timer'
-                    : 'Flexible',
-                _kind == ActivityKind.todo
-                    ? Icons.check_circle_outline
-                    : Icons.timer_outlined,
-              ),
-            ),
-            if (_kind == ActivityKind.duration)
-              TextButton(
-                onPressed: _saving ? null : _duration,
-                child: Text('$_minutes min'),
-              ),
-            PopupMenuButton<String>(
-              tooltip: 'Activity date',
-              enabled: !_saving,
-              onSelected: _pickDate,
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'today', child: Text('Today')),
-                PopupMenuItem(value: 'tomorrow', child: Text('Tomorrow')),
-                PopupMenuItem(value: 'pick', child: Text('Pick date')),
-              ],
-              child: option(label, Icons.calendar_today_outlined),
-            ),
-            PopupMenuButton<String>(
-              tooltip: 'Activity reminder',
-              enabled: !_saving,
-              onSelected: _pickReminder,
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'off', child: Text('Reminder off')),
-                PopupMenuItem(value: 'time', child: Text('Choose time')),
-              ],
-              child: option(
-                _reminder == null ? 'Reminder off' : _reminder!.format(context),
-                Icons.notifications_none,
-              ),
-            ),
-          ],
         ),
         if (_error != null)
           Padding(
