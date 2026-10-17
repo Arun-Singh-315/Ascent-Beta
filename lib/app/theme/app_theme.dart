@@ -206,10 +206,10 @@ class AscentTheme {
         color: day
             ? AppSurfaces.day.cardFill
             : (isNordicSky
-                ? (isDark
-                    ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
-                    : FrozenPalette.surface.withValues(alpha: 0.94))
-                : bgSurface),
+                  ? (isDark
+                        ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
+                        : FrozenPalette.surface.withValues(alpha: 0.94))
+                  : bgSurface),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(cardRadius),
@@ -228,8 +228,8 @@ class AscentTheme {
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: isNordicSky
             ? (isDark
-                ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
-                : FrozenPalette.surface.withValues(alpha: 0.96))
+                  ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
+                  : FrozenPalette.surface.withValues(alpha: 0.96))
             : bgBase,
         selectedItemColor: accentPrimary,
         unselectedItemColor: isNordicSky
@@ -248,16 +248,16 @@ class AscentTheme {
         fillColor: day
             ? AppSurfaces.day.cardFill
             : (isNordicSky
-                ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-                : bgSurface),
+                  ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+                  : bgSurface),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.all(inputRadius),
           borderSide: BorderSide(
             color: day
                 ? AppSurfaces.day.ink
                 : (isNordicSky
-                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                    : divider),
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : divider),
             width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
           ),
         ),
@@ -267,8 +267,8 @@ class AscentTheme {
             color: day
                 ? AppSurfaces.day.ink
                 : (isNordicSky
-                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                    : divider),
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : divider),
             width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
           ),
         ),
@@ -312,7 +312,9 @@ class AscentTheme {
           foregroundColor: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.disabled)) {
               return isNordicSky
-                  ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+                  ? (isDark
+                        ? FrozenPalette.darkMutedInk
+                        : FrozenPalette.mutedInk)
                   : textPrimary.withValues(alpha: 0.4);
             }
             return textOnPrimary;
@@ -371,8 +373,8 @@ class AscentTheme {
               color: day
                   ? AppSurfaces.day.ink
                   : (isNordicSky
-                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                      : divider),
+                        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                        : divider),
               width: day ? AppSurfaces.day.cardBorderWidth : 1.0,
             ),
           ),
@@ -444,10 +446,7 @@ class AscentTheme {
         ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(14)),
-          side: BorderSide(
-            color: Color(0x33FFFFFF),
-            width: 0.9,
-          ),
+          side: BorderSide(color: Color(0x33FFFFFF), width: 0.9),
         ),
         behavior: SnackBarBehavior.floating,
         actionTextColor: isNordicSky
@@ -502,20 +501,39 @@ class AscentTheme {
         selectedColor: isNordicSky
             ? accentPrimary
             : (day ? AppSurfaces.day.accent : null),
-        labelStyle: AscentTextStyles.labelSmall.copyWith(
-          color: isNordicSky ? accentPrimary : textPrimary,
+        labelStyle: WidgetStateTextStyle.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AscentTextStyles.labelSmall.copyWith(
+              color: isNordicSky
+                  ? (isDark ? FrozenPalette.darkCanvas : Colors.white)
+                  : textOnPrimary,
+              fontWeight: FontWeight.w600,
+            );
+          }
+          return AscentTextStyles.labelSmall.copyWith(
+            color: isNordicSky ? accentPrimary : textPrimary,
+          );
+        }),
+        secondaryLabelStyle: AscentTextStyles.labelSmall.copyWith(
+          color: isNordicSky
+              ? (isDark ? FrozenPalette.darkCanvas : Colors.white)
+              : textOnPrimary,
+          fontWeight: FontWeight.w600,
         ),
+        checkmarkColor: isNordicSky
+            ? (isDark ? FrozenPalette.darkCanvas : Colors.white)
+            : textOnPrimary,
         side: isNordicSky
             ? BorderSide(
                 color: isDark ? FrozenPalette.darkLine : FrozenPalette.line,
                 width: 1.0,
               )
             : (day
-                ? BorderSide(
-                    color: AppSurfaces.day.pillBorderColor,
-                    width: AppSurfaces.day.pillBorderWidth,
-                  )
-                : BorderSide.none),
+                  ? BorderSide(
+                      color: AppSurfaces.day.pillBorderColor,
+                      width: AppSurfaces.day.pillBorderWidth,
+                    )
+                  : BorderSide.none),
         shape: const StadiumBorder(),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),

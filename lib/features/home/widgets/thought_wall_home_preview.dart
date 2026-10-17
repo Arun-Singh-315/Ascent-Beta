@@ -483,12 +483,10 @@ class _ThoughtWallHomePreviewState
                             vertical: AppSpace.s12,
                           ),
                           onTap: () {
-                            HapticFeedback.lightImpact();
-                            if (_transientThoughtId == thought.id) {
-                              _dismissTransient();
-                            } else {
-                              _activateTransient(thought.id);
-                            }
+                            HapticFeedback.selectionClick();
+                            context.push(
+                              '/thought-wall?thought=${thought.id}',
+                            );
                           },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -617,19 +615,6 @@ class _ThoughtWallHomePreviewState
                                           ref.read(databaseProvider),
                                           [thought],
                                           'reminder',
-                                        );
-                                      },
-                                    ),
-                                    AppPill.action(
-                                      avatar: const Icon(
-                                        Icons.open_in_new_rounded,
-                                        size: 14,
-                                      ),
-                                      label: const Text('Open'),
-                                      onPressed: () {
-                                        _dismissTransient();
-                                        context.push(
-                                          '/thought-wall?thought=${thought.id}',
                                         );
                                       },
                                     ),
