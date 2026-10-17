@@ -1,16 +1,25 @@
 part of '../app_database.dart';
 
-class _DeletedThoughtLinks {
-  const _DeletedThoughtLinks(this.tasks, this.reminders, this.merges);
-  final List<Task> tasks;
-  final List<ThoughtReminderLink> reminders;
-  final List<ThoughtMergeSource> merges;
+/// An in-memory, single-use Undo token for one exact deletion.
+class ThoughtDeletion {
+  const ThoughtDeletion._(
+    this.thought,
+    this._tasks,
+    this._reminders,
+    this._reminderRecords,
+    this._merges,
+  );
+  final Thought thought;
+  final List<Task> _tasks;
+  final List<ThoughtReminderLink> _reminders;
+  final Map<int, Reminder> _reminderRecords;
+  final List<ThoughtMergeSource> _merges;
 }
 
 @DriftAccessor(tables: [ThoughtTable])
 class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   ThoughtDao(super.db);
-  final _recentlyDeleted = <int, _DeletedThoughtLinks>{};
+  final _recentlyDeleted = <int, ThoughtDeletion>{};
   void clearDeletionUndo() => _recentlyDeleted.clear();
 
   /// Watch active (non-archived) thoughts sorted by pinned first, then newest with stable ID ties.
@@ -116,79 +125,126 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   }
 
   /// Delete a thought.
-  Future<int> deleteThought(int id) => db.transaction(() async {
-    final tasks = await (db.select(
-      db.taskTable,
-    )..where((t) => t.linkedThoughtId.equals(id))).get();
-    final reminders = await (db.select(
-      db.thoughtReminderLinkTable,
-    )..where((l) => l.thoughtId.equals(id))).get();
-    final merges =
-        await (db.select(db.thoughtMergeSourceTable)..where(
-              (l) =>
-                  l.mergedThoughtId.equals(id) | l.sourceThoughtId.equals(id),
-            ))
-            .get();
-    await (db.update(db.taskTable)..where((t) => t.linkedThoughtId.equals(id)))
-        .write(const TaskTableCompanion(linkedThoughtId: Value(null)));
-    await (db.delete(
-      db.thoughtReminderLinkTable,
-    )..where((l) => l.thoughtId.equals(id))).go();
-    await (db.delete(
-      db.thoughtMergeSourceTable,
-    )..where((l) => l.mergedThoughtId.equals(id))).go();
-    await (db.update(
-      db.thoughtMergeSourceTable,
-    )..where((l) => l.sourceThoughtId.equals(id))).write(
-      const ThoughtMergeSourceTableCompanion(sourceThoughtId: Value(null)),
-    );
-    final count = await (delete(
-      thoughtTable,
-    )..where((t) => t.id.equals(id))).go();
-    if (count == 1) {
-      _recentlyDeleted[id] = _DeletedThoughtLinks(tasks, reminders, merges);
-      if (_recentlyDeleted.length > 20) {
-        _recentlyDeleted.remove(_recentlyDeleted.keys.first);
-      }
-    }
-    return count;
-  });
+  Future<int> deleteThought(int id) async =>
+      await deleteThoughtForUndo(id) == null ? 0 : 1;
 
-  Future<void> restoreDeletedThought(Thought thought) => db.transaction(
+  Future<ThoughtDeletion?> deleteThoughtForUndo(int id) => db.transaction(
     () async {
-      if (await getThoughtById(thought.id) != null) return;
-      final links = _recentlyDeleted[thought.id];
-      if (links == null) return;
-      await into(thoughtTable).insert(thought.toCompanion(true));
-      for (final task in links.tasks) {
-        final current = await db.taskDao.getTaskById(task.id);
-        if (current != null && current.linkedThoughtId == null) {
-          await (db.update(db.taskTable)..where((t) => t.id.equals(task.id)))
-              .write(TaskTableCompanion(linkedThoughtId: Value(thought.id)));
+      final original = await getThoughtById(id);
+      if (original == null) return null;
+      final tasks = await (db.select(
+        db.taskTable,
+      )..where((t) => t.linkedThoughtId.equals(id))).get();
+      final reminders = await (db.select(
+        db.thoughtReminderLinkTable,
+      )..where((l) => l.thoughtId.equals(id))).get();
+      final reminderRecords = <int, Reminder>{};
+      for (final link in reminders) {
+        final reminder = await db.reminderDao.getReminderById(link.reminderId);
+        if (reminder != null) reminderRecords[reminder.id] = reminder;
+      }
+      final merges =
+          await (db.select(db.thoughtMergeSourceTable)..where(
+                (l) =>
+                    l.mergedThoughtId.equals(id) | l.sourceThoughtId.equals(id),
+              ))
+              .get();
+      await (db.update(db.taskTable)
+            ..where((t) => t.linkedThoughtId.equals(id)))
+          .write(const TaskTableCompanion(linkedThoughtId: Value(null)));
+      await (db.delete(
+        db.thoughtReminderLinkTable,
+      )..where((l) => l.thoughtId.equals(id))).go();
+      await (db.delete(
+        db.thoughtMergeSourceTable,
+      )..where((l) => l.mergedThoughtId.equals(id))).go();
+      await (db.update(
+        db.thoughtMergeSourceTable,
+      )..where((l) => l.sourceThoughtId.equals(id))).write(
+        const ThoughtMergeSourceTableCompanion(sourceThoughtId: Value(null)),
+      );
+      final count = await (delete(
+        thoughtTable,
+      )..where((t) => t.id.equals(id))).go();
+      if (count == 1) {
+        final snapshot = ThoughtDeletion._(
+          original,
+          tasks,
+          reminders,
+          reminderRecords,
+          merges,
+        );
+        _recentlyDeleted[id] = snapshot;
+        if (_recentlyDeleted.length > 20) {
+          _recentlyDeleted.remove(_recentlyDeleted.keys.first);
         }
       }
-      for (final link in links.reminders) {
-        if (await db.reminderDao.getReminderById(link.reminderId) != null) {
-          await db
-              .into(db.thoughtReminderLinkTable)
-              .insertOnConflictUpdate(link.toCompanion(true));
-        }
-      }
-      for (final link in links.merges) {
-        final otherId = link.mergedThoughtId == thought.id
-            ? link.sourceThoughtId
-            : link.mergedThoughtId;
-        if (otherId != null && await getThoughtById(otherId) == null) continue;
-        final current = await (db.select(
-          db.thoughtMergeSourceTable,
-        )..where((l) => l.id.equals(link.id))).getSingleOrNull();
-        if (current == null || current.sourceThoughtId == null) {
-          await db
-              .into(db.thoughtMergeSourceTable)
-              .insertOnConflictUpdate(link.toCompanion(true));
-        }
-      }
-      _recentlyDeleted.remove(thought.id);
+      return _recentlyDeleted[id];
     },
   );
+
+  /// Compatibility entry point; new UI callers retain the exact deletion token.
+  Future<bool> restoreDeletedThought(Thought thought) async {
+    final snapshot = _recentlyDeleted[thought.id];
+    if (snapshot == null || snapshot.thought != thought) return false;
+    return restoreThoughtDeletion(snapshot);
+  }
+
+  Future<bool> restoreThoughtDeletion(
+    ThoughtDeletion snapshot,
+  ) => db.transaction(() async {
+    final thought = snapshot.thought;
+    if (!identical(_recentlyDeleted[thought.id], snapshot) ||
+        await getThoughtById(thought.id) != null) {
+      return false;
+    }
+    await into(thoughtTable).insert(thought.toCompanion(true));
+    for (final task in snapshot._tasks) {
+      final current = await db.taskDao.getTaskById(task.id);
+      // Only restore the link if the detached record has not changed since
+      // deletion. Never replace a newer task or undo a newer association.
+      if (current == task.copyWith(linkedThoughtId: const Value(null))) {
+        await (db.update(db.taskTable)..where((t) => t.id.equals(task.id)))
+            .write(TaskTableCompanion(linkedThoughtId: Value(thought.id)));
+      }
+    }
+    for (final link in snapshot._reminders) {
+      final current = await db.reminderDao.getReminderById(link.reminderId);
+      final original = snapshot._reminderRecords[link.reminderId];
+      if (current != null && original != null && current == original) {
+        await db
+            .into(db.thoughtReminderLinkTable)
+            .insert(link.toCompanion(true), mode: InsertMode.insertOrIgnore);
+      }
+    }
+    for (final link in snapshot._merges) {
+      if (await getThoughtById(link.mergedThoughtId) == null) continue;
+      if (link.sourceThoughtId != null &&
+          await getThoughtById(link.sourceThoughtId!) == null) {
+        continue;
+      }
+      final current = await (db.select(
+        db.thoughtMergeSourceTable,
+      )..where((l) => l.id.equals(link.id))).getSingleOrNull();
+      if (link.mergedThoughtId == thought.id) {
+        if (current == null) {
+          await db
+              .into(db.thoughtMergeSourceTable)
+              .insert(link.toCompanion(true), mode: InsertMode.insertOrIgnore);
+        }
+      } else if (current == link.copyWith(sourceThoughtId: const Value(null))) {
+        // A retained source tombstone must still match every field. If it
+        // was edited or removed since deletion, leave that newer work alone.
+        await (db.update(
+          db.thoughtMergeSourceTable,
+        )..where((l) => l.id.equals(link.id))).write(
+          ThoughtMergeSourceTableCompanion(
+            sourceThoughtId: Value(link.sourceThoughtId),
+          ),
+        );
+      }
+    }
+    _recentlyDeleted.remove(thought.id);
+    return true;
+  });
 }

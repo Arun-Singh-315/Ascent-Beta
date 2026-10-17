@@ -800,6 +800,60 @@ class ThoughtCardBubble extends ConsumerWidget {
     this.onLongPress,
   });
 
+  Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.mediumImpact();
+    final dao = ref.read(thoughtDaoProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    void failure(String message) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+
+    try {
+      final snapshot = await dao.deleteThoughtForUndo(thought.id);
+      if (snapshot == null) {
+        if (messenger.mounted) failure('This thought is no longer available.');
+        return false;
+      }
+      Future<void> restore() async {
+        try {
+          if (!await dao.restoreThoughtDeletion(snapshot) &&
+              messenger.mounted) {
+            failure('Undo is no longer available. Newer changes were kept.');
+          }
+        } catch (_) {
+          if (messenger.mounted) {
+            messenger.hideCurrentSnackBar();
+            messenger.showSnackBar(
+              SnackBar(
+                content: const Text('Could not restore the thought.'),
+                action: SnackBarAction(label: 'Retry', onPressed: restore),
+              ),
+            );
+          }
+        }
+      }
+
+      if (messenger.mounted) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            persist: false,
+            content: const Text('Thought removed'),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(label: 'Undo', onPressed: restore),
+          ),
+        );
+      }
+      return true;
+    } catch (_) {
+      if (messenger.mounted) {
+        failure('Could not delete the thought. Please try again.');
+      }
+      return false;
+    }
+  }
+
   Color _moodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
@@ -892,29 +946,7 @@ class ThoughtCardBubble extends ConsumerWidget {
               }
               return true;
             } else {
-              // Delete
-              HapticFeedback.mediumImpact();
-              final backup = thought;
-              await thoughtDao.deleteThought(thought.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    persist: false,
-                    content: const Text('Thought removed'),
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                    action: SnackBarAction(
-                      label: 'UNDO',
-                      textColor: context.accentPrimary,
-                      onPressed: () async {
-                        await thoughtDao.restoreDeletedThought(backup);
-                      },
-                    ),
-                  ),
-                );
-              }
-              return true;
+              return _deleteWithUndo(context, ref);
             }
           },
           background: AppCard(
@@ -1247,18 +1279,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                             } else if (action == 'track_challenge') {
                               context.push('/momentum', extra: thought);
                             } else if (action == 'delete') {
-                              HapticFeedback.mediumImpact();
-                              final dao = ref.read(thoughtDaoProvider);
-                              await dao.deleteThought(thought.id);
-                              if (context.mounted) {
-                                showUndoSnackbar(
-                                  context,
-                                  message: 'Thought removed',
-                                  onUndo: () => dao.insertThought(
-                                    thought.toCompanion(true),
-                                  ),
-                                );
-                              }
+                              await _deleteWithUndo(context, ref);
                             }
                           },
                           itemBuilder: (_) => [
