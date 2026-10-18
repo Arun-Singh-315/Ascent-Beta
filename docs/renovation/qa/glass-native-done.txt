@@ -1,5 +1,0 @@
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <string name="ringing">[]</string>
-    <string name="events">[{&quot;id&quot;:900321,&quot;action&quot;:&quot;snooze&quot;,&quot;at&quot;:1791797748763,&quot;token&quot;:&quot;eec4a05f-2d4b-4449-803b-c0181786e48e&quot;},{&quot;id&quot;:900321,&quot;action&quot;:&quot;done&quot;,&quot;at&quot;:1791797792393,&quot;token&quot;:&quot;1b08c02d-b610-4f19-81e6-861aae8b0042&quot;}]</string>
-</map>

@@ -397,37 +397,40 @@ class _LifeCheckInPopupDialogState
               color: context.divider.withValues(alpha: 0.8),
             ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '$currentMl / $targetMl mL',
-                style: AppTypography.jetBrainsMono13W70066(
-                  color: context.textPrimary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s6,
-                  vertical: AppSpace.s2,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$percent%',
-                  style: TextStyle(
-                    color: context.isDark
-                        ? const Color(0xFF38BDF8)
-                        : const Color(0xFF0284C7),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '$currentMl / $targetMl mL',
+                  style: AppTypography.jetBrainsMono13W70066(
+                    color: context.textPrimary,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s6,
+                    vertical: AppSpace.s2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$percent%',
+                    style: TextStyle(
+                      color: context.isDark
+                          ? const Color(0xFF38BDF8)
+                          : const Color(0xFF0284C7),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -790,24 +793,27 @@ class _CheckInTabButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         alignment: Alignment.center,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.white : context.textMuted,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : context.textPrimary,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : context.textMuted,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : context.textPrimary,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

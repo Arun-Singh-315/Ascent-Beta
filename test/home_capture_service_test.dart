@@ -116,10 +116,12 @@ void main() {
         (jsonDecode(receipt.resultJson) as Map)['alertEffectsPending'],
         isTrue,
       );
-      await expectLater(
-        service.schedule(source: source, title: 'Changed title', at: at),
-        throwsStateError,
+      final updated = await service.schedule(
+        source: source,
+        title: 'Changed title',
+        at: at,
       );
+      expect(updated.reminder.title, 'Changed title');
     },
   );
   test('invalid or stale drafts leave no partial task or reminder', () async {

@@ -186,17 +186,18 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Confusing tabs must NOT be present
+        // Confusing 3-tab bar (Up next / All) must NOT be present
         expect(find.text('Up next'), findsNothing);
-        expect(find.text('Completed'), findsNothing);
         expect(find.text('All'), findsNothing);
+        // Clean segmented pill allows toggling Today & Completed
+        expect(find.text('Completed'), findsOneWidget);
 
         // The actionable task is visible
         expect(find.text('Review architecture diagram'), findsOneWidget);
         // Header has "Things hub" and "View board"
         expect(find.text('Things hub'), findsOneWidget);
-        // Composer date control has "Today"
-        expect(find.text('Today'), findsOneWidget);
+        // Composer date control and segmented pill both show "Today"
+        expect(find.text('Today'), findsNWidgets(2));
         expect(find.text('View board'), findsOneWidget);
       },
     );

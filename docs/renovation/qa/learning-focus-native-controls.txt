@@ -1,6 +1,0 @@
-Tapped QA QA Learning timer / Pause
-Tapped QA QA Learning timer / Resume
-Opened QA player QA Learning timer
-Tapped QA QA Focus timer / Pause
-Tapped QA QA Focus timer / Resume
-Opened QA player QA Focus timer
