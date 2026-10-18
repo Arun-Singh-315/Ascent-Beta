@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/native.dart';
 import 'package:ascent/core/services/home_capture_service.dart';
 import 'package:ascent/core/services/plan_service.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/services/plan_collection_service.dart';
 
@@ -20,6 +21,12 @@ void main() {
       expect(
         PlanItemDraft.parseList('list:\n-- Java\n--> RAG\n3. Apply\n• Read'),
         ['Java', 'RAG', 'Apply', 'Read'],
+      );
+      expect(
+        PlanItemDraft.parseList(
+          '-- wake up early\n-- gym\n-- need to focus\n--Avoid food',
+        ),
+        ['wake up early', 'gym', 'need to focus', 'Avoid food'],
       );
       expect(PlanItemDraft.parseList('A -> B is an example.'), [
         'A -> B is an example.',
@@ -388,6 +395,136 @@ void main() {
         rows.map((i) => i.id),
       );
       expect((await db.reminderDao.watchAllReminders().first).length, 2);
+    },
+  );
+  test(
+    'user scenario: thought with routine items parses, customizes with different reminders, and preserves thought',
+    () async {
+      // 1. User records a thought containing 4 checklist items
+      const thoughtText =
+          '-- wake up early\n-- gym\n-- need to focus\n--Avoid food';
+      final thoughtId = await db.into(db.thoughtTable).insert(
+        ThoughtTableCompanion.insert(
+          content: thoughtText,
+          mood: const Value('thought'),
+        ),
+      );
+
+      // 2. Parser identifies the 4 independent items
+      final parsed = PlanItemDraft.parseList(thoughtText);
+      expect(parsed, [
+        'wake up early',
+        'gym',
+        'need to focus',
+        'Avoid food',
+      ]);
+
+      // 3. User customizes each item in the plan editor with different reminders
+      final tomorrow = DateTime(now.year, now.month, now.day + 1);
+      final customizedItems = [
+        PlanItemDraft(
+          title: parsed[0], // wake up early
+          at: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 0),
+          alert: 'alarm',
+        ),
+        PlanItemDraft(
+          title: parsed[1], // gym
+          at: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 7, 30),
+          minutes: 45,
+          alert: 'reminder',
+        ),
+        PlanItemDraft(
+          title: parsed[2], // need to focus
+          at: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 10, 0),
+          minutes: 120,
+          checkIn: true,
+          alert: 'reminder',
+        ),
+        PlanItemDraft(
+          title: parsed[3], // Avoid food
+          at: tomorrow,
+          dateOnly: true,
+          alert: 'none',
+        ),
+      ];
+
+      // 4. Save the plan collection linked to the source thought
+      final planId = await service.save(
+        title: 'Daily Routine & Focus',
+        sourceThoughtId: thoughtId,
+        requestId: 'daily_routine_test',
+        items: customizedItems,
+      );
+
+      // 5. Original thought remains intact in database
+      final storedThought = await db.thoughtDao.getThoughtById(thoughtId);
+      expect(storedThought, isNotNull);
+      expect(storedThought!.content, thoughtText);
+
+      // 6. Plan collection has 4 items with their custom configuration
+      final items = await service.watchItems(planId).first;
+      expect(items.length, 4);
+      expect(items[0].title, 'wake up early');
+      expect(items[0].alert, 'alarm');
+      expect(
+        items[0].at,
+        DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 0),
+      );
+
+      expect(items[1].title, 'gym');
+      expect(items[1].alert, 'reminder');
+      expect(items[1].minutes, 45);
+
+      expect(items[2].title, 'need to focus');
+      expect(items[2].checkIn, isTrue);
+      expect(items[2].minutes, 120);
+
+      expect(items[3].title, 'Avoid food');
+      expect(items[3].dateOnly, isTrue);
+      expect(items[3].alert, 'none');
+
+      // 7. Verify device alerts: only the timed items get scheduled alerts.
+      // 'wake up early' has 1 alarm, 'gym' has 1 reminder, and 'need to focus' has 2 (start alert + follow-up check-in).
+      // 'Avoid food' is date-only with 0 alerts.
+      final alerts = await db.reminderDao.watchAllReminders().first;
+      expect(alerts.length, 4);
+      final wakeAlert = alerts.firstWhere(
+        (a) => a.title.contains('wake up early'),
+      );
+      expect(wakeAlert.alarmEnabled, isTrue); // Alarm alert
+      expect(wakeAlert.isActive, isTrue);
+      expect(
+        wakeAlert.scheduledAt,
+        DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 6, 0),
+      );
+
+      // 8. Individual completion: completing to-do item 'wake up early' marks it done and deactivates its alarm
+      final wakeItem = items.firstWhere((i) => i.title == 'wake up early');
+      await service.complete(wakeItem, true);
+
+      final updatedCollection = (await service.watchCollections().first)
+          .firstWhere((c) => c.id == planId);
+      expect(updatedCollection.done, 1);
+      expect(updatedCollection.total, 4);
+
+      // Verify item views
+      final updatedItems = await service.watchItems(planId).first;
+      expect(
+        updatedItems.firstWhere((i) => i.title == 'wake up early').done,
+        isTrue,
+      );
+      expect(updatedItems.firstWhere((i) => i.title == 'gym').done, isFalse);
+
+      // Wake up early alarm is deactivated
+      final updatedAlerts = await db.reminderDao.watchAllReminders().first;
+      final wakeAlertAfter = updatedAlerts.firstWhere(
+        (a) => a.title.contains('wake up early'),
+      );
+      expect(wakeAlertAfter.isActive, isFalse);
+
+      // Gym and focus alerts remain active
+      final gymAlert = updatedAlerts.firstWhere((a) => a.title.contains('gym'));
+      expect(gymAlert.isActive, isTrue);
     },
   );
 }

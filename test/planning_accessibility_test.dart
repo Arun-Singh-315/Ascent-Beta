@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/notifications/reminder_alert_sync.dart';
@@ -12,7 +10,6 @@ import 'package:ascent/features/plans/widgets/plan_collection_detail.dart';
 import 'package:ascent/features/plans/widgets/plan_collection_editor.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -197,70 +194,58 @@ void main() {
       await t.pumpWidget(const SizedBox());
     },
   );
-  testWidgets('render planning detail for visual review', (t) async {
-    final now = DateTime.now();
-    final service = container.read(planCollectionServiceProvider);
-    final id = await service.save(
-      title: 'Interview preparation',
-      description: 'A clear plan for the next step in your career.',
-      requestId: 'preview',
-      items: [
-        const PlanItemDraft(title: 'Application-based preparation'),
-        PlanItemDraft(
-          title: 'Spring & Java lecture',
-          at: DateTime(now.year, now.month, now.day + 1, 10),
-        ),
-        const PlanItemDraft(
-          title: 'RAG practice',
-          notes: 'Review retrieval, indexing and evaluation.',
-        ),
-        const PlanItemDraft(title: 'Code practice'),
-      ],
-    );
-    final items = (await t.runAsync(() => service.watchItems(id).first))!;
-    await t.runAsync(() => service.complete(items.first, true));
-    final key = GlobalKey();
-    await mount(
-      t,
-      PlanCollectionDetail(id: id),
-      AscentTheme.light(preset: DayThemePreset.nordicSky),
-      width: 390,
-      scale: 1,
-      capture: key,
-    );
-    expect(t.takeException(), isNull);
-    final boundary =
-        key.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    await t.runAsync(() async {
-      final image = await boundary.toImage(pixelRatio: 2);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await File(
-        '/tmp/ascent-planning-detail.png',
-      ).writeAsBytes(bytes!.buffer.asUint8List());
-      image.dispose();
-    });
-    await t.pumpWidget(const SizedBox());
+  testWidgets(
+    'PlanCollectionDetail renders cleanly in light and dark mode without layout exceptions',
+    (t) async {
+      final now = DateTime.now();
+      final service = container.read(planCollectionServiceProvider);
+      final id = await service.save(
+        title: 'Interview preparation',
+        description: 'A clear plan for the next step in your career.',
+        requestId: 'preview',
+        items: [
+          const PlanItemDraft(title: 'Application-based preparation'),
+          PlanItemDraft(
+            title: 'Spring & Java lecture',
+            at: DateTime(now.year, now.month, now.day + 1, 10),
+          ),
+          const PlanItemDraft(
+            title: 'RAG practice',
+            notes: 'Review retrieval, indexing and evaluation.',
+          ),
+          const PlanItemDraft(title: 'Code practice'),
+        ],
+      );
+      final items = (await t.runAsync(() => service.watchItems(id).first))!;
+      await t.runAsync(() => service.complete(items.first, true));
 
-    final darkKey = GlobalKey();
-    await mount(
-      t,
-      PlanCollectionDetail(id: id),
-      AscentTheme.dark(),
-      width: 390,
-      scale: 1,
-      capture: darkKey,
-    );
-    expect(t.takeException(), isNull);
-    final darkBoundary =
-        darkKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-    await t.runAsync(() async {
-      final image = await darkBoundary.toImage(pixelRatio: 2);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await File(
-        '/tmp/ascent-planning-detail-dark.png',
-      ).writeAsBytes(bytes!.buffer.asUint8List());
-      image.dispose();
-    });
-    await t.pumpWidget(const SizedBox());
-  });
+      // Light mode verification
+      await mount(
+        t,
+        PlanCollectionDetail(id: id),
+        AscentTheme.light(preset: DayThemePreset.nordicSky),
+        width: 390,
+        scale: 1,
+      );
+      expect(t.takeException(), isNull);
+      expect(find.text('Interview preparation'), findsOneWidget);
+      expect(find.text('25%'), findsOneWidget);
+      expect(find.text('1 done'), findsOneWidget);
+      expect(find.text('3 remaining'), findsOneWidget);
+      await t.pumpWidget(const SizedBox());
+
+      // Dark mode verification
+      await mount(
+        t,
+        PlanCollectionDetail(id: id),
+        AscentTheme.dark(),
+        width: 390,
+        scale: 1,
+      );
+      expect(t.takeException(), isNull);
+      expect(find.text('Interview preparation'), findsOneWidget);
+      expect(find.text('25%'), findsOneWidget);
+      await t.pumpWidget(const SizedBox());
+    },
+  );
 }
