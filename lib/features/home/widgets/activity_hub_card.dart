@@ -98,12 +98,16 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    'Things hub',
-                    style: AscentTextStyles.homeTitle.copyWith(
-                      color: g.ink,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Text(
+                      'Things hub',
+                      style: AscentTextStyles.homeTitle.copyWith(
+                        color: g.ink,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   AppTapArea(
@@ -172,41 +176,44 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: g.edge),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _HubTabPill(
-                                label: 'Today',
-                                count: pendingActivities.length,
-                                isSelected: !_showCompleted,
-                                activeColor: g.clay,
-                                activeTextColor: Colors.white,
-                                inactiveTextColor: g.inkSecondary,
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() {
-                                    _showCompleted = false;
-                                    _showAll = false;
-                                  });
-                                },
-                              ),
-                              const SizedBox(width: 4),
-                              _HubTabPill(
-                                label: 'Completed',
-                                count: doneCount,
-                                isSelected: _showCompleted,
-                                activeColor: g.clay,
-                                activeTextColor: Colors.white,
-                                inactiveTextColor: g.inkSecondary,
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  setState(() {
-                                    _showCompleted = true;
-                                    _showAll = false;
-                                  });
-                                },
-                              ),
-                            ],
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _HubTabPill(
+                                  label: 'Today',
+                                  count: pendingActivities.length,
+                                  isSelected: !_showCompleted,
+                                  activeColor: g.clay,
+                                  activeTextColor: Colors.white,
+                                  inactiveTextColor: g.inkSecondary,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _showCompleted = false;
+                                      _showAll = false;
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 4),
+                                _HubTabPill(
+                                  label: 'Completed',
+                                  count: doneCount,
+                                  isSelected: _showCompleted,
+                                  activeColor: g.clay,
+                                  activeTextColor: Colors.white,
+                                  inactiveTextColor: g.inkSecondary,
+                                  onTap: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _showCompleted = true;
+                                      _showAll = false;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
 

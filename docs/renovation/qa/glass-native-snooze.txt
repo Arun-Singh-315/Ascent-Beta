@@ -1,6 +1,0 @@
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-    <string name="alarm_900321">{&quot;id&quot;:900321,&quot;title&quot;:&quot;Review your interview notes&quot;,&quot;at&quot;:1791797748763}</string>
-    <string name="ringing">[]</string>
-    <string name="events">[{&quot;id&quot;:900321,&quot;action&quot;:&quot;snooze&quot;,&quot;at&quot;:1791797748763,&quot;token&quot;:&quot;eec4a05f-2d4b-4449-803b-c0181786e48e&quot;}]</string>
-</map>

@@ -16,6 +16,7 @@ migrate_working_dir/
 *.mov
 *.webm
 *.apk
+docs/renovation/
 
 # IntelliJ related
 *.iml

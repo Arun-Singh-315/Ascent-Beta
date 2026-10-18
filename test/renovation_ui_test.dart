@@ -284,6 +284,9 @@ void main() {
           final file = File(
             'docs/renovation/${dark ? 'night' : 'day'}-writing-preview.png',
           );
+          if (!file.parent.existsSync()) {
+            file.parent.createSync(recursive: true);
+          }
           await file.writeAsBytes(bytes!.buffer.asUint8List());
           image.dispose();
         });

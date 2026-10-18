@@ -1,12 +1,14 @@
-ASCENT 1.0.8 — Android beta
+# Ascent Android Installation Guide
 
-Share Ascent-1.0.8-9.apk with users. Android 7.0 or newer is required.
+Android 7.0 (API level 24) or newer is required.
 
-1. Download the APK onto your Android phone.
-2. Open it. If Android asks, allow installation from the app used to open the file.
-3. Tap Install, then open Ascent and complete setup.
-4. Allow notification access when you want reminders. Quiet is the default; enable “Ring as an alarm” per reminder and follow its access prompts for ringing alerts.
+1. Build or download the latest release APK.
+2. Transfer or open the APK on your Android device.
+3. If prompted, grant permission to "Install unknown apps" from the file manager or browser.
+4. Tap Install to install or update Ascent.
+5. Launch Ascent and complete initialization.
+6. Grant Notification and Exact Alarm permissions when prompted to enable scheduled reminders and study timers.
 
-Existing Ascent users: install over the existing app to retain data. If Android reports a signature conflict, export a workspace backup before considering removal of the older app.
-
-This release-mode universal APK uses the existing development signing certificate for compatibility with the installed beta. A dedicated release key is still needed for store distribution.
+For existing users:
+Updating over the existing app preserves all local data, database records, and settings.
+Always export a workspace backup from Settings -> Workspace Backup before major OS upgrades or manual re-installs.

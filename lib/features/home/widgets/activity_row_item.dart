@@ -157,7 +157,7 @@ class ActivityRowItem extends ConsumerWidget {
               child: Material(
                 color: AppPalette.transparent,
                 child: AppTapArea(
-                  onTap: (isDone || isLecture)
+                  onTap: isLecture
                       ? null
                       : () async {
                           if (isDone) {
