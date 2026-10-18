@@ -102,7 +102,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
         await InAppReminderDialog.show(context, quietReminders.first);
         return true;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error checking overdue reminders: $e');
+    }
     return false;
   }
 
@@ -134,7 +136,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
           ? LifeCheckInTab.hydration
           : LifeCheckInTab.money;
       await LifeCheckInPopupDialog.show(context, initialTab: initialTab);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error prompting life checkin nudge: $e');
+    }
   }
 
   @override

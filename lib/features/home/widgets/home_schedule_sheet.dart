@@ -10,6 +10,8 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/home_capture_service.dart';
 import '../../../core/services/plan_recurrence_engine.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
+import '../../../app/theme/frozen_palette.dart';
+import '../../../app/theme/color_tokens.dart';
 
 const homePendingScheduleKey = 'ascent_home_pending_schedule';
 
@@ -390,14 +392,14 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                       'Once',
                       style: TextStyle(
                         color: _recurrenceRule == 'once'
-                            ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
-                            : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                            ? (isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface)
+                            : (isDark ? FrozenPalette.darkAction : FrozenPalette.action),
                         fontWeight: _recurrenceRule == 'once' ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                     selected: _recurrenceRule == 'once',
-                    selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
-                    checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
+                    selectedColor: isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                    checkmarkColor: isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface,
                     onSelected: (selected) {
                       if (selected) setState(() => _recurrenceRule = 'once');
                       _persist();
@@ -408,14 +410,14 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                       'Every day',
                       style: TextStyle(
                         color: _recurrenceRule == 'daily'
-                            ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
-                            : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                            ? (isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface)
+                            : (isDark ? FrozenPalette.darkAction : FrozenPalette.action),
                         fontWeight: _recurrenceRule == 'daily' ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                     selected: _recurrenceRule == 'daily',
-                    selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
-                    checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
+                    selectedColor: isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                    checkmarkColor: isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface,
                     onSelected: (selected) {
                       if (selected) setState(() => _recurrenceRule = 'daily');
                       _persist();
@@ -426,14 +428,14 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                       'Weekdays',
                       style: TextStyle(
                         color: _recurrenceRule == 'weekdays'
-                            ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
-                            : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                            ? (isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface)
+                            : (isDark ? FrozenPalette.darkAction : FrozenPalette.action),
                         fontWeight: _recurrenceRule == 'weekdays' ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                     selected: _recurrenceRule == 'weekdays',
-                    selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
-                    checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
+                    selectedColor: isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                    checkmarkColor: isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface,
                     onSelected: (selected) {
                       if (selected) setState(() => _recurrenceRule = 'weekdays');
                       _persist();
@@ -521,7 +523,7 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF64B5F6) : const Color(0xFF1976D2),
+                        color: isDark ? FrozenPalette.darkActionBright : FrozenPalette.action,
                       ),
                     ),
                   ),
@@ -618,14 +620,14 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                           'Once',
                           style: TextStyle(
                             color: _checkInPolicy == 'once'
-                                ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
-                                : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                                ? (isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface)
+                                : (isDark ? FrozenPalette.darkAction : FrozenPalette.action),
                             fontWeight: _checkInPolicy == 'once' ? FontWeight.w600 : FontWeight.w500,
                           ),
                         ),
                         selected: _checkInPolicy == 'once',
-                        selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
-                        checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
+                        selectedColor: isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                        checkmarkColor: isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface,
                         onSelected: (selected) {
                           if (selected) setState(() => _checkInPolicy = 'once');
                           _persist();
@@ -636,14 +638,14 @@ class _HomeScheduleSheetState extends ConsumerState<HomeScheduleSheet> {
                           'Gentle (Retries)',
                           style: TextStyle(
                             color: _checkInPolicy == 'gentle'
-                                ? (isDark ? const Color(0xFF0F1A2B) : Colors.white)
-                                : (isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4)),
+                                ? (isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface)
+                                : (isDark ? FrozenPalette.darkAction : FrozenPalette.action),
                             fontWeight: _checkInPolicy == 'gentle' ? FontWeight.w600 : FontWeight.w500,
                           ),
                         ),
                         selected: _checkInPolicy == 'gentle',
-                        selectedColor: isDark ? const Color(0xFF5EA0F0) : const Color(0xFF1D64B4),
-                        checkmarkColor: isDark ? const Color(0xFF0F1A2B) : Colors.white,
+                        selectedColor: isDark ? FrozenPalette.darkAction : FrozenPalette.action,
+                        checkmarkColor: isDark ? FrozenPalette.darkCanvas : AscentColors.bgSurface,
                         onSelected: (selected) {
                           if (selected) setState(() => _checkInPolicy = 'gentle');
                           _persist();

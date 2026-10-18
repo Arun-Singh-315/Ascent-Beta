@@ -149,8 +149,8 @@ class _LifeCheckInPopupDialogState
         SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle_rounded,
-                  color: Color(0xFF22C55E), size: 20),
+              Icon(Icons.check_circle_rounded,
+                  color: context.stateSuccess, size: 20),
               const SizedBox(width: 8),
               Text(
                 'Logged ₹${amount.toStringAsFixed(0)} for $title',
@@ -227,12 +227,12 @@ class _LifeCheckInPopupDialogState
                             gradient: LinearGradient(
                               colors: isWater
                                   ? [
-                                      const Color(0xFF38BDF8),
-                                      const Color(0xFF0284C7)
+                                      AscentColors.waterBright,
+                                      AscentColors.waterPrimary,
                                     ]
                                   : [
-                                      const Color(0xFF34D399),
-                                      const Color(0xFF059669)
+                                      AscentColors.financeBright,
+                                      AscentColors.financePrimary,
                                     ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -241,8 +241,8 @@ class _LifeCheckInPopupDialogState
                             boxShadow: [
                               BoxShadow(
                                 color: (isWater
-                                        ? const Color(0xFF0284C7)
-                                        : const Color(0xFF059669))
+                                        ? AscentColors.waterPrimary
+                                        : AscentColors.financePrimary)
                                     .withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
@@ -314,7 +314,7 @@ class _LifeCheckInPopupDialogState
                               label: 'Hydration',
                               icon: Icons.water_drop_rounded,
                               isSelected: isWater,
-                              activeColor: const Color(0xFF0284C7),
+                              activeColor: AscentColors.waterPrimary,
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 setState(() =>
@@ -328,7 +328,7 @@ class _LifeCheckInPopupDialogState
                               label: 'Money',
                               icon: Icons.currency_rupee_rounded,
                               isSelected: !isWater,
-                              activeColor: const Color(0xFF059669),
+                              activeColor: AscentColors.financePrimary,
                               onTap: () {
                                 HapticFeedback.selectionClick();
                                 setState(() =>
@@ -415,15 +415,13 @@ class _LifeCheckInPopupDialogState
                     vertical: AppSpace.s2,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                    color: AscentColors.waterPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '$percent%',
                     style: TextStyle(
-                      color: context.isDark
-                          ? const Color(0xFF38BDF8)
-                          : const Color(0xFF0284C7),
+                      color: context.waterAccent,
                       fontWeight: FontWeight.w700,
                       fontSize: 11,
                     ),
@@ -516,7 +514,7 @@ class _LifeCheckInPopupDialogState
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0284C7),
+                  backgroundColor: AscentColors.waterPrimary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -534,7 +532,7 @@ class _LifeCheckInPopupDialogState
               icon: const Icon(Icons.add_rounded, size: 16),
               label: const Text('Custom mL', style: TextStyle(fontSize: 12)),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF0284C7),
+                foregroundColor: AscentColors.waterPrimary,
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               ),
             ),
@@ -566,7 +564,7 @@ class _LifeCheckInPopupDialogState
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       color: _moneyType == 'expense'
-                          ? const Color(0xFFEF4444)
+                          ? context.stateDanger
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(9),
                     ),
@@ -593,7 +591,7 @@ class _LifeCheckInPopupDialogState
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
                       color: _moneyType == 'income'
-                          ? const Color(0xFF10B981)
+                          ? context.stateSuccess
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(9),
                     ),
@@ -685,12 +683,12 @@ class _LifeCheckInPopupDialogState
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? const Color(0xFF059669)
+                      ? AscentColors.financePrimary
                       : context.bgBase,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF059669)
+                        ? AscentColors.financePrimary
                         : context.divider,
                   ),
                 ),
@@ -731,7 +729,7 @@ class _LifeCheckInPopupDialogState
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF059669),
+              backgroundColor: AscentColors.financePrimary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
@@ -752,9 +750,7 @@ class _LifeCheckInPopupDialogState
             child: Text(
               'Open full money manager ›',
               style: TextStyle(
-                color: context.isDark
-                    ? const Color(0xFF34D399)
-                    : const Color(0xFF059669),
+                color: context.financeAccent,
                 fontSize: 12,
               ),
             ),
@@ -844,12 +840,12 @@ class _QuickWaterButton extends StatelessWidget {
           color: context.bgBase,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: const Color(0xFF0284C7).withValues(alpha: 0.25),
+            color: AscentColors.waterPrimary.withValues(alpha: 0.25),
           ),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 22, color: const Color(0xFF0284C7)),
+            Icon(icon, size: 22, color: AscentColors.waterPrimary),
             const SizedBox(height: 6),
             Text(
               '+$amountMl mL',

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/frozen_palette.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -401,8 +402,8 @@ class _ThoughtWallHomePreviewState
                 fillColor: context.isDark
                     ? null
                     : (g.frozen
-                          ? const Color(0xEBF7FAFD)
-                          : Colors.white),
+                          ? FrozenPalette.surface.withValues(alpha: 0.92)
+                          : AscentColors.bgSurface),
                 customBorder: context.isDark
                     ? null
                     : Border.all(
@@ -463,7 +464,9 @@ class _ThoughtWallHomePreviewState
                         child: GlassSurface(
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
-                          fillColor: context.isDark ? const Color(0x18FFFFFF) : Colors.white,
+                          fillColor: context.isDark
+                              ? g.fill.withValues(alpha: g.fill.a + 0.04)
+                              : AscentColors.bgSurface,
                           customBorder: context.isDark
                               ? null
                               : Border.all(

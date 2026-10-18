@@ -32,7 +32,49 @@ class MoreScreen extends ConsumerWidget {
         children: [
           // ── 1. Profile & Account Card ─────────────────────────────────────
           profileAsync.when(
-            loading: () => const SizedBox(height: 76),
+            loading: () => AscentCard(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpace.s16,
+                vertical: AppSpace.s14,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: g.fill,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 120,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: g.fill,
+                            borderRadius: AppGeometry.roundedr4,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          width: 80,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: g.fill,
+                            borderRadius: AppGeometry.roundedr4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
             error: (_, _) => const SizedBox(),
             data: (profile) {
               final name = profile?.name.isNotEmpty == true
@@ -85,6 +127,8 @@ class MoreScreen extends ConsumerWidget {
                             style: AscentTextStyles.labelLarge
                                 .copyWith(color: g.ink)
                                 .merge(AppTypeRoles.typeRole57),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -323,11 +367,15 @@ class _GroupHeader extends StatelessWidget {
             decoration: BoxDecoration(shape: BoxShape.circle, color: dotColor),
           ),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: AscentTextStyles.labelSmall
-                .copyWith(color: g.inkMuted, letterSpacing: 0.9)
-                .merge(AppTypeRoles.typeRole31),
+          Expanded(
+            child: Text(
+              title,
+              style: AscentTextStyles.labelSmall
+                  .copyWith(color: g.inkMuted, letterSpacing: 0.9)
+                  .merge(AppTypeRoles.typeRole31),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
@@ -392,6 +440,8 @@ class _MoreListTile extends StatelessWidget {
                       style: AscentTextStyles.labelMedium
                           .copyWith(color: g.ink)
                           .merge(AppTypeRoles.typeRole32),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(

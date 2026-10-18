@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
+import '../../../app/theme/color_tokens.dart';
 
 /// Home-only day treatment; other routes keep their existing presentation.
 class HomeTheme {
@@ -14,20 +15,20 @@ class HomeTheme {
     if (isDark) {
       final glass = isNordic
           ? (AscentGlass.nordicSkyDark.copyWith(
-              fill: const Color(0x1F223548),
-              edge: const Color(0x385EA0F0),
-              line: const Color(0x245EA0F0),
+              fill: const Color.fromRGBO(34, 53, 72, 0.12),
+              edge: const Color.fromRGBO(94, 160, 240, 0.22),
+              line: const Color.fromRGBO(94, 160, 240, 0.14),
             ) as AscentGlass)
           : (AscentGlass.dark.copyWith(
-              bg: const Color(0xFF12100E),
-              fill: const Color(0x14FFFFFF),
-              edge: const Color(0x2BFFFFFF),
-              line: const Color(0x1AFFFFFF),
-              glow1: const Color(0x38D6785C),
-              glow2: const Color(0x2EC1A17C),
-              ink: const Color(0xFFECEAF2),
-              inkSecondary: const Color(0xFFB4B7C6),
-              inkMuted: const Color(0xFF9094A4),
+              bg: AscentColors.bgBaseDark,
+              fill: const Color.fromRGBO(255, 255, 255, 0.08),
+              edge: const Color.fromRGBO(255, 255, 255, 0.17),
+              line: const Color.fromRGBO(255, 255, 255, 0.10),
+              glow1: AscentGlass.dark.glow1,
+              glow2: AscentGlass.dark.glow2,
+              ink: AscentColors.textPrimaryDark,
+              inkSecondary: AscentColors.textSecondaryDark,
+              inkMuted: AscentColors.textMutedDark,
             ) as AscentGlass);
 
       return parent.copyWith(
@@ -53,17 +54,17 @@ class HomeTheme {
     final glass = isNordic
         ? AscentGlass.nordicSky
         : (AscentGlass.light.copyWith(
-                bg: const Color(0xFFF4F3F8),
-                fill: const Color(0x1AFFFFFF),
-                ink: const Color(0xFF242323),
-                inkSecondary: const Color(0xFF62616B),
-                inkMuted: const Color(0xFF73727B),
-                edge: const Color(0x242B221B),
-                line: const Color(0x182B221B),
-                nav: const Color(0xE6F7F6F3),
+                bg: AscentColors.bgBase,
+                fill: const Color.fromRGBO(255, 255, 255, 0.10),
+                ink: AscentColors.textPrimary,
+                inkSecondary: AscentColors.textSecondary,
+                inkMuted: AscentColors.textMuted,
+                edge: AscentColors.divider,
+                line: AscentColors.divider,
+                nav: AscentGlass.light.nav,
                 shadow: Colors.transparent,
-                glow1: const Color(0x1FE29878),
-                glow2: const Color(0x19C1A17C),
+                glow1: AscentGlass.light.glow1,
+                glow2: AscentGlass.light.glow2,
               )
               as AscentGlass);
 

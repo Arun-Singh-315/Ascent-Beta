@@ -27,73 +27,79 @@ Future<void> main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   final prefs = await SharedPreferences.getInstance();
-  final recoveryDb = AppDatabase();
+  final bootstrapDb = AppDatabase();
   try {
-    await WorkspaceBackupService(
-      recoveryDb,
-      SharedBackupPreferences(prefs),
-      await getApplicationDocumentsDirectory(),
-    ).recoverPreferences();
-  } catch (_) {
-    await recoveryDb.close();
-    runApp(
-      MaterialApp(
-        theme: AscentTheme.light(),
-        home: Scaffold(
-          body: SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Finish restoring settings',
-                      style: TextStyle(fontSize: 24),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Your restored records are safe. Settings could not be synchronized. Free some storage and retry.',
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: main,
-                      child: const Text('Retry recovery'),
-                    ),
-                  ],
+    try {
+      await WorkspaceBackupService(
+        bootstrapDb,
+        SharedBackupPreferences(prefs),
+        await getApplicationDocumentsDirectory(),
+      ).recoverPreferences();
+    } catch (e) {
+      debugPrint('Startup preferences recovery failed: $e');
+      await bootstrapDb.close();
+      runApp(
+        MaterialApp(
+          theme: AscentTheme.light(),
+          home: Scaffold(
+            body: SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Finish restoring settings',
+                        style: TextStyle(fontSize: 24),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Your restored records are safe. Settings could not be synchronized. Free some storage and retry.',
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: main,
+                        child: const Text('Retry recovery'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    return;
-  }
-  if (!(prefs.getBool('ascent_restore_alert_sync_v1') ?? false)) {
-    try {
-      await ReminderAlarmBridge.reconcile(recoveryDb);
-    } catch (_) {}
-  }
-  await recoveryDb.close();
-  await NotificationService.instance.initialize();
-  if (prefs.getBool('ascent_restore_alert_sync_v1') ?? false) {
-    final alarmDb = AppDatabase();
-    try {
-      await finishRestoredAlerts(alarmDb, prefs);
-    } catch (_) {
-    } finally {
-      await alarmDb.close();
+      );
+      return;
     }
-  }
-  final pendingAlertDb = AppDatabase();
-  try {
-    await RiyaAlertEffects.device(pendingAlertDb).syncPending();
-    await ReminderAlertSync.device(pendingAlertDb).sync(onlyPending: true);
-  } catch (_) {
-    // Pending rows remain durable for retry when alerts become available.
+
+    if (!(prefs.getBool('ascent_restore_alert_sync_v1') ?? false)) {
+      try {
+        await ReminderAlarmBridge.reconcile(bootstrapDb);
+      } catch (e) {
+        debugPrint('ReminderAlarmBridge reconcile skipped or failed: $e');
+      }
+    }
+
+    await NotificationService.instance.initialize();
+
+    if (prefs.getBool('ascent_restore_alert_sync_v1') ?? false) {
+      try {
+        await finishRestoredAlerts(bootstrapDb, prefs);
+      } catch (e) {
+        debugPrint('finishRestoredAlerts failed: $e');
+      }
+    }
+
+    try {
+      await RiyaAlertEffects.device(bootstrapDb).syncPending();
+      await ReminderAlertSync.device(bootstrapDb).sync(onlyPending: true);
+    } catch (e) {
+      // Pending rows remain durable for retry when alerts become available.
+      debugPrint('Alert sync skipped/deferred: $e');
+    }
   } finally {
-    await pendingAlertDb.close();
+    await bootstrapDb.close();
   }
   await touchLastOpened(prefs);
 

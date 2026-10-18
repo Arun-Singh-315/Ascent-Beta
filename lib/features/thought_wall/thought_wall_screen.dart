@@ -1043,7 +1043,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                         ? g.clay.withValues(alpha: context.isDark ? .22 : .12)
                         : context.isDark
                         ? g.fill
-                        : const Color(0x1AFFFFFF),
+                        : AscentColors.translucentSurfaceDay,
                     borderRadius: BorderRadius.only(
                       topLeft: AppGeometry.radiusr18,
                       topRight: AppGeometry.radiusr18,
@@ -1058,9 +1058,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                         : Border.all(
                             color: context.isDark
                                 ? g.inkMuted.withValues(alpha: .4)
-                                : const Color(
-                                    0xFF73727B,
-                                  ).withValues(alpha: .18),
+                                : AscentColors.outlineDay
+                                    .withValues(alpha: .18),
                             width: AppBorderScale.w1point2,
                           ),
                     boxShadow: context.isDark
@@ -1589,12 +1588,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                       thought.content,
                       style: AppTypography.plusJakartaSans14W60071(
                         color: thought.isCompleted
-                            ? (context.isDark
-                                  ? context.textMuted
-                                  : const Color(0xFF73727B))
-                            : (context.isDark
-                                  ? context.textPrimary
-                                  : const Color(0xFF242323)),
+                            ? context.textMuted
+                            : context.textPrimary,
                         decoration: thought.isCompleted
                             ? TextDecoration.lineThrough
                             : null,
