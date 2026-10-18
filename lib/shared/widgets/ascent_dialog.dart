@@ -140,6 +140,9 @@ class AscentDialog extends StatelessWidget {
       child: GlassSurface(
         radius: AscentDimensions.radiusXl,
         padding: const EdgeInsets.all(AscentDimensions.spaceXl),
+        fillColor: context.bgSurface.withValues(
+          alpha: context.isDark ? 0.95 : 0.96,
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

@@ -4,17 +4,23 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
+import '../../core/notifications/reminder_alert_sync.dart';
+import '../../core/services/activity_entry_service.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'add_lecture_activity_sheet.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../core/services/plan_child_protection.dart';
+import '../plans/widgets/plan_protection_dialog.dart';
+import '../plans/widgets/plan_detail_sheet.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 
 class AddActivitySheet extends ConsumerStatefulWidget {
   final Task? existingTask;
@@ -76,6 +82,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _hasReminder = false;
   String _priority = 'medium';
+  bool _saving = false;
+  bool _reminderEdited = false;
+  bool _loadingReminder = false;
+  PlanChildRestriction? _protection;
 
   @override
   void initState() {
@@ -106,6 +116,14 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
         _kind = ActivityKind.todo;
       }
 
+      _loadingReminder = true;
+      Future.microtask(() async {
+        try {
+          final protection =
+              await ref.read(taskDaoProvider).getTaskProtection(t.id);
+          if (mounted) setState(() => _protection = protection);
+        } catch (_) {}
+      });
       // Check if existing task has an active reminder
       Future.microtask(() async {
         try {
@@ -114,7 +132,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               .watchAllReminders()
               .first;
           final existing = reminders
-              .where((r) => r.linkedTaskId == t.id)
+              .where((r) => r.linkedTaskId == t.id && r.isActive)
               .firstOrNull;
           if (existing != null && mounted) {
             setState(() {
@@ -123,7 +141,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               _selectedTime = TimeOfDay.fromDateTime(existing.scheduledAt);
             });
           }
-        } catch (_) {}
+        } catch (_) {
+        } finally {
+          if (mounted) setState(() => _loadingReminder = false);
+        }
       });
     }
   }
@@ -137,158 +158,78 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   }
 
   Future<void> _save() async {
-    final title = _titleController.text.trim();
-    if (title.isEmpty) return;
-
-    HapticFeedback.mediumImpact();
-    final taskDao = ref.read(taskDaoProvider);
-
-    int? estMinutes;
-    if (_kind == ActivityKind.duration) {
-      estMinutes = _isCustomDuration
-          ? (int.tryParse(_customDurationController.text.trim()) ?? 30)
-          : _targetMinutes;
-      if (estMinutes <= 0) estMinutes = 30;
-    } else if (_kind == ActivityKind.flexible) {
-      estMinutes = -1;
-    } else {
-      estMinutes = null;
-    }
-
-    // Merge date and time if reminder is set
-    DateTime plannedDateTime = _selectedDate;
-    if (_hasReminder) {
-      plannedDateTime = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        _selectedTime.hour,
-        _selectedTime.minute,
+    if (_saving || _loadingReminder) return;
+    setState(() => _saving = true);
+    try {
+      final minutes = _kind == ActivityKind.duration
+          ? (_isCustomDuration
+                ? int.tryParse(_customDurationController.text.trim())
+                : _targetMinutes)
+          : _kind == ActivityKind.flexible
+          ? -1
+          : null;
+      if (_kind == ActivityKind.duration &&
+          (minutes == null || minutes < 1 || minutes > 1440)) {
+        throw StateError('Choose a timer from 1 to 1440 minutes.');
+      }
+      final reminderAt = !_hasReminder
+          ? null
+          : DateTime(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+              _selectedTime.hour,
+              _selectedTime.minute,
+            );
+      final db = ref.read(databaseProvider);
+      final result = await ActivityEntryService(db).save(
+        title: _titleController.text,
+        date: _selectedDate,
+        estimatedMinutes: minutes,
+        taskId: widget.existingTask?.id,
+        notes: _notesController.text,
+        priority: _priority,
+        parentTaskId: widget.parentTaskId,
+        applicationId: widget.prefilledApplicationId,
+        reminderAt: reminderAt,
+        replaceReminders: widget.existingTask == null || _reminderEdited,
       );
-      final now = DateTime.now();
-      if (plannedDateTime.isBefore(now)) {
-        if (DateUtils.isSameDay(plannedDateTime, now)) {
-          // If within the same minute (boundary condition when user takes seconds to type & save)
-          if (now.difference(plannedDateTime).inMinutes <= 0) {
-            plannedDateTime = now.add(const Duration(minutes: 1));
-          } else {
-            // Picked an earlier time today: automatically schedule for tomorrow at that time
-            plannedDateTime = plannedDateTime.add(const Duration(days: 1));
+      var message = widget.existingTask == null
+          ? 'Activity added'
+          : 'Activity updated';
+      if (result.reminderIds.isNotEmpty) {
+        try {
+          final sync = await ReminderAlertSync.device(
+            db,
+          ).sync(ids: result.reminderIds, onlyPending: true);
+          if (!sync.complete) {
+            message +=
+                '. Reminder alert pending—check notification permissions.';
           }
-        } else {
-          plannedDateTime = now.add(const Duration(minutes: 2));
+        } catch (_) {
+          message += '. Reminder alert pending.';
         }
       }
-    }
-
-    int taskId;
-    if (widget.existingTask != null) {
-      taskId = widget.existingTask!.id;
-      await taskDao.updateTask(
-        TaskTableCompanion(
-          id: drift.Value(taskId),
-          title: drift.Value(title),
-          notes: drift.Value(
-            _notesController.text.trim().isEmpty
-                ? null
-                : _notesController.text.trim(),
-          ),
-          plannedDate: drift.Value(plannedDateTime),
-          priority: drift.Value(_priority),
-          estimatedMinutes: drift.Value(estMinutes),
-          parentTaskId: drift.Value(
-            widget.parentTaskId ?? widget.existingTask?.parentTaskId,
-          ),
-          linkedApplicationId: drift.Value(
-            widget.prefilledApplicationId ??
-                widget.existingTask?.linkedApplicationId,
-          ),
-          lastInteractedAt: drift.Value(DateTime.now()),
-        ),
-      );
-    } else {
-      taskId = await taskDao.insertTask(
-        TaskTableCompanion.insert(
-          title: title,
-          notes: drift.Value(
-            _notesController.text.trim().isEmpty
-                ? null
-                : _notesController.text.trim(),
-          ),
-          plannedDate: drift.Value(plannedDateTime),
-          priority: drift.Value(_priority),
-          estimatedMinutes: drift.Value(estMinutes),
-          parentTaskId: drift.Value(widget.parentTaskId),
-          linkedApplicationId: drift.Value(widget.prefilledApplicationId),
-          lastInteractedAt: drift.Value(DateTime.now()),
-        ),
-      );
-    }
-
-    final reminderDao = ref.read(reminderDaoProvider);
-
-    // Clean up previous reminders for this activity to avoid duplicates
-    if (widget.existingTask != null) {
-      try {
-        final linkedReminders = await reminderDao.getRemindersByTaskId(
-          widget.existingTask!.id,
-        );
-        for (final r in linkedReminders) {
-          await reminderDao.deleteReminder(r.id);
-          await NotificationService.instance.cancel(r.id);
-        }
-        final allReminders = await reminderDao.watchAllReminders().first;
-        for (final r in allReminders.where(
-          (r) =>
-              r.title.toLowerCase() ==
-                  widget.existingTask!.title.toLowerCase() ||
-              r.title.toLowerCase() == title.toLowerCase(),
-        )) {
-          await reminderDao.deleteReminder(r.id);
-          await NotificationService.instance.cancel(r.id);
-        }
-      } catch (e) {
-        debugPrint('Error cleaning up existing reminders: $e');
+      if (mounted) {
+        HapticFeedback.lightImpact();
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.of(context).pop();
+        messenger.showSnackBar(SnackBar(content: Text(message)));
       }
-    }
-
-    // Schedule reminder if toggled
-    if (_hasReminder) {
-      try {
-        final reminderId = await reminderDao.insertReminder(
-          ReminderTableCompanion.insert(
-            title: title,
-            scheduledAt: plannedDateTime,
-            isActive: const drift.Value(true),
-            linkedTaskId: drift.Value(taskId),
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              e is StateError
+                  ? e.message.toString()
+                  : 'Could not save. Try again.',
+            ),
           ),
         );
-        await NotificationService.instance.scheduleReminderNotification(
-          id: reminderId,
-          title: title,
-          scheduledAt: plannedDateTime,
-        );
-        debugPrint(
-          'Activity reminder saved: id=$reminderId title="$title" at $plannedDateTime linked to task $taskId',
-        );
-      } catch (e) {
-        debugPrint('Error inserting reminder or scheduling notification: $e');
       }
-    }
-
-    if (mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        AscentSnackBar.build(
-          context,
-          content: Text(
-            widget.existingTask != null
-                ? 'Activity updated'
-                : 'Activity added to hub',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -309,515 +250,326 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
           width: AppBorderScale.w1,
         ),
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            AppSpace.s20,
-            AppSpace.s16,
-            AppSpace.s20,
-            bottomInset + AppSpace.s16,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Top drag handle
-                Center(
-                  child: Container(
-                    width: 38,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: context.divider,
-                      borderRadius: AppGeometry.roundedr2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // Sheet Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      widget.existingTask != null
-                          ? 'Edit Activity'
-                          : 'Add Activity',
-                      style: AscentTextStyles.displaySmall
-                          .copyWith(color: context.textPrimary)
-                          .merge(AppTypeRoles.typeRole2),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 22),
-                      color: context.textMuted,
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // 1. What do you want to do?
-                Text(
-                  'What do you want to do?',
-                  style: AscentTextStyles.labelMedium
-                      .copyWith(color: context.textPrimary)
-                      .merge(AppTypeRoles.typeRole8),
-                ),
-                const SizedBox(height: 6),
-                TextField(
-                  controller: _titleController,
-                  autofocus: widget.existingTask == null,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: context.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    hintText:
-                        'e.g., Buy groceries, Exercise, Study Java, Meditate',
-                    hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                      color: context.textMuted,
-                    ),
-                    filled: true,
-                    fillColor: isDark
-                        ? AppPalette.colorFF201A14
-                        : AppPalette.colorFFF7F6F2,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s14,
-                      vertical: AppSpace.s12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr14,
-                      borderSide: BorderSide(color: context.divider),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr14,
-                      borderSide: BorderSide(
-                        color: context.divider.withValues(alpha: 0.8),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppGeometry.roundedr14,
-                      borderSide: BorderSide(
-                        color: context.accentPrimary,
-                        width: AppBorderScale.w1point5,
+      child: Material(
+        color: AppPalette.transparent,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpace.s20,
+              AppSpace.s16,
+              AppSpace.s20,
+              bottomInset + AppSpace.s16,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Top drag handle
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: context.divider,
+                        borderRadius: AppGeometry.roundedr2,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
-                // 2. Activity Type Selector (Progressive Disclosure)
-                Text(
-                  'Activity Type',
-                  style: AscentTextStyles.labelMedium
-                      .copyWith(color: context.textPrimary)
-                      .merge(AppTypeRoles.typeRole8),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _TypeSelectChip(
-                      icon: Icons.check_circle_outline_rounded,
-                      label: 'To-do',
-                      subtitle: 'Simple task',
-                      isSelected: _kind == ActivityKind.todo,
+                  // Sheet Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.existingTask != null
+                            ? 'Edit Activity'
+                            : 'Add Activity',
+                        style: AscentTextStyles.displaySmall
+                            .copyWith(color: context.textPrimary)
+                            .merge(AppTypeRoles.typeRole2),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 22),
+                        color: context.textMuted,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  if (_protection != null) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
                       onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _kind = ActivityKind.todo);
+                        showPlanDetailSheet(context, _protection!.planId);
                       },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.glass.claySoft,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: context.glass.clay.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.event_repeat_rounded,
+                              size: 14,
+                              color: context.glass.clay,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Part of ${_protection!.planTitle} · Open routine',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: context.glass.clay,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    const SizedBox(width: 8),
-                    _TypeSelectChip(
-                      icon: Icons.timer_outlined,
-                      label: 'Timed',
-                      subtitle: 'Track duration',
-                      isSelected: _kind == ActivityKind.duration,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _kind = ActivityKind.duration);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    _TypeSelectChip(
-                      icon: Icons.all_inclusive_rounded,
-                      label: 'Flexible',
-                      subtitle: 'Track as you go',
-                      isSelected: _kind == ActivityKind.flexible,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _kind = ActivityKind.flexible);
-                      },
+                  ] else if (widget.existingTask != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          icon: const Icon(
+                            Icons.event_repeat_rounded,
+                            size: 16,
+                          ),
+                          label: const Text('Make repeating routine'),
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            final db = ref.read(databaseProvider);
+                            final thoughtId = await db.thoughtDao.insertThought(
+                              ThoughtTableCompanion.insert(
+                                content:
+                                    'Routine: ${_titleController.text.trim()}',
+                              ),
+                            );
+                            final thought =
+                                await db.thoughtDao.getThoughtById(thoughtId);
+                            if (context.mounted && thought != null) {
+                              showHomeSchedule(
+                                context,
+                                thought,
+                                initialText:
+                                    '${_titleController.text.trim()} every day at ${_selectedTime.format(context)}',
+                              );
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ],
-                ),
+                  const SizedBox(height: 14),
 
-                if (widget.existingTask?.actualCompletedDate == null)
-                  TextButton.icon(
-                    icon: const Icon(Icons.school_outlined),
-                    label: Text(
-                      widget.existingTask == null
-                          ? 'Plan a lecture instead'
-                          : 'Convert to a course lecture',
-                    ),
-                    onPressed: () async {
-                      final saved = await AddLectureActivitySheet.show(
-                        context,
-                        task: widget.existingTask,
-                        title: _titleController.text,
-                        minutes: _kind == ActivityKind.duration
-                            ? _targetMinutes
-                            : null,
-                      );
-                      if (saved && context.mounted) Navigator.pop(context);
-                    },
-                  ),
-
-                // 3. Progressive Target Duration (Shown only when Timed is selected)
-                if (_kind == ActivityKind.duration) ...[
-                  const SizedBox(height: 16),
+                  // 1. What do you want to do?
                   Text(
-                    'Target Duration',
+                    'What do you want to do?',
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: context.textPrimary)
+                        .merge(AppTypeRoles.typeRole8),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _titleController,
+                    autofocus: widget.existingTask == null,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: AscentTextStyles.bodyMedium.copyWith(
+                      color: context.textPrimary,
+                    ),
+                    decoration: InputDecoration(
+                      hintText:
+                          'e.g., Buy groceries, Exercise, Study Java, Meditate',
+                      hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                        color: context.textMuted,
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? AppPalette.colorFF201A14
+                          : AppPalette.colorFFF7F6F2,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s14,
+                        vertical: AppSpace.s12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: AppGeometry.roundedr14,
+                        borderSide: BorderSide(color: context.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppGeometry.roundedr14,
+                        borderSide: BorderSide(
+                          color: context.divider.withValues(alpha: 0.8),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppGeometry.roundedr14,
+                        borderSide: BorderSide(
+                          color: context.accentPrimary,
+                          width: AppBorderScale.w1point5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // 2. Activity Type Selector (Progressive Disclosure)
+                  Text(
+                    'Activity Type',
                     style: AscentTextStyles.labelMedium
                         .copyWith(color: context.textPrimary)
                         .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  Row(
                     children: [
-                      for (final mins in [15, 30, 45, 60, 90])
-                        AppPill.choice(
-                          label: Text('$mins min'),
-                          selected:
-                              !_isCustomDuration && _targetMinutes == mins,
-                          selectedColor: context.accentPrimary.withValues(
-                            alpha: 0.15,
+                      _TypeSelectChip(
+                        icon: Icons.check_circle_outline_rounded,
+                        label: 'To-do',
+                        subtitle: 'Simple task',
+                        isSelected: _kind == ActivityKind.todo,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _kind = ActivityKind.todo);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _TypeSelectChip(
+                        icon: Icons.timer_outlined,
+                        label: 'Timed',
+                        subtitle: 'Track duration',
+                        isSelected: _kind == ActivityKind.duration,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _kind = ActivityKind.duration);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _TypeSelectChip(
+                        icon: Icons.all_inclusive_rounded,
+                        label: 'Flexible',
+                        subtitle: 'Track as you go',
+                        isSelected: _kind == ActivityKind.flexible,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _kind = ActivityKind.flexible);
+                        },
+                      ),
+                    ],
+                  ),
+
+                  if (widget.existingTask?.actualCompletedDate == null)
+                    TextButton.icon(
+                      icon: const Icon(Icons.school_outlined),
+                      label: Text(
+                        widget.existingTask == null
+                            ? 'Plan a lecture instead'
+                            : 'Convert to a course lecture',
+                      ),
+                      onPressed: () async {
+                        final saved = await AddLectureActivitySheet.show(
+                          context,
+                          task: widget.existingTask,
+                          title: _titleController.text,
+                          minutes: _kind == ActivityKind.duration
+                              ? _targetMinutes
+                              : null,
+                        );
+                        if (saved && context.mounted) Navigator.pop(context);
+                      },
+                    ),
+
+                  // 3. Progressive Target Duration (Shown only when Timed is selected)
+                  if (_kind == ActivityKind.duration) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'Target Duration',
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: context.textPrimary)
+                          .merge(AppTypeRoles.typeRole8),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final mins in [15, 30, 45, 60, 90])
+                          Builder(
+                            builder: (context) {
+                              final isSel =
+                                  !_isCustomDuration && _targetMinutes == mins;
+                              return AppPill.choice(
+                                label: Text('$mins min'),
+                                selected: isSel,
+                                selectedColor: context.accentPrimary,
+                                side: BorderSide(
+                                  color: isSel
+                                      ? context.accentPrimary
+                                      : context.divider,
+                                ),
+                                labelStyle: AppTypeRoles.typeRole17.copyWith(
+                                  color: isSel
+                                      ? AppPalette.white
+                                      : context.textPrimary,
+                                  fontWeight: isSel
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                                onSelected: (_) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() {
+                                    _isCustomDuration = false;
+                                    _targetMinutes = mins;
+                                  });
+                                },
+                              );
+                            },
                           ),
-                          side: BorderSide(
-                            color:
-                                (!_isCustomDuration && _targetMinutes == mins)
-                                ? context.accentPrimary
-                                : context.divider,
-                          ),
-                          labelStyle: AppTypeRoles.typeRole17.copyWith(
-                            color:
-                                (!_isCustomDuration && _targetMinutes == mins)
-                                ? context.accentPrimary
-                                : context.textPrimary,
-                          ),
-                          onSelected: (_) {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _isCustomDuration = false;
-                              _targetMinutes = mins;
-                            });
+                        Builder(
+                          builder: (context) {
+                            return AppPill.choice(
+                              label: const Text('Custom'),
+                              selected: _isCustomDuration,
+                              selectedColor: context.accentPrimary,
+                              side: BorderSide(
+                                color: _isCustomDuration
+                                    ? context.accentPrimary
+                                    : context.divider,
+                              ),
+                              labelStyle: AppTypeRoles.typeRole17.copyWith(
+                                color: _isCustomDuration
+                                    ? AppPalette.white
+                                    : context.textPrimary,
+                                fontWeight: _isCustomDuration
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
+                              onSelected: (_) {
+                                HapticFeedback.selectionClick();
+                                setState(() => _isCustomDuration = true);
+                              },
+                            );
                           },
                         ),
-                      AppPill.choice(
-                        label: const Text('Custom'),
-                        selected: _isCustomDuration,
-                        selectedColor: context.accentPrimary.withValues(
-                          alpha: 0.15,
-                        ),
-                        side: BorderSide(
-                          color: _isCustomDuration
-                              ? context.accentPrimary
-                              : context.divider,
-                        ),
-                        labelStyle: AppTypeRoles.typeRole17.copyWith(
-                          color: _isCustomDuration
-                              ? context.accentPrimary
-                              : context.textPrimary,
-                        ),
-                        onSelected: (_) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _isCustomDuration = true);
-                        },
-                      ),
-                    ],
-                  ),
-                  if (_isCustomDuration) ...[
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _customDurationController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        hintText: 'Enter duration in minutes (e.g. 120)',
-                        hintStyle: AscentTextStyles.bodySmall.copyWith(
-                          color: context.textMuted,
-                        ),
-                        filled: true,
-                        fillColor: isDark
-                            ? AppPalette.colorFF201A14
-                            : AppPalette.colorFFF7F6F2,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s12,
-                          vertical: AppSpace.s10,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: AppGeometry.roundedr12,
-                        ),
-                      ),
+                      ],
                     ),
-                  ],
-                ],
-
-                const SizedBox(height: 16),
-
-                // 4. Scheduling & Date
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'When should it happen?',
-                            style: AscentTextStyles.labelMedium
-                                .copyWith(color: context.textPrimary)
-                                .merge(AppTypeRoles.typeRole8),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              AppPill.choice(
-                                label: const Text('Today'),
-                                selected: DateUtils.isSameDay(
-                                  _selectedDate,
-                                  DateTime.now(),
-                                ),
-                                onSelected: (_) {
-                                  HapticFeedback.selectionClick();
-                                  setState(
-                                    () => _selectedDate = DateTime.now(),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 6),
-                              AppPill.choice(
-                                label: const Text('Tomorrow'),
-                                selected: DateUtils.isSameDay(
-                                  _selectedDate,
-                                  DateTime.now().add(const Duration(days: 1)),
-                                ),
-                                onSelected: (_) {
-                                  HapticFeedback.selectionClick();
-                                  setState(
-                                    () => _selectedDate = DateTime.now().add(
-                                      const Duration(days: 1),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 6),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 20,
-                                ),
-                                color: context.accentPrimary,
-                                onPressed: () async {
-                                  final picked = await showDatePicker(
-                                    context: context,
-                                    initialDate: _selectedDate,
-                                    firstDate: DateTime.now().subtract(
-                                      const Duration(days: 30),
-                                    ),
-                                    lastDate: DateTime.now().add(
-                                      const Duration(days: 365),
-                                    ),
-                                  );
-                                  if (picked != null) {
-                                    setState(() => _selectedDate = picked);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                // 5. Reminder Toggle
-                AppCard(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s12,
-                    vertical: AppSpace.s8,
-                  ),
-                  nightDecoration: BoxDecoration(
-                    color: isDark
-                        ? AppPalette.colorFF201A14
-                        : AppPalette.colorFFF7F6F2,
-                    borderRadius: AppGeometry.roundedr14,
-                    border: Border.all(
-                      color: context.divider.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.notifications_active_outlined,
-                        size: 20,
-                        color: context.accentPrimary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AppTapArea(
-                          onTap: _hasReminder
-                              ? () async {
-                                  final pickedTime = await showTimePicker(
-                                    context: context,
-                                    initialTime: _selectedTime,
-                                  );
-                                  if (pickedTime != null) {
-                                    setState(() => _selectedTime = pickedTime);
-                                  }
-                                }
-                              : null,
-                          borderRadius: AppGeometry.roundedr8,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'Remind me',
-                                    style: AscentTextStyles.labelMedium
-                                        .copyWith(color: context.textPrimary),
-                                  ),
-                                  if (_hasReminder) ...[
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '(Tap to edit)',
-                                      style: AscentTextStyles.captionMedium
-                                          .copyWith(color: context.textMuted)
-                                          .merge(AppTypeRoles.typeRole18),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              if (_hasReminder)
-                                Text(
-                                  '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
-                                  style: AscentTextStyles.captionMedium
-                                      .copyWith(color: context.accentPrimary)
-                                      .merge(AppTypeRoles.typeRole8),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Switch(
-                        value: _hasReminder,
-                        onChanged: (val) async {
-                          if (val) {
-                            await NotificationService.instance
-                                .requestPermissions();
-                            if (!context.mounted) return;
-                            final now = TimeOfDay.now();
-                            final isPastToday =
-                                DateUtils.isSameDay(
-                                  _selectedDate,
-                                  DateTime.now(),
-                                ) &&
-                                (_selectedTime.hour < now.hour ||
-                                    (_selectedTime.hour == now.hour &&
-                                        _selectedTime.minute <= now.minute));
-                            final initial = isPastToday
-                                ? TimeOfDay(
-                                    hour:
-                                        (now.hour +
-                                            (now.minute >= 45 ? 1 : 0)) %
-                                        24,
-                                    minute: (now.minute + 15) % 60,
-                                  )
-                                : _selectedTime;
-
-                            final pickedTime = await showTimePicker(
-                              context: context,
-                              initialTime: initial,
-                            );
-                            if (pickedTime != null) {
-                              setState(() {
-                                _selectedTime = pickedTime;
-                                _hasReminder = true;
-                              });
-                            }
-                          } else {
-                            setState(() => _hasReminder = false);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                // 6. Priority & Notes (Collapsible)
-                Theme(
-                  data: Theme.of(
-                    context,
-                  ).copyWith(dividerColor: AppPalette.transparent),
-                  child: ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: Text(
-                      'Priority & Notes',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: context.textMuted,
-                      ),
-                    ),
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Priority: ',
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: context.textMuted,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          for (final p in ['low', 'medium', 'high'])
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                right: AppSpace.s6,
-                              ),
-                              child: AppPill.choice(
-                                label: Text(p.toUpperCase()),
-                                selected: _priority == p,
-                                selectedColor: p == 'high'
-                                    ? context.stateDanger.withValues(
-                                        alpha: 0.15,
-                                      )
-                                    : context.accentPrimary.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                labelStyle: AppTypeRoles.typeRole19.copyWith(
-                                  color: _priority == p
-                                      ? context.textPrimary
-                                      : context.textMuted,
-                                ),
-                                onSelected: (_) =>
-                                    setState(() => _priority = p),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
+                    if (_isCustomDuration) ...[
+                      const SizedBox(height: 8),
                       TextField(
-                        controller: _notesController,
-                        maxLines: 2,
-                        style: AscentTextStyles.bodyMedium.copyWith(
-                          color: context.textPrimary,
-                        ),
+                        controller: _customDurationController,
+                        keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          hintText: 'Add notes or description (optional)',
+                          hintText: 'Enter duration in minutes (e.g. 120)',
                           hintStyle: AscentTextStyles.bodySmall.copyWith(
                             color: context.textMuted,
                           ),
@@ -825,122 +577,426 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           fillColor: isDark
                               ? AppPalette.colorFF201A14
                               : AppPalette.colorFFF7F6F2,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s12,
+                            vertical: AppSpace.s10,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: AppGeometry.roundedr12,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                    ],
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  // 4. Scheduling & Date
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'When should it happen?',
+                              style: AscentTextStyles.labelMedium
+                                  .copyWith(color: context.textPrimary)
+                                  .merge(AppTypeRoles.typeRole8),
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                AppPill.choice(
+                                  label: const Text('Today'),
+                                  selected: DateUtils.isSameDay(
+                                    _selectedDate,
+                                    DateTime.now(),
+                                  ),
+                                  onSelected: (_) {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _reminderEdited = true;
+                                      _selectedDate = DateTime.now();
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 6),
+                                AppPill.choice(
+                                  label: const Text('Tomorrow'),
+                                  selected: DateUtils.isSameDay(
+                                    _selectedDate,
+                                    DateTime.now().add(const Duration(days: 1)),
+                                  ),
+                                  onSelected: (_) {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _reminderEdited = true;
+                                      _selectedDate = DateTime.now().add(
+                                        const Duration(days: 1),
+                                      );
+                                    });
+                                  },
+                                ),
+                                const SizedBox(width: 6),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.calendar_today_rounded,
+                                    size: 20,
+                                  ),
+                                  color: context.accentPrimary,
+                                  onPressed: () async {
+                                    final picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: _selectedDate,
+                                      firstDate: DateTime.now().subtract(
+                                        const Duration(days: 30),
+                                      ),
+                                      lastDate: DateTime.now().add(
+                                        const Duration(days: 365),
+                                      ),
+                                    );
+                                    if (picked != null) {
+                                      setState(() {
+                                        _reminderEdited = true;
+                                        _selectedDate = picked;
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
 
-                const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
-                // Save button
-                AscentButton.primary(
-                  label: widget.existingTask != null
-                      ? 'Save Changes'
-                      : 'Create Activity',
-                  icon: widget.existingTask != null
-                      ? Icons.check_rounded
-                      : Icons.add_rounded,
-                  onPressed: _save,
-                ),
-
-                if (widget.existingTask != null) ...[
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        HapticFeedback.mediumImpact();
-                        final nav = Navigator.of(context);
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Delete Activity?'),
-                            content: Text(
-                              'Are you sure you want to delete "${widget.existingTask!.title}"? This will also remove any linked reminders.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: const Text('Cancel'),
-                              ),
-                              FilledButton(
-                                style: context.surfaces.buttonStyle(
-                                  FilledButton.styleFrom(
-                                    backgroundColor: context.stateDanger,
-                                  ),
-                                  filled: true,
-                                  icon: false,
-                                ),
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true && mounted) {
-                          final taskBackup = widget.existingTask!;
-                          final dummyItem = TodayActivityItem(
-                            id: 'task_${taskBackup.id}',
-                            title: taskBackup.title,
-                            sourceType: 'task',
-                            status: TodayActivityStatus.notStarted,
-                            elapsedSecondsToday: 0,
-                            linkedTaskId: taskBackup.id,
-                            categoryTag: 'Task',
-                            kind: ActivityKind.todo,
-                          );
-                          await deleteTodayActivity(ref, dummyItem);
-                          nav.pop();
-                          if (context.mounted) {
-                            AscentSnackBar.undo(
-                              context,
-                              message: 'Activity "${taskBackup.title}" deleted',
-                              onUndo: () async {
-                                HapticFeedback.lightImpact();
-                                await ref
-                                    .read(taskDaoProvider)
-                                    .insertTask(taskBackup.toCompanion(true));
-                                await ref
-                                    .read(
-                                      dismissedTodayActivityIdsProvider
-                                          .notifier,
-                                    )
-                                    .unDismissActivityId(dummyItem.id);
-                              },
-                            );
-                          }
-                        }
-                      },
-                      style: context.surfaces.buttonStyle(
-                        OutlinedButton.styleFrom(
-                          foregroundColor: context.stateDanger,
-                          side: BorderSide(
-                            color: context.stateDanger.withValues(alpha: 0.5),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: AppGeometry.roundedr12,
-                          ),
-                        ),
-                        filled: false,
-                        icon: false,
-                      ),
-                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                      label: const Text(
-                        'Delete Activity',
-                        style: AppTypeRoles.typeRole8,
+                  // 5. Reminder Toggle
+                  AppCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpace.s12,
+                      vertical: AppSpace.s8,
+                    ),
+                    nightDecoration: BoxDecoration(
+                      color: isDark
+                          ? AppPalette.colorFF201A14
+                          : AppPalette.colorFFF7F6F2,
+                      borderRadius: AppGeometry.roundedr14,
+                      border: Border.all(
+                        color: context.divider.withValues(alpha: 0.6),
                       ),
                     ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.notifications_active_outlined,
+                          size: 20,
+                          color: context.accentPrimary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: AppTapArea(
+                            onTap: _hasReminder
+                                ? () async {
+                                    final pickedTime = await showTimePicker(
+                                      context: context,
+                                      initialTime: _selectedTime,
+                                    );
+                                    if (pickedTime != null) {
+                                      setState(() {
+                                        _reminderEdited = true;
+                                        _selectedTime = pickedTime;
+                                      });
+                                    }
+                                  }
+                                : null,
+                            borderRadius: AppGeometry.roundedr8,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Remind me',
+                                      style: AscentTextStyles.labelMedium
+                                          .copyWith(color: context.textPrimary),
+                                    ),
+                                    if (_hasReminder) ...[
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '(Tap to edit)',
+                                        style: AscentTextStyles.captionMedium
+                                            .copyWith(color: context.textMuted)
+                                            .merge(AppTypeRoles.typeRole18),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                if (_hasReminder)
+                                  Text(
+                                    '${DateFormat('MMM d').format(_selectedDate)} at ${_selectedTime.format(context)}',
+                                    style: AscentTextStyles.captionMedium
+                                        .copyWith(color: context.accentPrimary)
+                                        .merge(AppTypeRoles.typeRole8),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Switch(
+                          value: _hasReminder,
+                          onChanged: (val) async {
+                            if (val) {
+                              await NotificationService.instance
+                                  .requestPermissions();
+                              if (!context.mounted) return;
+                              final now = TimeOfDay.now();
+                              final isPastToday =
+                                  DateUtils.isSameDay(
+                                    _selectedDate,
+                                    DateTime.now(),
+                                  ) &&
+                                  (_selectedTime.hour < now.hour ||
+                                      (_selectedTime.hour == now.hour &&
+                                          _selectedTime.minute <= now.minute));
+                              final initial = isPastToday
+                                  ? TimeOfDay(
+                                      hour:
+                                          (now.hour +
+                                              (now.minute >= 45 ? 1 : 0)) %
+                                          24,
+                                      minute: (now.minute + 15) % 60,
+                                    )
+                                  : _selectedTime;
+
+                              final pickedTime = await showTimePicker(
+                                context: context,
+                                initialTime: initial,
+                              );
+                              if (pickedTime != null) {
+                                setState(() {
+                                  _reminderEdited = true;
+                                  _selectedTime = pickedTime;
+                                  _hasReminder = true;
+                                });
+                              }
+                            } else {
+                              setState(() {
+                                _reminderEdited = true;
+                                _hasReminder = false;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
                   ),
+
+                  const SizedBox(height: 14),
+
+                  // 6. Priority & Notes (Collapsible)
+                  Theme(
+                    data: Theme.of(
+                      context,
+                    ).copyWith(dividerColor: AppPalette.transparent),
+                    child: ExpansionTile(
+                      tilePadding: EdgeInsets.zero,
+                      title: Text(
+                        'Priority & Notes',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: context.textMuted,
+                        ),
+                      ),
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'Priority: ',
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: context.textMuted,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            for (final p in ['low', 'medium', 'high'])
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  right: AppSpace.s6,
+                                ),
+                                child: AppPill.choice(
+                                  label: Text(p.toUpperCase()),
+                                  selected: _priority == p,
+                                  selectedColor: p == 'high'
+                                      ? context.stateDanger.withValues(
+                                          alpha: 0.15,
+                                        )
+                                      : context.accentPrimary.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                  labelStyle: AppTypeRoles.typeRole19.copyWith(
+                                    color: _priority == p
+                                        ? context.textPrimary
+                                        : context.textMuted,
+                                  ),
+                                  onSelected: (_) =>
+                                      setState(() => _priority = p),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _notesController,
+                          maxLines: 2,
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: context.textPrimary,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Add notes or description (optional)',
+                            hintStyle: AscentTextStyles.bodySmall.copyWith(
+                              color: context.textMuted,
+                            ),
+                            filled: true,
+                            fillColor: isDark
+                                ? AppPalette.colorFF201A14
+                                : AppPalette.colorFFF7F6F2,
+                            border: OutlineInputBorder(
+                              borderRadius: AppGeometry.roundedr12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Save button
+                  AscentButton.primary(
+                    label: widget.existingTask != null
+                        ? 'Save Changes'
+                        : 'Create Activity',
+                    icon: widget.existingTask != null
+                        ? Icons.check_rounded
+                        : Icons.add_rounded,
+                    loading: _saving,
+                    onPressed: _saving || _loadingReminder ? null : _save,
+                  ),
+
+                  if (widget.existingTask != null) ...[
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          final nav = Navigator.of(context);
+                          if (_protection != null) {
+                            await showPlanProtectionDialog(
+                              context,
+                              ref,
+                              _protection!,
+                            );
+                            nav.pop();
+                            return;
+                          }
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Delete Activity?'),
+                              content: Text(
+                                'Are you sure you want to delete "${widget.existingTask!.title}"? This will also remove any linked reminders.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(ctx).pop(false),
+                                  child: const Text('Cancel'),
+                                ),
+                                FilledButton(
+                                  style: context.surfaces.buttonStyle(
+                                    FilledButton.styleFrom(
+                                      backgroundColor: context.stateDanger,
+                                    ),
+                                    filled: true,
+                                    icon: false,
+                                  ),
+                                  onPressed: () => Navigator.of(ctx).pop(true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirm == true && mounted) {
+                            final taskBackup = widget.existingTask!;
+                            final dummyItem = TodayActivityItem(
+                              id: 'task_${taskBackup.id}',
+                              title: taskBackup.title,
+                              sourceType: 'task',
+                              status: TodayActivityStatus.notStarted,
+                              elapsedSecondsToday: 0,
+                              linkedTaskId: taskBackup.id,
+                              categoryTag: 'Task',
+                              kind: ActivityKind.todo,
+                            );
+                            await deleteTodayActivity(ref, dummyItem);
+                            nav.pop();
+                            if (context.mounted) {
+                              AscentSnackBar.undo(
+                                context,
+                                message:
+                                    'Activity "${taskBackup.title}" deleted',
+                                onUndo: () async {
+                                  HapticFeedback.lightImpact();
+                                  await ref
+                                      .read(taskDaoProvider)
+                                      .insertTask(taskBackup.toCompanion(true));
+                                  await ref
+                                      .read(
+                                        dismissedTodayActivityIdsProvider
+                                            .notifier,
+                                      )
+                                      .unDismissActivityId(dummyItem.id);
+                                },
+                              );
+                            }
+                          }
+                        },
+                        style: context.surfaces.buttonStyle(
+                          OutlinedButton.styleFrom(
+                            foregroundColor: context.stateDanger,
+                            side: BorderSide(
+                              color: context.stateDanger.withValues(alpha: 0.5),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpace.s12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: AppGeometry.roundedr12,
+                            ),
+                          ),
+                          filled: false,
+                          icon: false,
+                        ),
+                        icon: Icon(
+                          _protection != null
+                              ? Icons.event_busy_rounded
+                              : Icons.delete_outline_rounded,
+                          size: 18,
+                        ),
+                        label: Text(
+                          _protection != null
+                              ? 'Skip session or manage routine'
+                              : 'Delete Activity',
+                          style: AppTypeRoles.typeRole8,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -977,9 +1033,7 @@ class _TypeSelectChip extends StatelessWidget {
             horizontal: AppSpace.s8,
           ),
           nightDecoration: BoxDecoration(
-            color: isSelected
-                ? context.accentPrimary.withValues(alpha: 0.12)
-                : context.bgBase,
+            color: isSelected ? context.accentPrimary : context.bgBase,
             borderRadius: AppGeometry.roundedr14,
             border: Border.all(
               color: isSelected
@@ -993,16 +1047,19 @@ class _TypeSelectChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? context.accentPrimary : context.textMuted,
+                color: isSelected ? AppPalette.white : context.textMuted,
               ),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: AscentTextStyles.labelMedium
                     .copyWith(
-                      color: context.surfaces.contentForeground(isSelected, isSelected
-                          ? context.textPrimary
-                          : context.textMuted),
+                      color: isSelected
+                          ? AppPalette.white
+                          : context.textPrimary,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     )
                     .merge(AppTypeRoles.typeRole9),
               ),
@@ -1010,7 +1067,9 @@ class _TypeSelectChip extends StatelessWidget {
               Text(
                 subtitle,
                 style: AppStateTypography.stateType4.copyWith(
-                  color: context.surfaces.contentForeground(isSelected, AppPalette.grey),
+                  color: isSelected
+                      ? AppPalette.white.withValues(alpha: 0.85)
+                      : context.textMuted,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

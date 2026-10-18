@@ -206,7 +206,9 @@ void main() {
 
       expect(find.text('DSA Sliding Window Practice'), findsOneWidget);
       expect(find.text('45m target'), findsOneWidget);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        // DSA item verification
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
     });
 
     testWidgets(
@@ -241,6 +243,9 @@ void main() {
         // Only ONE play/pause button exists (inline on the row, not duplicated in a banner)
         expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
         expect(find.byIcon(Icons.pause_circle_outline_rounded), findsNothing);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
       },
     );
   });

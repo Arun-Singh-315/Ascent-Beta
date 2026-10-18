@@ -1,3 +1,4 @@
+import '../../plans/planning_providers.dart';
 import '../../today/add_lecture_activity_sheet.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -16,6 +17,8 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../today/add_activity_sheet.dart';
+import '../../plans/widgets/plan_protection_dialog.dart';
+import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../shared/widgets/ascent_snack_bar.dart';
 
 /// Redesigned task row matching Ascent Home Redesign:
@@ -31,18 +34,41 @@ class ActivityRowItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final planLabel = activity.linkedTaskId == null
+        ? null
+        : ref.watch(taskPlanLabelProvider(activity.linkedTaskId!)).value;
     final g = context.glass;
     final isDone = activity.status == TodayActivityStatus.done;
     final isRunning = activity.status == TodayActivityStatus.inProgress;
     final isPaused = activity.status == TodayActivityStatus.paused;
+    final isLecture = activity.sourceType == 'lecture';
     final isTimed =
-        activity.kind == ActivityKind.duration ||
-        (activity.targetMinutes != null && activity.targetMinutes! > 0) ||
-        activity.sourceType == 'lecture';
+        (activity.kind == ActivityKind.duration ||
+            (activity.targetMinutes != null && activity.targetMinutes! > 0)) &&
+        !isLecture;
+    final dueCheckIn = activity.linkedTaskId != null
+        ? ref.watch(dueCheckInForTaskProvider(activity.linkedTaskId!)).value
+        : null;
 
     return Dismissible(
       key: ValueKey(activity.id),
       direction: isDone ? DismissDirection.none : DismissDirection.endToStart,
+      confirmDismiss: (direction) async {
+        if (activity.linkedTaskId != null) {
+          final taskDao = ref.read(taskDaoProvider);
+          final protection = await taskDao.getTaskProtection(
+            activity.linkedTaskId!,
+          );
+          if (protection != null) {
+            HapticFeedback.mediumImpact();
+            if (context.mounted) {
+              await showPlanProtectionDialog(context, ref, protection);
+            }
+            return false;
+          }
+        }
+        return true;
+      },
       onDismissed: (_) async {
         HapticFeedback.mediumImpact();
         final taskDao = ref.read(taskDaoProvider);
@@ -123,270 +149,502 @@ class ActivityRowItem extends ConsumerWidget {
           horizontal: (isRunning || isPaused) ? AppSpace.s12 : AppSpace.s0,
           vertical: AppSpace.s10,
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── 1. CIRCULAR CHECK TARGET (44dp hit area, 28dp visual circle) ────
-            SizedBox(
-              width: 44,
-              height: 44,
-              child: Material(
-                color: AppPalette.transparent,
-                child: AppTapArea(
-                  onTap: () async {
-                    if (isDone) {
-                      // Once completed, it cannot be undone or brought to active (one way only).
-                      AscentSnackBar.show(
-                        context,
-                        message:
-                            'Completed items are finished and cannot be reopened.',
-                      );
-                      return;
-                    }
-                    HapticFeedback.mediumImpact();
-                    if (isTimed) {
-                      AscentSnackBar.show(
-                        context,
-                        message:
-                            'Timed activities complete automatically when the focus timer ends.',
-                      );
-                      return;
-                    }
-                    if (activity.linkedTaskId != null) {
-                      await ref
-                          .read(taskDaoProvider)
-                          .toggleTaskCompletion(activity.linkedTaskId!, true);
-                    }
-                  },
-                  borderRadius: AppGeometry.roundedr22,
-                  child: Center(
-                    child: AppTag(
-                      width: 26,
-                      height: 26,
-                      nightDecoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isDone ? g.clay : AppPalette.transparent,
-                        border: Border.all(
-                          color: isDone
-                              ? g.clay
-                              : (isRunning ? g.clay : g.inkMuted),
-                          width: AppBorderScale.w1point75,
+            Row(
+              children: [
+                // ── 1. CIRCULAR CHECK TARGET (44dp hit area, 28dp visual circle) ────
+                SizedBox(
+                  width: 44,
+                  height: 44,
+                  child: Material(
+                    color: AppPalette.transparent,
+                    child: AppTapArea(
+                      onTap: isLecture
+                          ? null
+                          : () async {
+                              if (isDone) {
+                                // Once completed, it cannot be undone or brought to active (one way only).
+                                AscentSnackBar.show(
+                                  context,
+                                  message:
+                                      'Completed items are finished and cannot be reopened.',
+                                );
+                                return;
+                              }
+                              HapticFeedback.mediumImpact();
+                              if (isTimed) {
+                                AscentSnackBar.show(
+                                  context,
+                                  message:
+                                      'Timed activities complete automatically when the focus timer ends.',
+                                );
+                                return;
+                              }
+                              if (activity.linkedTaskId != null) {
+                                await ref
+                                    .read(taskDaoProvider)
+                                    .toggleTaskCompletion(
+                                      activity.linkedTaskId!,
+                                      true,
+                                    );
+                              }
+                            },
+                      borderRadius: AppGeometry.roundedr22,
+                      child: Center(
+                        child: AppTag(
+                          width: 26,
+                          height: 26,
+                          nightDecoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDone ? g.clay : AppPalette.transparent,
+                            border: Border.all(
+                              color: isDone
+                                  ? g.clay
+                                  : (isRunning ? g.clay : g.inkMuted),
+                              width: AppBorderScale.w1point75,
+                            ),
+                          ),
+                          child: isDone
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: AppPalette.white,
+                                )
+                              : (isLecture
+                                    ? Icon(
+                                        isRunning
+                                            ? Icons.headphones_rounded
+                                            : Icons.school_outlined,
+                                        size: 14,
+                                        color: isRunning ? g.clay : g.inkMuted,
+                                      )
+                                    : (isTimed
+                                          ? Icon(
+                                              Icons.timer_outlined,
+                                              size: 13,
+                                              color: isRunning
+                                                  ? g.clay
+                                                  : g.inkMuted,
+                                            )
+                                          : null)),
                         ),
                       ),
-                      child: isDone
-                          ? const Icon(
-                              Icons.check_rounded,
-                              size: 16,
-                              color: AppPalette.white,
-                            )
-                          : (isTimed
-                                ? Icon(
-                                    Icons.timer_outlined,
-                                    size: 13,
-                                    color: isRunning ? g.clay : g.inkMuted,
-                                  )
-                                : null),
                     ),
                   ),
                 ),
-              ),
-            ),
 
-            const SizedBox(width: 8),
+                const SizedBox(width: 8),
 
-            // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
-            Expanded(
-              child: AppTapArea(
-                onTap: () async {
-                  HapticFeedback.lightImpact();
-                  if (isDone) {
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Completed activities are sealed and cannot be edited.',
-                        ),
-                        duration: Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                    return;
-                  }
-                  if (isRunning || isPaused) {
-                    context.push('/focus');
-                    return;
-                  }
-                  if (activity.sourceType == 'lecture') {
-                    if (!_selectLecture(ref, activity)) return;
-                    LectureFocusPlayerSheet.show(context);
-                    return;
-                  }
-                  _showActivityDetailDialog(context, ref, activity);
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Row(
+                // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
+                Expanded(
+                  child: AppTapArea(
+                    onTap: (isDone || isLecture)
+                        ? null
+                        : () async {
+                            HapticFeedback.lightImpact();
+                            if (isRunning || isPaused) {
+                              context.push('/focus');
+                              return;
+                            }
+                            _showActivityDetailDialog(context, ref, activity);
+                          },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Text(
-                            activity.title,
-                            style: AscentTextStyles.homeHeadline.copyWith(
-                              color: isDone ? g.inkMuted : g.ink,
-                              decoration: isDone
-                                  ? TextDecoration.lineThrough
-                                  : null,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                activity.title,
+                                style: AscentTextStyles.homeHeadline.copyWith(
+                                  color: isDone ? g.inkMuted : g.ink,
+                                  decoration: isDone
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (planLabel != null)
+                          Text(
+                            planLabel,
+                            style: AscentTextStyles.homeSecondary.copyWith(
+                              color: g.clay,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
+                        const SizedBox(height: 3),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (isLecture) ...[
+                              Text(
+                                _subtitleText(activity),
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: isRunning ? g.clay : g.inkMuted,
+                                  fontWeight: isRunning
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ] else if (isRunning) ...[
+                              Text(
+                                _runningTimerText(activity),
+                                style: AppTypography.jetBrainsMono12W600109(
+                                  color: g.clay,
+                                ),
+                              ),
+                            ] else if (isPaused) ...[
+                              Text(
+                                'Paused · ${_runningTimerText(activity)}',
+                                style: AppTypography.jetBrainsMono12W500110(
+                                  color: AppPalette.orange.shade400,
+                                ),
+                              ),
+                            ] else ...[
+                              Text(
+                                _subtitleText(activity),
+                                style: AscentTextStyles.homeSecondary.copyWith(
+                                  color: g.inkMuted,
+                                ),
+                              ),
+                            ],
+                            if (activity.isOverdue) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                '• Overdue',
+                                style: AscentTextStyles.homeSecondary
+                                    .copyWith(color: context.stateDanger)
+                                    .merge(AppTypeRoles.typeRole8),
+                              ),
+                            ],
+                            if (activity.hasReminder) ...[
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.alarm_rounded,
+                                size: 12,
+                                color: isDone ? g.inkMuted : g.clay,
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (isRunning) ...[
-                          Text(
-                            _runningTimerText(activity),
-                            style: AppTypography.jetBrainsMono12W600109(
-                              color: g.clay,
-                            ),
-                          ),
-                        ] else if (isPaused) ...[
-                          Text(
-                            'Paused · ${_runningTimerText(activity)}',
-                            style: AppTypography.jetBrainsMono12W500110(
-                              color: AppPalette.orange.shade400,
-                            ),
-                          ),
-                        ] else ...[
-                          Text(
-                            _subtitleText(activity),
-                            style: AscentTextStyles.homeSecondary.copyWith(
-                              color: g.inkMuted,
-                            ),
-                          ),
-                        ],
-                        if (activity.isOverdue) ...[
-                          const SizedBox(width: 6),
-                          Text(
-                            '• Overdue',
-                            style: AscentTextStyles.homeSecondary
-                                .copyWith(color: context.stateDanger)
-                                .merge(AppTypeRoles.typeRole8),
-                          ),
-                        ],
-                        if (activity.hasReminder) ...[
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.alarm_rounded,
-                            size: 12,
-                            color: isDone ? g.inkMuted : g.clay,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(width: 8),
+                const SizedBox(width: 8),
 
-            // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
-            if (isDone) ...[
-              // Completed activities are immutable and cannot be edited
-              const SizedBox(width: 8),
-            ] else if (activity.kind == ActivityKind.todo) ...[
-              SizedBox(
-                width: 44,
-                height: 44,
-                child: IconButton(
-                  tooltip: 'Edit activity',
-                  icon: Icon(Icons.edit_outlined, size: 18, color: g.inkMuted),
-                  onPressed: () async {
-                    HapticFeedback.lightImpact();
-                    Task? task;
-                    if (activity.linkedTaskId != null) {
-                      task = await ref
-                          .read(taskDaoProvider)
-                          .getTaskById(activity.linkedTaskId!);
-                    }
-                    if (context.mounted) {
-                      AddActivitySheet.show(
-                        context,
-                        existingTask: task,
-                        initialTitle: activity.title,
-                        initialKind: activity.kind,
-                        initialDurationMinutes: activity.targetMinutes,
-                      );
-                    }
-                  },
-                ),
-              ),
-            ] else ...[
-              SizedBox(
-                width: 44,
-                height: 44,
-                child: Material(
-                  color: AppPalette.transparent,
-                  child: AppTapArea(
-                    onTap: () async {
-                      HapticFeedback.lightImpact();
-                      if (activity.sourceType == 'lecture') {
-                        if (!_selectLecture(ref, activity)) return;
-                        ref
-                            .read(learningHubProvider.notifier)
-                            .togglePlayPause();
-                        return;
-                      }
-                      if (isRunning) {
-                        ref.read(timeTrackingProvider.notifier).pauseSession();
-                      } else if (isPaused) {
-                        ref.read(timeTrackingProvider.notifier).resumeSession();
-                      } else {
-                        await ref
-                            .read(timeTrackingProvider.notifier)
-                            .switchToTask(
-                              title: activity.title,
-                              taskId: activity.linkedTaskId,
-                              sourceType: activity.sourceType,
-                              autoStart: true,
-                            );
-                      }
-                    },
-                    borderRadius: AppGeometry.roundedr22,
-                    child: AppTag(
-                      nightDecoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isRunning ? g.clay : g.claySoft,
-                        border:
-                            Theme.of(context).brightness == Brightness.light &&
-                                !isRunning
-                            ? Border.all(
-                                color: g.clay.withValues(alpha: .45),
-                                width: 1,
-                              )
-                            : null,
+                // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
+                if (isDone || isLecture) ...[
+                  // Completed and lecture activities have no edit or timer play buttons on the row
+                  const SizedBox(width: 8),
+                ] else if (activity.kind == ActivityKind.todo) ...[
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: IconButton(
+                      tooltip: 'Edit activity',
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: g.inkMuted,
                       ),
-                      child: Center(
-                        child: Icon(
-                          isRunning
-                              ? Icons.pause_rounded
-                              : Icons.play_arrow_rounded,
-                          size: 26,
-                          color: isRunning ? AppPalette.white : g.clay,
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        Task? task;
+                        if (activity.linkedTaskId != null) {
+                          task = await ref
+                              .read(taskDaoProvider)
+                              .getTaskById(activity.linkedTaskId!);
+                        }
+                        if (context.mounted) {
+                          AddActivitySheet.show(
+                            context,
+                            existingTask: task,
+                            initialTitle: activity.title,
+                            initialKind: activity.kind,
+                            initialDurationMinutes: activity.targetMinutes,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ] else ...[
+                  SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Material(
+                      color: AppPalette.transparent,
+                      child: AppTapArea(
+                        onTap: () async {
+                          HapticFeedback.lightImpact();
+                          if (activity.sourceType == 'lecture') {
+                            if (!_selectLecture(ref, activity)) return;
+                            ref
+                                .read(learningHubProvider.notifier)
+                                .togglePlayPause();
+                            return;
+                          }
+                          if (isRunning) {
+                            ref
+                                .read(timeTrackingProvider.notifier)
+                                .pauseSession();
+                          } else if (isPaused) {
+                            ref
+                                .read(timeTrackingProvider.notifier)
+                                .resumeSession();
+                          } else {
+                            await ref
+                                .read(timeTrackingProvider.notifier)
+                                .switchToTask(
+                                  title: activity.title,
+                                  taskId: activity.linkedTaskId,
+                                  sourceType: activity.sourceType,
+                                  autoStart: true,
+                                );
+                          }
+                        },
+                        borderRadius: AppGeometry.roundedr22,
+                        child: AppTag(
+                          nightDecoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isRunning ? g.clay : g.claySoft,
+                            border:
+                                Theme.of(context).brightness ==
+                                        Brightness.light &&
+                                    !isRunning
+                                ? Border.all(
+                                    color: g.clay.withValues(alpha: .45),
+                                    width: 1,
+                                  )
+                                : null,
+                          ),
+                          child: Center(
+                            child: Icon(
+                              isRunning
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 26,
+                              color: isRunning ? AppPalette.white : g.clay,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
+                ],
+              ],
+            ),
+            if (dueCheckIn != null)
+              _buildCheckInResponseBar(context, ref, g, dueCheckIn),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckInResponseBar(
+    BuildContext context,
+    WidgetRef ref,
+    AscentGlass g,
+    DueCheckInItem dueCheckIn,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: g.claySoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: g.clay.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.help_outline_rounded, size: 14, color: g.clay),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Did you finish: ${activity.title}?',
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: g.ink,
+                  ),
                 ),
               ),
             ],
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              AppPill.action(
+                label: const Text('Done'),
+                onPressed: () async {
+                  HapticFeedback.mediumImpact();
+                  if (dueCheckIn.isRoutine) {
+                    await ref
+                        .read(planServiceProvider)
+                        .answerCheckIn(dueCheckIn.occurrenceId!, 'done');
+                  } else {
+                    await ref
+                        .read(homeCaptureServiceProvider)
+                        .answer(
+                          dueCheckIn.reminderId,
+                          dueCheckIn.scheduledAt,
+                          'done',
+                        );
+                  }
+                  try {
+                    await ReminderAlertSync.device(
+                      ref.read(databaseProvider),
+                    ).sync(onlyPending: true);
+                  } catch (_) {}
+                  if (context.mounted) {
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Done. Session marked finished.',
+                    );
+                  }
+                },
+              ),
+              AppPill.action(
+                label: const Text('Later'),
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  final delay = await showModalBottomSheet<Duration>(
+                    context: context,
+                    builder: (ctx) => SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const ListTile(title: Text('Ask me again in…')),
+                          for (final minutes in [15, 30, 60])
+                            ListTile(
+                              title: Text('$minutes minutes'),
+                              onTap: () => Navigator.pop(
+                                ctx,
+                                Duration(minutes: minutes),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                  if (delay != null && context.mounted) {
+                    if (dueCheckIn.isRoutine) {
+                      await ref
+                          .read(planServiceProvider)
+                          .answerCheckIn(
+                            dueCheckIn.occurrenceId!,
+                            'later',
+                            delay: delay,
+                          );
+                    } else {
+                      await ref
+                          .read(homeCaptureServiceProvider)
+                          .answer(
+                            dueCheckIn.reminderId,
+                            dueCheckIn.scheduledAt,
+                            'later',
+                            delay: delay,
+                          );
+                    }
+                    try {
+                      await ReminderAlertSync.device(
+                        ref.read(databaseProvider),
+                      ).sync(onlyPending: true);
+                    } catch (_) {}
+                    if (context.mounted) {
+                      AscentSnackBar.show(
+                        context,
+                        message:
+                            'Check-in moved by ${delay.inMinutes} minutes.',
+                      );
+                    }
+                  }
+                },
+              ),
+              AppPill.action(
+                label: const Text('Skip this time'),
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  if (dueCheckIn.isRoutine) {
+                    await ref
+                        .read(planServiceProvider)
+                        .answerCheckIn(
+                          dueCheckIn.occurrenceId!,
+                          'skip_this_time',
+                        );
+                  } else {
+                    await ref
+                        .read(homeCaptureServiceProvider)
+                        .answer(
+                          dueCheckIn.reminderId,
+                          dueCheckIn.scheduledAt,
+                          'skip',
+                        );
+                  }
+                  try {
+                    await ReminderAlertSync.device(
+                      ref.read(databaseProvider),
+                    ).sync(onlyPending: true);
+                  } catch (_) {}
+                  if (context.mounted) {
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Session skipped. Todo stays unfinished.',
+                    );
+                  }
+                },
+              ),
+              AppPill.action(
+                label: const Text('Skip check-in'),
+                onPressed: () async {
+                  HapticFeedback.lightImpact();
+                  if (dueCheckIn.isRoutine) {
+                    await ref
+                        .read(planServiceProvider)
+                        .answerCheckIn(
+                          dueCheckIn.occurrenceId!,
+                          'skip_check_in',
+                        );
+                  } else {
+                    await ref
+                        .read(homeCaptureServiceProvider)
+                        .answer(
+                          dueCheckIn.reminderId,
+                          dueCheckIn.scheduledAt,
+                          'skip',
+                        );
+                  }
+                  try {
+                    await ReminderAlertSync.device(
+                      ref.read(databaseProvider),
+                    ).sync(onlyPending: true);
+                  } catch (_) {}
+                  if (context.mounted) {
+                    AscentSnackBar.show(
+                      context,
+                      message: 'Check-in stopped for this session.',
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -409,6 +667,12 @@ class ActivityRowItem extends ConsumerWidget {
         return '✓ Done at ${DateFormat('h:mm a').format(act.completedAt!)}';
       }
       return '✓ Completed';
+    }
+    if (act.sourceType == 'lecture') {
+      if (act.status == TodayActivityStatus.inProgress) {
+        return 'Lecture in progress';
+      }
+      return 'Lecture';
     }
     if (act.kind == ActivityKind.todo) {
       final p = (act.priority != null && act.priority!.isNotEmpty)

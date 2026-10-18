@@ -19,6 +19,7 @@ import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../../shared/widgets/undo_snackbar.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
 import 'thought_quick_actions.dart';
@@ -240,6 +241,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       HapticFeedback.selectionClick();
       setState(() => _applyingSelection = true);
       try {
+        if (action == 'plan') {
+          await showHomeSchedule(context, selected.first);
+          if (mounted) _exitSelectionMode();
+          return;
+        }
         final saved = await applyThoughtAction(
           context,
           ref.read(databaseProvider),
@@ -269,6 +275,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
         runSpacing: 6,
         children: [
           for (final item in const [
+            ('plan', 'Plan', Icons.edit_calendar_outlined),
             ('todo', 'Todo', Icons.checklist_rounded),
             ('reminder', 'Reminder', Icons.notifications_none_rounded),
             ('both', 'Both', Icons.add_task_rounded),
@@ -386,15 +393,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected
-                ? (context.isDark ? g.clay : g.claySoft)
+                ? (context.isDark ? g.clay : context.accentPrimary)
                 : AppPalette.transparent,
             borderRadius: AppGeometry.roundedr10,
-            border: isSelected && !context.isDark
-                ? Border.all(
-                    color: g.clay.withValues(alpha: 0.28),
-                    width: AppBorderScale.w1point0,
-                  )
-                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -403,9 +404,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               Icon(
                 icon,
                 size: 13,
-                color: isSelected
-                    ? (context.isDark ? AppPalette.white : g.clay)
-                    : g.inkMuted,
+                color: isSelected ? AppPalette.white : g.inkMuted,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -415,9 +414,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: AppStateTypography.stateType12(
                     state0: isSelected,
-                    color: isSelected
-                        ? (context.isDark ? AppPalette.white : g.clay)
-                        : g.inkMuted,
+                    color: isSelected ? AppPalette.white : g.inkMuted,
                   ),
                 ),
               ),
@@ -803,6 +800,60 @@ class ThoughtCardBubble extends ConsumerWidget {
     this.onLongPress,
   });
 
+  Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.mediumImpact();
+    final dao = ref.read(thoughtDaoProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    void failure(String message) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+    }
+
+    try {
+      final snapshot = await dao.deleteThoughtForUndo(thought.id);
+      if (snapshot == null) {
+        if (messenger.mounted) failure('This thought is no longer available.');
+        return false;
+      }
+      Future<void> restore() async {
+        try {
+          if (!await dao.restoreThoughtDeletion(snapshot) &&
+              messenger.mounted) {
+            failure('Undo is no longer available. Newer changes were kept.');
+          }
+        } catch (_) {
+          if (messenger.mounted) {
+            messenger.hideCurrentSnackBar();
+            messenger.showSnackBar(
+              SnackBar(
+                content: const Text('Could not restore the thought.'),
+                action: SnackBarAction(label: 'Retry', onPressed: restore),
+              ),
+            );
+          }
+        }
+      }
+
+      if (messenger.mounted) {
+        messenger.hideCurrentSnackBar();
+        messenger.showSnackBar(
+          SnackBar(
+            persist: false,
+            content: const Text('Thought removed'),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(label: 'Undo', onPressed: restore),
+          ),
+        );
+      }
+      return true;
+    } catch (_) {
+      if (messenger.mounted) {
+        failure('Could not delete the thought. Please try again.');
+      }
+      return false;
+    }
+  }
+
   Color _moodColor(String mood) {
     switch (mood) {
       case 'me_to_me':
@@ -823,7 +874,9 @@ class ThoughtCardBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final moodColor = _moodColor(thought.mood);
+    final moodColor = context.glass.frozen
+        ? (thought.mood == 'win' ? context.glass.sage : context.glass.slate)
+        : _moodColor(thought.mood);
     final timeStr = DateFormat('MMM d • h:mm a').format(thought.createdAt);
     final g = context.glass;
 
@@ -893,29 +946,7 @@ class ThoughtCardBubble extends ConsumerWidget {
               }
               return true;
             } else {
-              // Delete
-              HapticFeedback.mediumImpact();
-              final backup = thought;
-              await thoughtDao.deleteThought(thought.id);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    persist: false,
-                    content: const Text('Thought removed'),
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                    action: SnackBarAction(
-                      label: 'UNDO',
-                      textColor: context.accentPrimary,
-                      onPressed: () async {
-                        await thoughtDao.restoreDeletedThought(backup);
-                      },
-                    ),
-                  ),
-                );
-              }
-              return true;
+              return _deleteWithUndo(context, ref);
             }
           },
           background: AppCard(
@@ -1012,7 +1043,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                         ? g.clay.withValues(alpha: context.isDark ? .22 : .12)
                         : context.isDark
                         ? g.fill
-                        : const Color(0x1AFFFFFF),
+                        : AscentColors.translucentSurfaceDay,
                     borderRadius: BorderRadius.only(
                       topLeft: AppGeometry.radiusr18,
                       topRight: AppGeometry.radiusr18,
@@ -1027,9 +1058,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                         : Border.all(
                             color: context.isDark
                                 ? g.inkMuted.withValues(alpha: .4)
-                                : const Color(
-                                    0xFF73727B,
-                                  ).withValues(alpha: .18),
+                                : AscentColors.outlineDay
+                                    .withValues(alpha: .18),
                             width: AppBorderScale.w1point2,
                           ),
                     boxShadow: context.isDark
@@ -1248,18 +1278,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                             } else if (action == 'track_challenge') {
                               context.push('/momentum', extra: thought);
                             } else if (action == 'delete') {
-                              HapticFeedback.mediumImpact();
-                              final dao = ref.read(thoughtDaoProvider);
-                              await dao.deleteThought(thought.id);
-                              if (context.mounted) {
-                                showUndoSnackbar(
-                                  context,
-                                  message: 'Thought removed',
-                                  onUndo: () => dao.insertThought(
-                                    thought.toCompanion(true),
-                                  ),
-                                );
-                              }
+                              await _deleteWithUndo(context, ref);
                             }
                           },
                           itemBuilder: (_) => [
@@ -1396,15 +1415,13 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 vertical: AppSpace.s2,
                               ),
                               nightDecoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(
-                                  alpha: 0.14,
-                                ),
+                                color: g.sage.withValues(alpha: 0.14),
                                 borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Text(
                                 '✓ Done',
                                 style: AppTypeRoles.typeRole55.copyWith(
-                                  color: context.accentPrimary,
+                                  color: g.sage,
                                 ),
                               ),
                             ),
@@ -1415,9 +1432,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 vertical: AppSpace.s2,
                               ),
                               nightDecoration: BoxDecoration(
-                                color: context.accentPrimary.withValues(
-                                  alpha: 0.12,
-                                ),
+                                color: g.amber.withValues(alpha: 0.14),
                                 borderRadius: AppGeometry.roundedr6,
                               ),
                               child: Row(
@@ -1426,13 +1441,13 @@ class ThoughtCardBubble extends ConsumerWidget {
                                   Icon(
                                     Icons.push_pin_rounded,
                                     size: 9,
-                                    color: context.accentPrimary,
+                                    color: g.amber,
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
                                     'PINNED',
                                     style: AscentTextStyles.labelSmall
-                                        .copyWith(color: context.accentPrimary)
+                                        .copyWith(color: g.amber)
                                         .merge(AppTypeRoles.typeRole56),
                                   ),
                                 ],
@@ -1573,12 +1588,8 @@ class ThoughtCardBubble extends ConsumerWidget {
                       thought.content,
                       style: AppTypography.plusJakartaSans14W60071(
                         color: thought.isCompleted
-                            ? (context.isDark
-                                  ? context.textMuted
-                                  : const Color(0xFF73727B))
-                            : (context.isDark
-                                  ? context.textPrimary
-                                  : const Color(0xFF242323)),
+                            ? context.textMuted
+                            : context.textPrimary,
                         decoration: thought.isCompleted
                             ? TextDecoration.lineThrough
                             : null,

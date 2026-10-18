@@ -13,6 +13,7 @@ class AscentApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final dayPreset = ref.watch(dayThemePresetProvider);
     ref.watch(pendingReminderEffectsProvider);
 
     return MaterialApp.router(
@@ -20,8 +21,8 @@ class AscentApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
 
       // Theme
-      theme: AscentTheme.light(),
-      darkTheme: AscentTheme.dark(),
+      theme: AscentTheme.light(preset: dayPreset),
+      darkTheme: AscentTheme.dark(preset: dayPreset),
       themeMode: themeMode,
 
       // Router

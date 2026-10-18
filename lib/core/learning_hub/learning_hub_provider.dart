@@ -530,12 +530,16 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
   }
 
   List<Course> _loadStoredCourses(SharedPreferences prefs) {
+    if (prefs.getInt(_kActiveLectureIdKey) == 38) {
+      prefs.remove(_kActiveLectureIdKey);
+    }
     final rawJson = prefs.getString(_kCoursesListKey);
     if (rawJson != null) {
       try {
         final List<dynamic> list = jsonDecode(rawJson);
         final courses = list
-            .map((item) => Course.fromJson(item as Map<String, dynamic>))
+            .map((item) =>
+                Course.fromJson(item as Map<String, dynamic>).sanitizeTestLectures())
             .toList();
         return courses;
       } catch (_) {}
@@ -1094,6 +1098,7 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
     String? title,
     int? durationSeconds,
     int thresholdPercent = 100,
+    bool makeActive = false,
   }) async {
     await ready;
     if (_completionPending) {
@@ -1221,20 +1226,24 @@ class LearningHubNotifier extends Notifier<LearningHubState> {
           );
         }
       });
-      state = state.copyWith(
-        courses: courses,
-        activeCourseId: courseId,
-        activeLectureId: chosen.id,
-        currentElapsedSeconds: chosen.elapsedSeconds,
-        sessionBaseElapsed: chosen.elapsedSeconds,
-      );
+      if (makeActive) {
+        state = state.copyWith(
+          courses: courses,
+          activeCourseId: courseId,
+          activeLectureId: chosen.id,
+          currentElapsedSeconds: chosen.elapsedSeconds,
+          sessionBaseElapsed: chosen.elapsedSeconds,
+        );
+        ref
+            .read(sharedPreferencesProvider)
+            .setString(_kActiveCourseIdKey, courseId);
+        ref
+            .read(sharedPreferencesProvider)
+            .setInt(_kActiveLectureIdKey, chosen.id);
+      } else {
+        state = state.copyWith(courses: courses);
+      }
       await catalog.cache(courses);
-      ref
-          .read(sharedPreferencesProvider)
-          .setString(_kActiveCourseIdKey, courseId);
-      ref
-          .read(sharedPreferencesProvider)
-          .setInt(_kActiveLectureIdKey, chosen.id);
       return chosen;
     } finally {
       _completionPending = false;

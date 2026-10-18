@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
@@ -21,6 +22,9 @@ import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
+import 'package:go_router/go_router.dart';
+import '../plans/widgets/plan_protection_dialog.dart';
+import '../plans/widgets/plan_detail_sheet.dart';
 
 enum _ReminderRepeatMode {
   none('One-time', 'Specific date only', Icons.event_rounded),
@@ -709,6 +713,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   }
 
   Future<void> _confirmDeleteReminder(Reminder reminder) async {
+    final dao = ref.read(reminderDaoProvider);
+    final protection = await dao.getReminderProtection(reminder.id);
+    if (!mounted) return;
+    if (protection != null) {
+      await showPlanProtectionDialog(context, ref, protection);
+      ref.invalidate(allRemindersProvider);
+      ref.invalidate(nextUpcomingReminderProvider);
+      return;
+    }
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -796,6 +810,27 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     return AscentScaffold(
       title: 'Reminders & Alerts',
       subtitle: 'Scheduled notifications & deadlines',
+      actions: [
+        IconButton(
+          tooltip: 'Routines & Plans',
+          icon: const Icon(Icons.event_repeat_rounded),
+          onPressed: () => context.push('/plans'),
+        ),
+        IconButton(
+          tooltip: 'Sync reminder alerts',
+          icon: _syncingAlerts
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: g.clay,
+                  ),
+                )
+              : const Icon(Icons.sync_rounded),
+          onPressed: _syncingAlerts ? null : _syncAlerts,
+        ),
+      ],
       floatingActionButton: remindersAsync.value?.isNotEmpty == true
           ? AscentButton.fab(
               icon: Icons.add_rounded,
@@ -803,7 +838,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             )
           : null,
       body: remindersAsync.when(
-        data: (reminders) {
+        data: (allReminders) {
+          final reminders = allReminders
+              .where((r) => !r.title.startsWith('Did you do it?'))
+              .toList();
           if (reminders.isEmpty) {
             return EmptyState(
               icon: Icons.notifications_none_rounded,
@@ -896,16 +934,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               bottom: AppSpace.s80,
             ),
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _syncingAlerts ? null : _syncAlerts,
-                  icon: const Icon(Icons.sync_rounded),
-                  label: Text(
-                    _syncingAlerts ? 'Scheduling…' : 'Sync reminder alerts',
-                  ),
-                ),
-              ),
               if (!_notificationsEnabled) ...[
                 AppCard(
                   margin: const EdgeInsets.only(bottom: AppSpace.s16),
@@ -969,9 +997,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 margin: const EdgeInsets.only(bottom: AppSpace.s16),
                 padding: const EdgeInsets.all(AppSpace.s4),
                 nightDecoration: BoxDecoration(
-                  color: g.fill,
+                  color: context.isFrozen
+                      ? (context.isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+                      : g.fill,
                   borderRadius: AppGeometry.roundedr16,
-                  border: Border.all(color: g.edge),
+                  border: Border.all(
+                    color: context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                        : g.edge,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -989,12 +1023,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           alignment: Alignment.center,
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 0
-                                ? g.claySoft
+                                ? (context.isFrozen
+                                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                    : (context.isDark ? g.clay : context.accentPrimary))
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 0
-                                  ? g.clay
+                                  ? (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                      : (context.isDark ? g.clay : context.accentPrimary))
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1003,7 +1041,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                             'Upcoming (${todayReminders.length + tomorrowReminders.length + thisWeekReminders.length + laterReminders.length})',
                             style: AppStateTypography.stateType8(
                               state0: _selectedTab == 0,
-                              color: _selectedTab == 0 ? g.ink : g.inkMuted,
+                              color: _selectedTab == 0
+                                  ? AppPalette.white
+                                  : (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+                                      : g.inkMuted),
                             ),
                           ),
                         ),
@@ -1024,12 +1066,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           alignment: Alignment.center,
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 1
-                                ? g.claySoft
+                                ? (context.isFrozen
+                                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                    : (context.isDark ? g.clay : context.accentPrimary))
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 1
-                                  ? g.clay
+                                  ? (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                                      : (context.isDark ? g.clay : context.accentPrimary))
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1038,7 +1084,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                             'Completed (${pastReminders.length})',
                             style: AppStateTypography.stateType8(
                               state0: _selectedTab == 1,
-                              color: _selectedTab == 1 ? g.ink : g.inkMuted,
+                              color: _selectedTab == 1
+                                  ? AppPalette.white
+                                  : (context.isFrozen
+                                      ? (context.isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+                                      : g.inkMuted),
                             ),
                           ),
                         ),
@@ -1077,7 +1127,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   _buildSectionHeader(
                     'Tomorrow',
                     tomorrowReminders.length,
-                    g.inkSecondary,
+                    context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                        : g.inkSecondary,
                     Icons.event_rounded,
                   ),
                   ...tomorrowReminders.map(
@@ -1219,12 +1271,24 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               vertical: AppSpace.s2,
             ),
             nightDecoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
+              color: context.isFrozen
+                  ? (context.isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
+                  : color.withValues(alpha: 0.12),
               borderRadius: AppGeometry.roundedr10,
+              border: context.isFrozen
+                  ? Border.all(
+                      color: context.isDark ? FrozenPalette.darkLine : FrozenPalette.line,
+                      width: 1.0,
+                    )
+                  : null,
             ),
             child: Text(
               '$count',
-              style: AppTypeRoles.typeRole34.copyWith(color: color),
+              style: AppTypeRoles.typeRole34.copyWith(
+                color: context.isFrozen
+                    ? (context.isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk)
+                    : color,
+              ),
             ),
           ),
         ],
@@ -1237,6 +1301,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final formattedTime = DateFormat(
       'EEE, MMM d • h:mm a',
     ).format(reminder.scheduledAt);
+    final protection =
+        ref.watch(reminderProtectionProvider(reminder.id)).value;
 
     return Dismissible(
       key: ValueKey(reminder.id),
@@ -1257,18 +1323,32 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
       child: AscentCard(
         margin: const EdgeInsets.only(bottom: AppSpace.s10),
         padding: const EdgeInsets.all(AppSpace.s14),
-        onTap: () => _openAddEditReminderSheet(reminder),
+        onTap: () {
+          if (protection != null) {
+            showPlanDetailSheet(context, protection.planId);
+          } else {
+            _openAddEditReminderSheet(reminder);
+          }
+        },
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             AppTag(
               padding: const EdgeInsets.all(AppSpace.s10),
               nightDecoration: BoxDecoration(
-                color: isUpcoming ? g.claySoft : g.fill,
+                color: isUpcoming
+                    ? (context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+                        : g.claySoft)
+                    : g.fill,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isUpcoming ? g.clay.withValues(alpha: 0.25) : g.edge,
-                  width: AppBorderScale.w0point8,
+                  color: isUpcoming
+                      ? (context.isFrozen
+                          ? (context.isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                          : g.clay.withValues(alpha: 0.25))
+                      : g.edge,
+                  width: AppBorderScale.w1,
                 ),
               ),
               child: Icon(
@@ -1278,7 +1358,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           : Icons.notifications_active_rounded)
                     : Icons.notifications_off_outlined,
                 size: 20,
-                color: isUpcoming ? g.clay : g.inkMuted,
+                color: isUpcoming
+                    ? (context.isFrozen
+                        ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                        : g.clay)
+                    : g.inkMuted,
               ),
             ),
             const SizedBox(width: 14),
@@ -1298,13 +1382,41 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         .merge(AppTypeRoles.typeRole8),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '$formattedTime · ${reminder.alarmEnabled ? "Alarm" : "Notification"}',
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: isUpcoming
-                          ? g.inkMuted
-                          : g.inkMuted.withValues(alpha: 0.6),
-                    ),
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (protection != null) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          margin: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: g.claySoft,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Part of ${protection.planTitle}',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: g.clay,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      Text(
+                        reminder.alarmEnabled
+                            ? '$formattedTime · Alarm'
+                            : formattedTime,
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: isUpcoming
+                              ? g.inkMuted
+                              : g.inkMuted.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1322,7 +1434,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   return;
                 }
                 if (val == 'edit') {
-                  _openAddEditReminderSheet(reminder);
+                  if (protection != null) {
+                    showPlanDetailSheet(context, protection.planId);
+                  } else {
+                    _openAddEditReminderSheet(reminder);
+                  }
                 } else if (val == 'delete') {
                   _confirmDeleteReminder(reminder);
                 }

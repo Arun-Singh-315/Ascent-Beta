@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'boost_notification_copy.dart';
 import 'notification_presentation.dart';
 import 'reminder_alarm_bridge.dart';
+import '../../app/theme/color_tokens.dart';
 
 /// Top-level background notification response callback required by flutter_local_notifications.
 @pragma('vm:entry-point')
@@ -69,8 +70,7 @@ class NotificationService {
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
   static const String channelOngoingSessionName = 'Ongoing Timers & Sessions';
   static const int ongoingLectureNotificationId = 888800;
-  static const int ongoingSessionNotificationId =
-      888800; // backwards-compatible alias for ongoingLectureNotificationId
+  static const int ongoingSessionNotificationId = 888804;
   static const int ongoingWalkNotificationId = 888801;
   static const int ongoingChaiBreakNotificationId = 888802;
   static const int ongoingFocusNotificationId = 888803;
@@ -102,6 +102,18 @@ class NotificationService {
       '/more',
     };
     if (payload != null && destinations.contains(payload)) return payload;
+    if (payload != null &&
+        RegExp(
+          r'^/home\?checkin=\d+&at=\d+(?:&answer=(?:done|later|skip))?$',
+        ).hasMatch(payload)) {
+      return payload;
+    }
+    if (payload != null &&
+        RegExp(
+          r'^/home\?(?:session=[a-zA-Z0-9_:.\-]+|checkin=\d+&at=\d+&occ=[a-zA-Z0-9_:.\-]+(?:&answer=(?:done|later|skip))?)$',
+        ).hasMatch(payload)) {
+      return payload;
+    }
     if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) {
       return payload;
     }
@@ -115,6 +127,9 @@ class NotificationService {
   // Interactive Notification Actions
   static const String actionPause = 'action_pause';
   static const String actionResume = 'action_resume';
+  static const String actionRewind = 'action_rewind';
+  static const String actionForward = 'action_forward';
+  static const String actionDone = 'action_done';
   static const String isolatePortName = 'ascent_notification_actions_port';
   static ReceivePort? _actionReceivePort;
 
@@ -261,16 +276,38 @@ class NotificationService {
     const androidSettings = AndroidInitializationSettings(
       '@drawable/ic_launcher_foreground',
     );
-    const darwinSettings = DarwinInitializationSettings(
+    final darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      notificationCategories: [
+        DarwinNotificationCategory(
+          'home_checkin',
+          actions: [
+            DarwinNotificationAction.plain(
+              'home_done',
+              'Done',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+            DarwinNotificationAction.plain(
+              'home_later',
+              'Later (30 min)',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+            DarwinNotificationAction.plain(
+              'home_skip',
+              'Skip check-in',
+              options: {DarwinNotificationActionOption.foreground},
+            ),
+          ],
+        ),
+      ],
     );
     const linuxSettings = LinuxInitializationSettings(
       defaultActionName: 'Open Ascent',
     );
 
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
@@ -326,7 +363,7 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            ledColor: Color(0xFFD86500),
+            ledColor: AscentColors.accentSecondary,
           ),
         );
         await androidImpl.createNotificationChannel(
@@ -366,7 +403,7 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            ledColor: Color(0xFFD86500),
+            ledColor: AscentColors.accentSecondary,
           ),
         );
         await androidImpl.createNotificationChannel(
@@ -514,9 +551,9 @@ class NotificationService {
       importance: importance,
       priority: priority,
       icon: '@drawable/ic_launcher_foreground',
-      color: const Color(0xFFD86500),
+      color: AscentColors.accentSecondary,
       enableLights: true,
-      ledColor: const Color(0xFFD86500),
+      ledColor: AscentColors.accentSecondary,
       ledOnMs: 500,
       ledOffMs: 500,
       enableVibration: true,
@@ -771,6 +808,8 @@ class NotificationService {
     required DateTime scheduledAt,
     bool scheduleFollowUp = false,
     bool alarmEnabled = false,
+    String destination = remindersDestination,
+    bool checkIn = false,
   }) async {
     if (!_isInitialized) await initialize();
     await refreshLocalTimeZone();
@@ -825,15 +864,37 @@ class NotificationService {
         channelDescription: 'Simple reminders with expandable full content',
         importance: Importance.high,
         priority: Priority.high,
-        color: const Color(0xFFA95235),
+        color: AscentColors.accentPrimary,
         category: AndroidNotificationCategory.reminder,
+        actions: checkIn
+            ? const [
+                AndroidNotificationAction(
+                  'home_done',
+                  'Done',
+                  showsUserInterface: true,
+                ),
+                AndroidNotificationAction(
+                  'home_later',
+                  'Later (30 min)',
+                  showsUserInterface: true,
+                ),
+                AndroidNotificationAction(
+                  'home_skip',
+                  'Skip check-in',
+                  showsUserInterface: true,
+                ),
+              ]
+            : null,
         styleInformation: BigTextStyleInformation(
           copy.expandedBody,
           contentTitle: copy.title,
-          summaryText: 'Tap to open Reminders',
+          summaryText: checkIn
+              ? 'Tap to answer on Home'
+              : 'Tap to open your plan',
         ),
       ),
-      iOS: const DarwinNotificationDetails(
+      iOS: DarwinNotificationDetails(
+        categoryIdentifier: checkIn ? 'home_checkin' : null,
         presentAlert: true,
         presentSound: true,
       ),
@@ -847,7 +908,7 @@ class NotificationService {
         scheduledDate: scheduledTz,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        payload: remindersDestination,
+        payload: destination,
       );
       debugPrint(
         'Successfully scheduled exact reminder id=$id at $scheduledTz',
@@ -864,7 +925,7 @@ class NotificationService {
           scheduledDate: scheduledTz,
           notificationDetails: notificationDetails,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          payload: remindersDestination,
+          payload: destination,
         );
         debugPrint(
           'Successfully scheduled inexact reminder fallback id=$id at $scheduledTz',
@@ -953,12 +1014,12 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.max,
       icon: '@drawable/ic_launcher_foreground',
-      color: const Color(0xFFD86500),
+      color: AscentColors.accentSecondary,
       category: AndroidNotificationCategory.alarm,
       fullScreenIntent: true,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       enableLights: true,
-      ledColor: const Color(0xFFD86500),
+      ledColor: AscentColors.accentSecondary,
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 1000]),
       subText: 'Ascent • Momentum Wake Alert',
@@ -1301,9 +1362,24 @@ class NotificationService {
           : nowMillis;
 
       final actions = <AndroidNotificationAction>[
+        const AndroidNotificationAction(
+          actionRewind,
+          '-10s',
+          showsUserInterface: false,
+        ),
         AndroidNotificationAction(
           isPaused ? actionResume : actionPause,
           isPaused ? 'Resume' : 'Pause',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionForward,
+          '+30s',
+          showsUserInterface: false,
+        ),
+        const AndroidNotificationAction(
+          actionDone,
+          'Done',
           showsUserInterface: false,
         ),
       ];
@@ -1326,7 +1402,7 @@ class NotificationService {
         showWhen: true,
         usesChronometer: !isPaused,
         when: chronometerStart,
-        color: const Color(0xFFD86500),
+        color: AscentColors.accentSecondary,
         subText:
             subText ??
             (isPaused
@@ -1336,6 +1412,9 @@ class NotificationService {
                       : 'Ascent • Active Focus')),
         category: AndroidNotificationCategory.status,
         actions: actions,
+        showProgress: totalSeconds != null && totalSeconds > 0,
+        maxProgress: totalSeconds ?? 0,
+        progress: elapsedSeconds ?? 0,
       );
       const darwinDetails = DarwinNotificationDetails(
         presentSound: false,
@@ -1363,6 +1442,7 @@ class NotificationService {
     try {
       await _plugin.cancel(id: ongoingLectureNotificationId);
       await _plugin.cancel(id: ongoingFocusNotificationId);
+      await _plugin.cancel(id: ongoingSessionNotificationId);
     } catch (e) {
       debugPrint('Failed to cancel ongoing session notification: $e');
     }
@@ -1424,7 +1504,7 @@ class NotificationService {
         showWhen: true,
         usesChronometer: !isPaused,
         when: chronometerStart,
-        color: const Color(0xFF2C6B45),
+        color: AscentColors.stateSuccess,
         subText: isPaused ? 'Walk Paused' : 'Walk Active • GPS Live',
         category: AndroidNotificationCategory.status,
         actions: actions,
@@ -1488,7 +1568,7 @@ class NotificationService {
         autoCancel: false,
         onlyAlertOnce: true,
         showWhen: false,
-        color: const Color(0xFFE28B57),
+        color: AscentColors.accentInfo,
         subText: isPaused ? 'Break Paused' : 'Chai & Coffee Break',
         category: AndroidNotificationCategory.status,
         actions: actions,

@@ -2,26 +2,72 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
+import '../../../app/theme/color_tokens.dart';
 
 /// Home-only day treatment; other routes keep their existing presentation.
 class HomeTheme {
   static ThemeData from(ThemeData parent) {
-    if (parent.brightness == Brightness.dark) return parent;
-    final glass =
-        AscentGlass.light.copyWith(
-              bg: const Color(0xFFF4F3F8),
-              fill: const Color(0x1AFFFFFF),
-              ink: const Color(0xFF242323),
-              inkSecondary: const Color(0xFF62616B),
-              inkMuted: const Color(0xFF73727B),
-              edge: const Color(0x242B221B),
-              line: const Color(0x182B221B),
-              nav: const Color(0xE6F7F6F3),
-              shadow: Colors.transparent,
-              glow1: const Color(0x1FE29878),
-              glow2: const Color(0x19C1A17C),
-            )
-            as AscentGlass;
+    final isDark = parent.brightness == Brightness.dark;
+    final parentGlass = parent.extension<AscentGlass>() ??
+        (isDark ? AscentGlass.dark : AscentGlass.light);
+    final isNordic = parentGlass.frozen;
+
+    if (isDark) {
+      final glass = isNordic
+          ? (AscentGlass.nordicSkyDark.copyWith(
+              fill: const Color.fromRGBO(34, 53, 72, 0.12),
+              edge: const Color.fromRGBO(94, 160, 240, 0.22),
+              line: const Color.fromRGBO(94, 160, 240, 0.14),
+            ) as AscentGlass)
+          : (AscentGlass.dark.copyWith(
+              bg: AscentColors.bgBaseDark,
+              fill: const Color.fromRGBO(255, 255, 255, 0.08),
+              edge: const Color.fromRGBO(255, 255, 255, 0.17),
+              line: const Color.fromRGBO(255, 255, 255, 0.10),
+              glow1: AscentGlass.dark.glow1,
+              glow2: AscentGlass.dark.glow2,
+              ink: AscentColors.textPrimaryDark,
+              inkSecondary: AscentColors.textSecondaryDark,
+              inkMuted: AscentColors.textMutedDark,
+            ) as AscentGlass);
+
+      return parent.copyWith(
+        scaffoldBackgroundColor: glass.bg,
+        extensions: [
+          ...parent.extensions.values.where(
+            (extension) =>
+                extension is! AscentGlass && extension is! AppSurfaces,
+          ),
+          glass,
+          (isNordic ? AppSurfaces.legacyNordicSky : AppSurfaces.night).copyWith(
+            blur: 0,
+            cardFill: glass.fill,
+            cardBorderColor: glass.edge,
+            pillBorderColor: glass.edge,
+            dividerColor: glass.line,
+            shadow: Colors.black.withValues(alpha: 0.35),
+          ),
+        ],
+      );
+    }
+
+    final glass = isNordic
+        ? AscentGlass.nordicSky
+        : (AscentGlass.light.copyWith(
+                bg: AscentColors.bgBase,
+                fill: const Color.fromRGBO(255, 255, 255, 0.10),
+                ink: AscentColors.textPrimary,
+                inkSecondary: AscentColors.textSecondary,
+                inkMuted: AscentColors.textMuted,
+                edge: AscentColors.divider,
+                line: AscentColors.divider,
+                nav: AscentGlass.light.nav,
+                shadow: Colors.transparent,
+                glow1: AscentGlass.light.glow1,
+                glow2: AscentGlass.light.glow2,
+              )
+              as AscentGlass);
+
     return parent.copyWith(
       scaffoldBackgroundColor: glass.bg,
       extensions: [
@@ -29,7 +75,8 @@ class HomeTheme {
           (extension) => extension is! AscentGlass && extension is! AppSurfaces,
         ),
         glass,
-        AppSurfaces.legacyLight.copyWith(blur: 0, shadow: Colors.transparent),
+        (isNordic ? AppSurfaces.legacyNordicSky : AppSurfaces.legacyLight)
+            .copyWith(blur: 0, shadow: Colors.transparent),
       ],
     );
   }

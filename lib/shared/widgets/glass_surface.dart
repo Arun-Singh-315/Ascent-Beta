@@ -76,7 +76,10 @@ class GlassSurface extends StatelessWidget {
       child: ClipRRect(
         borderRadius: r,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          filter: ImageFilter.blur(
+            sigmaX: context.surfaces.blur,
+            sigmaY: context.surfaces.blur,
+          ),
           child: content,
         ),
       ),

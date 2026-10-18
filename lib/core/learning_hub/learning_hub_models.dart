@@ -81,6 +81,15 @@ class Course {
     return '${m}m';
   }
 
+  Course sanitizeTestLectures() {
+    final sanitizedModules = modules.map((m) {
+      final sanitizedLectures =
+          m.lectures.where((l) => !isTargetTestLecture(l)).toList();
+      return m.copyWith(lectures: sanitizedLectures);
+    }).toList();
+    return copyWith(modules: sanitizedModules);
+  }
+
   Course copyWith({
     String? id,
     String? title,
@@ -404,4 +413,15 @@ class Lecture {
   }
 
   Map<String, dynamic> toMap() => toJson();
+}
+
+/// Identifies unwanted/corrupted test lectures (such as test lecture 38, "test )(", or 90min test entries).
+bool isTargetTestLecture(Lecture lecture) {
+  if (lecture.id == 38) return true;
+  final title = lecture.title.toLowerCase();
+  if (title.contains('test )(') || title.contains(')(')) return true;
+  if (title.contains('lecture 38')) return true;
+  if (lecture.durationSeconds == 5400 && title.contains('test')) return true;
+  if (lecture.id >= 38 && (title.contains('test') || lecture.durationSeconds == 5400)) return true;
+  return false;
 }

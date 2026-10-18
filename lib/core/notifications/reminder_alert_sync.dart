@@ -1,4 +1,5 @@
 import '../database/app_database.dart';
+import '../services/home_capture_service.dart';
 import 'notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,12 +23,29 @@ Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
       );
     }
   }
+  final routineAlertLink = await db.planDao.getAlertLinkForReminder(r.id);
+  final isRoutineCheckIn = routineAlertLink?.role == 'check_in';
+  final plan = routineAlertLink == null
+      ? await HomeCaptureService(db).planForReminder(r.id)
+      : null;
+  final checkIn = isRoutineCheckIn || plan?.checkIn?.id == r.id;
+  final payload = routineAlertLink != null
+      ? (isRoutineCheckIn
+            ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}&occ=${routineAlertLink.occurrenceId}'
+            : '/home?session=${routineAlertLink.occurrenceId}')
+      : plan == null
+      ? NotificationService.remindersDestination
+      : checkIn
+      ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}'
+      : '/home';
   return NotificationService.instance.scheduleReminderNotificationChecked(
     id: r.id,
     title: r.title,
     scheduledAt: r.scheduledAt,
     alarmEnabled: r.alarmEnabled,
     scheduleFollowUp: false,
+    destination: payload,
+    checkIn: checkIn,
   );
 }
 
@@ -78,6 +96,9 @@ class ReminderAlertSync {
                   : r.isActive && r.scheduledAt.isAfter(DateTime.now())),
         )
         .toList();
+    if (reminders.isEmpty && !replaceAll) {
+      return const ReminderAlertSyncResult(0, 0);
+    }
     if (replaceAll && !await reset()) {
       return ReminderAlertSyncResult(
         reminders.length,

@@ -87,10 +87,10 @@ class QuickModulesNavHub extends ConsumerWidget {
         GlassSurface(
           radius: 24,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? Colors.transparent
+              ? Colors.white
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
-              ? Border.all(color: Colors.black, width: 1)
+              ? Border.all(color: g.edge.withValues(alpha: .45), width: 1)
               : null,
           padding: EdgeInsets.zero,
           child: Column(

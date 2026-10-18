@@ -1,3 +1,4 @@
+import '../../shared/widgets/music_companion_card.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -445,6 +446,11 @@ class _FocusScreenState extends ConsumerState<FocusScreen> {
               _confirmCompleteSession(title, totalTime);
             },
           ),
+
+          const SizedBox(height: 10),
+
+          // ── Focus Audio Dock / Study Soundtrack ───────────────────
+          const MusicCompanionCard(),
 
           const SizedBox(height: 16),
 

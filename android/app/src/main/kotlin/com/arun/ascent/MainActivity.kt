@@ -32,6 +32,16 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ascent/device-timezone").setMethodCallHandler { call, result ->
             if (call.method == "getTimeZone") result.success(TimeZone.getDefault().id) else result.notImplemented()
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ascent/music").setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "status" -> result.success(MusicCompanion.status(this))
+                    "settings" -> { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)); result.success(null) }
+                    "control" -> result.success(MusicCompanion.control(this, call.argument<String>("package"), call.argument<String>("action")))
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) { result.error("music_unavailable", "Music access unavailable", null) }
+        }
         liveChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ascent/live-sessions")
         LiveSessions.bridge = liveChannel
         liveChannel!!.setMethodCallHandler { call, result ->

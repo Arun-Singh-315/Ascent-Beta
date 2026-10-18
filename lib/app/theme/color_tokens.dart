@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'glass_theme.dart';
+import 'frozen_palette.dart';
 
 /// All color tokens for the Ascent design system.
 /// Muted, matte, calm, and tailored for focus & productivity.
@@ -113,65 +115,131 @@ class AscentColors {
 
   /// Shadow in dark mode.
   static const Color shadowDark = Color(0xFF000000);
+
+  /// Water & Hydration accent tokens.
+  static const Color waterPrimary = Color(0xFF0284C7);
+  static const Color waterBright = Color(0xFF38BDF8);
+
+  /// Money & Finance accent tokens.
+  static const Color financePrimary = Color(0xFF059669);
+  static const Color financeBright = Color(0xFF34D399);
+
+  /// Translucent day surface highlight (e.g. thought bubble day backdrop)
+  static const Color translucentSurfaceDay = Color(0x1AFFFFFF);
+
+  /// Day mode subdued outline border
+  static const Color outlineDay = Color(0xFF73727B);
 }
 
 /// Convenience extension so call-sites never branch on brightness manually.
 extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
-  Color get bgBase => isDark ? AscentColors.bgBaseDark : AscentColors.bgBase;
+  bool get isFrozen => Theme.of(this).extension<AscentGlass>()?.frozen == true;
 
-  Color get bgSurface =>
-      isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface;
+  Color get waterAccent => isDark ? AscentColors.waterBright : AscentColors.waterPrimary;
+  Color get financeAccent => isDark ? AscentColors.financeBright : AscentColors.financePrimary;
 
-  Color get bgSurfaceElevated => isDark
+  Color get bgBase => isFrozen
+      ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
+      : isDark
+      ? AscentColors.bgBaseDark
+      : AscentColors.bgBase;
+
+  Color get bgSurface => isFrozen
+      ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+      : isDark
+      ? AscentColors.bgSurfaceDark
+      : AscentColors.bgSurface;
+
+  Color get bgSurfaceElevated => isFrozen
+      ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
+      : isDark
       ? AscentColors.bgSurfaceElevatedDark
       : AscentColors.bgSurfaceElevated;
 
-  Color get accentPrimary => Theme.of(this).colorScheme.primary;
+  Color get accentPrimary => isFrozen
+      ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+      : Theme.of(this).colorScheme.primary;
 
-  Color get accentSecondary =>
-      isDark ? AscentColors.accentSecondaryDark : AscentColors.accentSecondary;
+  Color get accentSecondary => isFrozen
+      ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+      : isDark
+      ? AscentColors.accentSecondaryDark
+      : AscentColors.accentSecondary;
 
-  Color get accentInfo =>
-      isDark ? AscentColors.accentInfoDark : AscentColors.accentInfo;
+  Color get accentInfo => isFrozen
+      ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
+      : isDark
+      ? AscentColors.accentInfoDark
+      : AscentColors.accentInfo;
 
-  Color get stateDanger =>
-      isDark ? AscentColors.stateDangerDark : AscentColors.stateDanger;
+  Color get stateDanger => isFrozen
+      ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
+      : isDark
+      ? AscentColors.stateDangerDark
+      : AscentColors.stateDanger;
 
-  Color get stateSuccess =>
-      isDark ? AscentColors.stateSuccessDark : AscentColors.stateSuccess;
+  Color get stateSuccess => isFrozen
+      ? (isDark ? FrozenPalette.darkSuccess : FrozenPalette.success)
+      : isDark
+      ? AscentColors.stateSuccessDark
+      : AscentColors.stateSuccess;
 
-  Color get stateWarning =>
-      isDark ? AscentColors.stateWarningDark : AscentColors.stateWarning;
+  Color get stateWarning => isFrozen
+      ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
+      : isDark
+      ? AscentColors.stateWarningDark
+      : AscentColors.stateWarning;
 
   Color get textPrimary => Theme.of(this).colorScheme.onSurface;
 
-  Color get textSecondary =>
-      isDark ? AscentColors.textSecondaryDark : AscentColors.textSecondary;
+  Color get textSecondary => isFrozen
+      ? (isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk)
+      : isDark
+      ? AscentColors.textSecondaryDark
+      : AscentColors.textSecondary;
 
   Color get textMuted => Theme.of(this).colorScheme.onSurfaceVariant;
 
-  Color get textOnPrimary =>
-      isDark ? AscentColors.textOnPrimaryDark : AscentColors.textOnPrimary;
+  Color get textOnPrimary => Theme.of(this).colorScheme.onPrimary;
 
   Color get divider =>
       Theme.of(this).dividerTheme.color ??
       (isDark ? AscentColors.dividerDark : AscentColors.divider);
 
-  Color get accentPrimaryBright => isDark
+  Color get accentPrimaryBright => isFrozen
+      ? (isDark ? FrozenPalette.darkActionBright : FrozenPalette.actionBright)
+      : isDark
       ? AscentColors.accentPrimaryBrightDark
       : AscentColors.accentPrimaryBright;
 
-  Color get accentPrimaryDim => isDark
+  Color get accentPrimaryDim => isFrozen
+      ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+      : isDark
       ? AscentColors.accentPrimaryDimDark
       : AscentColors.accentPrimaryDim;
 
-  Color get accentSecondaryBright => isDark
+  Color get accentSecondaryBright => isFrozen
+      ? (isDark ? FrozenPalette.darkActionBright : FrozenPalette.actionBright)
+      : isDark
       ? AscentColors.accentSecondaryBrightDark
       : AscentColors.accentSecondaryBright;
 
-  Color get stateDangerBright => isDark
+  Color get stateDangerBright => isFrozen
+      ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
+      : isDark
       ? AscentColors.stateDangerBrightDark
       : AscentColors.stateDangerBright;
+
+  Color get spark => isFrozen
+      ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
+      : (isDark ? const Color(0xFFECA361) : const Color(0xFFB06822));
+
+  Color get sparkTint => isFrozen
+      ? (isDark ? FrozenPalette.darkSparkTint : FrozenPalette.sparkTint)
+      : (isDark
+          ? const Color.fromRGBO(236, 163, 97, 0.14)
+          : const Color.fromRGBO(176, 104, 34, 0.11));
 }
+

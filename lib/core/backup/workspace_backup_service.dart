@@ -196,7 +196,7 @@ class WorkspaceBackupService {
     if (payload['format'] == 'ascent.workspace' &&
         payload['version'] == 1 &&
         payload['schema'] == 15 &&
-        db.schemaVersion == 16 &&
+        db.schemaVersion >= 16 &&
         payload['tables'] is Map) {
       final tables = payload['tables'] as Map;
       if (tables.containsKey('thought_reminder_links') ||
@@ -230,6 +230,40 @@ class WorkspaceBackupService {
       tables['thought_reminder_links'] = <dynamic>[];
       tables['thought_merge_sources'] = <dynamic>[];
       payload['schema'] = 16;
+    }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 16 &&
+        db.schemaVersion >= 17 &&
+        payload['tables'] is Map) {
+      final tables = payload['tables'] as Map;
+      if (tables.containsKey('plan_definitions') ||
+          tables.containsKey('plan_occurrences') ||
+          tables.containsKey('occurrence_alert_links')) {
+        throw const FormatException(
+          'Legacy schema contains newer relationships',
+        );
+      }
+      tables['plan_definitions'] = <dynamic>[];
+      tables['plan_occurrences'] = <dynamic>[];
+      tables['occurrence_alert_links'] = <dynamic>[];
+      payload['schema'] = 17;
+    }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 17 &&
+        db.schemaVersion >= 18 &&
+        payload['tables'] is Map) {
+      final tables = payload['tables'] as Map;
+      if (tables.containsKey('plan_collections') ||
+          tables.containsKey('plan_collection_items')) {
+        throw const FormatException(
+          'Legacy schema contains newer relationships',
+        );
+      }
+      tables['plan_collections'] = <dynamic>[];
+      tables['plan_collection_items'] = <dynamic>[];
+      payload['schema'] = 18;
     }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||

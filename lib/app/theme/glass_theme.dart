@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'color_tokens.dart';
+import 'frozen_palette.dart';
 
 /// Glass theme tokens for the Ascent design system.
 /// Defined according to the Ascent Liquid Glass specification:
@@ -8,6 +9,7 @@ import 'color_tokens.dart';
 /// - Dark base: #0D1016, Clay: #E6A088
 /// - Harmonic Accents: Slate (Study), Sage (Walk/Health), Amber (Focus/Cash), Coral (Urgent/Danger)
 class AscentGlass extends ThemeExtension<AscentGlass> {
+  final bool frozen;
   final Color bg;
   final Color fill;
   final Color edge;
@@ -39,6 +41,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   final Color inkMuted;
 
   const AscentGlass({
+    this.frozen = false,
     required this.bg,
     required this.fill,
     required this.edge,
@@ -90,6 +93,60 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     inkMuted: Color(0xFF74695F),
   );
 
+  static const nordicSky = AscentGlass(
+    frozen: true,
+    bg: FrozenPalette.canvas,
+    fill: Color.fromRGBO(247, 250, 253, 0.94),
+    edge: FrozenPalette.line,
+    highlight: Color.fromRGBO(255, 255, 255, 0.96),
+    line: FrozenPalette.line,
+    glow1: Color.fromRGBO(147, 197, 253, 0.28),
+    glow2: Color.fromRGBO(199, 210, 254, 0.20),
+    track: FrozenPalette.tint,
+    nav: Color.fromRGBO(247, 250, 253, 0.96),
+    shadow: Color.fromRGBO(29, 100, 180, 0.08),
+    clay: FrozenPalette.action,
+    claySoft: FrozenPalette.tint,
+    slate: FrozenPalette.action,
+    slateSoft: FrozenPalette.tint,
+    sage: FrozenPalette.success,
+    sageSoft: Color.fromRGBO(46, 125, 91, 0.12),
+    amber: FrozenPalette.spark,
+    amberSoft: FrozenPalette.sparkTint,
+    coral: FrozenPalette.danger,
+    coralSoft: Color.fromRGBO(192, 57, 43, 0.12),
+    ink: FrozenPalette.ink,
+    inkSecondary: FrozenPalette.secondaryInk,
+    inkMuted: FrozenPalette.mutedInk,
+  );
+
+  static const nordicSkyDark = AscentGlass(
+    frozen: true,
+    bg: FrozenPalette.darkCanvas,
+    fill: Color.fromRGBO(22, 35, 56, 0.94),
+    edge: FrozenPalette.darkLine,
+    highlight: Color.fromRGBO(255, 255, 255, 0.10),
+    line: FrozenPalette.darkLine,
+    glow1: Color.fromRGBO(94, 160, 240, 0.22),
+    glow2: Color.fromRGBO(125, 180, 245, 0.18),
+    track: FrozenPalette.darkTint,
+    nav: Color.fromRGBO(22, 35, 56, 0.96),
+    shadow: Color.fromRGBO(0, 0, 0, 0.40),
+    clay: FrozenPalette.darkAction,
+    claySoft: FrozenPalette.darkTint,
+    slate: FrozenPalette.darkAction,
+    slateSoft: FrozenPalette.darkTint,
+    sage: FrozenPalette.darkSuccess,
+    sageSoft: Color.fromRGBO(62, 163, 120, 0.14),
+    amber: FrozenPalette.darkSpark,
+    amberSoft: FrozenPalette.darkSparkTint,
+    coral: FrozenPalette.darkDanger,
+    coralSoft: Color.fromRGBO(229, 106, 94, 0.14),
+    ink: FrozenPalette.darkInk,
+    inkSecondary: FrozenPalette.darkSecondaryInk,
+    inkMuted: FrozenPalette.darkMutedInk,
+  );
+
   static const dark = AscentGlass(
     bg: Color(0xFF16110D),
     fill: Color.fromRGBO(255, 255, 255, 0.055),
@@ -118,6 +175,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
   @override
   ThemeExtension<AscentGlass> copyWith({
+    bool? frozen,
     Color? bg,
     Color? fill,
     Color? edge,
@@ -143,6 +201,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     Color? inkMuted,
   }) {
     return AscentGlass(
+      frozen: frozen ?? this.frozen,
       bg: bg ?? this.bg,
       fill: fill ?? this.fill,
       edge: edge ?? this.edge,
@@ -170,9 +229,13 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   }
 
   @override
-  ThemeExtension<AscentGlass> lerp(covariant ThemeExtension<AscentGlass>? other, double t) {
+  ThemeExtension<AscentGlass> lerp(
+    covariant ThemeExtension<AscentGlass>? other,
+    double t,
+  ) {
     if (other is! AscentGlass) return this;
     return AscentGlass(
+      frozen: t < 0.5 ? frozen : other.frozen,
       bg: Color.lerp(bg, other.bg, t)!,
       fill: Color.lerp(fill, other.fill, t)!,
       edge: Color.lerp(edge, other.edge, t)!,
@@ -202,5 +265,6 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
 extension AscentGlassX on BuildContext {
   AscentGlass get glass =>
-      Theme.of(this).extension<AscentGlass>() ?? (isDark ? AscentGlass.dark : AscentGlass.light);
+      Theme.of(this).extension<AscentGlass>() ??
+      (isDark ? AscentGlass.dark : AscentGlass.light);
 }

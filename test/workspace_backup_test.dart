@@ -49,6 +49,11 @@ void main() {
     final legacyTables = payload['tables'] as Map;
     legacyTables.remove('thought_reminder_links');
     legacyTables.remove('thought_merge_sources');
+    legacyTables.remove('plan_collections');
+    legacyTables.remove('plan_collection_items');
+    legacyTables.remove('plan_definitions');
+    legacyTables.remove('plan_occurrences');
+    legacyTables.remove('occurrence_alert_links');
     for (final row in legacyTables['tasks'] as List) {
       (row as Map)
         ..remove('linked_thought_id')

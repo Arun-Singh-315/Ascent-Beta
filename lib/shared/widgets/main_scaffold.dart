@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/frozen_palette.dart';
 
 import 'package:flutter/services.dart';
 
@@ -100,7 +101,11 @@ class _MainScaffoldState extends State<MainScaffold> {
               ),
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: AppPalette.colorFF2D251E.withValues(alpha: 0.95),
+              backgroundColor:
+                  (context.glass.frozen
+                          ? context.glass.ink
+                          : AppPalette.colorFF2D251E)
+                      .withValues(alpha: 0.95),
               elevation: 4,
               shape: RoundedRectangleBorder(
                 borderRadius: AppGeometry.roundedr20,
@@ -159,15 +164,34 @@ class _AscentBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = context.bgSurface;
-    final divider = context.divider;
-    final inactiveColor = context.textMuted;
+    final isFrozen = context.isFrozen;
+    final isDark = context.isDark;
+    final bg = isFrozen
+        ? (isDark
+            ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
+            : FrozenPalette.surface.withValues(alpha: 0.96))
+        : context.bgSurface;
+    final divider = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final inactiveColor = isFrozen
+        ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
+        : context.textMuted;
+    final activeColor = isFrozen
+        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+        : context.glass.clay;
+    final activeCapsuleBg = isFrozen
+        ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+        : context.glass.claySoft;
 
     return Container(
       decoration: BoxDecoration(
         color: bg,
         border: Border(
-          top: BorderSide(color: divider, width: AppBorderScale.w0point8),
+          top: BorderSide(
+            color: divider,
+            width: isFrozen ? 1.0 : AppBorderScale.w0point8,
+          ),
         ),
       ),
       child: SafeArea(
@@ -190,26 +214,21 @@ class _AscentBottomNav extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutCubic,
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOut,
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s14,
                               vertical: AppSpace.s3,
                             ),
-                            decoration: AppCard.decoration(
-                              context,
-                              night: BoxDecoration(
-                                color: isActive
-                                    ? context.glass.claySoft
-                                    : AppPalette.transparent,
-                                borderRadius: AppGeometry.roundedr16,
-                              ),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? activeCapsuleBg
+                                  : AppPalette.transparent,
+                              borderRadius: BorderRadius.circular(16),
                             ),
                             child: Icon(
                               isActive ? tab.activeIcon : tab.icon,
-                              color: isActive
-                                  ? context.glass.clay
-                                  : inactiveColor,
+                              color: isActive ? activeColor : inactiveColor,
                               size: 19,
                             ),
                           ),
@@ -221,7 +240,9 @@ class _AscentBottomNav extends StatelessWidget {
                                   state0: isActive,
                                 ).copyWith(
                                   color: isActive
-                                      ? context.glass.ink
+                                      ? (isFrozen
+                                            ? activeColor
+                                            : context.glass.ink)
                                       : inactiveColor,
                                   height: 1.1,
                                 ),

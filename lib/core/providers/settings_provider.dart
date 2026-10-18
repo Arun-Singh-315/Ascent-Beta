@@ -51,6 +51,41 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,
 );
 
+// ── Daylight Theme Preset ───────────────────────────────────────────────────
+
+enum DayThemePreset {
+  classicClay,
+  nordicSky,
+}
+
+const _dayThemePresetKey = 'ascent_day_theme_preset';
+
+class DayThemePresetNotifier extends Notifier<DayThemePreset> {
+  static const _values = {
+    'classicClay': DayThemePreset.classicClay,
+    'nordicSky': DayThemePreset.nordicSky,
+  };
+
+  @override
+  DayThemePreset build() {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final stored = prefs.getString(_dayThemePresetKey) ?? 'classicClay';
+    return _values[stored] ?? DayThemePreset.classicClay;
+  }
+
+  Future<void> setPreset(DayThemePreset preset) async {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final key = _values.entries.firstWhere((e) => e.value == preset).key;
+    await prefs.setString(_dayThemePresetKey, key);
+    state = preset;
+  }
+}
+
+final dayThemePresetProvider =
+    NotifierProvider<DayThemePresetNotifier, DayThemePreset>(
+      DayThemePresetNotifier.new,
+    );
+
 // ── Onboarding complete ──────────────────────────────────────────────────────
 
 const _onboardingKey = 'ascent_onboarding_complete';

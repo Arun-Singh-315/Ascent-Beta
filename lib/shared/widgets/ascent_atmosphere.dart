@@ -25,8 +25,14 @@ class AscentAtmosphereBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     if (context.surfaces.outlined) return child;
     final g = context.glass;
-    final color1 = softenGlow(glow1 ?? g.glow1, maxAlpha: 0.18);
-    final color2 = softenGlow(glow2 ?? g.glow2, maxAlpha: 0.14);
+    final color1 = softenGlow(
+      glow1 ?? g.glow1,
+      maxAlpha: g.frozen ? 0.32 : 0.18,
+    );
+    final color2 = softenGlow(
+      glow2 ?? g.glow2,
+      maxAlpha: g.frozen ? 0.24 : 0.14,
+    );
 
     return Stack(
       fit: StackFit.expand,

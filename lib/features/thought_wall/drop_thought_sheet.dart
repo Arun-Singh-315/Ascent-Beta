@@ -1,3 +1,4 @@
+import '../../shared/widgets/note_list_button.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -167,7 +168,9 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
             child: AppCard(
               nightDecoration: BoxDecoration(
                 color:
-                    (context.isDark
+                    (g.frozen
+                            ? context.bgSurface
+                            : context.isDark
                             ? AppPalette.colorFF1D1610
                             : AppPalette.colorFFF8FAFC)
                         .withValues(alpha: 0.95),
@@ -194,19 +197,20 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                         width: 44,
                         height: 44,
                         nightDecoration: BoxDecoration(
-                          color: AppPalette.colorFFB46824.withValues(
-                            alpha: 0.14,
-                          ),
+                          color: (g.frozen ? g.slate : AppPalette.colorFFB46824)
+                              .withValues(alpha: 0.14),
                           borderRadius: AppGeometry.roundedr14,
                           border: Border.all(
-                            color: AppPalette.colorFFB46824.withValues(
-                              alpha: 0.3,
-                            ),
+                            color:
+                                (g.frozen ? g.slate : AppPalette.colorFFB46824)
+                                    .withValues(alpha: 0.3),
                           ),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.handshake_rounded,
-                          color: AppPalette.colorFFB46824,
+                          color: (g.frozen
+                              ? g.slate
+                              : AppPalette.colorFFB46824),
                           size: 22,
                         ),
                       ),
@@ -277,8 +281,10 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: AppGeometry.roundedr14,
-                        borderSide: const BorderSide(
-                          color: AppPalette.colorFFB46824,
+                        borderSide: BorderSide(
+                          color: (g.frozen
+                              ? g.slate
+                              : AppPalette.colorFFB46824),
                           width: AppBorderScale.w1point5,
                         ),
                       ),
@@ -416,7 +422,9 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
                           onPressed: _isSaving ? null : _save,
                           style: context.surfaces.buttonStyle(
                             FilledButton.styleFrom(
-                              backgroundColor: AppPalette.colorFFB46824,
+                              backgroundColor: (g.frozen
+                                  ? g.slate
+                                  : AppPalette.colorFFB46824),
                               shape: RoundedRectangleBorder(
                                 borderRadius: AppGeometry.roundedr14,
                               ),
@@ -887,6 +895,8 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               ),
 
               const SizedBox(height: 18),
+
+              NoteListButton(controller: _contentController),
 
               // Submit Button
               AscentButton.primary(

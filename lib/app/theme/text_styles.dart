@@ -10,7 +10,7 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// Font mapping:
 /// - **Display** → Plus Jakarta Sans (SemiBold / Bold)
-/// - **Body / Label** → Inter (Regular / Medium)
+/// - **Body / Label** → DM Sans (Regular / Medium)
 /// - **Stat** → JetBrains Mono (Medium)
 class AscentTextStyles {
   AscentTextStyles._();
@@ -40,28 +40,40 @@ class AscentTextStyles {
     height: 1.3,
   );
 
-  // ── Body (Inter) ──────────────────────────────────────────────────────────
+  // ── Body (DM Sans) ──────────────────────────────────────────────────────────
 
   /// 16 px · Regular · h 1.5
-  static TextStyle get bodyLarge =>
-      GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w400, height: 1.5);
+  static TextStyle get bodyLarge => GoogleFonts.dmSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+  );
 
   /// 14 px · Regular · h 1.5
-  static TextStyle get bodyMedium =>
-      GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w400, height: 1.5);
+  static TextStyle get bodyMedium => GoogleFonts.dmSans(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.5,
+  );
 
   /// 12 px · Regular · h 1.4
-  static TextStyle get bodySmall =>
-      GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w400, height: 1.4);
+  static TextStyle get bodySmall => GoogleFonts.dmSans(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    height: 1.4,
+  );
 
   /// 14 px · Medium (w500) · h 1.5  — slightly emphasised body copy
-  static TextStyle get bodyMediumMedium =>
-      GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, height: 1.5);
+  static TextStyle get bodyMediumMedium => GoogleFonts.dmSans(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    height: 1.5,
+  );
 
-  // ── Labels (Inter Medium) ─────────────────────────────────────────────────
+  // ── Labels (DM Sans Medium) ─────────────────────────────────────────────────
 
   /// 16 px · Medium · h 1.3 · ls +0.1  — button labels, tab labels
-  static TextStyle get labelLarge => GoogleFonts.inter(
+  static TextStyle get labelLarge => GoogleFonts.dmSans(
     fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -69,7 +81,7 @@ class AscentTextStyles {
   );
 
   /// 12 px · Medium · h 1.3 · ls +0.4  — chips, badges, metadata
-  static TextStyle get labelSmall => GoogleFonts.inter(
+  static TextStyle get labelSmall => GoogleFonts.dmSans(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -77,7 +89,7 @@ class AscentTextStyles {
   );
 
   /// 14 px · Medium · h 1.3 · ls +0.2 — form labels, card subtitles
-  static TextStyle get labelMedium => GoogleFonts.inter(
+  static TextStyle get labelMedium => GoogleFonts.dmSans(
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -85,7 +97,7 @@ class AscentTextStyles {
   );
 
   /// 12 px · Medium · h 1.3 · ls +0.3 — captions, pills
-  static TextStyle get captionMedium => GoogleFonts.inter(
+  static TextStyle get captionMedium => GoogleFonts.dmSans(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.3,
@@ -182,17 +194,18 @@ class AscentTextStyles {
 
 /// Central font catalog, retaining the established glass type scale.
 /// Repeated styles share a definition; screens supply semantic colors only.
+/// Legacy inter* accessor names remain compatible but render DM Sans body copy.
 class AppTypography {
   AppTypography._();
   static TextStyle inter13Regular1({FontWeight? fontWeight, Color? color}) =>
-      GoogleFonts.inter(fontSize: 13, fontWeight: fontWeight, color: color);
+      GoogleFonts.dmSans(fontSize: 13, fontWeight: fontWeight, color: color);
   static TextStyle jetBrainsMono11W7002({Color? color}) =>
       GoogleFonts.jetBrainsMono(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         color: color,
       );
-  static TextStyle inter11W7003({Color? color}) => GoogleFonts.inter(
+  static TextStyle inter11W7003({Color? color}) => GoogleFonts.dmSans(
     fontSize: 11,
     fontWeight: FontWeight.w700,
     color: color,
@@ -208,9 +221,9 @@ class AppTypography {
     decoration: decoration,
   );
   static TextStyle inter14Regular5({Color? color}) =>
-      GoogleFonts.inter(fontSize: 14, height: 1.4, color: color);
+      GoogleFonts.dmSans(fontSize: 14, height: 1.4, color: color);
   static TextStyle inter13Regular6({Color? color}) =>
-      GoogleFonts.inter(fontSize: 13, color: color);
+      GoogleFonts.dmSans(fontSize: 13, color: color);
   static TextStyle plusJakartaSans14W7007({Color? color}) =>
       GoogleFonts.plusJakartaSans(
         fontSize: 14,
@@ -545,12 +558,12 @@ class AppTypography {
     double? fontSize,
     FontWeight? fontWeight,
     Color? color,
-  }) => GoogleFonts.inter(
+  }) => GoogleFonts.dmSans(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
   );
-  static TextStyle inter12W50062({Color? color}) => GoogleFonts.inter(
+  static TextStyle inter12W50062({Color? color}) => GoogleFonts.dmSans(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: color,
@@ -812,7 +825,7 @@ class AppTypography {
         fontSize: 12,
         color: color,
       );
-  static TextStyle inter12W600111({Color? color}) => GoogleFonts.inter(
+  static TextStyle inter12W600111({Color? color}) => GoogleFonts.dmSans(
     fontSize: 12,
     fontWeight: FontWeight.w600,
     color: color,

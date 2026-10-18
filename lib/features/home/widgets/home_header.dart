@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/home_layout_provider.dart';
@@ -49,7 +50,6 @@ class HomeHeader extends ConsumerWidget {
     final studyStreak = ref.watch(studyStreakProvider);
     final isStreakCardVisible = ref.watch(homeStreakVisibleProvider);
     final streak = studyStreak.displayStreakDays;
-    final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.s8),
@@ -104,14 +104,12 @@ class HomeHeader extends ConsumerWidget {
                       vertical: AppSpace.s8,
                     ),
                     nightDecoration: BoxDecoration(
-                      color: isDark
-                          ? (isStreakCardVisible ? g.claySoft : g.fill)
-                          : g.clay.withValues(
-                              alpha: isStreakCardVisible ? .025 : 0,
-                            ),
+                      color: Colors.transparent,
                       borderRadius: AppGeometry.roundedr99,
                       border: Border.all(
-                        color: isDark
+                        color: g.frozen
+                            ? FrozenPalette.line
+                            : isDark
                             ? (isStreakCardVisible ? g.clay : g.edge)
                             : Colors.black,
                         width: AppBorderScale.w1point0,
@@ -123,10 +121,14 @@ class HomeHeader extends ConsumerWidget {
                         Icon(
                           Icons.local_fire_department_rounded,
                           size: 15,
-                          color: context.surfaces.pillForeground(
-                            isStreakCardVisible,
-                            g.clay,
-                          ),
+                          color: g.frozen
+                              ? (isDark
+                                    ? FrozenPalette.darkSpark
+                                    : FrozenPalette.spark)
+                              : context.surfaces.pillForeground(
+                                  isStreakCardVisible,
+                                  g.clay,
+                                ),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
@@ -163,12 +165,43 @@ class HomeHeader extends ConsumerWidget {
                     width: 48,
                     height: 48,
                     nightDecoration: BoxDecoration(
-                      color: g.claySoft,
+                      gradient: g.frozen
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                isDark
+                                    ? FrozenPalette.darkActionBright
+                                    : FrozenPalette.actionBright,
+                                isDark
+                                    ? FrozenPalette.darkAction
+                                    : FrozenPalette.action,
+                              ],
+                            )
+                          : null,
+                      color: g.frozen ? null : g.claySoft,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: g.edge,
+                        color: g.frozen
+                            ? (isDark
+                                  ? FrozenPalette.darkLine
+                                  : FrozenPalette.line)
+                            : g.edge,
                         width: AppBorderScale.w1point0,
                       ),
+                      boxShadow: g.frozen
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (isDark
+                                            ? FrozenPalette.darkAction
+                                            : FrozenPalette.action)
+                                        .withValues(alpha: 0.20),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
                     ),
                     child: Center(
                       child: Text(
@@ -178,7 +211,7 @@ class HomeHeader extends ConsumerWidget {
                               ).toUpperCase()
                             : 'A',
                         style: AppTypography.bricolageGrotesque15W70099(
-                          color: g.ink,
+                          color: g.frozen ? Colors.white : g.ink,
                         ),
                       ),
                     ),
@@ -193,12 +226,22 @@ class HomeHeader extends ConsumerWidget {
           // ── GREETING & DISPLAY NAME ───────────────────────────────────
           Text(
             _greeting(),
-            style: AscentTextStyles.homeBody.copyWith(color: g.inkSecondary),
+            style: AscentTextStyles.homeHeadline.copyWith(
+              color: g.inkSecondary,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             name,
-            style: AscentTextStyles.homeDisplay.copyWith(color: g.ink),
+            style: AscentTextStyles.homeTitle.copyWith(
+              color: g.ink,
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.5,
+              height: 1.15,
+            ),
           ),
 
           const SizedBox(height: 6),
@@ -240,99 +283,19 @@ class HomeHeader extends ConsumerWidget {
                   ),
                 ),
 
-              // Home customization stays beside the profession label.
-              AppTapArea(
-                onTap: () {
+              // A quiet icon keeps personalization reachable without a second label.
+              IconButton(
+                tooltip: 'Customize Home',
+                onPressed: () {
                   HapticFeedback.lightImpact();
                   showHomeCustomization(context);
                 },
-                borderRadius: AppGeometry.roundedr6,
-                child: AppPill(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s8,
-                    vertical: AppSpace.s2point5,
-                  ),
-                  nightDecoration: BoxDecoration(
-                    color: g.fill,
-                    borderRadius: AppGeometry.roundedr6,
-                    border: Border.all(
-                      color: g.edge,
-                      width: AppBorderScale.w0point8,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.tune_rounded, size: 13, color: g.inkSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Customize Home',
-                        style: AppTypography.plusJakartaSans105W60010(
-                          color: g.inkSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                icon: Icon(Icons.tune_rounded, size: 19, color: g.inkSecondary),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.push('/ai-assistant');
-              },
-              borderRadius: BorderRadius.circular(22),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: g.claySoft.withValues(alpha: isDark ? .12 : 0),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isDark ? g.clay.withValues(alpha: .2) : Colors.black,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, color: g.clay, size: 22),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Ask $assistantName',
-                            style: AscentTextStyles.homeHeadline.copyWith(
-                              color: g.ink,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Plan your day or capture a thought',
-                            style: AscentTextStyles.homeSecondary.copyWith(
-                              color: g.inkSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Icon(Icons.chevron_right_rounded, color: g.clay, size: 20),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
         ],
       ),
     );

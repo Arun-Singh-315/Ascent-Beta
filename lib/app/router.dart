@@ -32,6 +32,7 @@ import '../features/medicine/medicine_screen.dart';
 import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
+import '../features/plans/plans_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../shared/widgets/feature_guide.dart';
 
@@ -67,6 +68,7 @@ class AscentRoutes {
   static const focus = '/focus';
   static const learning = '/learning';
   static const reminders = '/reminders';
+  static const plans = '/plans';
 }
 
 // ── Navigator key ─────────────────────────────────────────────────────────────
@@ -104,8 +106,9 @@ final ascentRouter = GoRouter(
           routes: [
             GoRoute(
               path: AscentRoutes.home,
-              pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: HomeScreen()),
+              pageBuilder: (context, state) => NoTransitionPage(
+                child: HomeScreen(notificationUri: state.uri),
+              ),
             ),
           ],
         ),
@@ -171,9 +174,18 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.aiAssistant,
-      builder: (context, state) =>
-          Theme(data: AscentTheme.assistant(Theme.of(context)),
-            child: const FeatureGuideHost(feature: 'Riya', child: AiAssistantScreen())),
+      builder: (context, state) => Theme(
+        data: AscentTheme.assistant(Theme.of(context)),
+        child: FeatureGuideHost(
+          feature: 'Riya',
+          child: AiAssistantScreen(
+            initialPrompt: state.uri.queryParameters['prompt'],
+            sourceThoughtId: int.tryParse(
+              state.uri.queryParameters['thought'] ?? '',
+            ),
+          ),
+        ),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -209,15 +221,26 @@ final ascentRouter = GoRouter(
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.plans,
+      builder: (context, state) => PlansScreen(
+        initialPlanId: state.uri.queryParameters['id'],
+      ),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.pipeline,
       builder: (context, state) => const PipelineScreen(),
       routes: [
         GoRoute(
           path: ':id',
           parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) => CardDetailScreen(
-            applicationId: int.parse(state.pathParameters['id']!),
-          ),
+          builder: (context, state) {
+            final id = int.tryParse(state.pathParameters['id'] ?? '');
+            if (id == null) {
+              return const PipelineScreen();
+            }
+            return CardDetailScreen(applicationId: id);
+          },
         ),
       ],
     ),
@@ -229,9 +252,13 @@ final ascentRouter = GoRouter(
         GoRoute(
           path: 'series/:id',
           parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) => SeriesReportCardScreen(
-            seriesId: int.parse(state.pathParameters['id']!),
-          ),
+          builder: (context, state) {
+            final id = int.tryParse(state.pathParameters['id'] ?? '');
+            if (id == null) {
+              return const AnalyticsScreen();
+            }
+            return SeriesReportCardScreen(seriesId: id);
+          },
         ),
       ],
     ),
@@ -267,7 +294,7 @@ final ascentRouter = GoRouter(
         final applicationId = state.uri.queryParameters['applicationId'];
         return InterviewPrepScreen(
           linkedApplicationId: applicationId != null
-              ? int.parse(applicationId)
+              ? int.tryParse(applicationId)
               : null,
         );
       },

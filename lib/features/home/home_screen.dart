@@ -4,9 +4,13 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' as drift;
 
+import 'package:flutter/services.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/color_tokens.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
@@ -29,7 +33,9 @@ import 'widgets/quick_modules_nav_hub.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
+import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
+import 'widgets/life_checkin_popup_dialog.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
@@ -38,17 +44,19 @@ import '../challenge/integration/challenge_proof_sync.dart';
 /// - First screen leads with Today execution.
 /// - Stationary ambient atmosphere painter behind smooth scrolling view.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.notificationUri});
+  final Uri? notificationUri;
 
   @override
   Widget build(BuildContext context) => Theme(
     data: HomeTheme.from(Theme.of(context)),
-    child: const _HomeContent(),
+    child: _HomeContent(notificationUri: notificationUri),
   );
 }
 
 class _HomeContent extends ConsumerStatefulWidget {
-  const _HomeContent();
+  const _HomeContent({this.notificationUri});
+  final Uri? notificationUri;
 
   @override
   ConsumerState<_HomeContent> createState() => _HomeScreenState();
@@ -74,12 +82,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
       if (!_hasCheckedOverdueReminders) {
         _hasCheckedOverdueReminders = true;
-        _checkAndPromptOverdueReminder();
+        final promptedReminder = await _checkAndPromptOverdueReminder();
+        if (!promptedReminder && mounted) {
+          await _checkAndPromptLifeNudge(preferences);
+        }
       }
     });
   }
 
-  Future<void> _checkAndPromptOverdueReminder() async {
+  Future<bool> _checkAndPromptOverdueReminder() async {
     try {
       final overdueReminders = await ref
           .read(reminderDaoProvider)
@@ -89,8 +100,45 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
           .toList();
       if (quietReminders.isNotEmpty && mounted) {
         await InAppReminderDialog.show(context, quietReminders.first);
+        return true;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error checking overdue reminders: $e');
+    }
+    return false;
+  }
+
+  Future<void> _checkAndPromptLifeNudge(SharedPreferences preferences) async {
+    try {
+      final openCount =
+          (preferences.getInt('ascent_life_nudge_open_count') ?? 0) + 1;
+      await preferences.setInt('ascent_life_nudge_open_count', openCount);
+
+      // Ask 4 out of 10 times: cycle indices 1, 3, 6, 8 (40% frequency)
+      final cycleIndex = openCount % 10;
+      final isEligible =
+          cycleIndex == 1 ||
+          cycleIndex == 3 ||
+          cycleIndex == 6 ||
+          cycleIndex == 8;
+      if (!isEligible) return;
+
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final lastNudgeMs = preferences.getInt('ascent_last_life_nudge_ms') ?? 0;
+      // Minimum 15-minute gap so navigating between tabs does not trigger it repeatedly
+      if (nowMs - lastNudgeMs < const Duration(minutes: 15).inMilliseconds) {
+        return;
+      }
+      await preferences.setInt('ascent_last_life_nudge_ms', nowMs);
+
+      if (!mounted) return;
+      final initialTab = (cycleIndex == 1 || cycleIndex == 6)
+          ? LifeCheckInTab.hydration
+          : LifeCheckInTab.money;
+      await LifeCheckInPopupDialog.show(context, initialTab: initialTab);
+    } catch (e) {
+      debugPrint('Error prompting life checkin nudge: $e');
+    }
   }
 
   @override
@@ -118,6 +166,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
     return Scaffold(
       backgroundColor: g.bg,
+      floatingActionButton: _buildFloatingAssistantPill(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: HomeAtmosphereBackground(
           child: profileAsync.when(
@@ -180,7 +230,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
                       const ThoughtWallHomePreview(),
-                    const SizedBox(height: 24),
+                    PlanningNotificationHandler(uri: widget.notificationUri),
+                    const SizedBox(height: 16),
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? ''),
 
@@ -227,6 +278,74 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                 ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingAssistantPill(BuildContext context) {
+    final isDark = context.isDark;
+    final g = context.glass;
+    final assistantName = ref.watch(assistantNameProvider);
+    final accentColors = g.frozen
+        ? (isDark
+              ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
+              : [FrozenPalette.actionBright, FrozenPalette.action])
+        : (isDark
+              ? [g.clay, g.clay.withValues(alpha: 0.82)]
+              : [g.clay.withValues(alpha: 0.88), g.clay]);
+    final shadowColor = g.frozen
+        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+        : g.clay;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            context.push('/ai-assistant');
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: accentColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: shadowColor.withValues(alpha: 0.28),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Ask $assistantName',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -144,7 +144,7 @@ void main() {
 
       await tester.pump();
       expect(find.text('Mind space'), findsNothing);
-      expect(find.textContaining("What's on your mind?"), findsOneWidget);
+      expect(find.textContaining("Capture a thought…"), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -193,22 +193,25 @@ void main() {
     );
 
     testWidgets(
-      'HomeHeader dynamically reflects customized assistant identity name',
+      'Home floating assistant pill dynamically reflects customized identity',
       (tester) async {
         final container = ProviderContainer(
           overrides: [
             databaseProvider.overrideWithValue(db),
             sharedPreferencesProvider.overrideWithValue(prefs),
             currentStreakStreamProvider.overrideWith((ref) => Stream.value(5)),
+            userProfileStreamProvider.overrideWith(
+              (ref) => Stream.value(_modularTestProfile),
+            ),
+            timeTrackingProvider.overrideWith(FakeTimeTrackingNotifier.new),
+            todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
           ],
         );
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const MaterialApp(
-              home: Scaffold(body: HomeHeader(profile: null)),
-            ),
+            child: const MaterialApp(home: HomeScreen()),
           ),
         );
         await tester.pump();
@@ -220,6 +223,7 @@ void main() {
 
         expect(find.text('Ask Jarvis'), findsOneWidget);
         expect(find.text('Ask Riya'), findsNothing);
+        await tester.pump(const Duration(milliseconds: 500));
         await tester.pumpWidget(const SizedBox());
         container.dispose();
         await tester.pump(const Duration(milliseconds: 300));

@@ -88,9 +88,71 @@ class ReminderDao extends DatabaseAccessor<AppDatabase>
     return update(reminderTable).replace(reminder);
   }
 
+  /// Checks if a reminder is protected by a managed plan or recurring routine.
+  Future<PlanChildRestriction?> getReminderProtection(int reminderId) async {
+    // 1. Check if linked to OccurrenceAlertLinkTable
+    final link = await db.planDao.getAlertLinkForReminder(reminderId);
+    if (link != null) {
+      final occ = await db.planDao.getOccurrenceById(link.occurrenceId);
+      if (occ != null) {
+        final plan = await db.planDao.getPlanById(occ.planId);
+        if (plan != null && plan.status != 'ended') {
+          final isRoutine = plan.recurrenceRule != 'once';
+          final isStart = link.role == 'start';
+          return PlanChildRestriction(
+            planId: plan.id,
+            planTitle: plan.title,
+            occurrenceId: occ.id,
+            targetType: isStart ? 'start_reminder' : 'checkin_reminder',
+            isRoutine: isRoutine,
+            allowedActions: isRoutine
+                ? (isStart
+                    ? const ['turn_off_reminder', 'open_routine']
+                    : const ['stop_asking', 'open_routine'])
+                : (isStart
+                    ? const ['turn_off_reminder', 'open_plan']
+                    : const ['stop_asking', 'open_plan']),
+            occurrenceDate: occ.eligibleLocalDate,
+          );
+        }
+      }
+    }
+
+    // 2. Check if linked to one-time managed plan via AiCommandTable
+    final receipts = await (db.select(db.aiCommandTable)
+          ..where((r) => r.capability.equals(HomeCaptureService.capability)))
+        .get();
+    for (final receipt in receipts) {
+      try {
+        final args = jsonDecode(receipt.argumentsJson) as Map;
+        if (args['reminderId'] == reminderId || args['checkInId'] == reminderId) {
+          final isStart = args['reminderId'] == reminderId;
+          return PlanChildRestriction(
+            planId: receipt.requestId,
+            planTitle: (args['title'] as String?) ?? 'Managed Plan',
+            targetType: isStart ? 'start_reminder' : 'checkin_reminder',
+            isRoutine: false,
+            allowedActions: isStart
+                ? const ['turn_off_reminder', 'open_plan']
+                : const ['stop_asking', 'open_plan'],
+          );
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
   /// Delete reminder by id.
-  Future<int> deleteReminder(int id) => db.transaction(() async {
-    final original = await getReminderById(id);
+  /// Plan-owned reminders reject raw deletion and throw [PlanChildProtectionException].
+  Future<int> deleteReminder(int id, {bool bypassProtection = false}) =>
+      db.transaction(() async {
+        if (!bypassProtection) {
+          final protection = await getReminderProtection(id);
+          if (protection != null) {
+            throw PlanChildProtectionException(protection);
+          }
+        }
+        final original = await getReminderById(id);
     if (original != null) {
       _deletedReminders[id] = (original, await getLinkedThoughtIds(id));
       if (_deletedReminders.length > 20) {

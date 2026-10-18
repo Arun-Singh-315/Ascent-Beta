@@ -386,13 +386,15 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                   nightDecoration: BoxDecoration(
                     color: isSelected
                         ? AppPalette.white.withValues(alpha: 0.25)
-                        : g.claySoft,
+                        : (context.isDark
+                            ? g.claySoft
+                            : context.divider.withValues(alpha: 0.5)),
                     borderRadius: AppGeometry.roundedr8,
                   ),
                   child: Text(
                     '$count',
                     style: AppTypography.jetBrainsMono11W7002(
-                      color: isSelected ? AppPalette.white : g.clay,
+                      color: isSelected ? AppPalette.white : g.ink,
                     ),
                   ),
                 ),
@@ -800,7 +802,9 @@ class _TaskItemTile extends ConsumerWidget {
                             ],
                           ],
                         ),
-                        if (task.notes != null && task.notes!.isNotEmpty) ...[
+                        if (task.notes != null &&
+                            task.notes!.isNotEmpty &&
+                            task.notes!.trim() != task.title.trim()) ...[
                           const SizedBox(height: 2),
                           Text(
                             task.notes!,
@@ -1139,11 +1143,31 @@ class _TaskItemTile extends ConsumerWidget {
                     decoration: isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
-                if (task.notes != null && task.notes!.isNotEmpty) ...[
+                if (task.notes != null &&
+                    task.notes!.isNotEmpty &&
+                    task.notes!.trim() != task.title.trim()) ...[
                   const SizedBox(height: 12),
                   Text(
                     task.notes!,
                     style: AppTypography.inter14Regular5(color: g.inkMuted),
+                  ),
+                ],
+                if (task.linkedThoughtId != null) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 14,
+                        color: g.clay,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'From a thought',
+                        style: AppTypography.inter11W7003(color: g.clay),
+                      ),
+                    ],
                   ),
                 ],
                 if (task.plannedDate != null) ...[

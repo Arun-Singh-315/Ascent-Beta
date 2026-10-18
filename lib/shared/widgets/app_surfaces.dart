@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../app/theme/color_tokens.dart';
 import '../../app/theme/surface_tokens.dart';
 
 /// The single grouped-content surface. Existing glass geometry is retained.
@@ -145,17 +146,21 @@ class AppPill extends AppCard {
   }) => Builder(
     builder: (context) {
       if (!context.surfaces.outlined) {
+        final effectiveLabelStyle = labelStyle ??
+            (selected
+                ? const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)
+                : TextStyle(color: context.surfaces.ink));
         return ChoiceChip(
           key: key,
           label: label,
           selected: selected,
           onSelected: onSelected,
-          selectedColor: selectedColor,
+          selectedColor: selectedColor ?? context.accentPrimary,
           backgroundColor: backgroundColor,
-          labelStyle: labelStyle,
+          labelStyle: effectiveLabelStyle,
           side: side,
           shape: shape,
-          checkmarkColor: checkmarkColor,
+          checkmarkColor: checkmarkColor ?? Colors.white,
         );
       }
       return _dayChip(
@@ -181,17 +186,21 @@ class AppPill extends AppCard {
   }) => Builder(
     builder: (context) {
       if (!context.surfaces.outlined) {
+        final effectiveLabelStyle = labelStyle ??
+            (selected
+                ? const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)
+                : TextStyle(color: context.surfaces.ink));
         return FilterChip(
           key: key,
           label: label,
           selected: selected,
           onSelected: onSelected,
-          selectedColor: selectedColor,
+          selectedColor: selectedColor ?? context.accentPrimary,
           backgroundColor: backgroundColor,
-          labelStyle: labelStyle,
+          labelStyle: effectiveLabelStyle,
           side: side,
           shape: shape,
-          checkmarkColor: checkmarkColor,
+          checkmarkColor: checkmarkColor ?? Colors.white,
         );
       }
       return _dayChip(
