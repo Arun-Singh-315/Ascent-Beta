@@ -108,9 +108,11 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       (select(taskTable)..where((t) => t.id.equals(id))).getSingleOrNull();
 
   /// Returns the Todo created for a Thought Wall Promise, if it still exists.
-  Future<Task?> getTaskLinkedToThought(int thoughtId) => (select(
-    taskTable,
-  )..where((t) => t.linkedThoughtId.equals(thoughtId))..limit(1)).getSingleOrNull();
+  Future<Task?> getTaskLinkedToThought(int thoughtId) =>
+      (select(taskTable)
+            ..where((t) => t.linkedThoughtId.equals(thoughtId))
+            ..limit(1))
+          .getSingleOrNull();
 
   /// Returns the task with the highest [seriesItemIndex] in [seriesId].
   /// Useful when auto-generating the next item in a series.
@@ -463,6 +465,24 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
 
   /// Checks if a task is protected by a managed plan or recurring routine.
   Future<PlanChildRestriction?> getTaskProtection(int taskId) async {
+    final collectionItem = await (db.select(
+      db.planCollectionItemTable,
+    )..where((i) => i.taskId.equals(taskId))).getSingleOrNull();
+    if (collectionItem != null) {
+      final collection =
+          await (db.select(db.planCollectionTable)
+                ..where((c) => c.id.equals(collectionItem.collectionId)))
+              .getSingleOrNull();
+      if (collection != null) {
+        return PlanChildRestriction(
+          planId: collection.id,
+          planTitle: collection.title,
+          targetType: 'collection_item',
+          isRoutine: false,
+          allowedActions: const ['open_plan'],
+        );
+      }
+    }
     // 1. Check if linked to PlanOccurrenceTable
     final occ = await db.planDao.getOccurrenceByTaskId(taskId);
     if (occ != null) {
@@ -484,9 +504,9 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
     }
 
     // 2. Check if linked to a one-time managed plan via AiCommandTable
-    final receipts = await (db.select(db.aiCommandTable)
-          ..where((r) => r.capability.equals(HomeCaptureService.capability)))
-        .get();
+    final receipts = await (db.select(
+      db.aiCommandTable,
+    )..where((r) => r.capability.equals(HomeCaptureService.capability))).get();
     for (final receipt in receipts) {
       try {
         final args = jsonDecode(receipt.argumentsJson) as Map;
@@ -521,63 +541,62 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Future<List<int>> deleteTaskWithDependents(
     int id, {
     bool bypassProtection = false,
-  }) =>
-      db.transaction(() async {
-        if (!bypassProtection) {
-          final protection = await getTaskProtection(id);
-          if (protection != null) {
-            throw PlanChildProtectionException(protection);
-          }
-        }
-        final cancelled = <int>[];
-        final captured = _DeletedTaskTree([], [], [], []);
-        final visiting = <int>{};
-        Future<void> remove(int current) async {
-          if (!visiting.add(current)) {
-            throw StateError(
-              'A cyclic task relationship needs repair before deletion',
-            );
-          }
-          final task = await getTaskById(current);
-          if (task == null) return;
-          final children = await (select(
-            taskTable,
-          )..where((t) => t.parentTaskId.equals(current))).get();
-          for (final child in children) {
-            await remove(child.id);
-          }
-          final reminders = await db.reminderDao.getRemindersByTaskId(current);
-          captured.tasks.add(task);
-          captured.reminders.addAll(reminders);
-          for (final reminder in reminders) {
-            captured.links.addAll(
-              await (db.select(
-                db.thoughtReminderLinkTable,
-              )..where((l) => l.reminderId.equals(reminder.id))).get(),
-            );
-          }
-          captured.sessions.addAll(
-            await (db.select(
-              db.timeSessionTable,
-            )..where((s) => s.linkedTaskId.equals(current))).get(),
-          );
-          cancelled.addAll(reminders.map((r) => r.id));
-          await db.reminderDao.deleteRemindersByTaskId(current);
-          await (db.delete(
-            db.timeSessionTable,
-          )..where((s) => s.linkedTaskId.equals(current))).go();
-          await (delete(taskTable)..where((t) => t.id.equals(current))).go();
-        }
+  }) => db.transaction(() async {
+    if (!bypassProtection) {
+      final protection = await getTaskProtection(id);
+      if (protection != null) {
+        throw PlanChildProtectionException(protection);
+      }
+    }
+    final cancelled = <int>[];
+    final captured = _DeletedTaskTree([], [], [], []);
+    final visiting = <int>{};
+    Future<void> remove(int current) async {
+      if (!visiting.add(current)) {
+        throw StateError(
+          'A cyclic task relationship needs repair before deletion',
+        );
+      }
+      final task = await getTaskById(current);
+      if (task == null) return;
+      final children = await (select(
+        taskTable,
+      )..where((t) => t.parentTaskId.equals(current))).get();
+      for (final child in children) {
+        await remove(child.id);
+      }
+      final reminders = await db.reminderDao.getRemindersByTaskId(current);
+      captured.tasks.add(task);
+      captured.reminders.addAll(reminders);
+      for (final reminder in reminders) {
+        captured.links.addAll(
+          await (db.select(
+            db.thoughtReminderLinkTable,
+          )..where((l) => l.reminderId.equals(reminder.id))).get(),
+        );
+      }
+      captured.sessions.addAll(
+        await (db.select(
+          db.timeSessionTable,
+        )..where((s) => s.linkedTaskId.equals(current))).get(),
+      );
+      cancelled.addAll(reminders.map((r) => r.id));
+      await db.reminderDao.deleteRemindersByTaskId(current);
+      await (db.delete(
+        db.timeSessionTable,
+      )..where((s) => s.linkedTaskId.equals(current))).go();
+      await (delete(taskTable)..where((t) => t.id.equals(current))).go();
+    }
 
-        await remove(id);
-        if (captured.tasks.isNotEmpty) {
-          _deletedTrees[id] = captured;
-          if (_deletedTrees.length > 20) {
-            _deletedTrees.remove(_deletedTrees.keys.first);
-          }
-        }
-        return cancelled;
-      });
+    await remove(id);
+    if (captured.tasks.isNotEmpty) {
+      _deletedTrees[id] = captured;
+      if (_deletedTrees.length > 20) {
+        _deletedTrees.remove(_deletedTrees.keys.first);
+      }
+    }
+    return cancelled;
+  });
   Future<bool> restoreDeletedTask(int id) => db.transaction(() async {
     final snapshot = _deletedTrees[id];
     if (snapshot == null) return false;

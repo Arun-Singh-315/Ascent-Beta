@@ -1,10 +1,8 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/ai/riya_alert_effects.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/home_schedule_sheet.dart';
 import 'package:ascent/features/plans/plans_screen.dart';
 import 'package:drift/drift.dart' hide isNotNull;
 import 'package:drift/native.dart';
@@ -27,13 +25,6 @@ void main() {
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        homeScheduleEffectsProvider.overrideWith(
-          (ref) => RiyaAlertEffects(
-            db,
-            cancel: (_) async => true,
-            schedule: (_) async => false,
-          ),
-        ),
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
@@ -84,10 +75,15 @@ void main() {
       // Simulate check-in reminder being due by updating scheduledAt to the past
       final links = await db.planDao.getAlertLinksForOccurrence(firstOcc.id);
       final checkLink = links.firstWhere((l) => l.role == 'check_in');
-      await (db.update(db.reminderTable)..where((r) => r.id.equals(checkLink.reminderId)))
-          .write(ReminderTableCompanion(
-        scheduledAt: Value(DateTime.now().subtract(const Duration(minutes: 5))),
-      ));
+      await (db.update(
+        db.reminderTable,
+      )..where((r) => r.id.equals(checkLink.reminderId))).write(
+        ReminderTableCompanion(
+          scheduledAt: Value(
+            DateTime.now().subtract(const Duration(minutes: 5)),
+          ),
+        ),
+      );
 
       final activityItem = TodayActivityItem(
         id: 'task_${firstOcc.linkedTaskId}',
@@ -117,7 +113,9 @@ void main() {
       expect(updatedOcc!.outcome, equals('done'));
 
       // Check-ins for this session should be stopped
-      final reminder = await db.reminderDao.getReminderById(checkLink.reminderId);
+      final reminder = await db.reminderDao.getReminderById(
+        checkLink.reminderId,
+      );
       expect(reminder!.isActive, isFalse);
     },
   );
@@ -174,70 +172,28 @@ void main() {
   );
 
   testWidgets(
-    'PlansScreen tabs and PlanDetailSheet lifecycle actions (pause, resume, end)',
+    'Plans board opens a reactive collection with lifecycle controls',
     (tester) async {
-      final planService = container.read(planServiceProvider);
-      await planService.createPlan(
-        title: 'Reading routine',
-        startDate: '2026-10-18',
-        endDate: '2026-10-25',
-        recurrenceRule: 'weekdays',
-        localTime: '08:00',
-        addTodo: true,
-      );
-
+      await container
+          .read(planServiceProvider)
+          .createPlan(
+            title: 'Reading routine',
+            startDate: '2026-10-18',
+            endDate: '2026-10-25',
+            recurrenceRule: 'weekdays',
+            localTime: '08:00',
+          );
       await mount(tester, const SizedBox(height: 600, child: PlansScreen()));
-
-      // Active tab shows the routine
       expect(find.text('Reading routine'), findsOneWidget);
-      expect(find.text('Weekdays · 8:00 AM · Until 2026-10-25'), findsOneWidget);
-
-      // Tap routine to open detail sheet
       await tester.tap(find.text('Reading routine'));
       await tester.pumpAndSettle();
-
-      expect(find.text('Active Routine'), findsOneWidget);
-      expect(find.text('Pause routine'), findsOneWidget);
-      expect(find.text('End routine'), findsOneWidget);
-
-      // Tap Pause routine
-      await tester.tap(find.text('Pause routine'));
+      await tester.tap(find.byTooltip('Plan actions'));
       await tester.pumpAndSettle();
-
-      // Switch to Paused tab
-      await tester.tap(find.text('Paused (1)'));
-      await tester.pumpAndSettle();
-      expect(find.text('Reading routine'), findsOneWidget);
-
-      // Open detail sheet again and Resume Routine
-      await tester.tap(find.text('Reading routine'));
-      await tester.pumpAndSettle();
-      expect(find.text('Resume routine'), findsOneWidget);
-
-      await tester.tap(find.text('Resume routine'));
-      await tester.pumpAndSettle();
-
-      // Switch to Active tab
-      await tester.tap(find.text('Active (1)'));
-      await tester.pumpAndSettle();
-      expect(find.text('Reading routine'), findsOneWidget);
-
-      // Open detail sheet and End Routine
-      await tester.tap(find.text('Reading routine'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('End routine'));
-      await tester.pumpAndSettle();
-
-      // Confirmation dialog
-      expect(find.text('End routine?'), findsOneWidget);
-      await tester.tap(find.widgetWithText(TextButton, 'End routine').last);
-      await tester.pumpAndSettle();
-
-      // Switch to Ended tab
-      await tester.tap(find.text('Ended (1)'));
-      await tester.pumpAndSettle();
-      expect(find.text('Reading routine'), findsOneWidget);
+      expect(find.text('Edit plan'), findsOneWidget);
+      expect(find.text('Pause'), findsOneWidget);
+      expect(find.text('Archive'), findsOneWidget);
+      expect(find.text('Add items'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
     },
   );
 }

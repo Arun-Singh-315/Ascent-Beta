@@ -163,6 +163,16 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
       )..where((l) => l.sourceThoughtId.equals(id))).write(
         const ThoughtMergeSourceTableCompanion(sourceThoughtId: Value(null)),
       );
+      await (db.update(
+        db.planCollectionTable,
+      )..where((c) => c.sourceThoughtId.equals(id))).write(
+        const PlanCollectionTableCompanion(sourceThoughtId: Value(null)),
+      );
+      await (db.update(
+        db.planDefinitionTable,
+      )..where((p) => p.sourceThoughtId.equals(id))).write(
+        const PlanDefinitionTableCompanion(sourceThoughtId: Value(null)),
+      );
       final count = await (delete(
         thoughtTable,
       )..where((t) => t.id.equals(id))).go();

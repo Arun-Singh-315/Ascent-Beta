@@ -1,3 +1,5 @@
+import '../../plans/widgets/plan_collection_editor.dart';
+import '../../../shared/widgets/note_list_button.dart';
 import 'dart:async';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -143,36 +145,43 @@ class _ThoughtWallHomePreviewState
   }
 
   Future<void> _resume() async {
-    try {
-      final prefs = ref.read(sharedPreferencesProvider);
-      final raw = prefs.getString(homePendingScheduleKey);
-      if (raw == null) return;
-      final id = (jsonDecode(raw) as Map)['thoughtId'] as int;
-      final thought = await ref.read(thoughtDaoProvider).getThoughtById(id);
-      if (mounted && thought != null) await _plan(thought);
-      if (thought == null) {
-        await prefs.remove(homePendingScheduleKey);
-        if (mounted) setState(() {});
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not reopen the draft. Please retry.'),
-          ),
-        );
-      }
-    }
+    final draft = _pendingDraft;
+    if (draft == null) return;
+    final sourceId = draft['sourceId'] as int?;
+    final source = sourceId == null
+        ? null
+        : await ref.read(thoughtDaoProvider).getThoughtById(sourceId);
+    if (!mounted) return;
+    await showPlanCollectionEditor(
+      context,
+      source: source,
+      draftKey: draft['key'] as String,
+    );
+    if (mounted) setState(() {});
   }
 
   Map<String, dynamic>? get _pendingDraft {
     try {
-      final raw = ref
-          .read(sharedPreferencesProvider)
-          .getString(homePendingScheduleKey);
-      return raw == null
-          ? null
-          : Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    final prefs = ref.read(sharedPreferencesProvider);
+    final drafts = <Map<String, dynamic>>[];
+    for (final key in prefs.getKeys().where(
+      (k) => k.startsWith('planning_draft_v1:'),
+    )) {
+      try {
+        final data = Map<String, dynamic>.from(
+          jsonDecode(prefs.getString(key)!) as Map,
+        );
+        data['key'] = key;
+        drafts.add(data);
+      } catch (_) {
+        /* Ignore an unreadable draft; preserve the original note. */
+      }
+    }
+    drafts.sort(
+      (a, b) =>
+          (b['updatedAt'] as int? ?? 0).compareTo(a['updatedAt'] as int? ?? 0),
+    );
+    return drafts.firstOrNull;
     } catch (_) {
       return null;
     }
@@ -180,7 +189,8 @@ class _ThoughtWallHomePreviewState
 
   Future<void> _keepThought() async {
     try {
-      await ref.read(sharedPreferencesProvider).remove(homePendingScheduleKey);
+      final key = _pendingDraft?['key'] as String?;
+      if (key != null) await ref.read(sharedPreferencesProvider).remove(key);
       if (mounted) {
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
@@ -223,7 +233,7 @@ class _ThoughtWallHomePreviewState
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Unscheduled plan',
+                'Plan draft',
                 style: Theme.of(
                   context,
                 ).textTheme.titleSmall?.copyWith(color: g.ink),
@@ -247,7 +257,7 @@ class _ThoughtWallHomePreviewState
         const SizedBox(height: 4),
         Text(
           showTitle
-              ? 'Saved as a thought. No reminder set yet.'
+              ? 'Draft saved. Review and save to activate its schedule.'
               : 'No reminder set yet.',
           style: Theme.of(
             context,
@@ -263,7 +273,7 @@ class _ThoughtWallHomePreviewState
             ),
             TextButton(
               onPressed: _saving ? null : _keepThought,
-              child: const Text('Keep as thought'),
+              child: const Text('Discard plan draft'),
             ),
           ],
         ),
@@ -294,21 +304,13 @@ class _ThoughtWallHomePreviewState
               border: Border.all(
                 color: _focusNode.hasFocus
                     ? g.clay
-                    : (context.isDark
-                        ? g.edge
-                        : g.edge.withValues(alpha: .45)),
+                    : (context.isDark ? g.edge : g.edge.withValues(alpha: .45)),
                 width: 1.0,
               ),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.edit_note_rounded,
-                  size: 20,
-                  color: _focusNode.hasFocus
-                      ? g.clay
-                      : g.inkSecondary,
-                ),
+                NoteListButton(controller: _controller, compact: true),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
@@ -318,9 +320,7 @@ class _ThoughtWallHomePreviewState
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
-                    style: AppTypography.plusJakartaSans14W60080(
-                      color: g.ink,
-                    ),
+                    style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                     decoration: InputDecoration(
                       hintText: "Capture a thought…",
                       hintStyle: TextStyle(
@@ -344,7 +344,9 @@ class _ThoughtWallHomePreviewState
                     backgroundColor: g.clay,
                     disabledBackgroundColor: g.clay.withValues(alpha: 0.45),
                     foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white.withValues(alpha: 0.7),
+                    disabledForegroundColor: Colors.white.withValues(
+                      alpha: 0.7,
+                    ),
                     minimumSize: const Size(44, 44),
                   ),
                   onPressed: _saving || _controller.text.trim().isEmpty
@@ -359,7 +361,10 @@ class _ThoughtWallHomePreviewState
                             color: Colors.white,
                           ),
                         )
-                      : const Icon(Icons.arrow_upward_rounded, color: Colors.white),
+                      : const Icon(
+                          Icons.arrow_upward_rounded,
+                          color: Colors.white,
+                        ),
                 ),
               ],
             ),
@@ -451,7 +456,8 @@ class _ThoughtWallHomePreviewState
                           pendingDraft?['thoughtId'] == thought.id;
 
                       final isTransientActive =
-                          _transientThoughtId == thought.id && !thought.isCompleted;
+                          _transientThoughtId == thought.id &&
+                          !thought.isCompleted;
 
                       final isRight = (index % 2 == 1);
 
@@ -486,9 +492,7 @@ class _ThoughtWallHomePreviewState
                           ),
                           onTap: () {
                             HapticFeedback.selectionClick();
-                            context.push(
-                              '/thought-wall?thought=${thought.id}',
-                            );
+                            context.push('/thought-wall?thought=${thought.id}');
                           },
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,7 +563,9 @@ class _ThoughtWallHomePreviewState
                                   '/thought-wall?thought=${thought.id}',
                                 ),
                                 style: AppTypography.plusJakartaSans14W600116(
-                                  color: thought.isCompleted ? g.inkMuted : g.ink,
+                                  color: thought.isCompleted
+                                      ? g.inkMuted
+                                      : g.ink,
                                   decoration: thought.isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -625,7 +631,8 @@ class _ThoughtWallHomePreviewState
                               ],
                               const SizedBox(height: 6),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -700,9 +707,7 @@ class _ThoughtWallHomePreviewState
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
-                        style: TextButton.styleFrom(
-                          foregroundColor: g.clay,
-                        ),
+                        style: TextButton.styleFrom(foregroundColor: g.clay),
                         onPressed: () {
                           HapticFeedback.selectionClick();
                           context.push('/thought-wall');

@@ -31,7 +31,10 @@ case "$MODE" in
       test/ui_integrity/interactive_completeness_test.dart \
       test/mindspace_accessible_layout_test.dart \
       test/day_surface_screen_audit_test.dart \
-      test/home_card_border_theme_test.dart
+      test/home_card_border_theme_test.dart \
+      test/planning_accessibility_test.dart \
+      test/plan_collection_service_test.dart \
+      test/planning_migration_test.dart
     ;;
 
   feature)
@@ -69,7 +72,10 @@ case "$MODE" in
     flutter test \
       test/home_day_layout_test.dart \
       test/ui_integrity/interactive_completeness_test.dart \
-      test/mindspace_accessible_layout_test.dart
+      test/mindspace_accessible_layout_test.dart \
+      test/planning_accessibility_test.dart \
+      test/plan_collection_service_test.dart \
+      test/planning_migration_test.dart
     echo "=========================================================="
     echo " SUCCESS: Pre-merge quality gate passed cleanly!"
     echo "=========================================================="

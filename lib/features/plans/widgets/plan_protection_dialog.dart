@@ -7,6 +7,7 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/services/plan_child_protection.dart';
 import '../../../shared/widgets/ascent_button.dart';
+import 'plan_collection_detail.dart';
 
 /// Shows an owner-aware replacement dialog when a user attempts to delete a protected plan-owned item.
 Future<void> showPlanProtectionDialog(
@@ -14,6 +15,9 @@ Future<void> showPlanProtectionDialog(
   WidgetRef ref,
   PlanChildRestriction restriction,
 ) {
+  if (restriction.targetType == 'collection_item') {
+    return showPlanCollectionDetail(context, restriction.planId);
+  }
   HapticFeedback.mediumImpact();
   final g = context.glass;
   final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -29,7 +33,9 @@ Future<void> showPlanProtectionDialog(
     messageText = restriction.isRoutine
         ? 'This activity is part of your recurring routine. Instead of deleting it from the entire system, you can skip this session or manage the routine.'
         : 'This activity is part of a scheduled plan. Instead of deleting it, you can skip this plan or open its controls.';
-    primaryLabel = restriction.isRoutine ? 'Skip this session' : 'Skip this plan';
+    primaryLabel = restriction.isRoutine
+        ? 'Skip this session'
+        : 'Skip this plan';
   } else if (restriction.targetType == 'start_reminder') {
     titleText = 'Start Reminder';
     messageText =
@@ -67,7 +73,9 @@ Future<void> showPlanProtectionDialog(
                   ),
                   child: Icon(
                     Icons.event_repeat_rounded,
-                    color: isDark ? FrozenPalette.darkActionBright : FrozenPalette.action,
+                    color: isDark
+                        ? FrozenPalette.darkActionBright
+                        : FrozenPalette.action,
                     size: 22,
                   ),
                 ),
@@ -78,16 +86,14 @@ Future<void> showPlanProtectionDialog(
                     children: [
                       Text(
                         titleText,
-                        style: Theme.of(sheetContext).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(sheetContext).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       Text(
-                        restriction.isRoutine ? 'Recurring Routine' : 'Managed Plan',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: g.inkMuted,
-                        ),
+                        restriction.isRoutine
+                            ? 'Recurring Routine'
+                            : 'Managed Plan',
+                        style: TextStyle(fontSize: 12, color: g.inkMuted),
                       ),
                     ],
                   ),
@@ -115,7 +121,9 @@ Future<void> showPlanProtectionDialog(
                   final planService = ref.read(planServiceProvider);
                   if (restriction.targetType == 'task') {
                     if (restriction.occurrenceId != null) {
-                      await planService.skipOccurrence(restriction.occurrenceId!);
+                      await planService.skipOccurrence(
+                        restriction.occurrenceId!,
+                      );
                     }
                   } else if (restriction.targetType == 'start_reminder') {
                     // Turn off start reminder
@@ -123,8 +131,12 @@ Future<void> showPlanProtectionDialog(
                       final links = await ref
                           .read(databaseProvider)
                           .planDao
-                          .getAlertLinksForOccurrence(restriction.occurrenceId!);
-                      final start = links.where((l) => l.role == 'start').firstOrNull;
+                          .getAlertLinksForOccurrence(
+                            restriction.occurrenceId!,
+                          );
+                      final start = links
+                          .where((l) => l.role == 'start')
+                          .firstOrNull;
                       if (start != null) {
                         await planService.turnOffOccurrenceReminder(
                           restriction.occurrenceId!,
@@ -134,7 +146,9 @@ Future<void> showPlanProtectionDialog(
                     }
                   } else if (restriction.targetType == 'checkin_reminder') {
                     if (restriction.occurrenceId != null) {
-                      await planService.stopAskingForOccurrence(restriction.occurrenceId!);
+                      await planService.stopAskingForOccurrence(
+                        restriction.occurrenceId!,
+                      );
                     }
                   }
 
@@ -145,8 +159,8 @@ Future<void> showPlanProtectionDialog(
                           restriction.targetType == 'task'
                               ? 'Session marked as skipped. Future sessions remain active.'
                               : restriction.targetType == 'start_reminder'
-                                  ? 'Reminder turned off for this session.'
-                                  : 'Check-in stopped for this session.',
+                              ? 'Reminder turned off for this session.'
+                              : 'Check-in stopped for this session.',
                         ),
                       ),
                     );

@@ -33,7 +33,7 @@ import 'widgets/quick_modules_nav_hub.dart';
 import 'widgets/streak_celebration_dialog.dart';
 import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
-import 'widgets/home_up_next.dart';
+import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
 import 'widgets/life_checkin_popup_dialog.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
@@ -116,15 +116,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
       // Ask 4 out of 10 times: cycle indices 1, 3, 6, 8 (40% frequency)
       final cycleIndex = openCount % 10;
-      final isEligible = cycleIndex == 1 ||
+      final isEligible =
+          cycleIndex == 1 ||
           cycleIndex == 3 ||
           cycleIndex == 6 ||
           cycleIndex == 8;
       if (!isEligible) return;
 
       final nowMs = DateTime.now().millisecondsSinceEpoch;
-      final lastNudgeMs =
-          preferences.getInt('ascent_last_life_nudge_ms') ?? 0;
+      final lastNudgeMs = preferences.getInt('ascent_last_life_nudge_ms') ?? 0;
       // Minimum 15-minute gap so navigating between tabs does not trigger it repeatedly
       if (nowMs - lastNudgeMs < const Duration(minutes: 15).inMilliseconds) {
         return;
@@ -230,7 +230,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
                       const ThoughtWallHomePreview(),
-                    HomeUpNext(notificationUri: widget.notificationUri),
+                    PlanningNotificationHandler(uri: widget.notificationUri),
                     const SizedBox(height: 16),
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? ''),
@@ -290,11 +290,11 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
     final assistantName = ref.watch(assistantNameProvider);
     final accentColors = g.frozen
         ? (isDark
-            ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
-            : [FrozenPalette.actionBright, FrozenPalette.action])
+              ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
+              : [FrozenPalette.actionBright, FrozenPalette.action])
         : (isDark
-            ? [g.clay, g.clay.withValues(alpha: 0.82)]
-            : [g.clay.withValues(alpha: 0.88), g.clay]);
+              ? [g.clay, g.clay.withValues(alpha: 0.82)]
+              : [g.clay.withValues(alpha: 0.88), g.clay]);
     final shadowColor = g.frozen
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
         : g.clay;
@@ -375,19 +375,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
           ),
         );
       case 'reminders':
-        final planIds =
-            ref
-                .watch(homePlansProvider)
-                .value
-                ?.expand(
-                  (p) => [p.reminder.id, if (p.checkIn != null) p.checkIn!.id],
-                )
-                .toSet() ??
-            <int>{};
-        final reminders = ref
-            .watch(homeVisibleRemindersProvider)
-            .where((r) => !planIds.contains(r.id))
-            .toList();
+        final reminders = ref.watch(homeVisibleRemindersProvider);
         if (reminders.isEmpty) return const SizedBox.shrink();
         return spaced(
           HomeDismissibleRemindersSection(
@@ -411,17 +399,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
         );
       case 'today':
         return spaced(
-          ActivityHubCard(
-            previewLimit: layout.compact.contains(id) ? 2 : 4,
-            excludedTaskIds:
-                ref
-                    .watch(homePlansProvider)
-                    .value
-                    ?.map((p) => p.task?.id)
-                    .whereType<int>()
-                    .toSet() ??
-                {},
-          ),
+          ActivityHubCard(previewLimit: layout.compact.contains(id) ? 2 : 4),
         );
       case 'learning':
         return spaced(const LearningHubCard());

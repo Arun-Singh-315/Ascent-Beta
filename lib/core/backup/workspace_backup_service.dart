@@ -249,6 +249,22 @@ class WorkspaceBackupService {
       tables['occurrence_alert_links'] = <dynamic>[];
       payload['schema'] = 17;
     }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 17 &&
+        db.schemaVersion >= 18 &&
+        payload['tables'] is Map) {
+      final tables = payload['tables'] as Map;
+      if (tables.containsKey('plan_collections') ||
+          tables.containsKey('plan_collection_items')) {
+        throw const FormatException(
+          'Legacy schema contains newer relationships',
+        );
+      }
+      tables['plan_collections'] = <dynamic>[];
+      tables['plan_collection_items'] = <dynamic>[];
+      payload['schema'] = 18;
+    }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
         payload['schema'] != db.schemaVersion) {

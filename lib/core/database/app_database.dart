@@ -102,6 +102,8 @@ part 'daos/plan_dao.dart';
     PlanDefinitionTable,
     PlanOccurrenceTable,
     OccurrenceAlertLinkTable,
+    PlanCollectionTable,
+    PlanCollectionItemTable,
   ],
   daos: [
     UserProfileDao,
@@ -146,13 +148,14 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _createThoughtLinkIndex();
+      await _createPlanningIndexes();
       // Seed built-in categories on fresh install
       await into(sessionCategoryTable).insert(
         SessionCategoryTableCompanion.insert(
@@ -263,8 +266,25 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(planOccurrenceTable);
         await m.createTable(occurrenceAlertLinkTable);
       }
+      if (from < 18) {
+        await m.createTable(planCollectionTable);
+        await m.createTable(planCollectionItemTable);
+        await _createPlanningIndexes();
+      }
     },
   );
+
+  Future<void> _createPlanningIndexes() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS plan_items_collection_position ON plan_collection_items(collection_id, position)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS plan_occurrences_owner_date ON plan_occurrences(plan_id, eligible_local_date, scheduled_start_time)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS occurrence_alert_owner ON occurrence_alert_links(occurrence_id)',
+    );
+  }
 
   Future<void> _createThoughtLinkIndex() => customStatement(
     'CREATE UNIQUE INDEX IF NOT EXISTS tasks_linked_thought_unique ON tasks(linked_thought_id) WHERE linked_thought_id IS NOT NULL',

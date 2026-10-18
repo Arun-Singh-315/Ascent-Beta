@@ -1,11 +1,11 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/ai/riya_alert_effects.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
-import 'package:ascent/features/home/widgets/home_schedule_sheet.dart';
-import 'package:ascent/features/home/widgets/home_up_next.dart';
+import 'package:ascent/core/notifications/reminder_alert_sync.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
+import 'package:ascent/features/plans/planning_providers.dart';
+import 'package:ascent/features/plans/widgets/plan_collection_editor.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,14 +25,16 @@ void main() {
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        homeScheduleEffectsProvider.overrideWith(
-          (ref) => RiyaAlertEffects(
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        planningAlertSyncProvider.overrideWith(
+          (ref) => ReminderAlertSync(
             db,
+            enabled: () async => true,
+            reset: () async => true,
             cancel: (_) async => true,
-            schedule: (_) async => false,
+            schedule: (_) async => true,
           ),
         ),
-        sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
   });
@@ -40,207 +42,105 @@ void main() {
     container.dispose();
     await db.close();
   });
-  Future<void> mount(
-    WidgetTester tester, {
-    required ThemeData theme,
-    double scale = 1,
-  }) async {
-    tester.view.physicalSize = const Size(360, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
+  Future<void> mount(WidgetTester t) async {
+    t.view.physicalSize = const Size(390, 844);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.resetPhysicalSize);
+    addTearDown(t.view.resetDevicePixelRatio);
+    await t.pumpWidget(
       UncontrolledProviderScope(
         container: container,
         child: MaterialApp(
-          theme: theme,
-          builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(textScaler: TextScaler.linear(scale)),
-            child: child!,
-          ),
+          theme: AscentTheme.light(),
           home: const Scaffold(
             body: SingleChildScrollView(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: Column(
-                  children: [ThoughtWallHomePreview(), HomeUpNext()],
-                ),
+                child: ThoughtWallHomePreview(),
               ),
             ),
           ),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await t.pumpAndSettle();
   }
 
-  testWidgets(
-    'ordinary capture stays a thought and transient Plan auto-dismisses',
-    (tester) async {
-      await mount(tester, theme: AscentTheme.light());
-      await tester.enterText(
-        find.byType(TextField),
-        'A quiet thought about tomorrow',
-      );
-      await tester.pump();
-      await tester.tap(find.byTooltip('Send capture'));
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 150)),
-      );
-      await tester.pumpAndSettle();
-      expect(await db.select(db.thoughtTable).get(), hasLength(1));
-      expect(await db.select(db.taskTable).get(), isEmpty);
-      expect(await db.select(db.reminderTable).get(), isEmpty);
-      // Immediately after capture, transient Plan is visible
-      expect(find.text('Plan'), findsOneWidget);
-      expect(find.text('Ask Riya'), findsNothing);
-      // After transient duration, options auto-dismiss
-      await tester.pump(const Duration(seconds: 9));
-      await tester.pumpAndSettle();
-      expect(find.text('Plan'), findsNothing);
-      expect(find.text('Ask Riya'), findsNothing);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
-  testWidgets(
-    'send, review, approve produces one linked plan and exposes check-in controls',
-    (tester) async {
-      await mount(
-        tester,
-        theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-      );
-      await tester.enterText(
-        find.byType(TextField),
-        'Tomorrow at 7 pm practise interviews for 30 minutes. Remind me and ask afterwards.',
-      );
-      await tester.pump();
-      await tester.tap(find.byTooltip('Send capture'));
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 150)),
-      );
-      await tester.pumpAndSettle();
-      // Does NOT show plan automatically. User selects Plan manually:
-      expect(find.byType(HomeScheduleSheet), findsNothing);
-      expect(find.text('Plan'), findsOneWidget);
-      await tester.tap(find.text('Plan'));
-      await tester.pumpAndSettle();
-      expect(find.text('Make a plan'), findsOneWidget);
-      expect(await db.select(db.taskTable).get(), isEmpty);
-      expect(prefs.containsKey(homePendingScheduleKey), isTrue);
-      final schedule = find.widgetWithText(FilledButton, 'Schedule');
-      await tester.ensureVisible(schedule);
-      await tester.tap(schedule);
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 150)),
-      );
-      await tester.pumpAndSettle();
-      expect(await db.select(db.taskTable).get(), hasLength(1));
-      final reminders = await db.select(db.reminderTable).get();
-      expect(reminders, hasLength(2));
-      expect(reminders.first.linkedTaskId, reminders.last.linkedTaskId);
-      expect(prefs.containsKey(homePendingScheduleKey), isFalse);
-      expect(find.text('Up next'), findsOneWidget);
-      expect(find.text('Later'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
-  testWidgets(
-    'Keep as thought clears the unscheduled draft without deleting the note',
-    (tester) async {
-      await mount(
-        tester,
-        theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-      );
-      await tester.enterText(find.byType(TextField), 'Remind me to call Mum');
-      await tester.pump();
-      await tester.tap(find.byTooltip('Send capture'));
-      await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 150)),
-      );
-      await tester.pumpAndSettle();
-      // User selects Plan
-      await tester.tap(find.text('Plan'));
-      await tester.pumpAndSettle();
-      Navigator.of(tester.element(find.byType(HomeScheduleSheet))).pop();
-      await tester.pumpAndSettle();
-      expect(find.text('Unscheduled plan'), findsOneWidget);
-      final source = (await db.select(db.thoughtTable).get()).single;
-      expect(
-        find.ancestor(
-          of: find.text('Review & schedule'),
-          matching: find.byKey(ValueKey('home_thought_${source.id}')),
-        ),
-        findsOneWidget,
-      );
-      await tester.ensureVisible(find.text('Keep as thought'));
-      await tester.tap(find.text('Keep as thought'));
-      await tester.pumpAndSettle();
-      expect(find.text('Unscheduled plan'), findsNothing);
-      expect(prefs.containsKey(homePendingScheduleKey), isFalse);
-      expect(await db.select(db.thoughtTable).get(), hasLength(1));
-      expect(await db.select(db.taskTable).get(), isEmpty);
-      expect(await db.select(db.reminderTable).get(), isEmpty);
-      await tester.pumpWidget(const SizedBox());
-    },
-  );
-  for (final themeName in ['clay', 'nordic', 'dark']) {
-    testWidgets(
-      'schedule sheet keeps draft and fits 360px with enlarged text: $themeName',
-      (tester) async {
-        final theme = themeName == 'dark'
-            ? AscentTheme.dark()
-            : AscentTheme.light(
-                preset: themeName == 'nordic'
-                    ? DayThemePreset.nordicSky
-                    : DayThemePreset.classicClay,
-              );
-        await mount(tester, theme: theme, scale: 2);
-        await tester.enterText(find.byType(TextField), 'Remind me to call Mum');
-        await tester.pump();
-        await tester.pump();
-        await tester.tap(find.byTooltip('Send capture'));
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 150)),
-        );
-        await tester.pumpAndSettle();
-        // User selects Plan
-        await tester.tap(find.text('Plan'));
-        await tester.pumpAndSettle();
-        // Missing time must open an editable review, never guess a schedule.
-        expect(find.text('Choose date and time'), findsOneWidget);
-        expect(await db.select(db.reminderTable).get(), isEmpty);
-        await tester.enterText(
-          find.descendant(
-            of: find.byType(HomeScheduleSheet),
-            matching: find.byType(TextField),
-          ),
-          'Call Mum about the appointment',
-        );
-        await tester.pumpAndSettle();
-        expect(
-          prefs.getString(homePendingScheduleKey),
-          contains('Call Mum about the appointment'),
-        );
-        expect(tester.takeException(), isNull);
-        // Dismiss and recover the same draft.
-        Navigator.of(tester.element(find.byType(HomeScheduleSheet))).pop();
-        await tester.pumpAndSettle();
-        await tester.ensureVisible(find.text('Review & schedule'));
-        await tester.tap(find.text('Review & schedule'));
-        await tester.pumpAndSettle();
-        expect(
-          find.descendant(
-            of: find.byType(HomeScheduleSheet),
-            matching: find.text('Call Mum about the appointment'),
-          ),
-          findsOneWidget,
-        );
-        expect(tester.takeException(), isNull);
-        await tester.pumpWidget(const SizedBox());
-      },
+  Future<void> flush(WidgetTester t) async {
+    await t.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
     );
+    await t.pumpAndSettle();
   }
+
+  testWidgets('ordinary capture remains a note without creating activities', (
+    t,
+  ) async {
+    await mount(t);
+    await t.enterText(find.byType(TextField), 'A quiet thought');
+    await t.pump();
+    await t.tap(find.byTooltip('Send capture'));
+    await flush(t);
+    expect(await db.select(db.thoughtTable).get(), hasLength(1));
+    expect(await db.select(db.taskTable).get(), isEmpty);
+    expect(find.text('Plan'), findsOneWidget);
+    await t.pump(const Duration(seconds: 9));
+    await t.pumpAndSettle();
+    expect(find.text('Plan'), findsNothing);
+    await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('capture list reviews independent rows and saves a named plan', (
+    t,
+  ) async {
+    await mount(t);
+    await t.enterText(find.byType(TextField), 'list:\n-- Java\n--> RAG');
+    await t.pump();
+    await t.tap(find.byTooltip('Send capture'));
+    await flush(t);
+    await t.tap(find.text('Plan'));
+    await t.pumpAndSettle();
+    expect(find.byType(PlanCollectionEditor), findsOneWidget);
+    expect(await db.select(db.taskTable).get(), isEmpty);
+    final name = find.widgetWithText(TextField, 'Plan name');
+    await t.enterText(name, 'Interview preparation');
+    await t.tap(find.widgetWithText(FilledButton, 'Save plan'));
+    await flush(t);
+    expect(await db.select(db.planCollectionTable).get(), hasLength(1));
+    expect(await db.select(db.planCollectionItemTable).get(), hasLength(2));
+    expect(await db.select(db.taskTable).get(), hasLength(2));
+    expect(await db.select(db.reminderTable).get(), isEmpty);
+    expect(find.text('Up next'), findsNothing);
+    expect(
+      (await db.select(db.thoughtTable).get()).single.content,
+      'list:\n-- Java\n--> RAG',
+    );
+    await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('closing and reopening restores unsaved plan rows', (t) async {
+    await mount(t);
+    await t.enterText(find.byType(TextField), 'Java');
+    await t.pump();
+    await t.tap(find.byTooltip('Send capture'));
+    await flush(t);
+    await t.tap(find.text('Plan'));
+    await t.pumpAndSettle();
+    await t.enterText(
+      find.widgetWithText(TextField, 'Plan name'),
+      'My saved draft',
+    );
+    await flush(t);
+    await t.tap(find.byTooltip('Close'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Review & schedule'));
+    await t.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(PlanCollectionEditor),
+        matching: find.text('My saved draft'),
+      ),
+      findsOneWidget,
+    );
+    expect(await db.select(db.planCollectionTable).get(), isEmpty);
+    await t.pumpWidget(const SizedBox());
+  });
 }

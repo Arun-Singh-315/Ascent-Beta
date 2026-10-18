@@ -1,12 +1,10 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/ai/riya_alert_effects.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/services/home_capture_service.dart';
 import 'package:ascent/core/streak/study_streak_models.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
-import 'package:ascent/features/home/widgets/home_schedule_sheet.dart';
 import 'package:ascent/features/home/widgets/study_streak_meter_card.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_actions.dart';
@@ -31,13 +29,6 @@ void main() {
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        homeScheduleEffectsProvider.overrideWith(
-          (ref) => RiyaAlertEffects(
-            db,
-            cancel: (_) async => true,
-            schedule: (_) async => false,
-          ),
-        ),
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );

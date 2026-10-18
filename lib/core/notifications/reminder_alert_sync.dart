@@ -31,8 +31,8 @@ Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
   final checkIn = isRoutineCheckIn || plan?.checkIn?.id == r.id;
   final payload = routineAlertLink != null
       ? (isRoutineCheckIn
-          ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}&occ=${routineAlertLink.occurrenceId}'
-          : '/home?session=${routineAlertLink.occurrenceId}')
+            ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}&occ=${routineAlertLink.occurrenceId}'
+            : '/home?session=${routineAlertLink.occurrenceId}')
       : plan == null
       ? NotificationService.remindersDestination
       : checkIn
@@ -96,6 +96,9 @@ class ReminderAlertSync {
                   : r.isActive && r.scheduledAt.isAfter(DateTime.now())),
         )
         .toList();
+    if (reminders.isEmpty && !replaceAll) {
+      return const ReminderAlertSyncResult(0, 0);
+    }
     if (replaceAll && !await reset()) {
       return ReminderAlertSyncResult(
         reminders.length,

@@ -108,6 +108,12 @@ class NotificationService {
         ).hasMatch(payload)) {
       return payload;
     }
+    if (payload != null &&
+        RegExp(
+          r'^/home\?(?:session=[a-zA-Z0-9_:.\-]+|checkin=\d+&at=\d+&occ=[a-zA-Z0-9_:.\-]+(?:&answer=(?:done|later|skip))?)$',
+        ).hasMatch(payload)) {
+      return payload;
+    }
     if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) {
       return payload;
     }

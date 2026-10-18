@@ -5,14 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/core/ai/riya_alert_effects.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/home_layout_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/widgets/home_header.dart';
-import 'package:ascent/features/home/widgets/home_schedule_sheet.dart';
+import 'package:ascent/features/plans/widgets/plan_collection_editor.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/features/thought_wall/thought_quick_actions.dart';
@@ -20,13 +19,13 @@ import 'package:ascent/features/thought_wall/thought_quick_actions.dart';
 class FakeStudyStreakNotifier extends StudyStreakNotifier {
   @override
   StudyStreakStatus build() => StudyStreakCalculator().calculate(
-        todaySeconds: 0,
-        yesterdaySeconds: 0,
-        priorStreakDays: 0,
-        historicalLongestStreak: 0,
-        historicalShortestStreak: 1,
-        now: DateTime.now(),
-      );
+    todaySeconds: 0,
+    yesterdaySeconds: 0,
+    priorStreakDays: 0,
+    historicalLongestStreak: 0,
+    historicalShortestStreak: 1,
+    now: DateTime.now(),
+  );
 }
 
 void main() {
@@ -45,13 +44,6 @@ void main() {
     container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
-        homeScheduleEffectsProvider.overrideWith(
-          (ref) => RiyaAlertEffects(
-            db,
-            cancel: (_) async => true,
-            schedule: (_) async => false,
-          ),
-        ),
         sharedPreferencesProvider.overrideWithValue(prefs),
         currentStreakStreamProvider.overrideWith((ref) => Stream.value(0)),
         studyStreakProvider.overrideWith(FakeStudyStreakNotifier.new),
@@ -92,7 +84,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // 1. Must NOT show plan sheet automatically
-        expect(find.byType(HomeScheduleSheet), findsNothing);
+        expect(find.byType(PlanCollectionEditor), findsNothing);
 
         // 2. Must show transient options for a few seconds
         expect(find.text('Plan'), findsOneWidget);
@@ -116,10 +108,10 @@ void main() {
         expect(find.text('Todo'), findsOneWidget);
         expect(find.text('Reminder'), findsOneWidget);
 
-        // 6. User selects Plan manually to open HomeScheduleSheet
+        // 6. User selects Plan manually to open PlanCollectionEditor
         await tester.tap(find.text('Plan'));
         await tester.pumpAndSettle();
-        expect(find.byType(HomeScheduleSheet), findsOneWidget);
+        expect(find.byType(PlanCollectionEditor), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
       },
     );
@@ -149,59 +141,59 @@ void main() {
   });
 
   group('Thought Wall Selection and Quick Actions Include Plan', () {
-    testWidgets(
-      'Thought Wall selection bar includes Plan alongside Todo',
-      (tester) async {
-        await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Note for testing plan selection'),
-        );
+    testWidgets('Thought Wall selection bar includes Plan alongside Todo', (
+      tester,
+    ) async {
+      await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Note for testing plan selection',
+        ),
+      );
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MaterialApp(home: ThoughtWallScreen()),
-          ),
-        );
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 100));
-        }
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: ThoughtWallScreen()),
+        ),
+      );
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
 
-        // Long press to enter selection mode
-        await tester.longPress(find.textContaining('Note for testing'));
-        await tester.pumpAndSettle();
+      // Long press to enter selection mode
+      await tester.longPress(find.textContaining('Note for testing'));
+      await tester.pumpAndSettle();
 
-        // Must find Plan, Todo, Reminder on selection
-        expect(find.widgetWithText(ActionChip, 'Plan'), findsOneWidget);
-        expect(find.widgetWithText(ActionChip, 'Todo'), findsOneWidget);
-        expect(find.widgetWithText(ActionChip, 'Reminder'), findsOneWidget);
+      // Must find Plan, Todo, Reminder on selection
+      expect(find.widgetWithText(ActionChip, 'Plan'), findsOneWidget);
+      expect(find.widgetWithText(ActionChip, 'Todo'), findsOneWidget);
+      expect(find.widgetWithText(ActionChip, 'Reminder'), findsOneWidget);
 
-        // Tap Plan from selection mode
-        await tester.tap(find.widgetWithText(ActionChip, 'Plan'));
-        await tester.pumpAndSettle();
+      // Tap Plan from selection mode
+      await tester.tap(find.widgetWithText(ActionChip, 'Plan'));
+      await tester.pumpAndSettle();
 
-        // Must open schedule sheet
-        expect(find.byType(HomeScheduleSheet), findsOneWidget);
-      },
-    );
+      // Must open schedule sheet
+      expect(find.byType(PlanCollectionEditor), findsOneWidget);
+    });
 
-    testWidgets(
-      'ThoughtQuickActions offers Plan, Todo, Reminder, Both',
-      (tester) async {
-        final id = await db.thoughtDao.insertThought(
-          ThoughtTableCompanion.insert(content: 'Quick note'),
-        );
-        final thought = await db.thoughtDao.getThoughtById(id);
+    testWidgets('ThoughtQuickActions offers Plan, Todo, Reminder, Both', (
+      tester,
+    ) async {
+      final id = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(content: 'Quick note'),
+      );
+      final thought = await db.thoughtDao.getThoughtById(id);
 
-        await tester.pumpWidget(
-          wrap(ThoughtQuickActions(thought: thought!, db: db)),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        wrap(ThoughtQuickActions(thought: thought!, db: db)),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.text('Plan'), findsOneWidget);
-        expect(find.text('Todo'), findsOneWidget);
-        expect(find.text('Reminder'), findsOneWidget);
-        expect(find.text('Both'), findsOneWidget);
-      },
-    );
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.text('Todo'), findsOneWidget);
+      expect(find.text('Reminder'), findsOneWidget);
+      expect(find.text('Both'), findsOneWidget);
+    });
   });
 }

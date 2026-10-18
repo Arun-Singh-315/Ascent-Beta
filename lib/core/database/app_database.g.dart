@@ -21913,7 +21913,7 @@ class $PlanOccurrenceTableTable extends PlanOccurrenceTable
 }
 
 class PlanOccurrence extends DataClass implements Insertable<PlanOccurrence> {
-  /// Stable unique occurrence ID (e.g. 'occ_<planId>_<date>_<slotIndex>').
+  /// Stable unique occurrence ID (e.g. `occ_<planId>_<date>_<slotIndex>`).
   final String id;
 
   /// Parent plan reference.
@@ -22878,6 +22878,1013 @@ class OccurrenceAlertLinkTableCompanion
   }
 }
 
+class $PlanCollectionTableTable extends PlanCollectionTable
+    with TableInfo<$PlanCollectionTableTable, PlanCollection> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlanCollectionTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _requestIdMeta = const VerificationMeta(
+    'requestId',
+  );
+  @override
+  late final GeneratedColumn<String> requestId = GeneratedColumn<String>(
+    'request_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 300,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sourceThoughtIdMeta = const VerificationMeta(
+    'sourceThoughtId',
+  );
+  @override
+  late final GeneratedColumn<int> sourceThoughtId = GeneratedColumn<int>(
+    'source_thought_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES thoughts (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('active'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    requestId,
+    title,
+    description,
+    sourceThoughtId,
+    status,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'plan_collections';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PlanCollection> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('request_id')) {
+      context.handle(
+        _requestIdMeta,
+        requestId.isAcceptableOrUnknown(data['request_id']!, _requestIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_requestIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_thought_id')) {
+      context.handle(
+        _sourceThoughtIdMeta,
+        sourceThoughtId.isAcceptableOrUnknown(
+          data['source_thought_id']!,
+          _sourceThoughtIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlanCollection map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlanCollection(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      requestId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}request_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      sourceThoughtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}source_thought_id'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PlanCollectionTableTable createAlias(String alias) {
+    return $PlanCollectionTableTable(attachedDatabase, alias);
+  }
+}
+
+class PlanCollection extends DataClass implements Insertable<PlanCollection> {
+  final String id;
+  final String requestId;
+  final String title;
+  final String description;
+  final int? sourceThoughtId;
+  final String status;
+  final DateTime createdAt;
+  const PlanCollection({
+    required this.id,
+    required this.requestId,
+    required this.title,
+    required this.description,
+    this.sourceThoughtId,
+    required this.status,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['request_id'] = Variable<String>(requestId);
+    map['title'] = Variable<String>(title);
+    map['description'] = Variable<String>(description);
+    if (!nullToAbsent || sourceThoughtId != null) {
+      map['source_thought_id'] = Variable<int>(sourceThoughtId);
+    }
+    map['status'] = Variable<String>(status);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PlanCollectionTableCompanion toCompanion(bool nullToAbsent) {
+    return PlanCollectionTableCompanion(
+      id: Value(id),
+      requestId: Value(requestId),
+      title: Value(title),
+      description: Value(description),
+      sourceThoughtId: sourceThoughtId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceThoughtId),
+      status: Value(status),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PlanCollection.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlanCollection(
+      id: serializer.fromJson<String>(json['id']),
+      requestId: serializer.fromJson<String>(json['requestId']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String>(json['description']),
+      sourceThoughtId: serializer.fromJson<int?>(json['sourceThoughtId']),
+      status: serializer.fromJson<String>(json['status']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'requestId': serializer.toJson<String>(requestId),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String>(description),
+      'sourceThoughtId': serializer.toJson<int?>(sourceThoughtId),
+      'status': serializer.toJson<String>(status),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PlanCollection copyWith({
+    String? id,
+    String? requestId,
+    String? title,
+    String? description,
+    Value<int?> sourceThoughtId = const Value.absent(),
+    String? status,
+    DateTime? createdAt,
+  }) => PlanCollection(
+    id: id ?? this.id,
+    requestId: requestId ?? this.requestId,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    sourceThoughtId: sourceThoughtId.present
+        ? sourceThoughtId.value
+        : this.sourceThoughtId,
+    status: status ?? this.status,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PlanCollection copyWithCompanion(PlanCollectionTableCompanion data) {
+    return PlanCollection(
+      id: data.id.present ? data.id.value : this.id,
+      requestId: data.requestId.present ? data.requestId.value : this.requestId,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      sourceThoughtId: data.sourceThoughtId.present
+          ? data.sourceThoughtId.value
+          : this.sourceThoughtId,
+      status: data.status.present ? data.status.value : this.status,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanCollection(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('sourceThoughtId: $sourceThoughtId, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    requestId,
+    title,
+    description,
+    sourceThoughtId,
+    status,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlanCollection &&
+          other.id == this.id &&
+          other.requestId == this.requestId &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.sourceThoughtId == this.sourceThoughtId &&
+          other.status == this.status &&
+          other.createdAt == this.createdAt);
+}
+
+class PlanCollectionTableCompanion extends UpdateCompanion<PlanCollection> {
+  final Value<String> id;
+  final Value<String> requestId;
+  final Value<String> title;
+  final Value<String> description;
+  final Value<int?> sourceThoughtId;
+  final Value<String> status;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const PlanCollectionTableCompanion({
+    this.id = const Value.absent(),
+    this.requestId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.sourceThoughtId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlanCollectionTableCompanion.insert({
+    required String id,
+    required String requestId,
+    required String title,
+    this.description = const Value.absent(),
+    this.sourceThoughtId = const Value.absent(),
+    this.status = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       requestId = Value(requestId),
+       title = Value(title);
+  static Insertable<PlanCollection> custom({
+    Expression<String>? id,
+    Expression<String>? requestId,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<int>? sourceThoughtId,
+    Expression<String>? status,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (requestId != null) 'request_id': requestId,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (sourceThoughtId != null) 'source_thought_id': sourceThoughtId,
+      if (status != null) 'status': status,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlanCollectionTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? requestId,
+    Value<String>? title,
+    Value<String>? description,
+    Value<int?>? sourceThoughtId,
+    Value<String>? status,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PlanCollectionTableCompanion(
+      id: id ?? this.id,
+      requestId: requestId ?? this.requestId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      sourceThoughtId: sourceThoughtId ?? this.sourceThoughtId,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (requestId.present) {
+      map['request_id'] = Variable<String>(requestId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (sourceThoughtId.present) {
+      map['source_thought_id'] = Variable<int>(sourceThoughtId.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanCollectionTableCompanion(')
+          ..write('id: $id, ')
+          ..write('requestId: $requestId, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('sourceThoughtId: $sourceThoughtId, ')
+          ..write('status: $status, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PlanCollectionItemTableTable extends PlanCollectionItemTable
+    with TableInfo<$PlanCollectionItemTableTable, PlanCollectionItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PlanCollectionItemTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _collectionIdMeta = const VerificationMeta(
+    'collectionId',
+  );
+  @override
+  late final GeneratedColumn<String> collectionId = GeneratedColumn<String>(
+    'collection_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES plan_collections (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _positionMeta = const VerificationMeta(
+    'position',
+  );
+  @override
+  late final GeneratedColumn<int> position = GeneratedColumn<int>(
+    'position',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 300,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+    'notes',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _dateOnlyMeta = const VerificationMeta(
+    'dateOnly',
+  );
+  @override
+  late final GeneratedColumn<bool> dateOnly = GeneratedColumn<bool>(
+    'date_only',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("date_only" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<int> taskId = GeneratedColumn<int>(
+    'task_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES tasks (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _definitionIdMeta = const VerificationMeta(
+    'definitionId',
+  );
+  @override
+  late final GeneratedColumn<String> definitionId = GeneratedColumn<String>(
+    'definition_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'UNIQUE REFERENCES plan_definitions (id) ON DELETE SET NULL',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    collectionId,
+    position,
+    title,
+    notes,
+    dateOnly,
+    taskId,
+    definitionId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'plan_collection_items';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PlanCollectionItem> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('collection_id')) {
+      context.handle(
+        _collectionIdMeta,
+        collectionId.isAcceptableOrUnknown(
+          data['collection_id']!,
+          _collectionIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_collectionIdMeta);
+    }
+    if (data.containsKey('position')) {
+      context.handle(
+        _positionMeta,
+        position.isAcceptableOrUnknown(data['position']!, _positionMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_positionMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+        _notesMeta,
+        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
+      );
+    }
+    if (data.containsKey('date_only')) {
+      context.handle(
+        _dateOnlyMeta,
+        dateOnly.isAcceptableOrUnknown(data['date_only']!, _dateOnlyMeta),
+      );
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    }
+    if (data.containsKey('definition_id')) {
+      context.handle(
+        _definitionIdMeta,
+        definitionId.isAcceptableOrUnknown(
+          data['definition_id']!,
+          _definitionIdMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PlanCollectionItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PlanCollectionItem(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      collectionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}collection_id'],
+      )!,
+      position: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}position'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      notes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}notes'],
+      )!,
+      dateOnly: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}date_only'],
+      )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}task_id'],
+      ),
+      definitionId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}definition_id'],
+      ),
+    );
+  }
+
+  @override
+  $PlanCollectionItemTableTable createAlias(String alias) {
+    return $PlanCollectionItemTableTable(attachedDatabase, alias);
+  }
+}
+
+class PlanCollectionItem extends DataClass
+    implements Insertable<PlanCollectionItem> {
+  final String id;
+  final String collectionId;
+  final int position;
+  final String title;
+  final String notes;
+  final bool dateOnly;
+  final int? taskId;
+  final String? definitionId;
+  const PlanCollectionItem({
+    required this.id,
+    required this.collectionId,
+    required this.position,
+    required this.title,
+    required this.notes,
+    required this.dateOnly,
+    this.taskId,
+    this.definitionId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['collection_id'] = Variable<String>(collectionId);
+    map['position'] = Variable<int>(position);
+    map['title'] = Variable<String>(title);
+    map['notes'] = Variable<String>(notes);
+    map['date_only'] = Variable<bool>(dateOnly);
+    if (!nullToAbsent || taskId != null) {
+      map['task_id'] = Variable<int>(taskId);
+    }
+    if (!nullToAbsent || definitionId != null) {
+      map['definition_id'] = Variable<String>(definitionId);
+    }
+    return map;
+  }
+
+  PlanCollectionItemTableCompanion toCompanion(bool nullToAbsent) {
+    return PlanCollectionItemTableCompanion(
+      id: Value(id),
+      collectionId: Value(collectionId),
+      position: Value(position),
+      title: Value(title),
+      notes: Value(notes),
+      dateOnly: Value(dateOnly),
+      taskId: taskId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(taskId),
+      definitionId: definitionId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(definitionId),
+    );
+  }
+
+  factory PlanCollectionItem.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PlanCollectionItem(
+      id: serializer.fromJson<String>(json['id']),
+      collectionId: serializer.fromJson<String>(json['collectionId']),
+      position: serializer.fromJson<int>(json['position']),
+      title: serializer.fromJson<String>(json['title']),
+      notes: serializer.fromJson<String>(json['notes']),
+      dateOnly: serializer.fromJson<bool>(json['dateOnly']),
+      taskId: serializer.fromJson<int?>(json['taskId']),
+      definitionId: serializer.fromJson<String?>(json['definitionId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'collectionId': serializer.toJson<String>(collectionId),
+      'position': serializer.toJson<int>(position),
+      'title': serializer.toJson<String>(title),
+      'notes': serializer.toJson<String>(notes),
+      'dateOnly': serializer.toJson<bool>(dateOnly),
+      'taskId': serializer.toJson<int?>(taskId),
+      'definitionId': serializer.toJson<String?>(definitionId),
+    };
+  }
+
+  PlanCollectionItem copyWith({
+    String? id,
+    String? collectionId,
+    int? position,
+    String? title,
+    String? notes,
+    bool? dateOnly,
+    Value<int?> taskId = const Value.absent(),
+    Value<String?> definitionId = const Value.absent(),
+  }) => PlanCollectionItem(
+    id: id ?? this.id,
+    collectionId: collectionId ?? this.collectionId,
+    position: position ?? this.position,
+    title: title ?? this.title,
+    notes: notes ?? this.notes,
+    dateOnly: dateOnly ?? this.dateOnly,
+    taskId: taskId.present ? taskId.value : this.taskId,
+    definitionId: definitionId.present ? definitionId.value : this.definitionId,
+  );
+  PlanCollectionItem copyWithCompanion(PlanCollectionItemTableCompanion data) {
+    return PlanCollectionItem(
+      id: data.id.present ? data.id.value : this.id,
+      collectionId: data.collectionId.present
+          ? data.collectionId.value
+          : this.collectionId,
+      position: data.position.present ? data.position.value : this.position,
+      title: data.title.present ? data.title.value : this.title,
+      notes: data.notes.present ? data.notes.value : this.notes,
+      dateOnly: data.dateOnly.present ? data.dateOnly.value : this.dateOnly,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      definitionId: data.definitionId.present
+          ? data.definitionId.value
+          : this.definitionId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanCollectionItem(')
+          ..write('id: $id, ')
+          ..write('collectionId: $collectionId, ')
+          ..write('position: $position, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('dateOnly: $dateOnly, ')
+          ..write('taskId: $taskId, ')
+          ..write('definitionId: $definitionId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    collectionId,
+    position,
+    title,
+    notes,
+    dateOnly,
+    taskId,
+    definitionId,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PlanCollectionItem &&
+          other.id == this.id &&
+          other.collectionId == this.collectionId &&
+          other.position == this.position &&
+          other.title == this.title &&
+          other.notes == this.notes &&
+          other.dateOnly == this.dateOnly &&
+          other.taskId == this.taskId &&
+          other.definitionId == this.definitionId);
+}
+
+class PlanCollectionItemTableCompanion
+    extends UpdateCompanion<PlanCollectionItem> {
+  final Value<String> id;
+  final Value<String> collectionId;
+  final Value<int> position;
+  final Value<String> title;
+  final Value<String> notes;
+  final Value<bool> dateOnly;
+  final Value<int?> taskId;
+  final Value<String?> definitionId;
+  final Value<int> rowid;
+  const PlanCollectionItemTableCompanion({
+    this.id = const Value.absent(),
+    this.collectionId = const Value.absent(),
+    this.position = const Value.absent(),
+    this.title = const Value.absent(),
+    this.notes = const Value.absent(),
+    this.dateOnly = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PlanCollectionItemTableCompanion.insert({
+    required String id,
+    required String collectionId,
+    required int position,
+    required String title,
+    this.notes = const Value.absent(),
+    this.dateOnly = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.definitionId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       collectionId = Value(collectionId),
+       position = Value(position),
+       title = Value(title);
+  static Insertable<PlanCollectionItem> custom({
+    Expression<String>? id,
+    Expression<String>? collectionId,
+    Expression<int>? position,
+    Expression<String>? title,
+    Expression<String>? notes,
+    Expression<bool>? dateOnly,
+    Expression<int>? taskId,
+    Expression<String>? definitionId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (collectionId != null) 'collection_id': collectionId,
+      if (position != null) 'position': position,
+      if (title != null) 'title': title,
+      if (notes != null) 'notes': notes,
+      if (dateOnly != null) 'date_only': dateOnly,
+      if (taskId != null) 'task_id': taskId,
+      if (definitionId != null) 'definition_id': definitionId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PlanCollectionItemTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? collectionId,
+    Value<int>? position,
+    Value<String>? title,
+    Value<String>? notes,
+    Value<bool>? dateOnly,
+    Value<int?>? taskId,
+    Value<String?>? definitionId,
+    Value<int>? rowid,
+  }) {
+    return PlanCollectionItemTableCompanion(
+      id: id ?? this.id,
+      collectionId: collectionId ?? this.collectionId,
+      position: position ?? this.position,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      dateOnly: dateOnly ?? this.dateOnly,
+      taskId: taskId ?? this.taskId,
+      definitionId: definitionId ?? this.definitionId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (collectionId.present) {
+      map['collection_id'] = Variable<String>(collectionId.value);
+    }
+    if (position.present) {
+      map['position'] = Variable<int>(position.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
+    }
+    if (dateOnly.present) {
+      map['date_only'] = Variable<bool>(dateOnly.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<int>(taskId.value);
+    }
+    if (definitionId.present) {
+      map['definition_id'] = Variable<String>(definitionId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PlanCollectionItemTableCompanion(')
+          ..write('id: $id, ')
+          ..write('collectionId: $collectionId, ')
+          ..write('position: $position, ')
+          ..write('title: $title, ')
+          ..write('notes: $notes, ')
+          ..write('dateOnly: $dateOnly, ')
+          ..write('taskId: $taskId, ')
+          ..write('definitionId: $definitionId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -22956,6 +23963,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PlanOccurrenceTableTable(this);
   late final $OccurrenceAlertLinkTableTable occurrenceAlertLinkTable =
       $OccurrenceAlertLinkTableTable(this);
+  late final $PlanCollectionTableTable planCollectionTable =
+      $PlanCollectionTableTable(this);
+  late final $PlanCollectionItemTableTable planCollectionItemTable =
+      $PlanCollectionItemTableTable(this);
   late final UserProfileDao userProfileDao = UserProfileDao(
     this as AppDatabase,
   );
@@ -23040,6 +24051,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     planDefinitionTable,
     planOccurrenceTable,
     occurrenceAlertLinkTable,
+    planCollectionTable,
+    planCollectionItemTable,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -23119,6 +24132,34 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('occurrence_alert_links', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'thoughts',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_collections', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'plan_collections',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_collection_items', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tasks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_collection_items', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'plan_definitions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('plan_collection_items', kind: UpdateKind.update)],
     ),
   ]);
 }
@@ -24558,6 +25599,27 @@ final class $$ThoughtTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$PlanCollectionTableTable, List<PlanCollection>>
+  _planCollectionTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planCollectionTable,
+        aliasName: 'thoughts__id__plan_collections__source_thought_id',
+      );
+
+  $$PlanCollectionTableTableProcessedTableManager get planCollectionTableRefs {
+    final manager = $$PlanCollectionTableTableTableManager(
+      $_db,
+      $_db.planCollectionTable,
+    ).filter((f) => f.sourceThoughtId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planCollectionTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ThoughtTableTableFilterComposer
@@ -24734,6 +25796,31 @@ class $$ThoughtTableTableFilterComposer
           }) => $$PlanDefinitionTableTableFilterComposer(
             $db: $db,
             $table: $db.planDefinitionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> planCollectionTableRefs(
+    Expression<bool> Function($$PlanCollectionTableTableFilterComposer f) f,
+  ) {
+    final $$PlanCollectionTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.planCollectionTable,
+      getReferencedColumn: (t) => t.sourceThoughtId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanCollectionTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planCollectionTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -24972,6 +26059,32 @@ class $$ThoughtTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> planCollectionTableRefs<T extends Object>(
+    Expression<T> Function($$PlanCollectionTableTableAnnotationComposer a) f,
+  ) {
+    final $$PlanCollectionTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionTable,
+          getReferencedColumn: (t) => t.sourceThoughtId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planCollectionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ThoughtTableTableTableManager
@@ -24993,6 +26106,7 @@ class $$ThoughtTableTableTableManager
             bool mergedNoteSources,
             bool sourceNoteMerges,
             bool planDefinitionTableRefs,
+            bool planCollectionTableRefs,
           })
         > {
   $$ThoughtTableTableTableManager(_$AppDatabase db, $ThoughtTableTable table)
@@ -25065,6 +26179,7 @@ class $$ThoughtTableTableTableManager
                 mergedNoteSources = false,
                 sourceNoteMerges = false,
                 planDefinitionTableRefs = false,
+                planCollectionTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -25075,6 +26190,7 @@ class $$ThoughtTableTableTableManager
                     if (mergedNoteSources) db.thoughtMergeSourceTable,
                     if (sourceNoteMerges) db.thoughtMergeSourceTable,
                     if (planDefinitionTableRefs) db.planDefinitionTable,
+                    if (planCollectionTableRefs) db.planCollectionTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -25184,6 +26300,27 @@ class $$ThoughtTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (planCollectionTableRefs)
+                        await $_getPrefetchedData<
+                          Thought,
+                          $ThoughtTableTable,
+                          PlanCollection
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ThoughtTableTableReferences
+                              ._planCollectionTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ThoughtTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planCollectionTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.sourceThoughtId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -25210,6 +26347,7 @@ typedef $$ThoughtTableTableProcessedTableManager =
         bool mergedNoteSources,
         bool sourceNoteMerges,
         bool planDefinitionTableRefs,
+        bool planCollectionTableRefs,
       })
     >;
 typedef $$ApplicationTableTableCreateCompanionBuilder =
@@ -26186,6 +27324,31 @@ final class $$TaskTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $PlanCollectionItemTableTable,
+    List<PlanCollectionItem>
+  >
+  _planCollectionItemTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planCollectionItemTable,
+        aliasName: 'tasks__id__plan_collection_items__task_id',
+      );
+
+  $$PlanCollectionItemTableTableProcessedTableManager
+  get planCollectionItemTableRefs {
+    final manager = $$PlanCollectionItemTableTableTableManager(
+      $_db,
+      $_db.planCollectionItemTable,
+    ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planCollectionItemTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$TaskTableTableFilterComposer
@@ -26509,6 +27672,32 @@ class $$TaskTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> planCollectionItemTableRefs(
+    Expression<bool> Function($$PlanCollectionItemTableTableFilterComposer f) f,
+  ) {
+    final $$PlanCollectionItemTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionItemTable,
+          getReferencedColumn: (t) => t.taskId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionItemTableTableFilterComposer(
+                $db: $db,
+                $table: $db.planCollectionItemTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -27026,6 +28215,33 @@ class $$TaskTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> planCollectionItemTableRefs<T extends Object>(
+    Expression<T> Function($$PlanCollectionItemTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$PlanCollectionItemTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionItemTable,
+          getReferencedColumn: (t) => t.taskId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionItemTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planCollectionItemTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$TaskTableTableTableManager
@@ -27052,6 +28268,7 @@ class $$TaskTableTableTableManager
             bool medicineLogTableRefs,
             bool planDefinitionTableRefs,
             bool planOccurrenceTableRefs,
+            bool planCollectionItemTableRefs,
           })
         > {
   $$TaskTableTableTableManager(_$AppDatabase db, $TaskTableTable table)
@@ -27173,6 +28390,7 @@ class $$TaskTableTableTableManager
                 medicineLogTableRefs = false,
                 planDefinitionTableRefs = false,
                 planOccurrenceTableRefs = false,
+                planCollectionItemTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -27182,6 +28400,7 @@ class $$TaskTableTableTableManager
                     if (medicineLogTableRefs) db.medicineLogTable,
                     if (planDefinitionTableRefs) db.planDefinitionTable,
                     if (planOccurrenceTableRefs) db.planOccurrenceTable,
+                    if (planCollectionItemTableRefs) db.planCollectionItemTable,
                   ],
                   addJoins:
                       <
@@ -27374,6 +28593,27 @@ class $$TaskTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (planCollectionItemTableRefs)
+                        await $_getPrefetchedData<
+                          Task,
+                          $TaskTableTable,
+                          PlanCollectionItem
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TaskTableTableReferences
+                              ._planCollectionItemTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TaskTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planCollectionItemTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.taskId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -27405,6 +28645,7 @@ typedef $$TaskTableTableProcessedTableManager =
         bool medicineLogTableRefs,
         bool planDefinitionTableRefs,
         bool planOccurrenceTableRefs,
+        bool planCollectionItemTableRefs,
       })
     >;
 typedef $$DsaLogTableTableCreateCompanionBuilder =
@@ -38810,6 +40051,31 @@ final class $$PlanDefinitionTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<
+    $PlanCollectionItemTableTable,
+    List<PlanCollectionItem>
+  >
+  _planCollectionItemTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planCollectionItemTable,
+        aliasName: 'plan_definitions__id__plan_collection_items__definition_id',
+      );
+
+  $$PlanCollectionItemTableTableProcessedTableManager
+  get planCollectionItemTableRefs {
+    final manager = $$PlanCollectionItemTableTableTableManager(
+      $_db,
+      $_db.planCollectionItemTable,
+    ).filter((f) => f.definitionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planCollectionItemTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PlanDefinitionTableTableFilterComposer
@@ -38974,6 +40240,32 @@ class $$PlanDefinitionTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return f(composer);
+  }
+
+  Expression<bool> planCollectionItemTableRefs(
+    Expression<bool> Function($$PlanCollectionItemTableTableFilterComposer f) f,
+  ) {
+    final $$PlanCollectionItemTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionItemTable,
+          getReferencedColumn: (t) => t.definitionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionItemTableTableFilterComposer(
+                $db: $db,
+                $table: $db.planCollectionItemTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return f(composer);
   }
 }
@@ -39266,6 +40558,33 @@ class $$PlanDefinitionTableTableAnnotationComposer
         );
     return f(composer);
   }
+
+  Expression<T> planCollectionItemTableRefs<T extends Object>(
+    Expression<T> Function($$PlanCollectionItemTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$PlanCollectionItemTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionItemTable,
+          getReferencedColumn: (t) => t.definitionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionItemTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planCollectionItemTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$PlanDefinitionTableTableTableManager
@@ -39285,6 +40604,7 @@ class $$PlanDefinitionTableTableTableManager
             bool sourceThoughtId,
             bool sourceTaskId,
             bool planOccurrenceTableRefs,
+            bool planCollectionItemTableRefs,
           })
         > {
   $$PlanDefinitionTableTableTableManager(
@@ -39407,11 +40727,13 @@ class $$PlanDefinitionTableTableTableManager
                 sourceThoughtId = false,
                 sourceTaskId = false,
                 planOccurrenceTableRefs = false,
+                planCollectionItemTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (planOccurrenceTableRefs) db.planOccurrenceTable,
+                    if (planCollectionItemTableRefs) db.planCollectionItemTable,
                   ],
                   addJoins:
                       <
@@ -39485,6 +40807,27 @@ class $$PlanDefinitionTableTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (planCollectionItemTableRefs)
+                        await $_getPrefetchedData<
+                          PlanDefinition,
+                          $PlanDefinitionTableTable,
+                          PlanCollectionItem
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PlanDefinitionTableTableReferences
+                              ._planCollectionItemTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PlanDefinitionTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planCollectionItemTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.definitionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -39509,6 +40852,7 @@ typedef $$PlanDefinitionTableTableProcessedTableManager =
         bool sourceThoughtId,
         bool sourceTaskId,
         bool planOccurrenceTableRefs,
+        bool planCollectionItemTableRefs,
       })
     >;
 typedef $$PlanOccurrenceTableTableCreateCompanionBuilder =
@@ -40710,6 +42054,1084 @@ typedef $$OccurrenceAlertLinkTableTableProcessedTableManager =
       OccurrenceAlertLink,
       PrefetchHooks Function({bool occurrenceId, bool reminderId})
     >;
+typedef $$PlanCollectionTableTableCreateCompanionBuilder =
+    PlanCollectionTableCompanion Function({
+      required String id,
+      required String requestId,
+      required String title,
+      Value<String> description,
+      Value<int?> sourceThoughtId,
+      Value<String> status,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+typedef $$PlanCollectionTableTableUpdateCompanionBuilder =
+    PlanCollectionTableCompanion Function({
+      Value<String> id,
+      Value<String> requestId,
+      Value<String> title,
+      Value<String> description,
+      Value<int?> sourceThoughtId,
+      Value<String> status,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+final class $$PlanCollectionTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PlanCollectionTableTable,
+          PlanCollection
+        > {
+  $$PlanCollectionTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ThoughtTableTable _sourceThoughtIdTable(_$AppDatabase db) => db
+      .thoughtTable
+      .createAlias('plan_collections__source_thought_id__thoughts__id');
+
+  $$ThoughtTableTableProcessedTableManager? get sourceThoughtId {
+    final $_column = $_itemColumn<int>('source_thought_id');
+    if ($_column == null) return null;
+    final manager = $$ThoughtTableTableTableManager(
+      $_db,
+      $_db.thoughtTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_sourceThoughtIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PlanCollectionItemTableTable,
+    List<PlanCollectionItem>
+  >
+  _planCollectionItemTableRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.planCollectionItemTable,
+        aliasName: 'plan_collections__id__plan_collection_items__collection_id',
+      );
+
+  $$PlanCollectionItemTableTableProcessedTableManager
+  get planCollectionItemTableRefs {
+    final manager = $$PlanCollectionItemTableTableTableManager(
+      $_db,
+      $_db.planCollectionItemTable,
+    ).filter((f) => f.collectionId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _planCollectionItemTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$PlanCollectionTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PlanCollectionTableTable> {
+  $$PlanCollectionTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ThoughtTableTableFilterComposer get sourceThoughtId {
+    final $$ThoughtTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableFilterComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> planCollectionItemTableRefs(
+    Expression<bool> Function($$PlanCollectionItemTableTableFilterComposer f) f,
+  ) {
+    final $$PlanCollectionItemTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionItemTable,
+          getReferencedColumn: (t) => t.collectionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionItemTableTableFilterComposer(
+                $db: $db,
+                $table: $db.planCollectionItemTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$PlanCollectionTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlanCollectionTableTable> {
+  $$PlanCollectionTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get requestId => $composableBuilder(
+    column: $table.requestId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ThoughtTableTableOrderingComposer get sourceThoughtId {
+    final $$ThoughtTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlanCollectionTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlanCollectionTableTable> {
+  $$PlanCollectionTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get requestId =>
+      $composableBuilder(column: $table.requestId, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$ThoughtTableTableAnnotationComposer get sourceThoughtId {
+    final $$ThoughtTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.sourceThoughtId,
+      referencedTable: $db.thoughtTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ThoughtTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.thoughtTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> planCollectionItemTableRefs<T extends Object>(
+    Expression<T> Function($$PlanCollectionItemTableTableAnnotationComposer a)
+    f,
+  ) {
+    final $$PlanCollectionItemTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.planCollectionItemTable,
+          getReferencedColumn: (t) => t.collectionId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionItemTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planCollectionItemTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+}
+
+class $$PlanCollectionTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlanCollectionTableTable,
+          PlanCollection,
+          $$PlanCollectionTableTableFilterComposer,
+          $$PlanCollectionTableTableOrderingComposer,
+          $$PlanCollectionTableTableAnnotationComposer,
+          $$PlanCollectionTableTableCreateCompanionBuilder,
+          $$PlanCollectionTableTableUpdateCompanionBuilder,
+          (PlanCollection, $$PlanCollectionTableTableReferences),
+          PlanCollection,
+          PrefetchHooks Function({
+            bool sourceThoughtId,
+            bool planCollectionItemTableRefs,
+          })
+        > {
+  $$PlanCollectionTableTableTableManager(
+    _$AppDatabase db,
+    $PlanCollectionTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlanCollectionTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PlanCollectionTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PlanCollectionTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> requestId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<int?> sourceThoughtId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanCollectionTableCompanion(
+                id: id,
+                requestId: requestId,
+                title: title,
+                description: description,
+                sourceThoughtId: sourceThoughtId,
+                status: status,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String requestId,
+                required String title,
+                Value<String> description = const Value.absent(),
+                Value<int?> sourceThoughtId = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanCollectionTableCompanion.insert(
+                id: id,
+                requestId: requestId,
+                title: title,
+                description: description,
+                sourceThoughtId: sourceThoughtId,
+                status: status,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$PlanCollectionTableTable, PlanCollection>(table),
+                  $$PlanCollectionTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({sourceThoughtId = false, planCollectionItemTableRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (planCollectionItemTableRefs) db.planCollectionItemTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (sourceThoughtId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.sourceThoughtId,
+                                    referencedTable:
+                                        $$PlanCollectionTableTableReferences
+                                            ._sourceThoughtIdTable(db),
+                                    referencedColumn:
+                                        $$PlanCollectionTableTableReferences
+                                            ._sourceThoughtIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (planCollectionItemTableRefs)
+                        await $_getPrefetchedData<
+                          PlanCollection,
+                          $PlanCollectionTableTable,
+                          PlanCollectionItem
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PlanCollectionTableTableReferences
+                              ._planCollectionItemTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PlanCollectionTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).planCollectionItemTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.collectionId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PlanCollectionTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlanCollectionTableTable,
+      PlanCollection,
+      $$PlanCollectionTableTableFilterComposer,
+      $$PlanCollectionTableTableOrderingComposer,
+      $$PlanCollectionTableTableAnnotationComposer,
+      $$PlanCollectionTableTableCreateCompanionBuilder,
+      $$PlanCollectionTableTableUpdateCompanionBuilder,
+      (PlanCollection, $$PlanCollectionTableTableReferences),
+      PlanCollection,
+      PrefetchHooks Function({
+        bool sourceThoughtId,
+        bool planCollectionItemTableRefs,
+      })
+    >;
+typedef $$PlanCollectionItemTableTableCreateCompanionBuilder =
+    PlanCollectionItemTableCompanion Function({
+      required String id,
+      required String collectionId,
+      required int position,
+      required String title,
+      Value<String> notes,
+      Value<bool> dateOnly,
+      Value<int?> taskId,
+      Value<String?> definitionId,
+      Value<int> rowid,
+    });
+typedef $$PlanCollectionItemTableTableUpdateCompanionBuilder =
+    PlanCollectionItemTableCompanion Function({
+      Value<String> id,
+      Value<String> collectionId,
+      Value<int> position,
+      Value<String> title,
+      Value<String> notes,
+      Value<bool> dateOnly,
+      Value<int?> taskId,
+      Value<String?> definitionId,
+      Value<int> rowid,
+    });
+
+final class $$PlanCollectionItemTableTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PlanCollectionItemTableTable,
+          PlanCollectionItem
+        > {
+  $$PlanCollectionItemTableTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $PlanCollectionTableTable _collectionIdTable(_$AppDatabase db) =>
+      db.planCollectionTable.createAlias(
+        'plan_collection_items__collection_id__plan_collections__id',
+      );
+
+  $$PlanCollectionTableTableProcessedTableManager get collectionId {
+    final $_column = $_itemColumn<String>('collection_id')!;
+
+    final manager = $$PlanCollectionTableTableTableManager(
+      $_db,
+      $_db.planCollectionTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_collectionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TaskTableTable _taskIdTable(_$AppDatabase db) =>
+      db.taskTable.createAlias('plan_collection_items__task_id__tasks__id');
+
+  $$TaskTableTableProcessedTableManager? get taskId {
+    final $_column = $_itemColumn<int>('task_id');
+    if ($_column == null) return null;
+    final manager = $$TaskTableTableTableManager(
+      $_db,
+      $_db.taskTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PlanDefinitionTableTable _definitionIdTable(_$AppDatabase db) =>
+      db.planDefinitionTable.createAlias(
+        'plan_collection_items__definition_id__plan_definitions__id',
+      );
+
+  $$PlanDefinitionTableTableProcessedTableManager? get definitionId {
+    final $_column = $_itemColumn<String>('definition_id');
+    if ($_column == null) return null;
+    final manager = $$PlanDefinitionTableTableTableManager(
+      $_db,
+      $_db.planDefinitionTable,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_definitionIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PlanCollectionItemTableTableFilterComposer
+    extends Composer<_$AppDatabase, $PlanCollectionItemTableTable> {
+  $$PlanCollectionItemTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dateOnly => $composableBuilder(
+    column: $table.dateOnly,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$PlanCollectionTableTableFilterComposer get collectionId {
+    final $$PlanCollectionTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.collectionId,
+      referencedTable: $db.planCollectionTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanCollectionTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planCollectionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TaskTableTableFilterComposer get taskId {
+    final $$TaskTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableFilterComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PlanDefinitionTableTableFilterComposer get definitionId {
+    final $$PlanDefinitionTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.definitionId,
+      referencedTable: $db.planDefinitionTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PlanDefinitionTableTableFilterComposer(
+            $db: $db,
+            $table: $db.planDefinitionTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PlanCollectionItemTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $PlanCollectionItemTableTable> {
+  $$PlanCollectionItemTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get position => $composableBuilder(
+    column: $table.position,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+    column: $table.notes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get dateOnly => $composableBuilder(
+    column: $table.dateOnly,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$PlanCollectionTableTableOrderingComposer get collectionId {
+    final $$PlanCollectionTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.collectionId,
+          referencedTable: $db.planCollectionTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.planCollectionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$TaskTableTableOrderingComposer get taskId {
+    final $$TaskTableTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableOrderingComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PlanDefinitionTableTableOrderingComposer get definitionId {
+    final $$PlanDefinitionTableTableOrderingComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.definitionId,
+          referencedTable: $db.planDefinitionTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanDefinitionTableTableOrderingComposer(
+                $db: $db,
+                $table: $db.planDefinitionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$PlanCollectionItemTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PlanCollectionItemTableTable> {
+  $$PlanCollectionItemTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get position =>
+      $composableBuilder(column: $table.position, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
+
+  GeneratedColumn<bool> get dateOnly =>
+      $composableBuilder(column: $table.dateOnly, builder: (column) => column);
+
+  $$PlanCollectionTableTableAnnotationComposer get collectionId {
+    final $$PlanCollectionTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.collectionId,
+          referencedTable: $db.planCollectionTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanCollectionTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planCollectionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+
+  $$TaskTableTableAnnotationComposer get taskId {
+    final $$TaskTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.taskTable,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TaskTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.taskTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PlanDefinitionTableTableAnnotationComposer get definitionId {
+    final $$PlanDefinitionTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.definitionId,
+          referencedTable: $db.planDefinitionTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PlanDefinitionTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.planDefinitionTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return composer;
+  }
+}
+
+class $$PlanCollectionItemTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PlanCollectionItemTableTable,
+          PlanCollectionItem,
+          $$PlanCollectionItemTableTableFilterComposer,
+          $$PlanCollectionItemTableTableOrderingComposer,
+          $$PlanCollectionItemTableTableAnnotationComposer,
+          $$PlanCollectionItemTableTableCreateCompanionBuilder,
+          $$PlanCollectionItemTableTableUpdateCompanionBuilder,
+          (PlanCollectionItem, $$PlanCollectionItemTableTableReferences),
+          PlanCollectionItem,
+          PrefetchHooks Function({
+            bool collectionId,
+            bool taskId,
+            bool definitionId,
+          })
+        > {
+  $$PlanCollectionItemTableTableTableManager(
+    _$AppDatabase db,
+    $PlanCollectionItemTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PlanCollectionItemTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$PlanCollectionItemTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PlanCollectionItemTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> collectionId = const Value.absent(),
+                Value<int> position = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> notes = const Value.absent(),
+                Value<bool> dateOnly = const Value.absent(),
+                Value<int?> taskId = const Value.absent(),
+                Value<String?> definitionId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanCollectionItemTableCompanion(
+                id: id,
+                collectionId: collectionId,
+                position: position,
+                title: title,
+                notes: notes,
+                dateOnly: dateOnly,
+                taskId: taskId,
+                definitionId: definitionId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String collectionId,
+                required int position,
+                required String title,
+                Value<String> notes = const Value.absent(),
+                Value<bool> dateOnly = const Value.absent(),
+                Value<int?> taskId = const Value.absent(),
+                Value<String?> definitionId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PlanCollectionItemTableCompanion.insert(
+                id: id,
+                collectionId: collectionId,
+                position: position,
+                title: title,
+                notes: notes,
+                dateOnly: dateOnly,
+                taskId: taskId,
+                definitionId: definitionId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $PlanCollectionItemTableTable,
+                    PlanCollectionItem
+                  >(table),
+                  $$PlanCollectionItemTableTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({collectionId = false, taskId = false, definitionId = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (collectionId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.collectionId,
+                                    referencedTable:
+                                        $$PlanCollectionItemTableTableReferences
+                                            ._collectionIdTable(db),
+                                    referencedColumn:
+                                        $$PlanCollectionItemTableTableReferences
+                                            ._collectionIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (taskId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.taskId,
+                                    referencedTable:
+                                        $$PlanCollectionItemTableTableReferences
+                                            ._taskIdTable(db),
+                                    referencedColumn:
+                                        $$PlanCollectionItemTableTableReferences
+                                            ._taskIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (definitionId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.definitionId,
+                                    referencedTable:
+                                        $$PlanCollectionItemTableTableReferences
+                                            ._definitionIdTable(db),
+                                    referencedColumn:
+                                        $$PlanCollectionItemTableTableReferences
+                                            ._definitionIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$PlanCollectionItemTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PlanCollectionItemTableTable,
+      PlanCollectionItem,
+      $$PlanCollectionItemTableTableFilterComposer,
+      $$PlanCollectionItemTableTableOrderingComposer,
+      $$PlanCollectionItemTableTableAnnotationComposer,
+      $$PlanCollectionItemTableTableCreateCompanionBuilder,
+      $$PlanCollectionItemTableTableUpdateCompanionBuilder,
+      (PlanCollectionItem, $$PlanCollectionItemTableTableReferences),
+      PlanCollectionItem,
+      PrefetchHooks Function({
+        bool collectionId,
+        bool taskId,
+        bool definitionId,
+      })
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -40827,6 +43249,13 @@ class $AppDatabaseManager {
       $$OccurrenceAlertLinkTableTableTableManager(
         _db,
         _db.occurrenceAlertLinkTable,
+      );
+  $$PlanCollectionTableTableTableManager get planCollectionTable =>
+      $$PlanCollectionTableTableTableManager(_db, _db.planCollectionTable);
+  $$PlanCollectionItemTableTableTableManager get planCollectionItemTable =>
+      $$PlanCollectionItemTableTableTableManager(
+        _db,
+        _db.planCollectionItemTable,
       );
 }
 

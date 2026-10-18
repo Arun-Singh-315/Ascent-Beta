@@ -18,17 +18,17 @@ class PlanDefinitionTable extends Table {
 
   /// Optional source thought FK.
   IntColumn get sourceThoughtId => integer().nullable().references(
-        ThoughtTable,
-        #id,
-        onDelete: KeyAction.setNull,
-      )();
+    ThoughtTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Optional source task FK if promoted from an existing standalone activity.
   IntColumn get sourceTaskId => integer().nullable().references(
-        TaskTable,
-        #id,
-        onDelete: KeyAction.setNull,
-      )();
+    TaskTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Activity classification: 'todo', 'timer', 'flexible'.
   TextColumn get activityType => text().withDefault(const Constant('todo'))();
@@ -71,11 +71,9 @@ class PlanDefinitionTable extends Table {
   /// Revision counter for optimistic concurrency and cache invalidation.
   IntColumn get revision => integer().withDefault(const Constant(1))();
 
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -92,8 +90,11 @@ class PlanOccurrenceTable extends Table {
   TextColumn get id => text()();
 
   /// Parent plan reference.
-  TextColumn get planId =>
-      text().references(PlanDefinitionTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get planId => text().references(
+    PlanDefinitionTable,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Eligible calendar date string 'YYYY-MM-DD'.
   TextColumn get eligibleLocalDate => text()();
@@ -102,7 +103,8 @@ class PlanOccurrenceTable extends Table {
   IntColumn get slotIndex => integer().withDefault(const Constant(0))();
 
   /// Definition revision snapshot under which this occurrence was generated.
-  IntColumn get definitionRevision => integer().withDefault(const Constant(1))();
+  IntColumn get definitionRevision =>
+      integer().withDefault(const Constant(1))();
 
   /// Exact scheduled start timestamp.
   DateTimeColumn get scheduledStartTime => dateTime()();
@@ -115,14 +117,13 @@ class PlanOccurrenceTable extends Table {
 
   /// Optional linked Todo task for this occurrence.
   IntColumn get linkedTaskId => integer().nullable().references(
-        TaskTable,
-        #id,
-        onDelete: KeyAction.setNull,
-      )();
+    TaskTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// Outcome: 'scheduled', 'done', 'skipped', 'not_confirmed'.
-  TextColumn get outcome =>
-      text().withDefault(const Constant('scheduled'))();
+  TextColumn get outcome => text().withDefault(const Constant('scheduled'))();
 
   /// Timestamp when check-in or user action answered this occurrence.
   DateTimeColumn get answeredAt => dateTime().nullable()();
@@ -130,19 +131,17 @@ class PlanOccurrenceTable extends Table {
   /// Timestamp when the task or occurrence was completed.
   DateTimeColumn get completedAt => dateTime().nullable()();
 
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {planId, eligibleLocalDate, slotIndex},
-      ];
+    {planId, eligibleLocalDate, slotIndex},
+  ];
 }
 
 /// Explicit link between a device reminder and a plan occurrence.
@@ -155,17 +154,14 @@ class OccurrenceAlertLinkTable extends Table {
 
   /// Linked occurrence ID.
   TextColumn get occurrenceId => text().references(
-        PlanOccurrenceTable,
-        #id,
-        onDelete: KeyAction.cascade,
-      )();
+    PlanOccurrenceTable,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Linked reminder ID in ReminderTable.
-  IntColumn get reminderId => integer().references(
-        ReminderTable,
-        #id,
-        onDelete: KeyAction.cascade,
-      )();
+  IntColumn get reminderId =>
+      integer().references(ReminderTable, #id, onDelete: KeyAction.cascade)();
 
   /// Alert role: 'start', 'check_in'.
   TextColumn get role => text()();
@@ -176,6 +172,53 @@ class OccurrenceAlertLinkTable extends Table {
   /// Revision version expected at scheduling time.
   IntColumn get expectedVersion => integer().withDefault(const Constant(1))();
 
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A named collection of independently actionable items.
+@DataClassName('PlanCollection')
+class PlanCollectionTable extends Table {
+  @override
+  String get tableName => 'plan_collections';
+  TextColumn get id => text()();
+  TextColumn get requestId => text().unique()();
+  TextColumn get title => text().withLength(min: 1, max: 300)();
+  TextColumn get description => text().withDefault(const Constant(''))();
+  IntColumn get sourceThoughtId => integer().nullable().references(
+    ThoughtTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  TextColumn get status => text().withDefault(const Constant('active'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('PlanCollectionItem')
+class PlanCollectionItemTable extends Table {
+  @override
+  String get tableName => 'plan_collection_items';
+  TextColumn get id => text()();
+  TextColumn get collectionId => text().references(
+    PlanCollectionTable,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+  IntColumn get position => integer()();
+  TextColumn get title => text().withLength(min: 1, max: 300)();
+  TextColumn get notes => text().withDefault(const Constant(''))();
+  BoolColumn get dateOnly => boolean().withDefault(const Constant(false))();
+  IntColumn get taskId => integer().nullable().unique().references(
+    TaskTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  TextColumn get definitionId => text().nullable().unique().references(
+    PlanDefinitionTable,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+  @override
+  Set<Column> get primaryKey => {id};
 }

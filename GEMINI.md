@@ -19,3 +19,5 @@
 15. **High-Volume & Boundary Protection**: All lists, tables, and collections must gracefully handle empty states (0 items), standard states (1-10 items), and boundary stress states (100+ items) without visual distortion, memory leaks, or UI thread freezing. Dashboard and preview lists must enforce strict preview caps (e.g., max 4) with explicit "Show more / View all" pagination to prevent viewport blowouts.
 16. **Centralized Token Discipline (Zero Magic Values)**: Hardcoded inline colors (`Color(0x...)`), arbitrary padding numbers, and ad-hoc corner radii are strictly forbidden in UI screens and feature components. All styling must resolve strictly through `AscentTheme`, `context.glass`, `AscentDimensions` (e.g. `AppSpace`, `AppGeometry`), `color_tokens.dart`, or `app_constants.dart`.
 
+
+17. **Temporary Planning Documents**: Implementation plans and task-specific planning documents are temporary working files. Delete them after implementation and verification are complete. Do not commit or retain a planning document as a deliverable unless the user explicitly asks to keep it. Preserve maintained product documentation and repository rules.

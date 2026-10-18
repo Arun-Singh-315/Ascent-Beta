@@ -24,7 +24,15 @@ class PlanRecurrenceEngine {
     final y = int.parse(parts[0]);
     final m = int.parse(parts[1]);
     final d = int.parse(parts[2]);
-    return DateTime(y, m, d);
+    final date = DateTime(y, m, d);
+    if (y < 1 ||
+        y > 9999 ||
+        date.year != y ||
+        date.month != m ||
+        date.day != d) {
+      throw ArgumentError('Choose a valid calendar date.');
+    }
+    return date;
   }
 
   /// Calculates the list of eligible calendar date strings ('YYYY-MM-DD')
@@ -39,7 +47,9 @@ class PlanRecurrenceEngine {
     final end = parseDate(endDate);
 
     if (start.isAfter(end)) {
-      throw ArgumentError('startDate ($startDate) cannot be after endDate ($endDate).');
+      throw ArgumentError(
+        'startDate ($startDate) cannot be after endDate ($endDate).',
+      );
     }
 
     if (recurrenceRule == 'once') {
@@ -80,11 +90,16 @@ class PlanRecurrenceEngine {
     final date = parseDate(dateStr);
     final timeParts = localTime.split(':');
     if (timeParts.length != 2) {
-      throw ArgumentError('Invalid localTime format (expected HH:mm): $localTime');
+      throw ArgumentError(
+        'Invalid localTime format (expected HH:mm): $localTime',
+      );
     }
     final hour = int.parse(timeParts[0]);
     final minute = int.parse(timeParts[1]);
 
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw ArgumentError('Choose a valid time from 00:00 to 23:59.');
+    }
     return DateTime(date.year, date.month, date.day, hour, minute);
   }
 
@@ -104,16 +119,15 @@ class PlanRecurrenceEngine {
   }) {
     if (policy == 'off') return const [];
 
-    final duration = expectedDurationMinutes != null && expectedDurationMinutes > 0
+    final duration =
+        expectedDurationMinutes != null && expectedDurationMinutes > 0
         ? expectedDurationMinutes
         : 30;
     // Initial check-in is start + duration + 10 min buffer
     final initialCheckIn = startTime.add(Duration(minutes: duration + 10));
 
     if (policy == 'once') {
-      return [
-        CheckInAttemptTiming(attemptIndex: 0, time: initialCheckIn),
-      ];
+      return [CheckInAttemptTiming(attemptIndex: 0, time: initialCheckIn)];
     }
 
     if (policy == 'gentle') {
@@ -130,9 +144,7 @@ class PlanRecurrenceEngine {
       ];
     }
 
-    return [
-      CheckInAttemptTiming(attemptIndex: 0, time: initialCheckIn),
-    ];
+    return [CheckInAttemptTiming(attemptIndex: 0, time: initialCheckIn)];
   }
 
   /// Calculates the closing cutoff time for a session.
@@ -147,7 +159,14 @@ class PlanRecurrenceEngine {
     final target = base.add(const Duration(hours: 2));
 
     // Do not exceed 23:59:59 of that day unless session started late in the evening
-    final endOfDay = DateTime(startTime.year, startTime.month, startTime.day, 23, 59, 59);
+    final endOfDay = DateTime(
+      startTime.year,
+      startTime.month,
+      startTime.day,
+      23,
+      59,
+      59,
+    );
     if (target.isAfter(endOfDay) && startTime.hour < 20) {
       return endOfDay;
     }

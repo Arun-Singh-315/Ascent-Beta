@@ -35,113 +35,131 @@ void main() {
   });
 
   group('Splash Screen Tagline Requirement', () {
-    testWidgets('SplashScreen tagline promotes personal clarity and not job prep or local os',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const SplashScreen(),
+    testWidgets(
+      'SplashScreen tagline promotes personal clarity and not job prep or local os',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const SplashScreen(),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Personal Clarity, Focus & Rhythm'), findsOneWidget);
-      expect(find.textContaining('Job Prep'), findsNothing);
-      expect(find.textContaining('Operating System'), findsNothing);
+        expect(find.text('Personal Clarity, Focus & Rhythm'), findsOneWidget);
+        expect(find.textContaining('Job Prep'), findsNothing);
+        expect(find.textContaining('Operating System'), findsNothing);
 
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pump(const Duration(milliseconds: 1500));
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 
   group('Activity Hub (Things Hub) UI Refinements', () {
     testWidgets(
-        'Things hub heading has View board on right end, no three dots, no progress bar, no streak flame',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-            todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ActivityHubCard()),
+      'Things hub heading has View board on right end, no three dots, no progress bar, no streak flame',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+              todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ActivityHubCard()),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Heading and View board
-      expect(find.text('Things hub'), findsOneWidget);
-      expect(find.text('View board'), findsOneWidget);
+        // Heading and View board
+        expect(find.text('Things hub'), findsOneWidget);
+        expect(find.text('View board'), findsOneWidget);
 
-      // Three dots 'Plans & Options' PopupMenuButton is removed from heading
-      expect(find.byTooltip('Plans & Options'), findsNothing);
+        // Three dots 'Plans & Options' PopupMenuButton is removed from heading
+        expect(find.byTooltip('Plans & Options'), findsNothing);
 
-      // Progress bar (LinearProgressIndicator) and flame streak removed
-      expect(find.byType(LinearProgressIndicator), findsNothing);
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
+        // Progress bar (LinearProgressIndicator) and flame streak removed
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+        expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
 
-      // Inside card: Today and Completed tabs and Routines & plans shortcut exist
-      expect(find.text('Today'), findsWidgets);
-      expect(find.text('Completed'), findsOneWidget);
-      expect(find.text('Routines & plans'), findsOneWidget);
+        // Inside card: Today and Completed tabs and Routines & plans shortcut exist
+        expect(find.text('Today'), findsWidgets);
+        expect(find.text('Completed'), findsOneWidget);
+        expect(find.text('Plans · 0'), findsOneWidget);
+        expect(find.text('Routines · 0'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpAndSettle();
+      },
+    );
 
-    testWidgets('Tapping Completed tab displays completed items and empty state correctly',
-        (tester) async {
-      final doneAct = TodayActivityItem(
-        id: 'done-1',
-        title: 'Morning Meditation',
-        status: TodayActivityStatus.done,
-        kind: ActivityKind.todo,
-        sourceType: 'todo',
-        elapsedSecondsToday: 0,
-        categoryTag: 'General',
-      );
+    testWidgets(
+      'Tapping Completed tab displays completed items and empty state correctly',
+      (tester) async {
+        final doneAct = TodayActivityItem(
+          id: 'done-1',
+          title: 'Morning Meditation',
+          status: TodayActivityStatus.done,
+          kind: ActivityKind.todo,
+          sourceType: 'todo',
+          elapsedSecondsToday: 0,
+          categoryTag: 'General',
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-            todayActivitiesProvider.overrideWith((ref) => Stream.value([doneAct])),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ActivityHubCard()),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+              todayActivitiesProvider.overrideWith(
+                (ref) => Stream.value([doneAct]),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ActivityHubCard()),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Initially on 'Today' tab: doneAct is not pending, shows All caught up
-      expect(find.text('All caught up! All 1 activities finished.'), findsOneWidget);
+        // Initially on 'Today' tab: doneAct is not pending, shows All caught up
+        expect(
+          find.text('All caught up! All 1 activities finished.'),
+          findsOneWidget,
+        );
 
-      // Tap 'Completed' tab
-      await tester.tap(find.text('Completed'));
-      await tester.pumpAndSettle();
+        // Tap 'Completed' tab
+        await tester.tap(find.text('Completed'));
+        await tester.pumpAndSettle();
 
-      // Completed activity is now displayed!
-      expect(find.text('Morning Meditation'), findsOneWidget);
-    });
+        // Completed activity is now displayed!
+        expect(find.text('Morning Meditation'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
   });
 
   group('Modern Curved Popup Menu Theme', () {
@@ -150,97 +168,106 @@ void main() {
       final darkTheme = AscentTheme.dark();
 
       expect(lightTheme.popupMenuTheme.shape, isA<RoundedRectangleBorder>());
-      final lightShape = lightTheme.popupMenuTheme.shape as RoundedRectangleBorder;
+      final lightShape =
+          lightTheme.popupMenuTheme.shape as RoundedRectangleBorder;
       expect(lightShape.borderRadius, equals(BorderRadius.circular(18)));
       expect(lightTheme.popupMenuTheme.elevation, equals(8));
 
       expect(darkTheme.popupMenuTheme.shape, isA<RoundedRectangleBorder>());
-      final darkShape = darkTheme.popupMenuTheme.shape as RoundedRectangleBorder;
+      final darkShape =
+          darkTheme.popupMenuTheme.shape as RoundedRectangleBorder;
       expect(darkShape.borderRadius, equals(BorderRadius.circular(18)));
       expect(darkTheme.popupMenuTheme.elevation, equals(8));
     });
   });
 
   group('Life Check-in Dialog & Prompt Frequency Tests', () {
-    testWidgets('LifeCheckInPopupDialog renders Hydration and logs water intake',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: LifeCheckInPopupDialog(initialTab: LifeCheckInTab.hydration),
+    testWidgets(
+      'LifeCheckInPopupDialog renders Hydration and logs water intake',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: LifeCheckInPopupDialog(
+                  initialTab: LifeCheckInTab.hydration,
+                ),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Mindful Check-in'), findsOneWidget);
-      expect(find.text('Hydration'), findsOneWidget);
-      expect(find.text('Money'), findsOneWidget);
-      expect(find.text('+250 mL'), findsOneWidget);
+        expect(find.text('Mindful Check-in'), findsOneWidget);
+        expect(find.text('Hydration'), findsOneWidget);
+        expect(find.text('Money'), findsOneWidget);
+        expect(find.text('+250 mL'), findsOneWidget);
 
-      // Log 250ml
-      await tester.tap(find.text('+250 mL'));
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 3));
+        // Log 250ml
+        await tester.tap(find.text('+250 mL'));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 3));
 
-      final todayWater = await db.waterDao.getWaterForDate(DateTime.now());
-      expect(todayWater, equals(250));
+        final todayWater = await db.waterDao.getWaterForDate(DateTime.now());
+        expect(todayWater, equals(250));
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
-    testWidgets('LifeCheckInPopupDialog can switch to Money tab and log transaction',
-        (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: LifeCheckInPopupDialog(initialTab: LifeCheckInTab.hydration),
+    testWidgets(
+      'LifeCheckInPopupDialog can switch to Money tab and log transaction',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const Scaffold(
+                body: LifeCheckInPopupDialog(
+                  initialTab: LifeCheckInTab.hydration,
+                ),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Switch to Money tab
-      await tester.tap(find.text('Money'));
-      await tester.pumpAndSettle();
+        // Switch to Money tab
+        await tester.tap(find.text('Money'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Expense'), findsOneWidget);
-      expect(find.text('Income'), findsOneWidget);
-      expect(find.text('Save Expense'), findsOneWidget);
+        expect(find.text('Expense'), findsOneWidget);
+        expect(find.text('Income'), findsOneWidget);
+        expect(find.text('Save Expense'), findsOneWidget);
 
-      // Enter amount
-      await tester.enterText(find.byType(TextField).first, '120');
-      await tester.pumpAndSettle();
+        // Enter amount
+        await tester.enterText(find.byType(TextField).first, '120');
+        await tester.pumpAndSettle();
 
-      // Save expense
-      await tester.tap(find.text('Save Expense'));
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 3));
+        // Save expense
+        await tester.tap(find.text('Save Expense'));
+        await tester.pumpAndSettle();
+        await tester.pump(const Duration(seconds: 3));
 
-      final transactions =
-          await db.select(db.financeTransactionTable).get();
-      expect(transactions.length, equals(1));
-      expect(transactions.first.amount, equals(120.0));
-      expect(transactions.first.type, equals('expense'));
+        final transactions = await db.select(db.financeTransactionTable).get();
+        expect(transactions.length, equals(1));
+        expect(transactions.first.amount, equals(120.0));
+        expect(transactions.first.type, equals('expense'));
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
     test('Life check-in 4 out of 10 opens frequency calculation', () {
       final eligibleCounts = <int>[];

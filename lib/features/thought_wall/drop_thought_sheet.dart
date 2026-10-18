@@ -1,3 +1,4 @@
+import '../../shared/widgets/note_list_button.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -894,6 +895,8 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
               ),
 
               const SizedBox(height: 18),
+
+              NoteListButton(controller: _contentController),
 
               // Submit Button
               AscentButton.primary(

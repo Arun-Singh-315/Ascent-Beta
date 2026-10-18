@@ -1,3 +1,4 @@
+import 'core/services/plan_collection_service.dart';
 import 'core/notifications/alarm_lifecycle.dart';
 import 'core/notifications/reminder_alarm_bridge.dart';
 import 'core/providers/database_provider.dart';
@@ -72,6 +73,9 @@ Future<void> main() async {
       );
       return;
     }
+
+    await PlanCollectionService(bootstrapDb).importLegacy();
+    await PlanCollectionService(bootstrapDb).reconcileLocalSchedules();
 
     if (!(prefs.getBool('ascent_restore_alert_sync_v1') ?? false)) {
       try {
@@ -155,7 +159,9 @@ Future<void> main() async {
     final effectivePayload = payload?.isNotEmpty == true ? payload : null;
     if ({'home_done', 'home_later', 'home_skip'}.contains(actionId) &&
         effectivePayload != null &&
-        RegExp(r'^/home\?checkin=\d+&at=\d+$').hasMatch(effectivePayload)) {
+        RegExp(
+          r'^/home\?checkin=\d+&at=\d+(?:&occ=[a-zA-Z0-9_:.\-]+)?$',
+        ).hasMatch(effectivePayload)) {
       NotificationService.onNotificationNavigate?.call(
         '$effectivePayload&answer=${actionId.substring(5)}',
       );
