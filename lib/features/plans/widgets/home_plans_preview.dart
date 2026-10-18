@@ -4,13 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
+import '../../../core/services/plan_collection_service.dart';
 import '../planning_providers.dart';
 import 'plan_collection_detail.dart';
 import 'plan_collection_editor.dart';
 
+/// Compact list of active plans shown inside the Things hub.
+///
+/// Each plan is one tappable row with a title and a single status line.
+/// Repeating routines live inside their plan, so they are not listed again.
 class HomePlansPreview extends ConsumerWidget {
-  const HomePlansPreview({super.key, this.routinesOnly = false});
-  final bool routinesOnly;
+  const HomePlansPreview({super.key});
+
+  static const _visibleLimit = 3;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
@@ -23,30 +30,39 @@ class HomePlansPreview extends ConsumerWidget {
             child: const Text('Retry plans'),
           ),
           data: (all) {
-            final plans = all
-                .where(
-                  (p) =>
-                      p.status == 'active' && (!routinesOnly || p.routines > 0),
-                )
-                .toList();
+            final plans = all.where((p) => p.status == 'active').toList();
+            if (plans.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Nothing planned yet.',
+                      style: TextStyle(color: g.inkSecondary),
+                    ),
+                    const SizedBox(height: AppSpace.s8),
+                    FilledButton.icon(
+                      onPressed: () => showPlanCollectionEditor(context),
+                      icon: const Icon(Icons.add),
+                      label: const Text('New plan'),
+                    ),
+                  ],
+                ),
+              );
+            }
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (plans.isEmpty)
+                for (final p in plans.take(_visibleLimit))
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
-                    child: Text(
-                      routinesOnly
-                          ? 'No repeating items yet. Add a schedule to a plan item.'
-                          : 'Make room for your next goal. Create a plan with a few clear steps.',
-                    ),
-                  ),
-                for (final p in plans.take(4))
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s4),
+                    padding: const EdgeInsets.only(bottom: AppSpace.s8),
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.all(AppSpace.s12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s12,
+                          vertical: AppSpace.s10,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr16,
                         ),
@@ -68,20 +84,19 @@ class HomePlansPreview extends ConsumerWidget {
                               children: [
                                 Text(
                                   p.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: Theme.of(context).textTheme.titleSmall,
                                 ),
                                 Text(
-                                  '${p.done} of ${p.total} done · ${p.remaining} remaining',
-                                  style: TextStyle(color: g.inkSecondary),
-                                ),
-                                if (p.nextAt != null)
-                                  Text(
-                                    'Next · ${DateFormat('EEE, h:mm a').format(p.nextAt!)}',
-                                    style: TextStyle(color: g.clay),
+                                  _statusLine(p),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: p.pendingAlerts > 0
+                                        ? g.clay
+                                        : g.inkSecondary,
                                   ),
-                                Text(
-                                  '${p.scheduled} scheduled · ${p.unscheduled} without times${p.pendingAlerts > 0 ? ' · alerts pending' : ''}',
-                                  style: TextStyle(color: g.inkMuted),
                                 ),
                               ],
                             ),
@@ -91,17 +106,17 @@ class HomePlansPreview extends ConsumerWidget {
                       ),
                     ),
                   ),
-                Wrap(
-                  spacing: AppSpace.s8,
+                Row(
                   children: [
                     TextButton.icon(
                       onPressed: () => showPlanCollectionEditor(context),
                       icon: const Icon(Icons.add),
                       label: const Text('New plan'),
                     ),
+                    const Spacer(),
                     TextButton(
                       onPressed: () => context.push('/plans'),
-                      child: Text('View all ${plans.length} plans'),
+                      child: const Text('View all'),
                     ),
                   ],
                 ),
@@ -109,5 +124,14 @@ class HomePlansPreview extends ConsumerWidget {
             );
           },
         );
+  }
+
+  /// One short line: alerts problem first, then next time, then progress.
+  static String _statusLine(PlanCollectionView p) {
+    if (p.pendingAlerts > 0) return 'Alerts need attention';
+    final progress = '${p.done} of ${p.total} done';
+    final next = p.nextAt;
+    if (next == null) return progress;
+    return '$progress · Next ${DateFormat('EEE, h:mm a').format(next)}';
   }
 }

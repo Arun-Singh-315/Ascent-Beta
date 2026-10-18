@@ -44,8 +44,18 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
     final collections = ref.watch(planCollectionsProvider);
     final legacy = ref.watch(allPlansStreamProvider);
     if (legacy.value != null) _checkInitialPlan(legacy.value!);
+    const statuses = ['active', 'paused', 'archived'];
+    final known = collections.value ?? [];
+    int countFor(String status) => known.where((c) => c.status == status).length;
+    String tabLabel(int n) {
+      final count = countFor(statuses[n]);
+      final name = ['Active', 'Paused', 'Archived'][n];
+      // Never show a zero; a number only appears when there is something.
+      return count > 0 ? '$name $count' : name;
+    }
+
     return AscentScaffold(
-      title: 'Plans & Routines',
+      title: 'Plans',
       body: Column(
         children: [
           Padding(
@@ -67,7 +77,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                   children: [
                     for (var n = 0; n < 3; n++)
                       ChoiceChip(
-                        label: Text(['Active', 'Paused', 'Archived'][n]),
+                        label: Text(tabLabel(n)),
                         selected: _selectedTab == n,
                         onSelected: (_) => setState(() => _selectedTab = n),
                       ),
@@ -93,11 +103,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
               ),
               data: (all) {
                 final list = all
-                    .where(
-                      (c) =>
-                          c.status ==
-                          ['active', 'paused', 'archived'][_selectedTab],
-                    )
+                    .where((c) => c.status == statuses[_selectedTab])
                     .toList();
                 if (list.isEmpty) {
                   return const EmptyState(
@@ -148,12 +154,14 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '${p.done} of ${p.total} done · ${p.remaining} remaining',
-                              style: TextStyle(color: g.inkSecondary),
-                            ),
-                            Text(
-                              '${p.scheduled} scheduled · ${p.routines} repeating${p.pendingAlerts > 0 ? ' · alerts need attention' : ''}',
-                              style: TextStyle(color: g.inkMuted),
+                              p.pendingAlerts > 0
+                                  ? '${p.done} of ${p.total} done · alerts need attention'
+                                  : '${p.done} of ${p.total} done',
+                              style: TextStyle(
+                                color: p.pendingAlerts > 0
+                                    ? g.clay
+                                    : g.inkSecondary,
+                              ),
                             ),
                           ],
                         ),

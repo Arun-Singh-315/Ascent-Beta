@@ -39,16 +39,12 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   bool _showAll = false;
   bool _showCompleted = false;
   bool _showPlans = false;
-  bool _routinesOnly = false;
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
     final plans = ref.watch(planCollectionsProvider).value ?? [];
     final planCount = plans.where((p) => p.status == 'active').length;
-    final routineCount = plans
-        .where((p) => p.status == 'active')
-        .fold<int>(0, (n, p) => n + p.routines);
     final activitiesAsync = ref.watch(todayActivitiesProvider);
 
     final allActivities =
@@ -168,121 +164,84 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── CARD HEADER ROW: TODAY & COMPLETED TABS + ROUTINES & PLANS CTA ──────
+              // ── ONE SEGMENTED CONTROL: TODAY · COMPLETED · PLANS ──────
+              // Plans already contain their repeating routines, so there is no
+              // separate Routines control. Counts appear only when above zero.
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    // Today & Completed segmented pills
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: g.edge),
-                      ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _HubTabPill(
-                              label: 'Today',
-                              count: pendingActivities.length,
-                              isSelected: !_showCompleted && !_showPlans,
-                              activeColor: g.clay,
-                              activeTextColor: Colors.white,
-                              inactiveTextColor: g.inkSecondary,
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _showPlans = false;
-                                  _showCompleted = false;
-                                  _showAll = false;
-                                });
-                              },
-                            ),
-                            const SizedBox(width: 4),
-                            _HubTabPill(
-                              label: 'Completed',
-                              count: doneCount,
-                              isSelected: _showCompleted && !_showPlans,
-                              activeColor: g.clay,
-                              activeTextColor: Colors.white,
-                              inactiveTextColor: g.inkSecondary,
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _showPlans = false;
-                                  _showCompleted = true;
-                                  _showAll = false;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      color: g.fill,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: g.edge),
                     ),
-
-                    // Routines & Plans shortcut
-                    AppTapArea(
-                      onTap: () {
-                        HapticFeedback.lightImpact();
-                        setState(() {
-                          _showPlans = !_showPlans;
-                          _routinesOnly = false;
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: g.fill,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: g.edge),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.event_repeat_rounded,
-                              size: 14,
-                              color: g.clay,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              'Plans · $planCount',
-                              style: AscentTextStyles.homeSecondary.copyWith(
-                                color: g.inkSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _HubTabPill(
+                            label: 'Today',
+                            count: pendingActivities.length,
+                            isSelected: !_showCompleted && !_showPlans,
+                            activeColor: g.clay,
+                            activeTextColor: Colors.white,
+                            inactiveTextColor: g.inkSecondary,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _showPlans = false;
+                                _showCompleted = false;
+                                _showAll = false;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          _HubTabPill(
+                            label: 'Completed',
+                            count: doneCount,
+                            isSelected: _showCompleted && !_showPlans,
+                            activeColor: g.clay,
+                            activeTextColor: Colors.white,
+                            inactiveTextColor: g.inkSecondary,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _showPlans = false;
+                                _showCompleted = true;
+                                _showAll = false;
+                              });
+                            },
+                          ),
+                          const SizedBox(width: 4),
+                          _HubTabPill(
+                            label: 'Plans',
+                            count: planCount,
+                            isSelected: _showPlans,
+                            activeColor: g.clay,
+                            activeTextColor: Colors.white,
+                            inactiveTextColor: g.inkSecondary,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _showPlans = true;
+                                _showAll = false;
+                              });
+                            },
+                          ),
+                        ],
                       ),
                     ),
-                    TextButton(
-                      onPressed: () => setState(() {
-                        _showPlans = true;
-                        _routinesOnly = true;
-                      }),
-                      child: Text('Routines · $routineCount'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 
               // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
               if (_showPlans)
-                HomePlansPreview(routinesOnly: _routinesOnly)
+                const HomePlansPreview()
               else if (currentList.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),

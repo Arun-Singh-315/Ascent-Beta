@@ -589,54 +589,32 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       minHeight: 6,
                                     ),
                                   ),
-                                  const SizedBox(height: AppSpace.s10),
-                                  Wrap(
-                                    spacing: AppSpace.s6,
-                                    runSpacing: AppSpace.s6,
-                                    children: [
-                                      _buildMetricBadge(
-                                        icon: Icons.check_circle_outline_rounded,
-                                        label: '${plan.done} done',
-                                        color: g.clay,
-                                        background: g.claySoft,
-                                      ),
-                                      _buildMetricBadge(
-                                        icon: Icons.pending_actions_rounded,
-                                        label: '${plan.remaining} remaining',
-                                        color: g.inkSecondary,
-                                        background: g.fill,
-                                      ),
-                                      if (plan.scheduled > 0)
-                                        _buildMetricBadge(
-                                          icon: Icons.calendar_today_rounded,
-                                          label: '${plan.scheduled} scheduled',
-                                          color: g.inkSecondary,
-                                          background: g.fill,
-                                        ),
-                                      if (plan.unscheduled > 0)
-                                        _buildMetricBadge(
-                                          icon: Icons.hourglass_empty_rounded,
-                                          label: '${plan.unscheduled} untimed',
-                                          color: g.inkMuted,
-                                          background: g.fill,
-                                        ),
-                                      if (plan.overdue > 0)
-                                        _buildMetricBadge(
-                                          icon: Icons.warning_amber_rounded,
-                                          label: '${plan.overdue} overdue',
-                                          color: context.stateDanger,
-                                          background: context.stateDanger
-                                              .withValues(alpha: 0.12),
-                                        ),
-                                      if (plan.skipped > 0)
-                                        _buildMetricBadge(
-                                          icon: Icons.skip_next_rounded,
-                                          label: '${plan.skipped} skipped',
-                                          color: g.inkMuted,
-                                          background: g.fill,
-                                        ),
-                                    ],
-                                  ),
+                                  // Done / remaining counts live in the filter tabs below,
+                                  // so only problems are called out here.
+                                  if (plan.overdue > 0 || plan.skipped > 0) ...[
+                                    const SizedBox(height: AppSpace.s10),
+                                    Wrap(
+                                      spacing: AppSpace.s6,
+                                      runSpacing: AppSpace.s6,
+                                      children: [
+                                        if (plan.overdue > 0)
+                                          _buildMetricBadge(
+                                            icon: Icons.warning_amber_rounded,
+                                            label: '${plan.overdue} overdue',
+                                            color: context.stateDanger,
+                                            background: context.stateDanger
+                                                .withValues(alpha: 0.12),
+                                          ),
+                                        if (plan.skipped > 0)
+                                          _buildMetricBadge(
+                                            icon: Icons.skip_next_rounded,
+                                            label: '${plan.skipped} skipped',
+                                            color: g.inkMuted,
+                                            background: g.fill,
+                                          ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -746,11 +724,18 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                           child: FittedBox(
                                             fit: BoxFit.scaleDown,
                                             child: Text(
+                                              // A count appears only when above zero.
                                               f == 'All'
-                                                  ? 'All (${plan.total})'
+                                                  ? (plan.total > 0
+                                                        ? 'All (${plan.total})'
+                                                        : 'All')
                                                   : f == 'Remaining'
-                                                  ? 'Remaining (${plan.remaining})'
-                                                  : 'Done (${plan.done})',
+                                                  ? (plan.remaining > 0
+                                                        ? 'Remaining (${plan.remaining})'
+                                                        : 'Remaining')
+                                                  : (plan.done > 0
+                                                        ? 'Done (${plan.done})'
+                                                        : 'Done'),
                                               style: TextStyle(
                                                 color: _filter == f
                                                     ? Colors.white
@@ -769,10 +754,11 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                               ),
                             ),
                             // Contextual Action Buttons
-                            if (items.value?.any(
-                                  (i) => !i.done && i.at == null,
-                                ) ??
-                                false || plan.pendingAlerts > 0) ...[
+                            if ((items.value?.any(
+                                      (i) => !i.done && i.at == null,
+                                    ) ??
+                                    false) ||
+                                plan.pendingAlerts > 0) ...[
                               const SizedBox(height: AppSpace.s10),
                               Wrap(
                                 spacing: AppSpace.s8,

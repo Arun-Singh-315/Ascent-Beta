@@ -93,7 +93,7 @@ void main() {
         theme.$2,
       );
       expect(t.takeException(), isNull);
-      final details = find.text('Time & details');
+      final details = find.text('Add time');
       for (var n = 0; n < 12 && details.hitTestable().evaluate().isEmpty; n++) {
         await t.drag(find.byType(ListView), const Offset(0, -160));
         await t.pumpAndSettle();
@@ -102,11 +102,14 @@ void main() {
       await t.pumpAndSettle();
       expect(find.text('Item details'), findsOneWidget);
       expect(t.takeException(), isNull);
+      // Notes live under "More options" so the common path stays short.
+      await t.tap(find.text('More options'));
+      await t.pumpAndSettle();
+      final notes = find.widgetWithText(TextField, 'Notes');
+      await t.ensureVisible(notes);
+      await t.pumpAndSettle();
       // Keyboard open must leave a scrollable settings form.
-      await t.enterText(
-        find.widgetWithText(TextField, 'Notes'),
-        'Supporting notes',
-      );
+      await t.enterText(notes, 'Supporting notes');
       await t.pump();
       expect(t.takeException(), isNull);
       await t.pumpWidget(const SizedBox());
@@ -140,7 +143,7 @@ void main() {
     });
   }
   testWidgets(
-    'defaults preview schedules each row and save creates independent reminders',
+    'tomorrow-morning chip schedules each row and save creates independent reminders',
     (t) async {
       await mount(
         t,
@@ -154,20 +157,17 @@ void main() {
         'Study plan',
       );
 
-      final defaults = find.text('Use schedule defaults');
+      // One tap on a "When" chip schedules every row; no extra sheet to fill in.
+      final morning = find.text('Tomorrow morning');
       for (
         var n = 0;
-        n < 12 && defaults.hitTestable().evaluate().isEmpty;
+        n < 12 && morning.hitTestable().evaluate().isEmpty;
         n++
       ) {
         await t.drag(find.byType(ListView), const Offset(0, -160));
         await t.pumpAndSettle();
       }
-      await t.tap(defaults.hitTestable());
-      await t.pumpAndSettle();
-
-      expect(find.text('Schedule defaults'), findsOneWidget);
-      await t.tap(find.text('Preview schedule'));
+      await t.tap(morning.hitTestable());
       await t.pumpAndSettle();
 
       final summary = find.textContaining('2 scheduled · 2 reminders');
@@ -230,8 +230,10 @@ void main() {
       expect(t.takeException(), isNull);
       expect(find.text('Interview preparation'), findsOneWidget);
       expect(find.text('25%'), findsOneWidget);
-      expect(find.text('1 done'), findsOneWidget);
-      expect(find.text('3 remaining'), findsOneWidget);
+      // Counts appear once, in the filter tabs, not repeated as badges.
+      expect(find.text('Done (1)'), findsOneWidget);
+      expect(find.text('Remaining (3)'), findsOneWidget);
+      expect(find.text('1 done'), findsNothing);
       await t.pumpWidget(const SizedBox());
 
       // Dark mode verification

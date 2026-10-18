@@ -95,6 +95,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   final _description = TextEditingController();
   final _paste = TextEditingController();
   final _items = <_Item>[];
+  // Items whose time came from a "When" chip, so another chip can re-time them
+  // without touching times the person set by hand.
+  final _presetItems = <_Item>{};
+  String _preset = 'none';
   late String _request;
   String? _destination, _error;
   bool _busy = false;
@@ -227,6 +231,26 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     _persist();
   }
 
+  DateTime _morning() {
+    final p = ref.read(sharedPreferencesProvider);
+    final now = DateTime.now();
+    return DateTime(
+      now.year,
+      now.month,
+      now.day + 1,
+      p.getInt('planning_default_hour') ?? 7,
+      p.getInt('planning_default_minute') ?? 0,
+    );
+  }
+
+  DateTime _evening() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 18);
+    return today.isAfter(now.add(const Duration(minutes: 30)))
+        ? today
+        : DateTime(now.year, now.month, now.day + 1, 18);
+  }
+
   Future<void> _settings(int index) async {
     FocusScope.of(context).unfocus();
     final item = _items[index];
@@ -234,7 +258,11 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _ItemSettings(initial: item.draft),
+      builder: (_) => _ItemSettings(
+        initial: item.draft,
+        morning: _morning(),
+        evening: _evening(),
+      ),
     );
     if (result == null || !mounted) return;
     item.title.text = result.title;
@@ -246,10 +274,50 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     item.endDate = result.endDate;
     item.checkIn = result.checkIn;
     item.dateOnly = result.dateOnly;
+    // A hand-set time is pinned: presets no longer overwrite it.
+    _presetItems.remove(item);
     _changed();
   }
 
-  Future<void> _defaults() async {
+  /// Gives untimed (or preset-timed) items consecutive times starting at
+  /// [start]. Items the user timed by hand stay where they are.
+  void _applySchedule(DateTime start, int spacing, String alert) {
+    var at = start;
+    for (final item in _items) {
+      if (item.at == null || _presetItems.contains(item)) {
+        item.at = at;
+        item.dateOnly = false;
+        item.alert = alert;
+        _presetItems.add(item);
+      }
+      at = (item.at ?? at).add(
+        Duration(minutes: item.minutes == null ? spacing : item.minutes! + 10),
+      );
+    }
+    _changed();
+  }
+
+  void _pickPreset(String key) {
+    final p = ref.read(sharedPreferencesProvider);
+    final spacing = p.getInt('planning_default_spacing') ?? 30;
+    final alert = p.getString('planning_default_alert') ?? 'reminder';
+    _preset = key;
+    _applySchedule(key == 'evening' ? _evening() : _morning(), spacing, alert);
+  }
+
+  void _clearTimes() {
+    for (final i in _items) {
+      i.at = null;
+      i.recurrence = 'once';
+      i.checkIn = false;
+      i.dateOnly = false;
+    }
+    _presetItems.clear();
+    _preset = 'none';
+    _changed();
+  }
+
+  Future<void> _customSchedule() async {
     FocusScope.of(context).unfocus();
     final result = await showModalBottomSheet<_Defaults>(
       context: context,
@@ -258,21 +326,76 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       builder: (_) => const _DefaultsSheet(),
     );
     if (result == null || !mounted) return;
-    var at = result.at;
-    for (final item in _items) {
-      // Existing explicit schedules stay pinned.
-      if (item.at == null) {
-        item.at = at;
-        item.dateOnly = false;
-        item.alert = result.alert;
-      }
-      at = (item.at ?? at).add(
-        Duration(
-          minutes: item.minutes == null ? result.spacing : item.minutes! + 10,
-        ),
-      );
+    _preset = 'custom';
+    _applySchedule(result.at, result.spacing, result.alert);
+  }
+
+  void _setAlertForAll(String alert) {
+    for (final i in _items) {
+      if (i.at != null && !i.dateOnly) i.alert = alert;
     }
     _changed();
+  }
+
+  Future<void> _pasteList() async {
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Paste a list'),
+        content: TextField(
+          controller: _paste,
+          minLines: 4,
+          maxLines: 8,
+          decoration: const InputDecoration(
+            hintText: '-- First item\n--> Second item',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, _paste.text),
+            child: const Text('Review items'),
+          ),
+        ],
+      ),
+    );
+    if (text == null || !mounted) return;
+    final lines = PlanItemDraft.parseList(text);
+    if (lines.length + _items.length > 200) {
+      setState(() => _error = 'A plan can hold up to 200 items.');
+      return;
+    }
+    _items.addAll(
+      lines.map((l) {
+        final d = PlanItemDraft.fromText(l, DateTime.now());
+        return _Item(
+          d.title,
+          at: d.at,
+          recurrence: d.recurrence,
+          endDate: d.endDate,
+          checkIn: d.checkIn,
+        );
+      }),
+    );
+    _paste.clear();
+    _changed();
+  }
+
+  /// Named after the first item when the person leaves the name empty, so a
+  /// quick list never needs a typed title.
+  String _planTitle() {
+    if (_title.text.trim().isNotEmpty) return _title.text;
+    if (_destination != null) return 'Existing plan';
+    for (final i in _items) {
+      final t = i.title.text.trim();
+      if (t.isNotEmpty) {
+        return t.length > 40 ? '${t.substring(0, 40).trim()}…' : t;
+      }
+    }
+    return _title.text;
   }
 
   Future<void> _save() async {
@@ -293,9 +416,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
         await service.updateItem(widget.editing!, _items.single.draft);
       } else {
         await service.save(
-          title: _title.text.isEmpty && _destination != null
-              ? 'Existing plan'
-              : _title.text,
+          title: _planTitle(),
           description: _description.text,
           items: _items.map((i) => i.draft).toList(),
           requestId: _request,
@@ -341,10 +462,37 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     }
   }
 
+  String _timeLabel(_Item item) {
+    final at = item.at;
+    if (at == null) return 'Add time';
+    final when = DateFormat(
+      item.dateOnly ? 'EEE, d MMM' : 'EEE, d MMM · h:mm a',
+    ).format(at);
+    return switch (item.recurrence) {
+      'daily' => '$when · Daily',
+      'weekdays' => '$when · Weekdays',
+      _ => when,
+    };
+  }
+
+  Widget _sectionLabel(BuildContext context, String text) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpace.s16, bottom: AppSpace.s8),
+      child: Text(
+        text,
+        style: Theme.of(
+          context,
+        ).textTheme.labelLarge?.copyWith(color: g.inkSecondary),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
     final collections = ref.watch(planCollectionsProvider).value ?? [];
+    final activePlans = collections.where((c) => c.status == 'active').toList();
     final scheduled = _items.where((i) => i.at != null).length;
     final alarms = _items
         .where((i) => i.at != null && !i.dateOnly && i.alert == 'alarm')
@@ -354,6 +502,18 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
         .length;
     final times = _items.where((i) => i.at != null).map((i) => i.at!).toList();
     final overlap = times.toSet().length != times.length;
+    final timed = _items.where((i) => i.at != null && !i.dateOnly).toList();
+    final alertChoice =
+        timed.isNotEmpty && timed.every((i) => i.alert == timed.first.alert)
+        ? timed.first.alert
+        : null;
+    final isNewPlan = widget.editing == null && widget.scheduling == null;
+    final summary = <String>[
+      '${_items.length} ${_items.length == 1 ? 'item' : 'items'}',
+      if (scheduled > 0) '$scheduled scheduled',
+      if (reminders > 0) '$reminders ${reminders == 1 ? 'reminder' : 'reminders'}',
+      if (alarms > 0) '$alarms ${alarms == 1 ? 'alarm' : 'alarms'}',
+    ].join(' · ');
     return PopScope(
       canPop: !_busy,
       child: Padding(
@@ -392,39 +552,54 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpace.s16),
                   children: [
-                    if (widget.editing == null &&
-                        widget.scheduling == null) ...[
-                      if (widget.collectionId == null)
-                        DropdownButtonFormField<String>(
-                          initialValue: _destination ?? '',
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Destination',
-                          ),
-                          items: [
-                            const DropdownMenuItem(
-                              value: '',
-                              child: Text('Create a new plan'),
-                            ),
-                            for (final c in collections.where(
-                              (c) => c.status == 'active',
-                            ))
-                              DropdownMenuItem(
-                                value: c.id,
-                                child: Text(
-                                  '${c.title} · ${c.total} items',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                    if (isNewPlan) ...[
+                      if (widget.collectionId == null &&
+                          activePlans.isNotEmpty) ...[
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              ChoiceChip(
+                                label: const Text('New plan'),
+                                selected: _destination == null,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) {
+                                        _destination = null;
+                                        _changed();
+                                      },
                               ),
-                          ],
-                          onChanged: _busy
-                              ? null
-                              : (v) {
-                                  _destination = v == '' ? null : v;
-                                  _changed();
-                                },
+                              for (final c in activePlans)
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    left: AppSpace.s8,
+                                  ),
+                                  child: ChoiceChip(
+                                    label: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 160,
+                                      ),
+                                      child: Text(
+                                        c.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    selected: _destination == c.id,
+                                    onSelected: _busy
+                                        ? null
+                                        : (_) {
+                                            _destination = c.id;
+                                            _changed();
+                                          },
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      if (_destination == null) ...[
+                        const SizedBox(height: AppSpace.s8),
+                      ],
+                      if (_destination == null)
                         TextField(
                           controller: _title,
                           maxLength: 300,
@@ -432,35 +607,16 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                           onChanged: (_) => _persist(),
                           decoration: const InputDecoration(
                             labelText: 'Plan name',
-                            hintText: 'e.g. Interview preparation',
+                            hintText: 'Optional · named from your first item',
+                            counterText: '',
                           ),
                         ),
-                        TextField(
-                          controller: _description,
-                          maxLines: 2,
-                          maxLength: 20000,
-                          enabled: !_busy,
-                          onChanged: (_) => _persist(),
-                          decoration: const InputDecoration(
-                            labelText: 'Notes / original thought',
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: AppSpace.s12),
-                      Text(
-                        'Your checklist',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const Text(
-                        'Each row becomes one item. Add times now or leave items unscheduled.',
-                      ),
+                      _sectionLabel(context, 'Items'),
                     ],
                     for (var n = 0; n < _items.length; n++)
                       Padding(
                         key: ObjectKey(_items[n]),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpace.s8,
-                        ),
+                        padding: const EdgeInsets.only(bottom: AppSpace.s8),
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: g.fill,
@@ -468,23 +624,18 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             borderRadius: AppGeometry.roundedr16,
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.all(AppSpace.s12),
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpace.s12,
+                              AppSpace.s4,
+                              AppSpace.s4,
+                              AppSpace.s8,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        top: AppSpace.s16,
-                                      ),
-                                      child: Text(
-                                        '${n + 1}.',
-                                        style: TextStyle(color: g.inkMuted),
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppSpace.s8),
                                     Expanded(
                                       child: TextField(
                                         controller: _items[n].title,
@@ -506,11 +657,14 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                         decoration: const InputDecoration(
                                           hintText: 'What needs doing?',
                                           counterText: '',
+                                          border: InputBorder.none,
+                                          enabledBorder: InputBorder.none,
+                                          focusedBorder: InputBorder.none,
+                                          filled: false,
                                         ),
                                       ),
                                     ),
-                                    if (widget.editing == null &&
-                                        widget.scheduling == null)
+                                    if (isNewPlan && _items.length > 1)
                                       IconButton(
                                         tooltip: 'Remove item',
                                         onPressed: _busy
@@ -519,6 +673,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                                 final removed = _items.removeAt(
                                                   n,
                                                 );
+                                                _presetItems.remove(removed);
                                                 setState(() {});
                                                 _persist();
                                                 // Dispose after the TextField has unmounted.
@@ -531,55 +686,55 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                       ),
                                   ],
                                 ),
-                                Text(
-                                  _items[n].at == null
-                                      ? 'Not scheduled'
-                                      : DateFormat(
-                                          _items[n].dateOnly
-                                              ? 'EEE, d MMM'
-                                              : 'EEE, d MMM · h:mm a',
-                                        ).format(_items[n].at!),
-                                  style: TextStyle(color: g.inkSecondary),
-                                ),
-                                Wrap(
-                                  spacing: AppSpace.s8,
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  children: [
-                                    TextButton.icon(
-                                      onPressed: _busy
-                                          ? null
-                                          : () => _settings(n),
-                                      icon: const Icon(Icons.tune, size: 18),
-                                      label: Text(
-                                        _items[n].at == null
-                                            ? 'Time & details'
-                                            : '${_items[n].alert} · ${_items[n].recurrence}',
-                                      ),
-                                    ),
-                                    if (n > 0 && widget.editing == null)
-                                      IconButton(
-                                        tooltip: 'Move item up',
-                                        onPressed: _busy
-                                            ? null
-                                            : () {
-                                                final item = _items.removeAt(n);
-                                                _items.insert(n - 1, item);
-                                                _changed();
-                                              },
-                                        icon: const Icon(
-                                          Icons.arrow_upward,
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: AppSpace.s8,
+                                  ),
+                                  child: Wrap(
+                                    spacing: AppSpace.s8,
+                                    runSpacing: AppSpace.s4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      ActionChip(
+                                        avatar: Icon(
+                                          _items[n].at == null
+                                              ? Icons.add_alarm
+                                              : Icons.schedule,
                                           size: 18,
                                         ),
+                                        label: Text(_timeLabel(_items[n])),
+                                        onPressed: _busy
+                                            ? null
+                                            : () => _settings(n),
                                       ),
-                                  ],
+                                      if (n > 0 && widget.editing == null)
+                                        IconButton(
+                                          tooltip: 'Move item up',
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: _busy
+                                              ? null
+                                              : () {
+                                                  final item = _items.removeAt(
+                                                    n,
+                                                  );
+                                                  _items.insert(n - 1, item);
+                                                  _changed();
+                                                },
+                                          icon: const Icon(
+                                            Icons.arrow_upward,
+                                            size: 18,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
                       ),
-                    if (widget.editing == null &&
-                        widget.scheduling == null) ...[
+                    if (isNewPlan)
                       Wrap(
                         spacing: AppSpace.s8,
                         children: [
@@ -590,106 +745,68 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                     _items.add(_Item(''));
                                     _changed();
                                   },
-                            icon: const Icon(Icons.playlist_add),
-                            label: const Text('Add next item →'),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add item'),
                           ),
-                          TextButton(
-                            onPressed: _busy
-                                ? null
-                                : () async {
-                                    final text = await showDialog<String>(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: const Text('Paste a list'),
-                                        content: TextField(
-                                          controller: _paste,
-                                          minLines: 4,
-                                          maxLines: 8,
-                                          decoration: const InputDecoration(
-                                            hintText:
-                                                '-- First item\n--> Second item',
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(ctx),
-                                            child: const Text('Cancel'),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () =>
-                                                Navigator.pop(ctx, _paste.text),
-                                            child: const Text('Review items'),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (text == null || !mounted) return;
-                                    final lines = PlanItemDraft.parseList(text);
-                                    if (lines.length + _items.length > 200) {
-                                      setState(
-                                        () => _error =
-                                            'A plan can hold up to 200 items.',
-                                      );
-                                      return;
-                                    }
-                                    _items.addAll(
-                                      lines.map((l) {
-                                        final d = PlanItemDraft.fromText(
-                                          l,
-                                          DateTime.now(),
-                                        );
-                                        return _Item(
-                                          d.title,
-                                          at: d.at,
-                                          recurrence: d.recurrence,
-                                          endDate: d.endDate,
-                                          checkIn: d.checkIn,
-                                        );
-                                      }),
-                                    );
-                                    _paste.clear();
-                                    _changed();
-                                  },
-                            child: const Text('Paste list'),
+                          TextButton.icon(
+                            onPressed: _busy ? null : _pasteList,
+                            icon: const Icon(Icons.content_paste, size: 18),
+                            label: const Text('Paste list'),
                           ),
                         ],
                       ),
+                    if (widget.editing == null) ...[
+                      _sectionLabel(context, 'When'),
                       Wrap(
                         spacing: AppSpace.s8,
                         runSpacing: AppSpace.s8,
                         children: [
-                          OutlinedButton.icon(
-                            onPressed: _busy ? null : _defaults,
-                            icon: const Icon(Icons.auto_fix_high),
-                            label: const Text('Use schedule defaults'),
+                          ChoiceChip(
+                            label: const Text('No times'),
+                            selected: scheduled == 0,
+                            onSelected: _busy ? null : (_) => _clearTimes(),
                           ),
-                          TextButton(
-                            onPressed: _busy
+                          ChoiceChip(
+                            label: const Text('Tomorrow morning'),
+                            selected: scheduled > 0 && _preset == 'morning',
+                            onSelected: _busy
                                 ? null
-                                : () {
-                                    for (final i in _items) {
-                                      i.at = null;
-                                      i.recurrence = 'once';
-                                      i.checkIn = false;
-                                    }
-                                    _changed();
-                                  },
-                            child: const Text('Save without times'),
+                                : (_) => _pickPreset('morning'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Evening'),
+                            selected: scheduled > 0 && _preset == 'evening',
+                            onSelected: _busy
+                                ? null
+                                : (_) => _pickPreset('evening'),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Custom'),
+                            selected: scheduled > 0 && _preset == 'custom',
+                            onSelected: _busy ? null : (_) => _customSchedule(),
                           ),
                         ],
                       ),
+                      if (timed.isNotEmpty) ...[
+                        _sectionLabel(context, 'Alert'),
+                        Wrap(
+                          spacing: AppSpace.s8,
+                          runSpacing: AppSpace.s8,
+                          children: [
+                            for (final a in const ['reminder', 'alarm', 'none'])
+                              ChoiceChip(
+                                label: Text(_alertNames[a]!),
+                                selected: alertChoice == a,
+                                onSelected: _busy
+                                    ? null
+                                    : (_) => _setAlertForAll(a),
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
-                    if (widget.scheduling != null)
-                      OutlinedButton.icon(
-                        onPressed: _busy ? null : _defaults,
-                        icon: const Icon(Icons.auto_fix_high),
-                        label: const Text('Use schedule defaults'),
-                      ),
                     const SizedBox(height: AppSpace.s12),
-                    Text(
-                      '${_items.length} items · $scheduled scheduled · $reminders reminders · $alarms alarms',
-                      style: TextStyle(color: g.inkSecondary),
-                    ),
+                    Text(summary, style: TextStyle(color: g.inkSecondary)),
                     if (overlap)
                       Text(
                         'Some items share a time. You can keep them or edit their times.',
@@ -738,9 +855,20 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   }
 }
 
+const _alertNames = {
+  'none': 'Silent',
+  'reminder': 'Reminder',
+  'alarm': 'Alarm',
+};
+
 class _ItemSettings extends StatefulWidget {
-  const _ItemSettings({required this.initial});
+  const _ItemSettings({
+    required this.initial,
+    required this.morning,
+    required this.evening,
+  });
   final PlanItemDraft initial;
+  final DateTime morning, evening;
   @override
   State<_ItemSettings> createState() => _SettingsState();
 }
@@ -750,7 +878,9 @@ class _SettingsState extends State<_ItemSettings> {
   late String _alert, _repeat;
   late bool _check;
   bool _dateOnly = false;
-  late TextEditingController _notes, _minutes;
+  int? _minutes;
+  late final List<int> _durations;
+  late TextEditingController _notes;
   @override
   void initState() {
     super.initState();
@@ -761,16 +891,35 @@ class _SettingsState extends State<_ItemSettings> {
     _repeat = d.recurrence;
     _check = d.checkIn;
     _dateOnly = d.dateOnly;
+    _minutes = d.minutes;
     _notes = TextEditingController(text: d.notes);
-    _minutes = TextEditingController(text: d.minutes?.toString() ?? '');
+    final extra = d.minutes;
+    _durations = [
+      15,
+      25,
+      45,
+      60,
+      if (extra != null && extra > 0 && ![15, 25, 45, 60].contains(extra)) extra,
+    ]..sort();
   }
 
   @override
   void dispose() {
     _notes.dispose();
-    _minutes.dispose();
     super.dispose();
   }
+
+  bool _is(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    if (_dateOnly) {
+      return a.year == b.year && a.month == b.month && a.day == b.day;
+    }
+    return a == b;
+  }
+
+  void _setAt(DateTime t) => setState(
+    () => _at = _dateOnly ? DateTime(t.year, t.month, t.day) : t,
+  );
 
   Future<void> _pick() async {
     final now = DateTime.now();
@@ -802,159 +951,202 @@ class _SettingsState extends State<_ItemSettings> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: EdgeInsets.only(
-      left: AppSpace.s16,
-      right: AppSpace.s16,
-      top: AppSpace.s16,
-      bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
-    ),
-    child: SingleChildScrollView(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('Item details', style: Theme.of(context).textTheme.titleLarge),
-          TextButton.icon(
-            onPressed: _pick,
-            icon: const Icon(Icons.schedule),
-            label: Text(
-              _at == null
-                  ? 'Choose date and time'
-                  : _dateOnly
-                  ? DateFormat('EEE, d MMM').format(_at!)
-                  : DateFormat('EEE, d MMM · h:mm a').format(_at!),
-            ),
-          ),
-          if (_at != null)
-            TextButton(
-              onPressed: () => setState(() {
-                _at = null;
-                _repeat = 'once';
-                _check = false;
-              }),
-              child: const Text('Remove schedule'),
-            ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Date only · no alert'),
-            value: _dateOnly,
-            onChanged: (v) => setState(() {
-              _dateOnly = v;
-              if (v) {
-                _repeat = 'once';
-                _alert = 'none';
-                if (_at != null) {
-                  _at = DateTime(_at!.year, _at!.month, _at!.day);
-                }
-                _check = false;
-              }
-            }),
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _alert,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Alert'),
-            items: [
-              for (final a in ['none', 'reminder', 'alarm'])
-                DropdownMenuItem(
-                  value: a,
-                  child: Text(
-                    a == 'none'
-                        ? 'No alert'
-                        : a == 'alarm'
-                        ? 'Alarm'
-                        : 'Reminder',
-                  ),
-                ),
-            ],
-            onChanged: (v) => setState(() => _alert = v!),
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: _repeat,
-            isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Repeat'),
-            items: [
-              for (final r in ['once', 'daily', 'weekdays'])
-                DropdownMenuItem(
-                  value: r,
-                  child: Text(
-                    r == 'once'
-                        ? 'Does not repeat'
-                        : r == 'daily'
-                        ? 'Every day'
-                        : 'Weekdays',
-                  ),
-                ),
-            ],
-            onChanged: (v) => setState(() => _repeat = v!),
-          ),
-          if (_repeat != 'once')
-            TextButton(
-              onPressed: () async {
-                final now = DateTime.now();
-                final start = _at ?? now;
-                final end = await showDatePicker(
-                  context: context,
-                  initialDate: _end ?? start.add(const Duration(days: 14)),
-                  firstDate: start,
-                  lastDate: start.add(const Duration(days: 90)),
-                );
-                if (end != null && mounted) setState(() => _end = end);
-              },
-              child: Text(
-                _end == null
-                    ? 'Choose repeat end date'
-                    : 'Until ${DateFormat.yMMMd().format(_end!)}',
-              ),
-            ),
-          TextField(
-            controller: _minutes,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Focus duration in minutes (optional)',
-              helperText: 'Leave blank for a simple checkable to-do.',
-            ),
-          ),
-          TextField(
-            controller: _notes,
-            maxLines: 3,
-            maxLength: 20000,
-            decoration: const InputDecoration(labelText: 'Notes'),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Check in after this activity'),
-            subtitle: const Text('One follow-up; no repeated nudges.'),
-            value: _check,
-            onChanged: _at == null || _dateOnly
-                ? null
-                : (v) => setState(() => _check = v),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(
-              context,
-              PlanItemDraft(
-                title: widget.initial.title,
-                notes: _notes.text,
-                at: _at,
-                alert: _alert,
-                recurrence: _repeat,
-                endDate: _end,
-                minutes: _minutes.text.trim().isEmpty
-                    ? null
-                    : int.tryParse(_minutes.text) ?? 0,
-                checkIn: _dateOnly ? false : _check,
-                dateOnly: _dateOnly,
-              ),
-            ),
-            child: const Text('Apply details'),
-          ),
-        ],
-      ),
-    ),
+  Widget _label(String text) => Padding(
+    padding: const EdgeInsets.only(top: AppSpace.s16, bottom: AppSpace.s8),
+    child: Text(text, style: Theme.of(context).textTheme.labelLarge),
   );
+
+  @override
+  Widget build(BuildContext context) {
+    final custom =
+        _at != null && !_is(_at, widget.morning) && !_is(_at, widget.evening);
+    final timed = _at != null && !_dateOnly;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: AppSpace.s16,
+        right: AppSpace.s16,
+        top: AppSpace.s16,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Item details', style: Theme.of(context).textTheme.titleLarge),
+            _label('When'),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                ChoiceChip(
+                  label: const Text('No time'),
+                  selected: _at == null,
+                  onSelected: (_) => setState(() {
+                    _at = null;
+                    _repeat = 'once';
+                    _check = false;
+                    _dateOnly = false;
+                  }),
+                ),
+                ChoiceChip(
+                  label: const Text('Tomorrow morning'),
+                  selected: _is(_at, widget.morning),
+                  onSelected: (_) => _setAt(widget.morning),
+                ),
+                ChoiceChip(
+                  label: const Text('Evening'),
+                  selected: _is(_at, widget.evening),
+                  onSelected: (_) => _setAt(widget.evening),
+                ),
+                ChoiceChip(
+                  label: Text(
+                    custom
+                        ? DateFormat(
+                            _dateOnly ? 'EEE, d MMM' : 'EEE, d MMM · h:mm a',
+                          ).format(_at!)
+                        : (_dateOnly ? 'Pick a date' : 'Pick date & time'),
+                  ),
+                  selected: custom,
+                  onSelected: (_) => _pick(),
+                ),
+                FilterChip(
+                  label: const Text('Date only · no alert'),
+                  selected: _dateOnly,
+                  onSelected: (v) => setState(() {
+                    _dateOnly = v;
+                    if (v) {
+                      _repeat = 'once';
+                      _alert = 'none';
+                      if (_at != null) {
+                        _at = DateTime(_at!.year, _at!.month, _at!.day);
+                      }
+                      _check = false;
+                    }
+                  }),
+                ),
+              ],
+            ),
+            if (timed) ...[
+              _label('Repeat'),
+              Wrap(
+                spacing: AppSpace.s8,
+                runSpacing: AppSpace.s8,
+                children: [
+                  for (final r in const ['once', 'daily', 'weekdays'])
+                    ChoiceChip(
+                      label: Text(
+                        r == 'once'
+                            ? 'Once'
+                            : r == 'daily'
+                            ? 'Every day'
+                            : 'Weekdays',
+                      ),
+                      selected: _repeat == r,
+                      onSelected: (_) => setState(() => _repeat = r),
+                    ),
+                ],
+              ),
+              if (_repeat != 'once')
+                TextButton(
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final start = _at ?? now;
+                    final end = await showDatePicker(
+                      context: context,
+                      initialDate: _end ?? start.add(const Duration(days: 14)),
+                      firstDate: start,
+                      lastDate: start.add(const Duration(days: 90)),
+                    );
+                    if (end != null && mounted) setState(() => _end = end);
+                  },
+                  child: Text(
+                    _end == null
+                        ? 'Choose repeat end date'
+                        : 'Until ${DateFormat.yMMMd().format(_end!)}',
+                  ),
+                ),
+              _label('Alert'),
+              Wrap(
+                spacing: AppSpace.s8,
+                runSpacing: AppSpace.s8,
+                children: [
+                  for (final a in const ['reminder', 'alarm', 'none'])
+                    ChoiceChip(
+                      label: Text(_alertNames[a]!),
+                      selected: _alert == a,
+                      onSelected: (_) => setState(() => _alert = a),
+                    ),
+                ],
+              ),
+            ],
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: EdgeInsets.zero,
+                title: const Text('More options'),
+                children: [
+                  _label('Focus time'),
+                  Wrap(
+                    spacing: AppSpace.s8,
+                    runSpacing: AppSpace.s8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('None'),
+                        selected: _minutes == null,
+                        onSelected: (_) => setState(() => _minutes = null),
+                      ),
+                      for (final m in _durations)
+                        ChoiceChip(
+                          label: Text('$m min'),
+                          selected: _minutes == m,
+                          onSelected: (_) => setState(() => _minutes = m),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpace.s12),
+                  TextField(
+                    controller: _notes,
+                    maxLines: 3,
+                    maxLength: 20000,
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Check in after this activity'),
+                    subtitle: const Text('One follow-up; no repeated nudges.'),
+                    value: _check,
+                    onChanged: _at == null || _dateOnly
+                        ? null
+                        : (v) => setState(() => _check = v),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpace.s8),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                context,
+                PlanItemDraft(
+                  title: widget.initial.title,
+                  notes: _notes.text,
+                  at: _at,
+                  alert: _alert,
+                  recurrence: _repeat,
+                  endDate: _end,
+                  minutes: _minutes,
+                  checkIn: _dateOnly ? false : _check,
+                  dateOnly: _dateOnly,
+                ),
+              ),
+              child: const Text('Apply details'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _Defaults {
@@ -987,6 +1179,11 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
     _at = DateTime(now.year, now.month, now.day + 1, hour, minute);
   }
 
+  Widget _label(String text) => Padding(
+    padding: const EdgeInsets.only(top: AppSpace.s16, bottom: AppSpace.s8),
+    child: Text(text, style: Theme.of(context).textTheme.labelLarge),
+  );
+
   @override
   Widget build(BuildContext context) => SafeArea(
     child: Padding(
@@ -997,63 +1194,71 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Schedule defaults',
+              'Custom schedule',
               style: Theme.of(context).textTheme.titleLarge,
             ),
+            const SizedBox(height: AppSpace.s4),
             const Text(
-              'Applies only to items without a time. Review every time before saving.',
+              'Applies to items without a time. Times you set by hand stay as they are.',
             ),
-            TextButton(
-              onPressed: () async {
-                final now = DateTime.now();
-                final day = await showDatePicker(
-                  context: context,
-                  initialDate: _at,
-                  firstDate: DateTime(now.year, now.month, now.day),
-                  lastDate: DateTime(now.year + 3),
-                );
-                if (day == null || !context.mounted) return;
-                final t = await showTimePicker(
-                  context: context,
-                  initialTime: TimeOfDay.fromDateTime(_at),
-                );
-                if (t != null && mounted) {
-                  setState(
-                    () => _at = DateTime(
-                      day.year,
-                      day.month,
-                      day.day,
-                      t.hour,
-                      t.minute,
-                    ),
+            _label('Start'),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ActionChip(
+                avatar: const Icon(Icons.schedule, size: 18),
+                label: Text(DateFormat('EEE, d MMM · h:mm a').format(_at)),
+                onPressed: () async {
+                  final now = DateTime.now();
+                  final day = await showDatePicker(
+                    context: context,
+                    initialDate: _at,
+                    firstDate: DateTime(now.year, now.month, now.day),
+                    lastDate: DateTime(now.year + 3),
                   );
-                }
-              },
-              child: Text(
-                'First item: ${DateFormat('EEE, d MMM · h:mm a').format(_at)}',
+                  if (day == null || !context.mounted) return;
+                  final t = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.fromDateTime(_at),
+                  );
+                  if (t != null && mounted) {
+                    setState(
+                      () => _at = DateTime(
+                        day.year,
+                        day.month,
+                        day.day,
+                        t.hour,
+                        t.minute,
+                      ),
+                    );
+                  }
+                },
               ),
             ),
-            DropdownButtonFormField<int>(
-              initialValue: _spacing,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Spacing between items',
-              ),
-              items: [
-                for (final n in [15, 30, 45, 60, 90, 120])
-                  DropdownMenuItem(value: n, child: Text('$n minutes')),
+            _label('Gap between items'),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                for (final n in const [15, 30, 45, 60, 90, 120])
+                  ChoiceChip(
+                    label: Text('$n min'),
+                    selected: _spacing == n,
+                    onSelected: (_) => setState(() => _spacing = n),
+                  ),
               ],
-              onChanged: (v) => setState(() => _spacing = v!),
             ),
-            DropdownButtonFormField<String>(
-              initialValue: _alert,
-              isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Alert style'),
-              items: [
-                for (final a in ['none', 'reminder', 'alarm'])
-                  DropdownMenuItem(value: a, child: Text(a)),
+            _label('Alert'),
+            Wrap(
+              spacing: AppSpace.s8,
+              runSpacing: AppSpace.s8,
+              children: [
+                for (final a in const ['reminder', 'alarm', 'none'])
+                  ChoiceChip(
+                    label: Text(_alertNames[a]!),
+                    selected: _alert == a,
+                    onSelected: (_) => setState(() => _alert = a),
+                  ),
               ],
-              onChanged: (v) => setState(() => _alert = v!),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -1074,7 +1279,7 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
                   Navigator.pop(context, _Defaults(_at, _spacing, _alert));
                 }
               },
-              child: const Text('Preview schedule'),
+              child: const Text('Apply'),
             ),
           ],
         ),

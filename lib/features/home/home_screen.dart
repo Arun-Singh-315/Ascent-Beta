@@ -62,12 +62,22 @@ class _HomeContent extends ConsumerStatefulWidget {
   ConsumerState<_HomeContent> createState() => _HomeScreenState();
 }
 
+/// The welcome-back greeting is shown once per app launch, not on every visit
+/// to the Home tab.
+bool _welcomeBackShownThisLaunch = false;
+
 class _HomeScreenState extends ConsumerState<_HomeContent> {
   bool _hasCheckedOverdueReminders = false;
+  int? _welcomeBackDays;
 
   @override
   void initState() {
     super.initState();
+    final daysAway = ref.read(daysSinceLastOpenProvider);
+    if (!_welcomeBackShownThisLaunch && daysAway >= 3 && daysAway < 999) {
+      _welcomeBackShownThisLaunch = true;
+      _welcomeBackDays = daysAway;
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
@@ -146,7 +156,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
     final g = context.glass;
 
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final daysSinceLastOpen = ref.watch(daysSinceLastOpenProvider);
     final layout = ref.watch(homeLayoutProvider);
     ref.watch(challengeProofSyncProvider);
 
@@ -170,7 +179,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: SafeArea(
         child: HomeAtmosphereBackground(
-          child: profileAsync.when(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: profileAsync.when(
             loading: () => const _HomeLoadingView(),
             error: (err, _) => Center(
               child: Text(
@@ -235,12 +247,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                     // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
                     DayOneTutorialCard(userName: profile?.name ?? ''),
 
-                    // Return-user cold start welcome banner (>3 days absent)
-                    if (daysSinceLastOpen >= 3 && daysSinceLastOpen < 999) ...[
-                      const SizedBox(height: 12),
-                      WelcomeBackBanner(days: daysSinceLastOpen),
-                    ],
-
                     if (layout.shortcuts.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(bottom: AppSpace.s18),
@@ -278,6 +284,23 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                 ),
               );
             },
+                ),
+              ),
+              // Return-user greeting: floats at the top for a few seconds and
+              // never pushes the Things hub down.
+              if (_welcomeBackDays != null)
+                Positioned(
+                  top: AppSpace.s8,
+                  left: AppSpace.s24,
+                  right: AppSpace.s24,
+                  child: WelcomeBackBanner(
+                    days: _welcomeBackDays!,
+                    onDismissed: () {
+                      if (mounted) setState(() => _welcomeBackDays = null);
+                    },
+                  ),
+                ),
+            ],
           ),
         ),
       ),

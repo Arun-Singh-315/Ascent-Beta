@@ -97,11 +97,13 @@ void main() {
         expect(find.byType(LinearProgressIndicator), findsNothing);
         expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
 
-        // Inside card: Today and Completed tabs and Routines & plans shortcut exist
+        // Inside card: one Today / Completed / Plans control. Routines live
+        // inside plans, and zero counts are never shown.
         expect(find.text('Today'), findsWidgets);
         expect(find.text('Completed'), findsOneWidget);
-        expect(find.text('Plans · 0'), findsOneWidget);
-        expect(find.text('Routines · 0'), findsOneWidget);
+        expect(find.text('Plans'), findsOneWidget);
+        expect(find.textContaining('Routines'), findsNothing);
+        expect(find.text('0'), findsNothing);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();
