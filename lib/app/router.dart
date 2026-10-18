@@ -234,9 +234,13 @@ final ascentRouter = GoRouter(
         GoRoute(
           path: ':id',
           parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) => CardDetailScreen(
-            applicationId: int.parse(state.pathParameters['id']!),
-          ),
+          builder: (context, state) {
+            final id = int.tryParse(state.pathParameters['id'] ?? '');
+            if (id == null) {
+              return const PipelineScreen();
+            }
+            return CardDetailScreen(applicationId: id);
+          },
         ),
       ],
     ),
@@ -248,9 +252,13 @@ final ascentRouter = GoRouter(
         GoRoute(
           path: 'series/:id',
           parentNavigatorKey: rootNavigatorKey,
-          builder: (context, state) => SeriesReportCardScreen(
-            seriesId: int.parse(state.pathParameters['id']!),
-          ),
+          builder: (context, state) {
+            final id = int.tryParse(state.pathParameters['id'] ?? '');
+            if (id == null) {
+              return const AnalyticsScreen();
+            }
+            return SeriesReportCardScreen(seriesId: id);
+          },
         ),
       ],
     ),
@@ -286,7 +294,7 @@ final ascentRouter = GoRouter(
         final applicationId = state.uri.queryParameters['applicationId'];
         return InterviewPrepScreen(
           linkedApplicationId: applicationId != null
-              ? int.parse(applicationId)
+              ? int.tryParse(applicationId)
               : null,
         );
       },

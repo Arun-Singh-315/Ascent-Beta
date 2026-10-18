@@ -469,7 +469,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             child: Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF181009).withValues(alpha: 0.72)
+                    ? context.bgBase.withValues(alpha: 0.72)
                     : Colors.white.withValues(alpha: 0.82),
                 border: Border(
                   bottom: BorderSide(
@@ -505,7 +505,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     gradient: LinearGradient(
                       colors: [
                         accentColor.withValues(alpha: 0.25),
-                        const Color(0xFF8B6A4F).withValues(alpha: 0.25),
+                        context.glass.clay.withValues(alpha: 0.25),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -533,12 +533,12 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       color: context.glass.sage,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? const Color(0xFF181009) : Colors.white,
+                        color: isDark ? context.bgBase : Colors.white,
                         width: 1.8,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.6),
+                          color: context.glass.sage.withValues(alpha: 0.6),
                           blurRadius: 4,
                           spreadRadius: 1,
                         ),
@@ -843,11 +843,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           padding: const EdgeInsets.symmetric(vertical: 7.5, horizontal: 8),
           decoration: BoxDecoration(
             color: isDark
-                ? const Color(0xFF2D1F13).withValues(alpha: 0.88)
+                ? context.bgSurface.withValues(alpha: 0.88)
                 : Colors.white.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isDark ? const Color(0xFF4B3726) : const Color(0xFFE2E8F0),
+              color: isDark ? context.glass.edge : context.divider,
               width: 1.0,
             ),
             boxShadow: [
@@ -1118,7 +1118,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF332416).withValues(alpha: 0.85)
+                          ? context.bgSurface.withValues(alpha: 0.85)
                           : Colors.white.withValues(alpha: 0.90),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
@@ -1194,13 +1194,13 @@ class _ThinkingBubble extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: isDark
-                  ? const Color(0xFF2D1F13).withValues(alpha: 0.88)
+                  ? context.bgSurface.withValues(alpha: 0.88)
                   : Colors.white.withValues(alpha: 0.92),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDark
-                    ? const Color(0xFF4B3726)
-                    : const Color(0xFFE2E8F0),
+                    ? context.glass.edge
+                    : context.divider,
                 width: 1.0,
               ),
               boxShadow: [
@@ -1287,7 +1287,7 @@ class _SoftChatWelcome extends ConsumerWidget {
                 gradient: LinearGradient(
                   colors: [
                     accent.withValues(alpha: 0.25),
-                    const Color(0xFF8B6A4F).withValues(alpha: 0.25),
+                    context.glass.clay.withValues(alpha: 0.25),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -1319,13 +1319,13 @@ class _SoftChatWelcome extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF2D1F13).withValues(alpha: 0.85)
+                    ? context.bgSurface.withValues(alpha: 0.85)
                     : Colors.white.withValues(alpha: 0.90),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isDark
-                      ? const Color(0xFF4B3726)
-                      : const Color(0xFFE2E8F0),
+                      ? context.glass.edge
+                      : context.divider,
                   width: 0.8,
                 ),
               ),
@@ -1405,15 +1405,13 @@ class _SoftChatWelcome extends ConsumerWidget {
                           ),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? const Color(
-                                    0xFF2D1F13,
-                                  ).withValues(alpha: 0.85)
+                                ? context.bgSurface.withValues(alpha: 0.85)
                                 : Colors.white.withValues(alpha: 0.90),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFF4B3726)
-                                  : const Color(0xFFE2E8F0),
+                                  ? context.glass.edge
+                                  : context.divider,
                               width: 1.0,
                             ),
                             boxShadow: [
@@ -1477,172 +1475,16 @@ class _AtmosphericChatBackground extends StatelessWidget {
         child: const AscentAtmosphereBackground(child: SizedBox.expand()),
       );
     }
-    if (isDark) {
-      return Stack(
+    return AscentAtmosphereBackground(
+      glow1: isDark ? context.glass.glow1 : context.glass.claySoft,
+      glow2: isDark ? context.glass.glow2 : context.glass.slateSoft,
+      child: Stack(
         fit: StackFit.expand,
         children: [
-          // Base cosmic midnight canvas
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF181009),
-                  Color(0xFF22160C),
-                  Color(0xFF100B06),
-                ],
-              ),
-            ),
-          ),
-          // Ambient Indigo/Violet Aura (Top-Left)
-          Positioned(
-            top: -60,
-            left: -60,
-            width: 320,
-            height: 320,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFF8B6A4F).withValues(alpha: 0.16),
-                    const Color(0xFFE59046).withValues(alpha: 0.08),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          ),
-          // Ethereal Sky/Cyan Aurora (Top-Right)
-          Positioned(
-            top: 40,
-            right: -80,
-            width: 300,
-            height: 300,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFE9740E).withValues(alpha: 0.13),
-                    const Color(0xFF6E8565).withValues(alpha: 0.05),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          ),
-          // Deep Nebula Rose/Purple Aurora (Bottom-Left)
-          Positioned(
-            bottom: 60,
-            left: -80,
-            width: 340,
-            height: 340,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFF7A155).withValues(alpha: 0.10),
-                    const Color(0xFFEA8833).withValues(alpha: 0.04),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.55, 1.0],
-                ),
-              ),
-            ),
-          ),
-          // Custom Celestial Shimmer Dust (Deterministic, zero CPU/GPU overhead)
-          const CustomPaint(painter: _CelestialStardustPainter(isDark: true)),
+          CustomPaint(painter: _CelestialStardustPainter(isDark: isDark)),
         ],
-      );
-    } else {
-      // Day Mode: Luminous Pearl & Morning Serenity
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          // Base serene porcelain & alabaster canvas
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFAFBFD),
-                  Color(0xFFF1F5F9),
-                  Color(0xFFEDF2F7),
-                ],
-              ),
-            ),
-          ),
-          // Morning Sky Mist Glow (Top-Left)
-          Positioned(
-            top: -60,
-            left: -50,
-            width: 320,
-            height: 320,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFF89238).withValues(alpha: 0.12),
-                    const Color(0xFF6E8565).withValues(alpha: 0.04),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          ),
-          // Soft Lavender / Orchid Warmth (Top-Right)
-          Positioned(
-            top: 60,
-            right: -60,
-            width: 280,
-            height: 280,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFABF8B).withValues(alpha: 0.09),
-                    const Color(0xFFF6A45C).withValues(alpha: 0.03),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-          ),
-          // Morning Sunbeam Gold Sheen (Bottom-Right)
-          Positioned(
-            bottom: 40,
-            right: -40,
-            width: 300,
-            height: 300,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFDE68A).withValues(alpha: 0.09),
-                    const Color(0xFFF59E0B).withValues(alpha: 0.03),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.6, 1.0],
-                ),
-              ),
-            ),
-          ),
-          // Custom Pearl Shimmer Dust (Deterministic)
-          const CustomPaint(painter: _CelestialStardustPainter(isDark: false)),
-        ],
-      );
-    }
+      ),
+    );
   }
 }
 
@@ -1693,7 +1535,7 @@ class _CelestialStardustPainter extends CustomPainter {
           ? ((i % 4 == 0) ? 0.38 : (i % 2 == 0 ? 0.22 : 0.14))
           : ((i % 4 == 0) ? 0.16 : 0.08);
 
-      paint.color = (isDark ? Colors.white : const Color(0xFF8B6A4F))
+      paint.color = (isDark ? Colors.white : AscentColors.accentSecondary)
           .withValues(alpha: alpha);
       canvas.drawCircle(pos, radius, paint);
     }

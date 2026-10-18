@@ -100,7 +100,7 @@ class StudyStreakMeterCard extends StatelessWidget {
           boxShadow: g.frozen
               ? [
                   BoxShadow(
-                    color: (isDark ? Colors.black : const Color(0xFF1D64B4))
+                    color: (isDark ? Colors.black : FrozenPalette.action)
                         .withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 4),

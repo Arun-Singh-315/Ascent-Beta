@@ -115,6 +115,20 @@ class AscentColors {
 
   /// Shadow in dark mode.
   static const Color shadowDark = Color(0xFF000000);
+
+  /// Water & Hydration accent tokens.
+  static const Color waterPrimary = Color(0xFF0284C7);
+  static const Color waterBright = Color(0xFF38BDF8);
+
+  /// Money & Finance accent tokens.
+  static const Color financePrimary = Color(0xFF059669);
+  static const Color financeBright = Color(0xFF34D399);
+
+  /// Translucent day surface highlight (e.g. thought bubble day backdrop)
+  static const Color translucentSurfaceDay = Color(0x1AFFFFFF);
+
+  /// Day mode subdued outline border
+  static const Color outlineDay = Color(0xFF73727B);
 }
 
 /// Convenience extension so call-sites never branch on brightness manually.
@@ -122,6 +136,9 @@ extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
   bool get isFrozen => Theme.of(this).extension<AscentGlass>()?.frozen == true;
+
+  Color get waterAccent => isDark ? AscentColors.waterBright : AscentColors.waterPrimary;
+  Color get financeAccent => isDark ? AscentColors.financeBright : AscentColors.financePrimary;
 
   Color get bgBase => isFrozen
       ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)

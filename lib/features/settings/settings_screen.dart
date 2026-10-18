@@ -665,7 +665,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _DayPresetOption(
                         label: 'Classic Clay',
                         subtitle: 'Terracotta & Linen',
-                        colorSwatch: const Color(0xFFA4523A),
+                        colorSwatch: AscentColors.accentPrimary,
                         icon: Icons.wb_sunny_outlined,
                         isSelected: dayPreset == DayThemePreset.classicClay,
                         onTap: () {

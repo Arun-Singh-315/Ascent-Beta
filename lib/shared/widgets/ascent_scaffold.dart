@@ -153,12 +153,16 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
             style: AscentTextStyles.displaySmall
                 .copyWith(color: g.ink, letterSpacing: -0.3)
                 .merge(AppTypeRoles.typeRole69),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (subtitle != null && subtitle!.isNotEmpty) ...[
             const SizedBox(height: 1),
             Text(
               subtitle!,
               style: AppTypography.jetBrainsMono105W500120(color: g.inkMuted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],

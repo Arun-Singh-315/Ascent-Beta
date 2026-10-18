@@ -170,12 +170,6 @@ class AppDatabase extends _$AppDatabase {
       );
     },
     onUpgrade: (m, from, to) async {
-      if (from < 15) {
-        await m.addColumn(reminderTable, reminderTable.alarmEnabled);
-      }
-      if (from < 14) {
-        await m.createTable(backupRestoreTable);
-      }
       if (from < 2) {
         await m.addColumn(taskTable, taskTable.parentTaskId);
         await m.addColumn(taskTable, taskTable.linkedApplicationId);
@@ -237,14 +231,20 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(thoughtTable, thoughtTable.isArchived);
         await m.addColumn(thoughtTable, thoughtTable.isCompleted);
       }
-      if (from < 13) {
-        await m.createTable(aiCommandTable);
-      }
       if (from < 12) {
         await m.createTable(challengeTable);
         await m.createTable(challengeLinkTable);
         await m.createTable(challengeProofEventTable);
         await m.createTable(challengeAmendmentTable);
+      }
+      if (from < 13) {
+        await m.createTable(aiCommandTable);
+      }
+      if (from < 14) {
+        await m.createTable(backupRestoreTable);
+      }
+      if (from < 15) {
+        await m.addColumn(reminderTable, reminderTable.alarmEnabled);
       }
       if (from < 16) {
         await m.addColumn(taskTable, taskTable.linkedThoughtId);

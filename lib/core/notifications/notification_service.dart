@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'boost_notification_copy.dart';
 import 'notification_presentation.dart';
 import 'reminder_alarm_bridge.dart';
+import '../../app/theme/color_tokens.dart';
 
 /// Top-level background notification response callback required by flutter_local_notifications.
 @pragma('vm:entry-point')
@@ -69,8 +70,7 @@ class NotificationService {
   static const String channelOngoingSessionId = 'ascent_ongoing_session';
   static const String channelOngoingSessionName = 'Ongoing Timers & Sessions';
   static const int ongoingLectureNotificationId = 888800;
-  static const int ongoingSessionNotificationId =
-      888800; // backwards-compatible alias for ongoingLectureNotificationId
+  static const int ongoingSessionNotificationId = 888804;
   static const int ongoingWalkNotificationId = 888801;
   static const int ongoingChaiBreakNotificationId = 888802;
   static const int ongoingFocusNotificationId = 888803;
@@ -357,7 +357,7 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            ledColor: Color(0xFFD86500),
+            ledColor: AscentColors.accentSecondary,
           ),
         );
         await androidImpl.createNotificationChannel(
@@ -397,7 +397,7 @@ class NotificationService {
             playSound: true,
             enableVibration: true,
             enableLights: true,
-            ledColor: Color(0xFFD86500),
+            ledColor: AscentColors.accentSecondary,
           ),
         );
         await androidImpl.createNotificationChannel(
@@ -545,9 +545,9 @@ class NotificationService {
       importance: importance,
       priority: priority,
       icon: '@drawable/ic_launcher_foreground',
-      color: const Color(0xFFD86500),
+      color: AscentColors.accentSecondary,
       enableLights: true,
-      ledColor: const Color(0xFFD86500),
+      ledColor: AscentColors.accentSecondary,
       ledOnMs: 500,
       ledOffMs: 500,
       enableVibration: true,
@@ -858,7 +858,7 @@ class NotificationService {
         channelDescription: 'Simple reminders with expandable full content',
         importance: Importance.high,
         priority: Priority.high,
-        color: const Color(0xFFA95235),
+        color: AscentColors.accentPrimary,
         category: AndroidNotificationCategory.reminder,
         actions: checkIn
             ? const [
@@ -1008,12 +1008,12 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.max,
       icon: '@drawable/ic_launcher_foreground',
-      color: const Color(0xFFD86500),
+      color: AscentColors.accentSecondary,
       category: AndroidNotificationCategory.alarm,
       fullScreenIntent: true,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       enableLights: true,
-      ledColor: const Color(0xFFD86500),
+      ledColor: AscentColors.accentSecondary,
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 1000]),
       subText: 'Ascent • Momentum Wake Alert',
@@ -1396,7 +1396,7 @@ class NotificationService {
         showWhen: true,
         usesChronometer: !isPaused,
         when: chronometerStart,
-        color: const Color(0xFFD86500),
+        color: AscentColors.accentSecondary,
         subText:
             subText ??
             (isPaused
@@ -1436,6 +1436,7 @@ class NotificationService {
     try {
       await _plugin.cancel(id: ongoingLectureNotificationId);
       await _plugin.cancel(id: ongoingFocusNotificationId);
+      await _plugin.cancel(id: ongoingSessionNotificationId);
     } catch (e) {
       debugPrint('Failed to cancel ongoing session notification: $e');
     }
@@ -1497,7 +1498,7 @@ class NotificationService {
         showWhen: true,
         usesChronometer: !isPaused,
         when: chronometerStart,
-        color: const Color(0xFF2C6B45),
+        color: AscentColors.stateSuccess,
         subText: isPaused ? 'Walk Paused' : 'Walk Active • GPS Live',
         category: AndroidNotificationCategory.status,
         actions: actions,
@@ -1561,7 +1562,7 @@ class NotificationService {
         autoCancel: false,
         onlyAlertOnce: true,
         showWhen: false,
-        color: const Color(0xFFE28B57),
+        color: AscentColors.accentInfo,
         subText: isPaused ? 'Break Paused' : 'Chai & Coffee Break',
         category: AndroidNotificationCategory.status,
         actions: actions,

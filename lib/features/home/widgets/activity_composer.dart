@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/color_tokens.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/services/activity_entry_service.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
@@ -236,11 +237,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0x18FFFFFF)
-                : (context.glass.frozen
-                      ? const Color(0xFFF0F5FA)
-                      : const Color(0xFFF7F6F9)),
+            color: isDark ? g.fill : context.bgSurfaceElevated,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isDark
