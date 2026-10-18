@@ -240,5 +240,27 @@ void main() {
       image.dispose();
     });
     await t.pumpWidget(const SizedBox());
+
+    final darkKey = GlobalKey();
+    await mount(
+      t,
+      PlanCollectionDetail(id: id),
+      AscentTheme.dark(),
+      width: 390,
+      scale: 1,
+      capture: darkKey,
+    );
+    expect(t.takeException(), isNull);
+    final darkBoundary =
+        darkKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    await t.runAsync(() async {
+      final image = await darkBoundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      await File(
+        '/tmp/ascent-planning-detail-dark.png',
+      ).writeAsBytes(bytes!.buffer.asUint8List());
+      image.dispose();
+    });
+    await t.pumpWidget(const SizedBox());
   });
 }
