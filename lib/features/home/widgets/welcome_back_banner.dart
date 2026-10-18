@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/color_tokens.dart';
@@ -48,7 +47,9 @@ class _WelcomeBackBannerState extends State<WelcomeBackBanner>
     if (_closing || !mounted) return;
     _closing = true;
     _timer?.cancel();
-    await _controller.reverse();
+    try {
+      await _controller.reverse().orCancel;
+    } catch (_) {}
     if (mounted) widget.onDismissed();
   }
 
@@ -66,6 +67,17 @@ class _WelcomeBackBannerState extends State<WelcomeBackBanner>
       curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeInCubic,
     );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark
+        ? Color.alphaBlend(
+            context.accentSecondary.withValues(alpha: 0.16),
+            context.bgSurfaceElevated,
+          )
+        : context.bgSurfaceElevated;
+    final borderColor = isDark
+        ? context.accentSecondary.withValues(alpha: 0.35)
+        : context.accentSecondary.withValues(alpha: 0.25);
+
     return FadeTransition(
       opacity: curved,
       child: SlideTransition(
@@ -73,45 +85,101 @@ class _WelcomeBackBannerState extends State<WelcomeBackBanner>
           begin: const Offset(0, -0.6),
           end: Offset.zero,
         ).animate(curved),
-        child: AppCard(
-          onTap: _dismiss,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s14,
-            vertical: AppSpace.s10,
-          ),
-          // Opaque on purpose: this floats over the header for a few seconds.
-          nightDecoration: BoxDecoration(
-            color: Color.alphaBlend(
-              context.accentSecondary.withValues(alpha: 0.12),
-              Theme.of(context).colorScheme.surface,
-            ),
-            borderRadius: AppGeometry.roundedr12,
-            border: Border.all(
-              color: context.accentSecondary.withValues(alpha: 0.25),
-              width: AppBorderScale.w0point8,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.wb_sunny_outlined,
-                color: context.accentSecondary,
-                size: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: surfaceColor,
+              borderRadius: AppGeometry.roundedr16,
+              border: Border.all(
+                color: borderColor,
+                width: AppBorderScale.w1point0,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  widget.days == 1
-                      ? 'Welcome back! You were away 1 day.'
-                      : 'Welcome back! You were away ${widget.days} days.',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.labelSmall
-                      .copyWith(color: context.textPrimary)
-                      .merge(AppTypeRoles.typeRole2),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.4)
+                      : Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: InkWell(
+              onTap: _dismiss,
+              borderRadius: AppGeometry.roundedr16,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpace.s6),
+                      decoration: BoxDecoration(
+                        color: context.accentSecondary.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.wb_sunny_rounded,
+                        color: context.accentSecondary,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.days == 1
+                                ? 'Welcome back! You were away 1 day.'
+                                : 'Welcome back! You were away ${widget.days} days.',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AscentTextStyles.labelSmall
+                                .copyWith(
+                                  color: context.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                )
+                                .merge(AppTypeRoles.typeRole2),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Consistency starts with one focused block. Let\'s build momentum today!',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AscentTextStyles.bodySmall
+                                .copyWith(
+                                  color: context.textMuted,
+                                  fontSize: 11,
+                                )
+                                .merge(AppTypeRoles.typeRole4),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s8),
+                    IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: context.textMuted,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 28,
+                        minHeight: 28,
+                      ),
+                      tooltip: 'Dismiss',
+                      onPressed: _dismiss,
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),

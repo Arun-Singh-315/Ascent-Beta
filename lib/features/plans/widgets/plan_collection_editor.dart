@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
+import '../../../app/theme/color_tokens.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/plan_collection_service.dart';
@@ -21,13 +22,21 @@ Future<void> showPlanCollectionEditor(
   context: context,
   isScrollControlled: true,
   useSafeArea: true,
-  builder: (_) => PlanCollectionEditor(
-    source: source,
-    initialText: initialText,
-    collectionId: collectionId,
-    draftKey: draftKey,
-    editing: editing,
-    scheduling: scheduling,
+  backgroundColor: Colors.transparent,
+  builder: (ctx) => Container(
+    decoration: BoxDecoration(
+      color: ctx.bgSurfaceElevated,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      border: Border.all(color: ctx.glass.line),
+    ),
+    child: PlanCollectionEditor(
+      source: source,
+      initialText: initialText,
+      collectionId: collectionId,
+      draftKey: draftKey,
+      editing: editing,
+      scheduling: scheduling,
+    ),
   ),
 );
 
@@ -42,12 +51,21 @@ class _Item {
     this.endDate,
     this.checkIn = false,
     this.dateOnly = false,
-  }) : title = TextEditingController(text: title);
+  }) : title = TextEditingController(text: title),
+       focusNode = FocusNode();
+
   final TextEditingController title;
+  final FocusNode focusNode;
   String notes, alert, recurrence;
   DateTime? at, endDate;
   int? minutes;
   bool checkIn, dateOnly;
+
+  void dispose() {
+    title.dispose();
+    focusNode.dispose();
+  }
+
   Map<String, dynamic> toJson() => {
     'title': title.text,
     'notes': notes,
@@ -172,7 +190,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
           _description.text = saved['description'] as String;
           _destination = saved['destination'] as String?;
           for (final i in _items) {
-            i.title.dispose();
+            i.dispose();
           }
           _items.clear();
           for (final row in saved['items'] as List) {
@@ -221,7 +239,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     _description.dispose();
     _paste.dispose();
     for (final i in _items) {
-      i.title.dispose();
+      i.dispose();
     }
     super.dispose();
   }
@@ -229,6 +247,29 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   void _changed() {
     setState(() {});
     _persist();
+  }
+
+  void _addItem([String text = '']) {
+    if (_items.length >= 200) {
+      setState(() => _error = 'A plan can hold up to 200 items.');
+      return;
+    }
+    final item = _Item(text);
+    setState(() {
+      _items.add(item);
+    });
+    _changed();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) item.focusNode.requestFocus();
+    });
+  }
+
+  DateTime _today() {
+    final now = DateTime.now();
+    final candidate = DateTime(now.year, now.month, now.day, now.hour + 1, 0);
+    return candidate.isAfter(now)
+        ? candidate
+        : now.add(const Duration(minutes: 30));
   }
 
   DateTime _morning() {
@@ -258,6 +299,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => _ItemSettings(
         initial: item.draft,
         morning: _morning(),
@@ -302,7 +344,12 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final spacing = p.getInt('planning_default_spacing') ?? 30;
     final alert = p.getString('planning_default_alert') ?? 'reminder';
     _preset = key;
-    _applySchedule(key == 'evening' ? _evening() : _morning(), spacing, alert);
+    final start = key == 'today'
+        ? _today()
+        : key == 'evening'
+        ? _evening()
+        : _morning();
+    _applySchedule(start, spacing, alert);
   }
 
   void _clearTimes() {
@@ -323,6 +370,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (_) => const _DefaultsSheet(),
     );
     if (result == null || !mounted) return;
@@ -338,28 +386,123 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   }
 
   Future<void> _pasteList() async {
-    final text = await showDialog<String>(
+    final g = context.glass;
+    final text = await showModalBottomSheet<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Paste a list'),
-        content: TextField(
-          controller: _paste,
-          minLines: 4,
-          maxLines: 8,
-          decoration: const InputDecoration(
-            hintText: '-- First item\n--> Second item',
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpace.s20),
+          decoration: BoxDecoration(
+            color: ctx.bgSurfaceElevated,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: g.line),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                    decoration: BoxDecoration(
+                      color: g.inkMuted.withValues(alpha: 0.3),
+                      borderRadius: AppGeometry.roundedr4,
+                    ),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      decoration: BoxDecoration(
+                        color: g.clay.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.playlist_add_rounded,
+                        color: g.clay,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Add multiple items',
+                            style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: g.ink,
+                            ),
+                          ),
+                          Text(
+                            'Type or paste items (one per line). Bullets and numbers are cleaned.',
+                            style: TextStyle(
+                              color: g.inkSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpace.s16),
+                TextField(
+                  controller: _paste,
+                  minLines: 4,
+                  maxLines: 10,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'First item\nSecond item\nThird item…',
+                    hintStyle: TextStyle(color: g.inkMuted),
+                    filled: true,
+                    fillColor: g.fill,
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr16,
+                      borderSide: BorderSide(color: g.edge),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr16,
+                      borderSide: BorderSide(color: g.edge),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text('Cancel', style: TextStyle(color: g.inkMuted)),
+                    ),
+                    const SizedBox(width: AppSpace.s8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: g.clay,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, _paste.text),
+                      child: const Text('Review items'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, _paste.text),
-            child: const Text('Review items'),
-          ),
-        ],
       ),
     );
     if (text == null || !mounted) return;
@@ -524,6 +667,17 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
           height: MediaQuery.sizeOf(context).height * .9,
           child: Column(
             children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(top: AppSpace.s12, bottom: AppSpace.s4),
+                  decoration: BoxDecoration(
+                    color: g.inkMuted.withValues(alpha: 0.3),
+                    borderRadius: AppGeometry.roundedr4,
+                  ),
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(AppSpace.s16),
                 child: Row(
@@ -611,150 +765,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             counterText: '',
                           ),
                         ),
-                      _sectionLabel(context, 'Items'),
                     ],
-                    for (var n = 0; n < _items.length; n++)
-                      Padding(
-                        key: ObjectKey(_items[n]),
-                        padding: const EdgeInsets.only(bottom: AppSpace.s8),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: g.fill,
-                            border: Border.all(color: g.edge),
-                            borderRadius: AppGeometry.roundedr16,
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(
-                              AppSpace.s12,
-                              AppSpace.s4,
-                              AppSpace.s4,
-                              AppSpace.s8,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _items[n].title,
-                                        maxLength: 300,
-                                        minLines: 1,
-                                        maxLines: 4,
-                                        enabled: !_busy,
-                                        textInputAction: TextInputAction.next,
-                                        onChanged: (_) => _persist(),
-                                        onSubmitted: (_) {
-                                          if (widget.editing == null &&
-                                              _items.length < 200) {
-                                            setState(
-                                              () => _items.add(_Item('')),
-                                            );
-                                            _persist();
-                                          }
-                                        },
-                                        decoration: const InputDecoration(
-                                          hintText: 'What needs doing?',
-                                          counterText: '',
-                                          border: InputBorder.none,
-                                          enabledBorder: InputBorder.none,
-                                          focusedBorder: InputBorder.none,
-                                          filled: false,
-                                        ),
-                                      ),
-                                    ),
-                                    if (isNewPlan && _items.length > 1)
-                                      IconButton(
-                                        tooltip: 'Remove item',
-                                        onPressed: _busy
-                                            ? null
-                                            : () {
-                                                final removed = _items.removeAt(
-                                                  n,
-                                                );
-                                                _presetItems.remove(removed);
-                                                setState(() {});
-                                                _persist();
-                                                // Dispose after the TextField has unmounted.
-                                                WidgetsBinding.instance
-                                                    .addPostFrameCallback((_) {
-                                                      removed.title.dispose();
-                                                    });
-                                              },
-                                        icon: const Icon(Icons.close, size: 18),
-                                      ),
-                                  ],
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                    right: AppSpace.s8,
-                                  ),
-                                  child: Wrap(
-                                    spacing: AppSpace.s8,
-                                    runSpacing: AppSpace.s4,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    children: [
-                                      ActionChip(
-                                        avatar: Icon(
-                                          _items[n].at == null
-                                              ? Icons.add_alarm
-                                              : Icons.schedule,
-                                          size: 18,
-                                        ),
-                                        label: Text(_timeLabel(_items[n])),
-                                        onPressed: _busy
-                                            ? null
-                                            : () => _settings(n),
-                                      ),
-                                      if (n > 0 && widget.editing == null)
-                                        IconButton(
-                                          tooltip: 'Move item up',
-                                          visualDensity: VisualDensity.compact,
-                                          onPressed: _busy
-                                              ? null
-                                              : () {
-                                                  final item = _items.removeAt(
-                                                    n,
-                                                  );
-                                                  _items.insert(n - 1, item);
-                                                  _changed();
-                                                },
-                                          icon: const Icon(
-                                            Icons.arrow_upward,
-                                            size: 18,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    if (isNewPlan)
-                      Wrap(
-                        spacing: AppSpace.s8,
-                        children: [
-                          TextButton.icon(
-                            onPressed: _busy || _items.length >= 200
-                                ? null
-                                : () {
-                                    _items.add(_Item(''));
-                                    _changed();
-                                  },
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add item'),
-                          ),
-                          TextButton.icon(
-                            onPressed: _busy ? null : _pasteList,
-                            icon: const Icon(Icons.content_paste, size: 18),
-                            label: const Text('Paste list'),
-                          ),
-                        ],
-                      ),
                     if (widget.editing == null) ...[
                       _sectionLabel(context, 'When'),
                       Wrap(
@@ -765,6 +776,13 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             label: const Text('No times'),
                             selected: scheduled == 0,
                             onSelected: _busy ? null : (_) => _clearTimes(),
+                          ),
+                          ChoiceChip(
+                            label: const Text('Today'),
+                            selected: scheduled > 0 && _preset == 'today',
+                            onSelected: _busy
+                                ? null
+                                : (_) => _pickPreset('today'),
                           ),
                           ChoiceChip(
                             label: const Text('Tomorrow morning'),
@@ -804,14 +822,281 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                           ],
                         ),
                       ],
+                      const SizedBox(height: AppSpace.s8),
+                      Text(summary, style: TextStyle(color: g.inkSecondary, fontSize: 13)),
+                      if (overlap)
+                        Text(
+                          'Some items share a time. You can keep them or edit their times.',
+                          style: TextStyle(color: g.clay, fontSize: 12),
+                        ),
                     ],
-                    const SizedBox(height: AppSpace.s12),
-                    Text(summary, style: TextStyle(color: g.inkSecondary)),
-                    if (overlap)
-                      Text(
-                        'Some items share a time. You can keep them or edit their times.',
-                        style: TextStyle(color: g.clay),
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpace.s16, bottom: AppSpace.s8),
+                      child: Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: AppSpace.s8,
+                        runSpacing: AppSpace.s6,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Items',
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: g.inkSecondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (_items.isNotEmpty) ...[
+                                const SizedBox(width: AppSpace.s6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: g.fill,
+                                    borderRadius: AppGeometry.roundedr6,
+                                    border: Border.all(color: g.edge),
+                                  ),
+                                  child: Text(
+                                    '${_items.length}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: g.inkMuted,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          if (isNewPlan)
+                            Wrap(
+                              spacing: AppSpace.s6,
+                              runSpacing: AppSpace.s4,
+                              children: [
+                                TextButton.icon(
+                                  onPressed: _busy || _items.length >= 200
+                                      ? null
+                                      : () => _addItem(),
+                                  icon: const Icon(Icons.add, size: 18),
+                                  label: const Text('Add item'),
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: _busy ? null : _pasteList,
+                                  icon: const Icon(Icons.playlist_add_rounded, size: 18),
+                                  label: const Text('Paste list'),
+                                  style: TextButton.styleFrom(
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
                       ),
+                    ),
+                    for (var n = 0; n < _items.length; n++)
+                      Padding(
+                        key: ObjectKey(_items[n]),
+                        padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: g.fill,
+                            border: Border.all(color: g.edge),
+                            borderRadius: AppGeometry.roundedr16,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpace.s12,
+                              AppSpace.s4,
+                              AppSpace.s4,
+                              AppSpace.s8,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: _items[n].title,
+                                        focusNode: _items[n].focusNode,
+                                        maxLength: 300,
+                                        minLines: 1,
+                                        maxLines: 4,
+                                        enabled: !_busy,
+                                        textInputAction: TextInputAction.next,
+                                        onChanged: (_) => _persist(),
+                                        onSubmitted: (_) {
+                                          if (n < _items.length - 1) {
+                                            _items[n + 1].focusNode.requestFocus();
+                                          } else if (widget.editing == null) {
+                                            _addItem();
+                                          }
+                                        },
+                                        decoration: const InputDecoration(
+                                          hintText: 'What needs doing?',
+                                          counterText: '',
+                                          border: InputBorder.none,
+                                          enabledBorder: InputBorder.none,
+                                          focusedBorder: InputBorder.none,
+                                          filled: false,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isNewPlan && _items.length > 1)
+                                      IconButton(
+                                        tooltip: 'Remove item',
+                                        onPressed: _busy
+                                            ? null
+                                            : () {
+                                                final removed = _items.removeAt(
+                                                  n,
+                                                );
+                                                _presetItems.remove(removed);
+                                                setState(() {});
+                                                _persist();
+                                                // Dispose after the TextField has unmounted.
+                                                WidgetsBinding.instance
+                                                    .addPostFrameCallback((_) {
+                                                      removed.dispose();
+                                                    });
+                                              },
+                                        icon: const Icon(Icons.close, size: 18),
+                                      ),
+                                  ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    right: AppSpace.s8,
+                                  ),
+                                  child: Wrap(
+                                    spacing: AppSpace.s8,
+                                    runSpacing: AppSpace.s4,
+                                    crossAxisAlignment:
+                                        WrapCrossAlignment.center,
+                                    children: [
+                                      ActionChip(
+                                        avatar: Icon(
+                                          _items[n].at == null
+                                              ? Icons.add_alarm
+                                              : Icons.schedule,
+                                          size: 18,
+                                        ),
+                                        label: Text(_timeLabel(_items[n])),
+                                        onPressed: _busy
+                                            ? null
+                                            : () => _settings(n),
+                                      ),
+                                      if (_items[n].at != null)
+                                        IconButton(
+                                          tooltip: 'Clear time',
+                                          visualDensity: VisualDensity.compact,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 28,
+                                            minHeight: 28,
+                                          ),
+                                          onPressed: _busy
+                                              ? null
+                                              : () {
+                                                  setState(() {
+                                                    _items[n].at = null;
+                                                    _items[n].recurrence = 'once';
+                                                    _items[n].dateOnly = false;
+                                                    _presetItems.remove(_items[n]);
+                                                  });
+                                                  _changed();
+                                                },
+                                          icon: Icon(
+                                            Icons.close_rounded,
+                                            size: 16,
+                                            color: g.inkMuted,
+                                          ),
+                                        ),
+                                      if (_items[n].minutes != null && _items[n].minutes! > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: g.clay.withValues(alpha: 0.12),
+                                            borderRadius: AppGeometry.roundedr8,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.timer_outlined, size: 12, color: g.clay),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${_items[n].minutes}m focus',
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: g.clay,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      if (n > 0 && widget.editing == null)
+                                        IconButton(
+                                          tooltip: 'Move item up',
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: _busy
+                                              ? null
+                                              : () {
+                                                  final item = _items.removeAt(
+                                                    n,
+                                                  );
+                                                  _items.insert(n - 1, item);
+                                                  _changed();
+                                                },
+                                          icon: const Icon(
+                                            Icons.arrow_upward,
+                                            size: 18,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (isNewPlan) ...[
+                      const SizedBox(height: AppSpace.s4),
+                      Wrap(
+                        spacing: AppSpace.s8,
+                        runSpacing: AppSpace.s8,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: _busy || _items.length >= 200
+                                ? null
+                                : () => _addItem(),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Add item'),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr12,
+                              ),
+                            ),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: _busy ? null : _pasteList,
+                            icon: const Icon(Icons.playlist_add_rounded, size: 18),
+                            label: const Text('Paste list'),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                     if (_error != null)
                       Padding(
                         padding: const EdgeInsets.all(AppSpace.s8),
@@ -958,14 +1243,23 @@ class _SettingsState extends State<_ItemSettings> {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final custom =
         _at != null && !_is(_at, widget.morning) && !_is(_at, widget.evening);
     final timed = _at != null && !_dateOnly;
-    return Padding(
+    return Material(
+      color: context.bgSurfaceElevated,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: g.line),
+        ),
       padding: EdgeInsets.only(
         left: AppSpace.s16,
         right: AppSpace.s16,
-        top: AppSpace.s16,
+        top: AppSpace.s12,
         bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
       ),
       child: SingleChildScrollView(
@@ -973,6 +1267,17 @@ class _SettingsState extends State<_ItemSettings> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: AppSpace.s12),
+                decoration: BoxDecoration(
+                  color: g.inkMuted.withValues(alpha: 0.3),
+                  borderRadius: AppGeometry.roundedr4,
+                ),
+              ),
+            ),
             Text('Item details', style: Theme.of(context).textTheme.titleLarge),
             _label('When'),
             Wrap(
@@ -1145,8 +1450,9 @@ class _SettingsState extends State<_ItemSettings> {
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _Defaults {
@@ -1185,18 +1491,44 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
   );
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: const EdgeInsets.all(AppSpace.s16),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Custom schedule',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Material(
+      color: context.bgSurfaceElevated,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: g.line),
+        ),
+      padding: EdgeInsets.only(
+        left: AppSpace.s16,
+        right: AppSpace.s16,
+        top: AppSpace.s12,
+        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpace.s12),
+                  decoration: BoxDecoration(
+                    color: g.inkMuted.withValues(alpha: 0.3),
+                    borderRadius: AppGeometry.roundedr4,
+                  ),
+                ),
+              ),
+              Text(
+                'Custom schedule',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             const SizedBox(height: AppSpace.s4),
             const Text(
               'Applies to items without a time. Times you set by hand stay as they are.',
@@ -1285,5 +1617,7 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
         ),
       ),
     ),
-  );
+  ),
+);
+}
 }

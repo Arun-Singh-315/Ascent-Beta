@@ -154,9 +154,13 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              p.pendingAlerts > 0
-                                  ? '${p.done} of ${p.total} done · alerts need attention'
-                                  : '${p.done} of ${p.total} done',
+                              p.total == 0
+                                  ? (p.pendingAlerts > 0
+                                        ? 'Alerts need attention'
+                                        : 'No items yet')
+                                  : (p.pendingAlerts > 0
+                                        ? '${p.done} of ${p.total} done · alerts need attention'
+                                        : '${p.done} of ${p.total} done'),
                               style: TextStyle(
                                 color: p.pendingAlerts > 0
                                     ? g.clay
