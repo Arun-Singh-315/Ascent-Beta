@@ -100,13 +100,23 @@ void main() {
     });
 
     test('night mode remains untouched and preserved', () {
-      final theme = AscentTheme.dark(preset: DayThemePreset.merlotLinen);
+      final theme = AscentTheme.dark(preset: DayThemePreset.classicClay);
 
       expect(theme.brightness, Brightness.dark);
       final glass = theme.extension<AscentGlass>();
       expect(glass, isNotNull);
       expect(glass!.merlot, isFalse); // dark glass is preserved
       expect(glass.bg, const Color(0xFF16110D));
+    });
+
+    test('dark merlot mode wires AscentGlass.merlotLinenDark and dark palette', () {
+      final theme = AscentTheme.dark(preset: DayThemePreset.merlotLinen);
+
+      expect(theme.brightness, Brightness.dark);
+      final glass = theme.extension<AscentGlass>();
+      expect(glass, isNotNull);
+      expect(glass!.merlot, isTrue);
+      expect(glass.bg, MerlotPalette.darkCanvas);
     });
   });
 

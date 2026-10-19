@@ -15,7 +15,17 @@ class HomeTheme {
     final isMerlot = parentGlass.merlot;
 
     if (isDark) {
-      final glass = isNordic
+      final glass = isMerlot
+          ? (AscentGlass.merlotLinenDark.copyWith(
+              bg: MerlotPalette.darkCanvas,
+              fill: const Color.fromRGBO(255, 255, 255, 0.07),
+              edge: MerlotPalette.darkLine,
+              line: MerlotPalette.darkLineSubtle,
+              ink: MerlotPalette.darkInk,
+              inkSecondary: MerlotPalette.darkSecondaryInk,
+              inkMuted: MerlotPalette.darkMutedInk,
+            ) as AscentGlass)
+          : isNordic
           ? (AscentGlass.nordicSkyDark.copyWith(
               fill: const Color.fromRGBO(34, 53, 72, 0.12),
               edge: const Color.fromRGBO(94, 160, 240, 0.22),
@@ -41,7 +51,12 @@ class HomeTheme {
                 extension is! AscentGlass && extension is! AppSurfaces,
           ),
           glass,
-          (isNordic ? AppSurfaces.legacyNordicSky : AppSurfaces.night).copyWith(
+          (isMerlot
+                  ? AppSurfaces.legacyMerlotLinenDark
+                  : isNordic
+                  ? AppSurfaces.legacyNordicSky
+                  : AppSurfaces.night)
+              .copyWith(
             blur: 0,
             cardFill: glass.fill,
             cardBorderColor: glass.edge,

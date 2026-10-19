@@ -29,7 +29,7 @@ class AscentTheme {
 
   // ── Dark ───────────────────────────────────────────────────────────────────
 
-  static ThemeData dark({DayThemePreset preset = DayThemePreset.merlotLinen}) =>
+  static ThemeData dark({DayThemePreset preset = DayThemePreset.classicClay}) =>
       _build(brightness: Brightness.dark, preset: preset);
 
   static ThemeData assistant(ThemeData parent) {
@@ -77,43 +77,43 @@ class AscentTheme {
 
     // Resolve semantic tokens for this brightness.
     final bgBase = isMerlotLinen
-        ? (isDark ? AscentColors.bgBaseDark : MerlotPalette.canvas)
+        ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.canvas)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
         : (isDark ? AscentColors.bgBaseDark : AscentColors.bgBase);
     final bgSurface = isMerlotLinen
-        ? (isDark ? AscentColors.bgSurfaceDark : MerlotPalette.surface)
+        ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
         : (isDark ? AscentColors.bgSurfaceDark : AscentColors.bgSurface);
     final bgSurfaceElevated = isMerlotLinen
-        ? (isDark ? AscentColors.bgSurfaceElevatedDark : MerlotPalette.elevated)
+        ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
         : (isDark
               ? AscentColors.bgSurfaceElevatedDark
               : AscentColors.bgSurfaceElevated);
     final accentPrimary = isMerlotLinen
-        ? (isDark ? AscentColors.accentPrimaryDark : MerlotPalette.action)
+        ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
         : (isDark
               ? AscentColors.accentPrimaryDark
               : AscentColors.accentPrimary);
     final accentSecondary = isMerlotLinen
-        ? (isDark ? MerlotPalette.antiqueGold : MerlotPalette.antiqueGold)
+        ? (isDark ? MerlotPalette.darkSpark : MerlotPalette.antiqueGold)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
         : (isDark
               ? AscentColors.accentSecondaryDark
               : AscentColors.accentSecondary);
     final accentInfo = isMerlotLinen
-        ? (isDark ? MerlotPalette.warning : MerlotPalette.warning)
+        ? (isDark ? MerlotPalette.darkWarning : MerlotPalette.warning)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkWarning : FrozenPalette.warning)
         : (isDark ? AscentColors.accentInfoDark : AscentColors.accentInfo);
     final stateDanger = isMerlotLinen
-        ? (isDark ? MerlotPalette.danger : MerlotPalette.danger)
+        ? (isDark ? MerlotPalette.darkDanger : MerlotPalette.danger)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
         : (isDark ? AscentColors.stateDangerDark : AscentColors.stateDanger);
@@ -124,7 +124,7 @@ class AscentTheme {
               ? AppSurfaces.nordicSky.ink
               : AppSurfaces.day.ink)
         : isMerlotLinen
-        ? (isDark ? AscentColors.textPrimaryDark : MerlotPalette.ink)
+        ? (isDark ? MerlotPalette.darkInk : MerlotPalette.ink)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
         : (isDark ? AscentColors.textPrimaryDark : AscentColors.textPrimary);
@@ -135,12 +135,12 @@ class AscentTheme {
               ? AppSurfaces.nordicSky.mutedText
               : AppSurfaces.day.mutedText)
         : isMerlotLinen
-        ? (isDark ? AscentColors.textMutedDark : MerlotPalette.mutedInk)
+        ? (isDark ? MerlotPalette.darkMutedInk : MerlotPalette.mutedInk)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
         : (isDark ? AscentColors.textMutedDark : AscentColors.textMuted);
     final textOnPrimary = isDark
-        ? AscentColors.textOnPrimaryDark
+        ? (isMerlotLinen ? Colors.white : AscentColors.textOnPrimaryDark)
         : AscentColors.textOnPrimary;
     final divider = day
         ? (isMerlotLinen
@@ -149,7 +149,7 @@ class AscentTheme {
               ? AppSurfaces.nordicSky.dividerColor
               : AppSurfaces.day.dividerColor)
         : isMerlotLinen
-        ? (isDark ? AscentColors.dividerDark : MerlotPalette.lineSubtle)
+        ? (isDark ? MerlotPalette.darkLineSubtle : MerlotPalette.lineSubtle)
         : isNordicSky
         ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
         : (isDark ? AscentColors.dividerDark : AscentColors.divider);
@@ -800,7 +800,11 @@ class AscentTheme {
       ),
       extensions: [
         isDark
-            ? (isNordicSky ? AscentGlass.nordicSkyDark : AscentGlass.dark)
+            ? (isMerlotLinen
+                ? AscentGlass.merlotLinenDark
+                : isNordicSky
+                ? AscentGlass.nordicSkyDark
+                : AscentGlass.dark)
             : isMerlotLinen
                 ? (!day
                     ? AscentGlass.merlotLinenLight
@@ -843,7 +847,9 @@ class AscentTheme {
                             shadow: Colors.transparent,
                           ),
         isDark
-            ? AppSurfaces.night
+            ? (isMerlotLinen
+                ? AppSurfaces.legacyMerlotLinenDark
+                : AppSurfaces.night)
             : isMerlotLinen
                 ? (day ? AppSurfaces.merlotLinen : AppSurfaces.legacyMerlotLinen)
                 : isNordicSky
