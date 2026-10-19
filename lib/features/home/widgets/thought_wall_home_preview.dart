@@ -325,7 +325,7 @@ class _ThoughtWallHomePreviewState
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Tip: Tap + or type --> for plans, -- for to-do',
+                        'Tip: Tap + or type → for plans, • for to-do',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,

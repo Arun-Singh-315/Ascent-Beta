@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'color_tokens.dart';
 import 'frozen_palette.dart';
+import 'aurora_palette.dart';
 
 /// Glass theme tokens for the Ascent design system.
 /// Defined according to the Ascent Liquid Glass specification:
@@ -145,6 +146,60 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     ink: FrozenPalette.darkInk,
     inkSecondary: FrozenPalette.darkSecondaryInk,
     inkMuted: FrozenPalette.darkMutedInk,
+  );
+
+  static const auroraCalmLight = AscentGlass(
+    frozen: false,
+    bg: AuroraPalette.canvas,
+    fill: Color.fromRGBO(252, 253, 255, 0.94),
+    edge: Color.fromRGBO(203, 213, 225, 0.90),
+    highlight: Color.fromRGBO(255, 255, 255, 0.98),
+    line: Color.fromRGBO(203, 213, 225, 0.70),
+    glow1: Color.fromRGBO(99, 102, 241, 0.22),
+    glow2: Color.fromRGBO(6, 182, 212, 0.18),
+    track: AuroraPalette.tint,
+    nav: Color.fromRGBO(252, 253, 255, 0.96),
+    shadow: Color.fromRGBO(79, 70, 229, 0.08),
+    clay: AuroraPalette.action,
+    claySoft: AuroraPalette.tint,
+    slate: AuroraPalette.actionCyan,
+    slateSoft: AuroraPalette.cyanTint,
+    sage: AuroraPalette.success,
+    sageSoft: Color.fromRGBO(16, 185, 129, 0.12),
+    amber: AuroraPalette.spark,
+    amberSoft: AuroraPalette.sparkTint,
+    coral: AuroraPalette.danger,
+    coralSoft: Color.fromRGBO(239, 68, 68, 0.12),
+    ink: AuroraPalette.ink,
+    inkSecondary: AuroraPalette.secondaryInk,
+    inkMuted: AuroraPalette.mutedInk,
+  );
+
+  static const auroraCalmDark = AscentGlass(
+    frozen: false,
+    bg: AuroraPalette.darkCanvas,
+    fill: Color.fromRGBO(19, 27, 46, 0.92),
+    edge: Color.fromRGBO(39, 53, 78, 0.90),
+    highlight: Color.fromRGBO(255, 255, 255, 0.12),
+    line: Color.fromRGBO(39, 53, 78, 0.70),
+    glow1: Color.fromRGBO(129, 140, 248, 0.22),
+    glow2: Color.fromRGBO(56, 189, 248, 0.18),
+    track: AuroraPalette.darkTint,
+    nav: Color.fromRGBO(19, 27, 46, 0.96),
+    shadow: Color.fromRGBO(0, 0, 0, 0.45),
+    clay: AuroraPalette.darkAction,
+    claySoft: AuroraPalette.darkTint,
+    slate: AuroraPalette.darkActionCyan,
+    slateSoft: AuroraPalette.darkCyanTint,
+    sage: AuroraPalette.darkSuccess,
+    sageSoft: Color.fromRGBO(52, 211, 153, 0.14),
+    amber: AuroraPalette.darkSpark,
+    amberSoft: AuroraPalette.darkSparkTint,
+    coral: AuroraPalette.darkDanger,
+    coralSoft: Color.fromRGBO(248, 113, 113, 0.14),
+    ink: AuroraPalette.darkInk,
+    inkSecondary: AuroraPalette.darkSecondaryInk,
+    inkMuted: AuroraPalette.darkMutedInk,
   );
 
   static const dark = AscentGlass(

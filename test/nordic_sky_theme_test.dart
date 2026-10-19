@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/aurora_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('DayThemePreset provider & persistence', () {
-    test('defaults to classicClay (brown) when no value is stored', () async {
+    test('defaults to auroraCalm when no value is stored', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
@@ -23,7 +24,7 @@ void main() {
 
       expect(
         container.read(dayThemePresetProvider),
-        DayThemePreset.classicClay,
+        DayThemePreset.auroraCalm,
       );
     });
 
@@ -64,6 +65,19 @@ void main() {
   });
 
   group('AscentTheme daylight presets', () {
+    test('auroraCalm preset applies Royal Indigo & Aurora Cyan palette', () {
+      final theme = AscentTheme.light(preset: DayThemePreset.auroraCalm);
+
+      expect(theme.brightness, Brightness.light);
+      expect(theme.colorScheme.primary, AuroraPalette.action);
+      expect(theme.scaffoldBackgroundColor, AuroraPalette.canvas);
+      final glass = theme.extension<AscentGlass>();
+      expect(glass, isNotNull);
+      expect(glass!.clay, AuroraPalette.action);
+      expect(glass.slate, AuroraPalette.actionCyan);
+      expect(glass.ink, AuroraPalette.ink);
+    });
+
     test('classicClay preset applies signature terracotta & linen palette', () {
       final theme = AscentTheme.light(preset: DayThemePreset.classicClay);
 
@@ -121,6 +135,27 @@ void main() {
     );
 
     test(
+      'switchTheme in auroraCalm has high-contrast selected (cyan/indigo) states',
+      () {
+        final theme = AscentTheme.light(preset: DayThemePreset.auroraCalm);
+        final switchTheme = theme.switchTheme;
+
+        expect(switchTheme.thumbColor, isNotNull);
+        expect(switchTheme.trackColor, isNotNull);
+
+        final selectedThumb = switchTheme.thumbColor!.resolve({
+          WidgetState.selected,
+        });
+        final selectedTrack = switchTheme.trackColor!.resolve({
+          WidgetState.selected,
+        });
+
+        expect(selectedThumb, Colors.white);
+        expect(selectedTrack, AuroraPalette.action);
+      },
+    );
+
+    test(
       'outlined and text buttons have Clear Sky action interactive blue foreground',
       () {
         final theme = AscentTheme.light(preset: DayThemePreset.nordicSky);
@@ -138,7 +173,7 @@ void main() {
 
   group('SettingsScreen Day Theme Selector & Toggles', () {
     testWidgets(
-      'shows both Classic Clay and Frozen Sky with Classic Clay selected by default',
+      'shows Aurora, Classic Clay and Frozen Sky with Aurora selected by default',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);
         tester.view.devicePixelRatio = 1.0;
@@ -165,13 +200,14 @@ void main() {
         // Check Appearance & Theme section
         expect(find.text('Appearance & Theme'), findsOneWidget);
         expect(find.text('Daylight Style'), findsOneWidget);
+        expect(find.text('Aurora'), findsOneWidget);
         expect(find.text('Classic Clay'), findsOneWidget);
         expect(find.text('Frozen Sky'), findsOneWidget);
 
-        // Default is Classic Clay
+        // Default is Aurora
         expect(
           container.read(dayThemePresetProvider),
-          DayThemePreset.classicClay,
+          DayThemePreset.auroraCalm,
         );
 
         // Tap Nordic Sky

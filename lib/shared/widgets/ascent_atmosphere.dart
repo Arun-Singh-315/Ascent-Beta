@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/surface_tokens.dart';
 
 /// Paints the soothing atmosphere ambient glows behind any Ascent screen or sheet:
 /// - Primary warm glow (defaults to clay) at top-left
@@ -23,14 +22,17 @@ class AscentAtmosphereBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (context.surfaces.outlined) return child;
     final g = context.glass;
+    final g1 = glow1 ?? g.glow1;
+    final g2 = glow2 ?? g.glow2;
+    if (g1.a == 0 && g2.a == 0) return child;
+
     final color1 = softenGlow(
-      glow1 ?? g.glow1,
+      g1,
       maxAlpha: g.frozen ? 0.32 : 0.18,
     );
     final color2 = softenGlow(
-      glow2 ?? g.glow2,
+      g2,
       maxAlpha: g.frozen ? 0.24 : 0.14,
     );
 

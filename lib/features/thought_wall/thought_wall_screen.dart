@@ -23,6 +23,7 @@ import '../home/widgets/home_schedule_sheet.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
 import 'thought_quick_actions.dart';
+import '../../shared/widgets/thought_excerpt.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
@@ -1591,15 +1592,18 @@ class ThoughtCardBubble extends ConsumerWidget {
                     const SizedBox(height: 10),
 
                     // Content
-                    Text(
-                      thought.content,
-                      style: AppTypography.plusJakartaSans14W60071(
-                        color: thought.isCompleted
-                            ? context.textMuted
-                            : context.textPrimary,
-                        decoration: thought.isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
+                    Text.rich(
+                      ThoughtExcerpt.buildRichArrowSpan(
+                        context: context,
+                        text: thought.content,
+                        baseStyle: AppTypography.plusJakartaSans14W60071(
+                          color: thought.isCompleted
+                              ? context.textMuted
+                              : context.textPrimary,
+                          decoration: thought.isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
                       ),
                     ),
                     if (showQuickActions &&

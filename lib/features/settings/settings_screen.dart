@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
+import '../../app/theme/aurora_palette.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/glass_theme.dart';
@@ -624,14 +625,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             .merge(AppTypeRoles.typeRole2),
                       ),
                       Text(
-                        dayPreset == DayThemePreset.nordicSky
-                            ? 'Frozen Sky'
-                            : 'Classic Clay (Default)',
+                        dayPreset == DayThemePreset.auroraCalm
+                            ? 'Royal Aurora (Default)'
+                            : dayPreset == DayThemePreset.nordicSky
+                                ? 'Frozen Sky'
+                                : 'Classic Clay',
                         style: AscentTextStyles.captionMedium
                             .copyWith(
-                              color: dayPreset == DayThemePreset.nordicSky
-                                  ? FrozenPalette.accent
-                                  : g.clay,
+                              color: dayPreset == DayThemePreset.auroraCalm
+                                  ? AuroraPalette.royalIndigo
+                                  : dayPreset == DayThemePreset.nordicSky
+                                      ? FrozenPalette.accent
+                                      : g.clay,
                             )
                             .merge(AppTypeRoles.typeRole8),
                       ),
@@ -641,8 +646,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     children: [
                       _DayPresetOption(
+                        label: 'Aurora',
+                        subtitle: 'Indigo & Cyan',
+                        colorSwatch: AuroraPalette.royalIndigo,
+                        icon: Icons.auto_awesome_rounded,
+                        isSelected: dayPreset == DayThemePreset.auroraCalm,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(dayThemePresetProvider.notifier)
+                              .setPreset(DayThemePreset.auroraCalm);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DayPresetOption(
                         label: 'Classic Clay',
-                        subtitle: 'Terracotta & Linen',
+                        subtitle: 'Terracotta',
                         colorSwatch: AscentColors.accentPrimary,
                         icon: Icons.wb_sunny_outlined,
                         isSelected: dayPreset == DayThemePreset.classicClay,
@@ -656,7 +675,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 8),
                       _DayPresetOption(
                         label: 'Frozen Sky',
-                        subtitle: 'Frost & Charcoal',
+                        subtitle: 'Frost Slate',
                         colorSwatch: FrozenPalette.accent,
                         icon: Icons.cloud_outlined,
                         isSelected: dayPreset == DayThemePreset.nordicSky,
@@ -1407,24 +1426,30 @@ class _DayPresetOption extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              Text(
-                label,
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: isSelected ? AppPalette.white : g.ink,
-                  fontWeight: FontWeight.w600,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: isSelected ? AppPalette.white : g.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: AscentTextStyles.captionMedium.copyWith(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.90)
-                      : g.inkMuted,
-                  fontSize: 10,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  subtitle,
+                  style: AscentTextStyles.captionMedium.copyWith(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.90)
+                        : g.inkMuted,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

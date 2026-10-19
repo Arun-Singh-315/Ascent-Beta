@@ -908,7 +908,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Add plan item (-->) or to-do (--) line',
+                    'Add plan item (→) or to-do (•) line',
                     style: TextStyle(
                       fontSize: 12,
                       color: context.textMuted,

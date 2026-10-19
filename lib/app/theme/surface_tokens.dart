@@ -3,6 +3,7 @@ import 'color_tokens.dart';
 import 'dimension_tokens.dart';
 import 'glass_theme.dart';
 import 'frozen_palette.dart';
+import 'aurora_palette.dart';
 
 enum AppSurfaceRole {
   card,
@@ -126,6 +127,40 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     tintFill: AscentGlass.nordicSky.claySoft,
     tintBorder: AscentGlass.nordicSky.edge,
     shadow: AscentGlass.nordicSky.shadow,
+    blur: 12,
+  );
+
+  static const auroraCalm = AppSurfaces(
+    outlined: true,
+    ink: AuroraPalette.ink,
+    mutedText: AuroraPalette.mutedInk,
+    accent: AuroraPalette.action,
+    greenAction: AuroraPalette.success,
+    cardFill: AuroraPalette.surface,
+    cardBorderColor: AuroraPalette.line,
+    pillBorderColor: AuroraPalette.line,
+    dividerColor: AuroraPalette.line,
+    tintFill: AuroraPalette.tint,
+    tintBorder: AuroraPalette.line,
+    onAccent: Colors.white,
+    cardBorderWidth: 1.0,
+    pillBorderWidth: 1.0,
+    shadow: Color.fromRGBO(79, 70, 229, 0.08),
+    blur: 0,
+  );
+
+  static final legacyAuroraCalm = night.copyWith(
+    ink: AscentGlass.auroraCalmLight.ink,
+    mutedText: AscentGlass.auroraCalmLight.inkMuted,
+    accent: AscentGlass.auroraCalmLight.clay,
+    greenAction: AuroraPalette.success,
+    cardFill: AscentGlass.auroraCalmLight.fill,
+    cardBorderColor: AscentGlass.auroraCalmLight.edge,
+    pillBorderColor: AscentGlass.auroraCalmLight.edge,
+    dividerColor: AscentGlass.auroraCalmLight.line,
+    tintFill: AscentGlass.auroraCalmLight.claySoft,
+    tintBorder: AscentGlass.auroraCalmLight.edge,
+    shadow: AscentGlass.auroraCalmLight.shadow,
     blur: 12,
   );
 

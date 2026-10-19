@@ -38,8 +38,8 @@ class NoteListButton extends StatelessWidget {
       return;
     }
     final marker = start == 0 || text.substring(0, start).endsWith('\n')
-        ? '--> '
-        : '\n--> ';
+        ? '→ '
+        : '\n→ ';
     controller.value = TextEditingValue(
       text: text.replaceRange(start, end, marker),
       selection: TextSelection.collapsed(offset: start + marker.length),
@@ -170,7 +170,7 @@ class InlineListAddButton extends StatelessWidget {
               _buildGuideTile(
                 ctx,
                 g,
-                symbol: '-->',
+                symbol: '→',
                 title: 'Plan Activity',
                 desc:
                     'Creates a scheduled activity or focus task with optional duration, alarms, and timers.',
@@ -179,7 +179,7 @@ class InlineListAddButton extends StatelessWidget {
               _buildGuideTile(
                 ctx,
                 g,
-                symbol: '--',
+                symbol: '•',
                 title: 'Simple To-Do',
                 desc:
                     'Creates a fast checkbox to-do item for everyday quick completions without timers.',
@@ -235,7 +235,7 @@ class InlineListAddButton extends StatelessWidget {
                 fontFamily: 'monospace',
                 fontWeight: FontWeight.w700,
                 color: g.clay,
-                fontSize: 13,
+                fontSize: 14,
               ),
             ),
           ),
@@ -272,7 +272,7 @@ class InlineListAddButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     return Tooltip(
-      message: 'Add plan item (-->) • Long press for guide',
+      message: 'Add plan item (→) • Long press for guide',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
