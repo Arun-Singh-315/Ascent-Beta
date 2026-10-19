@@ -50,23 +50,23 @@ class AscentColors {
   /// Warning — soft warm honey / amber (calm and non-glaring in day mode).
   static const Color stateWarning = Color(0xFFB46824);
 
-  /// Deep near-black graphite text.
-  static const Color textPrimary = Color(0xFF1D1916);
+  /// Deep near-black obsidian slate text.
+  static const Color textPrimary = Color(0xFF0F172A);
 
-  /// Refined secondary text.
-  static const Color textSecondary = Color(0xFF635A52);
+  /// Refined secondary slate text.
+  static const Color textSecondary = Color(0xFF334155);
 
-  /// Muted / placeholder text.
-  static const Color textMuted = Color(0xFF74695F);
+  /// Muted / placeholder slate text.
+  static const Color textMuted = Color(0xFF64748B);
 
   /// Text rendered on top of primary-colored surfaces.
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
   /// Ultra-thin hairline divider line.
-  static const Color divider = Color(0xFFE5E8ED);
+  static const Color divider = Color(0xFFE2E8F0);
 
   /// Shadow tint for soft diffuse elevation.
-  static const Color shadow = Color(0xFF1D1916);
+  static const Color shadow = Color(0xFF0F172A);
 
   // ── Dark mode ──────────────────────────────────────────────────────────────
 

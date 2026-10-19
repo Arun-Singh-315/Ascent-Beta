@@ -317,10 +317,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
               : [FrozenPalette.actionBright, FrozenPalette.action])
         : (isDark
               ? [g.clay, g.clay.withValues(alpha: 0.82)]
-              : [g.clay.withValues(alpha: 0.88), g.clay]);
+              : [const Color(0xFFE86B43), const Color(0xFFC85A32)]);
     final shadowColor = g.frozen
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : g.clay;
+        : (isDark ? g.clay : const Color(0xFFC85A32));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),

@@ -55,14 +55,14 @@ class HomeTheme {
         ? AscentGlass.nordicSky
         : (AscentGlass.light.copyWith(
                 bg: AscentColors.bgBase,
-                fill: const Color.fromRGBO(255, 255, 255, 0.10),
+                fill: Colors.white,
                 ink: AscentColors.textPrimary,
                 inkSecondary: AscentColors.textSecondary,
                 inkMuted: AscentColors.textMuted,
-                edge: AscentColors.divider,
-                line: AscentColors.divider,
+                edge: AscentGlass.light.edge,
+                line: AscentGlass.light.line,
                 nav: AscentGlass.light.nav,
-                shadow: Colors.transparent,
+                shadow: const Color.fromRGBO(15, 23, 42, 0.08),
                 glow1: AscentGlass.light.glow1,
                 glow2: AscentGlass.light.glow2,
               )
@@ -76,7 +76,12 @@ class HomeTheme {
         ),
         glass,
         (isNordic ? AppSurfaces.legacyNordicSky : AppSurfaces.legacyLight)
-            .copyWith(blur: 0, shadow: Colors.transparent),
+            .copyWith(
+              blur: 0,
+              cardFill: Colors.white,
+              cardBorderColor: glass.edge,
+              shadow: const Color.fromRGBO(15, 23, 42, 0.08),
+            ),
       ],
     );
   }

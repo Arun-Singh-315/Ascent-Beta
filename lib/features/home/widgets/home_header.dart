@@ -104,16 +104,34 @@ class HomeHeader extends ConsumerWidget {
                       vertical: AppSpace.s8,
                     ),
                     nightDecoration: BoxDecoration(
-                      color: Colors.transparent,
+                      color: isDark
+                          ? Colors.transparent
+                          : (isStreakCardVisible
+                              ? const Color(0xFFFEF3C7)
+                              : Colors.white),
                       borderRadius: AppGeometry.roundedr99,
                       border: Border.all(
                         color: g.frozen
                             ? FrozenPalette.line
                             : isDark
                             ? (isStreakCardVisible ? g.clay : g.edge)
-                            : Colors.black,
+                            : (isStreakCardVisible
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFFE2E8F0)),
                         width: AppBorderScale.w1point0,
                       ),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: (isStreakCardVisible
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFF0F172A))
+                                    .withValues(alpha: 0.06),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -125,23 +143,31 @@ class HomeHeader extends ConsumerWidget {
                               ? (isDark
                                     ? FrozenPalette.darkSpark
                                     : FrozenPalette.spark)
-                              : context.surfaces.pillForeground(
-                                  isStreakCardVisible,
-                                  g.clay,
-                                ),
+                              : (isDark
+                                    ? context.surfaces.pillForeground(
+                                        isStreakCardVisible,
+                                        g.clay,
+                                      )
+                                    : (isStreakCardVisible
+                                        ? const Color(0xFFEA580C)
+                                        : const Color(0xFF64748B))),
                         ),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             streak == 0 ? 'Start' : '$streak',
                             style: AppTypography.jetBrainsMono115W7009(
-                              color: context.surfaces.contentForeground(
-                                isStreakCardVisible,
-                                context.surfaces.pillForeground(
-                                  isStreakCardVisible,
-                                  g.clay,
-                                ),
-                              ),
+                              color: isDark
+                                  ? context.surfaces.contentForeground(
+                                      isStreakCardVisible,
+                                      context.surfaces.pillForeground(
+                                        isStreakCardVisible,
+                                        g.clay,
+                                      ),
+                                    )
+                                  : (isStreakCardVisible
+                                      ? const Color(0xFFB45309)
+                                      : const Color(0xFF0F172A)),
                             ),
                           ),
                         ),
@@ -178,15 +204,24 @@ class HomeHeader extends ConsumerWidget {
                                     : FrozenPalette.action,
                               ],
                             )
-                          : null,
-                      color: g.frozen ? null : g.claySoft,
+                          : (!isDark
+                              ? const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFFFEDD5),
+                                    Color(0xFFFED7AA),
+                                  ],
+                                )
+                              : null),
+                      color: g.frozen ? null : (isDark ? g.claySoft : null),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: g.frozen
                             ? (isDark
                                   ? FrozenPalette.darkLine
                                   : FrozenPalette.line)
-                            : g.edge,
+                            : (isDark ? g.edge : const Color(0xFFFDBA74)),
                         width: AppBorderScale.w1point0,
                       ),
                       boxShadow: g.frozen
@@ -201,7 +236,15 @@ class HomeHeader extends ConsumerWidget {
                                 offset: const Offset(0, 3),
                               ),
                             ]
-                          : null,
+                          : (!isDark
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFF97316).withValues(alpha: 0.15),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null),
                     ),
                     child: Center(
                       child: Text(
@@ -211,7 +254,9 @@ class HomeHeader extends ConsumerWidget {
                               ).toUpperCase()
                             : 'A',
                         style: AppTypography.bricolageGrotesque15W70099(
-                          color: g.frozen ? Colors.white : g.ink,
+                          color: g.frozen
+                              ? Colors.white
+                              : (isDark ? g.ink : const Color(0xFF9A3412)),
                         ),
                       ),
                     ),

@@ -62,20 +62,20 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
   double get minTapTarget => AscentDimensions.minTouchTarget;
   static const day = AppSurfaces(
     outlined: true,
-    ink: Color(0xFF2A1F1C),
-    mutedText: Color(0xFF6E625E),
-    accent: Color(0xFFB8634D),
+    ink: Color(0xFF0F172A),
+    mutedText: Color(0xFF64748B),
+    accent: Color(0xFFA4523A),
     greenAction: AscentColors.accentPrimary,
-    cardFill: Colors.transparent,
-    cardBorderColor: Color(0xFF2A1F1C),
-    pillBorderColor: Color(0xFF2A1F1C),
-    dividerColor: Color(0x332A1F1C),
-    tintFill: Color(0x24B8634D),
-    tintBorder: Color(0x4DB8634D),
+    cardFill: Colors.white,
+    cardBorderColor: Color(0xFFE2E8F0),
+    pillBorderColor: Color(0xFFCBD5E1),
+    dividerColor: Color(0xFFE2E8F0),
+    tintFill: Color(0xFFFDF4F0),
+    tintBorder: Color(0xFFF5D0C3),
     onAccent: Colors.white,
-    cardBorderWidth: 1.5,
-    pillBorderWidth: 1,
-    shadow: Colors.transparent,
+    cardBorderWidth: 1.0,
+    pillBorderWidth: 1.0,
+    shadow: Color.fromRGBO(15, 23, 42, 0.08),
     blur: 0,
   );
 
@@ -85,13 +85,14 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     mutedText: AscentGlass.light.inkMuted,
     accent: AscentGlass.light.clay,
     greenAction: AscentColors.accentPrimary,
-    cardFill: AscentGlass.light.fill,
+    cardFill: Colors.white,
     cardBorderColor: AscentGlass.light.edge,
     pillBorderColor: AscentGlass.light.edge,
     dividerColor: AscentGlass.light.line,
     tintFill: AscentGlass.light.claySoft,
     tintBorder: AscentGlass.light.clay.withValues(alpha: .25),
     shadow: AscentGlass.light.shadow,
+    blur: 0,
   );
 
   static const nordicSky = AppSurfaces(
