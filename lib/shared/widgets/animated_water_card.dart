@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../core/providers/database_provider.dart';
 import 'ascent_card.dart';
 
@@ -341,6 +342,7 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
@@ -353,36 +355,60 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         scale: _pressed ? 0.94 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
-        child: AppTag(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpace.s12,
-            vertical: AppSpace.s8,
-          ),
-          nightDecoration: BoxDecoration(
-            color: g.claySoft.withValues(alpha: 0.5),
-            borderRadius: AppGeometry.roundedr10,
-            border: Border.all(color: g.line),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? (g.merlot ? MerlotPalette.darkSurface : g.claySoft.withValues(alpha: 0.5))
+                : (g.merlot ? const Color(0xFFF0F7FB) : const Color(0xFFF0F7FB)),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isDark
+                  ? g.line
+                  : (g.merlot ? const Color(0x333B82F6) : g.line),
+              width: 0.75,
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, size: 16, color: g.clay),
-              const SizedBox(width: 6),
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? (g.merlot ? MerlotPalette.darkTint : g.claySoft)
+                      : const Color(0xFFE0EFF8),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Icon(
+                    widget.icon,
+                    size: 16,
+                    color: isDark
+                        ? (g.merlot ? MerlotPalette.darkActionBright : g.clay)
+                        : const Color(0xFF0284C7),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     widget.label,
-                    style: AscentTextStyles.labelMedium
-                        .copyWith(color: context.textPrimary)
-                        .merge(AppTypeRoles.typeRole9),
+                    style: AscentTextStyles.labelMedium.copyWith(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   Text(
                     widget.sub,
-                    style: AscentTextStyles.labelSmall
-                        .copyWith(color: context.textMuted)
-                        .merge(AppTypeRoles.typeRole75),
+                    style: AscentTextStyles.labelSmall.copyWith(
+                      color: context.textMuted,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
