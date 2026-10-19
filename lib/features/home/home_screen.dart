@@ -9,7 +9,7 @@ import 'package:drift/drift.dart' as drift;
 
 import 'package:flutter/services.dart';
 import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/aurora_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../core/notifications/notification_service.dart';
@@ -316,17 +316,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
         ? (isDark
               ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
               : [FrozenPalette.actionBright, FrozenPalette.action])
-        : g.aurora
+        : g.merlot
         ? (isDark
-              ? [AuroraPalette.darkAction, AuroraPalette.royalIndigo]
-              : [AuroraPalette.royalIndigo, const Color(0xFF4338CA)])
+              ? [g.clay, g.clay.withValues(alpha: 0.82)]
+              : [MerlotPalette.actionBright, MerlotPalette.actionDeep])
         : (isDark
               ? [g.clay, g.clay.withValues(alpha: 0.82)]
               : [const Color(0xFFE86B43), const Color(0xFFC85A32)]);
     final shadowColor = g.frozen
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : g.aurora
-        ? (isDark ? AuroraPalette.darkAction : AuroraPalette.royalIndigo)
+        : g.merlot
+        ? (isDark ? g.clay : MerlotPalette.actionDeep)
         : (isDark ? g.clay : const Color(0xFFC85A32));
 
     return Padding(
@@ -359,10 +359,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.auto_awesome_rounded,
                   size: 18,
-                  color: Colors.white,
+                  color: g.merlot && !isDark ? MerlotPalette.antiqueGold : Colors.white,
                 ),
                 const SizedBox(width: 8),
                 Text(

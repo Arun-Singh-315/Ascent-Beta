@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/aurora_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 
 /// Home-only day treatment; other routes keep their existing presentation.
 class HomeTheme {
@@ -12,22 +12,10 @@ class HomeTheme {
     final parentGlass = parent.extension<AscentGlass>() ??
         (isDark ? AscentGlass.dark : AscentGlass.light);
     final isNordic = parentGlass.frozen;
-    final isAurora = parentGlass.aurora;
+    final isMerlot = parentGlass.merlot;
 
     if (isDark) {
-      final glass = isAurora
-          ? (AscentGlass.auroraCalmDark.copyWith(
-              bg: AuroraPalette.darkCanvas,
-              fill: const Color.fromRGBO(19, 27, 46, 0.70),
-              edge: const Color.fromRGBO(39, 53, 78, 0.85),
-              line: const Color.fromRGBO(39, 53, 78, 0.50),
-              glow1: AuroraPalette.darkAction.withValues(alpha: 0.18),
-              glow2: AuroraPalette.darkActionCyan.withValues(alpha: 0.14),
-              ink: AuroraPalette.darkInk,
-              inkSecondary: AuroraPalette.darkSecondaryInk,
-              inkMuted: AuroraPalette.darkMutedInk,
-            ) as AscentGlass)
-          : isNordic
+      final glass = isNordic
           ? (AscentGlass.nordicSkyDark.copyWith(
               fill: const Color.fromRGBO(34, 53, 72, 0.12),
               edge: const Color.fromRGBO(94, 160, 240, 0.22),
@@ -53,12 +41,7 @@ class HomeTheme {
                 extension is! AscentGlass && extension is! AppSurfaces,
           ),
           glass,
-          (isAurora
-                  ? AppSurfaces.legacyAuroraCalm
-                  : (isNordic
-                      ? AppSurfaces.legacyNordicSky
-                      : AppSurfaces.night))
-              .copyWith(
+          (isNordic ? AppSurfaces.legacyNordicSky : AppSurfaces.night).copyWith(
             blur: 0,
             cardFill: glass.fill,
             cardBorderColor: glass.edge,
@@ -70,19 +53,19 @@ class HomeTheme {
       );
     }
 
-    final glass = isAurora
-        ? (AscentGlass.auroraCalmLight.copyWith(
-            bg: AuroraPalette.canvas,
-            fill: Colors.white,
-            ink: AuroraPalette.ink,
-            inkSecondary: AuroraPalette.secondaryInk,
-            inkMuted: AuroraPalette.mutedInk,
-            edge: AuroraPalette.line,
-            line: AuroraPalette.line.withValues(alpha: 0.70),
-            nav: const Color.fromRGBO(252, 253, 255, 0.96),
-            shadow: const Color.fromRGBO(79, 70, 229, 0.05),
-            glow1: const Color.fromRGBO(99, 102, 241, 0.14),
-            glow2: const Color.fromRGBO(6, 182, 212, 0.10),
+    final glass = isMerlot
+        ? (AscentGlass.merlotLinenLight.copyWith(
+            bg: MerlotPalette.canvas,
+            fill: MerlotPalette.surface,
+            ink: MerlotPalette.ink,
+            inkSecondary: MerlotPalette.secondaryInk,
+            inkMuted: MerlotPalette.mutedInk,
+            edge: MerlotPalette.line,
+            line: MerlotPalette.lineSubtle,
+            nav: const Color.fromRGBO(250, 247, 242, 0.96),
+            shadow: MerlotPalette.shadowAmbient,
+            glow1: const Color(0x29C28834),
+            glow2: const Color(0x1F581825),
           ) as AscentGlass)
         : isNordic
         ? AscentGlass.nordicSky
@@ -108,17 +91,17 @@ class HomeTheme {
           (extension) => extension is! AscentGlass && extension is! AppSurfaces,
         ),
         glass,
-        (isAurora
-                ? AppSurfaces.auroraCalm
+        (isMerlot
+                ? AppSurfaces.merlotLinen
                 : (isNordic
                     ? AppSurfaces.legacyNordicSky
                     : AppSurfaces.legacyLight))
             .copyWith(
               blur: 0,
-              cardFill: Colors.white,
+              cardFill: isMerlot ? MerlotPalette.surface : Colors.white,
               cardBorderColor: glass.edge,
-              shadow: isAurora
-                  ? const Color.fromRGBO(79, 70, 229, 0.05)
+              shadow: isMerlot
+                  ? MerlotPalette.shadowAmbient
                   : const Color.fromRGBO(15, 23, 42, 0.08),
             ),
       ],

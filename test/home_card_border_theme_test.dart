@@ -179,9 +179,11 @@ void main() {
             ),
           ],
           child: MaterialApp(
-            theme: AscentTheme.light(),
+            theme: AscentTheme.light(preset: DayThemePreset.classicClay),
             home: Theme(
-              data: HomeTheme.from(AscentTheme.light()),
+              data: HomeTheme.from(
+                AscentTheme.light(preset: DayThemePreset.classicClay),
+              ),
               child: const Scaffold(
                 body: SingleChildScrollView(
                   child: Column(

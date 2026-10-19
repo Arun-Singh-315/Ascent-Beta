@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'color_tokens.dart';
 import 'frozen_palette.dart';
-import 'aurora_palette.dart';
+import 'merlot_palette.dart';
 
 /// Glass theme tokens for the Ascent design system.
 /// Defined according to the Ascent Liquid Glass specification:
@@ -11,7 +11,7 @@ import 'aurora_palette.dart';
 /// - Harmonic Accents: Slate (Study), Sage (Walk/Health), Amber (Focus/Cash), Coral (Urgent/Danger)
 class AscentGlass extends ThemeExtension<AscentGlass> {
   final bool frozen;
-  final bool aurora;
+  final bool merlot;
   final Color bg;
   final Color fill;
   final Color edge;
@@ -44,7 +44,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
   const AscentGlass({
     this.frozen = false,
-    this.aurora = false,
+    this.merlot = false,
     required this.bg,
     required this.fill,
     required this.edge,
@@ -150,60 +150,31 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     inkMuted: FrozenPalette.darkMutedInk,
   );
 
-  static const auroraCalmLight = AscentGlass(
-    frozen: false,
-    aurora: true,
-    bg: AuroraPalette.canvas,
-    fill: Color.fromRGBO(252, 253, 255, 0.94),
-    edge: Color.fromRGBO(203, 213, 225, 0.90),
+  static const merlotLinenLight = AscentGlass(
+    merlot: true,
+    bg: MerlotPalette.canvas,
+    fill: Color.fromRGBO(255, 255, 255, 0.96),
+    edge: MerlotPalette.line,
     highlight: Color.fromRGBO(255, 255, 255, 0.98),
-    line: Color.fromRGBO(203, 213, 225, 0.70),
-    glow1: Color.fromRGBO(99, 102, 241, 0.22),
-    glow2: Color.fromRGBO(6, 182, 212, 0.18),
-    track: AuroraPalette.tint,
-    nav: Color.fromRGBO(252, 253, 255, 0.96),
-    shadow: Color.fromRGBO(79, 70, 229, 0.08),
-    clay: AuroraPalette.action,
-    claySoft: AuroraPalette.tint,
-    slate: AuroraPalette.actionCyan,
-    slateSoft: AuroraPalette.cyanTint,
-    sage: AuroraPalette.success,
-    sageSoft: Color.fromRGBO(16, 185, 129, 0.12),
-    amber: AuroraPalette.spark,
-    amberSoft: AuroraPalette.sparkTint,
-    coral: AuroraPalette.danger,
-    coralSoft: Color.fromRGBO(239, 68, 68, 0.12),
-    ink: AuroraPalette.ink,
-    inkSecondary: AuroraPalette.secondaryInk,
-    inkMuted: AuroraPalette.mutedInk,
-  );
-
-  static const auroraCalmDark = AscentGlass(
-    frozen: false,
-    aurora: true,
-    bg: AuroraPalette.darkCanvas,
-    fill: Color.fromRGBO(19, 27, 46, 0.92),
-    edge: Color.fromRGBO(39, 53, 78, 0.90),
-    highlight: Color.fromRGBO(255, 255, 255, 0.12),
-    line: Color.fromRGBO(39, 53, 78, 0.70),
-    glow1: Color.fromRGBO(129, 140, 248, 0.22),
-    glow2: Color.fromRGBO(56, 189, 248, 0.18),
-    track: AuroraPalette.darkTint,
-    nav: Color.fromRGBO(19, 27, 46, 0.96),
-    shadow: Color.fromRGBO(0, 0, 0, 0.45),
-    clay: AuroraPalette.darkAction,
-    claySoft: AuroraPalette.darkTint,
-    slate: AuroraPalette.darkActionCyan,
-    slateSoft: AuroraPalette.darkCyanTint,
-    sage: AuroraPalette.darkSuccess,
-    sageSoft: Color.fromRGBO(52, 211, 153, 0.14),
-    amber: AuroraPalette.darkSpark,
-    amberSoft: AuroraPalette.darkSparkTint,
-    coral: AuroraPalette.darkDanger,
-    coralSoft: Color.fromRGBO(248, 113, 113, 0.14),
-    ink: AuroraPalette.darkInk,
-    inkSecondary: AuroraPalette.darkSecondaryInk,
-    inkMuted: AuroraPalette.darkMutedInk,
+    line: MerlotPalette.lineSubtle,
+    glow1: Color.fromRGBO(194, 136, 52, 0.16),
+    glow2: Color.fromRGBO(88, 24, 37, 0.12),
+    track: MerlotPalette.tint,
+    nav: Color.fromRGBO(250, 247, 242, 0.96),
+    shadow: MerlotPalette.shadowAmbient,
+    clay: MerlotPalette.action,
+    claySoft: MerlotPalette.pillSoft,
+    slate: MerlotPalette.antiqueGold,
+    slateSoft: MerlotPalette.sparkTint,
+    sage: MerlotPalette.success,
+    sageSoft: MerlotPalette.successTint,
+    amber: MerlotPalette.antiqueGold,
+    amberSoft: MerlotPalette.sparkTint,
+    coral: MerlotPalette.terracotta,
+    coralSoft: MerlotPalette.terracottaTint,
+    ink: MerlotPalette.ink,
+    inkSecondary: MerlotPalette.secondaryInk,
+    inkMuted: MerlotPalette.mutedInk,
   );
 
   static const dark = AscentGlass(
@@ -235,7 +206,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   @override
   ThemeExtension<AscentGlass> copyWith({
     bool? frozen,
-    bool? aurora,
+    bool? merlot,
     Color? bg,
     Color? fill,
     Color? edge,
@@ -262,7 +233,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   }) {
     return AscentGlass(
       frozen: frozen ?? this.frozen,
-      aurora: aurora ?? this.aurora,
+      merlot: merlot ?? this.merlot,
       bg: bg ?? this.bg,
       fill: fill ?? this.fill,
       edge: edge ?? this.edge,
@@ -297,7 +268,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     if (other is! AscentGlass) return this;
     return AscentGlass(
       frozen: t < 0.5 ? frozen : other.frozen,
-      aurora: t < 0.5 ? aurora : other.aurora,
+      merlot: t < 0.5 ? merlot : other.merlot,
       bg: Color.lerp(bg, other.bg, t)!,
       fill: Color.lerp(fill, other.fill, t)!,
       edge: Color.lerp(edge, other.edge, t)!,

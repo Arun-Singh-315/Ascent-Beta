@@ -9,9 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
-import '../../app/theme/aurora_palette.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -454,21 +454,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Display Mode',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole2),
+                      Flexible(
+                        child: Text(
+                          'Display Mode',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole2),
+                        ),
                       ),
-                      Text(
-                        themeMode == ThemeMode.dark
-                            ? 'Night Mode'
-                            : (themeMode == ThemeMode.light
-                                  ? 'Day Mode'
-                                  : 'System Auto'),
-                        style: AscentTextStyles.captionMedium
-                            .copyWith(color: g.clay)
-                            .merge(AppTypeRoles.typeRole8),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          themeMode == ThemeMode.dark
+                              ? 'Night Mode'
+                              : (themeMode == ThemeMode.light
+                                    ? 'Day Mode'
+                                    : 'System Auto'),
+                          textAlign: TextAlign.end,
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(color: g.clay)
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
                       ),
                     ],
                   ),
@@ -522,15 +528,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: dayPreset == DayThemePreset.auroraCalm
-                            ? AuroraPalette.tint
+                        color: dayPreset == DayThemePreset.merlotLinen
+                            ? MerlotPalette.tint
                             : dayPreset == DayThemePreset.nordicSky
                             ? FrozenPalette.tint
                             : const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: dayPreset == DayThemePreset.auroraCalm
-                              ? AuroraPalette.royalIndigo.withValues(alpha: 0.35)
+                          color: dayPreset == DayThemePreset.merlotLinen
+                              ? MerlotPalette.line
                               : dayPreset == DayThemePreset.nordicSky
                               ? FrozenPalette.line
                               : const Color(0xFFFDBA74),
@@ -539,11 +545,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       child: Row(
                         children: [
                           Icon(
-                            dayPreset == DayThemePreset.auroraCalm
+                            dayPreset == DayThemePreset.merlotLinen
                                 ? Icons.auto_awesome_rounded
+                                : dayPreset == DayThemePreset.nordicSky
+                                ? Icons.cloud_outlined
                                 : Icons.wb_sunny_rounded,
-                            color: dayPreset == DayThemePreset.auroraCalm
-                                ? AuroraPalette.royalIndigo
+                            color: dayPreset == DayThemePreset.merlotLinen
+                                ? MerlotPalette.action
                                 : dayPreset == DayThemePreset.nordicSky
                                 ? FrozenPalette.action
                                 : const Color(0xFFEA580C),
@@ -552,16 +560,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              dayPreset == DayThemePreset.auroraCalm
-                                  ? 'Royal Aurora Theme is active. Cool royal indigo, aurora cyan mist, and satin matte depth.'
+                              dayPreset == DayThemePreset.merlotLinen
+                                  ? 'Vintage Merlot Theme is active. Deep vintage merlot, cashmere oat linen, and antique gold accents.'
                                   : dayPreset == DayThemePreset.nordicSky
                                   ? 'Frozen Sky Theme is active. Crisp arctic blues, frosted glass, and cool linen surfaces.'
                                   : 'Classic Clay Theme is active. Warm terracotta, amber glow, and crisp linen surfaces.',
                               style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
-                                color: dayPreset == DayThemePreset.auroraCalm
-                                    ? AuroraPalette.royalIndigo
+                                color: dayPreset == DayThemePreset.merlotLinen
+                                    ? MerlotPalette.action
                                     : dayPreset == DayThemePreset.nordicSky
                                     ? FrozenPalette.action
                                     : const Color(0xFF9A3412),
@@ -642,27 +650,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Daylight Style',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole2),
+                      Flexible(
+                        child: Text(
+                          'Daylight Style',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole2),
+                        ),
                       ),
-                      Text(
-                        dayPreset == DayThemePreset.auroraCalm
-                            ? 'Royal Aurora (Default)'
-                            : dayPreset == DayThemePreset.nordicSky
-                                ? 'Frozen Sky'
-                                : 'Classic Clay',
-                        style: AscentTextStyles.captionMedium
-                            .copyWith(
-                              color: dayPreset == DayThemePreset.auroraCalm
-                                  ? AuroraPalette.royalIndigo
-                                  : dayPreset == DayThemePreset.nordicSky
-                                      ? FrozenPalette.accent
-                                      : g.clay,
-                            )
-                            .merge(AppTypeRoles.typeRole8),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          dayPreset == DayThemePreset.merlotLinen
+                              ? 'Vintage Merlot (Default)'
+                              : dayPreset == DayThemePreset.nordicSky
+                                  ? 'Frozen Sky'
+                                  : 'Classic Clay',
+                          textAlign: TextAlign.end,
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(
+                                color: dayPreset == DayThemePreset.merlotLinen
+                                    ? MerlotPalette.action
+                                    : dayPreset == DayThemePreset.nordicSky
+                                        ? FrozenPalette.accent
+                                        : g.clay,
+                              )
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
                       ),
                     ],
                   ),
@@ -670,16 +684,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     children: [
                       _DayPresetOption(
-                        label: 'Aurora',
-                        subtitle: 'Indigo & Cyan',
-                        colorSwatch: AuroraPalette.royalIndigo,
+                        label: 'Merlot',
+                        subtitle: 'Cashmere',
+                        colorSwatch: MerlotPalette.action,
                         icon: Icons.auto_awesome_rounded,
-                        isSelected: dayPreset == DayThemePreset.auroraCalm,
+                        isSelected: dayPreset == DayThemePreset.merlotLinen,
                         onTap: () {
                           HapticFeedback.lightImpact();
                           ref
                               .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.auroraCalm);
+                              .setPreset(DayThemePreset.merlotLinen);
                         },
                       ),
                       const SizedBox(width: 8),

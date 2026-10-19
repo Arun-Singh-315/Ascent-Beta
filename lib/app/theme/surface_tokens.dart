@@ -3,7 +3,7 @@ import 'color_tokens.dart';
 import 'dimension_tokens.dart';
 import 'glass_theme.dart';
 import 'frozen_palette.dart';
-import 'aurora_palette.dart';
+import 'merlot_palette.dart';
 
 enum AppSurfaceRole {
   card,
@@ -130,37 +130,37 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     blur: 12,
   );
 
-  static const auroraCalm = AppSurfaces(
+  static const merlotLinen = AppSurfaces(
     outlined: true,
-    ink: AuroraPalette.ink,
-    mutedText: AuroraPalette.mutedInk,
-    accent: AuroraPalette.action,
-    greenAction: AuroraPalette.success,
-    cardFill: AuroraPalette.surface,
-    cardBorderColor: AuroraPalette.line,
-    pillBorderColor: AuroraPalette.line,
-    dividerColor: AuroraPalette.line,
-    tintFill: AuroraPalette.tint,
-    tintBorder: AuroraPalette.line,
+    ink: MerlotPalette.ink,
+    mutedText: MerlotPalette.mutedInk,
+    accent: MerlotPalette.action,
+    greenAction: MerlotPalette.success,
+    cardFill: MerlotPalette.surface,
+    cardBorderColor: MerlotPalette.line,
+    pillBorderColor: MerlotPalette.lineSubtle,
+    dividerColor: MerlotPalette.lineSubtle,
+    tintFill: MerlotPalette.pillSoft,
+    tintBorder: MerlotPalette.lineSubtle,
     onAccent: Colors.white,
-    cardBorderWidth: 1.0,
-    pillBorderWidth: 1.0,
-    shadow: Color.fromRGBO(79, 70, 229, 0.08),
+    cardBorderWidth: 0.75,
+    pillBorderWidth: 0.75,
+    shadow: MerlotPalette.shadowAmbient,
     blur: 0,
   );
 
-  static final legacyAuroraCalm = night.copyWith(
-    ink: AscentGlass.auroraCalmLight.ink,
-    mutedText: AscentGlass.auroraCalmLight.inkMuted,
-    accent: AscentGlass.auroraCalmLight.clay,
-    greenAction: AuroraPalette.success,
-    cardFill: AscentGlass.auroraCalmLight.fill,
-    cardBorderColor: AscentGlass.auroraCalmLight.edge,
-    pillBorderColor: AscentGlass.auroraCalmLight.edge,
-    dividerColor: AscentGlass.auroraCalmLight.line,
-    tintFill: AscentGlass.auroraCalmLight.claySoft,
-    tintBorder: AscentGlass.auroraCalmLight.edge,
-    shadow: AscentGlass.auroraCalmLight.shadow,
+  static final legacyMerlotLinen = night.copyWith(
+    ink: AscentGlass.merlotLinenLight.ink,
+    mutedText: AscentGlass.merlotLinenLight.inkMuted,
+    accent: AscentGlass.merlotLinenLight.clay,
+    greenAction: MerlotPalette.success,
+    cardFill: AscentGlass.merlotLinenLight.fill,
+    cardBorderColor: AscentGlass.merlotLinenLight.edge,
+    pillBorderColor: AscentGlass.merlotLinenLight.edge,
+    dividerColor: AscentGlass.merlotLinenLight.line,
+    tintFill: AscentGlass.merlotLinenLight.claySoft,
+    tintBorder: AscentGlass.merlotLinenLight.edge,
+    shadow: AscentGlass.merlotLinenLight.shadow,
     blur: 12,
   );
 

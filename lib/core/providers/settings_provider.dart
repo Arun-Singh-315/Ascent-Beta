@@ -54,7 +54,7 @@ final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
 // ── Daylight Theme Preset ───────────────────────────────────────────────────
 
 enum DayThemePreset {
-  auroraCalm,
+  merlotLinen,
   classicClay,
   nordicSky,
 }
@@ -63,7 +63,7 @@ const _dayThemePresetKey = 'ascent_day_theme_preset';
 
 class DayThemePresetNotifier extends Notifier<DayThemePreset> {
   static const _values = {
-    'auroraCalm': DayThemePreset.auroraCalm,
+    'merlotLinen': DayThemePreset.merlotLinen,
     'classicClay': DayThemePreset.classicClay,
     'nordicSky': DayThemePreset.nordicSky,
   };
@@ -71,8 +71,11 @@ class DayThemePresetNotifier extends Notifier<DayThemePreset> {
   @override
   DayThemePreset build() {
     final prefs = ref.watch(sharedPreferencesProvider);
-    final stored = prefs.getString(_dayThemePresetKey) ?? 'auroraCalm';
-    return _values[stored] ?? DayThemePreset.auroraCalm;
+    final stored = prefs.getString(_dayThemePresetKey) ?? 'merlotLinen';
+    if (stored == 'auroraCalm') {
+      return DayThemePreset.merlotLinen;
+    }
+    return _values[stored] ?? DayThemePreset.merlotLinen;
   }
 
   Future<void> setPreset(DayThemePreset preset) async {

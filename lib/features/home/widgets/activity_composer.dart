@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
-import '../../../app/theme/aurora_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/activity_entry_service.dart';
@@ -237,15 +237,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       decoration: BoxDecoration(
         color: isDark
             ? g.clay.withValues(alpha: 0.16)
-            : (g.aurora
-                ? AuroraPalette.tint
+            : (g.merlot
+                ? MerlotPalette.pillSoft
                 : g.clay.withValues(alpha: 0.08)),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
               ? g.clay.withValues(alpha: 0.30)
-              : (g.aurora
-                  ? AuroraPalette.royalIndigo.withValues(alpha: 0.20)
+              : (g.merlot
+                  ? MerlotPalette.lineSubtle
                   : g.clay.withValues(alpha: 0.15)),
           width: 0.8,
         ),
@@ -274,15 +274,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           decoration: BoxDecoration(
             color: isDark
                 ? g.fill
-                : (g.aurora ? AuroraPalette.surface : context.bgSurfaceElevated),
+                : (g.merlot ? MerlotPalette.surface : context.bgSurfaceElevated),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isDark
                   ? g.edge
-                  : (g.aurora
-                      ? AuroraPalette.line
+                  : (g.merlot
+                      ? MerlotPalette.line
                       : g.edge.withValues(alpha: 0.35)),
-              width: 1.0,
+              width: g.merlot ? 0.75 : 1.0,
             ),
           ),
           padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
@@ -343,15 +343,21 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     style: IconButton.styleFrom(
                       backgroundColor: isDark
                           ? g.clay
-                          : (g.aurora ? AuroraPalette.tint : g.claySoft),
+                          : (g.merlot ? MerlotPalette.action : g.claySoft),
                       disabledBackgroundColor: isDark
                           ? g.clay.withValues(alpha: 0.3)
-                          : g.edge.withValues(alpha: 0.2),
-                      foregroundColor: isDark ? Colors.white : g.clay,
+                          : (g.merlot
+                              ? MerlotPalette.action.withValues(alpha: 0.15)
+                              : g.edge.withValues(alpha: 0.2)),
+                      foregroundColor: isDark
+                          ? Colors.white
+                          : (g.merlot ? Colors.white : g.clay),
                       disabledForegroundColor: isDark
                           ? Colors.white.withValues(alpha: 0.4)
-                          : g.inkMuted.withValues(alpha: 0.4),
-                      side: isDark
+                          : (g.merlot
+                              ? MerlotPalette.mutedInk.withValues(alpha: 0.4)
+                              : g.inkMuted.withValues(alpha: 0.4)),
+                      side: isDark || g.merlot
                           ? null
                           : BorderSide(
                               color: g.clay.withValues(alpha: 0.25),

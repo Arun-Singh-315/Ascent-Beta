@@ -38,7 +38,7 @@ void main() {
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: MaterialApp(
-            theme: AscentTheme.light(),
+            theme: AscentTheme.light(preset: DayThemePreset.classicClay),
             home: const Scaffold(
               body: DayOneTutorialCard(userName: 'Arun'),
             ),

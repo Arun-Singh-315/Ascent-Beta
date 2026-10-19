@@ -12,7 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/frozen_palette.dart';
-import '../../../app/theme/aurora_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -349,17 +349,17 @@ class _ThoughtWallHomePreviewState
             nightDecoration: BoxDecoration(
               color: context.isDark
                   ? g.fill
-                  : (g.aurora ? AuroraPalette.surface : Colors.white),
+                  : (g.merlot ? MerlotPalette.surface : Colors.white),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: _focusNode.hasFocus
                     ? g.clay
                     : (context.isDark
                         ? g.edge
-                        : (g.aurora
-                            ? AuroraPalette.line
+                        : (g.merlot
+                            ? MerlotPalette.line
                             : g.edge.withValues(alpha: .45))),
-                width: 1.0,
+                width: g.merlot ? 0.75 : 1.0,
               ),
             ),
             child: Row(
@@ -407,39 +407,27 @@ class _ThoughtWallHomePreviewState
                 IconButton.filled(
                   tooltip: 'Send capture',
                   style: IconButton.styleFrom(
-                    backgroundColor: context.isDark
-                        ? g.clay
-                        : (g.aurora ? AuroraPalette.tint : g.claySoft),
-                    disabledBackgroundColor: context.isDark
-                        ? g.clay.withValues(alpha: 0.3)
-                        : g.edge.withValues(alpha: 0.2),
-                    foregroundColor: context.isDark ? Colors.white : g.clay,
-                    disabledForegroundColor: context.isDark
-                        ? Colors.white.withValues(alpha: 0.4)
-                        : g.inkMuted.withValues(alpha: 0.4),
-                    side: context.isDark
-                        ? null
-                        : BorderSide(
-                            color: g.clay.withValues(alpha: 0.25),
-                            width: 1,
-                          ),
+                    backgroundColor: g.clay,
+                    disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
+                    foregroundColor: Colors.white,
+                    disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
                     minimumSize: const Size(44, 44),
                   ),
                   onPressed: _saving || _controller.text.trim().isEmpty
                       ? null
                       : _send,
                   icon: _saving
-                      ? SizedBox(
+                      ? const SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: context.isDark ? Colors.white : g.clay,
+                            color: Colors.white,
                           ),
                         )
-                      : Icon(
+                      : const Icon(
                           Icons.arrow_upward_rounded,
-                          color: context.isDark ? Colors.white : g.clay,
+                          color: Colors.white,
                         ),
                 ),
               ],

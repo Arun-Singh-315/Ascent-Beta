@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/aurora_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
@@ -157,12 +157,12 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           radius: 22,
           enableBlur: false,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? (g.aurora ? AuroraPalette.surface : Colors.white)
+              ? (g.merlot ? MerlotPalette.surface : Colors.white)
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
               ? Border.all(
-                  color: g.aurora ? AuroraPalette.line : g.edge.withValues(alpha: .45),
-                  width: 1,
+                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
+                  width: g.merlot ? 0.75 : 1,
                 )
               : null,
           padding: const EdgeInsets.all(16),
@@ -397,34 +397,25 @@ class _HubTabPill extends StatelessWidget {
 
     // Light, calming tint for selected tab that avoids harsh solid dark fills
     final selectedBg = isDark
-        ? (g.aurora
-            ? AuroraPalette.darkTint
-            : (g.frozen
-                ? FrozenPalette.darkTint
-                : g.clay.withValues(alpha: 0.22)))
-        : (g.aurora
-            ? AuroraPalette.tint
+        ? (g.frozen
+            ? FrozenPalette.darkTint
+            : g.clay.withValues(alpha: 0.22))
+        : (g.merlot
+            ? MerlotPalette.tint
             : (g.frozen
                 ? FrozenPalette.tint
                 : g.claySoft));
     final selectedText = isDark
-        ? (g.aurora
-            ? AuroraPalette.darkAction
-            : (g.frozen ? FrozenPalette.darkAction : Colors.white))
-        : (g.aurora
-            ? AuroraPalette.royalIndigo
+        ? (g.frozen ? FrozenPalette.darkAction : Colors.white)
+        : (g.merlot
+            ? MerlotPalette.action
             : (g.frozen ? FrozenPalette.action : g.clay));
     final selectedBorder = isDark
-        ? (g.aurora
-            ? Border.all(color: AuroraPalette.darkLine, width: 1)
-            : (g.frozen
-                ? Border.all(color: FrozenPalette.darkLine, width: 1)
-                : Border.all(color: g.clay.withValues(alpha: 0.35), width: 1)))
-        : (g.aurora
-            ? Border.all(
-                color: AuroraPalette.royalIndigo.withValues(alpha: 0.25),
-                width: 1,
-              )
+        ? (g.frozen
+            ? Border.all(color: FrozenPalette.darkLine, width: 1)
+            : Border.all(color: g.clay.withValues(alpha: 0.35), width: 1))
+        : (g.merlot
+            ? Border.all(color: MerlotPalette.line, width: 0.75)
             : (g.frozen
                 ? Border.all(color: FrozenPalette.line, width: 1)
                 : Border.all(color: g.clay.withValues(alpha: 0.25), width: 1)));
