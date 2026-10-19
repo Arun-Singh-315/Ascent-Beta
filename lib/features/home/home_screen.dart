@@ -216,7 +216,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
-                      const ThoughtWallHomePreview(),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: AppSpace.s16),
+                        child: ThoughtWallHomePreview(),
+                      ),
                     PlanningNotificationHandler(uri: widget.notificationUri),
 
                     if (layout.shortcuts.isNotEmpty)
@@ -383,9 +386,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
             reminders: reminders,
             onAddReminder: () => context.push('/reminders'),
             onViewAll: () => context.push('/reminders'),
-            onDismissReminder: (reminder) => ref
-                .read(dismissedTodayReminderIdsProvider.notifier)
-                .dismissReminderId(reminder.id),
+            onDismissReminder: (reminder) async {
+              await ref.read(reminderDaoProvider).deleteReminder(reminder.id);
+              await NotificationService.instance.cancel(reminder.id);
+            },
             onCompleteReminder: (reminder) async {
               await ref
                   .read(reminderDaoProvider)
