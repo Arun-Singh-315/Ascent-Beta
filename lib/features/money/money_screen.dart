@@ -313,9 +313,10 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           '₹${monthSpend.toStringAsFixed(0)}',
@@ -323,7 +324,6 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                               .copyWith(color: context.textPrimary)
                               .merge(AppTypeRoles.typeRole45),
                         ),
-                        const SizedBox(width: 8),
                         Text(
                           'spent this month',
                           style: AscentTextStyles.bodyMedium.copyWith(
@@ -350,8 +350,10 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                     ),
                     const SizedBox(height: 12),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
                         Text(
                           'Remaining: ₹${remainingBudget.toStringAsFixed(0)}',

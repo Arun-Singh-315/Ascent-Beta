@@ -538,11 +538,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Icon(Icons.auto_awesome_rounded, size: 16, color: g.clay),
                       const SizedBox(width: 8),
-                      Text(
-                        'AI Copilot Name',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole8),
+                      Expanded(
+                        child: Text(
+                          'AI Copilot Name',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
                       ),
                     ],
                   ),
