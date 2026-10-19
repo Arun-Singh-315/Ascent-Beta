@@ -306,11 +306,10 @@ class HomeHeader extends ConsumerWidget {
                     _showProfileSheet(context, ref, name, role, isDark);
                   },
                   borderRadius: AppGeometry.roundedr99,
-                  child: AppCard(
-                    role: AppSurfaceRole.avatar,
-                    width: 48,
-                    height: 48,
-                    nightDecoration: BoxDecoration(
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
                       gradient: g.frozen
                           ? LinearGradient(
                               begin: Alignment.topLeft,
@@ -330,12 +329,12 @@ class HomeHeader extends ConsumerWidget {
                               end: Alignment.bottomRight,
                               colors: isDark
                                   ? [
-                                      g.clay,
-                                      g.clay.withValues(alpha: 0.8),
+                                      MerlotPalette.darkAction,
+                                      MerlotPalette.darkActionDeep,
                                     ]
                                   : [
-                                      MerlotPalette.tint,
-                                      MerlotPalette.pillSoft,
+                                      MerlotPalette.action,
+                                      MerlotPalette.actionDeep,
                                     ],
                             )
                           : (!isDark
@@ -357,10 +356,10 @@ class HomeHeader extends ConsumerWidget {
                                   : FrozenPalette.line)
                             : g.merlot
                             ? (isDark
-                                  ? g.edge
-                                  : MerlotPalette.line)
+                                  ? MerlotPalette.darkLine
+                                  : MerlotPalette.actionDeep)
                             : (isDark ? g.edge : const Color(0xFFFDBA74)),
-                        width: g.merlot ? 0.75 : AppBorderScale.w1point0,
+                        width: g.merlot ? 1.0 : AppBorderScale.w1point0,
                       ),
                       boxShadow: g.frozen
                           ? [
@@ -378,10 +377,10 @@ class HomeHeader extends ConsumerWidget {
                           ? [
                               BoxShadow(
                                 color: (isDark
-                                        ? g.clay
+                                        ? MerlotPalette.darkAction
                                         : MerlotPalette.action)
-                                    .withValues(alpha: 0.10),
-                                blurRadius: 8,
+                                    .withValues(alpha: isDark ? 0.25 : 0.20),
+                                blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
                             ]
@@ -406,7 +405,7 @@ class HomeHeader extends ConsumerWidget {
                           color: g.frozen
                               ? Colors.white
                               : g.merlot
-                              ? (isDark ? Colors.white : MerlotPalette.action)
+                              ? Colors.white
                               : (isDark ? g.ink : const Color(0xFF9A3412)),
                         ),
                       ),
