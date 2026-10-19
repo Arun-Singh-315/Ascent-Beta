@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../challenge/challenge_providers.dart';
@@ -87,10 +88,13 @@ class QuickModulesNavHub extends ConsumerWidget {
         GlassSurface(
           radius: 24,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? Colors.white
+              ? (g.merlot ? MerlotPalette.surface : Colors.white)
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
-              ? Border.all(color: g.edge.withValues(alpha: .45), width: 1)
+              ? Border.all(
+                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
+                  width: g.merlot ? 0.75 : 1,
+                )
               : null,
           padding: EdgeInsets.zero,
           child: Column(
@@ -106,12 +110,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: AppGeometry.radiusr24,
                   ),
-                  child: AppCard(
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s16,
                       vertical: AppSpace.s13,
                     ),
-                    nightDecoration: BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
                           color: g.line,
@@ -487,10 +491,10 @@ class _LifeGridCell extends StatelessWidget {
       child: AppTapArea(
         onTap: onTap,
         borderRadius: borderRadius,
-        child: AppCard(
+        child: Container(
           constraints: const BoxConstraints(minHeight: 96),
           padding: const EdgeInsets.all(AppSpace.s14),
-          nightDecoration: BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
               right: borderRight
                   ? BorderSide(color: g.line, width: AppBorderScale.w1point0)

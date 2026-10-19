@@ -374,14 +374,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                              color: isDark ? Colors.white : g.clay,
+                              color: isDark ? Colors.white : (g.merlot ? Colors.white : g.clay),
                               strokeWidth: 2,
                             ),
                           )
                         : Icon(
                             Icons.arrow_upward_rounded,
                             size: 20,
-                            color: isDark ? Colors.white : g.clay,
+                            color: isDark ? Colors.white : (g.merlot ? Colors.white : g.clay),
                           ),
                   ),
                 ],

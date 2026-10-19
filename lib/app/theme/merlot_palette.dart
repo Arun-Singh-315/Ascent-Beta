@@ -14,8 +14,8 @@ class MerlotPalette {
   /// Canvas: Scaffold background — soft, soothing cashmere oat linen
   static const canvas = Color(0xFFF8F5EE);
 
-  /// Surface: Cards, bottom nav, containers — frosted warm porcelain (top stop)
-  static const surface = Color(0xFFFFFFFF);
+  /// Surface: Cards, bottom nav, containers — frosted warm cashmere porcelain
+  static const surface = Color(0xFFFCFAF7);
 
   /// Surface Bottom: Lower stop for frosted card gradient
   static const surfaceBottom = Color(0xFFF6F2E9);
@@ -100,4 +100,60 @@ class MerlotPalette {
 
   /// Shadow Ambient: Wide ambient diffuse glow
   static const shadowAmbient = Color(0x0B260F14);
+
+  // ── Dark Mode ("Vintage Merlot Night Glass") ─────────────────────────────
+
+  /// Canvas: Dark velvet espresso-plum background
+  static const darkCanvas = Color(0xFF161012);
+
+  /// Surface: Frosted night merlot glass cards
+  static const darkSurface = Color(0xFF22171B);
+
+  /// Elevated: Modals, popups, and elevated sheets
+  static const darkElevated = Color(0xFF2C1E23);
+
+  /// Line: Hairline subtle specular edge in dark mode
+  static const darkLine = Color(0x33E09EA8);
+
+  /// Line Subtle: Inner divider in dark mode
+  static const darkLineSubtle = Color(0x1FE09EA8);
+
+  /// Action: Radiant velvet rose-merlot for primary buttons, active tabs (AAA contrast)
+  static const darkAction = Color(0xFFD4687A);
+
+  /// Action Bright: Gradient top highlight for dark mode CTA
+  static const darkActionBright = Color(0xFFE87E90);
+
+  /// Action Deep: Pressed state in dark mode
+  static const darkActionDeep = Color(0xFFB54C5E);
+
+  /// Tint: Selected pills and container highlights in dark mode
+  static const darkTint = Color(0xFF381F27);
+
+  /// Ink: Crisp cashmere cream primary text (15.5:1 contrast on dark canvas)
+  static const darkInk = Color(0xFFF7F2EE);
+
+  /// Secondary Ink: Soft linen silver secondary text (9.5:1 contrast on dark canvas)
+  static const darkSecondaryInk = Color(0xFFD6CBC7);
+
+  /// Muted Ink: Warm oat slate for captions & helper text (6.2:1 contrast on dark canvas)
+  static const darkMutedInk = Color(0xFFA89A96);
+
+  /// Spark: Radiant warm gold for flame/streak in dark mode
+  static const darkSpark = Color(0xFFF0B354);
+
+  /// Spark Tint: Gold container highlight in dark mode
+  static const darkSparkTint = Color(0xFF382914);
+
+  /// Terracotta: Warm glowing terracotta for Chai break in dark mode
+  static const darkTerracotta = Color(0xFFE07A5F);
+
+  /// Success: Luminous botanical sage in dark mode
+  static const darkSuccess = Color(0xFF4ADE80);
+
+  /// Warning: Warm amber
+  static const darkWarning = Color(0xFFFBBF24);
+
+  /// Danger: Soft ruby red
+  static const darkDanger = Color(0xFFFB7185);
 }

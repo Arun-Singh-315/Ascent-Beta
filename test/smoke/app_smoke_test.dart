@@ -9,6 +9,7 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:ascent/core/notifications/pending_reminder_effects_provider.dart';
 
 void main() {
   setUpAll(() {
@@ -37,7 +38,7 @@ void main() {
     });
 
     tearDown(() async {
-      await db.close();
+      // In-memory sqlite db doesn't require explicit close
     });
 
     testWidgets('App boots cleanly to Home and mounts root shell', (tester) async {
@@ -46,6 +47,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             databaseProvider.overrideWithValue(db),
+            pendingReminderEffectsProvider.overrideWith((ref) {}),
           ],
           child: const AscentApp(),
         ),
@@ -69,6 +71,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             databaseProvider.overrideWithValue(db),
+            pendingReminderEffectsProvider.overrideWith((ref) {}),
           ],
           child: const AscentApp(),
         ),
@@ -110,6 +113,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
             databaseProvider.overrideWithValue(db),
+            pendingReminderEffectsProvider.overrideWith((ref) {}),
           ],
           child: const AscentApp(),
         ),

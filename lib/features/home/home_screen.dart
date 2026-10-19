@@ -4,7 +4,6 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' as drift;
 
 import 'package:flutter/services.dart';
@@ -36,7 +35,6 @@ import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
-import 'widgets/life_checkin_popup_dialog.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
@@ -93,10 +91,19 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
       if (!_hasCheckedOverdueReminders) {
         _hasCheckedOverdueReminders = true;
-        final promptedReminder = await _checkAndPromptOverdueReminder();
-        if (!promptedReminder && mounted) {
-          await _checkAndPromptLifeNudge(preferences);
-        }
+        await _checkAndPromptOverdueReminder();
+      }
+
+      final tutorialDismissed =
+          (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
+          (preferences.getBool('ascent_quick_start_v1') ?? false);
+      if (!tutorialDismissed && mounted) {
+        preferences.setBool(DayOneTutorialDialog.prefKey, true);
+        final profile = ref.read(userProfileStreamProvider).value;
+        DayOneTutorialDialog.show(
+          context,
+          userName: profile?.name ?? '',
+        );
       }
     });
   }
@@ -117,39 +124,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
       debugPrint('Error checking overdue reminders: $e');
     }
     return false;
-  }
-
-  Future<void> _checkAndPromptLifeNudge(SharedPreferences preferences) async {
-    try {
-      final openCount =
-          (preferences.getInt('ascent_life_nudge_open_count') ?? 0) + 1;
-      await preferences.setInt('ascent_life_nudge_open_count', openCount);
-
-      // Ask 4 out of 10 times: cycle indices 1, 3, 6, 8 (40% frequency)
-      final cycleIndex = openCount % 10;
-      final isEligible =
-          cycleIndex == 1 ||
-          cycleIndex == 3 ||
-          cycleIndex == 6 ||
-          cycleIndex == 8;
-      if (!isEligible) return;
-
-      final nowMs = DateTime.now().millisecondsSinceEpoch;
-      final lastNudgeMs = preferences.getInt('ascent_last_life_nudge_ms') ?? 0;
-      // Minimum 15-minute gap so navigating between tabs does not trigger it repeatedly
-      if (nowMs - lastNudgeMs < const Duration(minutes: 15).inMilliseconds) {
-        return;
-      }
-      await preferences.setInt('ascent_last_life_nudge_ms', nowMs);
-
-      if (!mounted) return;
-      final initialTab = (cycleIndex == 1 || cycleIndex == 6)
-          ? LifeCheckInTab.hydration
-          : LifeCheckInTab.money;
-      await LifeCheckInPopupDialog.show(context, initialTab: initialTab);
-    } catch (e) {
-      debugPrint('Error prompting life checkin nudge: $e');
-    }
   }
 
   @override
@@ -244,9 +218,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                     if (layout.visible.contains('mind'))
                       const ThoughtWallHomePreview(),
                     PlanningNotificationHandler(uri: widget.notificationUri),
-                    const SizedBox(height: 16),
-                    // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
-                    DayOneTutorialCard(userName: profile?.name ?? ''),
 
                     if (layout.shortcuts.isNotEmpty)
                       Padding(

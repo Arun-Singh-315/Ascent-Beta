@@ -164,6 +164,21 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     blur: 12,
   );
 
+  static final legacyMerlotLinenDark = night.copyWith(
+    ink: AscentGlass.merlotLinenDark.ink,
+    mutedText: AscentGlass.merlotLinenDark.inkMuted,
+    accent: AscentGlass.merlotLinenDark.clay,
+    greenAction: MerlotPalette.darkSuccess,
+    cardFill: AscentGlass.merlotLinenDark.fill,
+    cardBorderColor: AscentGlass.merlotLinenDark.edge,
+    pillBorderColor: AscentGlass.merlotLinenDark.edge,
+    dividerColor: AscentGlass.merlotLinenDark.line,
+    tintFill: AscentGlass.merlotLinenDark.claySoft,
+    tintBorder: AscentGlass.merlotLinenDark.edge,
+    shadow: AscentGlass.merlotLinenDark.shadow,
+    blur: 12,
+  );
+
   static final night = AppSurfaces(
     outlined: false,
     ink: AscentGlass.dark.ink,

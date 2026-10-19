@@ -97,36 +97,53 @@ class HomeHeader extends ConsumerWidget {
                     _showStreakDetailsSheet(context, streak, isDark);
                   },
                   borderRadius: AppGeometry.roundedr99,
-                  child: AppPill(
-                    selected: isStreakCardVisible,
-                    constraints: const BoxConstraints(minHeight: 48),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 44),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s10,
+                      horizontal: AppSpace.s12,
                       vertical: AppSpace.s8,
                     ),
-                    nightDecoration: BoxDecoration(
+                    decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.transparent
+                          ? (g.merlot
+                              ? (isStreakCardVisible
+                                  ? MerlotPalette.darkTint
+                                  : Colors.transparent)
+                              : (g.frozen
+                                  ? (isStreakCardVisible
+                                      ? FrozenPalette.darkTint
+                                      : Colors.transparent)
+                                  : (isStreakCardVisible
+                                      ? g.clay.withValues(alpha: 0.22)
+                                      : Colors.transparent)))
                           : (isStreakCardVisible
                               ? (g.merlot
-                                  ? MerlotPalette.sparkTint
+                                  ? MerlotPalette.action
                                   : (g.frozen
-                                      ? FrozenPalette.sparkTint
+                                      ? FrozenPalette.action
                                       : const Color(0xFFFEF3C7)))
                               : (g.merlot ? MerlotPalette.surface : Colors.white)),
                       borderRadius: AppGeometry.roundedr99,
                       border: Border.all(
-                        color: g.frozen
-                            ? FrozenPalette.line
-                            : g.merlot
-                            ? (isStreakCardVisible
-                                ? MerlotPalette.spark.withValues(alpha: 0.5)
-                                : MerlotPalette.line)
-                            : isDark
-                            ? (isStreakCardVisible ? g.clay : g.edge)
-                            : (isStreakCardVisible
-                                ? const Color(0xFFF59E0B)
-                                : const Color(0xFFE2E8F0)),
+                        color: isDark
+                            ? (g.merlot
+                                ? (isStreakCardVisible
+                                    ? MerlotPalette.darkLine
+                                    : MerlotPalette.darkLineSubtle)
+                                : (g.frozen
+                                    ? (isStreakCardVisible
+                                        ? FrozenPalette.darkLine
+                                        : FrozenPalette.darkLine)
+                                    : (isStreakCardVisible ? g.clay : g.edge)))
+                            : (g.merlot
+                                ? (isStreakCardVisible
+                                    ? MerlotPalette.actionDeep
+                                    : MerlotPalette.line)
+                                : (g.frozen
+                                    ? FrozenPalette.line
+                                    : (isStreakCardVisible
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFFE2E8F0)))),
                         width: g.merlot ? 0.75 : AppBorderScale.w1point0,
                       ),
                       boxShadow: isDark
@@ -135,14 +152,14 @@ class HomeHeader extends ConsumerWidget {
                               BoxShadow(
                                 color: (isStreakCardVisible
                                         ? (g.merlot
-                                            ? MerlotPalette.spark
+                                            ? MerlotPalette.action
                                             : (g.frozen
-                                                ? FrozenPalette.spark
+                                                ? FrozenPalette.action
                                                 : const Color(0xFFF59E0B)))
                                         : (g.merlot
                                             ? MerlotPalette.action
                                             : const Color(0xFF0F172A)))
-                                    .withValues(alpha: 0.06),
+                                    .withValues(alpha: 0.08),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -153,48 +170,53 @@ class HomeHeader extends ConsumerWidget {
                       children: [
                         Icon(
                           Icons.local_fire_department_rounded,
-                          size: 15,
-                          color: g.frozen
-                              ? (isDark
-                                    ? FrozenPalette.darkSpark
-                                    : FrozenPalette.spark)
-                              : g.merlot
-                              ? (isDark
-                                    ? MerlotPalette.spark
-                                    : (isStreakCardVisible
-                                        ? MerlotPalette.spark
-                                        : MerlotPalette.mutedInk))
-                              : (isDark
-                                    ? context.surfaces.pillForeground(
-                                        isStreakCardVisible,
-                                        g.clay,
-                                      )
-                                    : (isStreakCardVisible
-                                        ? const Color(0xFFEA580C)
-                                        : const Color(0xFF64748B))),
+                          size: 16,
+                          color: isDark
+                              ? (g.merlot
+                                  ? MerlotPalette.darkSpark
+                                  : (g.frozen
+                                      ? FrozenPalette.darkSpark
+                                      : g.clay))
+                              : (isStreakCardVisible
+                                  ? (g.merlot
+                                      ? const Color(0xFFFBBF24)
+                                      : (g.frozen
+                                          ? Colors.white
+                                          : const Color(0xFFEA580C)))
+                                  : (g.merlot
+                                      ? MerlotPalette.mutedInk
+                                      : (g.frozen
+                                          ? FrozenPalette.mutedInk
+                                          : const Color(0xFF64748B)))),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Flexible(
                           child: Text(
                             streak == 0 ? 'Start' : '$streak',
                             style: AppTypography.jetBrainsMono115W7009(
                               color: isDark
-                                  ? context.surfaces.contentForeground(
-                                      isStreakCardVisible,
-                                      context.surfaces.pillForeground(
-                                        isStreakCardVisible,
-                                        g.clay,
-                                      ),
-                                    )
+                                  ? (g.merlot
+                                      ? (isStreakCardVisible
+                                          ? MerlotPalette.darkInk
+                                          : MerlotPalette.darkMutedInk)
+                                      : (g.frozen
+                                          ? (isStreakCardVisible
+                                              ? FrozenPalette.darkInk
+                                              : FrozenPalette.darkMutedInk)
+                                          : (isStreakCardVisible
+                                              ? Colors.white
+                                              : g.inkMuted)))
                                   : (isStreakCardVisible
                                       ? (g.merlot
-                                          ? MerlotPalette.spark
+                                          ? Colors.white
                                           : (g.frozen
-                                              ? FrozenPalette.spark
+                                              ? Colors.white
                                               : const Color(0xFFB45309)))
                                       : (g.merlot
                                           ? MerlotPalette.ink
-                                          : const Color(0xFF0F172A))),
+                                          : (g.frozen
+                                              ? FrozenPalette.ink
+                                              : const Color(0xFF0F172A)))),
                             ),
                           ),
                         ),

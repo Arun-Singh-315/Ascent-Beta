@@ -153,7 +153,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   static const merlotLinenLight = AscentGlass(
     merlot: true,
     bg: MerlotPalette.canvas,
-    fill: Color.fromRGBO(255, 255, 255, 0.96),
+    fill: Color.fromRGBO(252, 250, 247, 0.96),
     edge: MerlotPalette.line,
     highlight: Color.fromRGBO(255, 255, 255, 0.98),
     line: MerlotPalette.lineSubtle,
@@ -175,6 +175,33 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     ink: MerlotPalette.ink,
     inkSecondary: MerlotPalette.secondaryInk,
     inkMuted: MerlotPalette.mutedInk,
+  );
+
+  static const merlotLinenDark = AscentGlass(
+    merlot: true,
+    bg: MerlotPalette.darkCanvas,
+    fill: Color.fromRGBO(255, 255, 255, 0.06),
+    edge: MerlotPalette.darkLine,
+    highlight: Color.fromRGBO(255, 255, 255, 0.12),
+    line: MerlotPalette.darkLineSubtle,
+    glow1: Color.fromRGBO(240, 178, 84, 0.18),
+    glow2: Color.fromRGBO(212, 104, 122, 0.18),
+    track: MerlotPalette.darkTint,
+    nav: Color.fromRGBO(22, 16, 18, 0.88),
+    shadow: Color.fromRGBO(0, 0, 0, 0.55),
+    clay: MerlotPalette.darkAction,
+    claySoft: MerlotPalette.darkTint,
+    slate: MerlotPalette.darkSpark,
+    slateSoft: MerlotPalette.darkSparkTint,
+    sage: MerlotPalette.darkSuccess,
+    sageSoft: Color.fromRGBO(74, 222, 128, 0.14),
+    amber: MerlotPalette.darkSpark,
+    amberSoft: MerlotPalette.darkSparkTint,
+    coral: MerlotPalette.darkTerracotta,
+    coralSoft: Color.fromRGBO(224, 122, 95, 0.14),
+    ink: MerlotPalette.darkInk,
+    inkSecondary: MerlotPalette.darkSecondaryInk,
+    inkMuted: MerlotPalette.darkMutedInk,
   );
 
   static const dark = AscentGlass(

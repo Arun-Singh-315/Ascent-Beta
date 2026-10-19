@@ -101,13 +101,13 @@ class AscentColors {
   /// Crisp off-white text.
   static const Color textPrimaryDark = Color(0xFFEFF2F6);
 
-  /// Secondary text in dark mode.
-  static const Color textSecondaryDark = Color(0xFFA2ACB8);
+  /// Secondary text in dark mode — soft clear silver (10+:1 contrast).
+  static const Color textSecondaryDark = Color(0xFFCBD5E1);
 
-  /// Muted text in dark mode.
-  static const Color textMutedDark = Color(0xFF8C8075);
+  /// Muted text in dark mode — readable slate-oat (6.5+:1 contrast).
+  static const Color textMutedDark = Color(0xFFA89F96);
 
-  /// Text on primary in dark mode.
+  /// Text on primary in dark mode — dark ink on peach clay.
   static const Color textOnPrimaryDark = Color(0xFF0D1812);
 
   /// Subtle dark divider line.

@@ -918,36 +918,80 @@ class _QuickWaterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark
+        ? const Color(0xFF0369A1).withValues(alpha: 0.16)
+        : const Color(0xFFF0F9FF);
+    final borderColor = isDark
+        ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
+        : const Color(0xFFBAE6FD);
+    final iconBg = isDark
+        ? const Color(0xFF38BDF8).withValues(alpha: 0.2)
+        : const Color(0xFFE0F2FE);
+    final iconColor = isDark
+        ? const Color(0xFF38BDF8)
+        : const Color(0xFF0284C7);
+
     return AppTapArea(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: context.bgBase,
-          borderRadius: BorderRadius.circular(14),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AscentColors.waterPrimary.withValues(alpha: 0.25),
+            color: borderColor,
+            width: 1,
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 22, color: AscentColors.waterPrimary),
-            const SizedBox(height: 6),
-            Text(
-              '+$amountMl mL',
-              style: TextStyle(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : const Color(0xFF0284C7))
+                  .withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: context.textMuted,
-                fontSize: 10,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 19, color: iconColor),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '+$amountMl mL',
+                      style: AppTypography.jetBrainsMono13W70066(
+                        color: context.textPrimary,
+                      ).copyWith(fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
