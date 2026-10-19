@@ -57,6 +57,8 @@ void main() {
       try {
         await tester.pumpWidget(harness(container, const ThoughtWallScreen()));
         await settleDb(tester);
+        await tester.ensureVisible(find.textContaining('Selection note A'));
+        await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('Selection note A'));
         await tester.pumpAndSettle();
         for (final label in ['Plan', 'Todo', 'Reminder', 'Both', 'Merge']) {
@@ -106,7 +108,11 @@ void main() {
     try {
       await tester.pumpWidget(harness(container, const ThoughtWallScreen()));
       await settleDb(tester);
+      await tester.ensureVisible(find.textContaining('Selection note A'));
+      await tester.pumpAndSettle();
       await tester.longPress(find.textContaining('Selection note A'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.textContaining('Selection note B'));
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Selection note B'));
       await tester.pumpAndSettle();

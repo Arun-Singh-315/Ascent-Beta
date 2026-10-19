@@ -277,6 +277,63 @@ class PlanService {
     return answerCheckIn(occurrence.id, answer);
   });
 
+  /// Snooze the current alert without changing the activity or creating duplicates.
+  Future<bool> snoozeReminder(
+    int reminderId,
+    DateTime expectedAt, {
+    Duration delay = const Duration(minutes: 30),
+  }) => db.transaction(() async {
+    if (delay.inMinutes < 1 || delay > const Duration(days: 1)) return false;
+    final reminder = await db.reminderDao.getReminderById(reminderId);
+    final link = await db.planDao.getAlertLinkForReminder(reminderId);
+    if (reminder == null ||
+        link == null ||
+        !reminder.isActive ||
+        reminder.scheduledAt != expectedAt) {
+      return false;
+    }
+    final occurrence = await db.planDao.getOccurrenceById(link.occurrenceId);
+    if (occurrence == null || occurrence.outcome != 'scheduled') return false;
+    final definition = await db.planDao.getPlanById(occurrence.planId);
+    if (definition == null || definition.status != 'active') return false;
+    if (link.role == 'check_in') {
+      final links = await db.planDao.getAlertLinksForOccurrence(occurrence.id);
+      for (final other in links.where(
+        (l) => l.role == 'check_in' && l.reminderId != reminderId,
+      )) {
+        await (db.update(
+          db.reminderTable,
+        )..where((r) => r.id.equals(other.reminderId))).write(
+          const ReminderTableCompanion(
+            isActive: Value(false),
+            alertSyncPending: Value(true),
+          ),
+        );
+      }
+      await db.planDao.updateOccurrence(
+        PlanOccurrenceTableCompanion(
+          id: Value(occurrence.id),
+          closeTime: Value(
+            PlanRecurrenceEngine.calculateCloseTime(
+              startTime: occurrence.scheduledStartTime,
+              lastCheckInTime: clock().add(delay),
+            ),
+          ),
+          updatedAt: Value(clock()),
+        ),
+      );
+    }
+    await (db.update(
+      db.reminderTable,
+    )..where((r) => r.id.equals(reminderId))).write(
+      ReminderTableCompanion(
+        scheduledAt: Value(clock().add(delay)),
+        alertSyncPending: const Value(true),
+      ),
+    );
+    return true;
+  });
+
   /// Answer check-in for an occurrence with 'done', 'skip_this_time', 'skip_check_in', or 'later'.
   Future<bool> answerCheckIn(
     String occurrenceId,
@@ -321,6 +378,19 @@ class PlanService {
           scheduledAt: Value(nextCheckAt),
           isActive: const Value(true),
           alertSyncPending: const Value(true),
+        ),
+      );
+
+      await db.planDao.updateOccurrence(
+        PlanOccurrenceTableCompanion(
+          id: Value(occ.id),
+          closeTime: Value(
+            PlanRecurrenceEngine.calculateCloseTime(
+              startTime: occ.scheduledStartTime,
+              lastCheckInTime: nextCheckAt,
+            ),
+          ),
+          updatedAt: Value(now),
         ),
       );
 

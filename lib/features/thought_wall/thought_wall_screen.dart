@@ -1,3 +1,4 @@
+import '../../shared/widgets/note_list_button.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -317,12 +318,23 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: MessageComposer(
-          controller: _inputController,
-          focusNode: _focusNode,
-          hint: 'Write a thought...',
-          busy: _isSubmitting,
-          onSend: (_) => _submitThought(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            MessageComposer(
+              controller: _inputController,
+              focusNode: _focusNode,
+              hint: 'Write a thought...',
+              busy: _isSubmitting,
+              onSend: (_) => _submitThought(),
+            ),
+            NoteListToolbar(
+              controller: _inputController,
+              focusNode: _focusNode,
+              enabled: !_isSubmitting,
+            ),
+          ],
         ),
       ),
     );
@@ -1058,8 +1070,9 @@ class ThoughtCardBubble extends ConsumerWidget {
                         : Border.all(
                             color: context.isDark
                                 ? g.inkMuted.withValues(alpha: .4)
-                                : AscentColors.outlineDay
-                                    .withValues(alpha: .18),
+                                : AscentColors.outlineDay.withValues(
+                                    alpha: .18,
+                                  ),
                             width: AppBorderScale.w1point2,
                           ),
                     boxShadow: context.isDark

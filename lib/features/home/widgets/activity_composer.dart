@@ -1,3 +1,6 @@
+import '../../../shared/widgets/schedule_picker.dart';
+import '../../../shared/widgets/note_list_button.dart';
+import '../../../core/services/plan_collection_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +21,7 @@ class ActivityComposer extends ConsumerStatefulWidget {
 
 class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   final _text = TextEditingController();
+  final _inputFocus = FocusNode();
   ActivityKind _kind = ActivityKind.todo;
   int _minutes = 30;
   DateTime? _date;
@@ -38,6 +42,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   void dispose() {
     _text.removeListener(_changed);
+    _inputFocus.dispose();
     _text.dispose();
     super.dispose();
   }
@@ -116,21 +121,33 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       setState(() => _reminder = null);
       return;
     }
-    final picked = await showTimePicker(
-      context: context,
-      initialTime:
-          _reminder ??
-          TimeOfDay.fromDateTime(
-            DateTime.now().add(const Duration(minutes: 15)),
-          ),
+    final now = DateTime.now();
+    final selected = _reminder == null
+        ? null
+        : DateTime(
+            _day.year,
+            _day.month,
+            _day.day,
+            _reminder!.hour,
+            _reminder!.minute,
+          );
+    final picked = await pickFutureSchedule(
+      context,
+      purpose: 'Reminder',
+      initial:
+          selected ??
+          DateTime(_day.year, _day.month, _day.day, now.hour, now.minute + 30),
     );
     if (picked == null || !mounted) return;
-    setState(() => _reminder = picked);
+    setState(() {
+      _date = DateTime(picked.year, picked.month, picked.day);
+      _reminder = TimeOfDay.fromDateTime(picked);
+    });
     await NotificationService.instance.requestPermissions();
   }
 
   Future<void> _send() async {
-    if (_saving || _text.text.trim().isEmpty) return;
+    if (_saving || PlanItemDraft.parseList(_text.text).isEmpty) return;
     setState(() {
       _saving = true;
       _error = null;
@@ -138,8 +155,9 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
     final db = ref.read(databaseProvider);
     try {
       final date = _day;
-      final result = await ActivityEntryService(db).save(
-        title: _text.text,
+      final entries = PlanItemDraft.parseList(_text.text);
+      final results = await ActivityEntryService(db).saveMany(
+        titles: entries,
         date: date,
         estimatedMinutes: _kind == ActivityKind.duration
             ? _minutes
@@ -156,6 +174,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                 _reminder!.minute,
               ),
       );
+      final reminderIds = results.expand((r) => r.reminderIds).toList();
       // Persistence succeeded. Never repeat creation because device alerts fail.
       if (!mounted) return;
       HapticFeedback.lightImpact();
@@ -166,12 +185,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         _reminder = null;
         _minutes = 30;
       });
-      var message = 'Activity added';
-      if (result.reminderIds.isNotEmpty) {
+      var message = results.length == 1
+          ? 'Activity added'
+          : '${results.length} to-dos added';
+      if (reminderIds.isNotEmpty) {
         try {
           final sync = await ReminderAlertSync.device(
             db,
-          ).sync(ids: result.reminderIds, onlyPending: true);
+          ).sync(ids: reminderIds, onlyPending: true);
           if (!sync.complete) {
             message =
                 'Activity saved. Reminder alert pending—check notification permissions.';
@@ -240,9 +261,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
             color: isDark ? g.fill : context.bgSurfaceElevated,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark
-                  ? g.edge
-                  : g.edge.withValues(alpha: 0.35),
+              color: isDark ? g.edge : g.edge.withValues(alpha: 0.35),
               width: 1.0,
             ),
           ),
@@ -258,10 +277,11 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     child: TextField(
                       key: const ValueKey('activity_quick_input'),
                       controller: _text,
+                      focusNode: _inputFocus,
                       enabled: !_saving,
                       minLines: 1,
                       maxLines: 3,
-                      maxLength: 300,
+                      maxLength: 20000,
                       textCapitalization: TextCapitalization.sentences,
                       style: TextStyle(color: g.ink, fontSize: 14),
                       decoration: InputDecoration(
@@ -291,11 +311,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                       backgroundColor: g.clay,
                       disabledBackgroundColor: g.clay.withValues(alpha: 0.45),
                       foregroundColor: Colors.white,
-                      disabledForegroundColor:
-                          Colors.white.withValues(alpha: 0.7),
+                      disabledForegroundColor: Colors.white.withValues(
+                        alpha: 0.7,
+                      ),
                       minimumSize: const Size(40, 40),
                     ),
-                    onPressed: _saving || _text.text.trim().isEmpty ? null : _send,
+                    onPressed:
+                        _saving || PlanItemDraft.parseList(_text.text).isEmpty
+                        ? null
+                        : _send,
                     icon: _saving
                         ? const SizedBox(
                             width: 16,
@@ -308,6 +332,12 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                         : const Icon(Icons.arrow_upward_rounded, size: 20),
                   ),
                 ],
+              ),
+              NoteListToolbar(
+                controller: _text,
+                focusNode: _inputFocus,
+                enabled: !_saving,
+                helperText: 'One to-do per line. Shared date and alert below.',
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),

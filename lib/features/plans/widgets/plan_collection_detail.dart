@@ -76,90 +76,94 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
   Future<bool> _confirm(String title, String message) async {
     final g = context.glass;
     return await showDialog<bool>(
-      context: context,
-      builder: (ctx) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpace.s24),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpace.s20),
-          decoration: BoxDecoration(
-            color: ctx.bgSurfaceElevated,
-            borderRadius: AppGeometry.roundedr24,
-            border: Border.all(color: g.line),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.25),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppSpace.s8),
-                    decoration: BoxDecoration(
-                      color: context.stateDanger.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.delete_outline_rounded,
-                      color: context.stateDanger,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpace.s12),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: g.ink,
-                      ),
-                    ),
+          context: context,
+          builder: (ctx) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: AppSpace.s24),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpace.s20),
+              decoration: BoxDecoration(
+                color: ctx.bgSurfaceElevated,
+                borderRadius: AppGeometry.roundedr24,
+                border: Border.all(color: g.line),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpace.s12),
-              Text(
-                message,
-                style: TextStyle(
-                  color: g.inkSecondary,
-                  height: 1.4,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: AppSpace.s20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text('Cancel', style: TextStyle(color: g.inkMuted)),
-                  ),
-                  const SizedBox(width: AppSpace.s8),
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: context.stateDanger,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppGeometry.roundedr12,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpace.s8),
+                        decoration: BoxDecoration(
+                          color: context.stateDanger.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          color: context.stateDanger,
+                          size: 20,
+                        ),
                       ),
+                      const SizedBox(width: AppSpace.s12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: g.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpace.s12),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: g.inkSecondary,
+                      height: 1.4,
+                      fontSize: 13,
                     ),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete'),
+                  ),
+                  const SizedBox(height: AppSpace.s20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(color: g.inkMuted),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.s8),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: context.stateDanger,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr12,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   Future<void> _rename(PlanCollectionView plan) async {
@@ -217,23 +221,32 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                   ],
                 ),
                 const SizedBox(height: AppSpace.s16),
+                Text('Plan name', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: AppSpace.s8),
                 TextField(
+                  key: const ValueKey('rename_plan_field'),
                   controller: name,
+                  minLines: 1,
+                  maxLines: 3,
                   maxLength: 300,
                   decoration: InputDecoration(
-                    labelText: 'Name',
+                    hintText: 'Plan name',
+                    counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: AppGeometry.roundedr12,
                     ),
                   ),
                 ),
                 const SizedBox(height: AppSpace.s12),
+                Text('Notes', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: AppSpace.s8),
                 TextField(
                   controller: notes,
                   maxLines: 3,
                   maxLength: 20000,
                   decoration: InputDecoration(
-                    labelText: 'Notes',
+                    hintText: 'Optional notes',
+                    counterText: '',
                     border: OutlineInputBorder(
                       borderRadius: AppGeometry.roundedr12,
                     ),
@@ -245,7 +258,10 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text('Cancel', style: TextStyle(color: g.inkMuted)),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: g.inkMuted),
+                      ),
                     ),
                     const SizedBox(width: AppSpace.s8),
                     FilledButton(
@@ -522,9 +538,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                     child: Row(
                       children: [
                         Icon(
-                          c.routines > 0
-                              ? Icons.event_repeat
-                              : Icons.checklist,
+                          c.routines > 0 ? Icons.event_repeat : Icons.checklist,
                           color: g.clay,
                         ),
                         const SizedBox(width: AppSpace.s12),
@@ -680,7 +694,10 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
               child: Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(top: AppSpace.s12, bottom: AppSpace.s4),
+                margin: const EdgeInsets.only(
+                  top: AppSpace.s12,
+                  bottom: AppSpace.s4,
+                ),
                 decoration: BoxDecoration(
                   color: g.inkMuted.withValues(alpha: 0.3),
                   borderRadius: AppGeometry.roundedr4,
@@ -789,9 +806,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                             // Plan Title
                             Text(
                               plan.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
+                              style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: g.ink,
@@ -839,8 +854,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       value: plan.total == 0
                                           ? 0
                                           : plan.done / plan.total,
-                                      backgroundColor:
-                                          g.line.withValues(alpha: 0.3),
+                                      backgroundColor: g.line.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       color: g.clay,
                                       minHeight: 6,
                                     ),
@@ -921,9 +937,10 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                           ),
                                           Icon(
                                             _notesExpanded
-                                                ? Icons.keyboard_arrow_up_rounded
+                                                ? Icons
+                                                      .keyboard_arrow_up_rounded
                                                 : Icons
-                                                    .keyboard_arrow_down_rounded,
+                                                      .keyboard_arrow_down_rounded,
                                             size: 20,
                                             color: g.inkMuted,
                                           ),
@@ -1025,8 +1042,8 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       ) ??
                                       false)
                                     OutlinedButton.icon(
-                                      onPressed: _busy ||
-                                              plan.status != 'active'
+                                      onPressed:
+                                          _busy || plan.status != 'active'
                                           ? null
                                           : () => showPlanCollectionEditor(
                                               context,
@@ -1090,8 +1107,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                               Container(
                                 padding: const EdgeInsets.all(AppSpace.s8),
                                 decoration: BoxDecoration(
-                                  color: context.stateWarning
-                                      .withValues(alpha: 0.12),
+                                  color: context.stateWarning.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: AppGeometry.roundedr8,
                                 ),
                                 child: Row(
@@ -1204,10 +1222,12 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                           value: item.done,
                                           activeColor: g.clay,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
-                                          onChanged: _busy ||
+                                          onChanged:
+                                              _busy ||
                                                   item.done ||
                                                   plan.status != 'active'
                                               ? null
@@ -1224,15 +1244,12 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       Expanded(
                                         child: InkWell(
                                           borderRadius: AppGeometry.roundedr12,
-                                          onTap: (item.done &&
-                                                      !item.recurring) ||
+                                          onTap:
+                                              (item.done && !item.recurring) ||
                                                   _busy
                                               ? null
-                                              : () => _action(
-                                                  item,
-                                                  'edit',
-                                                  all,
-                                                ),
+                                              : () =>
+                                                    _action(item, 'edit', all),
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                               vertical: AppSpace.s8,
@@ -1254,7 +1271,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                                             : g.ink,
                                                         decoration: item.done
                                                             ? TextDecoration
-                                                                .lineThrough
+                                                                  .lineThrough
                                                             : null,
                                                       ),
                                                 ),
@@ -1301,12 +1318,13 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                                         !item.done) ...[
                                                       if (item.alert != 'none')
                                                         _buildItemTag(
-                                                          icon: item.alert ==
+                                                          icon:
+                                                              item.alert ==
                                                                   'alarm'
                                                               ? Icons
-                                                                  .alarm_rounded
+                                                                    .alarm_rounded
                                                               : Icons
-                                                                  .notifications_active_rounded,
+                                                                    .notifications_active_rounded,
                                                           label: item.alert,
                                                           color: g.clay,
                                                         ),
@@ -1383,8 +1401,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                               plan.status == 'active')
                                             const PopupMenuItem(
                                               value: 'focus',
-                                              child:
-                                                  Text('Start / resume focus'),
+                                              child: Text(
+                                                'Start / resume focus',
+                                              ),
                                             ),
                                           if (item.occurrenceId != null &&
                                               !item.done &&
@@ -1476,4 +1495,3 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
     );
   }
 }
-

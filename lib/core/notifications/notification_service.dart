@@ -110,7 +110,7 @@ class NotificationService {
     }
     if (payload != null &&
         RegExp(
-          r'^/home\?(?:session=[a-zA-Z0-9_:.\-]+|checkin=\d+&at=\d+&occ=[a-zA-Z0-9_:.\-]+(?:&answer=(?:done|later|skip))?)$',
+          r'^/home\?(?:session=[a-zA-Z0-9_:.\-]+(?:&reminder=\d+&at=\d+)?|checkin=\d+&at=\d+&occ=[a-zA-Z0-9_:.\-]+(?:&answer=(?:done|later|skip))?)$',
         ).hasMatch(payload)) {
       return payload;
     }

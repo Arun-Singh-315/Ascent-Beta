@@ -1,3 +1,5 @@
+import '../../../shared/widgets/note_list_button.dart';
+import '../../../shared/widgets/schedule_picker.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -117,6 +119,9 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   // without touching times the person set by hand.
   final _presetItems = <_Item>{};
   String _preset = 'none';
+  DateTime? _presetStart;
+  int _presetSpacing = 30;
+  String _presetAlert = 'reminder';
   late String _request;
   String? _destination, _error;
   bool _busy = false;
@@ -189,6 +194,12 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
           _title.text = saved['title'] as String;
           _description.text = saved['description'] as String;
           _destination = saved['destination'] as String?;
+          _preset = saved['preset'] as String? ?? 'none';
+          _presetStart = DateTime.tryParse(
+            saved['presetStart'] as String? ?? '',
+          );
+          _presetSpacing = saved['presetSpacing'] as int? ?? 30;
+          _presetAlert = saved['presetAlert'] as String? ?? 'reminder';
           for (final i in _items) {
             i.dispose();
           }
@@ -208,6 +219,11 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
               ),
             );
           }
+          for (final position in (saved['presetPositions'] as List? ?? [])) {
+            if (position is int && position >= 0 && position < _items.length) {
+              _presetItems.add(_items[position]);
+            }
+          }
         }
       } catch (_) {
         _error =
@@ -226,6 +242,14 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       'sourceId': widget.source?.id,
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
       'items': _items.map((i) => i.toJson()).toList(),
+      'preset': _preset,
+      'presetStart': _presetStart?.toIso8601String(),
+      'presetSpacing': _presetSpacing,
+      'presetAlert': _presetAlert,
+      'presetPositions': [
+        for (var n = 0; n < _items.length; n++)
+          if (_presetItems.contains(_items[n])) n,
+      ],
     });
     final prefs = ref.read(sharedPreferencesProvider);
     _writes = _writes.then((_) async {
@@ -258,7 +282,11 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     setState(() {
       _items.add(item);
     });
-    _changed();
+    if (_preset != 'none' && _presetStart != null) {
+      _applySchedule(_presetStart!, _presetSpacing, _presetAlert);
+    } else {
+      _changed();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) item.focusNode.requestFocus();
     });
@@ -292,7 +320,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
         : DateTime(now.year, now.month, now.day + 1, 18);
   }
 
-  Future<void> _settings(int index) async {
+  Future<bool> _settings(int index) async {
     FocusScope.of(context).unfocus();
     final item = _items[index];
     final result = await showModalBottomSheet<PlanItemDraft>(
@@ -306,7 +334,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
         evening: _evening(),
       ),
     );
-    if (result == null || !mounted) return;
+    if (result == null || !mounted) return false;
     item.title.text = result.title;
     item.notes = result.notes;
     item.at = result.at;
@@ -319,11 +347,15 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     // A hand-set time is pinned: presets no longer overwrite it.
     _presetItems.remove(item);
     _changed();
+    return true;
   }
 
   /// Gives untimed (or preset-timed) items consecutive times starting at
   /// [start]. Items the user timed by hand stay where they are.
   void _applySchedule(DateTime start, int spacing, String alert) {
+    _presetStart = start;
+    _presetSpacing = spacing;
+    _presetAlert = alert;
     var at = start;
     for (final item in _items) {
       if (item.at == null || _presetItems.contains(item)) {
@@ -332,9 +364,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
         item.alert = alert;
         _presetItems.add(item);
       }
-      at = (item.at ?? at).add(
+      final next = (item.at ?? at).add(
         Duration(minutes: item.minutes == null ? spacing : item.minutes! + 10),
       );
+      if (next.isAfter(at)) at = next;
     }
     _changed();
   }
@@ -361,17 +394,33 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     }
     _presetItems.clear();
     _preset = 'none';
+    _presetStart = null;
     _changed();
   }
 
   Future<void> _customSchedule() async {
     FocusScope.of(context).unfocus();
+    final prefs = ref.read(sharedPreferencesProvider);
+    final now = DateTime.now();
+    final initial = DateTime(
+      now.year,
+      now.month,
+      now.day + 1,
+      prefs.getInt('planning_default_hour') ?? 7,
+      prefs.getInt('planning_default_minute') ?? 0,
+    );
+    final start = await pickFutureSchedule(
+      context,
+      purpose: 'Schedule',
+      initial: initial,
+    );
+    if (start == null || !mounted) return;
     final result = await showModalBottomSheet<_Defaults>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _DefaultsSheet(),
+      builder: (_) => _DefaultsSheet(initialAt: start),
     );
     if (result == null || !mounted) return;
     _preset = 'custom';
@@ -379,6 +428,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   }
 
   void _setAlertForAll(String alert) {
+    _presetAlert = alert;
     for (final i in _items) {
       if (i.at != null && !i.dateOnly) i.alert = alert;
     }
@@ -393,9 +443,7 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(ctx).bottom,
-        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
         child: Container(
           padding: const EdgeInsets.all(AppSpace.s20),
           decoration: BoxDecoration(
@@ -440,10 +488,11 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                         children: [
                           Text(
                             'Add multiple items',
-                            style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: g.ink,
-                            ),
+                            style: Theme.of(ctx).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: g.ink,
+                                ),
                           ),
                           Text(
                             'Type or paste items (one per line). Bullets and numbers are cleaned.',
@@ -484,7 +533,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text('Cancel', style: TextStyle(color: g.inkMuted)),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: g.inkMuted),
+                      ),
                     ),
                     const SizedBox(width: AppSpace.s8),
                     FilledButton(
@@ -524,7 +576,11 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
       }),
     );
     _paste.clear();
-    _changed();
+    if (_preset != 'none' && _presetStart != null) {
+      _applySchedule(_presetStart!, _presetSpacing, _presetAlert);
+    } else {
+      _changed();
+    }
   }
 
   /// Named after the first item when the person leaves the name empty, so a
@@ -543,6 +599,23 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
 
   Future<void> _save() async {
     if (_busy) return;
+    if (_items.isEmpty || _items.any((i) => i.title.text.trim().isEmpty)) {
+      setState(() => _error = 'Name each item, or remove its empty row.');
+      return;
+    }
+    for (var n = 0; n < _items.length; n++) {
+      final i = _items[n];
+      if ((i.at != null && !i.dateOnly && !i.at!.isAfter(DateTime.now())) ||
+          (i.recurrence != 'once' &&
+              (i.at == null ||
+                  i.endDate == null ||
+                  i.endDate!.isBefore(
+                    DateTime(i.at!.year, i.at!.month, i.at!.day),
+                  )))) {
+        if (!await _settings(n) || !mounted) return;
+      }
+    }
+
     setState(() {
       _busy = true;
       _error = null;
@@ -654,7 +727,8 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     final summary = <String>[
       '${_items.length} ${_items.length == 1 ? 'item' : 'items'}',
       if (scheduled > 0) '$scheduled scheduled',
-      if (reminders > 0) '$reminders ${reminders == 1 ? 'reminder' : 'reminders'}',
+      if (reminders > 0)
+        '$reminders ${reminders == 1 ? 'reminder' : 'reminders'}',
       if (alarms > 0) '$alarms ${alarms == 1 ? 'alarm' : 'alarms'}',
     ].join(' · ');
     return PopScope(
@@ -671,7 +745,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                 child: Container(
                   width: 36,
                   height: 4,
-                  margin: const EdgeInsets.only(top: AppSpace.s12, bottom: AppSpace.s4),
+                  margin: const EdgeInsets.only(
+                    top: AppSpace.s12,
+                    bottom: AppSpace.s4,
+                  ),
                   decoration: BoxDecoration(
                     color: g.inkMuted.withValues(alpha: 0.3),
                     borderRadius: AppGeometry.roundedr4,
@@ -753,18 +830,34 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                         ),
                         const SizedBox(height: AppSpace.s8),
                       ],
-                      if (_destination == null)
+                      if (_destination == null) ...[
+                        _sectionLabel(context, 'Plan name'),
                         TextField(
+                          key: const ValueKey('plan_name_field'),
                           controller: _title,
+                          minLines: 1,
+                          maxLines: 3,
                           maxLength: 300,
                           enabled: !_busy,
                           onChanged: (_) => _persist(),
-                          decoration: const InputDecoration(
-                            labelText: 'Plan name',
-                            hintText: 'Optional · named from your first item',
+                          scrollPadding: const EdgeInsets.all(AppSpace.s24),
+                          decoration: InputDecoration(
+                            hintText: 'e.g. Interview preparation',
                             counterText: '',
+                            contentPadding: const EdgeInsets.all(AppSpace.s14),
+                            border: OutlineInputBorder(
+                              borderRadius: AppGeometry.roundedr12,
+                            ),
                           ),
                         ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: AppSpace.s4),
+                          child: Text(
+                            'Optional — leave blank to use your first item.',
+                            style: TextStyle(color: g.inkMuted),
+                          ),
+                        ),
+                      ],
                     ],
                     if (widget.editing == null) ...[
                       _sectionLabel(context, 'When'),
@@ -823,7 +916,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                         ),
                       ],
                       const SizedBox(height: AppSpace.s8),
-                      Text(summary, style: TextStyle(color: g.inkSecondary, fontSize: 13)),
+                      Text(
+                        summary,
+                        style: TextStyle(color: g.inkSecondary, fontSize: 13),
+                      ),
                       if (overlap)
                         Text(
                           'Some items share a time. You can keep them or edit their times.',
@@ -831,7 +927,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                         ),
                     ],
                     Padding(
-                      padding: const EdgeInsets.only(top: AppSpace.s16, bottom: AppSpace.s8),
+                      padding: const EdgeInsets.only(
+                        top: AppSpace.s16,
+                        bottom: AppSpace.s8,
+                      ),
                       child: Wrap(
                         alignment: WrapAlignment.spaceBetween,
                         crossAxisAlignment: WrapCrossAlignment.center,
@@ -843,15 +942,19 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                             children: [
                               Text(
                                 'Items',
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: g.inkSecondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: g.inkSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                               ),
                               if (_items.isNotEmpty) ...[
                                 const SizedBox(width: AppSpace.s6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: g.fill,
                                     borderRadius: AppGeometry.roundedr6,
@@ -869,32 +972,14 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                               ],
                             ],
                           ),
-                          if (isNewPlan)
-                            Wrap(
-                              spacing: AppSpace.s6,
-                              runSpacing: AppSpace.s4,
-                              children: [
-                                TextButton.icon(
-                                  onPressed: _busy || _items.length >= 200
-                                      ? null
-                                      : () => _addItem(),
-                                  icon: const Icon(Icons.add, size: 18),
-                                  label: const Text('Add item'),
-                                  style: TextButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: _busy ? null : _pasteList,
-                                  icon: const Icon(Icons.playlist_add_rounded, size: 18),
-                                  label: const Text('Paste list'),
-                                  style: TextButton.styleFrom(
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
-                              ],
-                            ),
                         ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                      child: Text(
+                        'One row = one to-do. Tap Add item to create the next row.',
+                        style: TextStyle(color: g.inkMuted),
                       ),
                     ),
                     for (var n = 0; n < _items.length; n++)
@@ -932,7 +1017,8 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                         onChanged: (_) => _persist(),
                                         onSubmitted: (_) {
                                           if (n < _items.length - 1) {
-                                            _items[n + 1].focusNode.requestFocus();
+                                            _items[n + 1].focusNode
+                                                .requestFocus();
                                           } else if (widget.editing == null) {
                                             _addItem();
                                           }
@@ -1005,9 +1091,13 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                               : () {
                                                   setState(() {
                                                     _items[n].at = null;
-                                                    _items[n].recurrence = 'once';
+                                                    _items[n].recurrence =
+                                                        'once';
                                                     _items[n].dateOnly = false;
-                                                    _presetItems.remove(_items[n]);
+                                                    _items[n].checkIn = false;
+                                                    _presetItems.remove(
+                                                      _items[n],
+                                                    );
                                                   });
                                                   _changed();
                                                 },
@@ -1017,17 +1107,27 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                             color: g.inkMuted,
                                           ),
                                         ),
-                                      if (_items[n].minutes != null && _items[n].minutes! > 0)
+                                      if (_items[n].minutes != null &&
+                                          _items[n].minutes! > 0)
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 4,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: g.clay.withValues(alpha: 0.12),
+                                            color: g.clay.withValues(
+                                              alpha: 0.12,
+                                            ),
                                             borderRadius: AppGeometry.roundedr8,
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              Icon(Icons.timer_outlined, size: 12, color: g.clay),
+                                              Icon(
+                                                Icons.timer_outlined,
+                                                size: 12,
+                                                color: g.clay,
+                                              ),
                                               const SizedBox(width: 4),
                                               Text(
                                                 '${_items[n].minutes}m focus',
@@ -1086,7 +1186,10 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                           ),
                           OutlinedButton.icon(
                             onPressed: _busy ? null : _pasteList,
-                            icon: const Icon(Icons.playlist_add_rounded, size: 18),
+                            icon: const Icon(
+                              Icons.playlist_add_rounded,
+                              size: 18,
+                            ),
                             label: const Text('Paste list'),
                             style: OutlinedButton.styleFrom(
                               shape: RoundedRectangleBorder(
@@ -1159,300 +1262,510 @@ class _ItemSettings extends StatefulWidget {
 }
 
 class _SettingsState extends State<_ItemSettings> {
-  late DateTime? _at, _end;
-  late String _alert, _repeat;
-  late bool _check;
-  bool _dateOnly = false;
+  DateTime? _at, _end;
+  String _alert = 'none', _repeat = 'once';
+  bool _check = false, _dateOnly = false, _choosing = false;
+  String? _notice;
   int? _minutes;
   late final List<int> _durations;
-  late TextEditingController _notes;
+  late final TextEditingController _notes;
+  final _notesFocus = FocusNode();
   @override
   void initState() {
     super.initState();
     final d = widget.initial;
     _at = d.at;
-    _end = d.endDate;
-    _alert = d.alert;
-    _repeat = d.recurrence;
-    _check = d.checkIn;
     _dateOnly = d.dateOnly;
     _minutes = d.minutes;
+    _alert = d.at == null || d.dateOnly ? 'none' : d.alert;
+    _repeat = d.recurrence;
+    _end = d.endDate;
+    _check = d.checkIn;
     _notes = TextEditingController(text: d.notes);
-    final extra = d.minutes;
-    _durations = [
+    _durations = {
       15,
       25,
       45,
       60,
-      if (extra != null && extra > 0 && ![15, 25, 45, 60].contains(extra)) extra,
-    ]..sort();
+      if (d.minutes != null && d.minutes! > 0) d.minutes!,
+    }.toList()..sort();
+    if ((_repeat != 'once' && (_at == null || _end == null)) ||
+        (_check && (_at == null || _dateOnly))) {
+      final intendedRepeat = _repeat;
+      _repeat = 'once';
+      _check = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && intendedRepeat != 'once') _chooseRepeat(intendedRepeat);
+      });
+    }
   }
 
   @override
   void dispose() {
+    _notesFocus.dispose();
     _notes.dispose();
     super.dispose();
   }
 
-  bool _is(DateTime? a, DateTime b) {
-    if (a == null) return false;
-    if (_dateOnly) {
-      return a.year == b.year && a.month == b.month && a.day == b.day;
-    }
-    return a == b;
+  void _inform(String message) {
+    if (mounted) setState(() => _notice = message);
   }
 
-  void _setAt(DateTime t) => setState(
-    () => _at = _dateOnly ? DateTime(t.year, t.month, t.day) : t,
+  DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
+  bool get _validTime =>
+      _at != null && !_dateOnly && _at!.isAfter(DateTime.now());
+
+  Future<DateTime?> _date(
+    String help, {
+    DateTime? initial,
+    DateTime? first,
+    DateTime? last,
+  }) async {
+    final lower = _day(first ?? DateTime.now());
+    final upper = _day(last ?? DateTime(DateTime.now().year + 3));
+    var suggested = _day(initial ?? _at ?? DateTime.now());
+    if (suggested.isBefore(lower)) suggested = lower;
+    if (suggested.isAfter(upper)) suggested = upper;
+    return showDatePicker(
+      context: context,
+      helpText: help,
+      initialDate: suggested,
+      firstDate: lower,
+      lastDate: upper,
+    );
+  }
+
+  Future<DateTime?> _time(String purpose, {DateTime? initial}) =>
+      pickFutureSchedule(
+        context,
+        purpose: purpose,
+        initial: initial ?? (_validTime ? _at : null),
+        onInvalid: _inform,
+      );
+
+  Future<DateTime?> _until(DateTime start) => _date(
+    'Repeat until',
+    initial: _end ?? start.add(const Duration(days: 14)),
+    first: start,
+    last: start.add(const Duration(days: 90)),
   );
 
-  Future<void> _pick() async {
-    final now = DateTime.now();
-    final day = await showDatePicker(
-      context: context,
-      initialDate: (_at?.isAfter(now) ?? false) ? _at : now,
-      firstDate: DateTime(now.year, now.month, now.day),
-      lastDate: DateTime(now.year + 3),
-    );
-    if (day == null || !mounted) return;
-    if (_dateOnly) {
-      setState(() => _at = day);
+  Future<void> _chooseAlert(String alert) async {
+    if (_choosing) return;
+    if (alert == 'none') {
+      setState(() {
+        _alert = alert;
+        _notice = null;
+      });
       return;
     }
-    final time = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_at ?? now),
-    );
-    if (time != null && mounted) {
-      setState(
-        () => _at = DateTime(
-          day.year,
-          day.month,
-          day.day,
-          time.hour,
-          time.minute,
-        ),
-      );
+    setState(() {
+      _choosing = true;
+      _notice = null;
+    });
+    final value = _validTime
+        ? _at
+        : await _time(alert == 'alarm' ? 'Alarm' : 'Reminder');
+    if (!mounted) return;
+    setState(() {
+      _choosing = false;
+      if (value != null) {
+        _at = value;
+        _dateOnly = false;
+        _alert = alert;
+        _notice = null;
+      } else {
+        _notice ??=
+            '${alert == 'alarm' ? 'Alarm' : 'Reminder'} was left unchanged. Choose a date and time to turn it on.';
+      }
+    });
+  }
+
+  Future<void> _chooseRepeat(String repeat) async {
+    if (_choosing) return;
+    if (repeat == 'once') {
+      setState(() {
+        _repeat = repeat;
+        _end = null;
+        _notice = null;
+      });
+      return;
     }
+    setState(() {
+      _choosing = true;
+      _notice = null;
+    });
+    final start = _validTime ? _at : await _time('Start');
+    final end = start == null || !mounted ? null : await _until(start);
+    if (!mounted) return;
+    setState(() {
+      _choosing = false;
+      if (start != null && end != null) {
+        _at = start;
+        _end = end;
+        _repeat = repeat;
+        _dateOnly = false;
+        _notice = null;
+      } else {
+        _notice ??=
+            'Repeat was left unchanged. Set the start and end dates to turn it on.';
+      }
+    });
+  }
+
+  Future<void> _chooseDateOnly(bool value) async {
+    if (_choosing) return;
+    if (!value) {
+      await _chooseStart();
+      return;
+    }
+    setState(() {
+      _choosing = true;
+      _notice = null;
+    });
+    final date = await _date('Activity date');
+    if (!mounted) return;
+    setState(() {
+      _choosing = false;
+      if (date != null) {
+        _at = date;
+        _dateOnly = true;
+        _alert = 'none';
+        _repeat = 'once';
+        _end = null;
+        _check = false;
+        _notice = null;
+      }
+    });
+  }
+
+  Future<void> _chooseStart({DateTime? preset}) async {
+    if (_choosing) return;
+    setState(() {
+      _choosing = true;
+      _notice = null;
+    });
+    final value = preset ?? await _time('Activity');
+    var end = _end;
+    if (value != null &&
+        _repeat != 'once' &&
+        (end == null || _day(end).isBefore(_day(value))) &&
+        mounted) {
+      end = await _until(value);
+    }
+    if (!mounted) return;
+    setState(() {
+      _choosing = false;
+      if (value != null && (_repeat == 'once' || end != null)) {
+        _at = value;
+        _dateOnly = false;
+        _end = end;
+        _notice = null;
+      }
+    });
+  }
+
+  Future<void> _chooseCheck(bool value) async {
+    if (_choosing) return;
+    if (!value) {
+      setState(() => _check = false);
+      return;
+    }
+    setState(() {
+      _choosing = true;
+      _notice = null;
+    });
+    final start = _validTime ? _at : await _time('Check-in start');
+    if (!mounted) return;
+    setState(() {
+      _choosing = false;
+      if (start != null) {
+        _at = start;
+        _dateOnly = false;
+        _check = true;
+        _notice = null;
+      } else {
+        _notice = 'Check-in was left off. Choose a start date and time first.';
+      }
+    });
+  }
+
+  Future<void> _apply() async {
+    if (_choosing) return;
+    if (_at != null && !_dateOnly && !_validTime) {
+      await _chooseStart();
+      if (!_validTime) return;
+    }
+    if (_repeat != 'once' &&
+        (_end == null || _day(_end!).isBefore(_day(_at!)))) {
+      await _chooseRepeat(_repeat);
+      if (_end == null) return;
+    }
+    if (!mounted) return;
+    Navigator.pop(
+      context,
+      PlanItemDraft(
+        title: widget.initial.title,
+        notes: _notes.text,
+        at: _at,
+        alert: _dateOnly || _at == null ? 'none' : _alert,
+        recurrence: _repeat,
+        endDate: _end,
+        minutes: _minutes,
+        checkIn: _check,
+        dateOnly: _dateOnly,
+      ),
+    );
   }
 
   Widget _label(String text) => Padding(
     padding: const EdgeInsets.only(top: AppSpace.s16, bottom: AppSpace.s8),
     child: Text(text, style: Theme.of(context).textTheme.labelLarge),
   );
-
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final custom =
-        _at != null && !_is(_at, widget.morning) && !_is(_at, widget.evening);
-    final timed = _at != null && !_dateOnly;
+    final dateFormat = DateFormat(
+      _dateOnly ? 'EEE, d MMM' : 'EEE, d MMM · h:mm a',
+    );
+    final checkAt = _at?.add(Duration(minutes: (_minutes ?? 30) + 10));
     return Material(
       color: context.bgSurfaceElevated,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border.all(color: g.line),
-        ),
-      padding: EdgeInsets.only(
-        left: AppSpace.s16,
-        right: AppSpace.s16,
-        top: AppSpace.s12,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppSpace.s12),
-                decoration: BoxDecoration(
-                  color: g.inkMuted.withValues(alpha: 0.3),
-                  borderRadius: AppGeometry.roundedr4,
-                ),
-              ),
-            ),
-            Text('Item details', style: Theme.of(context).textTheme.titleLarge),
-            _label('When'),
-            Wrap(
-              spacing: AppSpace.s8,
-              runSpacing: AppSpace.s8,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: AppSpace.s16,
+            right: AppSpace.s16,
+            top: AppSpace.s16,
+            bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
+          ),
+          child: SingleChildScrollView(
+            key: const ValueKey('item_settings_scroll'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ChoiceChip(
-                  label: const Text('No time'),
-                  selected: _at == null,
-                  onSelected: (_) => setState(() {
-                    _at = null;
-                    _repeat = 'once';
-                    _check = false;
-                    _dateOnly = false;
-                  }),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Item details',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Close item details',
+                      onPressed: _choosing
+                          ? null
+                          : () => Navigator.pop(context),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
                 ),
-                ChoiceChip(
-                  label: const Text('Tomorrow morning'),
-                  selected: _is(_at, widget.morning),
-                  onSelected: (_) => _setAt(widget.morning),
+                Text(
+                  widget.initial.title,
+                  style: Theme.of(context).textTheme.bodyLarge,
                 ),
-                ChoiceChip(
-                  label: const Text('Evening'),
-                  selected: _is(_at, widget.evening),
-                  onSelected: (_) => _setAt(widget.evening),
+                _label('When'),
+                Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('No time'),
+                      selected: _at == null,
+                      onSelected: _choosing
+                          ? null
+                          : (_) => setState(() {
+                              _at = null;
+                              _end = null;
+                              _alert = 'none';
+                              _repeat = 'once';
+                              _dateOnly = false;
+                              _check = false;
+                              _notice = null;
+                            }),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Tomorrow morning'),
+                      selected: _at == widget.morning && !_dateOnly,
+                      onSelected: _choosing
+                          ? null
+                          : (_) => _chooseStart(preset: widget.morning),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Evening'),
+                      selected: _at == widget.evening && !_dateOnly,
+                      onSelected: _choosing
+                          ? null
+                          : (_) => _chooseStart(preset: widget.evening),
+                    ),
+                    ActionChip(
+                      avatar: const Icon(Icons.schedule, size: 18),
+                      label: Text(
+                        _at == null
+                            ? 'Pick date & time'
+                            : dateFormat.format(_at!),
+                      ),
+                      onPressed: _choosing
+                          ? null
+                          : () => _dateOnly
+                                ? _chooseDateOnly(true)
+                                : _chooseStart(),
+                    ),
+                    FilterChip(
+                      label: const Text('Date only · no alert'),
+                      selected: _dateOnly,
+                      onSelected: _choosing ? null : _chooseDateOnly,
+                    ),
+                  ],
                 ),
-                ChoiceChip(
-                  label: Text(
-                    custom
-                        ? DateFormat(
-                            _dateOnly ? 'EEE, d MMM' : 'EEE, d MMM · h:mm a',
-                          ).format(_at!)
-                        : (_dateOnly ? 'Pick a date' : 'Pick date & time'),
+                _label('Alert'),
+                Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    for (final a in ['none', 'reminder', 'alarm'])
+                      ChoiceChip(
+                        label: Text(_alertNames[a]!),
+                        selected: _alert == a,
+                        onSelected: _choosing ? null : (_) => _chooseAlert(a),
+                      ),
+                  ],
+                ),
+                Text(
+                  _alert == 'none'
+                      ? 'No start notification.'
+                      : _alert == 'alarm'
+                      ? 'An alarm will ring at the selected time.'
+                      : 'A notification will appear at the selected time.',
+                  style: TextStyle(color: g.inkSecondary),
+                ),
+                _label('Repeat'),
+                Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    for (final r in ['once', 'daily', 'weekdays'])
+                      ChoiceChip(
+                        label: Text(
+                          r == 'once'
+                              ? 'Once'
+                              : r == 'daily'
+                              ? 'Every day'
+                              : 'Weekdays',
+                        ),
+                        selected: _repeat == r,
+                        onSelected: _choosing ? null : (_) => _chooseRepeat(r),
+                      ),
+                  ],
+                ),
+                if (_repeat != 'once' && _end != null)
+                  TextButton(
+                    onPressed: _choosing ? null : () => _chooseRepeat(_repeat),
+                    child: Text(
+                      'Repeats ${_repeat == 'daily' ? 'daily' : 'on weekdays'} until ${DateFormat.yMMMd().format(_end!)}',
+                    ),
                   ),
-                  selected: custom,
-                  onSelected: (_) => _pick(),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Check in afterwards'),
+                  subtitle: Text(
+                    _check && checkAt != null
+                        ? 'Next check-in: ${DateFormat('EEE, h:mm a').format(checkAt)}'
+                        : 'Optional notification to check whether you finished.',
+                  ),
+                  value: _check,
+                  onChanged: _choosing ? null : _chooseCheck,
                 ),
-                FilterChip(
-                  label: const Text('Date only · no alert'),
-                  selected: _dateOnly,
-                  onSelected: (v) => setState(() {
-                    _dateOnly = v;
-                    if (v) {
-                      _repeat = 'once';
-                      _alert = 'none';
-                      if (_at != null) {
-                        _at = DateTime(_at!.year, _at!.month, _at!.day);
-                      }
-                      _check = false;
-                    }
-                  }),
+                Theme(
+                  data: Theme.of(
+                    context,
+                  ).copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: const Text('More options'),
+                    children: [
+                      _label('Focus time'),
+                      const Text(
+                        'Optional. Leave this off for a simple to-do.',
+                      ),
+                      Wrap(
+                        spacing: AppSpace.s8,
+                        runSpacing: AppSpace.s8,
+                        children: [
+                          ChoiceChip(
+                            label: const Text('None'),
+                            selected: _minutes == null,
+                            onSelected: (_) => setState(() => _minutes = null),
+                          ),
+                          for (final m in _durations)
+                            ChoiceChip(
+                              label: Text('$m min'),
+                              selected: _minutes == m,
+                              onSelected: (_) => setState(() => _minutes = m),
+                            ),
+                        ],
+                      ),
+                      _label('Notes'),
+                      TextField(
+                        key: const ValueKey('plan_item_notes'),
+                        controller: _notes,
+                        focusNode: _notesFocus,
+                        minLines: 2,
+                        maxLines: 5,
+                        maxLength: 20000,
+                        decoration: const InputDecoration(
+                          hintText: 'Add useful details',
+                          counterText: '',
+                        ),
+                      ),
+                      NoteListToolbar(
+                        controller: _notes,
+                        focusNode: _notesFocus,
+                        helperText:
+                            'This checklist stays inside the item’s notes.',
+                      ),
+                    ],
+                  ),
+                ),
+                if (_notice != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(_notice!, style: TextStyle(color: g.clay)),
+                    ),
+                  ),
+                const SizedBox(height: AppSpace.s12),
+                Container(
+                  padding: const EdgeInsets.all(AppSpace.s12),
+                  decoration: BoxDecoration(
+                    color: g.fill,
+                    borderRadius: AppGeometry.roundedr12,
+                    border: Border.all(color: g.edge),
+                  ),
+                  child: Text(
+                    _at == null
+                        ? 'Saved as a to-do. No alerts will be created.'
+                        : '${dateFormat.format(_at!)} · ${_alertNames[_alert]}${_repeat != 'once' ? ' · ${_repeat == 'daily' ? 'Daily' : 'Weekdays'}' : ''}${_check ? ' · Check-in on' : ''}',
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s12),
+                FilledButton(
+                  onPressed: _choosing ? null : _apply,
+                  child: const Text('Apply details'),
                 ),
               ],
             ),
-            if (timed) ...[
-              _label('Repeat'),
-              Wrap(
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  for (final r in const ['once', 'daily', 'weekdays'])
-                    ChoiceChip(
-                      label: Text(
-                        r == 'once'
-                            ? 'Once'
-                            : r == 'daily'
-                            ? 'Every day'
-                            : 'Weekdays',
-                      ),
-                      selected: _repeat == r,
-                      onSelected: (_) => setState(() => _repeat = r),
-                    ),
-                ],
-              ),
-              if (_repeat != 'once')
-                TextButton(
-                  onPressed: () async {
-                    final now = DateTime.now();
-                    final start = _at ?? now;
-                    final end = await showDatePicker(
-                      context: context,
-                      initialDate: _end ?? start.add(const Duration(days: 14)),
-                      firstDate: start,
-                      lastDate: start.add(const Duration(days: 90)),
-                    );
-                    if (end != null && mounted) setState(() => _end = end);
-                  },
-                  child: Text(
-                    _end == null
-                        ? 'Choose repeat end date'
-                        : 'Until ${DateFormat.yMMMd().format(_end!)}',
-                  ),
-                ),
-              _label('Alert'),
-              Wrap(
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  for (final a in const ['reminder', 'alarm', 'none'])
-                    ChoiceChip(
-                      label: Text(_alertNames[a]!),
-                      selected: _alert == a,
-                      onSelected: (_) => setState(() => _alert = a),
-                    ),
-                ],
-              ),
-            ],
-            Theme(
-              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-              child: ExpansionTile(
-                tilePadding: EdgeInsets.zero,
-                childrenPadding: EdgeInsets.zero,
-                title: const Text('More options'),
-                children: [
-                  _label('Focus time'),
-                  Wrap(
-                    spacing: AppSpace.s8,
-                    runSpacing: AppSpace.s8,
-                    children: [
-                      ChoiceChip(
-                        label: const Text('None'),
-                        selected: _minutes == null,
-                        onSelected: (_) => setState(() => _minutes = null),
-                      ),
-                      for (final m in _durations)
-                        ChoiceChip(
-                          label: Text('$m min'),
-                          selected: _minutes == m,
-                          onSelected: (_) => setState(() => _minutes = m),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpace.s12),
-                  TextField(
-                    controller: _notes,
-                    maxLines: 3,
-                    maxLength: 20000,
-                    decoration: const InputDecoration(labelText: 'Notes'),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Check in after this activity'),
-                    subtitle: const Text('One follow-up; no repeated nudges.'),
-                    value: _check,
-                    onChanged: _at == null || _dateOnly
-                        ? null
-                        : (v) => setState(() => _check = v),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpace.s8),
-            FilledButton(
-              onPressed: () => Navigator.pop(
-                context,
-                PlanItemDraft(
-                  title: widget.initial.title,
-                  notes: _notes.text,
-                  at: _at,
-                  alert: _alert,
-                  recurrence: _repeat,
-                  endDate: _end,
-                  minutes: _minutes,
-                  checkIn: _dateOnly ? false : _check,
-                  dateOnly: _dateOnly,
-                ),
-              ),
-              child: const Text('Apply details'),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 class _Defaults {
@@ -1463,7 +1776,8 @@ class _Defaults {
 }
 
 class _DefaultsSheet extends ConsumerStatefulWidget {
-  const _DefaultsSheet();
+  const _DefaultsSheet({this.initialAt});
+  final DateTime? initialAt;
   @override
   ConsumerState<_DefaultsSheet> createState() => _DefaultsState();
 }
@@ -1482,7 +1796,9 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
     final minute = p.getInt('planning_default_minute') ?? 0;
     _spacing = p.getInt('planning_default_spacing') ?? 30;
     _alert = p.getString('planning_default_alert') ?? 'reminder';
-    _at = DateTime(now.year, now.month, now.day + 1, hour, minute);
+    _at =
+        widget.initialAt ??
+        DateTime(now.year, now.month, now.day + 1, hour, minute);
   }
 
   Widget _label(String text) => Padding(
@@ -1502,122 +1818,122 @@ class _DefaultsState extends ConsumerState<_DefaultsSheet> {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(color: g.line),
         ),
-      padding: EdgeInsets.only(
-        left: AppSpace.s16,
-        right: AppSpace.s16,
-        top: AppSpace.s12,
-        bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: AppSpace.s12),
-                  decoration: BoxDecoration(
-                    color: g.inkMuted.withValues(alpha: 0.3),
-                    borderRadius: AppGeometry.roundedr4,
+        padding: EdgeInsets.only(
+          left: AppSpace.s16,
+          right: AppSpace.s16,
+          top: AppSpace.s12,
+          bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpace.s16,
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: AppSpace.s12),
+                    decoration: BoxDecoration(
+                      color: g.inkMuted.withValues(alpha: 0.3),
+                      borderRadius: AppGeometry.roundedr4,
+                    ),
                   ),
                 ),
-              ),
-              Text(
-                'Custom schedule',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            const SizedBox(height: AppSpace.s4),
-            const Text(
-              'Applies to items without a time. Times you set by hand stay as they are.',
-            ),
-            _label('Start'),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ActionChip(
-                avatar: const Icon(Icons.schedule, size: 18),
-                label: Text(DateFormat('EEE, d MMM · h:mm a').format(_at)),
-                onPressed: () async {
-                  final now = DateTime.now();
-                  final day = await showDatePicker(
-                    context: context,
-                    initialDate: _at,
-                    firstDate: DateTime(now.year, now.month, now.day),
-                    lastDate: DateTime(now.year + 3),
-                  );
-                  if (day == null || !context.mounted) return;
-                  final t = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.fromDateTime(_at),
-                  );
-                  if (t != null && mounted) {
-                    setState(
-                      () => _at = DateTime(
-                        day.year,
-                        day.month,
-                        day.day,
-                        t.hour,
-                        t.minute,
+                Text(
+                  'Custom schedule',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppSpace.s4),
+                const Text(
+                  'Applies to items without a time. Times you set by hand stay as they are.',
+                ),
+                _label('Start'),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ActionChip(
+                    avatar: const Icon(Icons.schedule, size: 18),
+                    label: Text(DateFormat('EEE, d MMM · h:mm a').format(_at)),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final day = await showDatePicker(
+                        context: context,
+                        initialDate: _at,
+                        firstDate: DateTime(now.year, now.month, now.day),
+                        lastDate: DateTime(now.year + 3),
+                      );
+                      if (day == null || !context.mounted) return;
+                      final t = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.fromDateTime(_at),
+                      );
+                      if (t != null && mounted) {
+                        setState(
+                          () => _at = DateTime(
+                            day.year,
+                            day.month,
+                            day.day,
+                            t.hour,
+                            t.minute,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                _label('Gap between items'),
+                Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    for (final n in const [15, 30, 45, 60, 90, 120])
+                      ChoiceChip(
+                        label: Text('$n min'),
+                        selected: _spacing == n,
+                        onSelected: (_) => setState(() => _spacing = n),
                       ),
-                    );
-                  }
-                },
-              ),
-            ),
-            _label('Gap between items'),
-            Wrap(
-              spacing: AppSpace.s8,
-              runSpacing: AppSpace.s8,
-              children: [
-                for (final n in const [15, 30, 45, 60, 90, 120])
-                  ChoiceChip(
-                    label: Text('$n min'),
-                    selected: _spacing == n,
-                    onSelected: (_) => setState(() => _spacing = n),
-                  ),
+                  ],
+                ),
+                _label('Alert'),
+                Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    for (final a in const ['reminder', 'alarm', 'none'])
+                      ChoiceChip(
+                        label: Text(_alertNames[a]!),
+                        selected: _alert == a,
+                        onSelected: (_) => setState(() => _alert = a),
+                      ),
+                  ],
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Use for future plans'),
+                  value: _remember,
+                  onChanged: (v) => setState(() => _remember = v),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (_remember) {
+                      final p = ref.read(sharedPreferencesProvider);
+                      await p.setInt('planning_default_hour', _at.hour);
+                      await p.setInt('planning_default_minute', _at.minute);
+                      await p.setInt('planning_default_spacing', _spacing);
+                      await p.setString('planning_default_alert', _alert);
+                    }
+                    if (context.mounted) {
+                      Navigator.pop(context, _Defaults(_at, _spacing, _alert));
+                    }
+                  },
+                  child: const Text('Apply'),
+                ),
               ],
             ),
-            _label('Alert'),
-            Wrap(
-              spacing: AppSpace.s8,
-              runSpacing: AppSpace.s8,
-              children: [
-                for (final a in const ['reminder', 'alarm', 'none'])
-                  ChoiceChip(
-                    label: Text(_alertNames[a]!),
-                    selected: _alert == a,
-                    onSelected: (_) => setState(() => _alert = a),
-                  ),
-              ],
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Use for future plans'),
-              value: _remember,
-              onChanged: (v) => setState(() => _remember = v),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (_remember) {
-                  final p = ref.read(sharedPreferencesProvider);
-                  await p.setInt('planning_default_hour', _at.hour);
-                  await p.setInt('planning_default_minute', _at.minute);
-                  await p.setInt('planning_default_spacing', _spacing);
-                  await p.setString('planning_default_alert', _alert);
-                }
-                if (context.mounted) {
-                  Navigator.pop(context, _Defaults(_at, _spacing, _alert));
-                }
-              },
-              child: const Text('Apply'),
-            ),
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-);
-}
+    );
+  }
 }

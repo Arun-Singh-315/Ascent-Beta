@@ -101,7 +101,7 @@ void main() {
     await t.pumpAndSettle();
     expect(find.byType(PlanCollectionEditor), findsOneWidget);
     expect(await db.select(db.taskTable).get(), isEmpty);
-    final name = find.widgetWithText(TextField, 'Plan name');
+    final name = find.byKey(const ValueKey('plan_name_field'));
     await t.enterText(name, 'Interview preparation');
     await t.tap(find.widgetWithText(FilledButton, 'Save plan'));
     await flush(t);
@@ -125,7 +125,7 @@ void main() {
     await t.tap(find.text('Plan'));
     await t.pumpAndSettle();
     await t.enterText(
-      find.widgetWithText(TextField, 'Plan name'),
+      find.byKey(const ValueKey('plan_name_field')),
       'My saved draft',
     );
     await flush(t);

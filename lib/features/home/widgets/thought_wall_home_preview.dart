@@ -162,26 +162,27 @@ class _ThoughtWallHomePreviewState
 
   Map<String, dynamic>? get _pendingDraft {
     try {
-    final prefs = ref.read(sharedPreferencesProvider);
-    final drafts = <Map<String, dynamic>>[];
-    for (final key in prefs.getKeys().where(
-      (k) => k.startsWith('planning_draft_v1:'),
-    )) {
-      try {
-        final data = Map<String, dynamic>.from(
-          jsonDecode(prefs.getString(key)!) as Map,
-        );
-        data['key'] = key;
-        drafts.add(data);
-      } catch (_) {
-        /* Ignore an unreadable draft; preserve the original note. */
+      final prefs = ref.read(sharedPreferencesProvider);
+      final drafts = <Map<String, dynamic>>[];
+      for (final key in prefs.getKeys().where(
+        (k) => k.startsWith('planning_draft_v1:'),
+      )) {
+        try {
+          final data = Map<String, dynamic>.from(
+            jsonDecode(prefs.getString(key)!) as Map,
+          );
+          data['key'] = key;
+          drafts.add(data);
+        } catch (_) {
+          /* Ignore an unreadable draft; preserve the original note. */
+        }
       }
-    }
-    drafts.sort(
-      (a, b) =>
-          (b['updatedAt'] as int? ?? 0).compareTo(a['updatedAt'] as int? ?? 0),
-    );
-    return drafts.firstOrNull;
+      drafts.sort(
+        (a, b) => (b['updatedAt'] as int? ?? 0).compareTo(
+          a['updatedAt'] as int? ?? 0,
+        ),
+      );
+      return drafts.firstOrNull;
     } catch (_) {
       return null;
     }
@@ -310,7 +311,7 @@ class _ThoughtWallHomePreviewState
             ),
             child: Row(
               children: [
-                NoteListButton(controller: _controller, compact: true),
+                Icon(Icons.edit_note_rounded, color: g.inkSecondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: TextField(
@@ -368,6 +369,13 @@ class _ThoughtWallHomePreviewState
                 ),
               ],
             ),
+          ),
+
+        if (widget.showComposer)
+          NoteListToolbar(
+            controller: _controller,
+            focusNode: _focusNode,
+            enabled: !_saving,
           ),
 
         // ── THOUGHTS MESSAGE PREVIEW (ENCLOSED CARD) ──────────────────

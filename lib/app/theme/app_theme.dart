@@ -501,19 +501,11 @@ class AscentTheme {
         selectedColor: isNordicSky
             ? accentPrimary
             : (day ? AppSurfaces.day.accent : null),
-        labelStyle: WidgetStateTextStyle.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return AscentTextStyles.labelSmall.copyWith(
-              color: isNordicSky
-                  ? (isDark ? FrozenPalette.darkCanvas : Colors.white)
-                  : textOnPrimary,
-              fontWeight: FontWeight.w600,
-            );
-          }
-          return AscentTextStyles.labelSmall.copyWith(
-            color: isNordicSky ? accentPrimary : textPrimary,
-          );
-        }),
+        // RawChip uses this as a plain TextStyle for unselected labels.
+        // State-dependent text styles lose their font/color when merged here.
+        labelStyle: AscentTextStyles.labelSmall.copyWith(
+          color: isNordicSky ? accentPrimary : textPrimary,
+        ),
         secondaryLabelStyle: AscentTextStyles.labelSmall.copyWith(
           color: isNordicSky
               ? (isDark ? FrozenPalette.darkCanvas : Colors.white)
@@ -560,22 +552,25 @@ class AscentTheme {
         color: day
             ? AppSurfaces.day.cardFill
             : (isNordicSky
-                ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
-                : bgSurface),
+                  ? (isDark
+                        ? FrozenPalette.darkElevated
+                        : FrozenPalette.elevated)
+                  : bgSurface),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(
             color: day
                 ? AppSurfaces.day.cardBorderColor
                 : (isNordicSky
-                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                    : divider),
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : divider),
             width: 1.0,
           ),
         ),
         elevation: 8,
-        shadowColor:
-            (isDark ? Colors.black : Colors.black54).withValues(alpha: 0.18),
+        shadowColor: (isDark ? Colors.black : Colors.black54).withValues(
+          alpha: 0.18,
+        ),
         surfaceTintColor: Colors.transparent,
         menuPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         textStyle: AscentTextStyles.bodyMedium.copyWith(

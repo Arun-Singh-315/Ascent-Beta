@@ -68,7 +68,13 @@ void main() {
             child: child!,
           ),
           home: Scaffold(
-            body: RepaintBoundary(key: capture, child: Material(color: theme.scaffoldBackgroundColor, child: child)),
+            body: RepaintBoundary(
+              key: capture,
+              child: Material(
+                color: theme.scaffoldBackgroundColor,
+                child: child,
+              ),
+            ),
           ),
         ),
       ),
@@ -103,10 +109,24 @@ void main() {
       expect(find.text('Item details'), findsOneWidget);
       expect(t.takeException(), isNull);
       // Notes live under "More options" so the common path stays short.
-      await t.tap(find.text('More options'));
+      final more = find.text('More options');
+      for (var n = 0; n < 20 && more.hitTestable().evaluate().isEmpty; n++) {
+        await t.drag(
+          find.byKey(const ValueKey('item_settings_scroll')),
+          const Offset(0, -160),
+        );
+        await t.pumpAndSettle();
+      }
+      await t.tap(more.hitTestable());
       await t.pumpAndSettle();
-      final notes = find.widgetWithText(TextField, 'Notes');
-      await t.ensureVisible(notes);
+      final notes = find.byKey(const ValueKey('plan_item_notes'));
+      for (var n = 0; n < 20 && notes.hitTestable().evaluate().isEmpty; n++) {
+        await t.drag(
+          find.byKey(const ValueKey('item_settings_scroll')),
+          const Offset(0, -160),
+        );
+        await t.pumpAndSettle();
+      }
       await t.pumpAndSettle();
       // Keyboard open must leave a scrollable settings form.
       await t.enterText(notes, 'Supporting notes');
@@ -153,17 +173,13 @@ void main() {
         scale: 1,
       );
       await t.enterText(
-        find.widgetWithText(TextField, 'Plan name'),
+        find.byKey(const ValueKey('plan_name_field')),
         'Study plan',
       );
 
       // One tap on a "When" chip schedules every row; no extra sheet to fill in.
       final morning = find.text('Tomorrow morning');
-      for (
-        var n = 0;
-        n < 12 && morning.hitTestable().evaluate().isEmpty;
-        n++
-      ) {
+      for (var n = 0; n < 12 && morning.hitTestable().evaluate().isEmpty; n++) {
         await t.drag(find.byType(ListView), const Offset(0, -160));
         await t.pumpAndSettle();
       }
