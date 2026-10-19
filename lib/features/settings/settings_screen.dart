@@ -522,25 +522,49 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
+                        color: dayPreset == DayThemePreset.auroraCalm
+                            ? AuroraPalette.tint
+                            : dayPreset == DayThemePreset.nordicSky
+                            ? FrozenPalette.tint
+                            : const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFDBA74)),
+                        border: Border.all(
+                          color: dayPreset == DayThemePreset.auroraCalm
+                              ? AuroraPalette.royalIndigo.withValues(alpha: 0.35)
+                              : dayPreset == DayThemePreset.nordicSky
+                              ? FrozenPalette.line
+                              : const Color(0xFFFDBA74),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.wb_sunny_rounded,
-                            color: Color(0xFFEA580C),
+                          Icon(
+                            dayPreset == DayThemePreset.auroraCalm
+                                ? Icons.auto_awesome_rounded
+                                : Icons.wb_sunny_rounded,
+                            color: dayPreset == DayThemePreset.auroraCalm
+                                ? AuroraPalette.royalIndigo
+                                : dayPreset == DayThemePreset.nordicSky
+                                ? FrozenPalette.action
+                                : const Color(0xFFEA580C),
                             size: 16,
                           ),
                           const SizedBox(width: 8),
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Luminous Day Theme is active. Warm terracotta, amber glow, and crisp linen surfaces.',
+                              dayPreset == DayThemePreset.auroraCalm
+                                  ? 'Royal Aurora Theme is active. Cool royal indigo, aurora cyan mist, and satin matte depth.'
+                                  : dayPreset == DayThemePreset.nordicSky
+                                  ? 'Frozen Sky Theme is active. Crisp arctic blues, frosted glass, and cool linen surfaces.'
+                                  : 'Classic Clay Theme is active. Warm terracotta, amber glow, and crisp linen surfaces.',
                               style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF9A3412),
+                                color: dayPreset == DayThemePreset.auroraCalm
+                                    ? AuroraPalette.royalIndigo
+                                    : dayPreset == DayThemePreset.nordicSky
+                                    ? FrozenPalette.action
+                                    : const Color(0xFF9A3412),
                               ),
                             ),
                           ),

@@ -11,6 +11,7 @@ import 'aurora_palette.dart';
 /// - Harmonic Accents: Slate (Study), Sage (Walk/Health), Amber (Focus/Cash), Coral (Urgent/Danger)
 class AscentGlass extends ThemeExtension<AscentGlass> {
   final bool frozen;
+  final bool aurora;
   final Color bg;
   final Color fill;
   final Color edge;
@@ -43,6 +44,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
   const AscentGlass({
     this.frozen = false,
+    this.aurora = false,
     required this.bg,
     required this.fill,
     required this.edge,
@@ -150,6 +152,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
   static const auroraCalmLight = AscentGlass(
     frozen: false,
+    aurora: true,
     bg: AuroraPalette.canvas,
     fill: Color.fromRGBO(252, 253, 255, 0.94),
     edge: Color.fromRGBO(203, 213, 225, 0.90),
@@ -177,6 +180,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
 
   static const auroraCalmDark = AscentGlass(
     frozen: false,
+    aurora: true,
     bg: AuroraPalette.darkCanvas,
     fill: Color.fromRGBO(19, 27, 46, 0.92),
     edge: Color.fromRGBO(39, 53, 78, 0.90),
@@ -231,6 +235,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   @override
   ThemeExtension<AscentGlass> copyWith({
     bool? frozen,
+    bool? aurora,
     Color? bg,
     Color? fill,
     Color? edge,
@@ -257,6 +262,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
   }) {
     return AscentGlass(
       frozen: frozen ?? this.frozen,
+      aurora: aurora ?? this.aurora,
       bg: bg ?? this.bg,
       fill: fill ?? this.fill,
       edge: edge ?? this.edge,
@@ -291,6 +297,7 @@ class AscentGlass extends ThemeExtension<AscentGlass> {
     if (other is! AscentGlass) return this;
     return AscentGlass(
       frozen: t < 0.5 ? frozen : other.frozen,
+      aurora: t < 0.5 ? aurora : other.aurora,
       bg: Color.lerp(bg, other.bg, t)!,
       fill: Color.lerp(fill, other.fill, t)!,
       edge: Color.lerp(edge, other.edge, t)!,

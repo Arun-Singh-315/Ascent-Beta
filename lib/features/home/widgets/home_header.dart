@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/frozen_palette.dart';
+import '../../../app/theme/aurora_palette.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/home_layout_provider.dart';
@@ -107,12 +108,20 @@ class HomeHeader extends ConsumerWidget {
                       color: isDark
                           ? Colors.transparent
                           : (isStreakCardVisible
-                              ? const Color(0xFFFEF3C7)
-                              : Colors.white),
+                              ? (g.aurora
+                                  ? AuroraPalette.sparkTint
+                                  : (g.frozen
+                                      ? FrozenPalette.sparkTint
+                                      : const Color(0xFFFEF3C7)))
+                              : (g.aurora ? AuroraPalette.surface : Colors.white)),
                       borderRadius: AppGeometry.roundedr99,
                       border: Border.all(
                         color: g.frozen
                             ? FrozenPalette.line
+                            : g.aurora
+                            ? (isStreakCardVisible
+                                ? AuroraPalette.spark.withValues(alpha: 0.5)
+                                : AuroraPalette.line)
                             : isDark
                             ? (isStreakCardVisible ? g.clay : g.edge)
                             : (isStreakCardVisible
@@ -125,8 +134,14 @@ class HomeHeader extends ConsumerWidget {
                           : [
                               BoxShadow(
                                 color: (isStreakCardVisible
-                                        ? const Color(0xFFF59E0B)
-                                        : const Color(0xFF0F172A))
+                                        ? (g.aurora
+                                            ? AuroraPalette.spark
+                                            : (g.frozen
+                                                ? FrozenPalette.spark
+                                                : const Color(0xFFF59E0B)))
+                                        : (g.aurora
+                                            ? AuroraPalette.royalIndigo
+                                            : const Color(0xFF0F172A)))
                                     .withValues(alpha: 0.06),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
@@ -143,6 +158,12 @@ class HomeHeader extends ConsumerWidget {
                               ? (isDark
                                     ? FrozenPalette.darkSpark
                                     : FrozenPalette.spark)
+                              : g.aurora
+                              ? (isDark
+                                    ? AuroraPalette.darkSpark
+                                    : (isStreakCardVisible
+                                        ? AuroraPalette.spark
+                                        : AuroraPalette.mutedInk))
                               : (isDark
                                     ? context.surfaces.pillForeground(
                                         isStreakCardVisible,
@@ -166,8 +187,14 @@ class HomeHeader extends ConsumerWidget {
                                       ),
                                     )
                                   : (isStreakCardVisible
-                                      ? const Color(0xFFB45309)
-                                      : const Color(0xFF0F172A)),
+                                      ? (g.aurora
+                                          ? AuroraPalette.spark
+                                          : (g.frozen
+                                              ? FrozenPalette.spark
+                                              : const Color(0xFFB45309)))
+                                      : (g.aurora
+                                          ? AuroraPalette.ink
+                                          : const Color(0xFF0F172A))),
                             ),
                           ),
                         ),
@@ -195,17 +222,34 @@ class HomeHeader extends ConsumerWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: isDark ? g.fill : const Color(0xFFFFF7ED),
+                        color: isDark
+                            ? g.fill
+                            : (g.aurora
+                                ? AuroraPalette.surface
+                                : (g.frozen
+                                    ? FrozenPalette.surface
+                                    : const Color(0xFFFFF7ED))),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: isDark ? g.edge : const Color(0xFFFDBA74),
+                          color: isDark
+                              ? g.edge
+                              : (g.aurora
+                                  ? AuroraPalette.line
+                                  : (g.frozen
+                                      ? FrozenPalette.line
+                                      : const Color(0xFFFDBA74))),
                           width: AppBorderScale.w1point0,
                         ),
                         boxShadow: isDark
                             ? null
                             : [
                                 BoxShadow(
-                                  color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                                  color: (g.aurora
+                                          ? AuroraPalette.royalIndigo
+                                          : (g.frozen
+                                              ? FrozenPalette.action
+                                              : const Color(0xFFF97316)))
+                                      .withValues(alpha: 0.10),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -217,8 +261,14 @@ class HomeHeader extends ConsumerWidget {
                             : Icons.dark_mode_rounded,
                         size: 20,
                         color: isDark
-                            ? const Color(0xFFF59E0B)
-                            : const Color(0xFF6366F1),
+                            ? (g.aurora
+                                ? AuroraPalette.darkSpark
+                                : const Color(0xFFF59E0B))
+                            : (g.aurora
+                                ? AuroraPalette.royalIndigo
+                                : (g.frozen
+                                    ? FrozenPalette.action
+                                    : const Color(0xFF6366F1))),
                       ),
                     ),
                   ),
@@ -252,6 +302,20 @@ class HomeHeader extends ConsumerWidget {
                                     : FrozenPalette.action,
                               ],
                             )
+                          : g.aurora
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isDark
+                                  ? [
+                                      AuroraPalette.darkAction,
+                                      AuroraPalette.darkActionCyan,
+                                    ]
+                                  : [
+                                      const Color(0xFFEEF2FF),
+                                      const Color(0xFFE0E7FF),
+                                    ],
+                            )
                           : (!isDark
                               ? const LinearGradient(
                                   begin: Alignment.topLeft,
@@ -262,13 +326,17 @@ class HomeHeader extends ConsumerWidget {
                                   ],
                                 )
                               : null),
-                      color: g.frozen ? null : (isDark ? g.claySoft : null),
+                      color: (g.frozen || g.aurora) ? null : (isDark ? g.claySoft : null),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: g.frozen
                             ? (isDark
                                   ? FrozenPalette.darkLine
                                   : FrozenPalette.line)
+                            : g.aurora
+                            ? (isDark
+                                  ? AuroraPalette.darkLine
+                                  : AuroraPalette.line)
                             : (isDark ? g.edge : const Color(0xFFFDBA74)),
                         width: AppBorderScale.w1point0,
                       ),
@@ -282,6 +350,17 @@ class HomeHeader extends ConsumerWidget {
                                         .withValues(alpha: 0.20),
                                 blurRadius: 10,
                                 offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : g.aurora
+                          ? [
+                              BoxShadow(
+                                color: (isDark
+                                        ? AuroraPalette.darkAction
+                                        : AuroraPalette.royalIndigo)
+                                    .withValues(alpha: 0.10),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
                             ]
                           : (!isDark
@@ -304,6 +383,8 @@ class HomeHeader extends ConsumerWidget {
                         style: AppTypography.bricolageGrotesque15W70099(
                           color: g.frozen
                               ? Colors.white
+                              : g.aurora
+                              ? (isDark ? Colors.white : AuroraPalette.royalIndigo)
                               : (isDark ? g.ink : const Color(0xFF9A3412)),
                         ),
                       ),

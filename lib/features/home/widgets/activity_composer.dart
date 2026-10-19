@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
+import '../../../app/theme/aurora_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/activity_entry_service.dart';
@@ -234,8 +235,20 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       margin: const EdgeInsets.only(right: 4),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: g.clay.withValues(alpha: isDark ? 0.16 : 0.08),
+        color: isDark
+            ? g.clay.withValues(alpha: 0.16)
+            : (g.aurora
+                ? AuroraPalette.tint
+                : g.clay.withValues(alpha: 0.08)),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark
+              ? g.clay.withValues(alpha: 0.30)
+              : (g.aurora
+                  ? AuroraPalette.royalIndigo.withValues(alpha: 0.20)
+                  : g.clay.withValues(alpha: 0.15)),
+          width: 0.8,
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -259,10 +272,16 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: isDark ? g.fill : context.bgSurfaceElevated,
+            color: isDark
+                ? g.fill
+                : (g.aurora ? AuroraPalette.surface : context.bgSurfaceElevated),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isDark ? g.edge : g.edge.withValues(alpha: 0.35),
+              color: isDark
+                  ? g.edge
+                  : (g.aurora
+                      ? AuroraPalette.line
+                      : g.edge.withValues(alpha: 0.35)),
               width: 1.0,
             ),
           ),
@@ -322,12 +341,22 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   IconButton.filled(
                     tooltip: 'Add activity',
                     style: IconButton.styleFrom(
-                      backgroundColor: g.clay,
-                      disabledBackgroundColor: g.clay.withValues(alpha: 0.45),
-                      foregroundColor: Colors.white,
-                      disabledForegroundColor: Colors.white.withValues(
-                        alpha: 0.7,
-                      ),
+                      backgroundColor: isDark
+                          ? g.clay
+                          : (g.aurora ? AuroraPalette.tint : g.claySoft),
+                      disabledBackgroundColor: isDark
+                          ? g.clay.withValues(alpha: 0.3)
+                          : g.edge.withValues(alpha: 0.2),
+                      foregroundColor: isDark ? Colors.white : g.clay,
+                      disabledForegroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.4)
+                          : g.inkMuted.withValues(alpha: 0.4),
+                      side: isDark
+                          ? null
+                          : BorderSide(
+                              color: g.clay.withValues(alpha: 0.25),
+                              width: 1,
+                            ),
                       minimumSize: const Size(40, 40),
                     ),
                     onPressed:
@@ -335,15 +364,19 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                         ? null
                         : _send,
                     icon: _saving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: isDark ? Colors.white : g.clay,
                               strokeWidth: 2,
                             ),
                           )
-                        : const Icon(Icons.arrow_upward_rounded, size: 20),
+                        : Icon(
+                            Icons.arrow_upward_rounded,
+                            size: 20,
+                            color: isDark ? Colors.white : g.clay,
+                          ),
                   ),
                 ],
               ),
