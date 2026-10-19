@@ -1,4 +1,3 @@
-import '../../shared/widgets/note_list_button.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -328,11 +327,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               hint: 'Write a thought...',
               busy: _isSubmitting,
               onSend: (_) => _submitThought(),
-            ),
-            NoteListToolbar(
-              controller: _inputController,
-              focusNode: _focusNode,
-              enabled: !_isSubmitting,
             ),
           ],
         ),

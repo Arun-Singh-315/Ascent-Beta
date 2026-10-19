@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import 'note_list_button.dart';
 
 class MessageComposer extends StatefulWidget {
   const MessageComposer({
@@ -63,34 +64,50 @@ class _MessageComposerState extends State<MessageComposer> {
                       width: _focus.hasFocus ? 1.5 : 1,
                     ),
                   ),
-                  child: TextField(
-                    controller: widget.controller,
-                    focusNode: _focus,
-                    minLines: 1,
-                    maxLines: 4,
-                    keyboardType: TextInputType.multiline,
-                    textInputAction: TextInputAction.newline,
-                    textCapitalization: TextCapitalization.sentences,
-                    cursorColor: g.clay,
-                    style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
-                    decoration: InputDecoration(
-                      hintText: widget.hint,
-                      hintStyle: AscentTextStyles.bodyMedium.copyWith(
-                        color: g.inkMuted,
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 6),
+                        child: InlineListAddButton(
+                          controller: widget.controller,
+                          focusNode: _focus,
+                          enabled: !widget.busy,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s16,
-                        vertical: AppSpace.s14,
+                      Expanded(
+                        child: TextField(
+                          controller: widget.controller,
+                          focusNode: _focus,
+                          minLines: 1,
+                          maxLines: 4,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          textCapitalization: TextCapitalization.sentences,
+                          cursorColor: g.clay,
+                          style:
+                              AscentTextStyles.bodyMedium.copyWith(color: g.ink),
+                          decoration: InputDecoration(
+                            hintText: widget.hint,
+                            hintStyle: AscentTextStyles.bodyMedium.copyWith(
+                              color: g.inkMuted,
+                            ),
+                            contentPadding: const EdgeInsets.only(
+                              right: AppSpace.s16,
+                              top: AppSpace.s14,
+                              bottom: AppSpace.s14,
+                            ),
+                            isDense: true,
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
+                            errorBorder: InputBorder.none,
+                            focusedErrorBorder: InputBorder.none,
+                          ),
+                        ),
                       ),
-                      isDense: true,
-                      filled: false,
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      focusedErrorBorder: InputBorder.none,
-                    ),
+                    ],
                   ),
                 ),
               ),

@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/activity_entry_service.dart';
 import '../../../core/notifications/reminder_alert_sync.dart';
 import '../../../core/notifications/notification_service.dart';
@@ -273,12 +274,25 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  InlineListAddButton(
+                    controller: _text,
+                    focusNode: _inputFocus,
+                    enabled: !_saving,
+                  ),
                   Expanded(
                     child: TextField(
                       key: const ValueKey('activity_quick_input'),
                       controller: _text,
                       focusNode: _inputFocus,
                       enabled: !_saving,
+                      onTap: () {
+                        try {
+                          InlineListAddButton.maybeShowFirstTimeDiscovery(
+                            context,
+                            prefs: ref.read(sharedPreferencesProvider),
+                          );
+                        } catch (_) {}
+                      },
                       minLines: 1,
                       maxLines: 3,
                       maxLength: 20000,
@@ -332,12 +346,6 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                         : const Icon(Icons.arrow_upward_rounded, size: 20),
                   ),
                 ],
-              ),
-              NoteListToolbar(
-                controller: _text,
-                focusNode: _inputFocus,
-                enabled: !_saving,
-                helperText: 'One to-do per line. Shared date and alert below.',
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),

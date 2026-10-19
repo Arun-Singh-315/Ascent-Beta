@@ -2,6 +2,7 @@ import '../../../shared/widgets/note_list_button.dart';
 import '../../../shared/widgets/schedule_picker.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
@@ -348,6 +349,102 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
     _presetItems.remove(item);
     _changed();
     return true;
+  }
+
+  Future<void> _chooseItemDuration(int index) async {
+    FocusScope.of(context).unfocus();
+    final item = _items[index];
+    final current = item.minutes;
+    final result = await showModalBottomSheet<int?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(AppSpace.s20),
+        decoration: BoxDecoration(
+          color: ctx.bgSurfaceElevated,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: ctx.glass.line),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Set Focus Duration',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: ctx.textPrimary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.of(ctx).pop(current),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'How long do you want to spend on "${item.title.text.isNotEmpty ? item.title.text : 'this item'}":',
+                style: TextStyle(fontSize: 13, color: ctx.textMuted),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('None (To-do)'),
+                    selected: current == null,
+                    onSelected: (_) => Navigator.of(ctx).pop(null),
+                  ),
+                  for (final m in const [10, 15, 20, 25, 30, 45, 60, 90, 120])
+                    ChoiceChip(
+                      label: Text('$m min'),
+                      selected: current == m,
+                      onSelected: (_) => Navigator.of(ctx).pop(m),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    HapticFeedback.lightImpact();
+    setState(() {
+      item.minutes = result;
+    });
+    _changed();
+  }
+
+  void _setAllDurations(int? mins) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      for (final item in _items) {
+        item.minutes = mins;
+      }
+    });
+    _changed();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          mins != null
+              ? 'Set all items to ${mins}m duration'
+              : 'Cleared durations for all items',
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   /// Gives untimed (or preset-timed) items consecutive times starting at
@@ -982,6 +1079,55 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                         style: TextStyle(color: g.inkMuted),
                       ),
                     ),
+                    if (_items.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpace.s10),
+                        child: Wrap(
+                          spacing: AppSpace.s6,
+                          runSpacing: AppSpace.s6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              'Set all durations:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: g.inkMuted,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            for (final dur in [15, 25, 30, 45, 60])
+                              ActionChip(
+                                padding: EdgeInsets.zero,
+                                visualDensity: VisualDensity.compact,
+                                label: Text(
+                                  '${dur}m',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: g.clay,
+                                  ),
+                                ),
+                                onPressed: _busy
+                                    ? null
+                                    : () => _setAllDurations(dur),
+                              ),
+                            ActionChip(
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                              label: Text(
+                                'Clear all',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: g.inkMuted,
+                                ),
+                              ),
+                              onPressed: _busy
+                                  ? null
+                                  : () => _setAllDurations(null),
+                            ),
+                          ],
+                        ),
+                      ),
                     for (var n = 0; n < _items.length; n++)
                       Padding(
                         key: ObjectKey(_items[n]),
@@ -1107,37 +1253,59 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                             color: g.inkMuted,
                                           ),
                                         ),
+                                      ActionChip(
+                                        avatar: Icon(
+                                          Icons.timer_outlined,
+                                          size: 16,
+                                          color: (_items[n].minutes != null &&
+                                                  _items[n].minutes! > 0)
+                                              ? g.clay
+                                              : g.inkMuted,
+                                        ),
+                                        label: Text(
+                                          (_items[n].minutes != null &&
+                                                  _items[n].minutes! > 0)
+                                              ? '${_items[n].minutes}m duration'
+                                              : 'Set duration',
+                                          style: TextStyle(
+                                            color: (_items[n].minutes != null &&
+                                                    _items[n].minutes! > 0)
+                                                ? g.clay
+                                                : g.inkMuted,
+                                            fontWeight: (_items[n].minutes !=
+                                                        null &&
+                                                    _items[n].minutes! > 0)
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        onPressed: _busy
+                                            ? null
+                                            : () => _chooseItemDuration(n),
+                                      ),
                                       if (_items[n].minutes != null &&
                                           _items[n].minutes! > 0)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
+                                        IconButton(
+                                          tooltip: 'Clear duration',
+                                          visualDensity: VisualDensity.compact,
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(
+                                            minWidth: 28,
+                                            minHeight: 28,
                                           ),
-                                          decoration: BoxDecoration(
-                                            color: g.clay.withValues(
-                                              alpha: 0.12,
-                                            ),
-                                            borderRadius: AppGeometry.roundedr8,
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.timer_outlined,
-                                                size: 12,
-                                                color: g.clay,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '${_items[n].minutes}m focus',
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: g.clay,
-                                                ),
-                                              ),
-                                            ],
+                                          onPressed: _busy
+                                              ? null
+                                              : () {
+                                                  setState(() {
+                                                    _items[n].minutes = null;
+                                                  });
+                                                  _changed();
+                                                },
+                                          icon: Icon(
+                                            Icons.close_rounded,
+                                            size: 16,
+                                            color: g.inkMuted,
                                           ),
                                         ),
                                       if (n > 0 && widget.editing == null)
@@ -1681,6 +1849,31 @@ class _SettingsState extends State<_ItemSettings> {
                   value: _check,
                   onChanged: _choosing ? null : _chooseCheck,
                 ),
+                const SizedBox(height: AppSpace.s8),
+                _label('Focus duration'),
+                Text(
+                  'Set how long to focus on this item. Enables countdown timer and play controls.',
+                  style: TextStyle(fontSize: 12, color: g.inkMuted),
+                ),
+                const SizedBox(height: AppSpace.s6),
+                Wrap(
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('None (To-do)'),
+                      selected: _minutes == null,
+                      onSelected: (_) => setState(() => _minutes = null),
+                    ),
+                    for (final m in _durations)
+                      ChoiceChip(
+                        label: Text('$m min'),
+                        selected: _minutes == m,
+                        onSelected: (_) => setState(() => _minutes = m),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppSpace.s8),
                 Theme(
                   data: Theme.of(
                     context,
@@ -1689,27 +1882,6 @@ class _SettingsState extends State<_ItemSettings> {
                     tilePadding: EdgeInsets.zero,
                     title: const Text('More options'),
                     children: [
-                      _label('Focus time'),
-                      const Text(
-                        'Optional. Leave this off for a simple to-do.',
-                      ),
-                      Wrap(
-                        spacing: AppSpace.s8,
-                        runSpacing: AppSpace.s8,
-                        children: [
-                          ChoiceChip(
-                            label: const Text('None'),
-                            selected: _minutes == null,
-                            onSelected: (_) => setState(() => _minutes = null),
-                          ),
-                          for (final m in _durations)
-                            ChoiceChip(
-                              label: Text('$m min'),
-                              selected: _minutes == m,
-                              onSelected: (_) => setState(() => _minutes = m),
-                            ),
-                        ],
-                      ),
                       _label('Notes'),
                       TextField(
                         key: const ValueKey('plan_item_notes'),
@@ -1718,16 +1890,14 @@ class _SettingsState extends State<_ItemSettings> {
                         minLines: 2,
                         maxLines: 5,
                         maxLength: 20000,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           hintText: 'Add useful details',
                           counterText: '',
+                          suffixIcon: InlineListAddButton(
+                            controller: _notes,
+                            focusNode: _notesFocus,
+                          ),
                         ),
-                      ),
-                      NoteListToolbar(
-                        controller: _notes,
-                        focusNode: _notesFocus,
-                        helperText:
-                            'This checklist stays inside the item’s notes.',
                       ),
                     ],
                   ),

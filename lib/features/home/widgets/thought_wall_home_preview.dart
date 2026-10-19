@@ -296,9 +296,55 @@ class _ThoughtWallHomePreviewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.showComposer)
+        if (widget.showComposer) ...[
+          if (_focusNode.hasFocus && _controller.text.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: InkWell(
+                onTap: () => InlineListAddButton.showHelperDialog(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.clay.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 14,
+                        color: g.clay,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Tip: Tap + or type --> for plans, -- for to-do',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: g.clay,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.help_outline_rounded,
+                        size: 12,
+                        color: g.clay,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             nightDecoration: BoxDecoration(
               color: context.isDark ? g.fill : Colors.white,
               borderRadius: BorderRadius.circular(22),
@@ -311,12 +357,24 @@ class _ThoughtWallHomePreviewState
             ),
             child: Row(
               children: [
-                Icon(Icons.edit_note_rounded, color: g.inkSecondary),
-                const SizedBox(width: 8),
+                InlineListAddButton(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: !_saving,
+                ),
+                const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
+                    onTap: () {
+                      try {
+                        InlineListAddButton.maybeShowFirstTimeDiscovery(
+                          context,
+                          prefs: ref.read(sharedPreferencesProvider),
+                        );
+                      } catch (_) {}
+                    },
                     cursorColor: g.clay,
                     minLines: 1,
                     maxLines: 4,
@@ -370,13 +428,7 @@ class _ThoughtWallHomePreviewState
               ],
             ),
           ),
-
-        if (widget.showComposer)
-          NoteListToolbar(
-            controller: _controller,
-            focusNode: _focusNode,
-            enabled: !_saving,
-          ),
+        ],
 
         // ── THOUGHTS MESSAGE PREVIEW (ENCLOSED CARD) ──────────────────
         recentThoughtsAsync.when(

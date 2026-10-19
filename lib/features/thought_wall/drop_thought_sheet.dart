@@ -899,10 +899,23 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
               const SizedBox(height: 18),
 
-              NoteListToolbar(
-                controller: _contentController,
-                focusNode: _contentFocus,
-                enabled: !_isSaving,
+              Row(
+                children: [
+                  InlineListAddButton(
+                    controller: _contentController,
+                    focusNode: _contentFocus,
+                    enabled: !_isSaving,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Add plan item (-->) or to-do (--) line',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
 
               // Submit Button

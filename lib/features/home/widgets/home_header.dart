@@ -177,6 +177,54 @@ class HomeHeader extends ConsumerWidget {
                 ),
               ),
 
+              // Quick 1-Tap Theme Mode Switcher
+              Material(
+                color: AppPalette.transparent,
+                child: AppTapArea(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    final next = isDark ? ThemeMode.light : ThemeMode.dark;
+                    ref.read(themeModeProvider.notifier).setThemeMode(next);
+                  },
+                  borderRadius: AppGeometry.roundedr99,
+                  child: Tooltip(
+                    message: isDark
+                        ? 'Switch to Luminous Day Theme'
+                        : 'Switch to Night Glass Theme',
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isDark ? g.fill : const Color(0xFFFFF7ED),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? g.edge : const Color(0xFFFDBA74),
+                          width: AppBorderScale.w1point0,
+                        ),
+                        boxShadow: isDark
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      child: Icon(
+                        isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                        size: 20,
+                        color: isDark
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFF6366F1),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
               // Avatar Circle (opens profile & quick settings sheet)
               Material(
                 color: AppPalette.transparent,

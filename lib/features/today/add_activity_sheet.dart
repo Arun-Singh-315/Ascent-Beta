@@ -16,6 +16,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../core/services/activity_entry_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'add_lecture_activity_sheet.dart';
@@ -487,17 +488,24 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           width: AppBorderScale.w1point5,
                         ),
                       ),
+                      suffixIcon: widget.existingTask == null
+                          ? InlineListAddButton(
+                              controller: _titleController,
+                              focusNode: _titleFocus,
+                              enabled: !_saving,
+                            )
+                          : null,
                     ),
+                    onTap: () {
+                      try {
+                        InlineListAddButton.maybeShowFirstTimeDiscovery(
+                          context,
+                          prefs: ref.read(sharedPreferencesProvider),
+                        );
+                      } catch (_) {}
+                    },
                   ),
                   const SizedBox(height: 16),
-
-                  if (widget.existingTask == null)
-                    NoteListToolbar(
-                      controller: _titleController,
-                      focusNode: _titleFocus,
-                      enabled: !_saving,
-                      helperText: 'One to-do per line. Shared settings below.',
-                    ),
 
                   // 2. Activity Type Selector (Progressive Disclosure)
                   Text(
@@ -890,14 +898,12 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                             border: OutlineInputBorder(
                               borderRadius: AppGeometry.roundedr12,
                             ),
+                            suffixIcon: InlineListAddButton(
+                              controller: _notesController,
+                              focusNode: _notesFocus,
+                              enabled: !_saving,
+                            ),
                           ),
-                        ),
-                        NoteListToolbar(
-                          controller: _notesController,
-                          focusNode: _notesFocus,
-                          enabled: !_saving,
-                          helperText:
-                              'This checklist stays inside the activity’s notes.',
                         ),
                         const SizedBox(height: 8),
                       ],

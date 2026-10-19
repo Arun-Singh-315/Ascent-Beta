@@ -110,7 +110,7 @@ void main() {
       final input = find.byKey(const ValueKey('activity_quick_input'));
       await t.enterText(input, 'First task');
       await t.pump();
-      await t.tap(find.text('Add next item'));
+      await t.tap(find.byType(InlineListAddButton));
       await t.pump();
       expect(t.widget<TextField>(input).controller!.text, 'First task\n--> ');
       await t.enterText(input, 'First task\n--> Second task');
