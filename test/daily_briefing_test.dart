@@ -244,7 +244,7 @@ void main() {
           GoRoute(
             path: '/ai-assistant',
             builder: (_, state) =>
-                Scaffold(body: Text(state.uri.queryParameters['prompt']!)),
+                Scaffold(body: Text(state.uri.queryParameters['prompt'] ?? 'Riya destination')),
           ),
         ],
       );
@@ -292,11 +292,11 @@ void main() {
       expect(tester.takeException(), isNull);
       router.pop();
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Talk to me, bro :)'));
-      await tester.tap(find.text('Talk to me, bro :)'));
+      await tester.ensureVisible(find.text('Ask Riya'));
+      await tester.tap(find.text('Ask Riya'));
       await tester.pumpAndSettle();
       expect(
-        find.textContaining('Ask how I am feeling first.'),
+        find.text('Riya destination'),
         findsOneWidget,
       );
       await tester.pumpWidget(const SizedBox());

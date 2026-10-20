@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
@@ -1059,64 +1060,102 @@ class _TypeSelectChip extends StatelessWidget {
     required this.onTap,
   });
 
+  static const Color _fireSpark = Color(0xFFFBBF24); // Flame gold/amber
+
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Expanded(
       child: AppTapArea(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         borderRadius: AppGeometry.roundedr14,
-        child: AppCard(
-          selected: isSelected,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 76),
           padding: const EdgeInsets.symmetric(
-            vertical: AppSpace.s10,
-            horizontal: AppSpace.s8,
+            vertical: AppSpace.s6,
+            horizontal: AppSpace.s4,
           ),
-          nightDecoration: BoxDecoration(
-            color: isSelected ? context.accentPrimary : context.bgBase,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? (isDark ? context.accentPrimary.withValues(alpha: 0.85) : context.accentPrimary)
+                : (isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white)),
             borderRadius: AppGeometry.roundedr14,
             border: Border.all(
               color: isSelected
-                  ? context.accentPrimary
-                  : context.divider.withValues(alpha: 0.6),
+                  ? _fireSpark
+                  : g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
               width: isSelected ? 1.5 : 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: _fireSpark.withValues(alpha: 0.18),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected ? AppPalette.white : context.textMuted,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AscentTextStyles.labelMedium
-                    .copyWith(
-                      color: isSelected
-                          ? AppPalette.white
-                          : context.textPrimary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    )
-                    .merge(AppTypeRoles.typeRole9),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: AppStateTypography.stateType4.copyWith(
-                  color: isSelected
-                      ? AppPalette.white.withValues(alpha: 0.85)
-                      : context.textMuted,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isSelected
+                        ? _fireSpark.withValues(alpha: 0.22)
+                        : g.edge.withValues(alpha: isDark ? 0.2 : 0.1),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      icon,
+                      size: 15,
+                      color: isSelected ? _fireSpark : context.textMuted,
+                    ),
+                  ),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: AscentTextStyles.labelMedium
+                      .copyWith(
+                        color: isSelected
+                            ? AppPalette.white
+                            : context.textPrimary,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      )
+                      .merge(AppTypeRoles.typeRole9),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: AppStateTypography.stateType4.copyWith(
+                    color: isSelected
+                        ? AppPalette.white.withValues(alpha: 0.85)
+                        : context.textMuted,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
