@@ -24,6 +24,8 @@ import 'package:ascent/features/home/widgets/life_checkin_popup_dialog.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:ascent/shared/widgets/thought_excerpt.dart';
+import 'package:ascent/features/home/widgets/activity_row_item.dart';
+import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -80,7 +82,7 @@ void main() {
     lastOpenedAt: null,
   );
 
-  Widget buildTestableWidget(Widget child, {ThemeData? theme, List<Thought>? thoughts}) {
+  Widget buildTestableWidget(Widget child, {ThemeData? theme, List<Thought>? thoughts, List<TodayActivityItem>? activities}) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
@@ -99,10 +101,12 @@ void main() {
         todayMomentumCommitmentsStreamProvider
             .overrideWith((ref) => Stream.value([])),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value(thoughts ?? [])),
+        allThoughtsStreamProvider.overrideWith((ref) => Stream.value(thoughts ?? [])),
+        archivedThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
         userProfileStreamProvider
             .overrideWith((ref) => Stream.value(testProfile)),
         todayFocusTaskProvider.overrideWith((ref) => Future.value(null)),
-        todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
+        todayActivitiesProvider.overrideWith((ref) => Stream.value(activities ?? [])),
       ],
       child: MaterialApp(theme: theme, home: child),
     );
@@ -391,7 +395,9 @@ void main() {
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
       final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
-      expect(bubbleGlass.fillColor, equals(MerlotPalette.pillSoft));
+      expect(bubbleGlass.gradient, isNotNull);
+      final merlotGradient = bubbleGlass.gradient as LinearGradient;
+      expect(merlotGradient.colors, equals([MerlotPalette.actionBright, MerlotPalette.actionDeep]));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
@@ -468,6 +474,203 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byKey(const ValueKey('home_mind_space_card')), findsOneWidget);
       expect(find.byKey(ValueKey('home_thought_$tId')), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('10. ActivityRowItem active to-do receives theme tint, line border, checkbox accent, and reminder badge', (tester) async {
+      const todoItem = TodayActivityItem(
+        id: 'todo_active_1',
+        title: 'Review Engineering Mathematics formulas',
+        sourceType: 'task',
+        status: TodayActivityStatus.notStarted,
+        elapsedSecondsToday: 0,
+        categoryTag: 'Revision',
+        kind: ActivityKind.todo,
+        priority: 'high',
+        hasReminder: true,
+      );
+
+      // Frozen Sky Light
+      await tester.pumpWidget(
+        buildTestableWidget(
+          const Scaffold(
+            body: SingleChildScrollView(
+              child: ActivityRowItem(activity: todoItem),
+            ),
+          ),
+          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+          activities: [todoItem],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final frozenContainerFinder = find.byKey(const ValueKey('activity_row_container_todo_active_1'));
+      expect(frozenContainerFinder, findsOneWidget);
+      final frozenContainer = tester.widget<AnimatedContainer>(frozenContainerFinder);
+      final frozenBox = frozenContainer.decoration as BoxDecoration;
+      expect(frozenBox.color, equals(FrozenPalette.tint.withValues(alpha: 0.55)));
+      final frozenBorder = frozenBox.border as Border;
+      expect(frozenBorder.top.color, equals(FrozenPalette.line));
+
+      // Verify reminder pill exists
+      expect(find.text('Reminder'), findsOneWidget);
+      expect(find.byIcon(Icons.alarm_rounded), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+
+      // Merlot Linen Light
+      await tester.pumpWidget(
+        buildTestableWidget(
+          const Scaffold(
+            body: SingleChildScrollView(
+              child: ActivityRowItem(activity: todoItem),
+            ),
+          ),
+          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+          activities: [todoItem],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final merlotContainerFinder = find.byKey(const ValueKey('activity_row_container_todo_active_1'));
+      expect(merlotContainerFinder, findsOneWidget);
+      final merlotContainer = tester.widget<AnimatedContainer>(merlotContainerFinder);
+      final merlotBox = merlotContainer.decoration as BoxDecoration;
+      expect(merlotBox.color, equals(MerlotPalette.tint.withValues(alpha: 0.50)));
+      final merlotBorder = merlotBox.border as Border;
+      expect(merlotBorder.top.color, equals(MerlotPalette.line));
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('11. ThoughtWallScreen cards render with theme surface, crisp line border, and mood divider', (tester) async {
+      final thoughtId = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Clear actionable idea for distributed consensus algorithms',
+          mood: const drift.Value('idea'),
+        ),
+      );
+      final thought = (await db.thoughtDao.getThoughtById(thoughtId))!;
+
+      // Frozen Sky
+      await tester.pumpWidget(
+        buildTestableWidget(
+          const Scaffold(
+            body: ThoughtWallScreen(),
+          ),
+          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+          thoughts: [thought],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final containerFinder = find.byKey(ValueKey('thought_container_$thoughtId'));
+      expect(containerFinder, findsOneWidget);
+      final container = tester.widget<AnimatedContainer>(containerFinder);
+      final box = container.decoration as BoxDecoration;
+      expect(box.color, equals(FrozenPalette.surface));
+      final border = box.border as Border;
+      expect(border.top.color, equals(FrozenPalette.line));
+
+      // Verify mood badge "Idea" exists
+      expect(find.text('Idea'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+
+      // Merlot Linen
+      await tester.pumpWidget(
+        buildTestableWidget(
+          const Scaffold(
+            body: ThoughtWallScreen(),
+          ),
+          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+          thoughts: [thought],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final merlotThoughtFinder = find.byKey(ValueKey('thought_container_$thoughtId'));
+      expect(merlotThoughtFinder, findsOneWidget);
+      final merlotThoughtContainer = tester.widget<AnimatedContainer>(merlotThoughtFinder);
+      final merlotBox = merlotThoughtContainer.decoration as BoxDecoration;
+      expect(merlotBox.color, equals(MerlotPalette.surface));
+      final merlotBorder = merlotBox.border as Border;
+      expect(merlotBorder.top.color, equals(MerlotPalette.line));
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('12. ActivityRowItem and ThoughtWallScreen are immune to overflow at 320px with 2.0x text scale', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      const todoItem = TodayActivityItem(
+        id: 'todo_overflow_check',
+        title: 'Comprehensive test of long task title text wrap behavior under accessibility zoom',
+        sourceType: 'task',
+        status: TodayActivityStatus.notStarted,
+        elapsedSecondsToday: 0,
+        categoryTag: 'GATE',
+        kind: ActivityKind.todo,
+        priority: 'urgent',
+        hasReminder: true,
+        isOverdue: true,
+      );
+
+      final thoughtId = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Thorough review of discrete math graphs and combinatorics',
+          mood: const drift.Value('win'),
+        ),
+      );
+      final thought = (await db.thoughtDao.getThoughtById(thoughtId))!;
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 800),
+            textScaler: TextScaler.linear(2.0),
+          ),
+          child: buildTestableWidget(
+            Scaffold(
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const ActivityRowItem(activity: todoItem),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 500,
+                      child: const ThoughtWallScreen(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+            activities: [todoItem],
+            thoughts: [thought],
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('activity_row_container_todo_overflow_check')), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
