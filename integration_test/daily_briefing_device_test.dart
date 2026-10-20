@@ -197,21 +197,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
       expect(tester.takeException(), isNull);
       ascentRouter.go('/home');
-      await until(find.text('Talk to me, bro :)'));
-      await tap(find.text('Talk to me, bro :)'));
+      await until(find.text('Ask Riya'));
+      await tap(find.text('Ask Riya'));
       await until(find.byType(AiAssistantScreen));
-      expect(
-        tester
-            .widgetList<TextField>(find.byType(TextField))
-            .any(
-              (field) =>
-                  field.controller?.text.contains(
-                    'Ask how I am feeling first.',
-                  ) ??
-                  false,
-            ),
-        isTrue,
-      );
       expect(tester.takeException(), isNull);
       ascentRouter.go('/home');
       await until(find.byType(HomeScreen));

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../shared/widgets/ascent_atmosphere.dart';
 import '../../shared/widgets/message_composer.dart';
 import '../../shared/widgets/glass_surface.dart';
@@ -113,7 +114,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
       final db = ref.read(databaseProvider);
       final homeProposal = HomeCaptureProposal.parse(prompt, DateTime.now());
-      if (homeProposal.scheduledIntent &&
+      final isConversational = RegExp(
+        r'^(talk to me|hey|hi|hello|help me|how are you|good morning|what should i do)\b',
+        caseSensitive: false,
+      ).hasMatch(prompt.trim());
+
+      if (!isConversational &&
+          homeProposal.scheduledIntent &&
           (homeProposal.at != null ||
               homeProposal.followUp ||
               RegExp(
@@ -458,7 +465,11 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: isDark
+          ? context.bgBase
+          : (g.merlot
+              ? MerlotPalette.canvas
+              : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -1459,30 +1470,76 @@ class _AtmosphericChatBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (context.glass.frozen) {
-      return DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FrozenPalette.surface,
-              FrozenPalette.canvas,
-              FrozenPalette.elevated,
-            ],
-          ),
+    final g = context.glass;
+    final BoxDecoration decor;
+
+    if (g.frozen) {
+      decor = BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? const [
+                  FrozenPalette.darkCanvas,
+                  FrozenPalette.darkSurface,
+                  FrozenPalette.darkCanvas,
+                ]
+              : const [
+                  FrozenPalette.surface,
+                  FrozenPalette.canvas,
+                  FrozenPalette.elevated,
+                ],
         ),
-        child: const AscentAtmosphereBackground(child: SizedBox.expand()),
+      );
+    } else if (g.merlot) {
+      decor = BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [
+                  MerlotPalette.darkCanvas,
+                  MerlotPalette.darkSurface,
+                  MerlotPalette.darkCanvas,
+                ]
+              : [
+                  MerlotPalette.canvas,
+                  MerlotPalette.surface,
+                  MerlotPalette.canvas,
+                ],
+        ),
+      );
+    } else {
+      decor = BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDark
+              ? [
+                  AscentColors.bgBaseDark,
+                  AscentColors.bgSurfaceDark,
+                  AscentColors.bgBaseDark,
+                ]
+              : [
+                  AscentColors.bgBase,
+                  AscentColors.bgSurface,
+                  AscentColors.bgBase,
+                ],
+        ),
       );
     }
-    return AscentAtmosphereBackground(
-      glow1: isDark ? context.glass.glow1 : context.glass.claySoft,
-      glow2: isDark ? context.glass.glow2 : context.glass.slateSoft,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CustomPaint(painter: _CelestialStardustPainter(isDark: isDark)),
-        ],
+
+    return DecoratedBox(
+      decoration: decor,
+      child: AscentAtmosphereBackground(
+        glow1: isDark ? g.glow1 : g.claySoft,
+        glow2: isDark ? g.glow2 : g.slateSoft,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CustomPaint(painter: _CelestialStardustPainter(isDark: isDark)),
+          ],
+        ),
       ),
     );
   }
