@@ -104,7 +104,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Check hint text
-        expect(find.text('Capture a thought…'), findsOneWidget);
+        expect(find.text('Jot a thought'), findsOneWidget);
 
         // Exactly 2 thoughts rendered (collapsed view)
         final thought0Finder = find.byKey(

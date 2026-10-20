@@ -1,3 +1,4 @@
+import '../../core/copy/app_copy.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -730,7 +731,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '$name is thinking...',
+                            '$name is thinking',
                             style: TextStyle(
                               fontSize: 12,
                               color: context.textMuted,
@@ -808,7 +809,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                       top: false,
                       child: MessageComposer(
                         controller: _textController,
-                        hint: 'Message $name...',
+                        hint: AppCopy.messageHint(name),
                         busy: _isLoading,
                         onSend: _handleSubmitted,
                       ),
@@ -1478,70 +1479,7 @@ class _AtmosphericChatBackground extends StatelessWidget {
     return AscentAtmosphereBackground(
       glow1: isDark ? context.glass.glow1 : context.glass.claySoft,
       glow2: isDark ? context.glass.glow2 : context.glass.slateSoft,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          CustomPaint(painter: _CelestialStardustPainter(isDark: isDark)),
-        ],
-      ),
+      child: const SizedBox.expand(),
     );
   }
-}
-
-// ---------------------------------------------------------------------------
-// Deterministic Micro Stardust & Pearl Shimmer Painter
-// ---------------------------------------------------------------------------
-
-class _CelestialStardustPainter extends CustomPainter {
-  final bool isDark;
-  const _CelestialStardustPainter({required this.isDark});
-
-  // Deterministic star coordinates so they never flicker or recompute randomly
-  static const _stars = [
-    Offset(0.12, 0.08),
-    Offset(0.28, 0.14),
-    Offset(0.45, 0.06),
-    Offset(0.72, 0.11),
-    Offset(0.88, 0.09),
-    Offset(0.18, 0.22),
-    Offset(0.62, 0.25),
-    Offset(0.82, 0.28),
-    Offset(0.08, 0.35),
-    Offset(0.38, 0.38),
-    Offset(0.76, 0.42),
-    Offset(0.92, 0.46),
-    Offset(0.15, 0.52),
-    Offset(0.52, 0.56),
-    Offset(0.85, 0.60),
-    Offset(0.22, 0.68),
-    Offset(0.68, 0.72),
-    Offset(0.10, 0.76),
-    Offset(0.40, 0.78),
-    Offset(0.80, 0.75),
-    Offset(0.25, 0.62),
-    Offset(0.55, 0.48),
-    Offset(0.90, 0.65),
-    Offset(0.33, 0.45),
-  ];
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    for (int i = 0; i < _stars.length; i++) {
-      final s = _stars[i];
-      final pos = Offset(s.dx * size.width, s.dy * size.height);
-      final radius = (i % 3 == 0) ? 1.4 : (i % 2 == 0 ? 1.0 : 0.7);
-      final alpha = isDark
-          ? ((i % 4 == 0) ? 0.38 : (i % 2 == 0 ? 0.22 : 0.14))
-          : ((i % 4 == 0) ? 0.16 : 0.08);
-
-      paint.color = (isDark ? Colors.white : AscentColors.accentSecondary)
-          .withValues(alpha: alpha);
-      canvas.drawCircle(pos, radius, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _CelestialStardustPainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
 }

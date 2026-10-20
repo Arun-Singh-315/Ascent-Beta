@@ -292,12 +292,13 @@ void main() {
       expect(tester.takeException(), isNull);
       router.pop();
       await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Talk to me, bro :)'));
-      await tester.tap(find.text('Talk to me, bro :)'));
+      await tester.ensureVisible(find.textContaining('Ask '));
+      await tester.tap(find.textContaining('Ask ').last);
       await tester.pumpAndSettle();
+      // Riya opens empty: no long prompt is ever pre-filled.
       expect(
         find.textContaining('Ask how I am feeling first.'),
-        findsOneWidget,
+        findsNothing,
       );
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);

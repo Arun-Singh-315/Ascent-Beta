@@ -25,6 +25,7 @@ class AscentAtmosphereBackground extends StatelessWidget {
     final g = context.glass;
     final g1 = glow1 ?? g.glow1;
     final g2 = glow2 ?? g.glow2;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (g1.a == 0 && g2.a == 0) return child;
 
     final color1 = softenGlow(
@@ -43,6 +44,20 @@ class AscentAtmosphereBackground extends StatelessWidget {
           child: RepaintBoundary(
             child: CustomPaint(
               painter: AscentAtmospherePainter(glow1: color1, glow2: color2),
+            ),
+          ),
+        ),
+        // Theme signature: soft stardust, brighter at night.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: RepaintBoundary(
+              child: CustomPaint(
+                painter: AscentStardustPainter(
+                  color: isDark ? Colors.white : g.amber,
+                  isDark: isDark,
+                  faint: g.frozen,
+                ),
+              ),
             ),
           ),
         ),
@@ -116,4 +131,51 @@ class AscentAtmospherePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant AscentAtmospherePainter oldDelegate) =>
       oldDelegate.glow1 != glow1 || oldDelegate.glow2 != glow2;
+}
+
+/// Deterministic micro stardust so stars never flicker or move on rebuild.
+class AscentStardustPainter extends CustomPainter {
+  final Color color;
+  final bool isDark;
+  final bool faint;
+
+  const AscentStardustPainter({
+    required this.color,
+    required this.isDark,
+    this.faint = false,
+  });
+
+  static const _stars = [
+    Offset(0.12, 0.08), Offset(0.28, 0.14), Offset(0.45, 0.06),
+    Offset(0.72, 0.11), Offset(0.88, 0.09), Offset(0.18, 0.22),
+    Offset(0.62, 0.25), Offset(0.82, 0.28), Offset(0.08, 0.35),
+    Offset(0.38, 0.38), Offset(0.76, 0.42), Offset(0.92, 0.46),
+    Offset(0.15, 0.52), Offset(0.52, 0.56), Offset(0.85, 0.60),
+    Offset(0.22, 0.68), Offset(0.68, 0.72), Offset(0.10, 0.76),
+    Offset(0.40, 0.78), Offset(0.80, 0.75), Offset(0.25, 0.62),
+    Offset(0.55, 0.48), Offset(0.90, 0.65), Offset(0.33, 0.45),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    final scale = faint ? 0.5 : 1.0;
+    for (var i = 0; i < _stars.length; i++) {
+      final s = _stars[i];
+      final radius = (i % 3 == 0) ? 1.4 : (i % 2 == 0 ? 1.0 : 0.7);
+      final alpha = isDark
+          ? ((i % 4 == 0) ? 0.38 : (i % 2 == 0 ? 0.22 : 0.14))
+          : ((i % 4 == 0) ? 0.20 : 0.10);
+      paint.color = color.withValues(alpha: alpha * scale);
+      canvas.drawCircle(
+        Offset(s.dx * size.width, s.dy * size.height),
+        radius,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant AscentStardustPainter old) =>
+      old.color != color || old.isDark != isDark || old.faint != faint;
 }

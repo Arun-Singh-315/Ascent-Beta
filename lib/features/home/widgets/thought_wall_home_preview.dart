@@ -1,3 +1,4 @@
+import '../../../core/copy/app_copy.dart';
 import '../../plans/widgets/plan_collection_editor.dart';
 import '../../../shared/widgets/note_list_button.dart';
 import 'dart:async';
@@ -298,52 +299,6 @@ class _ThoughtWallHomePreviewState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.showComposer) ...[
-          if (_focusNode.hasFocus && _controller.text.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: InkWell(
-                onTap: () => InlineListAddButton.showHelperDialog(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: g.clay.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: g.clay.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline_rounded,
-                        size: 14,
-                        color: g.clay,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Tip: Tap + or type → for plans, • for to-do',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: g.clay,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.help_outline_rounded,
-                        size: 12,
-                        color: g.clay,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             nightDecoration: BoxDecoration(
@@ -388,7 +343,7 @@ class _ThoughtWallHomePreviewState
                     textCapitalization: TextCapitalization.sentences,
                     style: AppTypography.plusJakartaSans14W60080(color: g.ink),
                     decoration: InputDecoration(
-                      hintText: "Capture a thought…",
+                      hintText: AppCopy.captureHint,
                       hintStyle: TextStyle(
                         color: g.inkMuted,
                         fontSize: 14,

@@ -52,7 +52,7 @@ class _BriefingBody extends ConsumerWidget {
     final briefing = ref.watch(dailyBriefingProvider(day));
     final g = context.glass;
     final name = ref.watch(assistantNameProvider);
-    final hostContext = context;
+        final hostContext = context;
     void navigate(String route) {
       final router = GoRouter.of(context);
       if (inSheet) Navigator.pop(context);
@@ -176,17 +176,9 @@ class _BriefingBody extends ConsumerWidget {
               label: const Text('Capture a thought'),
             ),
             TextButton.icon(
-              onPressed: () => navigate(
-                Uri(
-                  path: '/ai-assistant',
-                  queryParameters: {
-                    'prompt':
-                        'Talk to me, $name. Help me check in honestly and choose one small next step today. Ask how I am feeling first.',
-                  },
-                ).toString(),
-              ),
+              onPressed: () => navigate('/ai-assistant'),
               icon: const Icon(Icons.chat_bubble_outline_rounded),
-              label: const Text('Talk to me, bro :)'),
+              label: Text('Ask $name'),
             ),
             if (inSheet)
               TextButton(

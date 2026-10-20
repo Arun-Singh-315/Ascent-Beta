@@ -1,3 +1,5 @@
+import '../../../core/copy/app_copy.dart';
+import '../../../shared/widgets/ascent_option_tile.dart';
 import '../../../shared/widgets/schedule_picker.dart';
 import '../../../shared/widgets/note_list_button.dart';
 import '../../../core/services/plan_collection_service.dart';
@@ -231,40 +233,18 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
         : DateUtils.isSameDay(_day, DateTime(now.year, now.month, now.day + 1))
         ? 'Tomorrow'
         : DateFormat('d MMM').format(_day);
-    Widget option(String text, IconData icon) => Container(
-      margin: const EdgeInsets.only(right: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: isDark
-            ? g.clay.withValues(alpha: 0.16)
-            : (g.merlot
-                ? MerlotPalette.pillSoft
-                : g.clay.withValues(alpha: 0.08)),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark
-              ? g.clay.withValues(alpha: 0.30)
-              : (g.merlot
-                  ? MerlotPalette.lineSubtle
-                  : g.clay.withValues(alpha: 0.15)),
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: g.clay),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-              color: g.inkSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+    // Equal-size tiles: the popup menu owns the tap, the tile only draws.
+    Widget option(
+      String text,
+      IconData icon, {
+      String? value,
+      bool selected = false,
+    }) => AscentOptionTile(
+      icon: icon,
+      label: text,
+      value: value,
+      selected: selected,
+      enabled: !_saving,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,7 +298,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                       textCapitalization: TextCapitalization.sentences,
                       style: TextStyle(color: g.ink, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Add an activity…',
+                        hintText: AppCopy.activityHint,
                         hintStyle: TextStyle(
                           color: g.inkMuted,
                           fontSize: 14,
@@ -387,78 +367,56 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                padding: const EdgeInsets.only(top: 4, bottom: 4, right: 4),
+                child: AscentOptionRow(
                   children: [
                     PopupMenuButton<ActivityKind>(
                       tooltip: 'Activity type',
                       enabled: !_saving,
-                      onSelected: (kind) => setState(() => _kind = kind),
+                      onSelected: (kind) {
+                        setState(() => _kind = kind);
+                        if (kind == ActivityKind.duration) _duration();
+                      },
                       itemBuilder: (_) => const [
                         PopupMenuItem(
                           value: ActivityKind.todo,
-                          child: Text('To-do'),
+                          child: Text(AppCopy.typeTodo),
                         ),
                         PopupMenuItem(
                           value: ActivityKind.duration,
-                          child: Text('Timer'),
+                          child: Text(AppCopy.typeTimer),
                         ),
                         PopupMenuItem(
                           value: ActivityKind.flexible,
-                          child: Text('Flexible timer'),
+                          child: Text(AppCopy.typeFlexible),
                         ),
                       ],
                       child: option(
                         _kind == ActivityKind.todo
-                            ? 'To-do'
+                            ? AppCopy.typeTodo
                             : _kind == ActivityKind.duration
-                            ? 'Timer'
-                            : 'Flexible',
+                            ? AppCopy.typeTimer
+                            : AppCopy.typeFlexible,
                         _kind == ActivityKind.todo
                             ? Icons.check_circle_outline
                             : Icons.timer_outlined,
+                        value: _kind == ActivityKind.duration
+                            ? '$_minutes min'
+                            : null,
                       ),
                     ),
-                    if (_kind == ActivityKind.duration)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: _saving ? null : _duration,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: g.clay.withValues(
-                                alpha: isDark ? 0.2 : 0.1,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$_minutes min',
-                              style: TextStyle(
-                                color: g.clay,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
                     PopupMenuButton<String>(
                       tooltip: 'Activity date',
                       enabled: !_saving,
                       onSelected: _pickDate,
                       itemBuilder: (_) => const [
-                        PopupMenuItem(value: 'today', child: Text('Today')),
+                        PopupMenuItem(
+                          value: 'today',
+                          child: Text(AppCopy.dateToday),
+                        ),
                         PopupMenuItem(
                           value: 'tomorrow',
-                          child: Text('Tomorrow'),
+                          child: Text(AppCopy.dateTomorrow),
                         ),
                         PopupMenuItem(value: 'pick', child: Text('Pick date')),
                       ],
@@ -471,7 +429,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                       itemBuilder: (_) => const [
                         PopupMenuItem(
                           value: 'off',
-                          child: Text('Reminder off'),
+                          child: Text(AppCopy.reminderOff),
                         ),
                         PopupMenuItem(
                           value: 'time',
@@ -480,9 +438,10 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                       ],
                       child: option(
                         _reminder == null
-                            ? 'Reminder off'
+                            ? AppCopy.reminderOff
                             : _reminder!.format(context),
                         Icons.notifications_none,
+                        selected: _reminder != null,
                       ),
                     ),
                   ],

@@ -60,7 +60,7 @@ void main() {
       );
       expect(find.text('To-do'), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Reminder off'), findsOneWidget);
+      expect(find.text('No reminder'), findsOneWidget);
       await tester.enterText(
         find.byKey(const ValueKey('activity_quick_input')),
         '  Quick task  ',
@@ -134,7 +134,7 @@ void main() {
       );
       expect(find.text('To-do'), findsOneWidget);
       expect(find.text('Today'), findsOneWidget);
-      expect(find.text('Reminder off'), findsOneWidget);
+      expect(find.text('No reminder'), findsOneWidget);
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();
     },
@@ -149,7 +149,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
-    expect(find.text('Reminder off'), findsOneWidget);
+    expect(find.text('No reminder'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
     await tester.pumpAndSettle();

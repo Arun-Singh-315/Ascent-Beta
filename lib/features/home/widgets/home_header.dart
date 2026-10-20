@@ -1,3 +1,5 @@
+import '../../day_start/day_start_sheet.dart';
+import '../../../core/providers/daily_briefing_provider.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -71,26 +73,9 @@ class HomeHeader extends ConsumerWidget {
               Material(
                 color: AppPalette.transparent,
                 child: AppTapArea(
-                  onTap: () async {
+                  onTap: () {
                     HapticFeedback.lightImpact();
-                    final layout = ref.read(homeLayoutProvider);
-                    final visible = {...layout.visible};
-                    isStreakCardVisible
-                        ? visible.remove('streak')
-                        : visible.add('streak');
-                    try {
-                      await ref
-                          .read(homeLayoutProvider.notifier)
-                          .save(layout.copyWith(visible: visible));
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Could not update Home. Try again.'),
-                          ),
-                        );
-                      }
-                    }
+                    DayStartSheet.show(context, briefingDay(DateTime.now()));
                   },
                   onLongPress: () {
                     HapticFeedback.mediumImpact();
@@ -170,24 +155,8 @@ class HomeHeader extends ConsumerWidget {
                       children: [
                         Icon(
                           Icons.local_fire_department_rounded,
-                          size: 16,
-                          color: isDark
-                              ? (g.merlot
-                                  ? MerlotPalette.darkSpark
-                                  : (g.frozen
-                                      ? FrozenPalette.darkSpark
-                                      : g.clay))
-                              : (isStreakCardVisible
-                                  ? (g.merlot
-                                      ? const Color(0xFFFBBF24)
-                                      : (g.frozen
-                                          ? Colors.white
-                                          : const Color(0xFFEA580C)))
-                                  : (g.merlot
-                                      ? MerlotPalette.mutedInk
-                                      : (g.frozen
-                                          ? FrozenPalette.mutedInk
-                                          : const Color(0xFF64748B)))),
+                          size: 18,
+                          color: g.spark,
                         ),
                         const SizedBox(width: 5),
                         Flexible(

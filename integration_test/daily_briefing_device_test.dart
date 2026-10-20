@@ -197,8 +197,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
       expect(tester.takeException(), isNull);
       ascentRouter.go('/home');
-      await until(find.text('Talk to me, bro :)'));
-      await tap(find.text('Talk to me, bro :)'));
+      await until(find.text('Ask Riya'));
+      await tap(find.text('Ask Riya'));
       await until(find.byType(AiAssistantScreen));
       expect(
         tester
@@ -210,7 +210,7 @@ void main() {
                   ) ??
                   false,
             ),
-        isTrue,
+        isFalse,
       );
       expect(tester.takeException(), isNull);
       ascentRouter.go('/home');

@@ -225,7 +225,7 @@ void main() {
 
   group('Requirement 2: Thought Input Placement and Placeholder', () {
     testWidgets(
-      'Thought input has intentional placeholder "Capture a thought…"',
+      'Thought input has intentional placeholder "Jot a thought"',
       (tester) async {
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -240,7 +240,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Capture a thought…'), findsOneWidget);
+        expect(find.text('Jot a thought'), findsOneWidget);
         // The generic confusing placeholder must NOT be present
         expect(
           find.text('A thought, a task, or something to remember…'),

@@ -147,7 +147,7 @@ void main() {
         );
 
         expect(find.text('A fresh start'), findsOneWidget);
-        expect(find.textContaining('Study for 120 minutes'), findsOneWidget);
+        expect(find.textContaining('Study for 120 minutes'), findsNothing);
       },
     );
   });

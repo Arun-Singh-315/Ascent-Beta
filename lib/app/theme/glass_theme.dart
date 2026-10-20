@@ -328,3 +328,22 @@ extension AscentGlassX on BuildContext {
       Theme.of(this).extension<AscentGlass>() ??
       (isDark ? AscentGlass.dark : AscentGlass.light);
 }
+
+/// Warm "spark" accent used for fire, streaks, the Start button and wins.
+/// Derived from the active theme so it never fights the palette: bright
+/// yellow on dark surfaces, deeper amber on light ones.
+extension AscentGlassSpark on AscentGlass {
+  bool get _isDarkSurface => bg.computeLuminance() < 0.3;
+
+  Color get spark =>
+      _isDarkSurface ? const Color(0xFFFFC83D) : const Color(0xFFF2A100);
+
+  Color get sparkSoft => spark.withValues(alpha: _isDarkSurface ? 0.18 : 0.14);
+
+  /// Text/icon colour that stays readable on top of [spark].
+  Color get onSpark => const Color(0xFF2B1B00);
+
+  /// Spark-toned text for use on the plain surface (higher contrast).
+  Color get sparkInk =>
+      _isDarkSurface ? const Color(0xFFFFD66B) : const Color(0xFF9A5B00);
+}

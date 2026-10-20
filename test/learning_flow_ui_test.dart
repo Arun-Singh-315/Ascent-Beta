@@ -117,8 +117,8 @@ void main() {
         await tester.pump();
         expect(tester.takeException(), isNull);
         expect(find.text('Resume learning'), findsOneWidget);
-        await tester.ensureVisible(find.text('How your streak works'));
-        await tester.tap(find.text('How your streak works'));
+        await tester.ensureVisible(find.byIcon(Icons.info_outline_rounded));
+        await tester.tap(find.byIcon(Icons.info_outline_rounded));
         await tester.pumpAndSettle();
         expect(find.textContaining('local midnight'), findsOneWidget);
         expect(tester.takeException(), isNull);

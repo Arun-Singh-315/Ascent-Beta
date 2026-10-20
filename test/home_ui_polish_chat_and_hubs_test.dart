@@ -271,7 +271,7 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(find.text('Reminder off'), findsOneWidget);
+        expect(find.text('No reminder'), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();

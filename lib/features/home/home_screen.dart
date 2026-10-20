@@ -26,7 +26,7 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import '../reminders/widgets/in_app_reminder_dialog.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
-import 'widgets/daily_briefing_card.dart';
+import '../day_start/day_start_sheet.dart';
 import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
@@ -173,7 +173,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     _openingBriefing = true;
     try {
       // Mark it seen when presented, so dismissing it respects the user's choice.
-      final sheet = DailyBriefingCard.show(context, _briefingDate);
+      final sheet = DayStartSheet.show(context, _briefingDate);
       await preferences.setString('ascent_daily_briefing_seen_v1', key);
       await sheet;
     } finally {
@@ -286,7 +286,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                   children: [
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
-                    DailyBriefingCard(day: _briefingDate),
 
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))

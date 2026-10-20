@@ -142,12 +142,8 @@ class StudyStreakMeterCard extends StatelessWidget {
               children: [
                 Icon(
                   Icons.local_fire_department_rounded,
-                  size: 18,
-                  color: g.frozen
-                      ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
-                      : (status.isTodaySecured
-                          ? AppPalette.deepOrangeAccent
-                          : (status.isRescueMode ? AppPalette.amber : g.clay)),
+                  size: 20,
+                  color: status.isRescueMode ? AppPalette.amber : g.spark,
                 ),
                 const SizedBox(width: 6),
                 Flexible(
@@ -203,12 +199,6 @@ class StudyStreakMeterCard extends StatelessWidget {
                   color: AppPalette.redAccent,
                 ),
               ),
-            ] else if (!status.isTodaySecured) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Study for ${status.targetMinutes} minutes to complete day ${status.displayStreakDays + 1}.',
-                style: AppTypography.plusJakartaSans12W50020(color: g.inkMuted),
-              ),
             ],
             const SizedBox(height: 8),
             // Progress Bar
@@ -221,21 +211,11 @@ class StudyStreakMeterCard extends StatelessWidget {
                     ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
                     : g.bg.withValues(alpha: 0.5),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  g.frozen
-                      ? (status.isTodaySecured
-                          ? (isDark
-                              ? FrozenPalette.darkSpark
-                              : FrozenPalette.spark)
-                          : (isDark
-                              ? FrozenPalette.darkAction
-                              : FrozenPalette.action))
-                      : (status.isTodaySecured
-                          ? AppPalette.deepOrangeAccent
-                          : (status.isRescueMode
-                              ? AppPalette.amber
-                              : (status.isUrgent
-                                  ? AppPalette.redAccent
-                                  : g.clay))),
+                  status.isRescueMode
+                      ? AppPalette.amber
+                      : (status.isUrgent && !status.isTodaySecured
+                            ? AppPalette.redAccent
+                            : g.spark),
                 ),
               ),
             ),
@@ -259,17 +239,6 @@ class StudyStreakMeterCard extends StatelessWidget {
                     color: status.isTodaySecured
                         ? AppPalette.green
                         : g.inkMuted,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => _showExplanation(context),
-                  child: Text(
-                    'How your streak works',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: g.clay,
-                    ),
                   ),
                 ),
               ],

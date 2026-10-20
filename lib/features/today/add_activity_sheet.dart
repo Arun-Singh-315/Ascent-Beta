@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_option_tile.dart';
 import '../../shared/widgets/schedule_picker.dart';
 import '../../shared/widgets/note_list_button.dart';
 import '../../core/services/plan_collection_service.dart';
@@ -1060,63 +1061,14 @@ class _TypeSelectChip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: AppTapArea(
-        onTap: onTap,
-        borderRadius: AppGeometry.roundedr14,
-        child: AppCard(
-          selected: isSelected,
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpace.s10,
-            horizontal: AppSpace.s8,
-          ),
-          nightDecoration: BoxDecoration(
-            color: isSelected ? context.accentPrimary : context.bgBase,
-            borderRadius: AppGeometry.roundedr14,
-            border: Border.all(
-              color: isSelected
-                  ? context.accentPrimary
-                  : context.divider.withValues(alpha: 0.6),
-              width: isSelected ? 1.5 : 1.0,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: isSelected ? AppPalette.white : context.textMuted,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: AscentTextStyles.labelMedium
-                    .copyWith(
-                      color: isSelected
-                          ? AppPalette.white
-                          : context.textPrimary,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    )
-                    .merge(AppTypeRoles.typeRole9),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: AppStateTypography.stateType4.copyWith(
-                  color: isSelected
-                      ? AppPalette.white.withValues(alpha: 0.85)
-                      : context.textMuted,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Expanded(
+    child: AscentOptionTile(
+      icon: icon,
+      label: label,
+      value: subtitle,
+      selected: isSelected,
+      onTap: onTap,
+    ),
+  );
 }
+
