@@ -44,3 +44,7 @@ flutter analyze
 flutter run
 ```
 
+
+### Device UI checks
+
+Run `./scripts/test_device_qa.sh -d DEVICE_ID` for the daily welcome and existing navigation checks. The script builds the separate `com.arun.ascent.qa` package, uses in-memory records and preferences, and retains the test install for screenshots. It does not replace the normal debug or release app. Avoid running device integration tests against a personal workspace: Flutter's default test cleanup uninstalls the target app.

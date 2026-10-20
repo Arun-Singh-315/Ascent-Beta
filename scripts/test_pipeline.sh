@@ -34,7 +34,10 @@ case "$MODE" in
       test/home_card_border_theme_test.dart \
       test/planning_accessibility_test.dart \
       test/plan_collection_service_test.dart \
-      test/planning_migration_test.dart
+      test/planning_migration_test.dart \
+      test/planning_guided_schedule_test.dart \
+      test/note_list_entry_test.dart \
+      test/plan_notification_flow_test.dart
     ;;
 
   feature)
@@ -75,7 +78,10 @@ case "$MODE" in
       test/mindspace_accessible_layout_test.dart \
       test/planning_accessibility_test.dart \
       test/plan_collection_service_test.dart \
-      test/planning_migration_test.dart
+      test/planning_migration_test.dart \
+      test/planning_guided_schedule_test.dart \
+      test/note_list_entry_test.dart \
+      test/plan_notification_flow_test.dart
     echo "=========================================================="
     echo " SUCCESS: Pre-merge quality gate passed cleanly!"
     echo "=========================================================="

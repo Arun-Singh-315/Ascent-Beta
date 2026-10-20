@@ -1,3 +1,6 @@
+import '../../shared/widgets/schedule_picker.dart';
+import '../../shared/widgets/note_list_button.dart';
+import '../../core/services/plan_collection_service.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -13,6 +16,7 @@ import '../../core/notifications/notification_service.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../core/services/activity_entry_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'add_lecture_activity_sheet.dart';
@@ -71,7 +75,9 @@ class AddActivitySheet extends ConsumerStatefulWidget {
 
 class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   final _titleController = TextEditingController();
+  final _titleFocus = FocusNode();
   final _notesController = TextEditingController();
+  final _notesFocus = FocusNode();
   final _customDurationController = TextEditingController();
 
   late ActivityKind _kind;
@@ -81,6 +87,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _hasReminder = false;
+  bool _pickingReminder = false;
   String _priority = 'medium';
   bool _saving = false;
   bool _reminderEdited = false;
@@ -119,8 +126,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
       _loadingReminder = true;
       Future.microtask(() async {
         try {
-          final protection =
-              await ref.read(taskDaoProvider).getTaskProtection(t.id);
+          final protection = await ref
+              .read(taskDaoProvider)
+              .getTaskProtection(t.id);
           if (mounted) setState(() => _protection = protection);
         } catch (_) {}
       });
@@ -151,14 +159,51 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
   @override
   void dispose() {
+    _titleFocus.dispose();
     _titleController.dispose();
+    _notesFocus.dispose();
     _notesController.dispose();
     _customDurationController.dispose();
     super.dispose();
   }
 
+  Future<void> _chooseReminder(bool enabled) async {
+    if (_pickingReminder) return;
+    if (!enabled) {
+      setState(() {
+        _hasReminder = false;
+        _reminderEdited = true;
+      });
+      return;
+    }
+    setState(() => _pickingReminder = true);
+    final selected = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
+    );
+    final picked = await pickFutureSchedule(
+      context,
+      purpose: 'Reminder',
+      initial: selected.isAfter(DateTime.now()) ? selected : null,
+    );
+    if (!mounted) return;
+    setState(() {
+      _pickingReminder = false;
+      if (picked != null) {
+        _selectedDate = DateTime(picked.year, picked.month, picked.day);
+        _selectedTime = TimeOfDay.fromDateTime(picked);
+        _hasReminder = true;
+        _reminderEdited = true;
+      }
+    });
+    if (picked != null) await NotificationService.instance.requestPermissions();
+  }
+
   Future<void> _save() async {
-    if (_saving || _loadingReminder) return;
+    if (_saving || _loadingReminder || _pickingReminder) return;
     setState(() => _saving = true);
     try {
       final minutes = _kind == ActivityKind.duration
@@ -182,26 +227,45 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
               _selectedTime.minute,
             );
       final db = ref.read(databaseProvider);
-      final result = await ActivityEntryService(db).save(
-        title: _titleController.text,
-        date: _selectedDate,
-        estimatedMinutes: minutes,
-        taskId: widget.existingTask?.id,
-        notes: _notesController.text,
-        priority: _priority,
-        parentTaskId: widget.parentTaskId,
-        applicationId: widget.prefilledApplicationId,
-        reminderAt: reminderAt,
-        replaceReminders: widget.existingTask == null || _reminderEdited,
-      );
+      final titles = widget.existingTask == null
+          ? PlanItemDraft.parseList(_titleController.text)
+          : [_titleController.text];
+      final results = widget.existingTask == null
+          ? await ActivityEntryService(db).saveMany(
+              titles: titles,
+              date: _selectedDate,
+              estimatedMinutes: minutes,
+              notes: _notesController.text,
+              priority: _priority,
+              parentTaskId: widget.parentTaskId,
+              applicationId: widget.prefilledApplicationId,
+              reminderAt: reminderAt,
+            )
+          : [
+              await ActivityEntryService(db).save(
+                title: _titleController.text,
+                date: _selectedDate,
+                estimatedMinutes: minutes,
+                taskId: widget.existingTask!.id,
+                notes: _notesController.text,
+                priority: _priority,
+                parentTaskId: widget.parentTaskId,
+                applicationId: widget.prefilledApplicationId,
+                reminderAt: reminderAt,
+                replaceReminders: _reminderEdited,
+              ),
+            ];
+      final reminderIds = results.expand((r) => r.reminderIds).toList();
       var message = widget.existingTask == null
-          ? 'Activity added'
+          ? (results.length == 1
+                ? 'Activity added'
+                : '${results.length} to-dos added')
           : 'Activity updated';
-      if (result.reminderIds.isNotEmpty) {
+      if (reminderIds.isNotEmpty) {
         try {
           final sync = await ReminderAlertSync.device(
             db,
-          ).sync(ids: result.reminderIds, onlyPending: true);
+          ).sync(ids: reminderIds, onlyPending: true);
           if (!sync.complete) {
             message +=
                 '. Reminder alert pending—check notification permissions.';
@@ -356,8 +420,9 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     'Routine: ${_titleController.text.trim()}',
                               ),
                             );
-                            final thought =
-                                await db.thoughtDao.getThoughtById(thoughtId);
+                            final thought = await db.thoughtDao.getThoughtById(
+                              thoughtId,
+                            );
                             if (context.mounted && thought != null) {
                               showHomeSchedule(
                                 context,
@@ -383,6 +448,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   const SizedBox(height: 6),
                   TextField(
                     controller: _titleController,
+                    focusNode: _titleFocus,
+                    minLines: 1,
+                    maxLines: 4,
+                    maxLength: widget.existingTask == null ? 20000 : 300,
                     autofocus: widget.existingTask == null,
                     textCapitalization: TextCapitalization.sentences,
                     style: AscentTextStyles.bodyMedium.copyWith(
@@ -419,7 +488,22 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                           width: AppBorderScale.w1point5,
                         ),
                       ),
+                      suffixIcon: widget.existingTask == null
+                          ? InlineListAddButton(
+                              controller: _titleController,
+                              focusNode: _titleFocus,
+                              enabled: !_saving,
+                            )
+                          : null,
                     ),
+                    onTap: () {
+                      try {
+                        InlineListAddButton.maybeShowFirstTimeDiscovery(
+                          context,
+                          prefs: ref.read(sharedPreferencesProvider),
+                        );
+                      } catch (_) {}
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -605,7 +689,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                   .merge(AppTypeRoles.typeRole8),
                             ),
                             const SizedBox(height: 6),
-                            Row(
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 AppPill.choice(
                                   label: const Text('Today'),
@@ -621,7 +708,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     });
                                   },
                                 ),
-                                const SizedBox(width: 6),
                                 AppPill.choice(
                                   label: const Text('Tomorrow'),
                                   selected: DateUtils.isSameDay(
@@ -638,7 +724,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     });
                                   },
                                 ),
-                                const SizedBox(width: 6),
                                 IconButton(
                                   icon: const Icon(
                                     Icons.calendar_today_rounded,
@@ -700,18 +785,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         Expanded(
                           child: AppTapArea(
                             onTap: _hasReminder
-                                ? () async {
-                                    final pickedTime = await showTimePicker(
-                                      context: context,
-                                      initialTime: _selectedTime,
-                                    );
-                                    if (pickedTime != null) {
-                                      setState(() {
-                                        _reminderEdited = true;
-                                        _selectedTime = pickedTime;
-                                      });
-                                    }
-                                  }
+                                ? () => _chooseReminder(true)
                                 : null,
                             borderRadius: AppGeometry.roundedr8,
                             child: Column(
@@ -748,48 +822,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         ),
                         Switch(
                           value: _hasReminder,
-                          onChanged: (val) async {
-                            if (val) {
-                              await NotificationService.instance
-                                  .requestPermissions();
-                              if (!context.mounted) return;
-                              final now = TimeOfDay.now();
-                              final isPastToday =
-                                  DateUtils.isSameDay(
-                                    _selectedDate,
-                                    DateTime.now(),
-                                  ) &&
-                                  (_selectedTime.hour < now.hour ||
-                                      (_selectedTime.hour == now.hour &&
-                                          _selectedTime.minute <= now.minute));
-                              final initial = isPastToday
-                                  ? TimeOfDay(
-                                      hour:
-                                          (now.hour +
-                                              (now.minute >= 45 ? 1 : 0)) %
-                                          24,
-                                      minute: (now.minute + 15) % 60,
-                                    )
-                                  : _selectedTime;
-
-                              final pickedTime = await showTimePicker(
-                                context: context,
-                                initialTime: initial,
-                              );
-                              if (pickedTime != null) {
-                                setState(() {
-                                  _reminderEdited = true;
-                                  _selectedTime = pickedTime;
-                                  _hasReminder = true;
-                                });
-                              }
-                            } else {
-                              setState(() {
-                                _reminderEdited = true;
-                                _hasReminder = false;
-                              });
-                            }
-                          },
+                          onChanged: _pickingReminder ? null : _chooseReminder,
                         ),
                       ],
                     ),
@@ -849,6 +882,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                         const SizedBox(height: 10),
                         TextField(
                           controller: _notesController,
+                          focusNode: _notesFocus,
                           maxLines: 2,
                           style: AscentTextStyles.bodyMedium.copyWith(
                             color: context.textPrimary,
@@ -864,6 +898,11 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                 : AppPalette.colorFFF7F6F2,
                             border: OutlineInputBorder(
                               borderRadius: AppGeometry.roundedr12,
+                            ),
+                            suffixIcon: InlineListAddButton(
+                              controller: _notesController,
+                              focusNode: _notesFocus,
+                              enabled: !_saving,
                             ),
                           ),
                         ),

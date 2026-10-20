@@ -287,7 +287,7 @@ void main() {
 
   group('Home Screen Dismissible Reminders Tests', () {
     testWidgets(
-      'HomeDismissibleRemindersSection renders upcoming reminders read-only',
+      'HomeDismissibleRemindersSection deletes a reminder on swipe left',
       (tester) async {
         bool dismissed = false;
 
@@ -308,11 +308,16 @@ void main() {
           MaterialApp(
             theme: AscentTheme.dark(),
             home: Scaffold(
-              body: HomeDismissibleRemindersSection(
-                reminders: reminders,
-                onDismissReminder: (reminder) async {
-                  dismissed = true;
-                },
+              body: StatefulBuilder(
+                builder: (context, update) => HomeDismissibleRemindersSection(
+                  reminders: reminders,
+                  onDismissReminder: (reminder) async {
+                    update(() {
+                      dismissed = true;
+                      reminders.removeWhere((item) => item.id == reminder.id);
+                    });
+                  },
+                ),
               ),
             ),
           ),
@@ -328,7 +333,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(dismissed, isFalse);
+        expect(dismissed, isTrue);
         expect(find.byType(Dismissible), findsNothing);
       },
     );

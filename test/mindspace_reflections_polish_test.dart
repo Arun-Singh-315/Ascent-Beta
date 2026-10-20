@@ -34,14 +34,14 @@ void main() {
 
   group('Mind Space Reflections & Theme Polish Tests', () {
     test('1. Day mode theme accentPrimary is terracotta brand color, not green', () {
-      final lightTheme = AscentTheme.light();
+      final lightTheme = AscentTheme.light(preset: DayThemePreset.classicClay);
       expect(
         lightTheme.colorScheme.primary,
         equals(AscentColors.accentPrimary),
         reason: 'Day mode primary accent must match Ascent brand terracotta, not greenAction',
       );
       expect(
-        lightTheme.colorScheme.primary,
+        AscentTheme.light().colorScheme.primary,
         isNot(equals(const Color(0xFF2F6B4F))),
       );
     });

@@ -11,6 +11,7 @@ import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -443,10 +444,297 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             vertical: AppSpace.s8,
           ),
           children: [
-            // ── Section 1: Target Profile & Identity (Always Visible) ────────
+            // ── Section 1: Appearance & Theme (Always Visible at Top) ────────
+            _SectionHeader(title: 'Appearance & Theme', dotColor: g.clay),
+            AscentCard(
+              padding: const EdgeInsets.all(AppSpace.s16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Display Mode',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          themeMode == ThemeMode.dark
+                              ? 'Night Mode'
+                              : (themeMode == ThemeMode.light
+                                    ? 'Day Mode'
+                                    : 'System Auto'),
+                          textAlign: TextAlign.end,
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(color: g.clay)
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _ThemeOption(
+                        label: 'Day / Light',
+                        icon: Icons.light_mode_rounded,
+                        isSelected: themeMode == ThemeMode.light,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(ThemeMode.light);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _ThemeOption(
+                        label: 'Night / Dark',
+                        icon: Icons.dark_mode_rounded,
+                        isSelected: themeMode == ThemeMode.dark,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(ThemeMode.dark);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _ThemeOption(
+                        label: 'System Auto',
+                        icon: Icons.brightness_auto_rounded,
+                        isSelected: themeMode == ThemeMode.system,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(ThemeMode.system);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Active Theme Feedback Banner
+                  if (themeMode == ThemeMode.light)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: dayPreset == DayThemePreset.merlotLinen
+                            ? MerlotPalette.tint
+                            : dayPreset == DayThemePreset.nordicSky
+                            ? FrozenPalette.tint
+                            : const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: dayPreset == DayThemePreset.merlotLinen
+                              ? MerlotPalette.line
+                              : dayPreset == DayThemePreset.nordicSky
+                              ? FrozenPalette.line
+                              : const Color(0xFFFDBA74),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            dayPreset == DayThemePreset.merlotLinen
+                                ? Icons.auto_awesome_rounded
+                                : dayPreset == DayThemePreset.nordicSky
+                                ? Icons.cloud_outlined
+                                : Icons.wb_sunny_rounded,
+                            color: dayPreset == DayThemePreset.merlotLinen
+                                ? MerlotPalette.action
+                                : dayPreset == DayThemePreset.nordicSky
+                                ? FrozenPalette.action
+                                : const Color(0xFFEA580C),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              dayPreset == DayThemePreset.merlotLinen
+                                  ? 'Vintage Merlot Theme is active. Deep vintage merlot, cashmere oat linen, and antique gold accents.'
+                                  : dayPreset == DayThemePreset.nordicSky
+                                  ? 'Frozen Sky Theme is active. Crisp arctic blues, frosted glass, and cool linen surfaces.'
+                                  : 'Classic Clay Theme is active. Warm terracotta, amber glow, and crisp linen surfaces.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: dayPreset == DayThemePreset.merlotLinen
+                                    ? MerlotPalette.action
+                                    : dayPreset == DayThemePreset.nordicSky
+                                    ? FrozenPalette.action
+                                    : const Color(0xFF9A3412),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (themeMode == ThemeMode.dark)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF334155)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.nightlight_round,
+                            color: Color(0xFFFF6B4A),
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Night Glass Theme is active. Deep obsidian glass and vibrant neon clay accents.',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFE2E8F0),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: g.edge),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.brightness_auto_rounded,
+                            color: g.clay,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'System Auto is active. Ascent automatically matches your device setting (${context.isDark ? "currently Night Glass" : "currently Luminous Day"}).',
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: g.ink,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 16),
+                  Divider(color: g.line, height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Daylight Style',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          dayPreset == DayThemePreset.merlotLinen
+                              ? 'Vintage Merlot (Default)'
+                              : dayPreset == DayThemePreset.nordicSky
+                                  ? 'Frozen Sky'
+                                  : 'Classic Clay',
+                          textAlign: TextAlign.end,
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(
+                                color: dayPreset == DayThemePreset.merlotLinen
+                                    ? MerlotPalette.action
+                                    : dayPreset == DayThemePreset.nordicSky
+                                        ? FrozenPalette.accent
+                                        : g.clay,
+                              )
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _DayPresetOption(
+                        label: 'Merlot',
+                        subtitle: 'Cashmere',
+                        colorSwatch: MerlotPalette.action,
+                        icon: Icons.auto_awesome_rounded,
+                        isSelected: dayPreset == DayThemePreset.merlotLinen,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(dayThemePresetProvider.notifier)
+                              .setPreset(DayThemePreset.merlotLinen);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DayPresetOption(
+                        label: 'Classic Clay',
+                        subtitle: 'Terracotta',
+                        colorSwatch: AscentColors.accentPrimary,
+                        icon: Icons.wb_sunny_outlined,
+                        isSelected: dayPreset == DayThemePreset.classicClay,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(dayThemePresetProvider.notifier)
+                              .setPreset(DayThemePreset.classicClay);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DayPresetOption(
+                        label: 'Frozen Sky',
+                        subtitle: 'Frost Slate',
+                        colorSwatch: FrozenPalette.accent,
+                        icon: Icons.cloud_outlined,
+                        isSelected: dayPreset == DayThemePreset.nordicSky,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(dayThemePresetProvider.notifier)
+                              .setPreset(DayThemePreset.nordicSky);
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Section 2: Target Profile & Identity (Always Visible) ────────
             _SectionHeader(
               title: 'Target Profile & Identity',
-              dotColor: g.clay,
+              dotColor: g.slate,
             ),
             AscentCard(
               padding: const EdgeInsets.all(AppSpace.s16),
@@ -538,11 +826,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Icon(Icons.auto_awesome_rounded, size: 16, color: g.clay),
                       const SizedBox(width: 8),
-                      Text(
-                        'AI Copilot Name',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole8),
+                      Expanded(
+                        child: Text(
+                          'AI Copilot Name',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
                       ),
                     ],
                   ),
@@ -559,137 +849,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       final currentName = ref.watch(assistantNameProvider);
                       return _AssistantNameEditor(currentName: currentName);
                     },
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // ── Section 2: Appearance & Theme (Always Visible) ───────────────
-            _SectionHeader(title: 'Appearance & Theme', dotColor: g.slate),
-            AscentCard(
-              padding: const EdgeInsets.all(AppSpace.s16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Display Mode',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole2),
-                      ),
-                      Text(
-                        themeMode == ThemeMode.dark
-                            ? 'Night Mode'
-                            : (themeMode == ThemeMode.light
-                                  ? 'Day Mode'
-                                  : 'System Auto'),
-                        style: AscentTextStyles.captionMedium
-                            .copyWith(color: g.clay)
-                            .merge(AppTypeRoles.typeRole8),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _ThemeOption(
-                        label: 'Day / Light',
-                        icon: Icons.light_mode_rounded,
-                        isSelected: themeMode == ThemeMode.light,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.light);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _ThemeOption(
-                        label: 'Night / Dark',
-                        icon: Icons.dark_mode_rounded,
-                        isSelected: themeMode == ThemeMode.dark,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.dark);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _ThemeOption(
-                        label: 'System Auto',
-                        icon: Icons.brightness_auto_rounded,
-                        isSelected: themeMode == ThemeMode.system,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.system);
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  Divider(color: g.line, height: 1),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Daylight Style',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole2),
-                      ),
-                      Text(
-                        dayPreset == DayThemePreset.nordicSky
-                            ? 'Frozen Sky'
-                            : 'Classic Clay (Default)',
-                        style: AscentTextStyles.captionMedium
-                            .copyWith(
-                              color: dayPreset == DayThemePreset.nordicSky
-                                  ? FrozenPalette.accent
-                                  : g.clay,
-                            )
-                            .merge(AppTypeRoles.typeRole8),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _DayPresetOption(
-                        label: 'Classic Clay',
-                        subtitle: 'Terracotta & Linen',
-                        colorSwatch: AscentColors.accentPrimary,
-                        icon: Icons.wb_sunny_outlined,
-                        isSelected: dayPreset == DayThemePreset.classicClay,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.classicClay);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _DayPresetOption(
-                        label: 'Frozen Sky',
-                        subtitle: 'Frost & Charcoal',
-                        colorSwatch: FrozenPalette.accent,
-                        icon: Icons.cloud_outlined,
-                        isSelected: dayPreset == DayThemePreset.nordicSky,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.nordicSky);
-                        },
-                      ),
-                    ],
                   ),
                 ],
               ),
@@ -1305,24 +1464,30 @@ class _DayPresetOption extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              Text(
-                label,
-                style: AscentTextStyles.labelSmall.copyWith(
-                  color: isSelected ? AppPalette.white : g.ink,
-                  fontWeight: FontWeight.w600,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: isSelected ? AppPalette.white : g.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: AscentTextStyles.captionMedium.copyWith(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.90)
-                      : g.inkMuted,
-                  fontSize: 10,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  subtitle,
+                  style: AscentTextStyles.captionMedium.copyWith(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.90)
+                        : g.inkMuted,
+                    fontSize: 10,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

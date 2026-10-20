@@ -110,7 +110,7 @@ void main() {
       // Active thought input is visible and interactive
       expect(find.text('Capture a thought…'), findsOneWidget);
       // Composer icons are present
-      expect(find.byIcon(Icons.playlist_add_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
       expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());

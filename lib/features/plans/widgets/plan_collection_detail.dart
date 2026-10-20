@@ -17,7 +17,15 @@ Future<void> showPlanCollectionDetail(BuildContext context, String id) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => PlanCollectionDetail(id: id),
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: ctx.bgSurfaceElevated,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border.all(color: ctx.glass.line),
+        ),
+        child: PlanCollectionDetail(id: id),
+      ),
     );
 
 class PlanCollectionDetail extends ConsumerStatefulWidget {
@@ -65,60 +73,213 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
     }
   }
 
-  Future<bool> _confirm(String title, String message) async =>
-      await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Cancel'),
+  Future<bool> _confirm(String title, String message) async {
+    final g = context.glass;
+    return await showDialog<bool>(
+          context: context,
+          builder: (ctx) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: AppSpace.s24),
+            child: Container(
+              padding: const EdgeInsets.all(AppSpace.s20),
+              decoration: BoxDecoration(
+                color: ctx.bgSurfaceElevated,
+                borderRadius: AppGeometry.roundedr24,
+                border: Border.all(color: g.line),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(AppSpace.s8),
+                        decoration: BoxDecoration(
+                          color: context.stateDanger.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          color: context.stateDanger,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.s12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: g.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpace.s12),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      color: g.inkSecondary,
+                      height: 1.4,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpace.s20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          'Cancel',
+                          style: TextStyle(color: g.inkMuted),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpace.s8),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: context.stateDanger,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppGeometry.roundedr12,
+                          ),
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            FilledButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Delete'),
-            ),
-          ],
-        ),
-      ) ??
-      false;
+          ),
+        ) ??
+        false;
+  }
+
   Future<void> _rename(PlanCollectionView plan) async {
+    final g = context.glass;
     final name = TextEditingController(text: plan.title),
         notes = TextEditingController(text: plan.description);
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Edit plan'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: name,
-                maxLength: 300,
-                decoration: const InputDecoration(labelText: 'Name'),
-              ),
-              TextField(
-                controller: notes,
-                maxLines: 3,
-                maxLength: 20000,
-                decoration: const InputDecoration(labelText: 'Notes'),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: AppSpace.s24),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpace.s20),
+          decoration: BoxDecoration(
+            color: ctx.bgSurfaceElevated,
+            borderRadius: AppGeometry.roundedr24,
+            border: Border.all(color: g.line),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      decoration: BoxDecoration(
+                        color: g.clay.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.edit_note_rounded,
+                        color: g.clay,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s12),
+                    Expanded(
+                      child: Text(
+                        'Edit plan',
+                        style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: g.ink,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpace.s16),
+                Text('Plan name', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: AppSpace.s8),
+                TextField(
+                  key: const ValueKey('rename_plan_field'),
+                  controller: name,
+                  minLines: 1,
+                  maxLines: 3,
+                  maxLength: 300,
+                  decoration: InputDecoration(
+                    hintText: 'Plan name',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s12),
+                Text('Notes', style: Theme.of(ctx).textTheme.labelLarge),
+                const SizedBox(height: AppSpace.s8),
+                TextField(
+                  controller: notes,
+                  maxLines: 3,
+                  maxLength: 20000,
+                  decoration: InputDecoration(
+                    hintText: 'Optional notes',
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: AppGeometry.roundedr12,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.s16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: g.inkMuted),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpace.s8),
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: g.clay,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Save'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save'),
-          ),
-        ],
       ),
     );
     if (result == true && mounted) {
@@ -147,59 +308,106 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
           .planDao
           .getOccurrencesForPlan(item.definitionId!);
       if (!mounted) return;
+      final g = context.glass;
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        builder: (ctx) => SizedBox(
-          height: MediaQuery.sizeOf(ctx).height * .8,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => Container(
+          height: MediaQuery.sizeOf(ctx).height * .75,
+          padding: const EdgeInsets.all(AppSpace.s16),
+          decoration: BoxDecoration(
+            color: ctx.bgSurfaceElevated,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: g.line),
+          ),
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(AppSpace.s16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Session history',
-                        style: Theme.of(ctx).textTheme.titleLarge,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Close history',
-                      onPressed: () => Navigator.pop(ctx),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpace.s12),
+                  decoration: BoxDecoration(
+                    color: g.inkMuted.withValues(alpha: 0.3),
+                    borderRadius: AppGeometry.roundedr4,
+                  ),
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: history.length,
-                  itemBuilder: (_, n) {
-                    final o = history[history.length - 1 - n];
-                    return ListTile(
-                      title: Text(
-                        DateFormat(
-                          'EEE, d MMM · h:mm a',
-                        ).format(o.scheduledStartTime),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Session history',
+                      style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: g.ink,
                       ),
-                      subtitle: Text(
-                        o.outcome == 'done'
-                            ? 'Completed'
-                            : o.outcome == 'skipped'
-                            ? 'Skipped'
-                            : o.outcome == 'not_confirmed'
-                            ? 'Not confirmed'
-                            : 'Scheduled',
-                      ),
-                      leading: Icon(
-                        o.outcome == 'done' ? Icons.task_alt : Icons.schedule,
-                      ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close history',
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
               ),
+              const SizedBox(height: AppSpace.s8),
+              if (history.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'No session history recorded yet.',
+                      style: TextStyle(color: g.inkMuted),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: history.length,
+                    itemBuilder: (_, n) {
+                      final o = history[history.length - 1 - n];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: AppSpace.s8),
+                        decoration: BoxDecoration(
+                          color: g.fill,
+                          borderRadius: AppGeometry.roundedr12,
+                          border: Border.all(color: g.edge),
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            DateFormat(
+                              'EEE, d MMM · h:mm a',
+                            ).format(o.scheduledStartTime),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            o.outcome == 'done'
+                                ? 'Completed'
+                                : o.outcome == 'skipped'
+                                ? 'Skipped'
+                                : o.outcome == 'not_confirmed'
+                                ? 'Not confirmed'
+                                : 'Scheduled',
+                            style: TextStyle(
+                              color: o.outcome == 'done'
+                                  ? g.clay
+                                  : g.inkSecondary,
+                            ),
+                          ),
+                          leading: Icon(
+                            o.outcome == 'done'
+                                ? Icons.task_alt_rounded
+                                : Icons.schedule_rounded,
+                            color: o.outcome == 'done' ? g.clay : g.inkMuted,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
             ],
           ),
         ),
@@ -269,22 +477,84 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
       final choices = (ref.read(planCollectionsProvider).value ?? [])
           .where((c) => c.id != item.collectionId && c.status == 'active')
           .toList();
-      final id = await showDialog<String>(
+      final g = context.glass;
+      final id = await showModalBottomSheet<String>(
         context: context,
-        builder: (ctx) => SimpleDialog(
-          title: const Text('Move to plan'),
-          children: [
-            if (choices.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(AppSpace.s16),
-                child: Text('Create another active plan first.'),
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => Container(
+          padding: const EdgeInsets.all(AppSpace.s20),
+          decoration: BoxDecoration(
+            color: ctx.bgSurfaceElevated,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: g.line),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                  decoration: BoxDecoration(
+                    color: g.inkMuted.withValues(alpha: 0.3),
+                    borderRadius: AppGeometry.roundedr4,
+                  ),
+                ),
               ),
-            for (final c in choices)
-              SimpleDialogOption(
-                onPressed: () => Navigator.pop(ctx, c.id),
-                child: Text(c.title),
+              Text(
+                'Move to plan',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: g.ink,
+                ),
               ),
-          ],
+              const SizedBox(height: AppSpace.s12),
+              if (choices.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpace.s16),
+                  child: Text(
+                    'Create another active plan first.',
+                    style: TextStyle(color: g.inkMuted),
+                  ),
+                ),
+              for (final c in choices)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpace.s8),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s16,
+                        vertical: AppSpace.s12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: AppGeometry.roundedr16,
+                      ),
+                      side: BorderSide(color: g.edge),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, c.id),
+                    child: Row(
+                      children: [
+                        Icon(
+                          c.routines > 0 ? Icons.event_repeat : Icons.checklist,
+                          color: g.clay,
+                        ),
+                        const SizedBox(width: AppSpace.s12),
+                        Expanded(
+                          child: Text(
+                            c.title,
+                            style: Theme.of(ctx).textTheme.titleSmall,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       );
       if (id != null && mounted) await _run(() => service.move(item.id, id));
@@ -424,7 +694,10 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
               child: Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(top: AppSpace.s12, bottom: AppSpace.s4),
+                margin: const EdgeInsets.only(
+                  top: AppSpace.s12,
+                  bottom: AppSpace.s4,
+                ),
                 decoration: BoxDecoration(
                   color: g.inkMuted.withValues(alpha: 0.3),
                   borderRadius: AppGeometry.roundedr4,
@@ -533,9 +806,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                             // Plan Title
                             Text(
                               plan.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
+                              style: Theme.of(context).textTheme.headlineSmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: g.ink,
@@ -583,8 +854,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       value: plan.total == 0
                                           ? 0
                                           : plan.done / plan.total,
-                                      backgroundColor:
-                                          g.line.withValues(alpha: 0.3),
+                                      backgroundColor: g.line.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       color: g.clay,
                                       minHeight: 6,
                                     ),
@@ -665,9 +937,10 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                           ),
                                           Icon(
                                             _notesExpanded
-                                                ? Icons.keyboard_arrow_up_rounded
+                                                ? Icons
+                                                      .keyboard_arrow_up_rounded
                                                 : Icons
-                                                    .keyboard_arrow_down_rounded,
+                                                      .keyboard_arrow_down_rounded,
                                             size: 20,
                                             color: g.inkMuted,
                                           ),
@@ -769,8 +1042,8 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       ) ??
                                       false)
                                     OutlinedButton.icon(
-                                      onPressed: _busy ||
-                                              plan.status != 'active'
+                                      onPressed:
+                                          _busy || plan.status != 'active'
                                           ? null
                                           : () => showPlanCollectionEditor(
                                               context,
@@ -834,8 +1107,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                               Container(
                                 padding: const EdgeInsets.all(AppSpace.s8),
                                 decoration: BoxDecoration(
-                                  color: context.stateWarning
-                                      .withValues(alpha: 0.12),
+                                  color: context.stateWarning.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: AppGeometry.roundedr8,
                                 ),
                                 child: Row(
@@ -948,10 +1222,12 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                           value: item.done,
                                           activeColor: g.clay,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
-                                          onChanged: _busy ||
+                                          onChanged:
+                                              _busy ||
                                                   item.done ||
                                                   plan.status != 'active'
                                               ? null
@@ -968,15 +1244,12 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                       Expanded(
                                         child: InkWell(
                                           borderRadius: AppGeometry.roundedr12,
-                                          onTap: (item.done &&
-                                                      !item.recurring) ||
+                                          onTap:
+                                              (item.done && !item.recurring) ||
                                                   _busy
                                               ? null
-                                              : () => _action(
-                                                  item,
-                                                  'edit',
-                                                  all,
-                                                ),
+                                              : () =>
+                                                    _action(item, 'edit', all),
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                               vertical: AppSpace.s8,
@@ -998,7 +1271,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                                             : g.ink,
                                                         decoration: item.done
                                                             ? TextDecoration
-                                                                .lineThrough
+                                                                  .lineThrough
                                                             : null,
                                                       ),
                                                 ),
@@ -1045,12 +1318,13 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                                         !item.done) ...[
                                                       if (item.alert != 'none')
                                                         _buildItemTag(
-                                                          icon: item.alert ==
+                                                          icon:
+                                                              item.alert ==
                                                                   'alarm'
                                                               ? Icons
-                                                                  .alarm_rounded
+                                                                    .alarm_rounded
                                                               : Icons
-                                                                  .notifications_active_rounded,
+                                                                    .notifications_active_rounded,
                                                           label: item.alert,
                                                           color: g.clay,
                                                         ),
@@ -1127,8 +1401,9 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                                               plan.status == 'active')
                                             const PopupMenuItem(
                                               value: 'focus',
-                                              child:
-                                                  Text('Start / resume focus'),
+                                              child: Text(
+                                                'Start / resume focus',
+                                              ),
                                             ),
                                           if (item.occurrenceId != null &&
                                               !item.done &&
@@ -1220,4 +1495,3 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
     );
   }
 }
-

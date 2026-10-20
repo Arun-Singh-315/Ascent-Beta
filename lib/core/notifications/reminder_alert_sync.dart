@@ -32,7 +32,7 @@ Future<bool> scheduleReminderOnDevice(AppDatabase db, Reminder r) async {
   final payload = routineAlertLink != null
       ? (isRoutineCheckIn
             ? '/home?checkin=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}&occ=${routineAlertLink.occurrenceId}'
-            : '/home?session=${routineAlertLink.occurrenceId}')
+            : '/home?session=${routineAlertLink.occurrenceId}&reminder=${r.id}&at=${r.scheduledAt.millisecondsSinceEpoch}')
       : plan == null
       ? NotificationService.remindersDestination
       : checkIn

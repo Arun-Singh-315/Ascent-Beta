@@ -15,6 +15,37 @@ class ActivityEntryService {
   final AppDatabase db;
   final DateTime Function() clock;
 
+  Future<List<ActivityEntryResult>> saveMany({
+    required List<String> titles,
+    required DateTime date,
+    int? estimatedMinutes,
+    String? notes,
+    String? priority,
+    int? parentTaskId,
+    int? applicationId,
+    DateTime? reminderAt,
+  }) => db.transaction(() async {
+    if (titles.isEmpty || titles.length > 200) {
+      throw StateError('Add between 1 and 200 items.');
+    }
+    final results = <ActivityEntryResult>[];
+    for (final title in titles) {
+      results.add(
+        await save(
+          title: title,
+          date: date,
+          estimatedMinutes: estimatedMinutes,
+          notes: notes,
+          priority: priority,
+          parentTaskId: parentTaskId,
+          applicationId: applicationId,
+          reminderAt: reminderAt,
+        ),
+      );
+    }
+    return results;
+  });
+
   Future<ActivityEntryResult> save({
     required String title,
     required DateTime date,

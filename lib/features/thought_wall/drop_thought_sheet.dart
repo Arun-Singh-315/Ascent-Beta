@@ -489,6 +489,7 @@ class _StepButton extends StatelessWidget {
 
 class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
   final _contentController = TextEditingController();
+  final _contentFocus = FocusNode();
   final _promiseDaysController = TextEditingController(text: '30');
   String _selectedMood = 'thought';
   bool _isPinned = false;
@@ -606,6 +607,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
   @override
   void dispose() {
     _contentController.removeListener(_onTextChanged);
+    _contentFocus.dispose();
     _contentController.dispose();
     _promiseDaysController.dispose();
     super.dispose();
@@ -864,6 +866,7 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
                 ),
               TextField(
                 controller: _contentController,
+                focusNode: _contentFocus,
                 autofocus: true,
                 readOnly: false,
                 maxLines: 4,
@@ -896,7 +899,24 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
               const SizedBox(height: 18),
 
-              NoteListButton(controller: _contentController),
+              Row(
+                children: [
+                  InlineListAddButton(
+                    controller: _contentController,
+                    focusNode: _contentFocus,
+                    enabled: !_isSaving,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Add plan item (→) or to-do (•) line',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
 
               // Submit Button
               AscentButton.primary(

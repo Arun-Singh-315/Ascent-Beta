@@ -42,7 +42,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         debug {
-            applicationIdSuffix = ".debug"
+            // Device QA must never replace the user's debug installation.
+            applicationIdSuffix = if (providers.gradleProperty("ascentDeviceQa").orNull == "true") ".qa" else ".debug"
             versionNameSuffix = "-debug"
         }
     }

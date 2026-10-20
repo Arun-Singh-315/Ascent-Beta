@@ -1,14 +1,16 @@
+import 'dart:async';
+
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drift/drift.dart' as drift;
 
 import 'package:flutter/services.dart';
 import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../core/notifications/notification_service.dart';
@@ -24,6 +26,8 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import '../reminders/widgets/in_app_reminder_dialog.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
+import 'widgets/daily_briefing_card.dart';
+import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
@@ -35,7 +39,6 @@ import 'widgets/study_streak_meter_card.dart';
 import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
-import 'widgets/life_checkin_popup_dialog.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
@@ -66,13 +69,20 @@ class _HomeContent extends ConsumerStatefulWidget {
 /// to the Home tab.
 bool _welcomeBackShownThisLaunch = false;
 
-class _HomeScreenState extends ConsumerState<_HomeContent> {
+class _HomeScreenState extends ConsumerState<_HomeContent>
+    with WidgetsBindingObserver {
+  DateTime _briefingDate = briefingDay(DateTime.now());
+  bool _openingBriefing = false;
+  bool _startupComplete = false;
+  Timer? _dayTimer;
   bool _hasCheckedOverdueReminders = false;
   int? _welcomeBackDays;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scheduleDayChange();
     final daysAway = ref.read(daysSinceLastOpenProvider);
     if (!_welcomeBackShownThisLaunch && daysAway >= 3 && daysAway < 999) {
       _welcomeBackShownThisLaunch = true;
@@ -92,12 +102,83 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
 
       if (!_hasCheckedOverdueReminders) {
         _hasCheckedOverdueReminders = true;
-        final promptedReminder = await _checkAndPromptOverdueReminder();
-        if (!promptedReminder && mounted) {
-          await _checkAndPromptLifeNudge(preferences);
-        }
+        await _checkAndPromptOverdueReminder();
       }
+
+      if (!mounted) return;
+      final profile = await ref
+          .read(userProfileStreamProvider.future)
+          .onError((_, _) => null);
+      if (!mounted || !canEnterWorkspace(profile, preferences)) return;
+
+      final tutorialDismissed =
+          (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
+          (preferences.getBool('ascent_quick_start_v1') ?? false);
+      if (!tutorialDismissed && mounted) {
+        preferences.setBool(DayOneTutorialDialog.prefKey, true);
+        await DayOneTutorialDialog.show(context, userName: profile?.name ?? '');
+      }
+      _startupComplete = true;
+      await _maybeOpenBriefing();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _dayTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshBriefingDay();
+      _maybeOpenBriefing();
+    }
+  }
+
+  void _refreshBriefingDay() {
+    final day = briefingDay(DateTime.now());
+    if (mounted && day != _briefingDate) {
+      setState(() => _briefingDate = day);
+    }
+    _scheduleDayChange();
+  }
+
+  void _scheduleDayChange() {
+    _dayTimer?.cancel();
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    _dayTimer = Timer(tomorrow.difference(now), () {
+      _refreshBriefingDay();
+      _maybeOpenBriefing();
+    });
+  }
+
+  Future<void> _maybeOpenBriefing() async {
+    if (!mounted ||
+        !_startupComplete ||
+        !ref.read(dailyBriefingAutoOpenProvider) ||
+        _openingBriefing ||
+        (widget.notificationUri?.hasQuery ?? false) ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    final preferences = ref.read(sharedPreferencesProvider);
+    final key = _briefingDate.toIso8601String();
+    if (preferences.getString('ascent_daily_briefing_seen_v1') == key) return;
+    _openingBriefing = true;
+    try {
+      // Mark it seen when presented, so dismissing it respects the user's choice.
+      final sheet = DailyBriefingCard.show(context, _briefingDate);
+      await preferences.setString('ascent_daily_briefing_seen_v1', key);
+      await sheet;
+    } finally {
+      _openingBriefing = false;
+    }
   }
 
   Future<bool> _checkAndPromptOverdueReminder() async {
@@ -116,39 +197,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
       debugPrint('Error checking overdue reminders: $e');
     }
     return false;
-  }
-
-  Future<void> _checkAndPromptLifeNudge(SharedPreferences preferences) async {
-    try {
-      final openCount =
-          (preferences.getInt('ascent_life_nudge_open_count') ?? 0) + 1;
-      await preferences.setInt('ascent_life_nudge_open_count', openCount);
-
-      // Ask 4 out of 10 times: cycle indices 1, 3, 6, 8 (40% frequency)
-      final cycleIndex = openCount % 10;
-      final isEligible =
-          cycleIndex == 1 ||
-          cycleIndex == 3 ||
-          cycleIndex == 6 ||
-          cycleIndex == 8;
-      if (!isEligible) return;
-
-      final nowMs = DateTime.now().millisecondsSinceEpoch;
-      final lastNudgeMs = preferences.getInt('ascent_last_life_nudge_ms') ?? 0;
-      // Minimum 15-minute gap so navigating between tabs does not trigger it repeatedly
-      if (nowMs - lastNudgeMs < const Duration(minutes: 15).inMilliseconds) {
-        return;
-      }
-      await preferences.setInt('ascent_last_life_nudge_ms', nowMs);
-
-      if (!mounted) return;
-      final initialTab = (cycleIndex == 1 || cycleIndex == 6)
-          ? LifeCheckInTab.hydration
-          : LifeCheckInTab.money;
-      await LifeCheckInPopupDialog.show(context, initialTab: initialTab);
-    } catch (e) {
-      debugPrint('Error prompting life checkin nudge: $e');
-    }
   }
 
   @override
@@ -238,14 +286,15 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                   children: [
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
+                    DailyBriefingCard(day: _briefingDate),
 
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
-                      const ThoughtWallHomePreview(),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: AppSpace.s16),
+                        child: ThoughtWallHomePreview(),
+                      ),
                     PlanningNotificationHandler(uri: widget.notificationUri),
-                    const SizedBox(height: 16),
-                    // Day 1 Welcome & Interactive Mental Model Guide (Zero freeze, dismissible)
-                    DayOneTutorialCard(userName: profile?.name ?? ''),
 
                     if (layout.shortcuts.isNotEmpty)
                       Padding(
@@ -315,12 +364,18 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
         ? (isDark
               ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
               : [FrozenPalette.actionBright, FrozenPalette.action])
+        : g.merlot
+        ? (isDark
+              ? [g.clay, g.clay.withValues(alpha: 0.82)]
+              : [MerlotPalette.actionBright, MerlotPalette.actionDeep])
         : (isDark
               ? [g.clay, g.clay.withValues(alpha: 0.82)]
-              : [g.clay.withValues(alpha: 0.88), g.clay]);
+              : [const Color(0xFFE86B43), const Color(0xFFC85A32)]);
     final shadowColor = g.frozen
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : g.clay;
+        : g.merlot
+        ? (isDark ? g.clay : MerlotPalette.actionDeep)
+        : (isDark ? g.clay : const Color(0xFFC85A32));
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
@@ -352,10 +407,12 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
+                Icon(
                   Icons.auto_awesome_rounded,
                   size: 18,
-                  color: Colors.white,
+                  color: g.merlot && !isDark
+                      ? MerlotPalette.antiqueGold
+                      : Colors.white,
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -405,9 +462,10 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
             reminders: reminders,
             onAddReminder: () => context.push('/reminders'),
             onViewAll: () => context.push('/reminders'),
-            onDismissReminder: (reminder) => ref
-                .read(dismissedTodayReminderIdsProvider.notifier)
-                .dismissReminderId(reminder.id),
+            onDismissReminder: (reminder) async {
+              await ref.read(reminderDaoProvider).deleteReminder(reminder.id);
+              await NotificationService.instance.cancel(reminder.id);
+            },
             onCompleteReminder: (reminder) async {
               await ref
                   .read(reminderDaoProvider)

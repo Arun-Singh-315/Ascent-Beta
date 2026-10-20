@@ -129,6 +129,7 @@ class HomePlansPreview extends ConsumerWidget {
   /// One short line: alerts problem first, then next time, then progress.
   static String _statusLine(PlanCollectionView p) {
     if (p.pendingAlerts > 0) return 'Alerts need attention';
+    if (p.total == 0) return 'No items yet';
     final progress = '${p.done} of ${p.total} done';
     final next = p.nextAt;
     if (next == null) return progress;

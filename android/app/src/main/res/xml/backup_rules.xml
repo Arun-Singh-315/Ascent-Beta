@@ -15,9 +15,8 @@
 -->
 <full-backup-content>
     <!-- Include the Drift database -->
-    <include domain="database" path="ascent_db.db" />
-    <include domain="database" path="ascent_db.db-wal" />
-    <include domain="database" path="ascent_db.db-shm" />
+    <!-- drift_flutter stores the workspace under app_flutter, not databases/. -->
+    <include domain="root" path="app_flutter/" />
 
     <!-- Include resume files stored in app's files directory -->
     <include domain="file" path="resumes" />

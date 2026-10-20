@@ -1,3 +1,4 @@
+import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,7 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('DayThemePreset provider & persistence', () {
-    test('defaults to classicClay (brown) when no value is stored', () async {
+    test('defaults to merlotLinen when no value is stored', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
@@ -23,7 +24,7 @@ void main() {
 
       expect(
         container.read(dayThemePresetProvider),
-        DayThemePreset.classicClay,
+        DayThemePreset.merlotLinen,
       );
     });
 
@@ -64,6 +65,18 @@ void main() {
   });
 
   group('AscentTheme daylight presets', () {
+    test('merlotLinen preset applies Vintage Merlot & Cashmere Linen palette', () {
+      final theme = AscentTheme.light(preset: DayThemePreset.merlotLinen);
+
+      expect(theme.brightness, Brightness.light);
+      expect(theme.colorScheme.primary, MerlotPalette.action);
+      expect(theme.scaffoldBackgroundColor, MerlotPalette.canvas);
+      final glass = theme.extension<AscentGlass>();
+      expect(glass, isNotNull);
+      expect(glass!.clay, MerlotPalette.action);
+      expect(glass.ink, MerlotPalette.ink);
+    });
+
     test('classicClay preset applies signature terracotta & linen palette', () {
       final theme = AscentTheme.light(preset: DayThemePreset.classicClay);
 
@@ -121,6 +134,27 @@ void main() {
     );
 
     test(
+      'switchTheme in merlotLinen has high-contrast selected (merlot/white) states',
+      () {
+        final theme = AscentTheme.light(preset: DayThemePreset.merlotLinen);
+        final switchTheme = theme.switchTheme;
+
+        expect(switchTheme.thumbColor, isNotNull);
+        expect(switchTheme.trackColor, isNotNull);
+
+        final selectedThumb = switchTheme.thumbColor!.resolve({
+          WidgetState.selected,
+        });
+        final selectedTrack = switchTheme.trackColor!.resolve({
+          WidgetState.selected,
+        });
+
+        expect(selectedThumb, Colors.white);
+        expect(selectedTrack, MerlotPalette.action);
+      },
+    );
+
+    test(
       'outlined and text buttons have Clear Sky action interactive blue foreground',
       () {
         final theme = AscentTheme.light(preset: DayThemePreset.nordicSky);
@@ -138,7 +172,7 @@ void main() {
 
   group('SettingsScreen Day Theme Selector & Toggles', () {
     testWidgets(
-      'shows both Classic Clay and Frozen Sky with Classic Clay selected by default',
+      'shows Merlot, Classic Clay and Frozen Sky with Merlot selected by default',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);
         tester.view.devicePixelRatio = 1.0;
@@ -165,16 +199,17 @@ void main() {
         // Check Appearance & Theme section
         expect(find.text('Appearance & Theme'), findsOneWidget);
         expect(find.text('Daylight Style'), findsOneWidget);
-        expect(find.text('Classic Clay'), findsOneWidget);
+        expect(find.text('Merlot'), findsOneWidget);
+        expect(find.text('Classic Clay'), findsWidgets);
         expect(find.text('Frozen Sky'), findsOneWidget);
 
-        // Default is Classic Clay
+        // Default is Merlot Linen
         expect(
           container.read(dayThemePresetProvider),
-          DayThemePreset.classicClay,
+          DayThemePreset.merlotLinen,
         );
 
-        // Tap Nordic Sky
+        // Tap Frozen Sky
         await tester.ensureVisible(find.text('Frozen Sky'));
         await tester.tap(find.text('Frozen Sky'));
         await tester.pumpAndSettle();

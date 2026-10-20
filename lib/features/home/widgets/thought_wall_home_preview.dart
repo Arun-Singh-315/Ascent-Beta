@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/frozen_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/database_provider.dart';
@@ -162,26 +163,27 @@ class _ThoughtWallHomePreviewState
 
   Map<String, dynamic>? get _pendingDraft {
     try {
-    final prefs = ref.read(sharedPreferencesProvider);
-    final drafts = <Map<String, dynamic>>[];
-    for (final key in prefs.getKeys().where(
-      (k) => k.startsWith('planning_draft_v1:'),
-    )) {
-      try {
-        final data = Map<String, dynamic>.from(
-          jsonDecode(prefs.getString(key)!) as Map,
-        );
-        data['key'] = key;
-        drafts.add(data);
-      } catch (_) {
-        /* Ignore an unreadable draft; preserve the original note. */
+      final prefs = ref.read(sharedPreferencesProvider);
+      final drafts = <Map<String, dynamic>>[];
+      for (final key in prefs.getKeys().where(
+        (k) => k.startsWith('planning_draft_v1:'),
+      )) {
+        try {
+          final data = Map<String, dynamic>.from(
+            jsonDecode(prefs.getString(key)!) as Map,
+          );
+          data['key'] = key;
+          drafts.add(data);
+        } catch (_) {
+          /* Ignore an unreadable draft; preserve the original note. */
+        }
       }
-    }
-    drafts.sort(
-      (a, b) =>
-          (b['updatedAt'] as int? ?? 0).compareTo(a['updatedAt'] as int? ?? 0),
-    );
-    return drafts.firstOrNull;
+      drafts.sort(
+        (a, b) => (b['updatedAt'] as int? ?? 0).compareTo(
+          a['updatedAt'] as int? ?? 0,
+        ),
+      );
+      return drafts.firstOrNull;
     } catch (_) {
       return null;
     }
@@ -295,27 +297,91 @@ class _ThoughtWallHomePreviewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.showComposer)
+        if (widget.showComposer) ...[
+          if (_focusNode.hasFocus && _controller.text.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: InkWell(
+                onTap: () => InlineListAddButton.showHelperDialog(context),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.clay.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: g.clay.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 14,
+                        color: g.clay,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Tip: Tap + or type → for plans, • for to-do',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: g.clay,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.help_outline_rounded,
+                        size: 12,
+                        color: g.clay,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             nightDecoration: BoxDecoration(
-              color: context.isDark ? g.fill : Colors.white,
+              color: context.isDark
+                  ? g.fill
+                  : (g.merlot ? MerlotPalette.surface : Colors.white),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: _focusNode.hasFocus
                     ? g.clay
-                    : (context.isDark ? g.edge : g.edge.withValues(alpha: .45)),
-                width: 1.0,
+                    : (context.isDark
+                        ? g.edge
+                        : (g.merlot
+                            ? MerlotPalette.line
+                            : g.edge.withValues(alpha: .45))),
+                width: g.merlot ? 0.75 : 1.0,
               ),
             ),
             child: Row(
               children: [
-                NoteListButton(controller: _controller, compact: true),
-                const SizedBox(width: 8),
+                InlineListAddButton(
+                  controller: _controller,
+                  focusNode: _focusNode,
+                  enabled: !_saving,
+                ),
+                const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
                     controller: _controller,
                     focusNode: _focusNode,
+                    onTap: () {
+                      try {
+                        InlineListAddButton.maybeShowFirstTimeDiscovery(
+                           context,
+                          prefs: ref.read(sharedPreferencesProvider),
+                        );
+                      } catch (_) {}
+                    },
                     cursorColor: g.clay,
                     minLines: 1,
                     maxLines: 4,
@@ -342,11 +408,9 @@ class _ThoughtWallHomePreviewState
                   tooltip: 'Send capture',
                   style: IconButton.styleFrom(
                     backgroundColor: g.clay,
-                    disabledBackgroundColor: g.clay.withValues(alpha: 0.45),
+                    disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
                     foregroundColor: Colors.white,
-                    disabledForegroundColor: Colors.white.withValues(
-                      alpha: 0.7,
-                    ),
+                    disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
                     minimumSize: const Size(44, 44),
                   ),
                   onPressed: _saving || _controller.text.trim().isEmpty
@@ -369,6 +433,7 @@ class _ThoughtWallHomePreviewState
               ],
             ),
           ),
+        ],
 
         // ── THOUGHTS MESSAGE PREVIEW (ENCLOSED CARD) ──────────────────
         recentThoughtsAsync.when(
@@ -559,9 +624,6 @@ class _ThoughtWallHomePreviewState
                               ],
                               ThoughtExcerpt(
                                 content: thought.content,
-                                onReadMore: () => context.push(
-                                  '/thought-wall?thought=${thought.id}',
-                                ),
                                 style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
                                       ? g.inkMuted

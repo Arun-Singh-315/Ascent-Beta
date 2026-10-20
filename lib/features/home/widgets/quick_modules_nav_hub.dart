@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../challenge/challenge_providers.dart';
@@ -87,10 +88,13 @@ class QuickModulesNavHub extends ConsumerWidget {
         GlassSurface(
           radius: 24,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? Colors.white
+              ? (g.merlot ? MerlotPalette.surface : Colors.white)
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
-              ? Border.all(color: g.edge.withValues(alpha: .45), width: 1)
+              ? Border.all(
+                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
+                  width: g.merlot ? 0.75 : 1,
+                )
               : null,
           padding: EdgeInsets.zero,
           child: Column(
@@ -106,12 +110,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(
                     top: AppGeometry.radiusr24,
                   ),
-                  child: AppCard(
+                  child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s16,
                       vertical: AppSpace.s13,
                     ),
-                    nightDecoration: BoxDecoration(
+                    decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
                           color: g.line,
@@ -221,192 +225,231 @@ class QuickModulesNavHub extends ConsumerWidget {
                   final stacked =
                       constraints.maxWidth < 320 ||
                       MediaQuery.textScalerOf(context).scale(14) > 18;
-                  final cellWidth = stacked
-                      ? constraints.maxWidth
-                      : constraints.maxWidth / 2;
-                  return Wrap(
-                    children: [
-                      // Cell A: Medicine
-                      SizedBox(
-                        width: cellWidth,
-                        child: _LifeGridCell(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push('/medicine');
-                          },
-                          borderRight: !stacked,
-                          borderRadius: BorderRadius.zero,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.medication_rounded,
-                                    size: 16,
-                                    color: g.inkMuted,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'Medicine',
-                                      style: AscentTextStyles.homeSecondary
-                                          .copyWith(color: g.inkSecondary)
-                                          .merge(AppTypeRoles.typeRole15),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: 16,
-                                    color: g.inkMuted,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              RichText(
-                                textScaler: MediaQuery.textScalerOf(context),
-                                text: TextSpan(
-                                  style:
-                                      AppTypography.bricolageGrotesque17W600107(
-                                        color: g.ink,
-                                      ).copyWith(fontSize: 22),
-                                  children: [
-                                    TextSpan(text: '$takenMedDoses'),
-                                    TextSpan(
-                                      text: ' of $totalMedDoses doses',
-                                      style: AppTypography.dmSans11W400108(
-                                        color: g.inkMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _NeutralProgressBar(progress: medProgress),
-                            ],
-                          ),
-                        ),
-                      ),
 
-                      // Cell B: Hydration
-                      SizedBox(
-                        width: cellWidth,
-                        child: _LifeGridCell(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push('/hydration');
-                          },
-                          borderRight: false,
-                          borderRadius: BorderRadius.zero,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                  final medicineCell = _LifeGridCell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/medicine');
+                    },
+                    borderRight: !stacked,
+                    borderRadius: BorderRadius.zero,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.medication_rounded,
+                                  size: 16,
+                                  color: g.inkMuted,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Medicine',
+                                    style: AscentTextStyles.homeSecondary
+                                        .copyWith(color: g.inkSecondary)
+                                        .merge(AppTypeRoles.typeRole15),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: g.inkMuted,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            RichText(
+                              textScaler: MediaQuery.textScalerOf(context),
+                              text: TextSpan(
+                                style:
+                                    AppTypography.bricolageGrotesque17W600107(
+                                      color: g.ink,
+                                    ).copyWith(fontSize: 22),
                                 children: [
-                                  Icon(
-                                    Icons.water_drop_rounded,
-                                    size: 16,
-                                    color: g.inkMuted,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      'Hydration',
-                                      style: AscentTextStyles.homeSecondary
-                                          .copyWith(color: g.inkSecondary)
-                                          .merge(AppTypeRoles.typeRole15),
-                                      overflow: TextOverflow.ellipsis,
+                                  TextSpan(text: '$takenMedDoses'),
+                                  TextSpan(
+                                    text: ' of $totalMedDoses doses',
+                                    style: AppTypography.dmSans11W400108(
+                                      color: g.inkMuted,
                                     ),
-                                  ),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: 16,
-                                    color: g.inkMuted,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: RichText(
-                                      textScaler: MediaQuery.textScalerOf(
-                                        context,
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 8),
+                            _NeutralProgressBar(
+                              key: const ValueKey('medicine_progress_bar'),
+                              progress: medProgress,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+
+                  final hydrationCell = _LifeGridCell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/hydration');
+                    },
+                    borderRight: false,
+                    borderRadius: BorderRadius.zero,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.water_drop_rounded,
+                                  size: 16,
+                                  color: g.inkMuted,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'Hydration',
+                                    style: AscentTextStyles.homeSecondary
+                                        .copyWith(color: g.inkSecondary)
+                                        .merge(AppTypeRoles.typeRole15),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  size: 16,
+                                  color: g.inkMuted,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: RichText(
+                                    textScaler: MediaQuery.textScalerOf(
+                                      context,
+                                    ),
+                                    text: TextSpan(
+                                      style:
+                                          AppTypography.bricolageGrotesque17W600107(
+                                            color: g.ink,
+                                          ).copyWith(fontSize: 22),
+                                      children: [
+                                        TextSpan(text: '$waterMl'),
+                                        TextSpan(
+                                          text: ' of $waterGoal mL',
+                                          style:
+                                              AppTypography.dmSans11W400108(
+                                                color: g.inkMuted,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: AppSpace.s6),
+                                // Instant 1-tap +250 mL Habit Button
+                                Material(
+                                  color: AppPalette.transparent,
+                                  child: AppTapArea(
+                                    onTap: () async {
+                                      HapticFeedback.mediumImpact();
+                                      await ref
+                                          .read(waterDaoProvider)
+                                          .addWater(250);
+                                    },
+                                    borderRadius: AppGeometry.roundedr8,
+                                    child: AppTag(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpace.s7,
+                                        vertical: AppSpace.s3,
                                       ),
-                                      text: TextSpan(
-                                        style:
-                                            AppTypography.bricolageGrotesque17W600107(
-                                              color: g.ink,
-                                            ).copyWith(fontSize: 22),
+                                      nightDecoration: BoxDecoration(
+                                        color: g.claySoft,
+                                        borderRadius: AppGeometry.roundedr8,
+                                        border: Border.all(
+                                          color: g.clay.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                          width: AppBorderScale.w1point0,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          TextSpan(text: '$waterMl'),
-                                          TextSpan(
-                                            text: ' of $waterGoal mL',
+                                          Icon(
+                                            Icons.add_rounded,
+                                            size: 12,
+                                            color: g.clay,
+                                          ),
+                                          Text(
+                                            '250',
                                             style:
-                                                AppTypography.dmSans11W400108(
-                                                  color: g.inkMuted,
+                                                AppTypography.jetBrainsMono11W7002(
+                                                  color: g.clay,
                                                 ),
                                           ),
                                         ],
                                       ),
                                     ),
                                   ),
-                                  // Instant 1-tap +250 mL Habit Button
-                                  Material(
-                                    color: AppPalette.transparent,
-                                    child: AppTapArea(
-                                      onTap: () async {
-                                        HapticFeedback.mediumImpact();
-                                        await ref
-                                            .read(waterDaoProvider)
-                                            .addWater(250);
-                                      },
-                                      borderRadius: AppGeometry.roundedr8,
-                                      child: AppTag(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpace.s7,
-                                          vertical: AppSpace.s3,
-                                        ),
-                                        nightDecoration: BoxDecoration(
-                                          color: g.claySoft,
-                                          borderRadius: AppGeometry.roundedr8,
-                                          border: Border.all(
-                                            color: g.clay.withValues(
-                                              alpha: 0.2,
-                                            ),
-                                            width: AppBorderScale.w1point0,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.add_rounded,
-                                              size: 12,
-                                              color: g.clay,
-                                            ),
-                                            Text(
-                                              '250',
-                                              style:
-                                                  AppTypography.jetBrainsMono11W7002(
-                                                    color: g.clay,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              _NeutralProgressBar(progress: waterProgress),
-                            ],
-                          ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(height: 8),
+                            _NeutralProgressBar(
+                              key: const ValueKey('hydration_progress_bar'),
+                              progress: waterProgress,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (stacked) {
+                    return Column(
+                      children: [
+                        medicineCell,
+                        AppDivider(height: 1, thickness: 1, color: g.line),
+                        hydrationCell,
+                      ],
+                    );
+                  }
+
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(child: medicineCell),
+                        Expanded(child: hydrationCell),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -487,10 +530,10 @@ class _LifeGridCell extends StatelessWidget {
       child: AppTapArea(
         onTap: onTap,
         borderRadius: borderRadius,
-        child: AppCard(
+        child: Container(
           constraints: const BoxConstraints(minHeight: 96),
           padding: const EdgeInsets.all(AppSpace.s14),
-          nightDecoration: BoxDecoration(
+          decoration: BoxDecoration(
             border: Border(
               right: borderRight
                   ? BorderSide(color: g.line, width: AppBorderScale.w1point0)
@@ -507,7 +550,7 @@ class _LifeGridCell extends StatelessWidget {
 class _NeutralProgressBar extends StatelessWidget {
   final double progress;
 
-  const _NeutralProgressBar({required this.progress});
+  const _NeutralProgressBar({super.key, required this.progress});
 
   @override
   Widget build(BuildContext context) {

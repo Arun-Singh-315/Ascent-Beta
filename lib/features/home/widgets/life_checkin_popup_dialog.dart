@@ -61,6 +61,11 @@ class _LifeCheckInPopupDialogState
   String _moneyCategory = 'Food & Groceries';
   bool _isSavingMoney = false;
 
+  // Session check-in tracking (enables entering both hydration & money)
+  int _sessionWaterMl = 0;
+  double? _sessionMoneyAmount;
+  String? _feedbackMessage;
+
   final List<String> _quickCategories = const [
     'Food & Groceries',
     'Transport',
@@ -89,25 +94,17 @@ class _LifeCheckInPopupDialogState
     await ref.read(waterDaoProvider).addWater(ml);
 
     if (!mounted) return;
-    Navigator.of(context).pop();
-
-    final g = context.glass;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.water_drop_rounded, color: g.clay, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'Hydrated! Added +$ml mL to your daily log',
-              style: AppTypeRoles.typeRole8,
-            ),
-          ],
-        ),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    setState(() {
+      _sessionWaterMl += ml;
+      _showCustomWaterInput = false;
+      _waterCustomController.clear();
+      if (_sessionMoneyAmount == null) {
+        _currentTab = LifeCheckInTab.money;
+        _feedbackMessage = '+$ml mL water logged! 💧 Now record any spending, or tap Done.';
+      } else {
+        _feedbackMessage = '+$ml mL water logged! 💧 Both recorded.';
+      }
+    });
   }
 
   Future<void> _saveMoney() async {
@@ -143,25 +140,18 @@ class _LifeCheckInPopupDialogState
 
       if (!mounted) return;
       HapticFeedback.mediumImpact();
-      Navigator.of(context).pop();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle_rounded,
-                  color: context.stateSuccess, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Logged ₹${amount.toStringAsFixed(0)} for $title',
-                style: AppTypeRoles.typeRole8,
-              ),
-            ],
-          ),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      setState(() {
+        _isSavingMoney = false;
+        _sessionMoneyAmount = amount;
+        _amountController.clear();
+        _moneyTitleController.clear();
+        if (_sessionWaterMl == 0) {
+          _currentTab = LifeCheckInTab.hydration;
+          _feedbackMessage = '₹${amount.toStringAsFixed(0)} logged! 💰 Now log hydration, or tap Done.';
+        } else {
+          _feedbackMessage = '₹${amount.toStringAsFixed(0)} logged! ✨ Both recorded.';
+        }
+      });
     } catch (_) {
       if (mounted) {
         setState(() => _isSavingMoney = false);
@@ -311,9 +301,12 @@ class _LifeCheckInPopupDialogState
                         children: [
                           Expanded(
                             child: _CheckInTabButton(
-                              label: 'Hydration',
+                              label: _sessionWaterMl > 0
+                                  ? 'Water (+${_sessionWaterMl}mL)'
+                                  : 'Hydration',
                               icon: Icons.water_drop_rounded,
                               isSelected: isWater,
+                              isLogged: _sessionWaterMl > 0,
                               activeColor: AscentColors.waterPrimary,
                               onTap: () {
                                 HapticFeedback.selectionClick();
@@ -325,9 +318,12 @@ class _LifeCheckInPopupDialogState
                           const SizedBox(width: 4),
                           Expanded(
                             child: _CheckInTabButton(
-                              label: 'Money',
+                              label: _sessionMoneyAmount != null
+                                  ? 'Money (₹${_sessionMoneyAmount!.toStringAsFixed(0)})'
+                                  : 'Money',
                               icon: Icons.currency_rupee_rounded,
                               isSelected: !isWater,
+                              isLogged: _sessionMoneyAmount != null,
                               activeColor: AscentColors.financePrimary,
                               onTap: () {
                                 HapticFeedback.selectionClick();
@@ -339,7 +335,45 @@ class _LifeCheckInPopupDialogState
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
+
+                    // Inline Feedback Banner
+                    if (_feedbackMessage != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFF10B981),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _feedbackMessage!,
+                                style: TextStyle(
+                                  color: context.textPrimary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                     // Active Tab Content
                     if (isWater)
@@ -349,20 +383,63 @@ class _LifeCheckInPopupDialogState
 
                     const SizedBox(height: 14),
 
-                    // Maybe later button
-                    TextButton(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        Navigator.of(context).pop();
-                      },
-                      child: Text(
-                        'Maybe later',
-                        style: AscentTextStyles.homeSecondary.copyWith(
-                          color: context.textMuted,
-                          fontSize: 13,
+                    // Bottom Action Button (Done / Maybe Later)
+                    if (_sessionWaterMl > 0 || _sessionMoneyAmount != null) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.of(context).pop();
+                          },
+                          icon: const Icon(Icons.check_rounded, size: 18),
+                          label: Text(
+                            (_sessionWaterMl > 0 && _sessionMoneyAmount != null)
+                                ? 'All Done for Today ✨'
+                                : 'Done with check-in',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: g.clay,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'Close',
+                          style: AscentTextStyles.homeSecondary.copyWith(
+                            color: context.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ] else
+                      TextButton(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.of(context).pop();
+                        },
+                        child: Text(
+                          'Maybe later',
+                          style: AscentTextStyles.homeSecondary.copyWith(
+                            color: context.textMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -765,6 +842,7 @@ class _CheckInTabButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final bool isSelected;
+  final bool isLogged;
   final Color activeColor;
   final VoidCallback onTap;
 
@@ -772,6 +850,7 @@ class _CheckInTabButton extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.isSelected,
+    this.isLogged = false,
     required this.activeColor,
     required this.onTap,
   });
@@ -808,6 +887,14 @@ class _CheckInTabButton extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
+              if (isLogged) ...[
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.check_circle_rounded,
+                  size: 14,
+                  color: isSelected ? Colors.white : const Color(0xFF10B981),
+                ),
+              ],
             ],
           ),
         ),
@@ -831,36 +918,80 @@ class _QuickWaterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark
+        ? const Color(0xFF0369A1).withValues(alpha: 0.16)
+        : const Color(0xFFF0F9FF);
+    final borderColor = isDark
+        ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
+        : const Color(0xFFBAE6FD);
+    final iconBg = isDark
+        ? const Color(0xFF38BDF8).withValues(alpha: 0.2)
+        : const Color(0xFFE0F2FE);
+    final iconColor = isDark
+        ? const Color(0xFF38BDF8)
+        : const Color(0xFF0284C7);
+
     return AppTapArea(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
-          color: context.bgBase,
-          borderRadius: BorderRadius.circular(14),
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: AscentColors.waterPrimary.withValues(alpha: 0.25),
+            color: borderColor,
+            width: 1,
           ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 22, color: AscentColors.waterPrimary),
-            const SizedBox(height: 6),
-            Text(
-              '+$amountMl mL',
-              style: TextStyle(
-                color: context.textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
-              ),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : const Color(0xFF0284C7))
+                  .withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: context.textMuted,
-                fontSize: 10,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 19, color: iconColor),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '+$amountMl mL',
+                      style: AppTypography.jetBrainsMono13W70066(
+                        color: context.textPrimary,
+                      ).copyWith(fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: context.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

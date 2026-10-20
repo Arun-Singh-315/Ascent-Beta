@@ -234,7 +234,7 @@ void main() {
   });
 
   testWidgets(
-    'Home reminders hide when empty and navigate without mutation controls',
+    'Home reminders hide when empty and tapping the title navigates without mutation',
     (tester) async {
       var opened = false;
       var mutated = false;
@@ -263,7 +263,7 @@ void main() {
         () => db.reminderDao.getReminderById(id!),
       );
       await tester.pumpWidget(build([reminder!]));
-      expect(find.byType(Dismissible), findsNothing);
+      expect(find.byType(Dismissible), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsNothing);
       await tester.tap(find.text('Read tonight'));
       expect(opened, isTrue);

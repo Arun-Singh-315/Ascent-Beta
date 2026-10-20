@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/merlot_palette.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/time_tracking_provider.dart';
 import '../../../shared/widgets/skeleton_shimmer.dart';
@@ -155,10 +157,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           radius: 22,
           enableBlur: false,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? Colors.white
+              ? (g.merlot ? MerlotPalette.surface : Colors.white)
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
-              ? Border.all(color: g.edge.withValues(alpha: .45), width: 1)
+              ? Border.all(
+                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
+                  width: g.merlot ? 0.75 : 1,
+                )
               : null,
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -387,6 +392,34 @@ class _HubTabPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Light, calming tint for selected tab that avoids harsh solid dark fills
+    final selectedBg = isDark
+        ? (g.frozen
+            ? FrozenPalette.darkTint
+            : g.clay.withValues(alpha: 0.22))
+        : (g.merlot
+            ? MerlotPalette.tint
+            : (g.frozen
+                ? FrozenPalette.tint
+                : g.claySoft));
+    final selectedText = isDark
+        ? (g.frozen ? FrozenPalette.darkAction : Colors.white)
+        : (g.merlot
+            ? MerlotPalette.action
+            : (g.frozen ? FrozenPalette.action : g.clay));
+    final selectedBorder = isDark
+        ? (g.frozen
+            ? Border.all(color: FrozenPalette.darkLine, width: 1)
+            : Border.all(color: g.clay.withValues(alpha: 0.35), width: 1))
+        : (g.merlot
+            ? Border.all(color: MerlotPalette.line, width: 0.75)
+            : (g.frozen
+                ? Border.all(color: FrozenPalette.line, width: 1)
+                : Border.all(color: g.clay.withValues(alpha: 0.25), width: 1)));
+
     return AppTapArea(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -394,8 +427,9 @@ class _HubTabPill extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? activeColor : Colors.transparent,
+          color: isSelected ? selectedBg : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
+          border: isSelected ? selectedBorder : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -403,7 +437,7 @@ class _HubTabPill extends StatelessWidget {
             Text(
               label,
               style: AscentTextStyles.homeSecondary.copyWith(
-                color: isSelected ? activeTextColor : inactiveTextColor,
+                color: isSelected ? selectedText : inactiveTextColor,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 12,
               ),
@@ -414,14 +448,16 @@ class _HubTabPill extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withValues(alpha: 0.25)
+                      ? (isDark
+                          ? Colors.white.withValues(alpha: 0.20)
+                          : selectedText.withValues(alpha: 0.14))
                       : inactiveTextColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    color: isSelected ? activeTextColor : inactiveTextColor,
+                    color: isSelected ? selectedText : inactiveTextColor,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),
