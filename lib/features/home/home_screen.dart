@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -24,6 +26,8 @@ import '../../shared/widgets/skeleton_shimmer.dart';
 import '../reminders/widgets/in_app_reminder_dialog.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
+import 'widgets/daily_briefing_card.dart';
+import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
@@ -65,13 +69,20 @@ class _HomeContent extends ConsumerStatefulWidget {
 /// to the Home tab.
 bool _welcomeBackShownThisLaunch = false;
 
-class _HomeScreenState extends ConsumerState<_HomeContent> {
+class _HomeScreenState extends ConsumerState<_HomeContent>
+    with WidgetsBindingObserver {
+  DateTime _briefingDate = briefingDay(DateTime.now());
+  bool _openingBriefing = false;
+  bool _startupComplete = false;
+  Timer? _dayTimer;
   bool _hasCheckedOverdueReminders = false;
   int? _welcomeBackDays;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scheduleDayChange();
     final daysAway = ref.read(daysSinceLastOpenProvider);
     if (!_welcomeBackShownThisLaunch && daysAway >= 3 && daysAway < 999) {
       _welcomeBackShownThisLaunch = true;
@@ -94,18 +105,80 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
         await _checkAndPromptOverdueReminder();
       }
 
+      if (!mounted) return;
+      final profile = await ref
+          .read(userProfileStreamProvider.future)
+          .onError((_, _) => null);
+      if (!mounted || !canEnterWorkspace(profile, preferences)) return;
+
       final tutorialDismissed =
           (preferences.getBool(DayOneTutorialDialog.prefKey) ?? false) ||
           (preferences.getBool('ascent_quick_start_v1') ?? false);
       if (!tutorialDismissed && mounted) {
         preferences.setBool(DayOneTutorialDialog.prefKey, true);
-        final profile = ref.read(userProfileStreamProvider).value;
-        DayOneTutorialDialog.show(
-          context,
-          userName: profile?.name ?? '',
-        );
+        await DayOneTutorialDialog.show(context, userName: profile?.name ?? '');
       }
+      _startupComplete = true;
+      await _maybeOpenBriefing();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _dayTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshBriefingDay();
+      _maybeOpenBriefing();
+    }
+  }
+
+  void _refreshBriefingDay() {
+    final day = briefingDay(DateTime.now());
+    if (mounted && day != _briefingDate) {
+      setState(() => _briefingDate = day);
+    }
+    _scheduleDayChange();
+  }
+
+  void _scheduleDayChange() {
+    _dayTimer?.cancel();
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    _dayTimer = Timer(tomorrow.difference(now), () {
+      _refreshBriefingDay();
+      _maybeOpenBriefing();
+    });
+  }
+
+  Future<void> _maybeOpenBriefing() async {
+    if (!mounted ||
+        !_startupComplete ||
+        !ref.read(dailyBriefingAutoOpenProvider) ||
+        _openingBriefing ||
+        (widget.notificationUri?.hasQuery ?? false) ||
+        ModalRoute.of(context)?.isCurrent != true) {
+      return;
+    }
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
+    final preferences = ref.read(sharedPreferencesProvider);
+    final key = _briefingDate.toIso8601String();
+    if (preferences.getString('ascent_daily_briefing_seen_v1') == key) return;
+    _openingBriefing = true;
+    try {
+      // Mark it seen when presented, so dismissing it respects the user's choice.
+      final sheet = DailyBriefingCard.show(context, _briefingDate);
+      await preferences.setString('ascent_daily_briefing_seen_v1', key);
+      await sheet;
+    } finally {
+      _openingBriefing = false;
+    }
   }
 
   Future<bool> _checkAndPromptOverdueReminder() async {
@@ -213,6 +286,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                   children: [
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
+                    DailyBriefingCard(day: _briefingDate),
 
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
@@ -336,7 +410,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent> {
                 Icon(
                   Icons.auto_awesome_rounded,
                   size: 18,
-                  color: g.merlot && !isDark ? MerlotPalette.antiqueGold : Colors.white,
+                  color: g.merlot && !isDark
+                      ? MerlotPalette.antiqueGold
+                      : Colors.white,
                 ),
                 const SizedBox(width: 8),
                 Text(

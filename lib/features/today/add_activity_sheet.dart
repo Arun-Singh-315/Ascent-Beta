@@ -689,7 +689,10 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                   .merge(AppTypeRoles.typeRole8),
                             ),
                             const SizedBox(height: 6),
-                            Row(
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 AppPill.choice(
                                   label: const Text('Today'),
@@ -705,7 +708,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     });
                                   },
                                 ),
-                                const SizedBox(width: 6),
                                 AppPill.choice(
                                   label: const Text('Tomorrow'),
                                   selected: DateUtils.isSameDay(
@@ -722,7 +724,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                                     });
                                   },
                                 ),
-                                const SizedBox(width: 6),
                                 IconButton(
                                   icon: const Icon(
                                     Icons.calendar_today_rounded,
