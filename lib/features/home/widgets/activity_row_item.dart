@@ -127,7 +127,7 @@ class ActivityRowItem extends ConsumerWidget {
                     : (context.isDark
                           ? (g.merlot ? MerlotPalette.darkElevated : g.fill)
                           : (g.merlot
-                                ? const Color(0xFFFBF8F4)
+                                ? MerlotPalette.pillSoft
                                 : const Color(0xFFFAFAFA)))),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
@@ -138,7 +138,7 @@ class ActivityRowItem extends ConsumerWidget {
                       : (context.isDark
                             ? (g.merlot ? MerlotPalette.darkLine : g.edge)
                             : (g.merlot
-                                  ? const Color(0x1F4E1D24)
+                                  ? MerlotPalette.lineSubtle
                                   : g.edge.withValues(alpha: 0.35)))),
             width: 0.75,
           ),

@@ -471,14 +471,18 @@ class _ThoughtWallHomePreviewState
                 enableBlur: false,
                 fillColor: context.isDark
                     ? null
-                    : (g.frozen
-                          ? FrozenPalette.surface.withValues(alpha: 0.92)
-                          : AscentColors.bgSurface),
+                    : (g.merlot
+                          ? MerlotPalette.surface
+                          : (g.frozen
+                                ? FrozenPalette.surface.withValues(alpha: 0.92)
+                                : AscentColors.bgSurface)),
                 customBorder: context.isDark
                     ? null
                     : Border.all(
-                        color: g.edge.withValues(alpha: 0.45),
-                        width: 1.0,
+                        color: g.merlot
+                            ? MerlotPalette.line
+                            : g.edge.withValues(alpha: 0.45),
+                        width: g.merlot ? 0.75 : 1.0,
                       ),
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -537,12 +541,18 @@ class _ThoughtWallHomePreviewState
                           enableBlur: false,
                           fillColor: context.isDark
                               ? g.fill.withValues(alpha: g.fill.a + 0.04)
-                              : AscentColors.bgSurface,
+                              : (g.merlot
+                                    ? MerlotPalette.pillSoft
+                                    : (g.frozen
+                                          ? FrozenPalette.surface.withValues(alpha: 0.92)
+                                          : AscentColors.bgSurface)),
                           customBorder: context.isDark
                               ? null
                               : Border.all(
-                                  color: g.edge.withValues(alpha: .45),
-                                  width: 1.0,
+                                  color: g.merlot
+                                      ? MerlotPalette.lineSubtle
+                                      : g.edge.withValues(alpha: .45),
+                                  width: g.merlot ? 0.75 : 1.0,
                                 ),
                           radius: 16,
                           borderRadius: BorderRadius.only(
