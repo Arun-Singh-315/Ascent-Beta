@@ -24,9 +24,10 @@ void main() {
       expect(MerlotPalette.terracotta, const Color(0xFFA04020));
       expect(MerlotPalette.success, const Color(0xFF166534));
       expect(MerlotPalette.ink, const Color(0xFF260F14));
+      expect(MerlotPalette.surface, const Color(0xFFF8F4EC));
     });
 
-    test('verifies WCAG AAA contrast ratio for primary ink on canvas', () {
+    test('verifies WCAG AAA contrast ratio for primary ink on canvas and surface', () {
       double luminance(Color c) {
         double channel(double v) =>
             v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
@@ -38,10 +39,13 @@ void main() {
 
       final lInk = luminance(MerlotPalette.ink);
       final lCanvas = luminance(MerlotPalette.canvas);
-      final contrast = (lCanvas + 0.05) / (lInk + 0.05);
+      final lSurface = luminance(MerlotPalette.surface);
+      final contrastCanvas = (lCanvas + 0.05) / (lInk + 0.05);
+      final contrastSurface = (lSurface + 0.05) / (lInk + 0.05);
 
       // Contrast must comfortably exceed WCAG AAA threshold of 7.0:1
-      expect(contrast, greaterThan(7.0));
+      expect(contrastCanvas, greaterThan(7.0));
+      expect(contrastSurface, greaterThan(7.0));
     });
 
     test('verifies WCAG AAA contrast for white text on primary button', () {

@@ -256,9 +256,16 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       vertical: AppSpace.s12,
                     ),
                     decoration: BoxDecoration(
-                      color: g.fill,
+                      color: g.merlot
+                          ? (Theme.of(context).brightness == Brightness.dark
+                              ? g.fill
+                              : MerlotPalette.pillSoft)
+                          : g.fill,
                       borderRadius: AppGeometry.roundedr16,
-                      border: Border.all(color: g.edge),
+                      border: Border.all(
+                        color: g.merlot ? MerlotPalette.lineSubtle : g.edge,
+                        width: g.merlot ? 0.75 : 1.0,
+                      ),
                     ),
                     child: Row(
                       children: [

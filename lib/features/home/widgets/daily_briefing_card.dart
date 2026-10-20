@@ -630,7 +630,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 label: Text('$mins min'),
                 selected: isSel,
                 selectedColor: context.accentPrimary.withValues(alpha: 0.15),
-                backgroundColor: isDark ? g.fill : Colors.white,
+                backgroundColor: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
                 side: BorderSide(
                   color: isSel ? context.accentPrimary : g.edge.withValues(alpha: 0.4),
                 ),

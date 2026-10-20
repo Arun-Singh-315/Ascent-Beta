@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../core/streak/study_streak_models.dart';
 
 class StudyStreakMeterCard extends StatelessWidget {
@@ -81,45 +82,57 @@ class StudyStreakMeterCard extends StatelessWidget {
       onTap: onTap ?? () => _showExplanation(context),
       child: Container(
         decoration: BoxDecoration(
-          color: g.frozen
-              ? (isDark
-                  ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
-                  : FrozenPalette.surface.withValues(alpha: 0.94))
-              : (isDark ? g.fill : Colors.white),
+          color: g.merlot
+              ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
+              : (g.frozen
+                  ? (isDark
+                      ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
+                      : FrozenPalette.surface.withValues(alpha: 0.94))
+                  : (isDark ? g.fill : Colors.white)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: g.frozen
-                ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                : (status.isRescueMode
-                    ? AppPalette.amber.withValues(alpha: 0.35)
-                    : (status.isUrgent
-                        ? AppPalette.redAccent.withValues(alpha: 0.35)
-                        : (isDark ? g.edge : g.edge.withValues(alpha: 0.45)))),
-            width: AppBorderScale.w1,
+            color: g.merlot
+                ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
+                : (g.frozen
+                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                    : (status.isRescueMode
+                        ? AppPalette.amber.withValues(alpha: 0.35)
+                        : (status.isUrgent
+                            ? AppPalette.redAccent.withValues(alpha: 0.35)
+                            : (isDark ? g.edge : g.edge.withValues(alpha: 0.45))))),
+            width: g.merlot ? 0.75 : AppBorderScale.w1,
           ),
-          boxShadow: g.frozen
+          boxShadow: g.merlot
               ? [
                   BoxShadow(
-                    color: (isDark ? Colors.black : FrozenPalette.action)
-                        .withValues(alpha: 0.08),
+                    color: MerlotPalette.shadowAmbient,
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
                 ]
-              : (isDark
-                  ? null
-                  : [
+              : (g.frozen
+                  ? [
                       BoxShadow(
-                        color: const Color.fromRGBO(15, 23, 42, 0.05),
+                        color: (isDark ? Colors.black : FrozenPalette.action)
+                            .withValues(alpha: 0.08),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
-                      BoxShadow(
-                        color: const Color.fromRGBO(15, 23, 42, 0.02),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ]),
+                    ]
+                  : (isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: const Color.fromRGBO(15, 23, 42, 0.05),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                          BoxShadow(
+                            color: const Color.fromRGBO(15, 23, 42, 0.02),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1),
+                          ),
+                        ])),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
