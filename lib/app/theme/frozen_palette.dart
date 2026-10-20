@@ -12,14 +12,23 @@ class FrozenPalette {
   /// Canvas: Scaffold background
   static const canvas = Color(0xFFEEF4F9);
 
-  /// Surface: Cards, bottom nav, containers
-  static const surface = Color(0xFFF7FAFD);
+  /// Surface: Cards, bottom nav, containers (frosted arctic porcelain)
+  static const surface = Color(0xFFF3F7FB);
+
+  /// Pill Soft: Inner thought bubbles, option chips, input field backgrounds
+  static const pillSoft = Color(0xFFEAF2F8);
 
   /// Elevated: Sheets, dialogs, modals
   static const elevated = Color(0xFFE1ECF5);
 
-  /// Line: 1px border on surfaces and containers
-  static const line = Color(0xFFBFD4E6);
+  /// Line: Hairline border on surfaces and containers
+  static const line = Color(0xFFBACFE2);
+
+  /// Line Subtle: Subtle hairline border on inner bubbles and nested items
+  static const lineSubtle = Color(0xFFD2E3F1);
+
+  /// Shadow Ambient: Atmospheric drop shadow for cards and bubbles
+  static const shadowAmbient = Color.fromRGBO(20, 50, 80, 0.055);
 
   /// Action: Buttons, active nav, FAB, selected tab, interactive icons
   static const action = Color(0xFF1D64B4);
@@ -65,6 +74,7 @@ class FrozenPalette {
   static const darkSurface = Color(0xFF162338);
   static const darkElevated = Color(0xFF1C2C45);
   static const darkLine = Color(0xFF2A3F5E);
+  static const darkLineSubtle = Color(0xFF1E314D);
   static const darkAction = Color(0xFF5EA0F0);
   static const darkActionBright = Color(0xFF7DB4F5);
   static const darkActionPressed = Color(0xFF4A8BDD);

@@ -85,9 +85,7 @@ class StudyStreakMeterCard extends StatelessWidget {
           color: g.merlot
               ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
               : (g.frozen
-                  ? (isDark
-                      ? FrozenPalette.darkSurface.withValues(alpha: 0.94)
-                      : FrozenPalette.surface.withValues(alpha: 0.94))
+                  ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
                   : (isDark ? g.fill : Colors.white)),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
@@ -100,7 +98,7 @@ class StudyStreakMeterCard extends StatelessWidget {
                         : (status.isUrgent
                             ? AppPalette.redAccent.withValues(alpha: 0.35)
                             : (isDark ? g.edge : g.edge.withValues(alpha: 0.45))))),
-            width: g.merlot ? 0.75 : AppBorderScale.w1,
+            width: (g.merlot || g.frozen) ? 0.75 : AppBorderScale.w1,
           ),
           boxShadow: g.merlot
               ? [
@@ -113,8 +111,9 @@ class StudyStreakMeterCard extends StatelessWidget {
               : (g.frozen
                   ? [
                       BoxShadow(
-                        color: (isDark ? Colors.black : FrozenPalette.action)
-                            .withValues(alpha: 0.08),
+                        color: isDark
+                            ? Colors.black.withValues(alpha: 0.35)
+                            : FrozenPalette.shadowAmbient,
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),

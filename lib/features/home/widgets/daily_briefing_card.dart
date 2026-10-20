@@ -31,7 +31,7 @@ class DailyBriefingCard extends ConsumerWidget {
         context: context,
         barrierDismissible: true,
         barrierLabel: 'Dismiss daily briefing',
-        barrierColor: Colors.black.withValues(alpha: 0.65),
+        barrierColor: Colors.black.withValues(alpha: 0.22),
         transitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (dialogContext, animation, secondaryAnimation) {
           final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
@@ -48,15 +48,25 @@ class DailyBriefingCard extends ConsumerWidget {
                   color: isDark
                       ? dialogContext.bgBase
                       : (g.merlot
-                          ? MerlotPalette.canvas
-                          : (g.frozen ? FrozenPalette.canvas : dialogContext.bgBase)),
-                  elevation: 16,
-                  shadowColor: Colors.black.withValues(alpha: isDark ? 0.5 : 0.16),
+                          ? MerlotPalette.surface
+                          : (g.frozen ? FrozenPalette.surface : dialogContext.bgBase)),
+                  elevation: 10,
+                  shadowColor: isDark
+                      ? Colors.black.withValues(alpha: 0.40)
+                      : (g.merlot
+                          ? MerlotPalette.shadowAmbient
+                          : (g.frozen
+                              ? FrozenPalette.shadowAmbient
+                              : Colors.black.withValues(alpha: 0.08))),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                     side: BorderSide(
-                      color: g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
-                      width: 1.0,
+                      color: g.merlot
+                          ? MerlotPalette.line
+                          : (g.frozen
+                              ? FrozenPalette.line
+                              : g.edge.withValues(alpha: isDark ? 0.35 : 0.45)),
+                      width: 0.75,
                     ),
                   ),
                   child: ClipRRect(
@@ -405,16 +415,64 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Friendly Companion Welcome
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.pillSoft
+                    : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF1F5F9))),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: g.merlot
+                  ? MerlotPalette.lineSubtle
+                  : (g.frozen ? FrozenPalette.lineSubtle : g.edge.withValues(alpha: 0.35)),
+              width: 0.75,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.wb_sunny_rounded, size: 18, color: g.clay),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Good morning! Let’s spend 60 seconds setting up your day together so I know what to keep you focused on.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: g.ink,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
         // Yesterday Review Card
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
+            color: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
-              width: 1.0,
+              color: g.merlot
+                  ? MerlotPalette.line
+                  : (g.frozen
+                      ? FrozenPalette.line
+                      : g.edge.withValues(alpha: isDark ? 0.35 : 0.65)),
+              width: 0.75,
             ),
           ),
           child: Column(
@@ -459,17 +517,25 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
         // Streak & Momentum Status
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
+            color: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
-              width: 1.0,
+              color: g.merlot
+                  ? MerlotPalette.line
+                  : (g.frozen
+                      ? FrozenPalette.line
+                      : g.edge.withValues(alpha: isDark ? 0.35 : 0.65)),
+              width: 0.75,
             ),
           ),
           child: Row(
@@ -492,18 +558,25 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 14),
 
-        // Quick Primary Actions
+        // Primary Companion Button
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: () => setState(() => _currentStep = 1),
+            icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+            label: const Text('Start Today’s Plan'),
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Secondary structured links
         Wrap(
           spacing: 8,
-          runSpacing: 8,
+          runSpacing: 6,
           children: [
-            FilledButton.icon(
-              onPressed: () => setState(() => _currentStep = 1),
-              icon: const Icon(Icons.arrow_forward_rounded, size: 16),
-              label: const Text('Glide to Today’s Plan'),
-            ),
             OutlinedButton.icon(
               onPressed: () async {
                 final navigator = Navigator.of(context);
@@ -545,6 +618,46 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Companion Prompt
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.pillSoft
+                    : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF1F5F9))),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: g.merlot
+                  ? MerlotPalette.lineSubtle
+                  : (g.frozen ? FrozenPalette.lineSubtle : g.edge.withValues(alpha: 0.35)),
+              width: 0.75,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.flag_rounded, size: 18, color: g.clay),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'What is your main priority today? Tell me what to schedule so I can remind you and keep you accountable.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: g.ink,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
         Text(
           'Feed Today’s Focus',
           style: TextStyle(
@@ -553,29 +666,44 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
             color: g.ink,
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Queue your main task, hydrate, or capture an intention in one place.',
-          style: TextStyle(fontSize: 12, color: g.inkMuted),
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
 
         // Inline Priority Task Input
         TextField(
           controller: _taskTitleController,
           decoration: InputDecoration(
             hintText: 'e.g., Complete System Design, Study Trees',
-            hintStyle: TextStyle(color: g.inkMuted.withValues(alpha: 0.6), fontSize: 13),
+            hintStyle: TextStyle(
+              color: g.inkMuted.withValues(alpha: 0.6),
+              fontSize: 13,
+            ),
             filled: true,
-            fillColor: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            fillColor: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: g.edge.withValues(alpha: 0.5)),
+              borderSide: BorderSide(
+                color: g.merlot
+                    ? MerlotPalette.lineSubtle
+                    : (g.frozen ? FrozenPalette.lineSubtle : g.edge.withValues(alpha: 0.5)),
+                width: 0.75,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: g.edge.withValues(alpha: 0.5)),
+              borderSide: BorderSide(
+                color: g.merlot
+                    ? MerlotPalette.lineSubtle
+                    : (g.frozen ? FrozenPalette.lineSubtle : g.edge.withValues(alpha: 0.5)),
+                width: 0.75,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -586,7 +714,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
 
         const SizedBox(height: 10),
 
-        // Activity Kind Chips (Compact Option Pills - Theme Matching)
+        // Activity Kind Chips
         Row(
           children: [
             _buildTypeChip(
@@ -630,9 +758,18 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 label: Text('$mins min'),
                 selected: isSel,
                 selectedColor: context.accentPrimary.withValues(alpha: 0.15),
-                backgroundColor: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
+                backgroundColor: isDark
+                    ? g.fill
+                    : (g.merlot
+                        ? MerlotPalette.surface
+                        : (g.frozen ? FrozenPalette.surface : Colors.white)),
                 side: BorderSide(
-                  color: isSel ? context.accentPrimary : g.edge.withValues(alpha: 0.4),
+                  color: isSel
+                      ? context.accentPrimary
+                      : (g.merlot
+                          ? MerlotPalette.lineSubtle
+                          : (g.frozen ? FrozenPalette.lineSubtle : g.edge.withValues(alpha: 0.4))),
+                  width: 0.75,
                 ),
                 labelStyle: TextStyle(
                   fontSize: 11,
@@ -647,7 +784,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
 
         const SizedBox(height: 12),
 
-        // Action to save quick task (Retains 'Plan one small task' for test compatibility)
+        // Action to save quick task
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
@@ -655,7 +792,6 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
               if (_taskTitleController.text.trim().isNotEmpty) {
                 await _saveQuickTask();
               } else {
-                // If text empty, open full activity composer
                 final navigator = Navigator.of(context);
                 final rootContext = navigator.context;
                 if (widget.inSheet) navigator.pop();
@@ -669,7 +805,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
 
         const SizedBox(height: 12),
 
-        // One-Tap Quick Feeders (Hydration + Thought)
+        // Quick log water & thought
         Row(
           children: [
             Expanded(
@@ -711,7 +847,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 child: TextField(
                   controller: _thoughtController,
                   decoration: InputDecoration(
-                    hintText: 'Note or reflection...',
+                    hintText: 'Morning thought or intention...',
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -754,15 +890,63 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Companion Prompt
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.pillSoft
+                    : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF1F5F9))),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: g.merlot
+                  ? MerlotPalette.lineSubtle
+                  : (g.frozen ? FrozenPalette.lineSubtle : g.edge.withValues(alpha: 0.35)),
+              width: 0.75,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.bolt_rounded, size: 18, color: g.clay),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'You’re all set and accompanied for today! I will alert you and track your progress.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    color: g.ink,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
+            color: isDark
+                ? g.fill
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
-              width: 1.0,
+              color: g.merlot
+                  ? MerlotPalette.line
+                  : (g.frozen
+                      ? FrozenPalette.line
+                      : g.edge.withValues(alpha: isDark ? 0.35 : 0.65)),
+              width: 0.75,
             ),
           ),
           child: Column(
@@ -864,7 +1048,11 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark ? context.accentPrimary.withValues(alpha: 0.85) : context.accentPrimary)
-                : (isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white)),
+                : (isDark
+                    ? g.fill
+                    : (g.merlot
+                        ? MerlotPalette.surface
+                        : (g.frozen ? FrozenPalette.surface : Colors.white))),
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected

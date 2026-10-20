@@ -280,8 +280,10 @@ class AscentTheme {
               : BorderSide(
                   color: isMerlotLinen
                       ? (isDark ? AscentColors.dividerDark : MerlotPalette.line)
-                      : divider,
-                  width: (isNordicSky || isMerlotLinen) ? 1.0 : 0.8,
+                      : isNordicSky
+                          ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                          : divider,
+                  width: (isNordicSky || isMerlotLinen) ? 0.75 : 0.8,
                 ),
         ),
         margin: EdgeInsets.zero,

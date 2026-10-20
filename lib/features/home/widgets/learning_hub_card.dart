@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -74,12 +75,22 @@ class LearningHubCard extends ConsumerWidget {
         GlassSurface(
           radius: 22,
           enableBlur: false,
-          fillColor: dark ? null : (g.merlot ? MerlotPalette.surface : Colors.white),
+          fillColor: dark
+              ? null
+              : (g.merlot
+                  ? MerlotPalette.surface
+                  : (g.frozen
+                      ? FrozenPalette.surface
+                      : Colors.white)),
           customBorder: dark
               ? null
               : Border.all(
-                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
-                  width: g.merlot ? 0.75 : 1,
+                  color: g.merlot
+                      ? MerlotPalette.line
+                      : (g.frozen
+                          ? FrozenPalette.line
+                          : g.edge.withValues(alpha: .45)),
+                  width: (g.merlot || g.frozen) ? 0.75 : 1,
                 ),
           padding: const EdgeInsets.all(16),
           child: Column(

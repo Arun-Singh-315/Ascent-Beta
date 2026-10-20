@@ -349,7 +349,11 @@ class _ThoughtWallHomePreviewState
             nightDecoration: BoxDecoration(
               color: context.isDark
                   ? g.fill
-                  : (g.merlot ? MerlotPalette.surface : Colors.white),
+                  : (g.merlot
+                      ? MerlotPalette.surface
+                      : (g.frozen
+                          ? FrozenPalette.surface
+                          : Colors.white)),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: _focusNode.hasFocus
@@ -358,8 +362,10 @@ class _ThoughtWallHomePreviewState
                         ? g.edge
                         : (g.merlot
                             ? MerlotPalette.line
-                            : g.edge.withValues(alpha: .45))),
-                width: g.merlot ? 0.75 : 1.0,
+                            : (g.frozen
+                                ? FrozenPalette.line
+                                : g.edge.withValues(alpha: .45)))),
+                width: (g.merlot || g.frozen) ? 0.75 : 1.0,
               ),
             ),
             child: Row(
@@ -474,15 +480,17 @@ class _ThoughtWallHomePreviewState
                     : (g.merlot
                           ? MerlotPalette.surface
                           : (g.frozen
-                                ? FrozenPalette.surface.withValues(alpha: 0.92)
+                                ? FrozenPalette.surface
                                 : AscentColors.bgSurface)),
                 customBorder: context.isDark
                     ? null
                     : Border.all(
                         color: g.merlot
                             ? MerlotPalette.line
-                            : g.edge.withValues(alpha: 0.45),
-                        width: g.merlot ? 0.75 : 1.0,
+                            : (g.frozen
+                                ? FrozenPalette.line
+                                : g.edge.withValues(alpha: 0.45)),
+                        width: (g.merlot || g.frozen) ? 0.75 : 1.0,
                       ),
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -544,22 +552,24 @@ class _ThoughtWallHomePreviewState
                               : (g.merlot
                                     ? MerlotPalette.pillSoft
                                     : (g.frozen
-                                          ? FrozenPalette.surface.withValues(alpha: 0.92)
+                                          ? FrozenPalette.pillSoft
                                           : AscentColors.bgSurface)),
                           customBorder: context.isDark
                               ? null
                               : Border.all(
                                   color: g.merlot
                                       ? MerlotPalette.lineSubtle
-                                      : g.edge.withValues(alpha: .45),
-                                  width: g.merlot ? 0.75 : 1.0,
+                                      : (g.frozen
+                                            ? FrozenPalette.lineSubtle
+                                            : g.edge.withValues(alpha: .45)),
+                                  width: (g.merlot || g.frozen) ? 0.75 : 1.0,
                                 ),
-                          radius: 16,
+                          radius: 18,
                           borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isRight ? 16 : 4),
-                            bottomRight: Radius.circular(isRight ? 4 : 16),
+                            topLeft: const Radius.circular(18),
+                            topRight: const Radius.circular(18),
+                            bottomLeft: Radius.circular(isRight ? 18 : 6),
+                            bottomRight: Radius.circular(isRight ? 6 : 18),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpace.s16,

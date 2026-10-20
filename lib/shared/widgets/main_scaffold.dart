@@ -172,7 +172,7 @@ class _AscentBottomNav extends StatelessWidget {
             : FrozenPalette.surface.withValues(alpha: 0.96))
         : context.bgSurface;
     final divider = isFrozen
-        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        ? (isDark ? FrozenPalette.darkLineSubtle : FrozenPalette.lineSubtle)
         : context.divider;
     final inactiveColor = isFrozen
         ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
@@ -190,7 +190,7 @@ class _AscentBottomNav extends StatelessWidget {
         border: Border(
           top: BorderSide(
             color: divider,
-            width: isFrozen ? 1.0 : AppBorderScale.w0point8,
+            width: isFrozen ? 0.75 : AppBorderScale.w0point8,
           ),
         ),
       ),

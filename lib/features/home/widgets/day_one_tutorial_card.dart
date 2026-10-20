@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -314,16 +315,24 @@ class DayOneTutorialDialog extends ConsumerWidget {
           child: GlassSurface(
             radius: 24,
             fillColor: isDark
-                ? (g.merlot ? MerlotPalette.darkSurface : null)
-                : (g.merlot ? MerlotPalette.surface : Colors.white),
+                ? (g.merlot
+                    ? MerlotPalette.darkSurface
+                    : (g.frozen ? FrozenPalette.darkSurface : null))
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
             padding: const EdgeInsets.all(AppSpace.s22),
             customBorder: Border.all(
               color: isDark
-                  ? (g.merlot ? MerlotPalette.darkLine : g.edge)
+                  ? (g.merlot
+                      ? MerlotPalette.darkLine
+                      : (g.frozen ? FrozenPalette.darkLineSubtle : g.edge))
                   : (g.merlot
                       ? MerlotPalette.line
-                      : g.clay.withValues(alpha: 0.35)),
-              width: AppBorderScale.w1point1,
+                      : (g.frozen
+                          ? FrozenPalette.lineSubtle
+                          : g.clay.withValues(alpha: 0.35))),
+              width: (g.merlot || g.frozen) ? 0.75 : AppBorderScale.w1point1,
             ),
             child: SingleChildScrollView(
               child: Column(

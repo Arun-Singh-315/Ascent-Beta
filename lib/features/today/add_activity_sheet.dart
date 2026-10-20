@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../core/database/app_database.dart';
 import '../../core/notifications/notification_service.dart';
@@ -1080,7 +1081,11 @@ class _TypeSelectChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark ? context.accentPrimary.withValues(alpha: 0.85) : context.accentPrimary)
-                : (isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white)),
+                : (isDark
+                    ? g.fill
+                    : (g.merlot
+                        ? MerlotPalette.surface
+                        : (g.frozen ? FrozenPalette.surface : Colors.white))),
             borderRadius: AppGeometry.roundedr24,
             border: Border.all(
               color: isSelected

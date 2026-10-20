@@ -220,10 +220,10 @@ void main() {
       // Step 1: Yesterday & Welcome
       expect(find.text('Daily Launchpad'), findsOneWidget);
       expect(find.text('Yesterday in Review'), findsOneWidget);
-      expect(find.text('Glide to Today’s Plan'), findsOneWidget);
+      expect(find.text('Start Today’s Plan'), findsOneWidget);
 
-      // Glide to Step 2
-      await tester.tap(find.text('Glide to Today’s Plan'));
+      // Advance to Step 2
+      await tester.tap(find.text('Start Today’s Plan'));
       await tester.pumpAndSettle();
 
       // Step 2: Feed Today's Focus

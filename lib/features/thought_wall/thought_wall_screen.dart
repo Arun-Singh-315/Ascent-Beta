@@ -14,6 +14,8 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/merlot_palette.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -1042,20 +1044,21 @@ class ThoughtCardBubble extends ConsumerWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(AppSpace.s16),
-                decoration: AppCard.decoration(
-                  context,
-                  selected: isSelected,
-                  night: BoxDecoration(
+                decoration: BoxDecoration(
                     color: isSelected
                         ? g.clay.withValues(alpha: context.isDark ? .22 : .12)
                         : context.isDark
                         ? g.fill
-                        : AscentColors.translucentSurfaceDay,
+                        : (g.merlot
+                              ? MerlotPalette.pillSoft
+                              : (g.frozen
+                                    ? FrozenPalette.pillSoft
+                                    : AscentColors.translucentSurfaceDay)),
                     borderRadius: BorderRadius.only(
-                      topLeft: AppGeometry.radiusr18,
-                      topRight: AppGeometry.radiusr18,
-                      bottomLeft: AppGeometry.bubbleTail(index.isEven),
-                      bottomRight: AppGeometry.bubbleTail(index.isOdd),
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(index.isEven ? 18 : 6),
+                      bottomRight: Radius.circular(index.isOdd ? 18 : 6),
                     ),
                     border: isSelected
                         ? Border.all(
@@ -1063,12 +1066,18 @@ class ThoughtCardBubble extends ConsumerWidget {
                             width: AppBorderScale.w1point8,
                           )
                         : Border.all(
-                            color: context.isDark
-                                ? g.inkMuted.withValues(alpha: .4)
-                                : AscentColors.outlineDay.withValues(
-                                    alpha: .18,
-                                  ),
-                            width: AppBorderScale.w1point2,
+                            color: g.merlot
+                                ? MerlotPalette.lineSubtle
+                                : (g.frozen
+                                      ? FrozenPalette.lineSubtle
+                                      : (context.isDark
+                                            ? g.inkMuted.withValues(alpha: .4)
+                                            : AscentColors.outlineDay.withValues(
+                                                alpha: .18,
+                                              ))),
+                            width: (g.merlot || g.frozen)
+                                ? 0.75
+                                : AppBorderScale.w1point2,
                           ),
                     boxShadow: context.isDark
                         ? [
@@ -1080,8 +1089,17 @@ class ThoughtCardBubble extends ConsumerWidget {
                               offset: const Offset(0, 3),
                             ),
                           ]
-                        : const [],
-                  ),
+                        : [
+                            BoxShadow(
+                              color: g.merlot
+                                  ? MerlotPalette.shadowAmbient
+                                  : (g.frozen
+                                        ? FrozenPalette.shadowAmbient
+                                        : const Color.fromRGBO(15, 23, 42, 0.04)),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
