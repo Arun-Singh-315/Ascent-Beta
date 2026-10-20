@@ -148,27 +148,21 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              title!,
-              style: AscentTextStyles.displaySmall
-                  .copyWith(color: g.ink, letterSpacing: -0.3)
-                  .merge(AppTypeRoles.typeRole69),
-              maxLines: 1,
-            ),
+          Text(
+            title!,
+            style: AscentTextStyles.displaySmall
+                .copyWith(color: g.ink, letterSpacing: -0.3)
+                .merge(AppTypeRoles.typeRole69),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           if (subtitle != null && subtitle!.isNotEmpty) ...[
             const SizedBox(height: 1),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                subtitle!,
-                style: AppTypography.jetBrainsMono105W500120(color: g.inkMuted),
-                maxLines: 1,
-              ),
+            Text(
+              subtitle!,
+              style: AppTypography.jetBrainsMono105W500120(color: g.inkMuted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ],
@@ -182,16 +176,7 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: leadingWidget,
       leadingWidth: 54,
       title: headerTitle,
-      actions: [
-        ...?actions?.map(
-          (w) => FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerRight,
-            child: w,
-          ),
-        ),
-        const SizedBox(width: 8),
-      ],
+      actions: [...?actions, const SizedBox(width: 8)],
       bottom: bottom,
       centerTitle: false,
     );

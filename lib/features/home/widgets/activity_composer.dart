@@ -8,7 +8,6 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/merlot_palette.dart';
-import '../../../app/theme/frozen_palette.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/activity_entry_service.dart';
@@ -237,44 +236,24 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: isDark
-            ? (g.frozen
-                ? FrozenPalette.darkAction.withValues(alpha: 0.16)
-                : (g.merlot
-                    ? MerlotPalette.darkAction.withValues(alpha: 0.16)
-                    : g.clay.withValues(alpha: 0.16)))
-            : (g.frozen
-                ? FrozenPalette.tint.withValues(alpha: 0.50)
-                : (g.merlot
-                    ? MerlotPalette.pillSoft
-                    : g.clay.withValues(alpha: 0.08))),
+            ? g.clay.withValues(alpha: 0.16)
+            : (g.merlot
+                ? MerlotPalette.pillSoft
+                : g.clay.withValues(alpha: 0.08)),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDark
-              ? (g.frozen
-                  ? FrozenPalette.darkAction.withValues(alpha: 0.30)
-                  : (g.merlot
-                      ? MerlotPalette.darkAction.withValues(alpha: 0.30)
-                      : g.clay.withValues(alpha: 0.30)))
-              : (g.frozen
-                  ? FrozenPalette.line
-                  : (g.merlot
-                      ? MerlotPalette.lineSubtle
-                      : g.clay.withValues(alpha: 0.15))),
+              ? g.clay.withValues(alpha: 0.30)
+              : (g.merlot
+                  ? MerlotPalette.lineSubtle
+                  : g.clay.withValues(alpha: 0.15)),
           width: 0.8,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: g.frozen
-                ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                : (g.merlot
-                    ? (isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
-                    : g.clay),
-          ),
+          Icon(icon, size: 14, color: g.clay),
           const SizedBox(width: 4),
           Text(
             text,
@@ -295,19 +274,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
           decoration: BoxDecoration(
             color: isDark
                 ? g.fill
-                : (g.frozen
-                    ? FrozenPalette.surface
-                    : (g.merlot ? MerlotPalette.surface : context.bgSurfaceElevated)),
+                : (g.merlot ? MerlotPalette.surface : context.bgSurfaceElevated),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isDark
                   ? g.edge
-                  : (g.frozen
-                      ? FrozenPalette.line
-                      : (g.merlot
-                          ? MerlotPalette.line
-                          : g.edge.withValues(alpha: 0.35))),
-              width: (g.frozen || g.merlot) ? 0.75 : 1.0,
+                  : (g.merlot
+                      ? MerlotPalette.line
+                      : g.edge.withValues(alpha: 0.35)),
+              width: g.merlot ? 0.75 : 1.0,
             ),
           ),
           padding: const EdgeInsets.fromLTRB(8, 4, 4, 4),
@@ -367,34 +342,22 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     tooltip: 'Add activity',
                     style: IconButton.styleFrom(
                       backgroundColor: isDark
-                          ? (g.frozen
-                              ? FrozenPalette.action
-                              : (g.merlot ? MerlotPalette.action : g.clay))
-                          : (g.frozen
-                              ? FrozenPalette.action
-                              : (g.merlot ? MerlotPalette.action : g.claySoft)),
+                          ? g.clay
+                          : (g.merlot ? MerlotPalette.action : g.claySoft),
                       disabledBackgroundColor: isDark
-                          ? (g.frozen
-                              ? FrozenPalette.action.withValues(alpha: 0.3)
-                              : (g.merlot
-                                  ? MerlotPalette.action.withValues(alpha: 0.3)
-                                  : g.clay.withValues(alpha: 0.3)))
-                          : (g.frozen
-                              ? FrozenPalette.action.withValues(alpha: 0.15)
-                              : (g.merlot
-                                  ? MerlotPalette.action.withValues(alpha: 0.15)
-                                  : g.edge.withValues(alpha: 0.2))),
+                          ? g.clay.withValues(alpha: 0.3)
+                          : (g.merlot
+                              ? MerlotPalette.action.withValues(alpha: 0.15)
+                              : g.edge.withValues(alpha: 0.2)),
                       foregroundColor: isDark
                           ? Colors.white
-                          : (g.frozen || g.merlot ? Colors.white : g.clay),
+                          : (g.merlot ? Colors.white : g.clay),
                       disabledForegroundColor: isDark
                           ? Colors.white.withValues(alpha: 0.4)
-                          : (g.frozen
-                              ? Colors.white.withValues(alpha: 0.4)
-                              : (g.merlot
-                                  ? MerlotPalette.mutedInk.withValues(alpha: 0.4)
-                                  : g.inkMuted.withValues(alpha: 0.4))),
-                      side: isDark || g.merlot || g.frozen
+                          : (g.merlot
+                              ? MerlotPalette.mutedInk.withValues(alpha: 0.4)
+                              : g.inkMuted.withValues(alpha: 0.4)),
+                      side: isDark || g.merlot
                           ? null
                           : BorderSide(
                               color: g.clay.withValues(alpha: 0.25),
@@ -411,18 +374,14 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(
-                              color: isDark
-                                  ? Colors.white
-                                  : (g.frozen || g.merlot ? Colors.white : g.clay),
+                              color: isDark ? Colors.white : (g.merlot ? Colors.white : g.clay),
                               strokeWidth: 2,
                             ),
                           )
                         : Icon(
                             Icons.arrow_upward_rounded,
                             size: 20,
-                            color: isDark
-                                ? Colors.white
-                                : (g.frozen || g.merlot ? Colors.white : g.clay),
+                            color: isDark ? Colors.white : (g.merlot ? Colors.white : g.clay),
                           ),
                   ),
                 ],
@@ -475,27 +434,15 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: isDark
-                                  ? (g.frozen
-                                      ? FrozenPalette.darkAction.withValues(alpha: 0.2)
-                                      : (g.merlot
-                                          ? MerlotPalette.darkAction.withValues(alpha: 0.2)
-                                          : g.clay.withValues(alpha: 0.2)))
-                                  : (g.frozen
-                                      ? FrozenPalette.tint
-                                      : (g.merlot
-                                          ? MerlotPalette.tint
-                                          : g.clay.withValues(alpha: 0.1))),
+                              color: g.clay.withValues(
+                                alpha: isDark ? 0.2 : 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               '$_minutes min',
                               style: TextStyle(
-                                color: g.frozen
-                                    ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                    : (g.merlot
-                                        ? (isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
-                                        : g.clay),
+                                color: g.clay,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),

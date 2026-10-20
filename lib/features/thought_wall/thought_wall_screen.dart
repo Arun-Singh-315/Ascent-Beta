@@ -579,19 +579,15 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen> {
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      _viewToggle == 'today'
-                          ? 'TODAY\'S REFLECTIONS'
-                          : 'PAST & ARCHIVED',
-                      style: AscentTextStyles.labelSmall
-                          .copyWith(color: context.textMuted, letterSpacing: 1.0)
-                          .merge(AppTypeRoles.typeRole2),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  Text(
+                    _viewToggle == 'today'
+                        ? 'TODAY\'S REFLECTIONS'
+                        : 'PAST & ARCHIVED',
+                    style: AscentTextStyles.labelSmall
+                        .copyWith(color: context.textMuted, letterSpacing: 1.0)
+                        .merge(AppTypeRoles.typeRole2),
                   ),
-                  const SizedBox(width: 8),
+                  const Spacer(),
                   PopupMenuButton<String>(
                     tooltip: 'Category filter',
                     initialValue: _categoryFilter,
@@ -1046,7 +1042,6 @@ class ThoughtCardBubble extends ConsumerWidget {
                       }
                     },
               child: AnimatedContainer(
-                key: ValueKey('thought_container_${thought.id}'),
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(AppSpace.s16),
                 decoration: BoxDecoration(
@@ -1055,10 +1050,10 @@ class ThoughtCardBubble extends ConsumerWidget {
                         : context.isDark
                         ? g.fill
                         : (g.merlot
-                              ? MerlotPalette.surface
+                              ? MerlotPalette.pillSoft
                               : (g.frozen
-                                    ? FrozenPalette.surface
-                                    : AscentColors.bgSurface)),
+                                    ? FrozenPalette.pillSoft
+                                    : AscentColors.translucentSurfaceDay)),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
                       topRight: const Radius.circular(18),
@@ -1072,20 +1067,26 @@ class ThoughtCardBubble extends ConsumerWidget {
                           )
                         : Border.all(
                             color: g.merlot
-                                ? (context.isDark ? g.edge : MerlotPalette.line)
+                                ? MerlotPalette.lineSubtle
                                 : (g.frozen
-                                      ? (context.isDark ? g.edge : FrozenPalette.line)
+                                      ? FrozenPalette.lineSubtle
                                       : (context.isDark
                                             ? g.inkMuted.withValues(alpha: .4)
-                                            : g.edge.withValues(alpha: 0.45))),
-                            width: 1.0,
+                                            : AscentColors.outlineDay.withValues(
+                                                alpha: .18,
+                                              ))),
+                            width: (g.merlot || g.frozen)
+                                ? 0.75
+                                : AppBorderScale.w1point2,
                           ),
                     boxShadow: context.isDark
                         ? [
                             BoxShadow(
-                              color: AppPalette.black.withValues(alpha: 0.30),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              color: AppPalette.black.withValues(
+                                alpha: context.isDark ? 0.30 : 0.06,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ]
                         : [
@@ -1094,21 +1095,16 @@ class ThoughtCardBubble extends ConsumerWidget {
                                   ? MerlotPalette.shadowAmbient
                                   : (g.frozen
                                         ? FrozenPalette.shadowAmbient
-                                        : const Color.fromRGBO(15, 23, 42, 0.07)),
-                              blurRadius: 14,
-                              offset: const Offset(0, 4),
-                            ),
-                            BoxShadow(
-                              color: const Color.fromRGBO(15, 23, 42, 0.03),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
+                                        : const Color.fromRGBO(15, 23, 42, 0.04)),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Date left; Mood badges and secondary menu remain in the top header.
+                    // Date left; Promise and secondary menu remain in the top header.
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -1132,25 +1128,20 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 .merge(AppTypeRoles.typeRole54),
                           ),
                         ),
-                        if (thought.mood != 'thought')
+                        if (thought.mood == 'promise')
                           AppTag(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s7,
                               vertical: AppSpace.s3,
                             ),
                             nightDecoration: BoxDecoration(
-                              color: moodColor.withValues(alpha: 0.14),
+                              color: g.clay.withValues(alpha: 0.14),
                               borderRadius: AppGeometry.roundedr7,
                             ),
                             child: Text(
-                              thought.mood == 'me_to_me'
-                                  ? 'Me to Me'
-                                  : '${thought.mood[0].toUpperCase()}${thought.mood.substring(1)}',
+                              'Promise',
                               style: AscentTextStyles.labelSmall
-                                  .copyWith(
-                                    color: moodColor,
-                                    fontWeight: FontWeight.w600,
-                                  )
+                                  .copyWith(color: g.clay)
                                   .merge(AppTypeRoles.typeRole18),
                             ),
                           ),
@@ -1536,7 +1527,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                     colors: [
                                       AppPalette.transparent,
                                       g.line,
-                                      (thought.isPinned ? g.clay : moodColor).withValues(alpha: .35),
+                                      g.clay.withValues(alpha: .35),
                                     ],
                                   ),
                                 ),
@@ -1549,7 +1540,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 horizontal: AppSpace.s6,
                               ),
                               decoration: BoxDecoration(
-                                color: (thought.isPinned ? g.clay : moodColor).withValues(alpha: .55),
+                                color: g.clay.withValues(alpha: .55),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -1559,7 +1550,7 @@ class ThoughtCardBubble extends ConsumerWidget {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      (thought.isPinned ? g.clay : moodColor).withValues(alpha: .35),
+                                      g.clay.withValues(alpha: .35),
                                       g.line,
                                       AppPalette.transparent,
                                     ],

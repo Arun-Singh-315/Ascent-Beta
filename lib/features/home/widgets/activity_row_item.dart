@@ -48,7 +48,6 @@ class ActivityRowItem extends ConsumerWidget {
         (activity.kind == ActivityKind.duration ||
             (activity.targetMinutes != null && activity.targetMinutes! > 0)) &&
         !isLecture;
-    final isTodoActive = !isDone && activity.kind == ActivityKind.todo;
     final dueCheckIn = activity.linkedTaskId != null
         ? ref.watch(dueCheckInForTaskProvider(activity.linkedTaskId!)).value
         : null;
@@ -110,7 +109,6 @@ class ActivityRowItem extends ConsumerWidget {
         ),
       ),
       child: AnimatedContainer(
-        key: ValueKey('activity_row_container_${activity.id}'),
         duration: const Duration(milliseconds: 200),
         constraints: const BoxConstraints(minHeight: 58),
         margin: const EdgeInsets.symmetric(vertical: 4),
@@ -133,29 +131,17 @@ class ActivityRowItem extends ConsumerWidget {
                                       ? FrozenPalette.darkElevated
                                       : AppPalette.white.withValues(alpha: 0.12)))
                           : const Color(0xFFFEF3C7))
-                    : (isTodoActive
-                          ? (context.isDark
-                                ? (g.frozen
-                                      ? FrozenPalette.darkAction.withValues(alpha: 0.14)
-                                      : (g.merlot
-                                            ? MerlotPalette.darkAction.withValues(alpha: 0.14)
-                                            : g.clay.withValues(alpha: 0.14)))
+                    : (context.isDark
+                          ? (g.merlot
+                                ? MerlotPalette.darkElevated
                                 : (g.frozen
-                                      ? FrozenPalette.tint.withValues(alpha: 0.55)
-                                      : (g.merlot
-                                            ? MerlotPalette.tint.withValues(alpha: 0.50)
-                                            : const Color(0xFFFDF4F0))))
-                          : (context.isDark
-                                ? (g.merlot
-                                      ? MerlotPalette.darkElevated
-                                      : (g.frozen
-                                            ? FrozenPalette.darkElevated
-                                            : g.fill))
-                                : (g.merlot
-                                      ? MerlotPalette.pillSoft
-                                      : (g.frozen
-                                            ? FrozenPalette.pillSoft
-                                            : const Color(0xFFFAFAFA)))))),
+                                      ? FrozenPalette.darkElevated
+                                      : g.fill))
+                          : (g.merlot
+                                ? MerlotPalette.pillSoft
+                                : (g.frozen
+                                      ? FrozenPalette.pillSoft
+                                      : const Color(0xFFFAFAFA))))),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isRunning
@@ -168,30 +154,18 @@ class ActivityRowItem extends ConsumerWidget {
                             : (g.frozen
                                   ? FrozenPalette.spark
                                   : AppPalette.orange.shade300))
-                      : (isTodoActive
-                            ? (context.isDark
-                                  ? (g.frozen
-                                        ? FrozenPalette.darkAction.withValues(alpha: 0.45)
-                                        : (g.merlot
-                                              ? MerlotPalette.darkAction.withValues(alpha: 0.45)
-                                              : g.clay.withValues(alpha: 0.45)))
+                      : (context.isDark
+                            ? (g.merlot
+                                  ? MerlotPalette.darkLine
                                   : (g.frozen
-                                        ? FrozenPalette.line
-                                        : (g.merlot
-                                              ? MerlotPalette.line
-                                              : g.clay.withValues(alpha: 0.35))))
-                            : (context.isDark
-                                  ? (g.merlot
-                                        ? MerlotPalette.darkLine
-                                        : (g.frozen
-                                              ? FrozenPalette.darkLine
-                                              : g.edge))
-                                  : (g.merlot
-                                        ? MerlotPalette.lineSubtle
-                                        : (g.frozen
-                                              ? FrozenPalette.lineSubtle
-                                              : g.edge.withValues(alpha: 0.35)))))),
-            width: isTodoActive ? 1.0 : 0.75,
+                                        ? FrozenPalette.darkLine
+                                        : g.edge))
+                            : (g.merlot
+                                  ? MerlotPalette.lineSubtle
+                                  : (g.frozen
+                                        ? FrozenPalette.lineSubtle
+                                        : g.edge.withValues(alpha: 0.35))))),
+            width: 0.75,
           ),
         ),
         padding: const EdgeInsets.symmetric(
@@ -249,32 +223,16 @@ class ActivityRowItem extends ConsumerWidget {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isDone
-                                ? (g.frozen
-                                    ? FrozenPalette.action
-                                    : (g.merlot ? MerlotPalette.action : g.clay))
-                                : (isTodoActive
-                                    ? (g.frozen
-                                        ? FrozenPalette.tint
-                                        : (g.merlot
-                                            ? MerlotPalette.spark.withValues(alpha: 0.12)
-                                            : g.claySoft))
+                                ? (g.merlot ? MerlotPalette.action : g.clay)
+                                : (g.merlot
+                                    ? MerlotPalette.spark.withValues(alpha: 0.12)
                                     : AppPalette.transparent),
                             border: Border.all(
                               color: isDone
-                                  ? (g.frozen
-                                      ? FrozenPalette.action
-                                      : (g.merlot ? MerlotPalette.action : g.clay))
-                                  : (isTodoActive
-                                      ? (g.frozen
-                                          ? FrozenPalette.action
-                                          : (g.merlot
-                                              ? MerlotPalette.spark
-                                              : g.clay))
-                                      : (isRunning
-                                          ? (g.frozen
-                                              ? FrozenPalette.action
-                                              : (g.merlot ? MerlotPalette.action : g.clay))
-                                          : g.inkMuted)),
+                                  ? (g.merlot ? MerlotPalette.action : g.clay)
+                                  : (g.merlot
+                                      ? MerlotPalette.spark
+                                      : (isRunning ? g.clay : g.inkMuted)),
                               width: 1.75,
                             ),
                           ),
@@ -290,21 +248,15 @@ class ActivityRowItem extends ConsumerWidget {
                                             ? Icons.headphones_rounded
                                             : Icons.school_outlined,
                                         size: 14,
-                                        color: isRunning
-                                            ? (g.frozen ? FrozenPalette.action : (g.merlot ? MerlotPalette.action : g.clay))
-                                            : (g.frozen
-                                                ? FrozenPalette.action
-                                                : (g.merlot ? MerlotPalette.spark : g.inkMuted)),
+                                        color: isRunning ? g.clay : (g.merlot ? MerlotPalette.spark : g.inkMuted),
                                       )
                                     : (isTimed
                                           ? Icon(
                                               Icons.timer_outlined,
                                               size: 13,
                                               color: isRunning
-                                                  ? (g.frozen ? FrozenPalette.action : (g.merlot ? MerlotPalette.action : g.clay))
-                                                  : (g.frozen
-                                                      ? FrozenPalette.action
-                                                      : (g.merlot ? MerlotPalette.spark : g.inkMuted)),
+                                                  ? g.clay
+                                                  : (g.merlot ? MerlotPalette.spark : g.inkMuted),
                                             )
                                           : null)),
                         ),
@@ -387,15 +339,13 @@ class ActivityRowItem extends ConsumerWidget {
                                 ),
                               ),
                             ] else ...[
-                              if (isTodoActive) ...[
+                              if (g.merlot && activity.kind == ActivityKind.todo && !isDone) ...[
                                 Container(
                                   width: 6,
                                   height: 6,
                                   margin: const EdgeInsets.only(right: 5),
-                                  decoration: BoxDecoration(
-                                    color: g.frozen
-                                        ? FrozenPalette.action
-                                        : (g.merlot ? MerlotPalette.spark : g.clay),
+                                  decoration: const BoxDecoration(
+                                    color: MerlotPalette.spark,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -403,14 +353,10 @@ class ActivityRowItem extends ConsumerWidget {
                               Text(
                                 _subtitleText(activity),
                                 style: AscentTextStyles.homeSecondary.copyWith(
-                                  color: isTodoActive
-                                      ? (g.frozen
-                                          ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                          : (g.merlot
-                                              ? (context.isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
-                                              : (context.isDark ? g.clay : g.clay)))
+                                  color: (g.merlot && activity.kind == ActivityKind.todo && !isDone)
+                                      ? (context.isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
                                       : g.inkMuted,
-                                  fontWeight: isTodoActive
+                                  fontWeight: (g.merlot && activity.kind == ActivityKind.todo && !isDone)
                                       ? FontWeight.w500
                                       : FontWeight.w400,
                                 ),
@@ -427,66 +373,10 @@ class ActivityRowItem extends ConsumerWidget {
                             ],
                             if (activity.hasReminder) ...[
                               const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 1.5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: g.frozen
-                                      ? (context.isDark
-                                          ? FrozenPalette.darkAction.withValues(alpha: 0.18)
-                                          : FrozenPalette.tint)
-                                      : (g.merlot
-                                          ? (context.isDark
-                                              ? MerlotPalette.darkAction.withValues(alpha: 0.18)
-                                              : MerlotPalette.tint)
-                                          : (context.isDark
-                                              ? g.clay.withValues(alpha: 0.18)
-                                              : g.claySoft)),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: g.frozen
-                                        ? (context.isDark
-                                            ? FrozenPalette.darkAction.withValues(alpha: 0.40)
-                                            : FrozenPalette.line)
-                                        : (g.merlot
-                                            ? (context.isDark
-                                                ? MerlotPalette.darkAction.withValues(alpha: 0.40)
-                                                : MerlotPalette.line)
-                                            : (context.isDark
-                                                ? g.clay.withValues(alpha: 0.40)
-                                                : g.clay.withValues(alpha: 0.30))),
-                                    width: 0.6,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.alarm_rounded,
-                                      size: 11,
-                                      color: isDone
-                                          ? g.inkMuted
-                                          : (g.frozen
-                                              ? FrozenPalette.action
-                                              : (g.merlot ? MerlotPalette.action : g.clay)),
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      'Reminder',
-                                      style: AppTypography.jetBrainsMono10Regular8(
-                                        color: isDone
-                                            ? g.inkMuted
-                                            : (g.frozen
-                                                ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                                : (g.merlot
-                                                    ? (context.isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
-                                                    : g.clay)),
-                                      ).copyWith(fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
+                              Icon(
+                                Icons.alarm_rounded,
+                                size: 12,
+                                color: isDone ? g.inkMuted : g.clay,
                               ),
                             ],
                           ],
@@ -511,11 +401,9 @@ class ActivityRowItem extends ConsumerWidget {
                       icon: Icon(
                         Icons.edit_outlined,
                         size: 18,
-                        color: g.frozen
-                            ? FrozenPalette.action.withValues(alpha: 0.85)
-                            : (g.merlot
-                                ? MerlotPalette.action.withValues(alpha: 0.85)
-                                : g.clay.withValues(alpha: 0.85)),
+                        color: g.merlot
+                            ? MerlotPalette.action.withValues(alpha: 0.8)
+                            : g.inkMuted,
                       ),
                       onPressed: () async {
                         HapticFeedback.lightImpact();
@@ -894,32 +782,14 @@ class ActivityRowItem extends ConsumerWidget {
                         vertical: AppSpace.s4,
                       ),
                       nightDecoration: BoxDecoration(
-                        color: activity.kind == ActivityKind.todo
-                            ? (g.frozen
-                                ? (ctx.isDark
-                                    ? FrozenPalette.darkAction.withValues(alpha: 0.20)
-                                    : FrozenPalette.tint)
-                                : (g.merlot
-                                    ? (ctx.isDark
-                                        ? MerlotPalette.darkAction.withValues(alpha: 0.20)
-                                        : MerlotPalette.tint)
-                                    : g.claySoft))
-                            : g.claySoft,
+                        color: g.claySoft,
                         borderRadius: AppGeometry.roundedr12,
                       ),
                       child: Text(
                         activity.kind == ActivityKind.todo
                             ? 'To-do'
                             : 'Focus Activity',
-                        style: AppTypography.inter12W600111(
-                          color: activity.kind == ActivityKind.todo
-                              ? (g.frozen
-                                  ? (ctx.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                  : (g.merlot
-                                      ? (ctx.isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
-                                      : g.clay))
-                              : g.clay,
-                        ),
+                        style: AppTypography.inter12W600111(color: g.clay),
                       ),
                     ),
                     const Spacer(),
