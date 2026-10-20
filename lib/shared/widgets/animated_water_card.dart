@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../core/providers/database_provider.dart';
 import 'ascent_card.dart';
@@ -235,75 +236,85 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
 
           const SizedBox(height: 14),
 
-          // 1-Tap Quick Hydration Logging Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _QuickWaterButton(
+          // 1-Tap Quick Hydration Logging - 4 Equal Balanced Tiles
+          Row(
+            children: [
+              Expanded(
+                child: _QuickWaterButton(
+                  label: '+150 mL',
+                  sub: 'Cup',
+                  icon: Icons.water_drop_outlined,
+                  onTap: () => _logWater(150),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _QuickWaterButton(
                   label: '+250 mL',
                   sub: 'Glass',
                   icon: Icons.local_drink_rounded,
                   onTap: () => _logWater(250),
                 ),
-                const SizedBox(width: 8),
-                _QuickWaterButton(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _QuickWaterButton(
                   label: '+500 mL',
                   sub: 'Bottle',
-                  icon: Icons.sports_bar_rounded,
+                  icon: Icons.water_drop_rounded,
                   onTap: () => _logWater(500),
                 ),
-                const SizedBox(width: 8),
-                _QuickWaterButton(
-                  label: '+150 mL',
-                  sub: 'Cup',
-                  icon: Icons.coffee_rounded,
-                  onTap: () => _logWater(150),
-                ),
-                const SizedBox(width: 8),
-                _QuickWaterButton(
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: _QuickWaterButton(
                   label: '+750 mL',
                   sub: 'Flask',
                   icon: Icons.water_rounded,
                   onTap: () => _logWater(750),
                 ),
-                if (currentMl > 0) ...[
-                  const SizedBox(width: 8),
-                  AppTapArea(
-                    borderRadius: AppGeometry.roundedr10,
-                    onTap: _undoLast,
-                    child: AppTag(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s10,
-                        vertical: AppSpace.s8,
-                      ),
-                      nightDecoration: BoxDecoration(
-                        color: context.bgBase,
-                        borderRadius: AppGeometry.roundedr10,
-                        border: Border.all(color: context.divider),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.undo_rounded,
-                            size: 14,
-                            color: context.textMuted,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Undo',
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
+          if (currentMl > 0) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppTapArea(
+                borderRadius: AppGeometry.roundedr10,
+                onTap: _undoLast,
+                child: AppTag(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s10,
+                    vertical: AppSpace.s6,
+                  ),
+                  nightDecoration: BoxDecoration(
+                    color: context.bgBase,
+                    borderRadius: AppGeometry.roundedr10,
+                    border: Border.all(color: context.divider),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.undo_rounded,
+                        size: 13,
+                        color: context.textMuted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Undo last intake',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: context.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -344,6 +355,25 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final cardBg = isDark
+        ? g.fill
+        : (g.merlot
+            ? MerlotPalette.pillSoft
+            : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
+    final borderColor = isDark
+        ? g.edge
+        : (g.merlot
+            ? MerlotPalette.lineSubtle
+            : (g.frozen ? FrozenPalette.lineSubtle : const Color(0xFFD2E3F1)));
+    final iconBg = isDark
+        ? context.waterAccent.withValues(alpha: 0.18)
+        : (g.merlot
+            ? MerlotPalette.darkTint.withValues(alpha: 0.35)
+            : const Color(0xFFE0EFF8));
+    final iconColor = isDark
+        ? context.waterAccent
+        : (g.merlot ? MerlotPalette.action : const Color(0xFF0284C7));
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) {
@@ -356,61 +386,65 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
-            color: isDark
-                ? (g.merlot ? MerlotPalette.darkSurface : g.claySoft.withValues(alpha: 0.5))
-                : (g.merlot ? const Color(0xFFF0F7FB) : const Color(0xFFF0F7FB)),
+            color: cardBg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark
-                  ? g.line
-                  : (g.merlot ? const Color(0x333B82F6) : g.line),
-              width: 0.75,
+              color: borderColor,
+              width: (g.merlot || g.frozen) ? 0.75 : 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.2)
+                    : (g.merlot
+                        ? MerlotPalette.shadowAmbient
+                        : const Color.fromRGBO(2, 132, 199, 0.04)),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 28,
+                height: 28,
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? (g.merlot ? MerlotPalette.darkTint : g.claySoft)
-                      : const Color(0xFFE0EFF8),
+                  color: iconBg,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Icon(
                     widget.icon,
-                    size: 16,
-                    color: isDark
-                        ? (g.merlot ? MerlotPalette.darkActionBright : g.clay)
-                        : const Color(0xFF0284C7),
+                    size: 15,
+                    color: iconColor,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    widget.label,
-                    style: AscentTextStyles.labelMedium.copyWith(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    widget.sub,
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: context.textMuted,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 5),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  widget.label,
+                  style: AppTypography.jetBrainsMono13W70066(
+                    color: context.textPrimary,
+                  ).copyWith(fontSize: 12.5, fontWeight: FontWeight.w700),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                widget.sub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: context.textMuted,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
