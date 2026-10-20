@@ -183,8 +183,30 @@ class LearningHubCard extends ConsumerWidget {
                     child: FilledButton(
                       onPressed: resume,
                       style: FilledButton.styleFrom(
-                        backgroundColor: g.clay,
-                        foregroundColor: Colors.white,
+                        backgroundColor: dark
+                            ? g.clay
+                            : (g.merlot
+                                ? MerlotPalette.pillSoft
+                                : (g.frozen
+                                    ? FrozenPalette.pillSoft
+                                    : g.claySoft)),
+                        foregroundColor: dark
+                            ? Colors.white
+                            : (g.merlot
+                                ? MerlotPalette.action
+                                : (g.frozen
+                                    ? FrozenPalette.action
+                                    : g.clay)),
+                        side: dark
+                            ? BorderSide.none
+                            : BorderSide(
+                                color: g.merlot
+                                    ? MerlotPalette.lineSubtle
+                                    : (g.frozen
+                                        ? FrozenPalette.lineSubtle
+                                        : g.line),
+                                width: 0.75,
+                              ),
                         minimumSize: const Size(0, 44),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -204,6 +226,10 @@ class LearningHubCard extends ConsumerWidget {
                             : 'Resume',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),

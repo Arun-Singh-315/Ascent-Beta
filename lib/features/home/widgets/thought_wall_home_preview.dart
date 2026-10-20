@@ -468,6 +468,76 @@ class _ThoughtWallHomePreviewState
             }
 
             final previewThoughts = _preview(thoughts);
+            final isDark = context.isDark;
+            final isCardDark = isDark || g.merlot || g.frozen;
+
+            final cardFill = isDark
+                ? null
+                : (g.merlot
+                    ? MerlotPalette.darkSurface
+                    : (g.frozen
+                        ? FrozenPalette.darkSurface
+                        : AscentColors.bgSurface));
+
+            final cardBorder = isDark
+                ? null
+                : Border.all(
+                    color: g.merlot
+                        ? MerlotPalette.darkLineSubtle
+                        : (g.frozen
+                            ? FrozenPalette.darkLineSubtle
+                            : g.edge.withValues(alpha: 0.45)),
+                    width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                  );
+
+            final titleColor = isCardDark
+                ? (g.merlot
+                    ? MerlotPalette.darkMutedInk
+                    : (g.frozen ? FrozenPalette.darkMutedInk : g.inkMuted))
+                : g.inkMuted;
+
+            final expandIconColor = isCardDark
+                ? (g.merlot
+                    ? MerlotPalette.antiqueGold
+                    : (g.frozen ? FrozenPalette.darkActionBright : g.clay))
+                : g.clay;
+
+            final bubbleFill = isDark
+                ? g.fill.withValues(alpha: g.fill.a + 0.04)
+                : (g.merlot
+                    ? MerlotPalette.darkElevated
+                    : (g.frozen
+                        ? FrozenPalette.darkElevated
+                        : AscentColors.bgSurface));
+
+            final bubbleBorder = isDark
+                ? null
+                : Border.all(
+                    color: g.merlot
+                        ? MerlotPalette.darkLineSubtle
+                        : (g.frozen
+                            ? FrozenPalette.darkLineSubtle
+                            : g.edge.withValues(alpha: 0.45)),
+                    width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                  );
+
+            final thoughtTextColor = isCardDark
+                ? (g.merlot
+                    ? MerlotPalette.darkInk
+                    : (g.frozen ? FrozenPalette.darkInk : Colors.white))
+                : g.ink;
+
+            final thoughtTextMutedColor = isCardDark
+                ? (g.merlot
+                    ? MerlotPalette.darkSecondaryInk
+                    : (g.frozen ? FrozenPalette.darkSecondaryInk : g.inkMuted))
+                : g.inkMuted;
+
+            final actionAccentColor = isCardDark
+                ? (g.merlot
+                    ? MerlotPalette.antiqueGold
+                    : (g.frozen ? FrozenPalette.darkActionBright : g.clay))
+                : g.clay;
 
             return Padding(
               padding: const EdgeInsets.only(top: 14),
@@ -475,23 +545,8 @@ class _ThoughtWallHomePreviewState
                 key: const ValueKey('home_mind_space_card'),
                 radius: 20,
                 enableBlur: false,
-                fillColor: context.isDark
-                    ? null
-                    : (g.merlot
-                          ? MerlotPalette.surface
-                          : (g.frozen
-                                ? FrozenPalette.surface
-                                : AscentColors.bgSurface)),
-                customBorder: context.isDark
-                    ? null
-                    : Border.all(
-                        color: g.merlot
-                            ? MerlotPalette.line
-                            : (g.frozen
-                                ? FrozenPalette.line
-                                : g.edge.withValues(alpha: 0.45)),
-                        width: (g.merlot || g.frozen) ? 0.75 : 1.0,
-                      ),
+                fillColor: cardFill,
+                customBorder: cardBorder,
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -504,7 +559,7 @@ class _ThoughtWallHomePreviewState
                                 ? 'Recent thoughts'
                                 : 'Recent thought',
                             style: AscentTextStyles.homeCaption.copyWith(
-                              color: g.inkMuted,
+                              color: titleColor,
                             ),
                           ),
                         ),
@@ -520,7 +575,7 @@ class _ThoughtWallHomePreviewState
                             _expanded
                                 ? Icons.expand_less_rounded
                                 : Icons.expand_more_rounded,
-                            color: g.clay,
+                            color: expandIconColor,
                           ),
                         ),
                       ],
@@ -547,23 +602,8 @@ class _ThoughtWallHomePreviewState
                         child: GlassSurface(
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
-                          fillColor: context.isDark
-                              ? g.fill.withValues(alpha: g.fill.a + 0.04)
-                              : (g.merlot
-                                    ? MerlotPalette.pillSoft
-                                    : (g.frozen
-                                          ? FrozenPalette.pillSoft
-                                          : AscentColors.bgSurface)),
-                          customBorder: context.isDark
-                              ? null
-                              : Border.all(
-                                  color: g.merlot
-                                      ? MerlotPalette.lineSubtle
-                                      : (g.frozen
-                                            ? FrozenPalette.lineSubtle
-                                            : g.edge.withValues(alpha: .45)),
-                                  width: (g.merlot || g.frozen) ? 0.75 : 1.0,
-                                ),
+                          fillColor: bubbleFill,
+                          customBorder: bubbleBorder,
                           radius: 18,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(18),
@@ -590,7 +630,7 @@ class _ThoughtWallHomePreviewState
                                     vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
-                                    color: g.clay.withValues(alpha: 0.14),
+                                    color: actionAccentColor.withValues(alpha: 0.16),
                                     borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
@@ -599,13 +639,13 @@ class _ThoughtWallHomePreviewState
                                       Icon(
                                         Icons.push_pin_rounded,
                                         size: 11,
-                                        color: g.clay,
+                                        color: actionAccentColor,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PINNED TO HOME',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(color: g.clay)
+                                            .copyWith(color: actionAccentColor)
                                             .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
@@ -619,7 +659,7 @@ class _ThoughtWallHomePreviewState
                                     vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
-                                    color: g.clay.withValues(alpha: 0.14),
+                                    color: actionAccentColor.withValues(alpha: 0.16),
                                     borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
@@ -628,13 +668,13 @@ class _ThoughtWallHomePreviewState
                                       Icon(
                                         Icons.handshake_rounded,
                                         size: 11,
-                                        color: g.clay,
+                                        color: actionAccentColor,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PROMISE',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(color: g.clay)
+                                            .copyWith(color: actionAccentColor)
                                             .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
@@ -646,8 +686,8 @@ class _ThoughtWallHomePreviewState
                                 content: thought.content,
                                 style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
-                                      ? g.inkMuted
-                                      : g.ink,
+                                      ? thoughtTextMutedColor
+                                      : thoughtTextColor,
                                   decoration: thought.isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -655,7 +695,15 @@ class _ThoughtWallHomePreviewState
                               ),
                               if (isDraftSource) ...[
                                 const SizedBox(height: 8),
-                                Divider(color: g.line),
+                                Divider(
+                                  color: isCardDark
+                                      ? (g.merlot
+                                          ? MerlotPalette.darkLineSubtle
+                                          : (g.frozen
+                                              ? FrozenPalette.darkLineSubtle
+                                              : g.line))
+                                      : g.line,
+                                ),
                                 const SizedBox(height: 6),
                                 _draftActions(pendingDraft!, showTitle: false),
                               ],
@@ -723,7 +771,7 @@ class _ThoughtWallHomePreviewState
                                         Icon(
                                           Icons.check_circle_rounded,
                                           size: 12,
-                                          color: g.clay,
+                                          color: actionAccentColor,
                                         ),
                                         const SizedBox(width: 4),
                                       ],
@@ -731,7 +779,7 @@ class _ThoughtWallHomePreviewState
                                         timeAgo,
                                         style: AscentTextStyles.homeCaption
                                             .copyWith(
-                                              color: g.inkMuted,
+                                              color: thoughtTextMutedColor,
                                               letterSpacing: 0.5,
                                             )
                                             .merge(AppTypeRoles.typeRole66),
@@ -762,8 +810,8 @@ class _ThoughtWallHomePreviewState
                                           ? Icons.keyboard_arrow_up_rounded
                                           : Icons.keyboard_arrow_down_rounded,
                                       color: isTransientActive
-                                          ? g.clay
-                                          : g.inkMuted,
+                                          ? actionAccentColor
+                                          : thoughtTextMutedColor,
                                     ),
                                   ),
                                 ],
@@ -789,7 +837,7 @@ class _ThoughtWallHomePreviewState
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
-                        style: TextButton.styleFrom(foregroundColor: g.clay),
+                        style: TextButton.styleFrom(foregroundColor: actionAccentColor),
                         onPressed: () {
                           HapticFeedback.selectionClick();
                           context.push('/thought-wall');
