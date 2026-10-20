@@ -80,6 +80,11 @@ void main() {
       }
       SharedPreferences.setMockInitialValues({
         'ascent_day_one_tutorial_v2_dismissed': true,
+        'ascent_daily_briefing_seen_v1': DateTime(
+          DateTime.now().year,
+          DateTime.now().month,
+          DateTime.now().day,
+        ).toIso8601String(),
         homeLayoutPreferenceKey: jsonEncode(
           HomeLayout(
             order: ['mind', 'today', 'learning', 'life'],
@@ -151,7 +156,11 @@ void main() {
         }
         expect(tester.takeException(), isNull);
         expect(find.text('Read a chapter'), findsOneWidget);
-        await tester.ensureVisible(find.text('250'));
+        await tester.scrollUntilVisible(
+          find.text('250'),
+          240,
+          scrollable: find.byType(Scrollable).first,
+        );
         expect(tester.takeException(), isNull);
         if (const bool.fromEnvironment('HOME_SCREENSHOTS')) {
           await tester.runAsync(() async {

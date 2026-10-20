@@ -624,9 +624,6 @@ class _ThoughtWallHomePreviewState
                               ],
                               ThoughtExcerpt(
                                 content: thought.content,
-                                onReadMore: () => context.push(
-                                  '/thought-wall?thought=${thought.id}',
-                                ),
                                 style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
                                       ? g.inkMuted

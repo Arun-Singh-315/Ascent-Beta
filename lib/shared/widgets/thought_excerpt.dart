@@ -1,31 +1,34 @@
-import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/glass_theme.dart';
 
 /// Measures the rendered text rather than guessing truncation by character count,
 /// with rich styled arrow markers (`→ `) for plan items.
-class ThoughtExcerpt extends StatelessWidget {
+class ThoughtExcerpt extends StatefulWidget {
   const ThoughtExcerpt({
     super.key,
     required this.content,
     required this.style,
-    required this.onReadMore,
     this.maxLines = 2,
     this.arrowColor,
   });
 
   final String content;
   final TextStyle style;
-  final VoidCallback onReadMore;
   final int maxLines;
   final Color? arrowColor;
 
   /// Formats raw text by replacing ASCII `-->` with clean `→ ` and `--` with `• `.
   static String formatArrowContent(String raw) {
     return raw
-        .replaceAll(RegExp(r'(^|\n)\s*-->\s*', multiLine: true), r'$1→ ')
-        .replaceAll(RegExp(r'(^|\n)\s*--\s*', multiLine: true), r'$1• ')
+        .replaceAllMapped(
+          RegExp(r'(^|\n)[ \t]*-->[ \t]*', multiLine: true),
+          (m) => '${m[1]}→ ',
+        )
+        .replaceAllMapped(
+          RegExp(r'(^|\n)[ \t]*--[ \t]*', multiLine: true),
+          (m) => '${m[1]}• ',
+        )
         .replaceAll('-->', '→');
   }
 
@@ -88,19 +91,32 @@ class ThoughtExcerpt extends StatelessWidget {
   }
 
   @override
+  State<ThoughtExcerpt> createState() => _ThoughtExcerptState();
+}
+
+class _ThoughtExcerptState extends State<ThoughtExcerpt> {
+  bool _expanded = false;
+
+  @override
+  void didUpdateWidget(covariant ThoughtExcerpt oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.content != widget.content) _expanded = false;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final richSpan = buildRichArrowSpan(
+    final richSpan = ThoughtExcerpt.buildRichArrowSpan(
       context: context,
-      text: content,
-      baseStyle: style,
-      arrowColor: arrowColor,
+      text: widget.content.trimRight(),
+      baseStyle: widget.style,
+      arrowColor: widget.arrowColor,
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final painter = TextPainter(
           text: richSpan,
-          maxLines: maxLines,
+          maxLines: widget.maxLines,
           textDirection: Directionality.of(context),
           textScaler: MediaQuery.textScalerOf(context),
           ellipsis: '…',
@@ -113,22 +129,30 @@ class ThoughtExcerpt extends StatelessWidget {
           children: [
             Text.rich(
               richSpan,
-              maxLines: maxLines,
-              overflow: TextOverflow.ellipsis,
+              maxLines: _expanded ? null : widget.maxLines,
+              overflow: _expanded
+                  ? TextOverflow.visible
+                  : TextOverflow.ellipsis,
             ),
             if (overflow)
-              TextButton(
-                onPressed: onReadMore,
-                style: context.surfaces.buttonStyle(
-                  TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: const Size(48, 48),
-                    alignment: Alignment.centerLeft,
+              TextButton.icon(
+                onPressed: () => setState(() => _expanded = !_expanded),
+                style: TextButton.styleFrom(
+                  foregroundColor: widget.arrowColor ?? context.glass.clay,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 48),
+                  alignment: Alignment.centerLeft,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  filled: false,
-                  icon: false,
+                  backgroundColor: Colors.transparent,
+                  side: BorderSide.none,
                 ),
-                child: const Text('Read more'),
+                icon: Icon(
+                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  size: 18,
+                ),
+                label: Text(_expanded ? 'Read less' : 'Read more'),
               ),
           ],
         );
