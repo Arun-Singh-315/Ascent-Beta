@@ -348,13 +348,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        widget.existingTask != null
-                            ? 'Edit Activity'
-                            : 'Add Activity',
-                        style: AscentTextStyles.displaySmall
-                            .copyWith(color: context.textPrimary)
-                            .merge(AppTypeRoles.typeRole2),
+                      Expanded(
+                        child: Text(
+                          widget.existingTask != null
+                              ? 'Edit Activity'
+                              : 'Add Activity',
+                          style: AscentTextStyles.displaySmall
+                              .copyWith(color: context.textPrimary)
+                              .merge(AppTypeRoles.typeRole2),
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close_rounded, size: 22),
@@ -521,7 +523,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       _TypeSelectChip(
                         icon: Icons.check_circle_outline_rounded,
                         label: 'To-do',
-                        subtitle: 'Simple task',
                         isSelected: _kind == ActivityKind.todo,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -532,7 +533,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       _TypeSelectChip(
                         icon: Icons.timer_outlined,
                         label: 'Timed',
-                        subtitle: 'Track duration',
                         isSelected: _kind == ActivityKind.duration,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -543,7 +543,6 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                       _TypeSelectChip(
                         icon: Icons.all_inclusive_rounded,
                         label: 'Flexible',
-                        subtitle: 'Track as you go',
                         isSelected: _kind == ActivityKind.flexible,
                         onTap: () {
                           HapticFeedback.selectionClick();
@@ -556,10 +555,13 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                   if (widget.existingTask?.actualCompletedDate == null)
                     TextButton.icon(
                       icon: const Icon(Icons.school_outlined),
-                      label: Text(
-                        widget.existingTask == null
-                            ? 'Plan a lecture instead'
-                            : 'Convert to a course lecture',
+                      label: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.existingTask == null
+                              ? 'Plan a lecture instead'
+                              : 'Convert to a course lecture',
+                        ),
                       ),
                       onPressed: () async {
                         final saved = await AddLectureActivitySheet.show(
@@ -1048,19 +1050,15 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 class _TypeSelectChip extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String subtitle;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _TypeSelectChip({
     required this.icon,
     required this.label,
-    required this.subtitle,
     required this.isSelected,
     required this.onTap,
   });
-
-  static const Color _fireSpark = Color(0xFFFBBF24); // Flame gold/amber
 
   @override
   Widget build(BuildContext context) {
@@ -1073,82 +1071,41 @@ class _TypeSelectChip extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        borderRadius: AppGeometry.roundedr14,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 76),
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpace.s6,
-            horizontal: AppSpace.s4,
-          ),
+        borderRadius: AppGeometry.roundedr24,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          height: 42,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpace.s8),
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark ? context.accentPrimary.withValues(alpha: 0.85) : context.accentPrimary)
                 : (isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white)),
-            borderRadius: AppGeometry.roundedr14,
+            borderRadius: AppGeometry.roundedr24,
             border: Border.all(
               color: isSelected
-                  ? _fireSpark
+                  ? context.accentPrimary
                   : g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
-              width: isSelected ? 1.5 : 1.0,
+              width: 1.0,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: _fireSpark.withValues(alpha: 0.18),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
           ),
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isSelected
-                        ? _fireSpark.withValues(alpha: 0.22)
-                        : g.edge.withValues(alpha: isDark ? 0.2 : 0.1),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      size: 15,
-                      color: isSelected ? _fireSpark : context.textMuted,
-                    ),
-                  ),
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isSelected ? AppPalette.white : context.textMuted,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(width: 6),
                 Text(
                   label,
-                  style: AscentTextStyles.labelMedium
-                      .copyWith(
-                        color: isSelected
-                            ? AppPalette.white
-                            : context.textPrimary,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      )
-                      .merge(AppTypeRoles.typeRole9),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  style: AppStateTypography.stateType4.copyWith(
-                    color: isSelected
-                        ? AppPalette.white.withValues(alpha: 0.85)
-                        : context.textMuted,
-                    fontSize: 10,
+                  style: AscentTextStyles.labelMedium.copyWith(
+                    color: isSelected ? AppPalette.white : context.textPrimary,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),

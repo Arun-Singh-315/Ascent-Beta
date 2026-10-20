@@ -18,45 +18,105 @@ import '../../../shared/widgets/ascent_card.dart';
 import '../../today/add_activity_sheet.dart';
 
 class DailyBriefingCard extends ConsumerWidget {
-  const DailyBriefingCard({super.key, required this.day});
+  const DailyBriefingCard({
+    super.key,
+    required this.day,
+    this.minimal = false,
+  });
   final DateTime day;
+  final bool minimal;
 
   static Future<void> show(BuildContext context, DateTime day) =>
-      showModalBottomSheet<void>(
+      showGeneralDialog<void>(
         context: context,
-        isScrollControlled: true,
-        useRootNavigator: true,
-        useSafeArea: true,
-        showDragHandle: true,
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? context.bgBase
-            : (context.glass.merlot
-                ? MerlotPalette.canvas
-                : (context.glass.frozen ? FrozenPalette.canvas : context.bgBase)),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        builder: (context) => ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.88,
-          ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              4,
-              20,
-              24 + MediaQuery.viewPaddingOf(context).bottom,
+        barrierDismissible: true,
+        barrierLabel: 'Dismiss daily briefing',
+        barrierColor: Colors.black.withValues(alpha: 0.65),
+        transitionDuration: const Duration(milliseconds: 280),
+        pageBuilder: (dialogContext, animation, secondaryAnimation) {
+          final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+          final g = dialogContext.glass;
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 420,
+                maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.85,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 20),
+                child: Material(
+                  color: isDark
+                      ? dialogContext.bgBase
+                      : (g.merlot
+                          ? MerlotPalette.canvas
+                          : (g.frozen ? FrozenPalette.canvas : dialogContext.bgBase)),
+                  elevation: 16,
+                  shadowColor: Colors.black.withValues(alpha: isDark ? 0.5 : 0.16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    side: BorderSide(
+                      color: g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: _DailyLaunchpadFlow(day: day, inSheet: true),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            child: _DailyLaunchpadFlow(day: day, inSheet: true),
-          ),
-        ),
+          );
+        },
+        transitionBuilder: (context, anim, secondaryAnim, child) {
+          final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+          return ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1.0).animate(curved),
+            child: FadeTransition(
+              opacity: curved,
+              child: child,
+            ),
+          );
+        },
       );
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
-    child: AscentCard(child: _DailyLaunchpadFlow(day: day)),
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (minimal) {
+      final autoOpen = ref.watch(dailyBriefingAutoOpenProvider);
+      if (autoOpen) {
+        return const SizedBox.shrink();
+      }
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Center(
+          child: TextButton.icon(
+            onPressed: () => DailyBriefingCard.show(context, day),
+            icon: Icon(
+              Icons.rocket_launch_rounded,
+              size: 16,
+              color: context.accentPrimary,
+            ),
+            label: Text(
+              'Open daily check-in',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.accentPrimary,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: AscentCard(child: _DailyLaunchpadFlow(day: day)),
+    );
+  }
 }
 
 class _DailyLaunchpadFlow extends ConsumerStatefulWidget {
@@ -80,8 +140,6 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
   bool _showThoughtField = false;
 
   Timer? _feedbackTimer;
-
-  static const Color _fireSpark = Color(0xFFFBBF24); // Flame yellow/amber
 
   @override
   void dispose() {
@@ -182,17 +240,17 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _fireSpark.withValues(alpha: 0.18),
+                color: context.accentPrimary.withValues(alpha: isDark ? 0.25 : 0.12),
                 border: Border.all(
-                  color: _fireSpark.withValues(alpha: 0.4),
+                  color: context.accentPrimary.withValues(alpha: isDark ? 0.4 : 0.25),
                   width: 1.0,
                 ),
               ),
-              child: const Center(
+              child: Center(
                 child: Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 18,
-                  color: _fireSpark,
+                  Icons.rocket_launch_rounded,
+                  size: 17,
+                  color: context.accentPrimary,
                 ),
               ),
             ),
@@ -231,7 +289,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
               IconButton(
                 tooltip: 'Dismiss daily briefing',
                 onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close_rounded),
               ),
           ],
         ),
@@ -249,7 +307,7 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
                   color: active
-                      ? _fireSpark
+                      ? context.accentPrimary
                       : g.edge.withValues(alpha: isDark ? 0.25 : 0.4),
                 ),
               ),
@@ -366,12 +424,14 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
                 children: [
                   Icon(Icons.history_rounded, size: 16, color: g.clay),
                   const SizedBox(width: 6),
-                  Text(
-                    'Yesterday in Review',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: g.clay,
+                  Expanded(
+                    child: Text(
+                      'Yesterday in Review',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: g.clay,
+                      ),
                     ),
                   ),
                 ],
@@ -405,26 +465,26 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: _fireSpark.withValues(alpha: 0.1),
+            color: isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: _fireSpark.withValues(alpha: 0.3),
+              color: g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
               width: 1.0,
             ),
           ),
           child: Row(
             children: [
-              const Icon(Icons.local_fire_department_rounded, size: 18, color: _fireSpark),
+              Icon(Icons.local_fire_department_rounded, size: 18, color: g.clay),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   streak == 0
                       ? 'Ignite your streak today with 1 focused activity!'
                       : '$streak day active streak! Keep the flame alive.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFFB45309),
+                    color: g.ink,
                   ),
                 ),
               ),
@@ -519,20 +579,19 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: _fireSpark, width: 1.5),
+              borderSide: BorderSide(color: context.accentPrimary, width: 1.5),
             ),
           ),
         ),
 
         const SizedBox(height: 10),
 
-        // Activity Kind Chips (Equal Sized & Fire-accented)
+        // Activity Kind Chips (Compact Option Pills - Theme Matching)
         Row(
           children: [
             _buildTypeChip(
               icon: Icons.check_circle_outline_rounded,
               label: 'To-do',
-              subtitle: 'Simple task',
               isSelected: _selectedKind == ActivityKind.todo,
               onTap: () => setState(() => _selectedKind = ActivityKind.todo),
               g: g,
@@ -542,7 +601,6 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
             _buildTypeChip(
               icon: Icons.timer_outlined,
               label: 'Timed',
-              subtitle: 'Track duration',
               isSelected: _selectedKind == ActivityKind.duration,
               onTap: () => setState(() => _selectedKind = ActivityKind.duration),
               g: g,
@@ -552,7 +610,6 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
             _buildTypeChip(
               icon: Icons.all_inclusive_rounded,
               label: 'Flexible',
-              subtitle: 'Track as you go',
               isSelected: _selectedKind == ActivityKind.flexible,
               onTap: () => setState(() => _selectedKind = ActivityKind.flexible),
               g: g,
@@ -572,15 +629,15 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
               return ChoiceChip(
                 label: Text('$mins min'),
                 selected: isSel,
-                selectedColor: _fireSpark.withValues(alpha: 0.25),
+                selectedColor: context.accentPrimary.withValues(alpha: 0.15),
                 backgroundColor: isDark ? g.fill : Colors.white,
                 side: BorderSide(
-                  color: isSel ? _fireSpark : g.edge.withValues(alpha: 0.4),
+                  color: isSel ? context.accentPrimary : g.edge.withValues(alpha: 0.4),
                 ),
                 labelStyle: TextStyle(
                   fontSize: 11,
                   fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                  color: isSel ? (isDark ? Colors.white : const Color(0xFFB45309)) : g.ink,
+                  color: isSel ? context.accentPrimary : g.ink,
                 ),
                 onSelected: (_) => setState(() => _durationMinutes = mins),
               );
@@ -713,14 +770,16 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.rocket_launch_rounded, size: 16, color: _fireSpark),
+                  Icon(Icons.rocket_launch_rounded, size: 16, color: context.accentPrimary),
                   const SizedBox(width: 6),
-                  Text(
-                    'All Set for Today',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: g.ink,
+                  Expanded(
+                    child: Text(
+                      'All Set for Today',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: g.ink,
+                      ),
                     ),
                   ),
                 ],
@@ -785,7 +844,6 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
   Widget _buildTypeChip({
     required IconData icon,
     required String label,
-    required String subtitle,
     required bool isSelected,
     required VoidCallback onTap,
     required AscentGlass g,
@@ -797,69 +855,41 @@ class _DailyLaunchpadFlowState extends ConsumerState<_DailyLaunchpadFlow> {
           HapticFeedback.selectionClick();
           onTap();
         },
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 74),
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        borderRadius: BorderRadius.circular(24),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
           decoration: BoxDecoration(
             color: isSelected
                 ? (isDark ? context.accentPrimary.withValues(alpha: 0.85) : context.accentPrimary)
                 : (isDark ? g.fill : (g.merlot ? MerlotPalette.surface : Colors.white)),
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected
-                  ? _fireSpark
+                  ? context.accentPrimary
                   : g.edge.withValues(alpha: isDark ? 0.35 : 0.65),
-              width: isSelected ? 1.5 : 1.0,
+              width: 1.0,
             ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: _fireSpark.withValues(alpha: 0.18),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
           ),
           child: FittedBox(
             fit: BoxFit.scaleDown,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isSelected
-                        ? _fireSpark.withValues(alpha: 0.22)
-                        : g.edge.withValues(alpha: isDark ? 0.2 : 0.1),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      size: 14,
-                      color: isSelected ? _fireSpark : context.textMuted,
-                    ),
-                  ),
+                Icon(
+                  icon,
+                  size: 15,
+                  color: isSelected ? Colors.white : context.textMuted,
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(width: 5),
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 11.5,
+                    fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     color: isSelected ? Colors.white : context.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    color: isSelected ? Colors.white.withValues(alpha: 0.85) : context.textMuted,
                   ),
                 ),
               ],

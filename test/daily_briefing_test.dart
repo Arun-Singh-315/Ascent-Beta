@@ -273,10 +273,16 @@ void main() {
       await tester.ensureVisible(find.text('Open daily check-in'));
       await tester.tap(find.text('Open daily check-in'));
       await tester.pumpAndSettle();
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        FlutterError.dumpErrorToConsole(details);
+        originalOnError?.call(details);
+      };
       final add = find.text('Plan one small task').last;
       await tester.ensureVisible(add);
       await tester.tap(add);
       await tester.pumpAndSettle();
+      FlutterError.onError = originalOnError;
       expect(find.byType(AddActivitySheet), findsOneWidget);
       expect(tester.takeException(), isNull);
       Navigator.of(tester.element(find.byType(AddActivitySheet))).pop();
