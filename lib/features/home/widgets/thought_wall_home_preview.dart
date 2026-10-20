@@ -469,74 +469,76 @@ class _ThoughtWallHomePreviewState
 
             final previewThoughts = _preview(thoughts);
             final isDark = context.isDark;
-            final isCardDark = isDark || g.merlot || g.frozen;
 
+            // Rest card colour as it was before (theme surface / porcelain)
             final cardFill = isDark
                 ? null
                 : (g.merlot
-                    ? MerlotPalette.darkSurface
+                    ? MerlotPalette.surface
                     : (g.frozen
-                        ? FrozenPalette.darkSurface
+                        ? FrozenPalette.surface
                         : AscentColors.bgSurface));
 
             final cardBorder = isDark
                 ? null
                 : Border.all(
                     color: g.merlot
-                        ? MerlotPalette.darkLineSubtle
+                        ? MerlotPalette.line
                         : (g.frozen
-                            ? FrozenPalette.darkLineSubtle
+                            ? FrozenPalette.line
                             : g.edge.withValues(alpha: 0.45)),
                     width: (g.merlot || g.frozen) ? 0.75 : 1.0,
                   );
 
-            final titleColor = isCardDark
-                ? (g.merlot
-                    ? MerlotPalette.darkMutedInk
-                    : (g.frozen ? FrozenPalette.darkMutedInk : g.inkMuted))
-                : g.inkMuted;
+            final titleColor = g.inkMuted;
+            final expandIconColor = g.clay;
+            final actionAccentColor = g.clay;
 
-            final expandIconColor = isCardDark
-                ? (g.merlot
-                    ? MerlotPalette.antiqueGold
-                    : (g.frozen ? FrozenPalette.darkActionBright : g.clay))
-                : g.clay;
+            // ONLY the bubble of thought changes to the exact blue of floating Ask Aria / avatar A
+            final bubbleGradient = g.frozen
+                ? LinearGradient(
+                    colors: isDark
+                        ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
+                        : [FrozenPalette.actionBright, FrozenPalette.action],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null;
 
-            final bubbleFill = isDark
-                ? g.fill.withValues(alpha: g.fill.a + 0.04)
-                : (g.merlot
-                    ? MerlotPalette.darkElevated
-                    : (g.frozen
-                        ? FrozenPalette.darkElevated
+            final bubbleFill = bubbleGradient != null
+                ? null
+                : (isDark
+                    ? g.fill.withValues(alpha: g.fill.a + 0.04)
+                    : (g.merlot
+                        ? MerlotPalette.pillSoft
                         : AscentColors.bgSurface));
 
-            final bubbleBorder = isDark
-                ? null
-                : Border.all(
-                    color: g.merlot
-                        ? MerlotPalette.darkLineSubtle
-                        : (g.frozen
-                            ? FrozenPalette.darkLineSubtle
-                            : g.edge.withValues(alpha: 0.45)),
-                    width: (g.merlot || g.frozen) ? 0.75 : 1.0,
-                  );
+            final bubbleBorder = g.frozen
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.22),
+                    width: 0.75,
+                  )
+                : (isDark
+                    ? null
+                    : Border.all(
+                        color: g.merlot
+                            ? MerlotPalette.lineSubtle
+                            : g.edge.withValues(alpha: 0.45),
+                        width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                      ));
 
-            final thoughtTextColor = isCardDark
-                ? (g.merlot
-                    ? MerlotPalette.darkInk
-                    : (g.frozen ? FrozenPalette.darkInk : Colors.white))
-                : g.ink;
+            final isBubbleBlue = g.frozen;
 
-            final thoughtTextMutedColor = isCardDark
-                ? (g.merlot
-                    ? MerlotPalette.darkSecondaryInk
-                    : (g.frozen ? FrozenPalette.darkSecondaryInk : g.inkMuted))
+            final thoughtTextColor = isBubbleBlue
+                ? Colors.white
+                : (isDark ? Colors.white : g.ink);
+
+            final thoughtTextMutedColor = isBubbleBlue
+                ? Colors.white.withValues(alpha: 0.85)
                 : g.inkMuted;
 
-            final actionAccentColor = isCardDark
-                ? (g.merlot
-                    ? MerlotPalette.antiqueGold
-                    : (g.frozen ? FrozenPalette.darkActionBright : g.clay))
+            final bubbleAccentColor = isBubbleBlue
+                ? Colors.white
                 : g.clay;
 
             return Padding(
@@ -603,6 +605,7 @@ class _ThoughtWallHomePreviewState
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
                           fillColor: bubbleFill,
+                          gradient: bubbleGradient,
                           customBorder: bubbleBorder,
                           radius: 18,
                           borderRadius: BorderRadius.only(
@@ -630,7 +633,7 @@ class _ThoughtWallHomePreviewState
                                     vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
-                                    color: actionAccentColor.withValues(alpha: 0.16),
+                                    color: bubbleAccentColor.withValues(alpha: isBubbleBlue ? 0.22 : 0.16),
                                     borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
@@ -639,13 +642,13 @@ class _ThoughtWallHomePreviewState
                                       Icon(
                                         Icons.push_pin_rounded,
                                         size: 11,
-                                        color: actionAccentColor,
+                                        color: bubbleAccentColor,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PINNED TO HOME',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(color: actionAccentColor)
+                                            .copyWith(color: bubbleAccentColor)
                                             .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
@@ -659,7 +662,7 @@ class _ThoughtWallHomePreviewState
                                     vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
-                                    color: actionAccentColor.withValues(alpha: 0.16),
+                                    color: bubbleAccentColor.withValues(alpha: isBubbleBlue ? 0.22 : 0.16),
                                     borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
@@ -668,13 +671,13 @@ class _ThoughtWallHomePreviewState
                                       Icon(
                                         Icons.handshake_rounded,
                                         size: 11,
-                                        color: actionAccentColor,
+                                        color: bubbleAccentColor,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PROMISE',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(color: actionAccentColor)
+                                            .copyWith(color: bubbleAccentColor)
                                             .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
@@ -684,9 +687,10 @@ class _ThoughtWallHomePreviewState
                               ],
                               ThoughtExcerpt(
                                 content: thought.content,
+                                arrowColor: isBubbleBlue ? Colors.white : null,
                                 style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
-                                      ? thoughtTextMutedColor
+                                      ? (isBubbleBlue ? Colors.white70 : thoughtTextMutedColor)
                                       : thoughtTextColor,
                                   decoration: thought.isCompleted
                                       ? TextDecoration.lineThrough
@@ -696,12 +700,8 @@ class _ThoughtWallHomePreviewState
                               if (isDraftSource) ...[
                                 const SizedBox(height: 8),
                                 Divider(
-                                  color: isCardDark
-                                      ? (g.merlot
-                                          ? MerlotPalette.darkLineSubtle
-                                          : (g.frozen
-                                              ? FrozenPalette.darkLineSubtle
-                                              : g.line))
+                                  color: isBubbleBlue
+                                      ? Colors.white.withValues(alpha: 0.25)
                                       : g.line,
                                 ),
                                 const SizedBox(height: 6),
@@ -714,22 +714,28 @@ class _ThoughtWallHomePreviewState
                                   runSpacing: 4,
                                   children: [
                                     AppPill.action(
-                                      avatar: const Icon(
+                                      avatar: Icon(
                                         Icons.edit_calendar_outlined,
                                         size: 14,
+                                        color: isBubbleBlue ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action) : null,
                                       ),
                                       label: const Text('Plan'),
+                                      backgroundColor: isBubbleBlue ? Colors.white : null,
+                                      labelStyle: isBubbleBlue ? TextStyle(color: isDark ? FrozenPalette.darkAction : FrozenPalette.action, fontWeight: FontWeight.w600) : null,
                                       onPressed: () {
                                         _dismissTransient();
                                         _plan(thought);
                                       },
                                     ),
                                     AppPill.action(
-                                      avatar: const Icon(
+                                      avatar: Icon(
                                         Icons.checklist_rounded,
                                         size: 14,
+                                        color: isBubbleBlue ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action) : null,
                                       ),
                                       label: const Text('Todo'),
+                                      backgroundColor: isBubbleBlue ? Colors.white : null,
+                                      labelStyle: isBubbleBlue ? TextStyle(color: isDark ? FrozenPalette.darkAction : FrozenPalette.action, fontWeight: FontWeight.w600) : null,
                                       onPressed: () {
                                         _dismissTransient();
                                         applyThoughtAction(
@@ -741,11 +747,14 @@ class _ThoughtWallHomePreviewState
                                       },
                                     ),
                                     AppPill.action(
-                                      avatar: const Icon(
+                                      avatar: Icon(
                                         Icons.notifications_none_rounded,
                                         size: 14,
+                                        color: isBubbleBlue ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action) : null,
                                       ),
                                       label: const Text('Reminder'),
+                                      backgroundColor: isBubbleBlue ? Colors.white : null,
+                                      labelStyle: isBubbleBlue ? TextStyle(color: isDark ? FrozenPalette.darkAction : FrozenPalette.action, fontWeight: FontWeight.w600) : null,
                                       onPressed: () {
                                         _dismissTransient();
                                         applyThoughtAction(
@@ -771,7 +780,7 @@ class _ThoughtWallHomePreviewState
                                         Icon(
                                           Icons.check_circle_rounded,
                                           size: 12,
-                                          color: actionAccentColor,
+                                          color: bubbleAccentColor,
                                         ),
                                         const SizedBox(width: 4),
                                       ],
@@ -809,9 +818,7 @@ class _ThoughtWallHomePreviewState
                                       isTransientActive
                                           ? Icons.keyboard_arrow_up_rounded
                                           : Icons.keyboard_arrow_down_rounded,
-                                      color: isTransientActive
-                                          ? actionAccentColor
-                                          : thoughtTextMutedColor,
+                                      color: bubbleAccentColor,
                                     ),
                                   ),
                                 ],

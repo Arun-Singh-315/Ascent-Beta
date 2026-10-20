@@ -248,20 +248,23 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     }
     final primary = selected || role == AppSurfaceRole.primary;
     return BoxDecoration(
-      color: primary
-          ? accent
-          : role == AppSurfaceRole.tag
-          ? tintFill
-          : cardFill,
+      color: night?.gradient != null
+          ? null
+          : (primary
+              ? accent
+              : role == AppSurfaceRole.tag
+                  ? tintFill
+                  : cardFill),
+      gradient: night?.gradient,
       borderRadius: night?.shape == BoxShape.circle ? null : r,
       shape: night?.shape ?? BoxShape.rectangle,
       border: primary
           ? null
           : role == AppSurfaceRole.tag
-          ? Border.all(color: tintBorder, width: pillBorderWidth)
-          : role == AppSurfaceRole.pill
-          ? pillBorder
-          : cardBorder,
+              ? Border.all(color: tintBorder, width: pillBorderWidth)
+              : (night?.border ??
+                  (role == AppSurfaceRole.pill ? pillBorder : cardBorder)),
+      boxShadow: night?.boxShadow,
     );
   }
 

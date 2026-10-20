@@ -23,6 +23,7 @@ import 'package:ascent/features/home/widgets/learning_hub_card.dart';
 import 'package:ascent/features/home/widgets/life_checkin_popup_dialog.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
+import 'package:ascent/shared/widgets/thought_excerpt.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -363,13 +364,13 @@ void main() {
       await tester.pump(Duration.zero);
     });
 
-    testWidgets('8. ThoughtWallHomePreview thought card is dark in Merlot and Frozen Sky themes', (tester) async {
+    testWidgets('8. ThoughtWallHomePreview card retains theme surface and only thought bubble receives vibrant blue gradient in Frozen Sky', (tester) async {
       final tId = await db.thoughtDao.insertThought(
         ThoughtTableCompanion.insert(content: 'Deep mind space reflection'),
       );
       final t = (await db.thoughtDao.getThoughtById(tId))!;
 
-      // Merlot light
+      // Merlot light: outer card is MerlotPalette.surface, bubble is MerlotPalette.pillSoft
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -385,17 +386,17 @@ void main() {
       final cardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(cardFinder, findsOneWidget);
       final cardGlass = tester.widget<GlassSurface>(cardFinder);
-      expect(cardGlass.fillColor, equals(MerlotPalette.darkSurface));
+      expect(cardGlass.fillColor, equals(MerlotPalette.surface));
 
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
       final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
-      expect(bubbleGlass.fillColor, equals(MerlotPalette.darkElevated));
+      expect(bubbleGlass.fillColor, equals(MerlotPalette.pillSoft));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
 
-      // Frozen Sky light
+      // Frozen Sky light: outer card is FrozenPalette.surface, bubble has Ask Aria blue gradient
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -411,12 +412,62 @@ void main() {
       final frozenCardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(frozenCardFinder, findsOneWidget);
       final frozenCardGlass = tester.widget<GlassSurface>(frozenCardFinder);
-      expect(frozenCardGlass.fillColor, equals(FrozenPalette.darkSurface));
+      expect(frozenCardGlass.fillColor, equals(FrozenPalette.surface));
 
       final frozenBubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(frozenBubbleFinder, findsOneWidget);
       final frozenBubbleGlass = tester.widget<GlassSurface>(frozenBubbleFinder);
-      expect(frozenBubbleGlass.fillColor, equals(FrozenPalette.darkElevated));
+      expect(frozenBubbleGlass.gradient, isNotNull);
+      final gradient = frozenBubbleGlass.gradient as LinearGradient;
+      expect(gradient.colors, equals([FrozenPalette.actionBright, FrozenPalette.action]));
+
+      // Verify thought text inside the blue bubble is white
+      final excerptFinder = find.byType(ThoughtExcerpt);
+      expect(excerptFinder, findsOneWidget);
+      final excerptWidget = tester.widget<ThoughtExcerpt>(excerptFinder);
+      expect(excerptWidget.style.color, equals(Colors.white));
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('9. ThoughtWallHomePreview is immune to overflows at 320px width with 2.0x text scale', (tester) async {
+      tester.view.physicalSize = const Size(320 * 2.0, 800 * 2.0);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final tId = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Important reflection about daily routines and priorities',
+          isPinned: const drift.Value(true),
+        ),
+      );
+      final t = (await db.thoughtDao.getThoughtById(tId))!;
+
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(320, 800),
+            textScaler: TextScaler.linear(2.0),
+          ),
+          child: buildTestableWidget(
+            const Scaffold(
+              body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+            ),
+            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+            thoughts: [t],
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(const ValueKey('home_mind_space_card')), findsOneWidget);
+      expect(find.byKey(ValueKey('home_thought_$tId')), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
