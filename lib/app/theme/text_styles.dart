@@ -42,66 +42,70 @@ class AscentTextStyles {
 
   // ── Body (DM Sans) ──────────────────────────────────────────────────────────
 
-  /// 16 px · Regular · h 1.5
+  /// 16 px · Regular · h 1.45 · ls −0.15
   static TextStyle get bodyLarge => GoogleFonts.dmSans(
     fontSize: 16,
     fontWeight: FontWeight.w400,
-    height: 1.5,
+    height: 1.45,
+    letterSpacing: -0.15,
   );
 
-  /// 14 px · Regular · h 1.5
+  /// 14 px · Regular · h 1.45 · ls −0.12
   static TextStyle get bodyMedium => GoogleFonts.dmSans(
     fontSize: 14,
     fontWeight: FontWeight.w400,
-    height: 1.5,
+    height: 1.45,
+    letterSpacing: -0.12,
   );
 
-  /// 12 px · Regular · h 1.4
+  /// 12 px · Regular · h 1.4 · ls −0.05
   static TextStyle get bodySmall => GoogleFonts.dmSans(
     fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.4,
+    letterSpacing: -0.05,
   );
 
-  /// 14 px · Medium (w500) · h 1.5  — slightly emphasised body copy
+  /// 14 px · Medium (w500) · h 1.45 · ls −0.12 — slightly emphasised body copy
   static TextStyle get bodyMediumMedium => GoogleFonts.dmSans(
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    height: 1.5,
+    height: 1.45,
+    letterSpacing: -0.12,
   );
 
   // ── Labels (DM Sans Medium) ─────────────────────────────────────────────────
 
-  /// 16 px · Medium · h 1.3 · ls +0.1  — button labels, tab labels
+  /// 16 px · Medium · h 1.3 · ls +0.05  — button labels, tab labels
   static TextStyle get labelLarge => GoogleFonts.dmSans(
     fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+    letterSpacing: 0.05,
+  );
+
+  /// 12 px · Medium · h 1.3 · ls +0.35  — chips, badges, metadata
+  static TextStyle get labelSmall => GoogleFonts.dmSans(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    height: 1.3,
+    letterSpacing: 0.35,
+  );
+
+  /// 14 px · Medium · h 1.3 · ls +0.1 — form labels, card subtitles
+  static TextStyle get labelMedium => GoogleFonts.dmSans(
+    fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1.3,
     letterSpacing: 0.1,
   );
 
-  /// 12 px · Medium · h 1.3 · ls +0.4  — chips, badges, metadata
-  static TextStyle get labelSmall => GoogleFonts.dmSans(
-    fontSize: 12,
-    fontWeight: FontWeight.w500,
-    height: 1.3,
-    letterSpacing: 0.4,
-  );
-
-  /// 14 px · Medium · h 1.3 · ls +0.2 — form labels, card subtitles
-  static TextStyle get labelMedium => GoogleFonts.dmSans(
-    fontSize: 14,
-    fontWeight: FontWeight.w500,
-    height: 1.3,
-    letterSpacing: 0.2,
-  );
-
-  /// 12 px · Medium · h 1.3 · ls +0.3 — captions, pills
+  /// 12 px · Medium · h 1.3 · ls +0.25 — captions, pills
   static TextStyle get captionMedium => GoogleFonts.dmSans(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.3,
-    letterSpacing: 0.3,
+    letterSpacing: 0.25,
   );
 
   /// Alias for captionMedium
@@ -169,26 +173,28 @@ class AscentTextStyles {
     height: 24 / 17,
   );
 
-  /// Body 15 / 22 · 400 (DM Sans)
+  /// Body 15 / 22 · 400 (DM Sans) · ls −0.12
   static TextStyle get homeBody => GoogleFonts.dmSans(
     fontSize: 15,
     fontWeight: FontWeight.w400,
-    height: 22 / 15,
+    height: 1.45,
+    letterSpacing: -0.12,
   );
 
-  /// Secondary 13 / 18 · 400 (DM Sans)
+  /// Secondary 13 / 18 · 400 (DM Sans) · ls −0.08
   static TextStyle get homeSecondary => GoogleFonts.dmSans(
     fontSize: 13,
     fontWeight: FontWeight.w400,
-    height: 18 / 13,
+    height: 1.4,
+    letterSpacing: -0.08,
   );
 
-  /// Caption 11 / 16 · 500 (DM Sans)
+  /// Caption 11 / 16 · 500 (DM Sans) · ls +0.35
   static TextStyle get homeCaption => GoogleFonts.dmSans(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    height: 16 / 11,
-    letterSpacing: 0.4,
+    height: 1.35,
+    letterSpacing: 0.35,
   );
 }
 
@@ -617,9 +623,10 @@ class AppTypography {
     Color? color,
     TextDecoration? decoration,
   }) => GoogleFonts.plusJakartaSans(
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
     height: 1.45,
     fontSize: 14,
+    letterSpacing: -0.12,
     color: color,
     decoration: decoration,
   );
@@ -857,7 +864,9 @@ class AppTypography {
     TextDecoration? decoration,
   }) => GoogleFonts.plusJakartaSans(
     fontSize: 14,
-    fontWeight: FontWeight.w600,
+    fontWeight: FontWeight.w500,
+    height: 1.45,
+    letterSpacing: -0.12,
     color: color,
     decoration: decoration,
   );

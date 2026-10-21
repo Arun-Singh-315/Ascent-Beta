@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
@@ -74,12 +75,22 @@ class LearningHubCard extends ConsumerWidget {
         GlassSurface(
           radius: 22,
           enableBlur: false,
-          fillColor: dark ? null : (g.merlot ? MerlotPalette.surface : Colors.white),
+          fillColor: dark
+              ? null
+              : (g.merlot
+                  ? MerlotPalette.surface
+                  : (g.frozen
+                      ? FrozenPalette.surface
+                      : Colors.white)),
           customBorder: dark
               ? null
               : Border.all(
-                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
-                  width: g.merlot ? 0.75 : 1,
+                  color: g.merlot
+                      ? MerlotPalette.line
+                      : (g.frozen
+                          ? FrozenPalette.line
+                          : g.edge.withValues(alpha: .45)),
+                  width: (g.merlot || g.frozen) ? 0.75 : 1,
                 ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -172,8 +183,30 @@ class LearningHubCard extends ConsumerWidget {
                     child: FilledButton(
                       onPressed: resume,
                       style: FilledButton.styleFrom(
-                        backgroundColor: g.clay,
-                        foregroundColor: Colors.white,
+                        backgroundColor: dark
+                            ? g.clay
+                            : (g.merlot
+                                ? MerlotPalette.pillSoft
+                                : (g.frozen
+                                    ? FrozenPalette.pillSoft
+                                    : g.claySoft)),
+                        foregroundColor: dark
+                            ? Colors.white
+                            : (g.merlot
+                                ? MerlotPalette.action
+                                : (g.frozen
+                                    ? FrozenPalette.action
+                                    : g.clay)),
+                        side: dark
+                            ? BorderSide.none
+                            : BorderSide(
+                                color: g.merlot
+                                    ? MerlotPalette.lineSubtle
+                                    : (g.frozen
+                                        ? FrozenPalette.lineSubtle
+                                        : g.line),
+                                width: 0.75,
+                              ),
                         minimumSize: const Size(0, 44),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -193,6 +226,10 @@ class LearningHubCard extends ConsumerWidget {
                             : 'Resume',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),

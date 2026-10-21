@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/merlot_palette.dart';
+import '../../../app/theme/frozen_palette.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
 import '../../../core/providers/database_provider.dart';
@@ -116,30 +117,54 @@ class ActivityRowItem extends ConsumerWidget {
               ? (context.isDark
                     ? (g.merlot
                           ? MerlotPalette.darkAction.withValues(alpha: 0.18)
-                          : AppPalette.white.withValues(alpha: 0.22))
-                    : (g.merlot ? MerlotPalette.tint : g.fill))
+                          : (g.frozen
+                                ? FrozenPalette.darkAction.withValues(alpha: 0.18)
+                                : AppPalette.white.withValues(alpha: 0.22)))
+                    : (g.merlot
+                          ? MerlotPalette.tint
+                          : (g.frozen ? FrozenPalette.tint : g.fill)))
               : (isPaused
                     ? (context.isDark
                           ? (g.merlot
                                 ? MerlotPalette.darkElevated
-                                : AppPalette.white.withValues(alpha: 0.12))
+                                : (g.frozen
+                                      ? FrozenPalette.darkElevated
+                                      : AppPalette.white.withValues(alpha: 0.12)))
                           : const Color(0xFFFEF3C7))
                     : (context.isDark
-                          ? (g.merlot ? MerlotPalette.darkElevated : g.fill)
+                          ? (g.merlot
+                                ? MerlotPalette.darkElevated
+                                : (g.frozen
+                                      ? FrozenPalette.darkElevated
+                                      : g.fill))
                           : (g.merlot
-                                ? const Color(0xFFFBF8F4)
-                                : const Color(0xFFFAFAFA)))),
+                                ? MerlotPalette.pillSoft
+                                : (g.frozen
+                                      ? FrozenPalette.pillSoft
+                                      : const Color(0xFFFAFAFA))))),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isRunning
-                ? (g.merlot ? MerlotPalette.action : g.clay)
+                ? (g.merlot
+                      ? MerlotPalette.action
+                      : (g.frozen ? FrozenPalette.action : g.clay))
                 : (isPaused
-                      ? (g.merlot ? MerlotPalette.spark : AppPalette.orange.shade300)
+                      ? (g.merlot
+                            ? MerlotPalette.spark
+                            : (g.frozen
+                                  ? FrozenPalette.spark
+                                  : AppPalette.orange.shade300))
                       : (context.isDark
-                            ? (g.merlot ? MerlotPalette.darkLine : g.edge)
+                            ? (g.merlot
+                                  ? MerlotPalette.darkLine
+                                  : (g.frozen
+                                        ? FrozenPalette.darkLine
+                                        : g.edge))
                             : (g.merlot
-                                  ? const Color(0x1F4E1D24)
-                                  : g.edge.withValues(alpha: 0.35)))),
+                                  ? MerlotPalette.lineSubtle
+                                  : (g.frozen
+                                        ? FrozenPalette.lineSubtle
+                                        : g.edge.withValues(alpha: 0.35))))),
             width: 0.75,
           ),
         ),

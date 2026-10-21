@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/frozen_palette.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../core/actions/expense_actions.dart';
@@ -510,14 +512,14 @@ class _LifeCheckInPopupDialogState
         ),
         const SizedBox(height: 14),
 
-        // Quick log buttons grid
+        // Quick log buttons grid - 4 equal balanced hydration options
         Row(
           children: [
             Expanded(
               child: _QuickWaterButton(
                 amountMl: 150,
                 label: 'Small Sip',
-                icon: Icons.coffee_rounded,
+                icon: Icons.water_drop_outlined,
                 onTap: () => _logWater(150),
               ),
             ),
@@ -539,7 +541,7 @@ class _LifeCheckInPopupDialogState
               child: _QuickWaterButton(
                 amountMl: 350,
                 label: 'Bottle',
-                icon: Icons.emoji_food_beverage_rounded,
+                icon: Icons.water_drop_rounded,
                 onTap: () => _logWater(350),
               ),
             ),
@@ -548,7 +550,7 @@ class _LifeCheckInPopupDialogState
               child: _QuickWaterButton(
                 amountMl: 500,
                 label: 'Sipper',
-                icon: Icons.sports_bar_rounded,
+                icon: Icons.water_rounded,
                 onTap: () => _logWater(500),
               ),
             ),
@@ -918,80 +920,89 @@ class _QuickWaterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark
-        ? const Color(0xFF0369A1).withValues(alpha: 0.16)
-        : const Color(0xFFF0F9FF);
+        ? g.fill
+        : (g.merlot
+            ? MerlotPalette.pillSoft
+            : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
     final borderColor = isDark
-        ? const Color(0xFF38BDF8).withValues(alpha: 0.3)
-        : const Color(0xFFBAE6FD);
+        ? g.edge
+        : (g.merlot
+            ? MerlotPalette.lineSubtle
+            : (g.frozen ? FrozenPalette.lineSubtle : const Color(0xFFD2E3F1)));
     final iconBg = isDark
-        ? const Color(0xFF38BDF8).withValues(alpha: 0.2)
-        : const Color(0xFFE0F2FE);
+        ? context.waterAccent.withValues(alpha: 0.18)
+        : (g.merlot
+            ? MerlotPalette.darkTint.withValues(alpha: 0.35)
+            : const Color(0xFFE0EFF8));
     final iconColor = isDark
-        ? const Color(0xFF38BDF8)
-        : const Color(0xFF0284C7);
+        ? context.waterAccent
+        : (g.merlot ? MerlotPalette.action : const Color(0xFF0284C7));
 
     return AppTapArea(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        constraints: const BoxConstraints(minHeight: 84),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: borderColor,
-            width: 1,
+            width: (g.merlot || g.frozen) ? 0.75 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isDark ? Colors.black : const Color(0xFF0284C7))
-                  .withValues(alpha: isDark ? 0.2 : 0.04),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.2)
+                  : (g.merlot
+                      ? MerlotPalette.shadowAmbient
+                      : const Color.fromRGBO(2, 132, 199, 0.04)),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 36,
-              height: 36,
+              width: 28,
+              height: 28,
               decoration: BoxDecoration(
                 color: iconBg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 19, color: iconColor),
+              child: Center(
+                child: Icon(icon, size: 15, color: iconColor),
+              ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      '+$amountMl mL',
-                      style: AppTypography.jetBrainsMono13W70066(
-                        color: context.textPrimary,
-                      ).copyWith(fontSize: 13),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: context.textSecondary,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                '+$amountMl mL',
+                style: AppTypography.jetBrainsMono13W70066(
+                  color: context.textPrimary,
+                ).copyWith(fontSize: 12.5, fontWeight: FontWeight.w700),
+              ),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: context.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],

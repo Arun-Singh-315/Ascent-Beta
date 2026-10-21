@@ -77,7 +77,7 @@ class HomeTheme {
             inkMuted: MerlotPalette.mutedInk,
             edge: MerlotPalette.line,
             line: MerlotPalette.lineSubtle,
-            nav: const Color.fromRGBO(250, 247, 242, 0.96),
+            nav: MerlotPalette.surface,
             shadow: MerlotPalette.shadowAmbient,
             glow1: const Color(0x29C28834),
             glow2: const Color(0x1F581825),

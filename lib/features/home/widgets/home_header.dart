@@ -16,7 +16,6 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/providers/home_layout_provider.dart';
 import '../../../core/streak/study_streak_provider.dart';
-import 'daily_briefing_card.dart';
 
 /// Redesigned HomeHeader based on Ascent Home Redesign spec:
 /// - Top row: uppercase date caption on left, Riya glass pill + avatar (+ streak) on right.
@@ -74,10 +73,6 @@ class HomeHeader extends ConsumerWidget {
                 child: AppTapArea(
                   onTap: () async {
                     HapticFeedback.lightImpact();
-                    if (streak == 0) {
-                      await DailyBriefingCard.show(context, DateTime.now());
-                      return;
-                    }
                     final layout = ref.read(homeLayoutProvider);
                     final visible = {...layout.visible};
                     isStreakCardVisible

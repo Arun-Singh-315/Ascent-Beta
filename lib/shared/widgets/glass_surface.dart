@@ -18,6 +18,7 @@ class GlassSurface extends StatelessWidget {
   final VoidCallback? onTap;
   final Border? customBorder;
   final Color? fillColor;
+  final Gradient? gradient;
   final bool enableBlur;
   final BorderRadius? borderRadius;
 
@@ -29,6 +30,7 @@ class GlassSurface extends StatelessWidget {
     this.onTap,
     this.customBorder,
     this.fillColor,
+    this.gradient,
     this.enableBlur = true,
     this.borderRadius,
   });
@@ -41,7 +43,8 @@ class GlassSurface extends StatelessWidget {
     Widget content = AppCard(
       padding: padding,
       nightDecoration: BoxDecoration(
-        color: fillColor ?? g.fill,
+        color: gradient == null ? (fillColor ?? g.fill) : null,
+        gradient: gradient,
         borderRadius: r,
         border:
             customBorder ??

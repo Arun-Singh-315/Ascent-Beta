@@ -349,7 +349,11 @@ class _ThoughtWallHomePreviewState
             nightDecoration: BoxDecoration(
               color: context.isDark
                   ? g.fill
-                  : (g.merlot ? MerlotPalette.surface : Colors.white),
+                  : (g.merlot
+                      ? MerlotPalette.surface
+                      : (g.frozen
+                          ? FrozenPalette.surface
+                          : Colors.white)),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: _focusNode.hasFocus
@@ -358,8 +362,10 @@ class _ThoughtWallHomePreviewState
                         ? g.edge
                         : (g.merlot
                             ? MerlotPalette.line
-                            : g.edge.withValues(alpha: .45))),
-                width: g.merlot ? 0.75 : 1.0,
+                            : (g.frozen
+                                ? FrozenPalette.line
+                                : g.edge.withValues(alpha: .45)))),
+                width: (g.merlot || g.frozen) ? 0.75 : 1.0,
               ),
             ),
             child: Row(
@@ -462,6 +468,78 @@ class _ThoughtWallHomePreviewState
             }
 
             final previewThoughts = _preview(thoughts);
+            final isDark = context.isDark;
+
+            // Rest card colour as it was before (theme surface / porcelain)
+            final cardFill = isDark
+                ? null
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen
+                        ? FrozenPalette.surface
+                        : AscentColors.bgSurface));
+
+            final cardBorder = isDark
+                ? null
+                : Border.all(
+                    color: g.merlot
+                        ? MerlotPalette.line
+                        : (g.frozen
+                            ? FrozenPalette.line
+                            : g.edge.withValues(alpha: 0.45)),
+                    width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                  );
+
+            final titleColor = g.inkMuted;
+            final expandIconColor = g.clay;
+            final actionAccentColor = g.clay;
+
+            // ONLY the bubble of thought changes to the exact blue of floating Ask Aria / avatar A
+            final bubbleGradient = g.frozen
+                ? LinearGradient(
+                    colors: isDark
+                        ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
+                        : [FrozenPalette.actionBright, FrozenPalette.action],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                : null;
+
+            final bubbleFill = bubbleGradient != null
+                ? null
+                : (isDark
+                    ? g.fill.withValues(alpha: g.fill.a + 0.04)
+                    : (g.merlot
+                        ? MerlotPalette.pillSoft
+                        : AscentColors.bgSurface));
+
+            final bubbleBorder = g.frozen
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.22),
+                    width: 0.75,
+                  )
+                : (isDark
+                    ? null
+                    : Border.all(
+                        color: g.merlot
+                            ? MerlotPalette.lineSubtle
+                            : g.edge.withValues(alpha: 0.45),
+                        width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                      ));
+
+            final isBubbleBlue = g.frozen;
+
+            final thoughtTextColor = isBubbleBlue
+                ? Colors.white
+                : (isDark ? Colors.white : g.ink);
+
+            final thoughtTextMutedColor = isBubbleBlue
+                ? Colors.white.withValues(alpha: 0.85)
+                : g.inkMuted;
+
+            final bubbleAccentColor = isBubbleBlue
+                ? Colors.white
+                : g.clay;
 
             return Padding(
               padding: const EdgeInsets.only(top: 14),
@@ -469,17 +547,8 @@ class _ThoughtWallHomePreviewState
                 key: const ValueKey('home_mind_space_card'),
                 radius: 20,
                 enableBlur: false,
-                fillColor: context.isDark
-                    ? null
-                    : (g.frozen
-                          ? FrozenPalette.surface.withValues(alpha: 0.92)
-                          : AscentColors.bgSurface),
-                customBorder: context.isDark
-                    ? null
-                    : Border.all(
-                        color: g.edge.withValues(alpha: 0.45),
-                        width: 1.0,
-                      ),
+                fillColor: cardFill,
+                customBorder: cardBorder,
                 padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -492,7 +561,7 @@ class _ThoughtWallHomePreviewState
                                 ? 'Recent thoughts'
                                 : 'Recent thought',
                             style: AscentTextStyles.homeCaption.copyWith(
-                              color: g.inkMuted,
+                              color: titleColor,
                             ),
                           ),
                         ),
@@ -508,7 +577,7 @@ class _ThoughtWallHomePreviewState
                             _expanded
                                 ? Icons.expand_less_rounded
                                 : Icons.expand_more_rounded,
-                            color: g.clay,
+                            color: expandIconColor,
                           ),
                         ),
                       ],
@@ -535,21 +604,15 @@ class _ThoughtWallHomePreviewState
                         child: GlassSurface(
                           key: ValueKey('home_thought_${thought.id}'),
                           enableBlur: false,
-                          fillColor: context.isDark
-                              ? g.fill.withValues(alpha: g.fill.a + 0.04)
-                              : AscentColors.bgSurface,
-                          customBorder: context.isDark
-                              ? null
-                              : Border.all(
-                                  color: g.edge.withValues(alpha: .45),
-                                  width: 1.0,
-                                ),
-                          radius: 16,
+                          fillColor: bubbleFill,
+                          gradient: bubbleGradient,
+                          customBorder: bubbleBorder,
+                          radius: 18,
                           borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isRight ? 16 : 4),
-                            bottomRight: Radius.circular(isRight ? 4 : 16),
+                            topLeft: const Radius.circular(18),
+                            topRight: const Radius.circular(18),
+                            bottomLeft: Radius.circular(isRight ? 18 : 6),
+                            bottomRight: Radius.circular(isRight ? 6 : 18),
                           ),
                           padding: const EdgeInsets.symmetric(
                             horizontal: AppSpace.s16,
@@ -570,7 +633,7 @@ class _ThoughtWallHomePreviewState
                                     vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
-                                    color: g.clay.withValues(alpha: 0.14),
+                                    color: bubbleAccentColor.withValues(alpha: isBubbleBlue ? 0.22 : 0.16),
                                     borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
@@ -579,13 +642,13 @@ class _ThoughtWallHomePreviewState
                                       Icon(
                                         Icons.push_pin_rounded,
                                         size: 11,
-                                        color: g.clay,
+                                        color: bubbleAccentColor,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PINNED TO HOME',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(color: g.clay)
+                                            .copyWith(color: bubbleAccentColor)
                                             .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
@@ -599,7 +662,7 @@ class _ThoughtWallHomePreviewState
                                     vertical: AppSpace.s2,
                                   ),
                                   nightDecoration: BoxDecoration(
-                                    color: g.clay.withValues(alpha: 0.14),
+                                    color: bubbleAccentColor.withValues(alpha: isBubbleBlue ? 0.22 : 0.16),
                                     borderRadius: AppGeometry.roundedr10,
                                   ),
                                   child: Row(
@@ -608,13 +671,13 @@ class _ThoughtWallHomePreviewState
                                       Icon(
                                         Icons.handshake_rounded,
                                         size: 11,
-                                        color: g.clay,
+                                        color: bubbleAccentColor,
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'PROMISE',
                                         style: AscentTextStyles.homeCaption
-                                            .copyWith(color: g.clay)
+                                            .copyWith(color: bubbleAccentColor)
                                             .merge(AppTypeRoles.typeRole65),
                                       ),
                                     ],
@@ -624,10 +687,11 @@ class _ThoughtWallHomePreviewState
                               ],
                               ThoughtExcerpt(
                                 content: thought.content,
+                                arrowColor: isBubbleBlue ? Colors.white : null,
                                 style: AppTypography.plusJakartaSans14W600116(
                                   color: thought.isCompleted
-                                      ? g.inkMuted
-                                      : g.ink,
+                                      ? (isBubbleBlue ? Colors.white70 : thoughtTextMutedColor)
+                                      : thoughtTextColor,
                                   decoration: thought.isCompleted
                                       ? TextDecoration.lineThrough
                                       : null,
@@ -635,7 +699,11 @@ class _ThoughtWallHomePreviewState
                               ),
                               if (isDraftSource) ...[
                                 const SizedBox(height: 8),
-                                Divider(color: g.line),
+                                Divider(
+                                  color: isBubbleBlue
+                                      ? Colors.white.withValues(alpha: 0.25)
+                                      : g.line,
+                                ),
                                 const SizedBox(height: 6),
                                 _draftActions(pendingDraft!, showTitle: false),
                               ],
@@ -646,22 +714,28 @@ class _ThoughtWallHomePreviewState
                                   runSpacing: 4,
                                   children: [
                                     AppPill.action(
-                                      avatar: const Icon(
+                                      avatar: Icon(
                                         Icons.edit_calendar_outlined,
                                         size: 14,
+                                        color: isBubbleBlue ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action) : null,
                                       ),
                                       label: const Text('Plan'),
+                                      backgroundColor: isBubbleBlue ? Colors.white : null,
+                                      labelStyle: isBubbleBlue ? TextStyle(color: isDark ? FrozenPalette.darkAction : FrozenPalette.action, fontWeight: FontWeight.w600) : null,
                                       onPressed: () {
                                         _dismissTransient();
                                         _plan(thought);
                                       },
                                     ),
                                     AppPill.action(
-                                      avatar: const Icon(
+                                      avatar: Icon(
                                         Icons.checklist_rounded,
                                         size: 14,
+                                        color: isBubbleBlue ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action) : null,
                                       ),
                                       label: const Text('Todo'),
+                                      backgroundColor: isBubbleBlue ? Colors.white : null,
+                                      labelStyle: isBubbleBlue ? TextStyle(color: isDark ? FrozenPalette.darkAction : FrozenPalette.action, fontWeight: FontWeight.w600) : null,
                                       onPressed: () {
                                         _dismissTransient();
                                         applyThoughtAction(
@@ -673,11 +747,14 @@ class _ThoughtWallHomePreviewState
                                       },
                                     ),
                                     AppPill.action(
-                                      avatar: const Icon(
+                                      avatar: Icon(
                                         Icons.notifications_none_rounded,
                                         size: 14,
+                                        color: isBubbleBlue ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action) : null,
                                       ),
                                       label: const Text('Reminder'),
+                                      backgroundColor: isBubbleBlue ? Colors.white : null,
+                                      labelStyle: isBubbleBlue ? TextStyle(color: isDark ? FrozenPalette.darkAction : FrozenPalette.action, fontWeight: FontWeight.w600) : null,
                                       onPressed: () {
                                         _dismissTransient();
                                         applyThoughtAction(
@@ -703,7 +780,7 @@ class _ThoughtWallHomePreviewState
                                         Icon(
                                           Icons.check_circle_rounded,
                                           size: 12,
-                                          color: g.clay,
+                                          color: bubbleAccentColor,
                                         ),
                                         const SizedBox(width: 4),
                                       ],
@@ -711,7 +788,7 @@ class _ThoughtWallHomePreviewState
                                         timeAgo,
                                         style: AscentTextStyles.homeCaption
                                             .copyWith(
-                                              color: g.inkMuted,
+                                              color: thoughtTextMutedColor,
                                               letterSpacing: 0.5,
                                             )
                                             .merge(AppTypeRoles.typeRole66),
@@ -741,9 +818,7 @@ class _ThoughtWallHomePreviewState
                                       isTransientActive
                                           ? Icons.keyboard_arrow_up_rounded
                                           : Icons.keyboard_arrow_down_rounded,
-                                      color: isTransientActive
-                                          ? g.clay
-                                          : g.inkMuted,
+                                      color: bubbleAccentColor,
                                     ),
                                   ),
                                 ],
@@ -769,7 +844,7 @@ class _ThoughtWallHomePreviewState
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
-                        style: TextButton.styleFrom(foregroundColor: g.clay),
+                        style: TextButton.styleFrom(foregroundColor: actionAccentColor),
                         onPressed: () {
                           HapticFeedback.selectionClick();
                           context.push('/thought-wall');

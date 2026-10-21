@@ -102,16 +102,16 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     mutedText: FrozenPalette.mutedInk,
     accent: FrozenPalette.action,
     greenAction: FrozenPalette.success,
-    cardFill: Colors.transparent,
+    cardFill: FrozenPalette.surface,
     cardBorderColor: FrozenPalette.line,
-    pillBorderColor: FrozenPalette.line,
-    dividerColor: FrozenPalette.line,
-    tintFill: FrozenPalette.tint,
-    tintBorder: FrozenPalette.line,
+    pillBorderColor: FrozenPalette.lineSubtle,
+    dividerColor: FrozenPalette.lineSubtle,
+    tintFill: FrozenPalette.pillSoft,
+    tintBorder: FrozenPalette.lineSubtle,
     onAccent: Colors.white,
-    cardBorderWidth: 1.0,
-    pillBorderWidth: 1.0,
-    shadow: Color.fromRGBO(29, 100, 180, 0.08),
+    cardBorderWidth: 0.75,
+    pillBorderWidth: 0.75,
+    shadow: FrozenPalette.shadowAmbient,
     blur: 0,
   );
 
@@ -248,20 +248,23 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     }
     final primary = selected || role == AppSurfaceRole.primary;
     return BoxDecoration(
-      color: primary
-          ? accent
-          : role == AppSurfaceRole.tag
-          ? tintFill
-          : cardFill,
+      color: night?.gradient != null
+          ? null
+          : (primary
+              ? accent
+              : role == AppSurfaceRole.tag
+                  ? tintFill
+                  : cardFill),
+      gradient: night?.gradient,
       borderRadius: night?.shape == BoxShape.circle ? null : r,
       shape: night?.shape ?? BoxShape.rectangle,
       border: primary
           ? null
           : role == AppSurfaceRole.tag
-          ? Border.all(color: tintBorder, width: pillBorderWidth)
-          : role == AppSurfaceRole.pill
-          ? pillBorder
-          : cardBorder,
+              ? Border.all(color: tintBorder, width: pillBorderWidth)
+              : (night?.border ??
+                  (role == AppSurfaceRole.pill ? pillBorder : cardBorder)),
+      boxShadow: night?.boxShadow,
     );
   }
 

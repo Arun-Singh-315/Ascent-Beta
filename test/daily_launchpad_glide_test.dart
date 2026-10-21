@@ -220,10 +220,10 @@ void main() {
       // Step 1: Yesterday & Welcome
       expect(find.text('Daily Launchpad'), findsOneWidget);
       expect(find.text('Yesterday in Review'), findsOneWidget);
-      expect(find.text('Glide to Today’s Plan'), findsOneWidget);
+      expect(find.text('Start Today’s Plan'), findsOneWidget);
 
-      // Glide to Step 2
-      await tester.tap(find.text('Glide to Today’s Plan'));
+      // Advance to Step 2
+      await tester.tap(find.text('Start Today’s Plan'));
       await tester.pumpAndSettle();
 
       // Step 2: Feed Today's Focus
@@ -292,7 +292,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('6. HomeHeader Start button triggers DailyBriefingCard popup when streak is 0', (tester) async {
+    testWidgets('6. HomeHeader Start button toggles streak card as previously, and DailyBriefingCard.show opens centered popup', (tester) async {
       await tester.pumpWidget(
         buildHarness(
           Scaffold(
@@ -307,9 +307,35 @@ void main() {
       await tester.tap(find.text('Start'));
       await tester.pumpAndSettle();
 
-      // Daily Launchpad popup opened!
+      // Verified streak meter card toggled in layout as previously
+      final layout = prefs.getString('ascent_home_layout_v1');
+      expect(layout, isNotNull);
+
+      // Verify DailyBriefingCard.show opens the centered popup dialog
+      await tester.pumpWidget(
+        buildHarness(
+          Scaffold(
+            body: Builder(
+              builder: (ctx) => ElevatedButton(
+                onPressed: () => DailyBriefingCard.show(ctx, DateTime(2026, 10, 20)),
+                child: const Text('Open Dialog'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pumpAndSettle();
+
+      // Centered popup dialog opened!
       expect(find.text('Daily Launchpad'), findsOneWidget);
       expect(find.byTooltip('Dismiss daily briefing'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Dismiss daily briefing'));
+      await tester.pumpAndSettle();
+      expect(find.text('Daily Launchpad'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(const Duration(milliseconds: 100));

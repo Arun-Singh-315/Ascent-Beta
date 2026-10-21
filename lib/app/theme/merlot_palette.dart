@@ -15,7 +15,7 @@ class MerlotPalette {
   static const canvas = Color(0xFFF8F5EE);
 
   /// Surface: Cards, bottom nav, containers — frosted warm cashmere porcelain
-  static const surface = Color(0xFFFCFAF7);
+  static const surface = Color(0xFFF8F4EC);
 
   /// Surface Bottom: Lower stop for frosted card gradient
   static const surfaceBottom = Color(0xFFF6F2E9);
