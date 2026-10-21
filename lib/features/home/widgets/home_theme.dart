@@ -54,7 +54,7 @@ class HomeTheme {
           (isMerlot
                   ? AppSurfaces.legacyMerlotLinenDark
                   : isNordic
-                  ? AppSurfaces.legacyNordicSky
+                  ? AppSurfaces.legacyNordicSkyDark
                   : AppSurfaces.night)
               .copyWith(
             blur: 0,

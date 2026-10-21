@@ -130,7 +130,11 @@ class ActivityRowItem extends ConsumerWidget {
                                 : (g.frozen
                                       ? FrozenPalette.darkElevated
                                       : AppPalette.white.withValues(alpha: 0.12)))
-                          : const Color(0xFFFEF3C7))
+                          : (g.merlot
+                                ? MerlotPalette.sparkTint
+                                : (g.frozen
+                                      ? FrozenPalette.sparkTint
+                                      : const Color(0xFFFEF3C7))))
                     : (context.isDark
                           ? (g.merlot
                                 ? MerlotPalette.darkElevated
@@ -335,7 +339,15 @@ class ActivityRowItem extends ConsumerWidget {
                               Text(
                                 'Paused · ${_runningTimerText(activity)}',
                                 style: AppTypography.jetBrainsMono12W500110(
-                                  color: AppPalette.orange.shade400,
+                                  color: g.frozen
+                                      ? (context.isDark
+                                          ? FrozenPalette.darkSpark
+                                          : FrozenPalette.spark)
+                                      : (g.merlot
+                                          ? (context.isDark
+                                              ? MerlotPalette.darkSpark
+                                              : MerlotPalette.antiqueGold)
+                                          : AppPalette.orange.shade400),
                                 ),
                               ),
                             ] else ...[

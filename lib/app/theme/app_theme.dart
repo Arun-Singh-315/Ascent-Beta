@@ -851,7 +851,9 @@ class AscentTheme {
         isDark
             ? (isMerlotLinen
                 ? AppSurfaces.legacyMerlotLinenDark
-                : AppSurfaces.night)
+                : (isNordicSky
+                    ? AppSurfaces.legacyNordicSkyDark
+                    : AppSurfaces.night))
             : isMerlotLinen
                 ? (day ? AppSurfaces.merlotLinen : AppSurfaces.legacyMerlotLinen)
                 : isNordicSky
