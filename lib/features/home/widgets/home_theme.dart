@@ -27,9 +27,9 @@ class HomeTheme {
             ) as AscentGlass)
           : isNordic
           ? (AscentGlass.nordicSkyDark.copyWith(
-              fill: const Color.fromRGBO(34, 53, 72, 0.12),
-              edge: const Color.fromRGBO(94, 160, 240, 0.22),
-              line: const Color.fromRGBO(94, 160, 240, 0.14),
+              fill: const Color.fromRGBO(22, 35, 56, 0.70),
+              edge: const Color.fromRGBO(94, 160, 240, 0.28),
+              line: const Color.fromRGBO(94, 160, 240, 0.16),
             ) as AscentGlass)
           : (AscentGlass.dark.copyWith(
               bg: AscentColors.bgBaseDark,
@@ -109,7 +109,7 @@ class HomeTheme {
         (isMerlot
                 ? AppSurfaces.merlotLinen
                 : (isNordic
-                    ? AppSurfaces.nordicSky
+                    ? AppSurfaces.legacyNordicSky
                     : AppSurfaces.legacyLight))
             .copyWith(
               blur: 0,
