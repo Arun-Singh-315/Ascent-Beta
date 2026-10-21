@@ -33,7 +33,9 @@ import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
+import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
+import 'package:ascent/shared/widgets/thought_excerpt.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
   @override
@@ -71,7 +73,7 @@ void main() {
     await db.close();
   });
 
-  Widget buildTestable(Widget child, {ThemeData? theme}) {
+  Widget buildTestable(Widget child, {ThemeData? theme, List<Thought>? thoughts}) {
     return ProviderScope(
       overrides: [
         databaseProvider.overrideWithValue(db),
@@ -83,6 +85,9 @@ void main() {
             .overrideWith((ref) => Stream.value(null)),
         todayMomentumCommitmentsStreamProvider
             .overrideWith((ref) => Stream.value([])),
+        if (thoughts != null)
+          recentThoughtsStreamProvider
+              .overrideWith((ref) => Stream.value(thoughts)),
       ],
       child: MaterialApp(theme: theme, home: Scaffold(body: child)),
     );
@@ -352,6 +357,44 @@ void main() {
       final textWidget = tester.widget<Text>(textFinder);
       expect(textWidget.style?.color, equals(FrozenPalette.action),
           reason: 'Paused timer text in light Frozen mode should be cool blue action color');
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('15. Thought bubble in dark Frozen mode uses soothing darkElevated glass, not blinding bright blue', (tester) async {
+      final tId = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(content: 'Late night quiet reflection'),
+      );
+      final t = (await db.thoughtDao.getThoughtById(tId))!;
+
+      await tester.pumpWidget(
+        buildTestable(
+          const Scaffold(
+            body: SingleChildScrollView(child: ThoughtWallHomePreview()),
+          ),
+          theme: AscentTheme.dark(preset: DayThemePreset.nordicSky),
+          thoughts: [t],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
+      expect(bubbleFinder, findsOneWidget);
+      final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
+
+      // In dark Frozen mode: bubble must not have bright neon gradient
+      expect(bubbleGlass.gradient, isNull,
+          reason: 'Dark Frozen mode must not use bright flashlight gradient at night');
+      expect(bubbleGlass.fillColor, equals(FrozenPalette.darkElevated),
+          reason: 'Dark Frozen bubble should use soothing darkElevated glass');
+
+      // Text inside bubble must be high-contrast darkInk
+      final textFinder = find.byType(ThoughtExcerpt);
+      expect(textFinder, findsOneWidget);
+      final excerpt = tester.widget<ThoughtExcerpt>(textFinder);
+      expect(excerpt.style.color, equals(FrozenPalette.darkInk));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);

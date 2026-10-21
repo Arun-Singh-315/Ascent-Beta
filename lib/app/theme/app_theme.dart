@@ -416,6 +416,9 @@ class AscentTheme {
                   ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
                   : bgSurfaceElevated.withValues(alpha: 0.4);
             }
+            if (isNordicSky) {
+              return FrozenPalette.action.withValues(alpha: .94);
+            }
             return accentPrimary;
           }),
           foregroundColor: WidgetStateProperty.resolveWith((states) {
