@@ -85,12 +85,8 @@ class LearningHubCard extends ConsumerWidget {
           customBorder: dark
               ? null
               : Border.all(
-                  color: g.merlot
-                      ? MerlotPalette.line
-                      : (g.frozen
-                          ? FrozenPalette.line
-                          : g.edge.withValues(alpha: .45)),
-                  width: (g.merlot || g.frozen) ? 0.75 : 1,
+                  color: g.merlot ? MerlotPalette.line : g.edge,
+                  width: 1.0,
                 ),
           padding: const EdgeInsets.all(16),
           child: Column(

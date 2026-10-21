@@ -131,10 +131,10 @@ class ActivityRowItem extends ConsumerWidget {
                                       ? FrozenPalette.darkElevated
                                       : AppPalette.white.withValues(alpha: 0.12)))
                           : (g.merlot
-                                ? MerlotPalette.sparkTint
+                                ? MerlotPalette.pillSoft
                                 : (g.frozen
-                                      ? FrozenPalette.sparkTint
-                                      : const Color(0xFFFEF3C7))))
+                                      ? FrozenPalette.pillSoft
+                                      : const Color(0xFFFAFAFA))))
                     : (context.isDark
                           ? (g.merlot
                                 ? MerlotPalette.darkElevated
@@ -154,10 +154,10 @@ class ActivityRowItem extends ConsumerWidget {
                       : (g.frozen ? FrozenPalette.action : g.clay))
                 : (isPaused
                       ? (g.merlot
-                            ? MerlotPalette.spark
+                            ? MerlotPalette.antiqueGold
                             : (g.frozen
-                                  ? FrozenPalette.spark
-                                  : AppPalette.orange.shade300))
+                                  ? FrozenPalette.line
+                                  : g.line))
                       : (context.isDark
                             ? (g.merlot
                                   ? MerlotPalette.darkLine
@@ -169,7 +169,7 @@ class ActivityRowItem extends ConsumerWidget {
                                   : (g.frozen
                                         ? FrozenPalette.lineSubtle
                                         : g.edge.withValues(alpha: 0.35))))),
-            width: 0.75,
+            width: isRunning ? 1.5 : (g.merlot || g.frozen ? 0.75 : 1),
           ),
         ),
         padding: const EdgeInsets.symmetric(
@@ -234,8 +234,10 @@ class ActivityRowItem extends ConsumerWidget {
                             border: Border.all(
                               color: isDone
                                   ? (g.merlot ? MerlotPalette.action : g.clay)
-                                  : (g.merlot
-                                      ? MerlotPalette.spark
+                                  : (isPaused
+                                      ? (g.frozen
+                                          ? FrozenPalette.action
+                                          : (g.merlot ? MerlotPalette.antiqueGold : g.clay))
                                       : (isRunning ? g.clay : g.inkMuted)),
                               width: 1.75,
                             ),
@@ -252,7 +254,13 @@ class ActivityRowItem extends ConsumerWidget {
                                             ? Icons.headphones_rounded
                                             : Icons.school_outlined,
                                         size: 14,
-                                        color: isRunning ? g.clay : (g.merlot ? MerlotPalette.spark : g.inkMuted),
+                                        color: isRunning
+                                            ? g.clay
+                                            : (isPaused
+                                                ? (g.frozen
+                                                    ? FrozenPalette.action
+                                                    : (g.merlot ? MerlotPalette.antiqueGold : g.clay))
+                                                : g.inkMuted),
                                       )
                                     : (isTimed
                                           ? Icon(
@@ -260,7 +268,11 @@ class ActivityRowItem extends ConsumerWidget {
                                               size: 13,
                                               color: isRunning
                                                   ? g.clay
-                                                  : (g.merlot ? MerlotPalette.spark : g.inkMuted),
+                                                  : (isPaused
+                                                      ? (g.frozen
+                                                          ? FrozenPalette.action
+                                                          : (g.merlot ? MerlotPalette.antiqueGold : g.clay))
+                                                      : g.inkMuted),
                                             )
                                           : null)),
                         ),
@@ -341,8 +353,8 @@ class ActivityRowItem extends ConsumerWidget {
                                 style: AppTypography.jetBrainsMono12W500110(
                                   color: g.frozen
                                       ? (context.isDark
-                                          ? FrozenPalette.darkSpark
-                                          : FrozenPalette.spark)
+                                          ? FrozenPalette.darkSecondaryInk
+                                          : FrozenPalette.action)
                                       : (g.merlot
                                           ? (context.isDark
                                               ? MerlotPalette.darkSpark

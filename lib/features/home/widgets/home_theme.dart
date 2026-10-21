@@ -109,15 +109,21 @@ class HomeTheme {
         (isMerlot
                 ? AppSurfaces.merlotLinen
                 : (isNordic
-                    ? AppSurfaces.legacyNordicSky
+                    ? AppSurfaces.nordicSky
                     : AppSurfaces.legacyLight))
             .copyWith(
               blur: 0,
-              cardFill: isMerlot ? MerlotPalette.surface : Colors.white,
+              cardFill: isMerlot
+                  ? MerlotPalette.surface
+                  : (isNordic
+                      ? const Color.fromRGBO(243, 247, 251, 0.78)
+                      : Colors.white),
               cardBorderColor: glass.edge,
               shadow: isMerlot
                   ? MerlotPalette.shadowAmbient
-                  : const Color.fromRGBO(15, 23, 42, 0.08),
+                  : (isNordic
+                      ? const Color.fromRGBO(20, 50, 80, 0.08)
+                      : const Color.fromRGBO(15, 23, 42, 0.08)),
             ),
       ],
     );

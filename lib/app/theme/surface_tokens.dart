@@ -102,17 +102,17 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     mutedText: FrozenPalette.mutedInk,
     accent: FrozenPalette.action,
     greenAction: FrozenPalette.success,
-    cardFill: FrozenPalette.surface,
+    cardFill: Color.fromRGBO(243, 247, 251, 0.78),
     cardBorderColor: FrozenPalette.line,
     pillBorderColor: FrozenPalette.lineSubtle,
     dividerColor: FrozenPalette.lineSubtle,
     tintFill: FrozenPalette.pillSoft,
     tintBorder: FrozenPalette.lineSubtle,
     onAccent: Colors.white,
-    cardBorderWidth: 0.75,
+    cardBorderWidth: 1.0,
     pillBorderWidth: 0.75,
-    shadow: FrozenPalette.shadowAmbient,
-    blur: 0,
+    shadow: Color.fromRGBO(20, 50, 80, 0.08),
+    blur: 16,
   );
 
   static final legacyNordicSky = night.copyWith(

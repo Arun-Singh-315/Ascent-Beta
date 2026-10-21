@@ -32,6 +32,7 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/challenge/challenge_providers.dart';
 import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
+import 'package:ascent/features/home/widgets/activity_row_item.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 
 class _FakeTimeTrackingNotifier extends TimeTrackingNotifier {
@@ -112,16 +113,26 @@ void main() {
       );
     });
 
-    test('3. FrozenPalette.sparkTint exists and is a very light warm amber', () {
-      const tint = FrozenPalette.sparkTint;
-      expect(tint.r, greaterThan(0.8), reason: 'sparkTint should be a very light color');
-      expect(tint.g, greaterThan(0.9), reason: 'sparkTint should be a light warm color');
+    test('3. nordicSky glass fill is translucent for light frosted glass (alpha <= 0.85)', () {
+      final fill = AscentGlass.nordicSky.fill;
+      expect(
+        fill.a,
+        lessThanOrEqualTo(0.85),
+        reason:
+            'nordicSky fill must be translucent so background atmospheric blue shows through. '
+            'Got alpha=${fill.a.toStringAsFixed(2)}',
+      );
     });
 
-    test('4. FrozenPalette.sparkTint != hardcoded warm yellow 0xFFFEF3C7', () {
-      const frozenTint = FrozenPalette.sparkTint;
-      const oldWarmYellow = Color(0xFFFEF3C7);
-      expect(frozenTint, isNot(equals(oldWarmYellow)));
+    test('4. AppSurfaces.nordicSky.cardFill is translucent for light frosted glass (alpha <= 0.85)', () {
+      final fill = AppSurfaces.nordicSky.cardFill;
+      expect(
+        fill.a,
+        lessThanOrEqualTo(0.85),
+        reason:
+            'nordicSky cardFill must be translucent so cards feel like frosted glass. '
+            'Got alpha=${fill.a.toStringAsFixed(2)}',
+      );
     });
 
     test('5. nordicSkyDark shadow has depth (alpha > 0.45)', () {
@@ -265,6 +276,82 @@ void main() {
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(Duration.zero);
+    });
+
+    testWidgets('16. Paused ActivityRowItem in light Frozen theme uses cool pillSoft (NOT yellow)', (tester) async {
+      const pausedItem = TodayActivityItem(
+        id: 'lecture_spring_boot',
+        title: 'Spring Boot Mastery',
+        sourceType: 'lecture',
+        learningCourseId: 'spring_course',
+        learningLectureId: 2,
+        status: TodayActivityStatus.paused,
+        elapsedSecondsToday: 363,
+        categoryTag: 'Study',
+        kind: ActivityKind.duration,
+        targetMinutes: 30,
+      );
+
+      await tester.pumpWidget(
+        buildTestable(
+          const ActivityRowItem(activity: pausedItem),
+          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+
+      // Verify no container inside ActivityRowItem uses warm yellow #FEF3C7 or sparkTint
+      final containers = tester.widgetList<Container>(
+        find.descendant(of: find.byType(ActivityRowItem), matching: find.byType(Container)),
+      ).toList();
+
+      for (final container in containers) {
+        final decoration = container.decoration;
+        if (decoration is BoxDecoration) {
+          expect(decoration.color, isNot(equals(const Color(0xFFFEF3C7))),
+              reason: 'Paused item background must not be warm yellow #FEF3C7');
+          expect(decoration.color, isNot(equals(FrozenPalette.sparkTint)),
+              reason: 'Paused item background must not be sparkTint in Frozen theme');
+        }
+      }
+
+      // Verify row background is FrozenPalette.pillSoft
+      final rowContainer = containers.firstWhere(
+        (c) => c.decoration is BoxDecoration && (c.decoration as BoxDecoration).borderRadius != null,
+      );
+      expect((rowContainer.decoration as BoxDecoration).color, equals(FrozenPalette.pillSoft),
+          reason: 'Paused item must use cool pillSoft surface in Frozen light mode');
+
+      // Now verify timed activity shows Paused in FrozenPalette.action
+      const pausedTimed = TodayActivityItem(
+        id: 'timed_task_1',
+        title: 'Practice Coding',
+        sourceType: 'task',
+        status: TodayActivityStatus.paused,
+        elapsedSecondsToday: 300,
+        categoryTag: 'Code',
+        kind: ActivityKind.duration,
+        targetMinutes: 25,
+      );
+
+      await tester.pumpWidget(
+        buildTestable(
+          const ActivityRowItem(activity: pausedTimed),
+          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+
+      final textFinder = find.textContaining('Paused');
+      expect(textFinder, findsOneWidget);
+      final textWidget = tester.widget<Text>(textFinder);
+      expect(textWidget.style?.color, equals(FrozenPalette.action),
+          reason: 'Paused timer text in light Frozen mode should be cool blue action color');
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);

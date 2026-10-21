@@ -157,12 +157,14 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           radius: 22,
           enableBlur: false,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? (g.merlot ? MerlotPalette.surface : Colors.white)
+              ? (g.merlot
+                  ? MerlotPalette.surface
+                  : (g.frozen ? FrozenPalette.surface : Colors.white))
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
               ? Border.all(
-                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
-                  width: g.merlot ? 0.75 : 1,
+                  color: g.merlot ? MerlotPalette.line : g.edge,
+                  width: 1.0,
                 )
               : null,
           padding: const EdgeInsets.all(16),
