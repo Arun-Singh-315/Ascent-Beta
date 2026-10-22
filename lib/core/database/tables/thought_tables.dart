@@ -9,10 +9,20 @@ class ThoughtTable extends Table {
   TextColumn get content => text()();
   // 'thought', 'idea', 'me_to_me', 'win', 'future'
   TextColumn get mood => text().withDefault(const Constant('thought'))();
+  TextColumn get category => text().withDefault(const Constant('general'))();
   TextColumn get colorHex => text().withDefault(const Constant('#2D2D3A'))();
   BoolColumn get isPinned => boolean().withDefault(const Constant(false))();
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   BoolColumn get isCompleted => boolean().withDefault(const Constant(false))();
   TextColumn get promptQuestion => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+@DataClassName('ThoughtCategory')
+class ThoughtCategoryTable extends Table {
+  @override
+  String get tableName => 'thought_categories';
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get normalizedName => text().unique()();
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
+import '../../shared/utils/action_text.dart';
 
 /// Conservative local interpretation. A proposal never writes records.
 class HomeCaptureProposal {
@@ -364,16 +365,7 @@ class HomeCaptureService {
         task = await db.taskDao.getTaskById(task.id);
       } else {
         final cleanTitle = title.trim();
-        final cleanContent = source.content.trim();
-        String? taskNotes;
-        if (cleanTitle.toLowerCase() != cleanContent.toLowerCase()) {
-          if (cleanContent.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
-            final remainder = cleanContent.substring(cleanTitle.length).trim();
-            taskNotes = remainder.isNotEmpty ? remainder : null;
-          } else {
-            taskNotes = cleanContent.isNotEmpty ? cleanContent : null;
-          }
-        }
+        final taskNotes = actionSupportingText(cleanTitle, source.content);
         final id = await db.taskDao.insertTask(
           TaskTableCompanion.insert(
             title: cleanTitle,

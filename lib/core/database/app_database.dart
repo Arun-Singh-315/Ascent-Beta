@@ -88,6 +88,7 @@ part 'daos/plan_dao.dart';
     WaterLogTable,
     WaterGoalTable,
     ThoughtTable,
+    ThoughtCategoryTable,
     ThoughtReminderLinkTable,
     ThoughtMergeSourceTable,
     CourseTable,
@@ -148,7 +149,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 20;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -218,6 +219,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 7) {
         await m.createTable(thoughtTable);
       }
+      if (from >= 7 && from < 19) {
+        await m.addColumn(thoughtTable, thoughtTable.category);
+      }
       if (from < 8) {
         await m.addColumn(reminderTable, reminderTable.linkedTaskId);
         await m.createTable(courseTable);
@@ -265,6 +269,9 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(planDefinitionTable);
         await m.createTable(planOccurrenceTable);
         await m.createTable(occurrenceAlertLinkTable);
+      }
+      if (from < 20) {
+        await m.createTable(thoughtCategoryTable);
       }
       if (from < 18) {
         await m.createTable(planCollectionTable);

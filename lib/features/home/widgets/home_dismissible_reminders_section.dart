@@ -34,9 +34,30 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (reminders.isEmpty) return const SizedBox.shrink();
     final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final reminder = reminders.first;
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Reminders',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AscentTextStyles.homeTitle.copyWith(
+            color: g.ink,
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _buildReminder(context, reminder),
+      ],
+    );
+  }
+
+  Widget _buildReminder(BuildContext context, Reminder reminder) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Dismissible(
       key: ValueKey('home_reminder_${reminder.id}'),
       direction: DismissDirection.horizontal,
@@ -65,7 +86,11 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: const Row(
           children: [
-            Icon(Icons.check_circle_outline_rounded, color: Colors.white, size: 24),
+            Icon(
+              Icons.check_circle_outline_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
             SizedBox(width: 8),
             Text(
               'Done',
@@ -137,14 +162,18 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: g.merlot
-                          ? (isDark ? MerlotPalette.darkTint : MerlotPalette.tint)
+                          ? (isDark
+                                ? MerlotPalette.darkTint
+                                : MerlotPalette.tint)
                           : g.clay.withValues(alpha: 0.12),
                     ),
                     child: Center(
                       child: Icon(
                         Icons.notifications_active_outlined,
                         color: g.merlot
-                            ? (isDark ? MerlotPalette.darkActionBright : MerlotPalette.action)
+                            ? (isDark
+                                  ? MerlotPalette.darkActionBright
+                                  : MerlotPalette.action)
                             : g.clay,
                         size: 18,
                       ),

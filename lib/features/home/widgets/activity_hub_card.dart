@@ -313,7 +313,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     in (_showAll
                         ? currentList
                         : currentList.take(widget.previewLimit.clamp(1, 4))))
-                  ActivityRowItem(activity: act),
+                  ActivityRowItem(key: ValueKey(act.id), activity: act),
 
                 // Show more / Show less toggle when count exceeds 4
                 if (currentList.length > 4)

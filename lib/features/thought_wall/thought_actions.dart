@@ -1,3 +1,4 @@
+import '../../shared/utils/action_text.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart' as drift;
 import '../../core/database/app_database.dart';
@@ -19,21 +20,13 @@ class ThoughtActions {
   static String extractTitle(String text) {
     final firstLine = text.trim().split(RegExp(r'\r?\n')).first.trim();
     final candidate = firstLine.isNotEmpty ? firstLine : text.trim();
-    return candidate.length <= 300 ? candidate : '${candidate.substring(0, 297)}…';
+    return candidate.length <= 300
+        ? candidate
+        : '${candidate.substring(0, 297)}…';
   }
 
-  static String? extractNotes(String title, String content) {
-    final cleanTitle = title.trim();
-    final cleanContent = content.trim();
-    if (cleanTitle.toLowerCase() == cleanContent.toLowerCase()) {
-      return null;
-    }
-    if (cleanContent.toLowerCase().startsWith(cleanTitle.toLowerCase())) {
-      final remainder = cleanContent.substring(cleanTitle.length).trim();
-      return remainder.isNotEmpty ? remainder : null;
-    }
-    return cleanContent.isNotEmpty ? cleanContent : null;
-  }
+  static String? extractNotes(String title, String content) =>
+      actionSupportingText(title, content);
 
   String _title(String text) => extractTitle(text);
 
@@ -207,8 +200,9 @@ class ThoughtActions {
                       .entries
                       .map((e) => '${e.key + 1}. ${e.value.content}')
                       .join('\n');
-            final finalTitle =
-                title.length <= 300 ? title : '${title.substring(0, 297)}…';
+            final finalTitle = title.length <= 300
+                ? title
+                : '${title.substring(0, 297)}…';
             final id = await db.reminderDao.insertReminder(
               ReminderTableCompanion.insert(
                 title: finalTitle,

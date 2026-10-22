@@ -8,6 +8,7 @@ import '../../core/database/app_database.dart';
 import '../../core/notifications/reminder_alert_sync.dart';
 import '../../shared/widgets/ascent_button.dart';
 import 'thought_actions.dart';
+import '../home/widgets/home_schedule_sheet.dart';
 
 Future<bool> showThoughtConversion(
   BuildContext context,
@@ -198,7 +199,7 @@ class _ThoughtConversionSheetState extends State<ThoughtConversionSheet> {
                               label: Text(switch (mode) {
                                 ThoughtConversionMode.todo => 'Todo',
                                 ThoughtConversionMode.reminder => 'Reminder',
-                                ThoughtConversionMode.both => 'Both',
+                                ThoughtConversionMode.both => 'Todo & Reminder',
                               }),
                               selected: _mode == mode,
                               onSelected: _saving
@@ -267,6 +268,21 @@ class _ThoughtConversionSheetState extends State<ThoughtConversionSheet> {
                         ),
                       ),
                     if (_mode != ThoughtConversionMode.todo) ...[
+                      if (widget.thoughts.length == 1)
+                        TextButton.icon(
+                          icon: const Icon(Icons.repeat_rounded),
+                          label: const Text('Repeat · several times a day'),
+                          onPressed: _saving
+                              ? null
+                              : () async {
+                                  await showHomeSchedule(
+                                    context,
+                                    widget.thoughts.single,
+                                    dailyTimes: true,
+                                  );
+                                  if (context.mounted) Navigator.pop(context);
+                                },
+                        ),
                       const SizedBox(height: 14),
                       Text(
                         'When should I remind you?',

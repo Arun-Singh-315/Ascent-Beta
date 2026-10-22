@@ -1,1246 +1,586 @@
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/medicine/medicine_service.dart';
 import '../../core/providers/database_provider.dart';
-import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import '../../shared/widgets/glass_surface.dart';
+import 'medicine_editor_sheet.dart';
 
 class MedicineScreen extends ConsumerStatefulWidget {
   const MedicineScreen({super.key});
-
   @override
   ConsumerState<MedicineScreen> createState() => _MedicineScreenState();
 }
 
-class _MedicineScreenState extends ConsumerState<MedicineScreen> {
-  void _openAddMedicineSheet([Medicine? existing]) {
-    String instructions = existing?.instructions ?? 'After food';
-    String type = existing?.type ?? 'tablet';
-    int durationDays = existing?.durationDays ?? 7;
-    DateTime startDate = existing?.startDate ?? DateTime.now();
+class _MedicineScreenState extends ConsumerState<MedicineScreen>
+    with WidgetsBindingObserver {
+  final _updating = <int>{};
+  bool _showMedicines = false;
+  Timer? _dayTimer;
 
-    // Default time slots
-    final selectedTimes = <String>{'08:00', '20:00'};
-    if (existing != null) {
-      try {
-        final decoded = jsonDecode(existing.scheduledTimes) as List<dynamic>;
-        selectedTimes.clear();
-        selectedTimes.addAll(decoded.map((e) => e.toString()));
-      } catch (_) {}
-    }
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _scheduleDayChange();
+  }
 
-    bool saving = false;
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      isScrollControlled: true,
-      backgroundColor: context.glass.bg,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: AppGeometry.radiusr24),
-      ),
-      builder: (sheetContext) {
-        return _MedicineSheetControllers(
-          name: existing?.name ?? '',
-          dosage: existing?.dosage ?? '1 Tablet',
-          builder: (nameController, dosageController) => StatefulBuilder(
-            builder: (context, setSheetState) {
-              final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-              final g = context.glass;
-
-              final maxHeight = MediaQuery.of(context).size.height * 0.88;
-
-              return PopScope(
-                canPop: !saving,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxHeight),
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: AppSpace.s20,
-                      right: AppSpace.s20,
-                      top: AppSpace.s20,
-                      bottom: bottomInset + AppSpace.s16,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Pinned Drag Handle
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: g.line,
-                              borderRadius: AppGeometry.roundedr2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Pinned Header Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                existing == null
-                                    ? 'Add Medicine'
-                                    : 'Edit Medicine',
-                                style: AscentTextStyles.displaySmall
-                                    .copyWith(color: g.ink)
-                                    .merge(AppTypeRoles.typeRole21),
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                Icons.close_rounded,
-                                color: g.inkMuted,
-                              ),
-                              onPressed: saving
-                                  ? null
-                                  : () => Navigator.pop(sheetContext),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Scrollable Fields Body
-                        Flexible(
-                          child: SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Medicine Name Input
-                                TextField(
-                                  controller: nameController,
-                                  autofocus: existing == null,
-                                  style: AppTypeRoles.typeRole59.copyWith(
-                                    color: g.ink,
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: 'Medicine Name',
-                                    hintText:
-                                        'e.g. Paracetamol 500mg, Vitamin C',
-                                    labelStyle: AppTypeRoles.typeRole58
-                                        .copyWith(color: g.inkSecondary),
-                                    hintStyle: AppTypeRoles.typeRole58.copyWith(
-                                      color: g.inkMuted,
-                                    ),
-                                    filled: true,
-                                    fillColor: g.claySoft,
-                                    border: OutlineInputBorder(
-                                      borderRadius: AppGeometry.roundedr14,
-                                      borderSide: BorderSide(color: g.line),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: AppGeometry.roundedr14,
-                                      borderSide: BorderSide(color: g.line),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: AppGeometry.roundedr14,
-                                      borderSide: BorderSide(
-                                        color: g.clay,
-                                        width: AppBorderScale.w1point5,
-                                      ),
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpace.s14,
-                                      vertical: AppSpace.s12,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-
-                                // Quick name suggestion chips
-                                Wrap(
-                                  spacing: 6,
-                                  runSpacing: 4,
-                                  children:
-                                      [
-                                            'Paracetamol',
-                                            'Vitamin D3',
-                                            'Amoxicillin',
-                                            'Omega-3',
-                                            'Cetirizine',
-                                          ]
-                                          .map(
-                                            (chip) => AppPill.action(
-                                              label: Text(
-                                                chip,
-                                                style: AppTypeRoles.typeRole4
-                                                    .copyWith(
-                                                      color: g.inkSecondary,
-                                                    ),
-                                              ),
-                                              backgroundColor: g.fill,
-                                              side: BorderSide(color: g.line),
-                                              onPressed: () {
-                                                nameController.text = chip;
-                                                setSheetState(() {});
-                                              },
-                                            ),
-                                          )
-                                          .toList(),
-                                ),
-                                const SizedBox(height: 14),
-
-                                // Dosage & Form Factor Row
-                                Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: TextField(
-                                        controller: dosageController,
-                                        style: AppTypeRoles.typeRole59.copyWith(
-                                          color: g.ink,
-                                        ),
-                                        decoration: InputDecoration(
-                                          labelText: 'Dosage',
-                                          hintText: '1 Tablet, 5ml',
-                                          labelStyle: AppTypeRoles.typeRole58
-                                              .copyWith(color: g.inkSecondary),
-                                          hintStyle: AppTypeRoles.typeRole58
-                                              .copyWith(color: g.inkMuted),
-                                          filled: true,
-                                          fillColor: g.claySoft,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: g.line,
-                                            ),
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: g.line,
-                                            ),
-                                          ),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: AppSpace.s14,
-                                                vertical: AppSpace.s12,
-                                              ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      child: DropdownButtonFormField<String>(
-                                        isExpanded: true,
-                                        initialValue: type,
-                                        dropdownColor: g.bg,
-                                        style: AppTypeRoles.typeRole58.copyWith(
-                                          color: g.ink,
-                                        ),
-                                        decoration: InputDecoration(
-                                          labelText: 'Form',
-                                          labelStyle: AppTypeRoles.typeRole58
-                                              .copyWith(color: g.inkSecondary),
-                                          filled: true,
-                                          fillColor: g.claySoft,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            borderSide: BorderSide(
-                                              color: g.line,
-                                            ),
-                                          ),
-                                          contentPadding:
-                                              const EdgeInsets.symmetric(
-                                                horizontal: AppSpace.s12,
-                                                vertical: AppSpace.s12,
-                                              ),
-                                        ),
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: 'tablet',
-                                            child: Text('Tablet'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'capsule',
-                                            child: Text('Capsule'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'syrup',
-                                            child: Text('Syrup'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'drops',
-                                            child: Text('Drops'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 'injection',
-                                            child: Text('Injection'),
-                                          ),
-                                        ],
-                                        onChanged: (val) {
-                                          if (val != null) {
-                                            setSheetState(() => type = val);
-                                          }
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Food Condition
-                                Text(
-                                  'Instructions / Meal Timing',
-                                  style: AppTypeRoles.typeRole17.copyWith(
-                                    color: g.ink,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  children:
-                                      [
-                                        'After food',
-                                        'Before meal',
-                                        'With water',
-                                        'Empty stomach',
-                                      ].map((opt) {
-                                        final isSel = instructions == opt;
-                                        return AppPill.choice(
-                                          label: Text(
-                                            opt,
-                                            style: AppTypeRoles.typeRole27
-                                                .copyWith(
-                                                  color: isSel
-                                                      ? AppPalette.white
-                                                      : g.inkSecondary,
-                                                ),
-                                          ),
-                                          selected: isSel,
-                                          selectedColor: g.clay,
-                                          backgroundColor: g.fill,
-                                          side: BorderSide(
-                                            color: isSel ? g.clay : g.line,
-                                          ),
-                                          onSelected: (val) {
-                                            if (val) {
-                                              setSheetState(
-                                                () => instructions = opt,
-                                              );
-                                            }
-                                          },
-                                        );
-                                      }).toList(),
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Daily Schedule Timings
-                                Text(
-                                  'Daily Doses & Timing Slots',
-                                  style: AppTypeRoles.typeRole17.copyWith(
-                                    color: g.ink,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    _buildTimeChip(
-                                      label: 'Morning',
-                                      time: '08:00',
-                                      isSelected: selectedTimes.contains(
-                                        '08:00',
-                                      ),
-                                      g: g,
-                                      onToggle: () {
-                                        setSheetState(() {
-                                          if (selectedTimes.contains('08:00')) {
-                                            if (selectedTimes.length > 1) {
-                                              selectedTimes.remove('08:00');
-                                            }
-                                          } else {
-                                            selectedTimes.add('08:00');
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(width: 8),
-                                    _buildTimeChip(
-                                      label: 'Afternoon',
-                                      time: '13:00',
-                                      isSelected: selectedTimes.contains(
-                                        '13:00',
-                                      ),
-                                      g: g,
-                                      onToggle: () {
-                                        setSheetState(() {
-                                          if (selectedTimes.contains('13:00')) {
-                                            if (selectedTimes.length > 1) {
-                                              selectedTimes.remove('13:00');
-                                            }
-                                          } else {
-                                            selectedTimes.add('13:00');
-                                          }
-                                        });
-                                      },
-                                    ),
-                                    const SizedBox(width: 8),
-                                    _buildTimeChip(
-                                      label: 'Night',
-                                      time: '20:00',
-                                      isSelected: selectedTimes.contains(
-                                        '20:00',
-                                      ),
-                                      g: g,
-                                      onToggle: () {
-                                        setSheetState(() {
-                                          if (selectedTimes.contains('20:00')) {
-                                            if (selectedTimes.length > 1) {
-                                              selectedTimes.remove('20:00');
-                                            }
-                                          } else {
-                                            selectedTimes.add('20:00');
-                                          }
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Duration (How many days)
-                                Text(
-                                  'Course Duration (Days)',
-                                  style: AppTypeRoles.typeRole17.copyWith(
-                                    color: g.ink,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  children: [3, 5, 7, 14, 30].map((d) {
-                                    final isSel = durationDays == d;
-                                    return AppPill.choice(
-                                      label: Text(
-                                        '$d Days',
-                                        style: AppTypeRoles.typeRole27.copyWith(
-                                          color: isSel
-                                              ? AppPalette.white
-                                              : g.inkSecondary,
-                                        ),
-                                      ),
-                                      selected: isSel,
-                                      selectedColor: g.clay,
-                                      backgroundColor: g.fill,
-                                      side: BorderSide(
-                                        color: isSel ? g.clay : g.line,
-                                      ),
-                                      onSelected: (val) {
-                                        if (val) {
-                                          setSheetState(() => durationDays = d);
-                                        }
-                                      },
-                                    );
-                                  }).toList(),
-                                ),
-                                const SizedBox(height: 14),
-
-                                // Info banner explaining the automated sync
-                                AppCard(
-                                  padding: const EdgeInsets.all(AppSpace.s12),
-                                  nightDecoration: BoxDecoration(
-                                    color: g.claySoft,
-                                    borderRadius: AppGeometry.roundedr14,
-                                    border: Border.all(color: g.line),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        Icons.sync_rounded,
-                                        color: g.clay,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Text(
-                                          'Sync Guarantee: Automatically creates daily To-dos and reminders for all $durationDays days.',
-                                          style: AppTypeRoles.typeRole4
-                                              .copyWith(
-                                                color: g.inkSecondary,
-                                                height: 1.3,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // ALWAYS IN FRAME: Pinned Save Action Button
-                        Container(
-                          padding: const EdgeInsets.only(top: AppSpace.s8),
-                          decoration: BoxDecoration(
-                            border: Border(top: BorderSide(color: g.line)),
-                          ),
-                          child: AscentButton.primary(
-                            label: saving
-                                ? 'Saving…'
-                                : existing == null
-                                ? 'Save Prescription & Schedule'
-                                : 'Update Prescription',
-                            expanded: true,
-                            onPressed: saving
-                                ? null
-                                : () async {
-                                    final service = ref.read(
-                                      medicineServiceProvider,
-                                    );
-                                    final name = nameController.text.trim();
-                                    final dosage = dosageController.text.trim();
-                                    final sortedTimes = selectedTimes.toList()
-                                      ..sort();
-                                    setSheetState(() => saving = true);
-                                    HapticFeedback.mediumImpact();
-                                    try {
-                                      if (existing == null) {
-                                        await service.addMedicine(
-                                          name: name,
-                                          dosage: dosage,
-                                          scheduledTimes: sortedTimes,
-                                          durationDays: durationDays,
-                                          startDate: startDate,
-                                          instructions: instructions,
-                                          type: type,
-                                        );
-                                      } else {
-                                        await service.updateMedicine(
-                                          existing.id,
-                                          name: name,
-                                          dosage: dosage,
-                                          scheduledTimes: sortedTimes,
-                                          durationDays: durationDays,
-                                          startDate: startDate,
-                                          instructions: instructions,
-                                          type: type,
-                                        );
-                                      }
-                                      if (!mounted || !sheetContext.mounted) {
-                                        return;
-                                      }
-                                      setSheetState(() => saving = false);
-                                      Navigator.pop(sheetContext);
-                                      ScaffoldMessenger.of(
-                                        this.context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Saved $name. Reminder delivery depends on device permissions.',
-                                          ),
-                                        ),
-                                      );
-                                    } catch (error) {
-                                      if (sheetContext.mounted) {
-                                        setSheetState(() => saving = false);
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Could not save schedule: $error',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                    }
-                                  },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
+  void _scheduleDayChange() {
+    _dayTimer?.cancel();
+    final now = DateTime.now();
+    _dayTimer = Timer(
+      DateTime(now.year, now.month, now.day + 1).difference(now),
+      () {
+        if (mounted) {
+          setState(() {});
+          ref.invalidate(todayMedicineLogsStreamProvider);
+          _scheduleDayChange();
+        }
       },
     );
   }
 
-  Widget _buildTimeChip({
-    required String label,
-    required String time,
-    required bool isSelected,
-    required dynamic g,
-    required VoidCallback onToggle,
-  }) {
-    return Expanded(
-      child: AppTapArea(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onToggle();
-        },
-        borderRadius: AppGeometry.roundedr12,
-        child: AppCard(
-          selected: isSelected,
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s10),
-          nightDecoration: BoxDecoration(
-            color: isSelected ? g.clay : g.fill,
-            borderRadius: AppGeometry.roundedr12,
-            border: Border.all(color: isSelected ? g.clay : g.line),
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      setState(() {});
+      ref.invalidate(todayMedicineLogsStreamProvider);
+      _scheduleDayChange();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _dayTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _toggleDose(MedicineLog log) async {
+    if (_updating.contains(log.id)) return;
+    setState(() => _updating.add(log.id));
+    try {
+      await ref.read(medicineServiceProvider).toggleDose(log.id, !log.isTaken);
+      HapticFeedback.selectionClick();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update this dose. Try again.'),
           ),
-          child: Column(
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _updating.remove(log.id));
+    }
+  }
+
+  Future<void> _delete(Medicine medicine) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove ${medicine.name}?'),
+        content: const Text(
+          'This removes the medicine, dose history, and its linked reminders and tasks.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Keep medicine'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref.read(medicineServiceProvider).deleteMedicine(medicine.id);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not remove this medicine. Try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _surface({
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.all(18),
+  }) => Container(
+    padding: padding,
+    decoration: BoxDecoration(
+      color: context.bgSurface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: context.glass.edge),
+    ),
+    child: child,
+  );
+
+  Widget _label(String text) => Padding(
+    padding: const EdgeInsets.only(top: 24, bottom: 12),
+    child: Text(
+      text,
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+    ),
+  );
+
+  Widget _tag(String text, {IconData? icon}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: BoxDecoration(
+      color: context.bgSurfaceElevated,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: context.glass.line),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (icon != null) ...[
+          Icon(icon, size: 15, color: context.glass.inkSecondary),
+          const SizedBox(width: 6),
+        ],
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(color: context.glass.inkSecondary),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _summary(List<MedicineLog> logs) {
+    final g = context.glass;
+    final taken = logs.where((log) => log.isTaken).length;
+    final now = DateTime.now();
+    final currentTime = DateFormat('HH:mm').format(now);
+    final next = logs
+        .where(
+          (log) => !log.isTaken && log.timeSlot.compareTo(currentTime) >= 0,
+        )
+        .firstOrNull;
+    return _surface(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Text(
-                label,
-                style: AppTypeRoles.typeRole34.copyWith(
-                  color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white : g.ink),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: context.bgSurfaceElevated,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.medication_outlined,
+                  color: g.inkSecondary,
+                  size: 28,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                MedicineService.formatTimeSlot(time),
-                style: AppTypeRoles.typeRole18.copyWith(
-                  color: context.surfaces.contentForeground(isSelected, isSelected ? AppPalette.white70 : g.inkMuted),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your daily care',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('EEEE, MMM d').format(now),
+                      style: TextStyle(color: g.inkMuted),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 20),
+          Text(
+            logs.isEmpty
+                ? 'No doses scheduled today'
+                : '$taken of ${logs.length} doses taken',
+            style: TextStyle(
+              color: g.inkSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          LinearProgressIndicator(
+            value: logs.isEmpty ? 0 : taken / logs.length,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(4),
+            color: g.sage,
+            backgroundColor: g.track,
+          ),
+          if (next != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                'Next scheduled dose · ${MedicineService.formatTimeSlot(next.timeSlot)}',
+                style: TextStyle(color: g.inkMuted),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dose(MedicineLog log, Medicine medicine) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: _surface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              medicine.name,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: g.ink,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              medicine.dosage,
+              style: TextStyle(color: g.inkSecondary, height: 1.4),
+            ),
+            if (medicine.instructions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  medicine.instructions,
+                  style: TextStyle(color: g.inkMuted, height: 1.4),
+                ),
+              ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: log.isTaken
+                  ? OutlinedButton.icon(
+                      onPressed: _updating.contains(log.id)
+                          ? null
+                          : () => _toggleDose(log),
+                      icon: Icon(Icons.check_circle_rounded, color: g.sage),
+                      label: Text(
+                        log.takenAt == null
+                            ? 'Taken · Undo'
+                            : 'Taken ${DateFormat('h:mm a').format(log.takenAt!)} · Undo',
+                        textAlign: TextAlign.center,
+                      ),
+                    )
+                  : FilledButton.icon(
+                      onPressed: _updating.contains(log.id)
+                          ? null
+                          : () => _toggleDose(log),
+                      icon: const Icon(Icons.check_rounded),
+                      label: Text(
+                        _updating.contains(log.id) ? 'Saving…' : 'Mark taken',
+                      ),
+                    ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _confirmDeleteMedicine(Medicine medicine) {
+  Widget _medicine(Medicine medicine) {
     final g = context.glass;
-    showDialog(
-      context: context,
-      builder: (dlgContext) => AlertDialog(
-        backgroundColor: g.bg,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppGeometry.roundedr20,
-          side: BorderSide(color: g.line),
-        ),
-        title: Row(
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final start = DateTime(
+      medicine.startDate.year,
+      medicine.startDate.month,
+      medicine.startDate.day,
+    );
+    final end = DateTime(
+      start.year,
+      start.month,
+      start.day + medicine.durationDays - 1,
+    );
+    final day = (today.difference(start).inDays + 1).clamp(
+      0,
+      medicine.durationDays,
+    );
+    final status = !medicine.isActive
+        ? 'Paused'
+        : today.isBefore(start)
+        ? 'Starts ${DateFormat.MMMd().format(start)}'
+        : today.isAfter(end)
+        ? 'Course complete'
+        : 'Day $day of ${medicine.durationDays}';
+    List<String> times = [];
+    try {
+      times = (jsonDecode(medicine.scheduledTimes) as List).cast<String>()
+        ..sort();
+    } catch (_) {
+      /* Keep a damaged schedule editable. */
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: _surface(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(Icons.delete_outline_rounded, color: g.coral, size: 24),
-            const SizedBox(width: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                _tag(
+                  '${medicine.type[0].toUpperCase()}${medicine.type.substring(1)}',
+                  icon: Icons.medication_outlined,
+                ),
+                _tag(status),
+              ],
+            ),
+            const SizedBox(height: 14),
             Text(
-              'Delete ${medicine.name}',
-              style: AppTypeRoles.typeRole10.copyWith(color: g.ink),
+              medicine.name,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: g.ink,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(medicine.dosage, style: TextStyle(color: g.inkSecondary)),
+            if (medicine.instructions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  medicine.instructions,
+                  style: TextStyle(color: g.inkMuted, height: 1.4),
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text(
+              '${times.length} daily dose${times.length == 1 ? '' : 's'}',
+              style: TextStyle(color: g.inkMuted),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final time in times)
+                  _tag(
+                    MedicineService.formatTimeSlot(time),
+                    icon: Icons.schedule_rounded,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${DateFormat.MMMd().format(start)} – ${DateFormat.yMMMd().format(end)}',
+              style: TextStyle(color: g.inkMuted),
+            ),
+            const SizedBox(height: 10),
+            LinearProgressIndicator(
+              value: day / medicine.durationDays,
+              minHeight: 4,
+              borderRadius: BorderRadius.circular(4),
+              color: g.sage,
+              backgroundColor: g.track,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Tooltip(
+                  message: 'Edit Prescription',
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        showMedicineEditor(context, medicine: medicine),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: const Text('Edit schedule'),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Delete Prescription',
+                  onPressed: () => _delete(medicine),
+                  icon: Icon(Icons.delete_outline_rounded, color: g.inkMuted),
+                ),
+              ],
             ),
           ],
         ),
-        content: Text(
-          'Cascading Deletion: This will remove this medicine and cleanly cancel all associated daily dose reminders and Today tasks across the entire course.\n\nAre you sure?',
-          style: AppTypeRoles.typeRole58.copyWith(
-            color: g.inkSecondary,
-            height: 1.4,
+      ),
+    );
+  }
+
+  Widget _tab(String label, bool medicines) {
+    final selected = _showMedicines == medicines;
+    return Expanded(
+      child: Semantics(
+        selected: selected,
+        child: TextButton(
+          key: ValueKey(
+            medicines ? 'medicine_view_medicines' : 'medicine_view_today',
           ),
+          onPressed: () => setState(() => _showMedicines = medicines),
+          style: TextButton.styleFrom(
+            backgroundColor: selected
+                ? Theme.of(context).colorScheme.primary
+                : Colors.transparent,
+            foregroundColor: selected
+                ? Theme.of(context).colorScheme.onPrimary
+                : context.glass.inkSecondary,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(label, textAlign: TextAlign.center),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dlgContext),
-            child: Text('Cancel', style: TextStyle(color: g.inkMuted)),
-          ),
-          ElevatedButton(
-            style: context.surfaces.buttonStyle(
-              ElevatedButton.styleFrom(
-                backgroundColor: g.coral,
-                shape: RoundedRectangleBorder(
-                  borderRadius: AppGeometry.roundedr10,
-                ),
-              ),
-              filled: true,
-              icon: false,
-            ),
-            onPressed: () async {
-              HapticFeedback.mediumImpact();
-              Navigator.pop(dlgContext);
-              await ref
-                  .read(medicineServiceProvider)
-                  .deleteMedicine(medicine.id);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Removed ${medicine.name}. Alert cancellation will retry if needed.',
-                    ),
-                  ),
-                );
-              }
-            },
-            child: Text(
-              'Delete & Cancel Reminders',
-              style: AppTypeRoles.typeRole27.copyWith(color: AppPalette.white),
-            ),
-          ),
-        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final g = context.glass;
-    final medicinesAsync = ref.watch(allMedicinesStreamProvider);
-    final todayLogsAsync = ref.watch(todayMedicineLogsStreamProvider);
-
+    final medicines = ref.watch(allMedicinesStreamProvider);
+    final today = ref.watch(todayMedicineLogsStreamProvider);
     return AscentScaffold(
-      title: 'Medicine & Health',
-      subtitle: 'Prescriptions & Dose Reminders',
+      title: 'Medicines',
+      subtitle: 'Daily care',
+      showFeatureHelp: false,
       actions: [
         IconButton(
           tooltip: 'Add Medicine',
-          icon: Icon(Icons.add_circle_outline_rounded, color: g.clay),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            _openAddMedicineSheet();
-          },
+          onPressed: () => showMedicineEditor(context),
+          icon: const Icon(Icons.add_rounded),
         ),
       ],
-      body: ListView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpace.s20,
-          vertical: AppSpace.s16,
+      body: medicines.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, _) => Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(allMedicinesStreamProvider),
+            child: const Text('Could not load medicines. Tap to retry.'),
+          ),
         ),
-        children: [
-          // ── 1. TODAY'S DOSE COMPLIANCE CARD ────────────────────────────────
-          todayLogsAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (todayLogs) {
-              final total = todayLogs.length;
-              final taken = todayLogs.where((l) => l.isTaken).length;
-              final progress = total > 0
-                  ? (taken / total).clamp(0.0, 1.0)
-                  : 0.0;
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GlassSurface(
-                    radius: 20,
-                    padding: const EdgeInsets.all(AppSpace.s18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+        data: (medicines) {
+          final byId = {
+            for (final medicine in medicines) medicine.id: medicine,
+          };
+          final logs =
+              (today.value ?? [])
+                  .where((log) => byId[log.medicineId]?.isActive == true)
+                  .toList()
+                ..sort((a, b) => a.timeSlot.compareTo(b.timeSlot));
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: _surface(
+                  padding: const EdgeInsets.all(4),
+                  child: Row(
+                    children: [_tab('Today', false), _tab('My meds', true)],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  key: ValueKey(_showMedicines),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  children: [
+                    if (!_showMedicines) ...[
+                      if (today.hasValue) _summary(logs),
+                      if (today.hasError)
+                        TextButton(
+                          onPressed: () =>
+                              ref.invalidate(todayMedicineLogsStreamProvider),
+                          child: const Text(
+                            'Could not load today’s doses. Tap to retry.',
+                          ),
+                        ),
+                      if (today.isLoading) const LinearProgressIndicator(),
+                      if (logs.isNotEmpty) ...[
+                        _label('Today’s schedule'),
+                        for (var i = 0; i < logs.length; i++) ...[
+                          if (i == 0 ||
+                              logs[i - 1].timeSlot != logs[i].timeSlot)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
+                              child: Text(
+                                MedicineService.formatTimeSlot(
+                                  logs[i].timeSlot,
+                                ),
+                                style: TextStyle(
+                                  color: context.glass.inkSecondary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          _dose(logs[i], byId[logs[i].medicineId]!),
+                        ],
+                      ],
+                    ],
+                    if (_showMedicines) _label('Your medicines'),
+                    if (medicines.isEmpty)
+                      _surface(
+                        child: Column(
                           children: [
-                            AppTag(
-                              padding: const EdgeInsets.all(AppSpace.s8),
-                              nightDecoration: BoxDecoration(
-                                color: g.claySoft,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.medication_rounded,
-                                color: g.clay,
-                                size: 20,
-                              ),
+                            Icon(
+                              Icons.medication_outlined,
+                              size: 40,
+                              color: context.glass.inkSecondary,
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Today's Doses",
-                                    style: AppTypeRoles.typeRole60.copyWith(
-                                      color: g.ink,
-                                    ),
-                                  ),
-                                  Text(
-                                    '$taken of $total doses taken',
-                                    style: AppTypeRoles.typeRole27.copyWith(
-                                      color: g.inkSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
+                            const SizedBox(height: 12),
                             Text(
-                              '${(progress * 100).toInt()}%',
-                              style: AppTypeRoles.typeRole21.copyWith(
-                                color: g.clay,
+                              'A place for your medicines',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Keep the dose, exact times, and course together. Follow each day’s schedule here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: context.glass.inkMuted,
+                                height: 1.5,
                               ),
+                            ),
+                            const SizedBox(height: 20),
+                            FilledButton.icon(
+                              onPressed: () => showMedicineEditor(context),
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text('Add First Medicine'),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: AppGeometry.roundedr4,
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 6,
-                            backgroundColor: g.track,
-                            valueColor: AlwaysStoppedAnimation<Color>(g.clay),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Today's Scheduled Dose Items
-                  Text(
-                    'TODAY\'S SCHEDULE',
-                    style: AppTypeRoles.typeRole22.copyWith(
-                      color: g.inkMuted,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  if (todayLogs.isEmpty)
-                    medicinesAsync.when(
-                      data: (meds) => meds.isEmpty
-                          ? const SizedBox.shrink()
-                          : GlassSurface(
-                              radius: 16,
-                              padding: const EdgeInsets.all(AppSpace.s16),
-                              child: Center(
-                                child: Text(
-                                  'No doses scheduled for today.',
-                                  style: AppTypeRoles.typeRole58.copyWith(
-                                    color: g.inkMuted,
-                                  ),
-                                ),
-                              ),
-                            ),
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, _) => const SizedBox.shrink(),
-                    )
-                  else
-                    ...todayLogs.map((log) {
-                      return medicinesAsync.when(
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, _) => const SizedBox.shrink(),
-                        data: (meds) {
-                          final med = meds
-                              .where((m) => m.id == log.medicineId)
-                              .firstOrNull;
-                          final medName = med?.name ?? 'Medicine';
-                          final medDosage = med?.dosage ?? '';
-                          final instructions = med?.instructions ?? '';
-                          final timeStr = MedicineService.formatTimeSlot(
-                            log.timeSlot,
-                          );
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: AppSpace.s10),
-                            child: GlassSurface(
-                              radius: 16,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpace.s16,
-                                vertical: AppSpace.s12,
-                              ),
-                              child: Row(
-                                children: [
-                                  // Time badge
-                                  AppTag(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpace.s10,
-                                      vertical: AppSpace.s6,
-                                    ),
-                                    nightDecoration: BoxDecoration(
-                                      color: log.isTaken
-                                          ? g.sage.withValues(alpha: 0.15)
-                                          : g.claySoft,
-                                      borderRadius: AppGeometry.roundedr8,
-                                    ),
-                                    child: Text(
-                                      timeStr,
-                                      style: AppTypeRoles.typeRole34.copyWith(
-                                        color: log.isTaken ? g.sage : g.clay,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-
-                                  // Details
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          medName,
-                                          style: AppTypeRoles.typeRole61
-                                              .copyWith(
-                                                color: g.ink,
-                                                decoration: log.isTaken
-                                                    ? TextDecoration.lineThrough
-                                                    : null,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '$medDosage • $instructions',
-                                          style: AppTypeRoles.typeRole4
-                                              .copyWith(color: g.inkSecondary),
-                                        ),
-                                        if (log.isTaken &&
-                                            log.takenAt != null) ...[
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'Taken at ${DateFormat('h:mm a').format(log.takenAt!)}',
-                                            style: AppTypeRoles.typeRole44
-                                                .copyWith(color: g.sage),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                  ),
-
-                                  // Check/Take action button
-                                  AppTapArea(
-                                    onTap: () async {
-                                      HapticFeedback.lightImpact();
-                                      await ref
-                                          .read(medicineServiceProvider)
-                                          .toggleDose(log.id, !log.isTaken);
-                                    },
-                                    borderRadius: AppGeometry.roundedr20,
-                                    child: AppCard(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpace.s12,
-                                        vertical: AppSpace.s8,
-                                      ),
-                                      nightDecoration: BoxDecoration(
-                                        color: log.isTaken ? g.sage : g.clay,
-                                        borderRadius: AppGeometry.roundedr20,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            log.isTaken
-                                                ? Icons.check_rounded
-                                                : Icons
-                                                      .radio_button_unchecked_rounded,
-                                            size: 14,
-                                            color: AppPalette.white,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            log.isTaken ? 'Taken' : 'Take',
-                                            style: AppStateTypography
-                                                .stateType21
-                                                .copyWith(
-                                                  color: AppPalette.white,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    }),
-                  const SizedBox(height: 24),
-                ],
-              );
-            },
-          ),
-
-          // ── 2. ACTIVE COURSES & PRESCRIPTIONS ──────────────────────────────
-          Text(
-            'ACTIVE PRESCRIPTIONS',
-            style: AppTypeRoles.typeRole22.copyWith(
-              color: g.inkMuted,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 10),
-
-          medicinesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, _) => Center(
-              child: Text('Error: $err', style: TextStyle(color: g.inkMuted)),
-            ),
-            data: (medicines) {
-              if (medicines.isEmpty) {
-                return GlassSurface(
-                  radius: 20,
-                  padding: const EdgeInsets.all(AppSpace.s28),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.medication_rounded,
-                        size: 48,
-                        color: g.inkMuted,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'No Medicines Added Yet',
-                        style: AppTypeRoles.typeRole30.copyWith(color: g.ink),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Add your prescriptions with dosage & duration.\nReminders & daily to-dos will sync automatically.',
-                        textAlign: TextAlign.center,
-                        style: AppTypeRoles.typeRole27.copyWith(
-                          color: g.inkSecondary,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      AscentButton.primary(
-                        label: 'Add First Medicine',
-                        icon: Icons.add_rounded,
-                        onPressed: _openAddMedicineSheet,
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return Column(
-                children: medicines.map((med) {
-                  final now = DateTime.now();
-                  final today = DateTime(now.year, now.month, now.day);
-                  final start = DateTime(
-                    med.startDate.year,
-                    med.startDate.month,
-                    med.startDate.day,
-                  );
-                  final elapsedDays = today.difference(start).inDays + 1;
-                  final clampedDay = elapsedDays.clamp(1, med.durationDays);
-                  final remainingDays = (med.durationDays - clampedDay).clamp(
-                    0,
-                    med.durationDays,
-                  );
-                  final progress = (clampedDay / med.durationDays).clamp(
-                    0.0,
-                    1.0,
-                  );
-
-                  List<String> timesList = [];
-                  try {
-                    final decoded =
-                        jsonDecode(med.scheduledTimes) as List<dynamic>;
-                    timesList = decoded
-                        .map(
-                          (e) => MedicineService.formatTimeSlot(e.toString()),
-                        )
-                        .toList();
-                  } catch (_) {}
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: AppSpace.s14),
-                    child: GlassSurface(
-                      radius: 20,
-                      padding: const EdgeInsets.all(AppSpace.s16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 6,
-                                      children: [
-                                        Text(
-                                          med.name,
-                                          style: AppTypeRoles.typeRole30
-                                              .copyWith(color: g.ink),
-                                        ),
-                                        AppCard(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpace.s8,
-                                            vertical: AppSpace.s3,
-                                          ),
-                                          nightDecoration: BoxDecoration(
-                                            color: g.claySoft,
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            med.type.toUpperCase(),
-                                            style: AppTypeRoles.typeRole55
-                                                .copyWith(color: g.clay),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${med.dosage} • ${med.instructions}',
-                                      style: AppTypeRoles.typeRole27.copyWith(
-                                        color: g.inkSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              IconButton(
-                                tooltip: 'Edit Prescription',
-                                icon: Icon(
-                                  Icons.edit_outlined,
-                                  color: g.inkMuted,
-                                ),
-                                onPressed: () {
-                                  HapticFeedback.selectionClick();
-                                  _openAddMedicineSheet(med);
-                                },
-                              ),
-                              IconButton(
-                                tooltip: 'Delete Prescription',
-                                icon: Icon(
-                                  Icons.delete_outline_rounded,
-                                  color: g.coral,
-                                  size: 20,
-                                ),
-                                onPressed: () => _confirmDeleteMedicine(med),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Times badges
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: timesList
-                                .map(
-                                  (t) => AppTag(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpace.s8,
-                                      vertical: AppSpace.s4,
-                                    ),
-                                    nightDecoration: BoxDecoration(
-                                      color: g.fill,
-                                      borderRadius: AppGeometry.roundedr6,
-                                      border: Border.all(color: g.line),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.access_time_rounded,
-                                          size: 11,
-                                          color: g.inkMuted,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          t,
-                                          style: AppTypeRoles.typeRole44
-                                              .copyWith(color: g.inkSecondary),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-
-                          const SizedBox(height: 14),
-
-                          // Course Duration Progress
-                          Wrap(
-                            alignment: WrapAlignment.spaceBetween,
-                            spacing: 12,
-                            runSpacing: 6,
-                            children: [
-                              Text(
-                                'Day $clampedDay of ${med.durationDays}',
-                                style: AppTypeRoles.typeRole34.copyWith(
-                                  color: g.ink,
-                                ),
-                              ),
-                              Text(
-                                remainingDays == 0
-                                    ? 'Course complete'
-                                    : '$remainingDays days left',
-                                style: AppTypeRoles.typeRole4.copyWith(
-                                  color: g.inkMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: AppGeometry.roundedr3,
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 5,
-                              backgroundColor: g.track,
-                              valueColor: AlwaysStoppedAnimation<Color>(g.clay),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-
-          const SizedBox(height: 40),
-        ],
+                      )
+                    else if (_showMedicines)
+                      ...medicines.map(_medicine),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
-  }
-}
-
-class _MedicineSheetControllers extends StatefulWidget {
-  const _MedicineSheetControllers({
-    required this.name,
-    required this.dosage,
-    required this.builder,
-  });
-  final String name, dosage;
-  final Widget Function(TextEditingController, TextEditingController) builder;
-  @override
-  State<_MedicineSheetControllers> createState() =>
-      _MedicineSheetControllersState();
-}
-
-class _MedicineSheetControllersState extends State<_MedicineSheetControllers> {
-  late final name = TextEditingController(text: widget.name);
-  late final dosage = TextEditingController(text: widget.dosage);
-  @override
-  Widget build(BuildContext context) => widget.builder(name, dosage);
-  @override
-  void dispose() {
-    name.dispose();
-    dosage.dispose();
-    super.dispose();
   }
 }

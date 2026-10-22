@@ -97,11 +97,10 @@ class _ThoughtQuickActionsState extends State<ThoughtQuickActions> {
               ),
               AppPill.action(
                 avatar: const Icon(Icons.add_task_rounded, size: 14),
-                label: const Text('Both'),
+                label: const Text('Todo & Reminder'),
                 onPressed: () => _act('both'),
               ),
             ],
           ),
         );
 }
-
