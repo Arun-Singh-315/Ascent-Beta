@@ -1333,130 +1333,266 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
   Widget _compactContent(BuildContext context, String timeStr) {
     final g = context.glass;
-    return Row(
+    final moodColor = context.glass.frozen
+        ? (thought.mood == 'win' ? context.glass.sage : context.glass.slate)
+        : _moodColor(thought.mood);
+
+    return Column(
       key: ValueKey('thought_compact_${thought.id}'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        if (isSelectionMode) ...[
-          Icon(
-            isSelected
-                ? Icons.check_circle_rounded
-                : Icons.radio_button_unchecked_rounded,
-            color: isSelected ? g.clay : g.inkMuted,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-        ],
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onDoubleTap: isSelectionMode ? null : _toggleDone,
-                child: Text.rich(
-                  ThoughtExcerpt.buildRichArrowSpan(
-                    context: context,
-                    text: thought.content,
-                    baseStyle: AppTypography.thoughtContent(
-                      color: thought.isCompleted
-                          ? context.textMuted
-                          : context.textPrimary,
-                      decoration: thought.isCompleted
-                          ? TextDecoration.lineThrough
-                          : null,
-                    ),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isSelectionMode) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 2, right: 10),
+                child: Icon(
+                  isSelected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  color: isSelected ? g.clay : g.inkMuted,
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 6),
-              Row(
+            ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (thought.isPinned) ...[
-                    Icon(Icons.push_pin_rounded, size: 12, color: g.clay),
-                    const SizedBox(width: 4),
-                  ],
-                  if (thought.isCompleted) ...[
-                    Text(
-                      'DONE · ',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.inkMuted,
+                  // WhatsApp Quoted Reply/Prompt Box
+                  if (thought.promptQuestion != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: moodColor.withValues(
+                          alpha: context.isDark ? 0.12 : 0.08,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border(
+                          left: BorderSide(
+                            color: moodColor,
+                            width: 3.5,
+                          ),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.reply_rounded,
+                                size: 12,
+                                color: moodColor,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Prompt',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: moodColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            thought.promptQuestion!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: context.textMuted,
+                              height: 1.25,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                  if (thought.isArchived) ...[
-                    Text(
-                      'ARCHIVED',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.inkMuted,
+
+                  // Category tag & Promise chip
+                  if (widget.categoryLabel != null ||
+                      thought.mood == 'promise') ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (widget.categoryLabel != null)
+                            Text(
+                              '#${widget.categoryLabel!}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AscentTextStyles.labelSmall.copyWith(
+                                color: context.isDark && g.merlot
+                                    ? g.inkSecondary
+                                    : g.clay,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          if (thought.mood == 'promise')
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: g.clay.withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                'Promise',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.clay,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 4),
                   ],
-                  Expanded(
-                    child: Text(
-                      timeStr,
-                      maxLines: 1,
+
+                  // Thought message body (WhatsApp bubble text)
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onDoubleTap: isSelectionMode ? null : _toggleDone,
+                    child: Text.rich(
+                      ThoughtExcerpt.buildRichArrowSpan(
+                        context: context,
+                        text: thought.content,
+                        baseStyle: AppTypography.thoughtContent(
+                          color: thought.isCompleted
+                              ? context.textMuted
+                              : context.textPrimary,
+                          decoration: thought.isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.inkMuted,
-                      ),
                     ),
                   ),
                 ],
               ),
-              if (widget.categoryLabel != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  widget.categoryLabel!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AscentTextStyles.labelSmall.copyWith(
-                    color: context.isDark && g.merlot ? g.inkSecondary : g.clay,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        if (!isSelectionMode) _doneButton(),
-        if (thought.isArchived && !isSelectionMode)
-          IconButton(
-            tooltip: 'Unarchive thought',
-            icon: const Icon(Icons.unarchive_outlined, size: 18),
-            onPressed: () async {
-              try {
-                await ref.read(thoughtDaoProvider).unarchiveThought(thought.id);
-              } catch (_) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Could not restore the thought. Try again.',
-                      ),
-                    ),
-                  );
-                }
-              }
-            },
-          ),
-        if (!isSelectionMode)
-          IconButton(
-            tooltip: isSelectionMode ? 'Select thought' : 'Expand thought',
-            onPressed: isSelectionMode
-                ? onToggleSelect
-                : () => setState(() => _expanded = true),
-            icon: Icon(
-              isSelectionMode
-                  ? Icons.checklist_rounded
-                  : Icons.expand_more_rounded,
-              size: 20,
             ),
-            constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-          ),
+          ],
+        ),
+
+        const SizedBox(height: 6),
+
+        // WhatsApp Footer: Pin, Archive, Timestamp, Status Ticks, Expand Chevron
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (thought.isPinned) ...[
+              Icon(Icons.push_pin_rounded, size: 12, color: g.clay),
+              const SizedBox(width: 4),
+            ],
+            if (thought.isArchived) ...[
+              Text(
+                'ARCHIVED',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: g.inkMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (!isSelectionMode)
+                IconButton(
+                  tooltip: 'Unarchive thought',
+                  icon: const Icon(Icons.unarchive_outlined, size: 16),
+                  constraints: const BoxConstraints(
+                    minHeight: 28,
+                    minWidth: 28,
+                  ),
+                  padding: EdgeInsets.zero,
+                  onPressed: () async {
+                    try {
+                      await ref
+                          .read(thoughtDaoProvider)
+                          .unarchiveThought(thought.id);
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Could not restore the thought. Try again.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              timeStr,
+              maxLines: 1,
+              style: AscentTextStyles.labelSmall.copyWith(
+                color: g.inkMuted,
+                fontSize: 11,
+              ),
+            ),
+            const SizedBox(width: 4),
+            // WhatsApp Status Ticks (done_all_rounded for completed, done_rounded for active)
+            if (!isSelectionMode)
+              IconButton(
+                tooltip: thought.isCompleted ? 'Mark open' : 'Mark done',
+                constraints: const BoxConstraints(
+                  minHeight: 28,
+                  minWidth: 28,
+                ),
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  thought.isCompleted
+                      ? Icons.done_all_rounded
+                      : Icons.done_rounded,
+                  size: 16,
+                  color: thought.isCompleted
+                      ? (context.glass.frozen
+                          ? context.glass.sage
+                          : (context.isDark
+                              ? const Color(0xFF4ADE80)
+                              : const Color(0xFF16A34A)))
+                      : g.inkMuted,
+                ),
+                onPressed: _toggleDone,
+              ),
+            // Expand Chevron (WhatsApp menu trigger)
+            if (!isSelectionMode)
+              IconButton(
+                tooltip: 'Expand thought',
+                constraints: const BoxConstraints(
+                  minHeight: 28,
+                  minWidth: 28,
+                ),
+                padding: EdgeInsets.zero,
+                icon: const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: 18,
+                ),
+                onPressed: () => setState(() => _expanded = true),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -1476,12 +1612,20 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
   Widget _doneButton() => IconButton(
     tooltip: thought.isCompleted ? 'Mark open' : 'Mark done',
+    constraints: const BoxConstraints(minHeight: 28, minWidth: 28),
+    padding: EdgeInsets.zero,
     icon: Icon(
       thought.isCompleted
-          ? Icons.check_circle_rounded
-          : Icons.radio_button_unchecked_rounded,
-      size: 21,
-      color: thought.isCompleted ? context.glass.sage : context.glass.inkMuted,
+          ? Icons.done_all_rounded
+          : Icons.done_rounded,
+      size: 16,
+      color: thought.isCompleted
+          ? (context.glass.frozen
+              ? context.glass.sage
+              : (context.isDark
+                  ? const Color(0xFF4ADE80)
+                  : const Color(0xFF16A34A)))
+          : context.glass.inkMuted,
     ),
     onPressed: _toggleDone,
   );
@@ -1563,12 +1707,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final style = widget.appearance.style;
     final minimal = style == ThoughtCardStyle.minimal;
     final radius = switch (style) {
-      ThoughtCardStyle.soft => BorderRadius.circular(18),
+      ThoughtCardStyle.soft => BorderRadius.circular(16),
       ThoughtCardStyle.bubble => const BorderRadius.only(
-        topLeft: Radius.circular(18),
-        topRight: Radius.circular(18),
-        bottomRight: Radius.circular(18),
-        bottomLeft: Radius.circular(6),
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
+        bottomLeft: Radius.circular(16),
+        bottomRight: Radius.circular(4),
       ),
       ThoughtCardStyle.minimal => BorderRadius.zero,
     };
