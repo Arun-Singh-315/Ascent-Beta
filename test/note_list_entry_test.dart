@@ -16,7 +16,7 @@ void main() {
   test('list button inserts a real new line and parser produces two items', () {
     final controller = TextEditingController(text: 'Read Java');
     NoteListButton.insertNextItem(controller);
-    expect(controller.text, 'Read Java\n→ ');
+    expect(controller.text, 'Read Java\n\n→ ');
     controller.text += 'Practise RAG';
     expect(PlanItemDraft.parseList(controller.text), [
       'Read Java',
@@ -38,7 +38,7 @@ void main() {
     final controller = TextEditingController(text: 'ReadApply')
       ..selection = const TextSelection.collapsed(offset: 4);
     NoteListButton.insertNextItem(controller);
-    expect(controller.text, 'Read\n→ Apply');
+    expect(controller.text, 'Read\n\n→ Apply');
     controller.dispose();
   });
   test(
@@ -81,7 +81,7 @@ void main() {
       );
       await t.tap(find.text('Add next item'));
       await t.pump();
-      expect(controller.text, 'First\n→ ');
+      expect(controller.text, 'First\n\n→ ');
       expect(focus.hasFocus, isTrue);
       expect(
         find.text('One line per item. Tap Plan to review your list.'),
@@ -112,7 +112,7 @@ void main() {
       await t.pump();
       await t.tap(find.byType(InlineListAddButton));
       await t.pump();
-      expect(t.widget<TextField>(input).controller!.text, 'First task\n→ ');
+      expect(t.widget<TextField>(input).controller!.text, 'First task\n\n→ ');
       await t.enterText(input, 'First task\n→ Second task');
       await t.pump();
       await t.tap(find.byTooltip('Add activity'));

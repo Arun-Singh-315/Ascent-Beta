@@ -46,19 +46,33 @@ class GlassSurface extends StatelessWidget {
         color: gradient == null ? (fillColor ?? g.fill) : null,
         gradient: gradient,
         borderRadius: r,
-        border:
-            customBorder ??
+        border: customBorder ??
             Border.all(color: g.edge, width: AppBorderScale.w1point0),
         boxShadow: context.isDark
             ? (context.surfaces.blur == 0
                 ? const []
-                : [
-                    BoxShadow(
-                      color: g.shadow.withValues(alpha: 0.35),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ])
+                : g.frozen
+                    ? [
+                        BoxShadow(
+                          color: g.shadow.withValues(alpha: 0.50),
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                          spreadRadius: -2,
+                        ),
+                        BoxShadow(
+                          color: g.highlight.withValues(alpha: 0.60),
+                          blurRadius: 0,
+                          offset: const Offset(0, 0),
+                          spreadRadius: -1,
+                        ),
+                      ]
+                    : [
+                        BoxShadow(
+                          color: g.shadow.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ])
             : [
                 BoxShadow(
                   color: g.shadow.withValues(alpha: 0.05),

@@ -265,6 +265,30 @@ class WorkspaceBackupService {
       tables['plan_collection_items'] = <dynamic>[];
       payload['schema'] = 18;
     }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 18 &&
+        db.schemaVersion >= 19 &&
+        payload['tables'] is Map) {
+      final thoughts = (payload['tables'] as Map)['thoughts'];
+      if (thoughts is List) {
+        for (final row in thoughts) {
+          if (row is Map) row.putIfAbsent('category', () => 'general');
+        }
+      }
+      payload['schema'] = 19;
+    }
+    if (payload['format'] == 'ascent.workspace' &&
+        payload['version'] == 1 &&
+        payload['schema'] == 19 &&
+        db.schemaVersion >= 20 &&
+        payload['tables'] is Map) {
+      (payload['tables'] as Map).putIfAbsent(
+        'thought_categories',
+        () => <dynamic>[],
+      );
+      payload['schema'] = 20;
+    }
     if (payload['format'] != 'ascent.workspace' ||
         payload['version'] != 1 ||
         payload['schema'] != db.schemaVersion) {

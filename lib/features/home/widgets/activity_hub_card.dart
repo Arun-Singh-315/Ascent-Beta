@@ -157,12 +157,18 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           radius: 22,
           enableBlur: false,
           fillColor: Theme.of(context).brightness == Brightness.light
-              ? (g.merlot ? MerlotPalette.surface : Colors.white)
+              ? (g.merlot
+                  ? MerlotPalette.surface
+                  : (g.frozen ? FrozenPalette.surface : Colors.white))
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
               ? Border.all(
-                  color: g.merlot ? MerlotPalette.line : g.edge.withValues(alpha: .45),
-                  width: g.merlot ? 0.75 : 1,
+                  color: g.merlot
+                      ? MerlotPalette.line
+                      : (g.frozen
+                          ? FrozenPalette.line
+                          : g.edge.withValues(alpha: 0.45)),
+                  width: 1.0,
                 )
               : null,
           padding: const EdgeInsets.all(16),
@@ -307,7 +313,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     in (_showAll
                         ? currentList
                         : currentList.take(widget.previewLimit.clamp(1, 4))))
-                  ActivityRowItem(activity: act),
+                  ActivityRowItem(key: ValueKey(act.id), activity: act),
 
                 // Show more / Show less toggle when count exceeds 4
                 if (currentList.length > 4)

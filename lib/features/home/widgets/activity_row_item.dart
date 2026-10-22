@@ -1,3 +1,4 @@
+import '../../../shared/utils/action_text.dart';
 import '../../plans/planning_providers.dart';
 import '../../today/add_lecture_activity_sheet.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -29,13 +30,28 @@ import '../../../shared/widgets/ascent_snack_bar.dart';
 /// - Clean subtitle / priority tag
 /// - 44dp circular start button (one-tap focus/timer start)
 /// - Clean hairline divider
-class ActivityRowItem extends ConsumerWidget {
+class ActivityRowItem extends ConsumerStatefulWidget {
   final TodayActivityItem activity;
 
   const ActivityRowItem({super.key, required this.activity});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ActivityRowItem> createState() => _ActivityRowItemState();
+}
+
+class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
+  bool _removed = false;
+  TodayActivityItem get activity => widget.activity;
+
+  @override
+  void didUpdateWidget(covariant ActivityRowItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.activity.id != activity.id) _removed = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_removed) return const SizedBox.shrink();
     final planLabel = activity.linkedTaskId == null
         ? null
         : ref.watch(taskPlanLabelProvider(activity.linkedTaskId!)).value;
@@ -73,28 +89,67 @@ class ActivityRowItem extends ConsumerWidget {
       },
       onDismissed: (_) async {
         HapticFeedback.mediumImpact();
-        final taskDao = ref.read(taskDaoProvider);
-        Task? taskBackup;
-        if (activity.linkedTaskId != null) {
-          taskBackup = await taskDao.getTaskById(activity.linkedTaskId!);
-        }
-        await deleteTodayActivity(ref, activity);
-        if (context.mounted) {
-          final isLecture = activity.sourceType == 'lecture';
-          AscentSnackBar.undo(
-            context,
-            message: isLecture
-                ? 'Removed from today\'s activities'
-                : 'Activity "${activity.title}" deleted',
-            onUndo: () async {
-              HapticFeedback.lightImpact();
-              if (taskBackup != null) {
-                await taskDao.insertTask(taskBackup.toCompanion(true));
-              }
-              await ref
-                  .read(dismissedTodayActivityIdsProvider.notifier)
-                  .unDismissActivityId(activity.id);
-            },
+        // Capture dependencies before the row disappears from its parent stream.
+        final container = ProviderScope.containerOf(context, listen: false);
+        final messenger = ScaffoldMessenger.of(context);
+        final removedActivity = activity;
+        final taskDao = container.read(taskDaoProvider);
+        final dismissed = container.read(
+          dismissedTodayActivityIdsProvider.notifier,
+        );
+        // Never leave a dismissed Dismissible in the tree while awaiting I/O.
+        setState(() => _removed = true);
+        try {
+          await deleteTodayActivity(container, removedActivity);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                removedActivity.sourceType == 'lecture'
+                    ? "Removed from today's activities"
+                    : 'Activity "${removedActivity.title}" deleted',
+              ),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () async {
+                  try {
+                    if (removedActivity.linkedTaskId != null &&
+                        removedActivity.sourceType != 'lecture') {
+                      final restored = await taskDao.restoreDeletedTask(
+                        removedActivity.linkedTaskId!,
+                      );
+                      if (!restored) {
+                        if (!messenger.mounted) return;
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Could not restore this activity.'),
+                          ),
+                        );
+                        return;
+                      }
+                    }
+                    await dismissed.unDismissActivityId(removedActivity.id);
+                    if (mounted) setState(() => _removed = false);
+                  } catch (_) {
+                    if (!messenger.mounted) return;
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not restore this activity.'),
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+          );
+        } catch (_) {
+          await dismissed.unDismissActivityId(removedActivity.id);
+          if (mounted) setState(() => _removed = false);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Could not delete this activity. Try again.'),
+            ),
           );
         }
       },
@@ -118,7 +173,9 @@ class ActivityRowItem extends ConsumerWidget {
                     ? (g.merlot
                           ? MerlotPalette.darkAction.withValues(alpha: 0.18)
                           : (g.frozen
-                                ? FrozenPalette.darkAction.withValues(alpha: 0.18)
+                                ? FrozenPalette.darkAction.withValues(
+                                    alpha: 0.18,
+                                  )
                                 : AppPalette.white.withValues(alpha: 0.22)))
                     : (g.merlot
                           ? MerlotPalette.tint
@@ -129,8 +186,14 @@ class ActivityRowItem extends ConsumerWidget {
                                 ? MerlotPalette.darkElevated
                                 : (g.frozen
                                       ? FrozenPalette.darkElevated
-                                      : AppPalette.white.withValues(alpha: 0.12)))
-                          : const Color(0xFFFEF3C7))
+                                      : AppPalette.white.withValues(
+                                          alpha: 0.12,
+                                        )))
+                          : (g.merlot
+                                ? MerlotPalette.pillSoft
+                                : (g.frozen
+                                      ? FrozenPalette.pillSoft
+                                      : const Color(0xFFFAFAFA))))
                     : (context.isDark
                           ? (g.merlot
                                 ? MerlotPalette.darkElevated
@@ -150,10 +213,8 @@ class ActivityRowItem extends ConsumerWidget {
                       : (g.frozen ? FrozenPalette.action : g.clay))
                 : (isPaused
                       ? (g.merlot
-                            ? MerlotPalette.spark
-                            : (g.frozen
-                                  ? FrozenPalette.spark
-                                  : AppPalette.orange.shade300))
+                            ? MerlotPalette.antiqueGold
+                            : (g.frozen ? FrozenPalette.line : g.line))
                       : (context.isDark
                             ? (g.merlot
                                   ? MerlotPalette.darkLine
@@ -165,7 +226,7 @@ class ActivityRowItem extends ConsumerWidget {
                                   : (g.frozen
                                         ? FrozenPalette.lineSubtle
                                         : g.edge.withValues(alpha: 0.35))))),
-            width: 0.75,
+            width: isRunning ? 1.5 : (g.merlot || g.frozen ? 0.75 : 1),
           ),
         ),
         padding: const EdgeInsets.symmetric(
@@ -225,14 +286,20 @@ class ActivityRowItem extends ConsumerWidget {
                             color: isDone
                                 ? (g.merlot ? MerlotPalette.action : g.clay)
                                 : (g.merlot
-                                    ? MerlotPalette.spark.withValues(alpha: 0.12)
-                                    : AppPalette.transparent),
+                                      ? MerlotPalette.spark.withValues(
+                                          alpha: 0.12,
+                                        )
+                                      : AppPalette.transparent),
                             border: Border.all(
                               color: isDone
                                   ? (g.merlot ? MerlotPalette.action : g.clay)
-                                  : (g.merlot
-                                      ? MerlotPalette.spark
-                                      : (isRunning ? g.clay : g.inkMuted)),
+                                  : (isPaused
+                                        ? (g.frozen
+                                              ? FrozenPalette.action
+                                              : (g.merlot
+                                                    ? MerlotPalette.antiqueGold
+                                                    : g.clay))
+                                        : (isRunning ? g.clay : g.inkMuted)),
                               width: 1.75,
                             ),
                           ),
@@ -248,7 +315,16 @@ class ActivityRowItem extends ConsumerWidget {
                                             ? Icons.headphones_rounded
                                             : Icons.school_outlined,
                                         size: 14,
-                                        color: isRunning ? g.clay : (g.merlot ? MerlotPalette.spark : g.inkMuted),
+                                        color: isRunning
+                                            ? g.clay
+                                            : (isPaused
+                                                  ? (g.frozen
+                                                        ? FrozenPalette.action
+                                                        : (g.merlot
+                                                              ? MerlotPalette
+                                                                    .antiqueGold
+                                                              : g.clay))
+                                                  : g.inkMuted),
                                       )
                                     : (isTimed
                                           ? Icon(
@@ -256,7 +332,15 @@ class ActivityRowItem extends ConsumerWidget {
                                               size: 13,
                                               color: isRunning
                                                   ? g.clay
-                                                  : (g.merlot ? MerlotPalette.spark : g.inkMuted),
+                                                  : (isPaused
+                                                        ? (g.frozen
+                                                              ? FrozenPalette
+                                                                    .action
+                                                              : (g.merlot
+                                                                    ? MerlotPalette
+                                                                          .antiqueGold
+                                                                    : g.clay))
+                                                        : g.inkMuted),
                                             )
                                           : null)),
                         ),
@@ -301,7 +385,8 @@ class ActivityRowItem extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        if (planLabel != null)
+                        if (planLabel != null &&
+                            !sameActionText(planLabel, activity.title))
                           Text(
                             planLabel,
                             style: AscentTextStyles.homeSecondary.copyWith(
@@ -335,11 +420,21 @@ class ActivityRowItem extends ConsumerWidget {
                               Text(
                                 'Paused · ${_runningTimerText(activity)}',
                                 style: AppTypography.jetBrainsMono12W500110(
-                                  color: AppPalette.orange.shade400,
+                                  color: g.frozen
+                                      ? (context.isDark
+                                            ? FrozenPalette.darkSecondaryInk
+                                            : FrozenPalette.action)
+                                      : (g.merlot
+                                            ? (context.isDark
+                                                  ? MerlotPalette.darkSpark
+                                                  : MerlotPalette.antiqueGold)
+                                            : AppPalette.orange.shade400),
                                 ),
                               ),
                             ] else ...[
-                              if (g.merlot && activity.kind == ActivityKind.todo && !isDone) ...[
+                              if (g.merlot &&
+                                  activity.kind == ActivityKind.todo &&
+                                  !isDone) ...[
                                 Container(
                                   width: 6,
                                   height: 6,
@@ -353,10 +448,18 @@ class ActivityRowItem extends ConsumerWidget {
                               Text(
                                 _subtitleText(activity),
                                 style: AscentTextStyles.homeSecondary.copyWith(
-                                  color: (g.merlot && activity.kind == ActivityKind.todo && !isDone)
-                                      ? (context.isDark ? MerlotPalette.darkSecondaryInk : MerlotPalette.action)
+                                  color:
+                                      (g.merlot &&
+                                          activity.kind == ActivityKind.todo &&
+                                          !isDone)
+                                      ? (context.isDark
+                                            ? MerlotPalette.darkSecondaryInk
+                                            : MerlotPalette.action)
                                       : g.inkMuted,
-                                  fontWeight: (g.merlot && activity.kind == ActivityKind.todo && !isDone)
+                                  fontWeight:
+                                      (g.merlot &&
+                                          activity.kind == ActivityKind.todo &&
+                                          !isDone)
                                       ? FontWeight.w500
                                       : FontWeight.w400,
                                 ),

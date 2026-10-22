@@ -102,17 +102,17 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     mutedText: FrozenPalette.mutedInk,
     accent: FrozenPalette.action,
     greenAction: FrozenPalette.success,
-    cardFill: FrozenPalette.surface,
+    cardFill: Color.fromRGBO(243, 247, 251, 0.78),
     cardBorderColor: FrozenPalette.line,
     pillBorderColor: FrozenPalette.lineSubtle,
     dividerColor: FrozenPalette.lineSubtle,
     tintFill: FrozenPalette.pillSoft,
     tintBorder: FrozenPalette.lineSubtle,
     onAccent: Colors.white,
-    cardBorderWidth: 0.75,
+    cardBorderWidth: 1.0,
     pillBorderWidth: 0.75,
-    shadow: FrozenPalette.shadowAmbient,
-    blur: 0,
+    shadow: Color.fromRGBO(20, 50, 80, 0.08),
+    blur: 16,
   );
 
   static final legacyNordicSky = night.copyWith(
@@ -127,6 +127,21 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
     tintFill: AscentGlass.nordicSky.claySoft,
     tintBorder: AscentGlass.nordicSky.edge,
     shadow: AscentGlass.nordicSky.shadow,
+    blur: 12,
+  );
+
+  static final legacyNordicSkyDark = night.copyWith(
+    ink: AscentGlass.nordicSkyDark.ink,
+    mutedText: AscentGlass.nordicSkyDark.inkMuted,
+    accent: AscentGlass.nordicSkyDark.clay,
+    greenAction: FrozenPalette.darkSuccess,
+    cardFill: AscentGlass.nordicSkyDark.fill,
+    cardBorderColor: AscentGlass.nordicSkyDark.edge,
+    pillBorderColor: AscentGlass.nordicSkyDark.edge,
+    dividerColor: AscentGlass.nordicSkyDark.line,
+    tintFill: AscentGlass.nordicSkyDark.claySoft,
+    tintBorder: AscentGlass.nordicSkyDark.edge,
+    shadow: AscentGlass.nordicSkyDark.shadow,
     blur: 12,
   );
 

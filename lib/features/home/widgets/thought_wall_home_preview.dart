@@ -487,19 +487,21 @@ class _ThoughtWallHomePreviewState
                         : (g.frozen
                             ? FrozenPalette.line
                             : g.edge.withValues(alpha: 0.45)),
-                    width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                    width: 1.0,
                   );
 
             final titleColor = g.inkMuted;
             final expandIconColor = g.clay;
             final actionAccentColor = g.clay;
 
-            // ONLY the bubble of thought changes to the exact blue of floating Ask Aria / avatar A
-            final bubbleGradient = g.frozen
-                ? LinearGradient(
-                    colors: isDark
-                        ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
-                        : [FrozenPalette.actionBright, FrozenPalette.action],
+            // In day Frozen Sky: thought bubble receives vibrant blue gradient matching Ask Aria.
+            // In dark mode: thought bubble is soothing, elevated dark navy glass with no blinding glare.
+            final bubbleGradient = g.frozen && !isDark
+                ? const LinearGradient(
+                    colors: [
+                      FrozenPalette.actionBright,
+                      FrozenPalette.action,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -508,14 +510,18 @@ class _ThoughtWallHomePreviewState
             final bubbleFill = bubbleGradient != null
                 ? null
                 : (isDark
-                    ? g.fill.withValues(alpha: g.fill.a + 0.04)
+                    ? (g.frozen
+                        ? FrozenPalette.darkElevated
+                        : g.fill.withValues(alpha: g.fill.a + 0.04))
                     : (g.merlot
                         ? MerlotPalette.pillSoft
                         : AscentColors.bgSurface));
 
             final bubbleBorder = g.frozen
                 ? Border.all(
-                    color: Colors.white.withValues(alpha: isDark ? 0.35 : 0.22),
+                    color: isDark
+                        ? FrozenPalette.darkLine
+                        : Colors.white.withValues(alpha: 0.22),
                     width: 0.75,
                   )
                 : (isDark
@@ -527,15 +533,15 @@ class _ThoughtWallHomePreviewState
                         width: (g.merlot || g.frozen) ? 0.75 : 1.0,
                       ));
 
-            final isBubbleBlue = g.frozen;
+            final isBubbleBlue = g.frozen && !isDark;
 
             final thoughtTextColor = isBubbleBlue
                 ? Colors.white
-                : (isDark ? Colors.white : g.ink);
+                : (isDark ? FrozenPalette.darkInk : g.ink);
 
             final thoughtTextMutedColor = isBubbleBlue
                 ? Colors.white.withValues(alpha: 0.85)
-                : g.inkMuted;
+                : (isDark ? FrozenPalette.darkMutedInk : g.inkMuted);
 
             final bubbleAccentColor = isBubbleBlue
                 ? Colors.white

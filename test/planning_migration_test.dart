@@ -27,6 +27,7 @@ void main() {
           .toList();
       await db.customStatement('DROP TABLE plan_collection_items');
       await db.customStatement('DROP TABLE plan_collections');
+      await db.customStatement('ALTER TABLE thoughts DROP COLUMN category');
       await db.customStatement('PRAGMA user_version = 17');
       await db.close();
       db = AppDatabase.forTesting(NativeDatabase(file));

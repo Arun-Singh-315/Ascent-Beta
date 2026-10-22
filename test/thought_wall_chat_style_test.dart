@@ -11,6 +11,7 @@ void main() {
       'Even index thought is left-aligned and odd index thought is right-aligned in chat style',
       (tester) async {
         final thought1 = Thought(
+          category: 'general',
           id: 1,
           content: 'Note to myself: Keep pushing steady today.',
           mood: 'me_to_me',
@@ -22,6 +23,7 @@ void main() {
         );
 
         final thought2 = Thought(
+          category: 'general',
           id: 2,
           content: 'Future me: You built something durable.',
           mood: 'future',
@@ -99,6 +101,7 @@ void main() {
       tester,
     ) async {
       final thought = Thought(
+        category: 'general',
         id: 1,
         content: 'Night glass reflection.',
         mood: 'thought',
@@ -148,6 +151,7 @@ void main() {
       'Thought card has a visible rounded outline and inset header separator in day mode',
       (tester) async {
         final thought = Thought(
+          category: 'general',
           id: 1,
           content: 'Day transparent reflection with black border.',
           mood: 'thought',
@@ -198,6 +202,7 @@ void main() {
       (tester) async {
         final testDate = DateTime(2026, 10, 11, 14, 30);
         final thought = Thought(
+          category: 'general',
           id: 1,
           content: 'Deep reflective insight on architecture.',
           mood: 'idea',

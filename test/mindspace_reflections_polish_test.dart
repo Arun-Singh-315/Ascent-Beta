@@ -58,6 +58,7 @@ void main() {
 
     testWidgets('3. Thought Wall cards render content cleanly without forced display quotes', (tester) async {
       final thought = Thought(
+        category: 'general',
         id: 42,
         content: 'My clean personal reflection',
         mood: 'thought',
@@ -160,6 +161,7 @@ void main() {
 
     testWidgets('5b. Home Mind Space preview displays two thoughts (Pinned + Latest)', (tester) async {
       final pinnedThought = Thought(
+        category: 'general',
         id: 101,
         content: 'Pinned: Finish Spring Boot course by 30',
         mood: 'promise',
@@ -171,6 +173,7 @@ void main() {
       );
 
       final latestThought = Thought(
+        category: 'general',
         id: 102,
         content: 'Latest: Just finished section 4',
         mood: 'thought',
@@ -182,6 +185,7 @@ void main() {
       );
 
       final extraThought = Thought(
+        category: 'general',
         id: 103,
         content: 'Extra: Older unpinned thought',
         mood: 'thought',

@@ -1,3 +1,4 @@
+import '../../shared/utils/action_text.dart';
 import 'add_lecture_activity_sheet.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -387,8 +388,8 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                     color: isSelected
                         ? AppPalette.white.withValues(alpha: 0.25)
                         : (context.isDark
-                            ? g.claySoft
-                            : context.divider.withValues(alpha: 0.5)),
+                              ? g.claySoft
+                              : context.divider.withValues(alpha: 0.5)),
                     borderRadius: AppGeometry.roundedr8,
                   ),
                   child: Text(
@@ -802,12 +803,11 @@ class _TaskItemTile extends ConsumerWidget {
                             ],
                           ],
                         ),
-                        if (task.notes != null &&
-                            task.notes!.isNotEmpty &&
-                            task.notes!.trim() != task.title.trim()) ...[
+                        if (actionSupportingText(task.title, task.notes) !=
+                            null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            task.notes!,
+                            actionSupportingText(task.title, task.notes)!,
                             style: AscentTextStyles.bodySmall.copyWith(
                               color: context.textMuted,
                             ),
@@ -1143,12 +1143,10 @@ class _TaskItemTile extends ConsumerWidget {
                     decoration: isDone ? TextDecoration.lineThrough : null,
                   ),
                 ),
-                if (task.notes != null &&
-                    task.notes!.isNotEmpty &&
-                    task.notes!.trim() != task.title.trim()) ...[
+                if (actionSupportingText(task.title, task.notes) != null) ...[
                   const SizedBox(height: 12),
                   Text(
-                    task.notes!,
+                    actionSupportingText(task.title, task.notes)!,
                     style: AppTypography.inter14Regular5(color: g.inkMuted),
                   ),
                 ],

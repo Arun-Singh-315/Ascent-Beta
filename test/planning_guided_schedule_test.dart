@@ -46,6 +46,7 @@ void main() {
     WidgetTester t, {
     double width = 390,
     double scale = 1,
+    bool dailyTimes = false,
   }) async {
     t.view.physicalSize = Size(width, 844);
     t.view.devicePixelRatio = 1;
@@ -62,8 +63,11 @@ void main() {
             ).copyWith(textScaler: TextScaler.linear(scale)),
             child: child!,
           ),
-          home: const Scaffold(
-            body: PlanCollectionEditor(initialText: 'Review Java'),
+          home: Scaffold(
+            body: PlanCollectionEditor(
+              initialText: 'Review Java',
+              dailyTimes: dailyTimes,
+            ),
           ),
         ),
       ),
@@ -87,6 +91,65 @@ void main() {
     await t.tap(target);
     await t.pumpAndSettle();
   }
+
+  testWidgets('repeat shortcut opens the daily time choices immediately', (
+    t,
+  ) async {
+    await mount(t, dailyTimes: true);
+    expect(find.text('4 times'), findsOneWidget);
+    expect(find.text('Time 4'), findsOneWidget);
+    expect(find.text('Choose end date'), findsOneWidget);
+    await t.tap(find.text('Cancel').last);
+    await t.pumpAndSettle();
+    await t.pumpWidget(const SizedBox());
+  });
+
+  testWidgets(
+    'four daily times persist as four independently scheduled routines',
+    (t) async {
+      await mount(t);
+      final repeat = find.text('Several times a day');
+      await t.ensureVisible(repeat);
+      await t.tap(repeat);
+      await t.pumpAndSettle();
+      await t.tap(find.text('Use these times'));
+      await t.pumpAndSettle();
+      expect(
+        find.text('Choose distinct times and an end date.'),
+        findsOneWidget,
+      );
+      for (var i = 0; i < 4; i++) {
+        await t.ensureVisible(find.text('Time ${i + 1}'));
+        await t.tap(find.text('Time ${i + 1}'));
+        await t.pumpAndSettle();
+        Navigator.of(
+          t.element(find.byType(TimePickerDialog)),
+        ).pop(TimeOfDay(hour: 8 + i * 4, minute: 15));
+        await t.pumpAndSettle();
+      }
+      await t.ensureVisible(find.text('Choose end date'));
+      await t.tap(find.text('Choose end date'));
+      await t.pumpAndSettle();
+      Navigator.of(
+        t.element(find.byType(DatePickerDialog)),
+      ).pop(DateTime.now().add(const Duration(days: 7)));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Use these times'));
+      await t.pumpAndSettle();
+      await t.tap(find.widgetWithText(FilledButton, 'Save plan'));
+      await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await t.pumpAndSettle();
+      final rows = await db.select(db.planDefinitionTable).get();
+      expect(rows.length, 4);
+      expect(rows.every((row) => row.recurrenceRule == 'daily'), isTrue);
+      final reminders = await db.select(db.reminderTable).get();
+      expect(reminders.map((r) => r.scheduledAt.hour).toSet(), {8, 12, 16, 20});
+      expect(reminders.every((r) => r.scheduledAt.minute == 15), isTrue);
+      await t.pumpWidget(const SizedBox());
+    },
+  );
 
   testWidgets(
     'reminder immediately requests its date and cancel leaves it off',

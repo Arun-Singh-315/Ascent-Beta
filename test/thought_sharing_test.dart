@@ -6,6 +6,7 @@ void main() {
   group('Thought Sharing Formatter Tests', () {
     test('Formats plain thought content cleanly for sharing to WhatsApp and other apps', () {
       final thought = Thought(
+        category: 'general',
         id: 1,
         content: 'Consistency is more powerful than occasional intensity.',
         mood: 'calm',
@@ -24,6 +25,7 @@ void main() {
 
     test('Includes reflection prompt question when present', () {
       final thought = Thought(
+        category: 'general',
         id: 2,
         content: 'I managed to finish all my deep work tasks despite feeling tired.',
         mood: 'focus',

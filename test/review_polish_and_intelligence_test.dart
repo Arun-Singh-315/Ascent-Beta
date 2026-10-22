@@ -32,6 +32,7 @@ void main() {
 
     test('Formats a single thought identically to single share format', () {
       final t = Thought(
+        category: 'general',
         id: 1,
         content: 'Small steps every day yield exponential growth.',
         mood: 'focus',
@@ -49,6 +50,7 @@ void main() {
 
     test('Formats multiple thoughts for WhatsApp batch sharing with clean separators', () {
       final t1 = Thought(
+        category: 'general',
         id: 1,
         content: 'Action cures fear.',
         mood: 'energized',
@@ -60,6 +62,7 @@ void main() {
       );
 
       final t2 = Thought(
+        category: 'general',
         id: 2,
         content: 'Reflect before reacting.',
         mood: 'calm',

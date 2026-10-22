@@ -193,7 +193,7 @@ void main() {
       expect(find.text('Plan'), findsOneWidget);
       expect(find.text('Todo'), findsOneWidget);
       expect(find.text('Reminder'), findsOneWidget);
-      expect(find.text('Both'), findsOneWidget);
+      expect(find.text('Todo & Reminder'), findsOneWidget);
     });
   });
 }
