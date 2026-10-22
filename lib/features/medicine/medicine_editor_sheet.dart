@@ -1,4 +1,3 @@
-import 'medicine_time_dialog.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -116,12 +115,11 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
     final initial = _parseTime(_times[index]);
     TimeOfDay? value;
     try {
-      value = await showDialog<TimeOfDay>(
+      value = await showTimePicker(
         context: context,
-        builder: (_) => MedicineTimeDialog(
-          initialTime: initial ?? TimeOfDay.now(),
-          dose: index + 1,
-        ),
+        initialTime: initial ?? TimeOfDay.now(),
+        initialEntryMode: TimePickerEntryMode.dial,
+        helpText: 'Dose ${index + 1} Time',
       );
     } finally {
       _pickingTime = false;

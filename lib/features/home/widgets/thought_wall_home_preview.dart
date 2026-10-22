@@ -21,6 +21,7 @@ import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
 import '../../thought_wall/thought_action_ui.dart';
+import '../../thought_wall/thought_wall_preferences.dart';
 import 'home_schedule_sheet.dart';
 import 'dart:convert';
 
@@ -289,6 +290,7 @@ class _ThoughtWallHomePreviewState
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final appearance = ref.watch(thoughtWallAppearanceProvider);
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
     final pendingDraft = _pendingDraft;
     final draftInPreview =
@@ -507,9 +509,11 @@ class _ThoughtWallHomePreviewState
             final expandIconColor = g.clay;
             final actionAccentColor = g.clay;
 
+            final isBubbleBlue = g.frozen && !isDark && (!appearance.applyToHome || appearance.tone == ThoughtCardTone.theme);
+
             // In day Frozen Sky: thought bubble receives vibrant blue gradient matching Ask Aria.
             // In dark mode: thought bubble is soothing, elevated dark navy glass with no blinding glare.
-            final bubbleGradient = g.frozen && !isDark
+            final bubbleGradient = (g.frozen && !isDark && (!appearance.applyToHome || appearance.tone == ThoughtCardTone.theme))
                 ? const LinearGradient(
                     colors: [
                       FrozenPalette.actionBright,
@@ -520,33 +524,52 @@ class _ThoughtWallHomePreviewState
                   )
                 : null;
 
+            final appliedToneTint = switch (appearance.tone) {
+              ThoughtCardTone.theme => g.clay,
+              ThoughtCardTone.linen => const Color(0xFFA38B6B),
+              ThoughtCardTone.sage => const Color(0xFF718B72),
+              ThoughtCardTone.slate => const Color(0xFF718398),
+            };
+
+            final hasCustomTone = appearance.applyToHome && appearance.tone != ThoughtCardTone.theme;
+
+            final baseSurface = isDark
+                ? (g.frozen
+                    ? FrozenPalette.darkElevated
+                    : g.fill.withValues(alpha: g.fill.a + 0.04))
+                : (g.merlot
+                    ? MerlotPalette.pillSoft
+                    : AscentColors.bgSurface);
+
             final bubbleFill = bubbleGradient != null
                 ? null
-                : (isDark
-                    ? (g.frozen
-                        ? FrozenPalette.darkElevated
-                        : g.fill.withValues(alpha: g.fill.a + 0.04))
-                    : (g.merlot
-                        ? MerlotPalette.pillSoft
-                        : AscentColors.bgSurface));
+                : (hasCustomTone
+                    ? Color.alphaBlend(
+                        appliedToneTint.withValues(alpha: isDark ? .18 : .12),
+                        baseSurface,
+                      )
+                    : baseSurface);
 
-            final bubbleBorder = g.frozen
+            final bubbleBorder = hasCustomTone
                 ? Border.all(
-                    color: isDark
-                        ? FrozenPalette.darkLine
-                        : Colors.white.withValues(alpha: 0.22),
-                    width: 0.75,
+                    color: appliedToneTint.withValues(alpha: isDark ? .45 : .28),
+                    width: 1.0,
                   )
-                : (isDark
-                    ? null
-                    : Border.all(
-                        color: g.merlot
-                            ? MerlotPalette.lineSubtle
-                            : g.edge.withValues(alpha: 0.45),
-                        width: (g.merlot || g.frozen) ? 0.75 : 1.0,
-                      ));
-
-            final isBubbleBlue = g.frozen && !isDark;
+                : (g.frozen
+                    ? Border.all(
+                        color: isDark
+                            ? FrozenPalette.darkLine
+                            : Colors.white.withValues(alpha: 0.22),
+                        width: 0.75,
+                      )
+                    : (isDark
+                        ? null
+                        : Border.all(
+                            color: g.merlot
+                                ? MerlotPalette.lineSubtle
+                                : g.edge.withValues(alpha: 0.45),
+                            width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                          )));
 
             final thoughtTextColor = isBubbleBlue
                 ? Colors.white
@@ -556,9 +579,9 @@ class _ThoughtWallHomePreviewState
                 ? Colors.white.withValues(alpha: 0.85)
                 : (isDark ? FrozenPalette.darkMutedInk : g.inkMuted);
 
-            final bubbleAccentColor = isBubbleBlue
-                ? Colors.white
-                : g.clay;
+            final bubbleAccentColor = hasCustomTone
+                ? appliedToneTint
+                : (isBubbleBlue ? Colors.white : g.clay);
 
             return Padding(
               padding: const EdgeInsets.only(top: 14),
@@ -707,7 +730,7 @@ class _ThoughtWallHomePreviewState
                               ThoughtExcerpt(
                                 content: thought.content,
                                 arrowColor: isBubbleBlue ? Colors.white : null,
-                                style: AppTypography.plusJakartaSans14W600116(
+                                style: AppTypography.thoughtContent(
                                   color: thought.isCompleted
                                       ? (isBubbleBlue ? Colors.white70 : thoughtTextMutedColor)
                                       : thoughtTextColor,

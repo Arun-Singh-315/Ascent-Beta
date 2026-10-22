@@ -119,7 +119,18 @@ class _ThoughtWallAppearanceSheetState
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            const Divider(),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Apply to Home'),
+              subtitle: const Text('Match Home cards with selected tone'),
+              value: appearance.applyToHome,
+              onChanged: _saving
+                  ? null
+                  : (value) => _save(appearance.copyWith(applyToHome: value)),
+            ),
+            const SizedBox(height: 8),
             const Text('Applies to every card in Thought Wall.'),
             if (_error != null)
               Padding(
