@@ -19,6 +19,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
+import '../thought_wall/thought_wall_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -404,6 +405,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final profileAsync = ref.watch(userProfileStreamProvider);
     final themeMode = ref.watch(themeModeProvider);
     final dayPreset = ref.watch(dayThemePresetProvider);
+    final thoughtAppearance = ref.watch(thoughtWallAppearanceProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
       _initFromProfile(profileAsync.value);
@@ -725,6 +727,138 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                       ),
                     ],
+                  ),
+
+                  const SizedBox(height: 16),
+                  Divider(color: g.line, height: 1),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          'Thought Cards',
+                          style: AscentTextStyles.labelMedium
+                              .copyWith(color: g.ink)
+                              .merge(AppTypeRoles.typeRole2),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          switch (thoughtAppearance.tone) {
+                            ThoughtCardTone.theme => 'Theme',
+                            ThoughtCardTone.linen => 'Linen',
+                            ThoughtCardTone.sage => 'Sage',
+                            ThoughtCardTone.slate => 'Slate',
+                          },
+                          textAlign: TextAlign.end,
+                          style: AscentTextStyles.captionMedium
+                              .copyWith(color: g.clay)
+                              .merge(AppTypeRoles.typeRole8),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      for (final tone in ThoughtCardTone.values) ...[
+                        Expanded(
+                          child: AppTapArea(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              ref
+                                  .read(thoughtWallAppearanceProvider.notifier)
+                                  .save(thoughtAppearance.copyWith(tone: tone));
+                            },
+                            borderRadius: AppGeometry.roundedr12,
+                            child: AppCard(
+                              selected: thoughtAppearance.tone == tone,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSpace.s10,
+                                horizontal: AppSpace.s4,
+                              ),
+                              nightDecoration: BoxDecoration(
+                                color: thoughtAppearance.tone == tone
+                                    ? (context.isDark
+                                        ? g.clay.withValues(alpha: 0.28)
+                                        : context.accentPrimary)
+                                    : g.fill,
+                                borderRadius: AppGeometry.roundedr12,
+                                border: Border.all(
+                                  color: thoughtAppearance.tone == tone
+                                      ? context.accentPrimary
+                                      : g.edge,
+                                  width: thoughtAppearance.tone == tone ? 1.5 : 1.0,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: switch (tone) {
+                                        ThoughtCardTone.theme => g.clay,
+                                        ThoughtCardTone.linen => const Color(0xFFA38B6B),
+                                        ThoughtCardTone.sage => const Color(0xFF718B72),
+                                        ThoughtCardTone.slate => const Color(0xFF718398),
+                                      },
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      switch (tone) {
+                                        ThoughtCardTone.theme => 'Theme',
+                                        ThoughtCardTone.linen => 'Linen',
+                                        ThoughtCardTone.sage => 'Sage',
+                                        ThoughtCardTone.slate => 'Slate',
+                                      },
+                                      maxLines: 1,
+                                      style: AscentTextStyles.labelSmall.copyWith(
+                                        color: thoughtAppearance.tone == tone
+                                            ? AppPalette.white
+                                            : g.ink,
+                                        fontWeight: thoughtAppearance.tone == tone
+                                            ? FontWeight.w600
+                                            : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (tone != ThoughtCardTone.values.last)
+                          const SizedBox(width: 6),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      'Apply to Home',
+                      style: AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                    ),
+                    subtitle: Text(
+                      'Match Home cards with selected tone',
+                      style: AscentTextStyles.captionMedium.copyWith(color: g.inkMuted),
+                    ),
+                    value: thoughtAppearance.applyToHome,
+                    activeTrackColor: g.clay,
+                    onChanged: (value) {
+                      HapticFeedback.lightImpact();
+                      ref
+                          .read(thoughtWallAppearanceProvider.notifier)
+                          .save(thoughtAppearance.copyWith(applyToHome: value));
+                    },
                   ),
                 ],
               ),
@@ -1365,35 +1499,67 @@ class _ThemeOption extends StatelessWidget {
     return Expanded(
       child: AppTapArea(
         onTap: onTap,
-        borderRadius: AppGeometry.roundedr12,
+        borderRadius: AppGeometry.roundedr16,
         child: AppCard(
           selected: isSelected,
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpace.s16,
+            horizontal: AppSpace.s8,
+          ),
           nightDecoration: BoxDecoration(
             color: isSelected ? context.accentPrimary : g.fill,
-            borderRadius: AppGeometry.roundedr12,
+            borderRadius: AppGeometry.roundedr16,
             border: Border.all(
               color: isSelected ? context.accentPrimary : g.edge,
+              width: isSelected ? 1.5 : 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: context.accentPrimary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: isSelected ? AppPalette.white : g.inkSecondary,
-                size: 20,
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : (context.isDark
+                          ? g.edge.withValues(alpha: 0.4)
+                          : g.clay.withValues(alpha: 0.08)),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? AppPalette.white : g.inkSecondary,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: AscentTextStyles.labelSmall
-                    .copyWith(
-                      color: isSelected ? AppPalette.white : g.ink,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    )
-                    .merge(AppStateTypography.stateType1(state0: isSelected)),
+              const SizedBox(height: 10),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: AscentTextStyles.labelSmall
+                      .copyWith(
+                        color: isSelected ? AppPalette.white : g.ink,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      )
+                      .merge(AppStateTypography.stateType1(state0: isSelected)),
+                ),
               ),
             ],
           ),

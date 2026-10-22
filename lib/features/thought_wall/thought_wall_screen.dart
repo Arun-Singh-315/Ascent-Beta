@@ -361,6 +361,54 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       }
     }
 
+    Future<void> deleteSelected() async {
+      if (_applyingSelection || selected.isEmpty) return;
+      HapticFeedback.mediumImpact();
+      final dao = ref.read(thoughtDaoProvider);
+      final messenger = ScaffoldMessenger.of(context);
+      final count = selected.length;
+      setState(() => _applyingSelection = true);
+      try {
+        final snapshots = <dynamic>[];
+        for (final thought in selected) {
+          final s = await dao.deleteThoughtForUndo(thought.id);
+          if (s != null) snapshots.add(s);
+        }
+        if (mounted) _exitSelectionMode();
+        if (messenger.mounted && snapshots.isNotEmpty) {
+          messenger.hideCurrentSnackBar();
+          messenger.showSnackBar(
+            SnackBar(
+              persist: false,
+              content: Text(
+                count == 1 ? 'Thought removed' : '$count thoughts removed',
+              ),
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () async {
+                  for (final s in snapshots) {
+                    try {
+                      await dao.restoreThoughtDeletion(s);
+                    } catch (_) {}
+                  }
+                },
+              ),
+            ),
+          );
+        }
+      } catch (_) {
+        if (context.mounted) {
+          AscentSnackBar.error(
+            context,
+            message: 'Could not remove selected thoughts. Try again.',
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _applyingSelection = false);
+      }
+    }
+
     final enabled = !_applyingSelection && selected.isNotEmpty;
     return SafeArea(
       top: false,
@@ -383,11 +431,23 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 onPressed: enabled ? () => _moveToCategory(selected) : null,
               ),
             ),
+            Expanded(
+              child: TextButton.icon(
+                icon: Icon(Icons.delete_outline_rounded, color: g.coral),
+                label: Text(
+                  'Delete',
+                  style: TextStyle(color: g.coral),
+                ),
+                onPressed: enabled ? deleteSelected : null,
+              ),
+            ),
             PopupMenuButton<String>(
               tooltip: 'More selected actions',
               enabled: enabled,
               onSelected: (action) async {
-                if (action == 'archive' || action == 'restore') {
+                if (action == 'delete') {
+                  await deleteSelected();
+                } else if (action == 'archive' || action == 'restore') {
                   await updateSelected(action);
                 } else if (action == 'share') {
                   await shareMultipleThoughts(selected);
@@ -405,6 +465,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   ('archive', 'Archive'),
                   ('restore', 'Unarchive'),
                   ('share', 'Share'),
+                  ('delete', 'Delete'),
                 ])
                   PopupMenuItem(
                     value: item.$1,
@@ -824,6 +885,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
 
   Widget _buildViewSegment(String key, String label, IconData icon, dynamic g) {
     final isSelected = _viewToggle == key;
+    final activeColor = context.isDark ? g.clay : context.accentPrimary;
     return Expanded(
       child: AppGestureTap(
         onTap: () {
@@ -836,15 +898,22 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           });
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isSelected
-                ? (context.isDark ? g.clay : context.accentPrimary)
-                : AppPalette.transparent,
+            color: isSelected ? activeColor : AppPalette.transparent,
             borderRadius: AppGeometry.roundedr10,
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeColor.withValues(alpha: 0.22),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1.5),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -852,19 +921,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
             children: [
               Icon(
                 icon,
-                size: 13,
+                size: 15,
                 color: isSelected
                     ? Theme.of(context).colorScheme.onPrimary
                     : g.inkMuted,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               Flexible(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppStateTypography.stateType12(
-                    state0: isSelected,
+                  style: AscentTextStyles.labelMedium.copyWith(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: isSelected
                         ? Theme.of(context).colorScheme.onPrimary
                         : g.inkMuted,
@@ -1288,7 +1358,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   ThoughtExcerpt.buildRichArrowSpan(
                     context: context,
                     text: thought.content,
-                    baseStyle: AppTypography.plusJakartaSans14W60071(
+                    baseStyle: AppTypography.thoughtContent(
                       color: thought.isCompleted
                           ? context.textMuted
                           : context.textPrimary,
@@ -2330,7 +2400,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                   context: context,
                                   text: thought.content,
                                   baseStyle:
-                                      AppTypography.plusJakartaSans14W60071(
+                                      AppTypography.thoughtContent(
                                         color: thought.isCompleted
                                             ? context.textMuted
                                             : context.textPrimary,
