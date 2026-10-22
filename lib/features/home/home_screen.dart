@@ -1,3 +1,4 @@
+import '../reminders/reminder_action_ui.dart';
 import 'dart:async';
 
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -6,14 +7,12 @@ import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:drift/drift.dart' as drift;
 
 import 'package:flutter/services.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
-import '../../core/notifications/notification_service.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -463,18 +462,19 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             onAddReminder: () => context.push('/reminders'),
             onViewAll: () => context.push('/reminders'),
             onDismissReminder: (reminder) async {
-              await ref.read(reminderDaoProvider).deleteReminder(reminder.id);
-              await NotificationService.instance.cancel(reminder.id);
+              await runReminderAction(
+                context, ref, reminder, ReminderRowAction.delete,
+              );
             },
             onCompleteReminder: (reminder) async {
-              await ref
-                  .read(reminderDaoProvider)
-                  .updateReminder(
-                    reminder
-                        .toCompanion(true)
-                        .copyWith(isActive: const drift.Value(false)),
-                  );
-              await NotificationService.instance.cancel(reminder.id);
+              await runReminderAction(
+                context, ref, reminder, ReminderRowAction.done,
+              );
+            },
+            onSnoozeReminder: (reminder) async {
+              await runReminderAction(
+                context, ref, reminder, ReminderRowAction.snooze,
+              );
             },
           ),
         );

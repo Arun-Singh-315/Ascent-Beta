@@ -1,3 +1,6 @@
+import '../../app/theme/dimension_tokens.dart';
+import '../../app/theme/color_tokens.dart';
+import '../../shared/widgets/glass_surface.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'dart:async';
@@ -76,31 +79,47 @@ class _ThoughtQuickActionsState extends State<ThoughtQuickActions> {
       ? const SizedBox.shrink()
       : Padding(
           padding: const EdgeInsets.only(top: AppSpace.s8),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              AppPill.action(
-                avatar: const Icon(Icons.edit_calendar_outlined, size: 14),
-                label: const Text('Plan'),
-                onPressed: _plan,
-              ),
-              AppPill.action(
-                avatar: const Icon(Icons.checklist_rounded, size: 14),
-                label: const Text('Todo'),
-                onPressed: () => _act('todo'),
-              ),
-              AppPill.action(
-                avatar: const Icon(Icons.notifications_none_rounded, size: 14),
-                label: const Text('Reminder'),
-                onPressed: () => _act('reminder'),
-              ),
-              AppPill.action(
-                avatar: const Icon(Icons.add_task_rounded, size: 14),
-                label: const Text('Todo & Reminder'),
-                onPressed: () => _act('both'),
-              ),
-            ],
+          child: GlassSurface(
+            radius: AscentDimensions.radiusMd,
+            fillColor: context.bgSurface,
+            padding: const EdgeInsets.all(AscentSpacing.md),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                AppPill.action(
+                  backgroundColor: context.bgSurfaceElevated,
+                  labelStyle: TextStyle(color: context.textPrimary),
+                  avatar: const Icon(Icons.edit_calendar_outlined, size: 14),
+                  label: const Text('Plan'),
+                  onPressed: _plan,
+                ),
+                AppPill.action(
+                  backgroundColor: context.bgSurfaceElevated,
+                  labelStyle: TextStyle(color: context.textPrimary),
+                  avatar: const Icon(Icons.checklist_rounded, size: 14),
+                  label: const Text('Todo'),
+                  onPressed: () => _act('todo'),
+                ),
+                AppPill.action(
+                  backgroundColor: context.bgSurfaceElevated,
+                  labelStyle: TextStyle(color: context.textPrimary),
+                  avatar: const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 14,
+                  ),
+                  label: const Text('Reminder'),
+                  onPressed: () => _act('reminder'),
+                ),
+                AppPill.action(
+                  backgroundColor: context.bgSurfaceElevated,
+                  labelStyle: TextStyle(color: context.textPrimary),
+                  avatar: const Icon(Icons.add_task_rounded, size: 14),
+                  label: const Text('Todo & Reminder'),
+                  onPressed: () => _act('both'),
+                ),
+              ],
+            ),
           ),
         );
 }

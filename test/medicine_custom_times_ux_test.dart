@@ -202,10 +202,14 @@ void main() {
           );
           expect(find.text('Add medicine'), findsNothing);
           await capture(t, '${dark ? 'night' : 'day'}-page');
+          await t.ensureVisible(
+            find.byKey(const ValueKey('medicine_view_medicines')),
+          );
           await t.tap(find.byKey(const ValueKey('medicine_view_medicines')));
           await t.pumpAndSettle();
           await capture(t, '${dark ? 'night' : 'day'}-medicines');
-          await t.ensureVisible(find.byTooltip('Edit Prescription'));
+          await t.ensureVisible(find.text('Edit schedule'));
+          await t.pumpAndSettle();
           await t.tap(find.byTooltip('Edit Prescription'));
           await t.pumpAndSettle();
           expect(find.byKey(const ValueKey('medicine_time_3')), findsOneWidget);
@@ -220,6 +224,49 @@ void main() {
             ),
             findsOneWidget,
           );
+          expect(t.takeException(), isNull);
+        } finally {
+          await cleanup(t);
+        }
+      },
+    );
+
+    testWidgets(
+      'editing three doses adds and saves a fourth at 320px and 2x dark=$dark',
+      (t) async {
+        await MedicineService(db, syncAlerts: false).addMedicine(
+          name: 'Edit fourth dose',
+          dosage: 'Recorded dose',
+          scheduledTimes: ['06:23', '11:47', '17:16'],
+          durationDays: 1,
+          startDate: DateTime.now(),
+        );
+        await mount(t, dark: dark, scale: 2, width: 320);
+        try {
+          await t.ensureVisible(
+            find.byKey(const ValueKey('medicine_view_medicines')),
+          );
+          await t.tap(find.byKey(const ValueKey('medicine_view_medicines')));
+          await t.pumpAndSettle();
+          await t.ensureVisible(find.text('Edit schedule'));
+          await t.pumpAndSettle();
+          await t.tap(find.byTooltip('Edit Prescription'));
+          await t.pumpAndSettle();
+          await t.ensureVisible(find.text('4 doses'));
+          await t.tap(find.text('4 doses'));
+          await t.pumpAndSettle();
+          await pick(t, 3, const TimeOfDay(hour: 23, minute: 8));
+          await t.tap(find.text('Update Prescription'));
+          await settle(t);
+          final rows = await t.runAsync(
+            () => db.medicineDao.watchAllMedicines().first,
+          );
+          expect(jsonDecode(rows!.single.scheduledTimes), [
+            '06:23',
+            '11:47',
+            '17:16',
+            '23:08',
+          ]);
           expect(t.takeException(), isNull);
         } finally {
           await cleanup(t);

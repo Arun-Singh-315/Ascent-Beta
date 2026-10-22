@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_snack_bar.dart';
 import 'thought_wall_preferences.dart';
 import 'thought_wall_appearance_sheet.dart';
 import 'dart:async';
@@ -170,18 +171,39 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     _openHomeThought();
   }
 
+  @override
+  void didUpdateWidget(covariant ThoughtWallScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialThoughtId != widget.initialThoughtId) {
+      _openHomeThought();
+    }
+  }
+
   Future<void> _openHomeThought() async {
     final id = widget.initialThoughtId;
     if (id == null) return;
     final thought = await ref.read(thoughtDaoProvider).getThoughtById(id);
-    if (!mounted || thought == null) return;
+    if (!mounted || widget.initialThoughtId != id) return;
+    if (thought == null) {
+      AscentSnackBar.error(
+        context,
+        message: 'This thought is no longer available.',
+      );
+      return;
+    }
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     setState(() {
       _openedThoughtId = id;
+      _categoryFilter = 'all';
+      _selectedIds.clear();
+      _isSelectionMode = false;
       _viewToggle = thought.isArchived || thought.createdAt.isBefore(today)
           ? 'history'
           : 'today';
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scrollController.hasClients) _scrollController.jumpTo(0);
     });
   }
 
@@ -635,6 +657,14 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     final activeAsync = ref.watch(allThoughtsStreamProvider);
     final archivedAsync = ref.watch(archivedThoughtsStreamProvider);
 
+    if (activeAsync.hasValue && archivedAsync.hasValue) {
+      final ids = [
+        ...activeAsync.value!,
+        ...archivedAsync.value!,
+      ].map((t) => t.id).toSet();
+      _selectedIds.retainAll(ids);
+      if (_selectedIds.isEmpty) _isSelectionMode = false;
+    }
     final g = context.glass;
 
     return PopScope(
@@ -691,7 +721,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
 
                     final isAllSelected =
                         filtered.isNotEmpty &&
-                        _selectedIds.length >= filtered.length;
+                        filtered.every((t) => _selectedIds.contains(t.id));
 
                     return IconButton(
                       icon: Icon(
@@ -705,24 +735,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                     );
                   },
                   orElse: () => const SizedBox.shrink(),
-                ),
-                IconButton(
-                  icon: Icon(Icons.share_rounded, color: g.clay),
-                  tooltip: 'Share to WhatsApp',
-                  onPressed: () {
-                    final activeList = activeAsync.value ?? [];
-                    final archivedList = archivedAsync.value ?? [];
-                    final allThoughts = [...activeList, ...archivedList];
-                    final selectedList = allThoughts
-                        .where((t) => _selectedIds.contains(t.id))
-                        .toList();
-                    shareMultipleThoughts(selectedList);
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.close_rounded, color: g.inkMuted),
-                  tooltip: 'Exit Selection',
-                  onPressed: _exitSelectionMode,
                 ),
               ]
             : [
@@ -780,11 +792,6 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 ],
               ),
             ),
-            if (_isSelectionMode)
-              _buildSelectionActions(context, g, [
-                ...(activeAsync.value ?? []),
-                ...(archivedAsync.value ?? []),
-              ]),
             const SizedBox(height: 6),
 
             Padding(
@@ -964,9 +971,20 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
               ),
             ),
             // Selection actions are visible below the tabs; compose when not selecting.
-            _isSelectionMode
-                ? const SizedBox.shrink()
-                : _buildWhatsAppComposer(context, g),
+            if (_isSelectionMode)
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(context).height * .32,
+                ),
+                child: SingleChildScrollView(
+                  child: _buildSelectionActions(context, g, [
+                    ...(activeAsync.value ?? []),
+                    ...(archivedAsync.value ?? []),
+                  ]),
+                ),
+              )
+            else
+              _buildWhatsAppComposer(context, g),
           ],
         ),
       ),
@@ -1031,43 +1049,17 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     }
   }
 
-  bool _completing = false;
-
-  Future<void> _toggleDone() async {
-    if (_completing) return;
-    setState(() => _completing = true);
-    try {
-      await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
-      HapticFeedback.mediumImpact();
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not update this thought. Try again.'),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _completing = false);
+  Widget _animateExpansion({required Widget child}) {
+    if (!widget.compact || MediaQuery.of(context).disableAnimations) {
+      return child;
     }
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: child,
+    );
   }
-
-  Widget _doneAction() => TextButton.icon(
-    style: context.glass.merlot && !thought.isCompleted
-        ? TextButton.styleFrom(
-            backgroundColor: MerlotPalette.action,
-            foregroundColor: MerlotPalette.pillSoft,
-          )
-        : null,
-    onPressed: _completing ? null : _toggleDone,
-    icon: Icon(
-      thought.isCompleted
-          ? Icons.check_circle_rounded
-          : Icons.check_circle_outline_rounded,
-      size: 18,
-    ),
-    label: Text(thought.isCompleted ? 'Done' : 'Mark done'),
-  );
 
   Widget _compactContent(BuildContext context, String timeStr) {
     final g = context.glass;
@@ -1091,9 +1083,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onDoubleTap: isSelectionMode || thought.mood == 'promise'
-                    ? null
-                    : _toggleDone,
                 child: Text.rich(
                   ThoughtExcerpt.buildRichArrowSpan(
                     context: context,
@@ -1174,19 +1163,20 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               }
             },
           ),
-        IconButton(
-          tooltip: isSelectionMode ? 'Select thought' : 'Expand thought',
-          onPressed: isSelectionMode
-              ? onToggleSelect
-              : () => setState(() => _expanded = true),
-          icon: Icon(
-            isSelectionMode
-                ? Icons.checklist_rounded
-                : Icons.expand_more_rounded,
-            size: 20,
+        if (!isSelectionMode)
+          IconButton(
+            tooltip: isSelectionMode ? 'Select thought' : 'Expand thought',
+            onPressed: isSelectionMode
+                ? onToggleSelect
+                : () => setState(() => _expanded = true),
+            icon: Icon(
+              isSelectionMode
+                  ? Icons.checklist_rounded
+                  : Icons.expand_more_rounded,
+              size: 20,
+            ),
+            constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           ),
-          constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
-        ),
       ],
     );
   }
@@ -1558,28 +1548,15 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 ),
                               ],
                       ),
-                child: AnimatedSize(
-                  duration:
-                      widget.compact &&
-                          !MediaQuery.of(context).disableAnimations
-                      ? const Duration(milliseconds: 220)
-                      : Duration.zero,
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment.topCenter,
+                child: _animateExpansion(
                   child: widget.compact && !_expanded
                       ? Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _compactContent(context, timeStr),
-                            if (!isSelectionMode && thought.mood != 'promise')
-                              _doneAction(),
-                          ],
+                          children: [_compactContent(context, timeStr)],
                         )
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (!isSelectionMode && thought.mood != 'promise')
-                              _doneAction(),
                             // Date left; Promise and secondary menu remain in the top header.
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.center,
@@ -1705,248 +1682,236 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                       }
                                     },
                                   ),
-                                PopupMenuButton<String>(
-                                  icon: Icon(
-                                    Icons.more_horiz_rounded,
-                                    size: 18,
-                                    color: context.textMuted,
-                                  ),
-                                  color: context.bgSurface,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                    minWidth: 48,
-                                    minHeight: 48,
-                                  ),
-                                  onSelected: (action) async {
-                                    if (action == 'category') {
-                                      widget.onMoveToCategory?.call();
-                                    } else if (action == 'share') {
-                                      await shareThought(thought);
-                                    } else if (action == 'toggle_done') {
-                                      HapticFeedback.lightImpact();
-                                      await ref
-                                          .read(thoughtDaoProvider)
-                                          .toggleCompleted(thought.id);
-                                    } else if (action == 'convert_task') {
-                                      await applyThoughtAction(
-                                        context,
-                                        ref.read(databaseProvider),
-                                        [thought],
-                                        'todo',
-                                      );
-                                    } else if (action == 'both') {
-                                      await applyThoughtAction(
-                                        context,
-                                        ref.read(databaseProvider),
-                                        [thought],
-                                        'both',
-                                      );
-                                    } else if (action == 'reminder') {
-                                      await applyThoughtAction(
-                                        context,
-                                        ref.read(databaseProvider),
-                                        [thought],
-                                        'reminder',
-                                      );
-                                    } else if (action == 'archive') {
-                                      HapticFeedback.lightImpact();
-                                      final dao = ref.read(thoughtDaoProvider);
-                                      if (thought.isArchived) {
-                                        await dao.unarchiveThought(thought.id);
-                                      } else {
-                                        await dao.archiveThought(thought.id);
-                                      }
-                                      if (context.mounted) {
-                                        showUndoSnackbar(
+                                if (!isSelectionMode)
+                                  PopupMenuButton<String>(
+                                    icon: Icon(
+                                      Icons.more_horiz_rounded,
+                                      size: 18,
+                                      color: context.textMuted,
+                                    ),
+                                    color: context.bgSurface,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    ),
+                                    onSelected: (action) async {
+                                      if (action == 'category') {
+                                        widget.onMoveToCategory?.call();
+                                      } else if (action == 'share') {
+                                        await shareThought(thought);
+                                      } else if (action == 'convert_task') {
+                                        await applyThoughtAction(
                                           context,
-                                          message: thought.isArchived
-                                              ? 'Thought restored'
-                                              : 'Thought archived',
-                                          onUndo: () {
-                                            if (thought.isArchived) {
-                                              dao.archiveThought(thought.id);
-                                            } else {
-                                              dao.unarchiveThought(thought.id);
-                                            }
-                                          },
+                                          ref.read(databaseProvider),
+                                          [thought],
+                                          'todo',
                                         );
-                                      }
-                                    } else if (action == 'pin') {
-                                      HapticFeedback.lightImpact();
-                                      await ref
-                                          .read(thoughtDaoProvider)
-                                          .togglePin(thought.id);
-                                    } else if (action == 'copy') {
-                                      HapticFeedback.lightImpact();
-                                      await Clipboard.setData(
-                                        ClipboardData(text: thought.content),
-                                      );
-                                      if (context.mounted) {
-                                        ScaffoldMessenger.of(
+                                      } else if (action == 'both') {
+                                        await applyThoughtAction(
                                           context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            persist: false,
-                                            content: Text(
-                                              'Copied to clipboard!',
+                                          ref.read(databaseProvider),
+                                          [thought],
+                                          'both',
+                                        );
+                                      } else if (action == 'reminder') {
+                                        await applyThoughtAction(
+                                          context,
+                                          ref.read(databaseProvider),
+                                          [thought],
+                                          'reminder',
+                                        );
+                                      } else if (action == 'archive') {
+                                        HapticFeedback.lightImpact();
+                                        final dao = ref.read(
+                                          thoughtDaoProvider,
+                                        );
+                                        if (thought.isArchived) {
+                                          await dao.unarchiveThought(
+                                            thought.id,
+                                          );
+                                        } else {
+                                          await dao.archiveThought(thought.id);
+                                        }
+                                        if (context.mounted) {
+                                          showUndoSnackbar(
+                                            context,
+                                            message: thought.isArchived
+                                                ? 'Thought restored'
+                                                : 'Thought archived',
+                                            onUndo: () {
+                                              if (thought.isArchived) {
+                                                dao.archiveThought(thought.id);
+                                              } else {
+                                                dao.unarchiveThought(
+                                                  thought.id,
+                                                );
+                                              }
+                                            },
+                                          );
+                                        }
+                                      } else if (action == 'pin') {
+                                        HapticFeedback.lightImpact();
+                                        await ref
+                                            .read(thoughtDaoProvider)
+                                            .togglePin(thought.id);
+                                      } else if (action == 'copy') {
+                                        HapticFeedback.lightImpact();
+                                        await Clipboard.setData(
+                                          ClipboardData(text: thought.content),
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              persist: false,
+                                              content: Text(
+                                                'Copied to clipboard!',
+                                              ),
                                             ),
-                                          ),
+                                          );
+                                        }
+                                      } else if (action == 'edit') {
+                                        HapticFeedback.lightImpact();
+                                        DropThoughtSheet.show(
+                                          context,
+                                          existingThought: thought,
                                         );
+                                      } else if (action == 'open_todo') {
+                                        context.push('/today');
+                                      } else if (action == 'track_challenge') {
+                                        context.push(
+                                          '/momentum',
+                                          extra: thought,
+                                        );
+                                      } else if (action == 'delete') {
+                                        await _deleteWithUndo(context, ref);
                                       }
-                                    } else if (action == 'edit') {
-                                      HapticFeedback.lightImpact();
-                                      DropThoughtSheet.show(
-                                        context,
-                                        existingThought: thought,
-                                      );
-                                    } else if (action == 'open_todo') {
-                                      context.push('/today');
-                                    } else if (action == 'track_challenge') {
-                                      context.push('/momentum', extra: thought);
-                                    } else if (action == 'delete') {
-                                      await _deleteWithUndo(context, ref);
-                                    }
-                                  },
-                                  itemBuilder: (_) => [
-                                    if (widget.onMoveToCategory != null)
+                                    },
+                                    itemBuilder: (_) => [
+                                      if (widget.onMoveToCategory != null)
+                                        const PopupMenuItem(
+                                          value: 'category',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.folder_outlined,
+                                                size: 16,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Move to category'),
+                                            ],
+                                          ),
+                                        ),
                                       const PopupMenuItem(
-                                        value: 'category',
+                                        value: 'both',
+                                        child: Text('Todo + Reminder'),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'reminder',
                                         child: Row(
                                           children: [
                                             Icon(
-                                              Icons.folder_outlined,
+                                              Icons
+                                                  .notifications_active_outlined,
                                               size: 16,
                                             ),
                                             SizedBox(width: 8),
-                                            Text('Move to category'),
+                                            Text('Set reminder'),
                                           ],
                                         ),
                                       ),
-                                    const PopupMenuItem(
-                                      value: 'both',
-                                      child: Text('Todo + Reminder'),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'reminder',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.notifications_active_outlined,
-                                            size: 16,
+                                      if (thought.mood == 'promise')
+                                        const PopupMenuItem(
+                                          value: 'open_todo',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.open_in_new_rounded,
+                                                size: 16,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('View linked Todo'),
+                                            ],
                                           ),
-                                          SizedBox(width: 8),
-                                          Text('Set reminder'),
-                                        ],
-                                      ),
-                                    ),
-                                    if (thought.mood != 'promise')
+                                        ),
+                                      if (thought.mood == 'promise')
+                                        const PopupMenuItem(
+                                          value: 'track_challenge',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.flag_outlined,
+                                                size: 16,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Track with Challenge'),
+                                            ],
+                                          ),
+                                        ),
+                                      if (thought.mood != 'promise')
+                                        const PopupMenuItem(
+                                          value: 'convert_task',
+                                          child: Row(
+                                            children: [
+                                              Icon(
+                                                Icons.add_task_rounded,
+                                                size: 16,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text('Convert to Today Task'),
+                                            ],
+                                          ),
+                                        ),
                                       PopupMenuItem(
-                                        value: 'toggle_done',
+                                        value: 'archive',
                                         child: Row(
                                           children: [
                                             Icon(
-                                              thought.isCompleted
-                                                  ? Icons
-                                                        .check_circle_outline_rounded
-                                                  : Icons.check_circle_rounded,
+                                              thought.isArchived
+                                                  ? Icons.unarchive_outlined
+                                                  : Icons.archive_outlined,
                                               size: 16,
                                             ),
                                             SizedBox(width: 8),
                                             Text(
-                                              thought.isCompleted
-                                                  ? 'Mark as undone'
-                                                  : 'Mark as done',
+                                              thought.isArchived
+                                                  ? 'Unarchive'
+                                                  : 'Archive thought',
                                             ),
                                           ],
                                         ),
-                                      )
-                                    else
+                                      ),
                                       const PopupMenuItem(
-                                        value: 'open_todo',
+                                        value: 'share',
                                         child: Row(
                                           children: [
-                                            Icon(
-                                              Icons.open_in_new_rounded,
-                                              size: 16,
-                                            ),
+                                            Icon(Icons.share_rounded, size: 16),
                                             SizedBox(width: 8),
-                                            Text('View linked Todo'),
+                                            Text('Share (WhatsApp & apps)'),
                                           ],
                                         ),
                                       ),
-                                    if (thought.mood == 'promise')
-                                      const PopupMenuItem(
-                                        value: 'track_challenge',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.flag_outlined, size: 16),
-                                            SizedBox(width: 8),
-                                            Text('Track with Challenge'),
-                                          ],
+                                      PopupMenuItem(
+                                        value: 'pin',
+                                        child: Text(
+                                          thought.isPinned
+                                              ? 'Unpin'
+                                              : 'Pin to top',
                                         ),
                                       ),
-                                    if (thought.mood != 'promise')
                                       const PopupMenuItem(
-                                        value: 'convert_task',
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.add_task_rounded,
-                                              size: 16,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text('Convert to Today Task'),
-                                          ],
-                                        ),
-                                      ),
-                                    PopupMenuItem(
-                                      value: 'archive',
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            thought.isArchived
-                                                ? Icons.unarchive_outlined
-                                                : Icons.archive_outlined,
-                                            size: 16,
+                                        value: 'delete',
+                                        child: Text(
+                                          'Delete thought',
+                                          style: TextStyle(
+                                            color: AppPalette.redAccent,
                                           ),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            thought.isArchived
-                                                ? 'Unarchive'
-                                                : 'Archive thought',
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'share',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.share_rounded, size: 16),
-                                          SizedBox(width: 8),
-                                          Text('Share (WhatsApp & apps)'),
-                                        ],
-                                      ),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'pin',
-                                      child: Text(
-                                        thought.isPinned
-                                            ? 'Unpin'
-                                            : 'Pin to top',
-                                      ),
-                                    ),
-                                    const PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text(
-                                        'Delete thought',
-                                        style: TextStyle(
-                                          color: AppPalette.redAccent,
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  ),
                               ],
                             ),
 
@@ -2141,10 +2106,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                             // Content
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
-                              onDoubleTap:
-                                  isSelectionMode || thought.mood == 'promise'
-                                  ? null
-                                  : _toggleDone,
                               child: Text.rich(
                                 ThoughtExcerpt.buildRichArrowSpan(
                                   context: context,

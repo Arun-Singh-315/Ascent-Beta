@@ -93,6 +93,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
         }
         return 0;
       });
+    final previewLimit = widget.previewLimit.clamp(1, 4);
     final currentList = _showCompleted ? doneActivities : sortedPending;
 
     return Column(
@@ -158,16 +159,16 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           enableBlur: false,
           fillColor: Theme.of(context).brightness == Brightness.light
               ? (g.merlot
-                  ? MerlotPalette.surface
-                  : (g.frozen ? FrozenPalette.surface : Colors.white))
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white))
               : null,
           customBorder: Theme.of(context).brightness == Brightness.light
               ? Border.all(
                   color: g.merlot
                       ? MerlotPalette.line
                       : (g.frozen
-                          ? FrozenPalette.line
-                          : g.edge.withValues(alpha: 0.45)),
+                            ? FrozenPalette.line
+                            : g.edge.withValues(alpha: 0.45)),
                   width: 1.0,
                 )
               : null,
@@ -264,13 +265,14 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     decoration: BoxDecoration(
                       color: g.merlot
                           ? (Theme.of(context).brightness == Brightness.dark
-                              ? g.fill
-                              : MerlotPalette.pillSoft)
+                                ? g.fill
+                                : MerlotPalette.pillSoft)
                           : (g.frozen
-                              ? (Theme.of(context).brightness == Brightness.dark
-                                  ? g.fill
-                                  : FrozenPalette.pillSoft)
-                              : g.fill),
+                                ? (Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? g.fill
+                                      : FrozenPalette.pillSoft)
+                                : g.fill),
                       borderRadius: AppGeometry.roundedr16,
                       border: Border.all(
                         color: g.merlot
@@ -312,11 +314,11 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 for (final act
                     in (_showAll
                         ? currentList
-                        : currentList.take(widget.previewLimit.clamp(1, 4))))
+                        : currentList.take(previewLimit)))
                   ActivityRowItem(key: ValueKey(act.id), activity: act),
 
                 // Show more / Show less toggle when count exceeds 4
-                if (currentList.length > 4)
+                if (currentList.length > previewLimit)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
                     child: Row(
@@ -347,31 +349,12 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                 Text(
                                   _showAll
                                       ? 'Show less'
-                                      : 'Show ${currentList.length - 4} more',
+                                      : 'Show ${currentList.length - previewLimit} more',
                                   style: AscentTextStyles.homeSecondary
                                       .copyWith(color: g.clay)
                                       .merge(AppTypeRoles.typeRole8),
                                 ),
                               ],
-                            ),
-                          ),
-                        ),
-                        AppTapArea(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            context.push('/today');
-                          },
-                          borderRadius: AppGeometry.roundedr8,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s6,
-                              vertical: AppSpace.s4,
-                            ),
-                            child: Text(
-                              'Open Board ›',
-                              style: AscentTextStyles.homeSecondary
-                                  .copyWith(color: g.inkMuted)
-                                  .merge(AppTypeRoles.typeRole15),
                             ),
                           ),
                         ),
@@ -416,28 +399,27 @@ class _HubTabPill extends StatelessWidget {
 
     // Light, calming tint for selected tab that avoids harsh solid dark fills
     final selectedBg = isDark
-        ? (g.frozen
-            ? FrozenPalette.darkTint
-            : g.clay.withValues(alpha: 0.22))
+        ? (g.frozen ? FrozenPalette.darkTint : g.clay.withValues(alpha: 0.22))
         : (g.merlot
-            ? MerlotPalette.tint
-            : (g.frozen
-                ? FrozenPalette.tint
-                : g.claySoft));
+              ? MerlotPalette.tint
+              : (g.frozen ? FrozenPalette.tint : g.claySoft));
     final selectedText = isDark
         ? (g.frozen ? FrozenPalette.darkAction : Colors.white)
         : (g.merlot
-            ? MerlotPalette.action
-            : (g.frozen ? FrozenPalette.action : g.clay));
+              ? MerlotPalette.action
+              : (g.frozen ? FrozenPalette.action : g.clay));
     final selectedBorder = isDark
         ? (g.frozen
-            ? Border.all(color: FrozenPalette.darkLine, width: 1)
-            : Border.all(color: g.clay.withValues(alpha: 0.35), width: 1))
+              ? Border.all(color: FrozenPalette.darkLine, width: 1)
+              : Border.all(color: g.clay.withValues(alpha: 0.35), width: 1))
         : (g.merlot
-            ? Border.all(color: MerlotPalette.line, width: 0.75)
-            : (g.frozen
-                ? Border.all(color: FrozenPalette.line, width: 1)
-                : Border.all(color: g.clay.withValues(alpha: 0.25), width: 1)));
+              ? Border.all(color: MerlotPalette.line, width: 0.75)
+              : (g.frozen
+                    ? Border.all(color: FrozenPalette.line, width: 1)
+                    : Border.all(
+                        color: g.clay.withValues(alpha: 0.25),
+                        width: 1,
+                      )));
 
     return AppTapArea(
       onTap: onTap,
@@ -468,8 +450,8 @@ class _HubTabPill extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isSelected
                       ? (isDark
-                          ? Colors.white.withValues(alpha: 0.20)
-                          : selectedText.withValues(alpha: 0.14))
+                            ? Colors.white.withValues(alpha: 0.20)
+                            : selectedText.withValues(alpha: 0.14))
                       : inactiveTextColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),

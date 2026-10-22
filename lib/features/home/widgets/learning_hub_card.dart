@@ -191,7 +191,7 @@ class LearningHubCard extends ConsumerWidget {
                                     ? FrozenPalette.pillSoft
                                     : g.claySoft)),
                         foregroundColor: dark
-                            ? Colors.white
+                            ? Theme.of(context).colorScheme.onPrimary
                             : (g.merlot
                                 ? MerlotPalette.action
                                 : (g.frozen

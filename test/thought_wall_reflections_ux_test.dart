@@ -55,7 +55,7 @@ void main() {
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'visible filters and completion in Merlot dark=$dark scale=$scale',
+        'visible filters and simplified actions in Merlot dark=$dark scale=$scale',
         (t) async {
           SharedPreferences.setMockInitialValues({
             'feature_guide_v1_Thought Wall': true,
@@ -112,7 +112,7 @@ void main() {
             expect(find.text('Bugs'), findsOneWidget);
             expect(find.text('Suggestions'), findsOneWidget);
             expect(find.byTooltip('How this works'), findsNothing);
-            expect(find.text('Mark done'), findsOneWidget);
+            expect(find.text('Mark done'), findsNothing);
             expect(t.takeException(), isNull);
             if (Platform.environment['ASCENT_QA_CAPTURE'] == '1' &&
                 scale == 1) {
@@ -129,29 +129,6 @@ void main() {
                 ).writeAsBytes(bytes!.buffer.asUint8List());
                 picture.dispose();
               });
-            }
-            await t.tap(find.text('Mark done'));
-            for (var i = 0; i < 8; i++) {
-              await t.runAsync(
-                () => Future<void>.delayed(const Duration(milliseconds: 20)),
-              );
-              await t.pump(const Duration(milliseconds: 100));
-            }
-            expect(
-              (await t.runAsync(
-                () => db.thoughtDao.getThoughtById(id),
-              ))!.isCompleted,
-              isTrue,
-            );
-            final text = find.textContaining('Review the new design');
-            await t.tap(text);
-            await t.pump(const Duration(milliseconds: 50));
-            await t.tap(text);
-            for (var i = 0; i < 8; i++) {
-              await t.runAsync(
-                () => Future<void>.delayed(const Duration(milliseconds: 20)),
-              );
-              await t.pump(const Duration(milliseconds: 100));
             }
             expect(
               (await t.runAsync(

@@ -415,7 +415,7 @@ class _ThoughtWallHomePreviewState
                   style: IconButton.styleFrom(
                     backgroundColor: g.clay,
                     disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
                     minimumSize: const Size(44, 44),
                   ),

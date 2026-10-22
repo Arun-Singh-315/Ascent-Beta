@@ -7,6 +7,7 @@ import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/color_tokens.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../core/database/app_database.dart';
 
@@ -20,6 +21,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
     required this.reminders,
     required this.onDismissReminder,
     this.onCompleteReminder,
+    this.onSnoozeReminder,
     this.onAddReminder,
     this.onViewAll,
   });
@@ -27,6 +29,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
   final List<Reminder> reminders;
   final Future<void> Function(Reminder) onDismissReminder;
   final Future<void> Function(Reminder)? onCompleteReminder;
+  final Future<void> Function(Reminder)? onSnoozeReminder;
   final VoidCallback? onAddReminder;
   final VoidCallback? onViewAll;
 
@@ -68,18 +71,18 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
           if (onCompleteReminder != null) {
             await onCompleteReminder!(reminder);
           }
-          return true;
+          return false;
         } else {
           // Swipe left: Delete
           HapticFeedback.lightImpact();
           await onDismissReminder(reminder);
-          return true;
+          return false;
         }
       },
       background: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
-          color: const Color(0xFF10B981).withValues(alpha: 0.90),
+          color: context.stateSuccess.withValues(alpha: 0.90),
           borderRadius: BorderRadius.circular(18),
         ),
         alignment: Alignment.centerLeft,
@@ -106,7 +109,7 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
       secondaryBackground: Container(
         margin: const EdgeInsets.symmetric(vertical: 2),
         decoration: BoxDecoration(
-          color: const Color(0xFFEF4444).withValues(alpha: 0.90),
+          color: context.stateDanger.withValues(alpha: 0.90),
           borderRadius: BorderRadius.circular(18),
         ),
         alignment: Alignment.centerRight,
@@ -145,85 +148,101 @@ class HomeDismissibleRemindersSection extends StatelessWidget {
               horizontal: AppSpace.s14,
               vertical: AppSpace.s12,
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Quick mark done toggle button
-                InkWell(
-                  onTap: () async {
-                    HapticFeedback.mediumImpact();
-                    if (onCompleteReminder != null) {
-                      await onCompleteReminder!(reminder);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: g.merlot
-                          ? (isDark
-                                ? MerlotPalette.darkTint
-                                : MerlotPalette.tint)
-                          : g.clay.withValues(alpha: 0.12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.notifications_active_outlined,
-                        color: g.merlot
-                            ? (isDark
-                                  ? MerlotPalette.darkActionBright
-                                  : MerlotPalette.action)
-                            : g.clay,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        reminder.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.plusJakartaSans14W60080(
-                          color: g.ink,
+                Row(
+                  children: [
+                    // Quick mark done toggle button
+                    InkWell(
+                      onTap: () async {
+                        HapticFeedback.mediumImpact();
+                        if (onCompleteReminder != null) {
+                          await onCompleteReminder!(reminder);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: g.merlot
+                              ? (isDark
+                                    ? MerlotPalette.darkTint
+                                    : MerlotPalette.tint)
+                              : g.clay.withValues(alpha: 0.12),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.notifications_active_outlined,
+                            color: g.merlot
+                                ? (isDark
+                                      ? MerlotPalette.darkActionBright
+                                      : MerlotPalette.action)
+                                : g.clay,
+                            size: 18,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${DateFormat('d MMM · h:mm a').format(reminder.scheduledAt)}${reminders.length > 1 ? ' · +${reminders.length - 1} more' : ''}',
-                        style: AppTypography.plusJakartaSans12Regular57(
-                          color: g.inkMuted,
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            reminder.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.plusJakartaSans14W60080(
+                              color: g.ink,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${DateFormat('d MMM · h:mm a').format(reminder.scheduledAt)}${reminders.length > 1 ? ' · +${reminders.length - 1} more' : ''}',
+                            style: AppTypography.plusJakartaSans12Regular57(
+                              color: g.inkMuted,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                // Trailing 1-tap quick complete and delete actions
-                IconButton(
-                  icon: const Icon(Icons.check_rounded, size: 18),
-                  tooltip: 'Mark done',
-                  color: const Color(0xFF10B981),
-                  onPressed: () async {
-                    HapticFeedback.mediumImpact();
-                    if (onCompleteReminder != null) {
-                      await onCompleteReminder!(reminder);
-                    }
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                  tooltip: 'Delete',
-                  color: g.inkMuted,
-                  onPressed: () async {
-                    HapticFeedback.lightImpact();
-                    await onDismissReminder(reminder);
-                  },
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  children: [
+                    // Trailing 1-tap quick complete and delete actions
+                    IconButton(
+                      icon: const Icon(Icons.check_rounded, size: 18),
+                      tooltip: 'Mark done',
+                      color: context.stateSuccess,
+                      onPressed: () async {
+                        HapticFeedback.mediumImpact();
+                        if (onCompleteReminder != null) {
+                          await onCompleteReminder!(reminder);
+                        }
+                      },
+                    ),
+                    if (onSnoozeReminder != null)
+                      IconButton(
+                        tooltip: 'Snooze 10 min',
+                        icon: const Icon(Icons.snooze_rounded, size: 18),
+                        onPressed: () => onSnoozeReminder!(reminder),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                      tooltip: 'Delete',
+                      color: g.inkMuted,
+                      onPressed: () async {
+                        HapticFeedback.lightImpact();
+                        await onDismissReminder(reminder);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),

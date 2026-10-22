@@ -239,10 +239,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
           children: [
             Row(
               children: [
-                // ── 1. CIRCULAR CHECK TARGET (44dp hit area, 28dp visual circle) ────
+                // ── 1. CIRCULAR CHECK TARGET (48dp hit area, 28dp visual circle) ────
                 SizedBox(
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
                   child: Material(
                     color: AppPalette.transparent,
                     child: AppTapArea(
@@ -268,12 +268,33 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 return;
                               }
                               if (activity.linkedTaskId != null) {
-                                await ref
-                                    .read(taskDaoProvider)
-                                    .toggleTaskCompletion(
-                                      activity.linkedTaskId!,
-                                      true,
+                                final dao = ref.read(taskDaoProvider);
+                                try {
+                                  await dao.toggleTaskCompletion(
+                                    activity.linkedTaskId!,
+                                    true,
+                                  );
+                                  final saved = await dao.getTaskById(
+                                    activity.linkedTaskId!,
+                                  );
+                                  if (context.mounted) {
+                                    AscentSnackBar.show(
+                                      context,
+                                      message:
+                                          saved?.actualCompletedDate != null
+                                          ? 'Task completed'
+                                          : 'Finish the checklist steps before completing this task.',
                                     );
+                                  }
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    AscentSnackBar.error(
+                                      context,
+                                      message:
+                                          'Could not complete the task. Please retry.',
+                                    );
+                                  }
+                                }
                               }
                             },
                       borderRadius: AppGeometry.roundedr22,
@@ -497,16 +518,14 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                   const SizedBox(width: 8),
                 ] else if (activity.kind == ActivityKind.todo) ...[
                   SizedBox(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     child: IconButton(
                       tooltip: 'Edit activity',
                       icon: Icon(
                         Icons.edit_outlined,
                         size: 18,
-                        color: g.merlot
-                            ? MerlotPalette.action.withValues(alpha: 0.8)
-                            : g.inkMuted,
+                        color: g.inkMuted,
                       ),
                       onPressed: () async {
                         HapticFeedback.lightImpact();
@@ -1028,7 +1047,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         style: context.surfaces.buttonStyle(
                           FilledButton.styleFrom(
                             backgroundColor: g.clay,
-                            foregroundColor: AppPalette.white,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s18,
                               vertical: AppSpace.s10,

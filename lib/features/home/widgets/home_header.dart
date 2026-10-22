@@ -98,7 +98,7 @@ class HomeHeader extends ConsumerWidget {
                   },
                   borderRadius: AppGeometry.roundedr99,
                   child: Container(
-                    constraints: const BoxConstraints(minHeight: 44),
+                    constraints: const BoxConstraints(minHeight: 48),
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpace.s12,
                       vertical: AppSpace.s8,
@@ -241,8 +241,8 @@ class HomeHeader extends ConsumerWidget {
                         ? 'Switch to Luminous Day Theme'
                         : 'Switch to Night Glass Theme',
                     child: Container(
-                      width: 44,
-                      height: 44,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         color: isDark
                             ? g.fill
@@ -307,8 +307,8 @@ class HomeHeader extends ConsumerWidget {
                   },
                   borderRadius: AppGeometry.roundedr99,
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
                       gradient: g.frozen
                           ? LinearGradient(
@@ -402,10 +402,8 @@ class HomeHeader extends ConsumerWidget {
                               ).toUpperCase()
                             : 'A',
                         style: AppTypography.bricolageGrotesque15W70099(
-                          color: g.frozen
-                              ? Colors.white
-                              : g.merlot
-                              ? Colors.white
+                          color: g.frozen || g.merlot
+                              ? Theme.of(context).colorScheme.onPrimary
                               : (isDark ? g.ink : const Color(0xFF9A3412)),
                         ),
                       ),
@@ -486,7 +484,7 @@ class HomeHeader extends ConsumerWidget {
                   showHomeCustomization(context);
                 },
                 icon: Icon(Icons.tune_rounded, size: 19, color: g.inkSecondary),
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
               ),
             ],
           ),
@@ -711,7 +709,7 @@ class HomeHeader extends ConsumerWidget {
                   style: context.surfaces.buttonStyle(
                     FilledButton.styleFrom(
                       backgroundColor: g.clay,
-                      foregroundColor: AppPalette.white,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       shape: RoundedRectangleBorder(
                         borderRadius: AppGeometry.roundedr12,
                       ),

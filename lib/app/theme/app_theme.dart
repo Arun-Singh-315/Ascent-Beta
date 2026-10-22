@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'color_tokens.dart';
+import 'dimension_tokens.dart';
 import 'frozen_palette.dart';
 import 'merlot_palette.dart';
 import 'glass_theme.dart';
@@ -138,7 +139,7 @@ class AscentTheme {
         ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
         : (isDark ? AscentColors.textMutedDark : AscentColors.textMuted);
     final textOnPrimary = isDark
-        ? (isMerlotLinen ? Colors.white : AscentColors.textOnPrimaryDark)
+        ? (isMerlotLinen ? MerlotPalette.darkCanvas : AscentColors.textOnPrimaryDark)
         : AscentColors.textOnPrimary;
     final divider = day
         ? (isMerlotLinen
@@ -222,6 +223,14 @@ class AscentTheme {
 
     return ThemeData(
       useMaterial3: true,
+      iconButtonTheme: const IconButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(
+            Size.square(AscentDimensions.minTouchTarget),
+          ),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
       brightness: brightness,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: bgBase,
@@ -693,22 +702,10 @@ class AscentTheme {
               : textPrimary,
         ),
         secondaryLabelStyle: AscentTextStyles.labelSmall.copyWith(
-          color: (isMerlotLinen || isNordicSky)
-              ? (isDark
-                    ? (isMerlotLinen
-                          ? MerlotPalette.darkInk
-                          : FrozenPalette.darkCanvas)
-                    : Colors.white)
-              : textOnPrimary,
+          color: textOnPrimary,
           fontWeight: FontWeight.w600,
         ),
-        checkmarkColor: (isMerlotLinen || isNordicSky)
-            ? (isDark
-                  ? (isMerlotLinen
-                        ? MerlotPalette.darkInk
-                        : FrozenPalette.darkCanvas)
-                  : Colors.white)
-            : textOnPrimary,
+        checkmarkColor: textOnPrimary,
         side: isMerlotLinen
             ? BorderSide(
                 color: isDark

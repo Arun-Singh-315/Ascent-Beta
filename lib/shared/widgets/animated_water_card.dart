@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
@@ -236,45 +237,39 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
 
           const SizedBox(height: 14),
 
-          // 1-Tap Quick Hydration Logging - 4 Equal Balanced Tiles
-          Row(
-            children: [
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+150 mL',
-                  sub: 'Cup',
-                  icon: Icons.water_drop_outlined,
-                  onTap: () => _logWater(150),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+250 mL',
-                  sub: 'Glass',
-                  icon: Icons.local_drink_rounded,
-                  onTap: () => _logWater(250),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+500 mL',
-                  sub: 'Bottle',
-                  icon: Icons.water_drop_rounded,
-                  onTap: () => _logWater(500),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+750 mL',
-                  sub: 'Flask',
-                  icon: Icons.water_rounded,
-                  onTap: () => _logWater(750),
-                ),
-              ),
-            ],
+          // Keep every quick action readable as available width and text size change.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns =
+                  constraints.maxWidth < 360 ||
+                      MediaQuery.textScalerOf(context).scale(14) > 20
+                  ? 2
+                  : 4;
+              return Wrap(
+                spacing: AscentSpacing.sm,
+                runSpacing: AscentSpacing.sm,
+                children: [
+                  for (final preset in const [
+                    (150, 'Cup', Icons.water_drop_outlined),
+                    (250, 'Glass', Icons.local_drink_rounded),
+                    (500, 'Bottle', Icons.water_drop_rounded),
+                    (750, 'Flask', Icons.water_rounded),
+                  ])
+                    SizedBox(
+                      width:
+                          (constraints.maxWidth -
+                              (columns - 1) * AscentSpacing.sm) /
+                          columns,
+                      child: _QuickWaterButton(
+                        label: '+${preset.$1} mL',
+                        sub: preset.$2,
+                        icon: preset.$3,
+                        onTap: () => _logWater(preset.$1),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           if (currentMl > 0) ...[
             const SizedBox(height: 10),
@@ -358,18 +353,20 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
     final cardBg = isDark
         ? g.fill
         : (g.merlot
-            ? MerlotPalette.pillSoft
-            : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
+              ? MerlotPalette.pillSoft
+              : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
     final borderColor = isDark
         ? g.edge
         : (g.merlot
-            ? MerlotPalette.lineSubtle
-            : (g.frozen ? FrozenPalette.lineSubtle : const Color(0xFFD2E3F1)));
+              ? MerlotPalette.lineSubtle
+              : (g.frozen
+                    ? FrozenPalette.lineSubtle
+                    : const Color(0xFFD2E3F1)));
     final iconBg = isDark
         ? context.waterAccent.withValues(alpha: 0.18)
         : (g.merlot
-            ? MerlotPalette.darkTint.withValues(alpha: 0.35)
-            : const Color(0xFFE0EFF8));
+              ? MerlotPalette.darkTint.withValues(alpha: 0.35)
+              : const Color(0xFFE0EFF8));
     final iconColor = isDark
         ? context.waterAccent
         : (g.merlot ? MerlotPalette.action : const Color(0xFF0284C7));
@@ -386,7 +383,7 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: Container(
-          height: 80,
+          constraints: const BoxConstraints(minHeight: 80),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
             color: cardBg,
@@ -400,14 +397,15 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.2)
                     : (g.merlot
-                        ? MerlotPalette.shadowAmbient
-                        : const Color.fromRGBO(2, 132, 199, 0.04)),
+                          ? MerlotPalette.shadowAmbient
+                          : const Color.fromRGBO(2, 132, 199, 0.04)),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
@@ -418,11 +416,7 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Icon(
-                    widget.icon,
-                    size: 15,
-                    color: iconColor,
-                  ),
+                  child: Icon(widget.icon, size: 15, color: iconColor),
                 ),
               ),
               const SizedBox(height: 5),

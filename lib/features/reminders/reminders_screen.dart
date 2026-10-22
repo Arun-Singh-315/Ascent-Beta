@@ -1,3 +1,5 @@
+import 'widgets/in_app_reminder_dialog.dart';
+import 'reminder_action_ui.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/shared/widgets/app_surfaces.dart';
@@ -23,7 +25,6 @@ import '../../shared/widgets/glass_surface.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'package:go_router/go_router.dart';
-import '../plans/widgets/plan_protection_dialog.dart';
 import '../plans/widgets/plan_detail_sheet.dart';
 
 enum _ReminderRepeatMode {
@@ -52,7 +53,8 @@ enum _ReminderRepeatMode {
 }
 
 class RemindersScreen extends ConsumerStatefulWidget {
-  const RemindersScreen({super.key});
+  const RemindersScreen({super.key, this.initialReminderId});
+  final int? initialReminderId;
 
   @override
   ConsumerState<RemindersScreen> createState() => _RemindersScreenState();
@@ -66,6 +68,33 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   void initState() {
     super.initState();
     _checkNotificationPermission();
+    _scheduleTarget();
+  }
+
+  @override
+  void didUpdateWidget(covariant RemindersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialReminderId != widget.initialReminderId) {
+      _scheduleTarget();
+    }
+  }
+
+  void _scheduleTarget() {
+    final id = widget.initialReminderId;
+    if (id == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final row = await ref.read(reminderDaoProvider).getReminderById(id);
+      if (!mounted || widget.initialReminderId != id) return;
+      if (row == null) {
+        AscentSnackBar.error(
+          context,
+          message: 'This reminder is no longer available.',
+        );
+      } else {
+        InAppReminderDialog.show(context, row, isPreview: true);
+      }
+    });
   }
 
   Future<void> _checkNotificationPermission() async {
@@ -636,169 +665,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   }
 
   Future<void> _finishReminder(Reminder row) async {
-    try {
-      await ref
-          .read(reminderDaoProvider)
-          .updateReminder(
-            row.toCompanion(true).copyWith(isActive: const drift.Value(false)),
-          );
-      await NotificationService.instance.cancel(row.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          AscentSnackBar.build(
-            context,
-            content: Text('Reminder completed'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          AscentSnackBar.build(
-            context,
-            content: Text('Could not finish the reminder. Please retry.'),
-          ),
-        );
-      }
-    }
+    await runReminderAction(context, ref, row, ReminderRowAction.done);
   }
 
   Future<void> _snoozeReminder(Reminder row) async {
-    try {
-      final at = DateTime.now().add(const Duration(minutes: 10));
-      await ref
-          .read(reminderDaoProvider)
-          .updateReminder(
-            row
-                .toCompanion(true)
-                .copyWith(
-                  scheduledAt: drift.Value(at),
-                  isActive: const drift.Value(true),
-                ),
-          );
-      await NotificationService.instance.cancel(row.id);
-      final scheduled = await NotificationService.instance
-          .scheduleReminderNotificationChecked(
-            id: row.id,
-            title: row.title,
-            scheduledAt: at,
-            alarmEnabled: row.alarmEnabled,
-          );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          AscentSnackBar.build(
-            context,
-            content: Text(
-              scheduled
-                  ? 'Snoozed for 10 minutes'
-                  : 'Saved for 10 minutes from now. Enable notification or alarm access and retry alert sync.',
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          AscentSnackBar.build(
-            context,
-            content: Text(
-              'Could not snooze. Check saved reminder time and retry.',
-            ),
-          ),
-        );
-      }
-    }
+    await runReminderAction(context, ref, row, ReminderRowAction.snooze);
   }
 
-  Future<void> _confirmDeleteReminder(Reminder reminder) async {
-    final dao = ref.read(reminderDaoProvider);
-    final protection = await dao.getReminderProtection(reminder.id);
-    if (!mounted) return;
-    if (protection != null) {
-      await showPlanProtectionDialog(context, ref, protection);
-      ref.invalidate(allRemindersProvider);
-      ref.invalidate(nextUpcomingReminderProvider);
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete Reminder?'),
-        content: Text('Are you sure you want to delete "${reminder.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            style: context.surfaces.buttonStyle(
-              TextButton.styleFrom(foregroundColor: context.glass.coral),
-              filled: false,
-              icon: false,
-            ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final dao = ref.read(reminderDaoProvider);
-      final deletedReminder = reminder;
-      final thoughtIds = await dao.getLinkedThoughtIds(deletedReminder.id);
-      await dao.deleteReminder(deletedReminder.id);
-      await NotificationService.instance.cancel(deletedReminder.id);
-      ref.invalidate(allRemindersProvider);
-      ref.invalidate(nextUpcomingReminderProvider);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          AscentSnackBar.build(
-            context,
-            content: Text('Reminder "${deletedReminder.title}" deleted'),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'UNDO',
-              textColor: AppPalette.colorFFF9AB67,
-              onPressed: () async {
-                try {
-                  final restored = await dao.restoreDeletedReminder(
-                    deletedReminder,
-                    thoughtIds,
-                  );
-                  if (!restored && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'A newer reminder already uses this record. It was kept.',
-                        ),
-                      ),
-                    );
-                  }
-                } catch (_) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Could not restore the reminder. Try again.',
-                        ),
-                      ),
-                    );
-                  }
-                }
-                ref.invalidate(allRemindersProvider);
-                ref.invalidate(nextUpcomingReminderProvider);
-              },
-            ),
-          ),
-        );
-      }
-    }
+  Future<void> _confirmDeleteReminder(Reminder row) async {
+    await runReminderAction(context, ref, row, ReminderRowAction.delete);
   }
 
   @override
@@ -998,12 +873,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 padding: const EdgeInsets.all(AppSpace.s4),
                 nightDecoration: BoxDecoration(
                   color: context.isFrozen
-                      ? (context.isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
+                      ? (context.isDark
+                            ? FrozenPalette.darkSurface
+                            : FrozenPalette.surface)
                       : g.fill,
                   borderRadius: AppGeometry.roundedr16,
                   border: Border.all(
                     color: context.isFrozen
-                        ? (context.isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                        ? (context.isDark
+                              ? FrozenPalette.darkLine
+                              : FrozenPalette.line)
                         : g.edge,
                   ),
                 ),
@@ -1024,15 +903,23 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 0
                                 ? (context.isFrozen
-                                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                    : (context.isDark ? g.clay : context.accentPrimary))
+                                      ? (context.isDark
+                                            ? FrozenPalette.darkAction
+                                            : FrozenPalette.action)
+                                      : (context.isDark
+                                            ? g.clay
+                                            : context.accentPrimary))
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 0
                                   ? (context.isFrozen
-                                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                      : (context.isDark ? g.clay : context.accentPrimary))
+                                        ? (context.isDark
+                                              ? FrozenPalette.darkAction
+                                              : FrozenPalette.action)
+                                        : (context.isDark
+                                              ? g.clay
+                                              : context.accentPrimary))
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1044,8 +931,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                               color: _selectedTab == 0
                                   ? AppPalette.white
                                   : (context.isFrozen
-                                      ? (context.isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
-                                      : g.inkMuted),
+                                        ? (context.isDark
+                                              ? FrozenPalette.darkMutedInk
+                                              : FrozenPalette.mutedInk)
+                                        : g.inkMuted),
                             ),
                           ),
                         ),
@@ -1067,15 +956,23 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           nightDecoration: BoxDecoration(
                             color: _selectedTab == 1
                                 ? (context.isFrozen
-                                    ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                    : (context.isDark ? g.clay : context.accentPrimary))
+                                      ? (context.isDark
+                                            ? FrozenPalette.darkAction
+                                            : FrozenPalette.action)
+                                      : (context.isDark
+                                            ? g.clay
+                                            : context.accentPrimary))
                                 : AppPalette.transparent,
                             borderRadius: AppGeometry.roundedr12,
                             border: Border.all(
                               color: _selectedTab == 1
                                   ? (context.isFrozen
-                                      ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                                      : (context.isDark ? g.clay : context.accentPrimary))
+                                        ? (context.isDark
+                                              ? FrozenPalette.darkAction
+                                              : FrozenPalette.action)
+                                        : (context.isDark
+                                              ? g.clay
+                                              : context.accentPrimary))
                                   : AppPalette.transparent,
                               width: AppBorderScale.w1,
                             ),
@@ -1087,8 +984,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                               color: _selectedTab == 1
                                   ? AppPalette.white
                                   : (context.isFrozen
-                                      ? (context.isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
-                                      : g.inkMuted),
+                                        ? (context.isDark
+                                              ? FrozenPalette.darkMutedInk
+                                              : FrozenPalette.mutedInk)
+                                        : g.inkMuted),
                             ),
                           ),
                         ),
@@ -1128,7 +1027,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     'Tomorrow',
                     tomorrowReminders.length,
                     context.isFrozen
-                        ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                        ? (context.isDark
+                              ? FrozenPalette.darkAction
+                              : FrozenPalette.action)
                         : g.inkSecondary,
                     Icons.event_rounded,
                   ),
@@ -1272,12 +1173,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             ),
             nightDecoration: BoxDecoration(
               color: context.isFrozen
-                  ? (context.isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
+                  ? (context.isDark
+                        ? FrozenPalette.darkCanvas
+                        : FrozenPalette.canvas)
                   : color.withValues(alpha: 0.12),
               borderRadius: AppGeometry.roundedr10,
               border: context.isFrozen
                   ? Border.all(
-                      color: context.isDark ? FrozenPalette.darkLine : FrozenPalette.line,
+                      color: context.isDark
+                          ? FrozenPalette.darkLine
+                          : FrozenPalette.line,
                       width: 1.0,
                     )
                   : null,
@@ -1286,7 +1191,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               '$count',
               style: AppTypeRoles.typeRole34.copyWith(
                 color: context.isFrozen
-                    ? (context.isDark ? FrozenPalette.darkSecondaryInk : FrozenPalette.secondaryInk)
+                    ? (context.isDark
+                          ? FrozenPalette.darkSecondaryInk
+                          : FrozenPalette.secondaryInk)
                     : color,
               ),
             ),
@@ -1301,8 +1208,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final formattedTime = DateFormat(
       'EEE, MMM d • h:mm a',
     ).format(reminder.scheduledAt);
-    final protection =
-        ref.watch(reminderProtectionProvider(reminder.id)).value;
+    final protection = ref.watch(reminderProtectionProvider(reminder.id)).value;
 
     return Dismissible(
       key: ValueKey(reminder.id),
@@ -1338,15 +1244,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               nightDecoration: BoxDecoration(
                 color: isUpcoming
                     ? (context.isFrozen
-                        ? (context.isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                        : g.claySoft)
+                          ? (context.isDark
+                                ? FrozenPalette.darkTint
+                                : FrozenPalette.tint)
+                          : g.claySoft)
                     : g.fill,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isUpcoming
                       ? (context.isFrozen
-                          ? (context.isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                          : g.clay.withValues(alpha: 0.25))
+                            ? (context.isDark
+                                  ? FrozenPalette.darkLine
+                                  : FrozenPalette.line)
+                            : g.clay.withValues(alpha: 0.25))
                       : g.edge,
                   width: AppBorderScale.w1,
                 ),
@@ -1360,8 +1270,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 size: 20,
                 color: isUpcoming
                     ? (context.isFrozen
-                        ? (context.isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-                        : g.clay)
+                          ? (context.isDark
+                                ? FrozenPalette.darkAction
+                                : FrozenPalette.action)
+                          : g.clay)
                     : g.inkMuted,
               ),
             ),
@@ -1381,6 +1293,21 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                         )
                         .merge(AppTypeRoles.typeRole8),
                   ),
+                  if (reminder.isActive)
+                    Wrap(
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _finishReminder(reminder),
+                          icon: const Icon(Icons.check_rounded),
+                          label: const Text('Done'),
+                        ),
+                        TextButton.icon(
+                          onPressed: () => _snoozeReminder(reminder),
+                          icon: const Icon(Icons.snooze_rounded),
+                          label: const Text('Snooze'),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 4),
                   Wrap(
                     crossAxisAlignment: WrapCrossAlignment.center,
