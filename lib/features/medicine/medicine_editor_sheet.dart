@@ -1,3 +1,4 @@
+import 'medicine_time_dialog.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -113,13 +114,18 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
     if (_pickingTime || _saving || index >= _times.length) return;
     _pickingTime = true;
     final initial = _parseTime(_times[index]);
-    final value = await showTimePicker(
-      context: context,
-      initialTime: initial ?? TimeOfDay.now(),
-      helpText: 'Time for dose ${index + 1}',
-      initialEntryMode: TimePickerEntryMode.input,
-    );
-    _pickingTime = false;
+    TimeOfDay? value;
+    try {
+      value = await showDialog<TimeOfDay>(
+        context: context,
+        builder: (_) => MedicineTimeDialog(
+          initialTime: initial ?? TimeOfDay.now(),
+          dose: index + 1,
+        ),
+      );
+    } finally {
+      _pickingTime = false;
+    }
     if (value == null || !mounted || index >= _times.length) return;
     final time =
         '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';

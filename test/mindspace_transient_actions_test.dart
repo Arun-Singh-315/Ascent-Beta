@@ -164,13 +164,17 @@ void main() {
       await tester.longPress(find.textContaining('Note for testing'));
       await tester.pumpAndSettle();
 
+      // Open more actions menu
+      await tester.tap(find.byTooltip('More selected actions'));
+      await tester.pumpAndSettle();
+
       // Must find Plan, Todo, Reminder on selection
-      expect(find.widgetWithText(ActionChip, 'Plan'), findsOneWidget);
-      expect(find.widgetWithText(ActionChip, 'Todo'), findsOneWidget);
-      expect(find.widgetWithText(ActionChip, 'Reminder'), findsOneWidget);
+      expect(find.text('Plan'), findsOneWidget);
+      expect(find.text('Create Todo'), findsOneWidget);
+      expect(find.text('Set reminder'), findsOneWidget);
 
       // Tap Plan from selection mode
-      await tester.tap(find.widgetWithText(ActionChip, 'Plan'));
+      await tester.tap(find.text('Plan'));
       await tester.pumpAndSettle();
 
       // Must open schedule sheet

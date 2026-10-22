@@ -57,6 +57,7 @@ void main() {
         .save(
           const ThoughtWallAppearance(
             style: ThoughtCardStyle.bubble,
+            tone: ThoughtCardTone.slate,
             density: ThoughtCardDensity.comfortable,
           ),
         );
@@ -71,6 +72,10 @@ void main() {
     expect(
       container.read(thoughtWallAppearanceProvider).density,
       ThoughtCardDensity.comfortable,
+    );
+    expect(
+      container.read(thoughtWallAppearanceProvider).tone,
+      ThoughtCardTone.slate,
     );
     container.dispose();
   });

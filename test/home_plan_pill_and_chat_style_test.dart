@@ -1,4 +1,8 @@
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/color_tokens.dart';
+import 'package:ascent/app/theme/merlot_palette.dart';
+import 'package:ascent/app/theme/frozen_palette.dart';
+import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -121,11 +125,15 @@ void main() {
         expect(thought1Finder, findsOneWidget);
         expect(thought2Finder, findsNothing);
 
-        // Verify GlassSurface fill color is white
+        // Verify GlassSurface fill color matches theme surface
         final glass0 = tester.widget<GlassSurface>(thought0Finder);
         final glass1 = tester.widget<GlassSurface>(thought1Finder);
-        expect(glass0.fillColor, Colors.white);
-        expect(glass1.fillColor, Colors.white);
+        final g = tester.element(thought0Finder).glass;
+        final expectedFill = g.merlot
+            ? MerlotPalette.pillSoft
+            : (g.frozen ? FrozenPalette.pillSoft : AscentColors.bgSurface);
+        expect(glass0.fillColor, expectedFill);
+        expect(glass1.fillColor, expectedFill);
 
         // Verify left / right asymmetric chat margins
         final padding0 = tester.widget<Padding>(

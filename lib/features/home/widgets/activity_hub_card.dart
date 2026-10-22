@@ -176,6 +176,23 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (totalCount > 0) ...[
+                Text(
+                  '$doneCount of $totalCount completed',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: doneCount / totalCount,
+                    minHeight: 4,
+                    color: g.sage,
+                    backgroundColor: g.fill,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               // ── ONE SEGMENTED CONTROL: TODAY · COMPLETED · PLANS ──────
               // Plans already contain their repeating routines, so there is no
               // separate Routines control. Counts appear only when above zero.
@@ -190,62 +207,64 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: g.edge),
                     ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _HubTabPill(
-                            label: 'Today',
-                            count: pendingActivities.length,
-                            isSelected: !_showCompleted && !_showPlans,
-                            activeColor: g.clay,
-                            activeTextColor: Colors.white,
-                            inactiveTextColor: g.inkSecondary,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _showPlans = false;
-                                _showCompleted = false;
-                                _showAll = false;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          _HubTabPill(
-                            label: 'Completed',
-                            count: doneCount,
-                            isSelected: _showCompleted && !_showPlans,
-                            activeColor: g.clay,
-                            activeTextColor: Colors.white,
-                            inactiveTextColor: g.inkSecondary,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _showPlans = false;
-                                _showCompleted = true;
-                                _showAll = false;
-                              });
-                            },
-                          ),
-                          const SizedBox(width: 4),
-                          _HubTabPill(
-                            label: 'Plans',
-                            count: planCount,
-                            isSelected: _showPlans,
-                            activeColor: g.clay,
-                            activeTextColor: Colors.white,
-                            inactiveTextColor: g.inkSecondary,
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _showPlans = true;
-                                _showAll = false;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: [
+                        _HubTabPill(
+                          label: 'Today',
+                          count: pendingActivities.length,
+                          isSelected: !_showCompleted && !_showPlans,
+                          activeColor: g.clay,
+                          activeTextColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          inactiveTextColor: g.inkSecondary,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _showPlans = false;
+                              _showCompleted = false;
+                              _showAll = false;
+                            });
+                          },
+                        ),
+                        _HubTabPill(
+                          label: 'Completed',
+                          count: doneCount,
+                          isSelected: _showCompleted && !_showPlans,
+                          activeColor: g.clay,
+                          activeTextColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          inactiveTextColor: g.inkSecondary,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _showPlans = false;
+                              _showCompleted = true;
+                              _showAll = false;
+                            });
+                          },
+                        ),
+                        _HubTabPill(
+                          label: 'Plans',
+                          count: planCount,
+                          isSelected: _showPlans,
+                          activeColor: g.clay,
+                          activeTextColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                          inactiveTextColor: g.inkSecondary,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _showPlans = true;
+                              _showAll = false;
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),

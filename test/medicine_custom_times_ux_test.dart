@@ -118,14 +118,26 @@ void main() {
     await t.ensureVisible(target);
     await t.tap(target);
     await t.pumpAndSettle();
-    expect(find.byType(TimePickerDialog), findsOneWidget);
-    expect(
-      t
-          .widget<TimePickerDialog>(find.byType(TimePickerDialog))
-          .initialEntryMode,
-      TimePickerEntryMode.input,
+    await t.enterText(
+      find
+          .descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(TextFormField),
+          )
+          .first,
+      '${time.hour}',
     );
-    Navigator.of(t.element(find.byType(TimePickerDialog))).pop(time);
+    await t.enterText(
+      find
+          .descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(TextFormField),
+          )
+          .last,
+      '${time.minute}',
+    );
+    await t.ensureVisible(find.text('Save time'));
+    await t.tap(find.text('Save time'));
     await t.pumpAndSettle();
   }
 

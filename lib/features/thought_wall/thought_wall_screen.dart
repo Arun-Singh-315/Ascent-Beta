@@ -126,7 +126,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     }
   }
 
-  String _viewToggle = 'today'; // 'today', 'history'
+  String _viewToggle = 'today';
+  String _completionFilter = 'all';
+  String _archiveFilter = 'all';
   String _categoryFilter =
       'all'; // 'all', 'me_to_me', 'thought', 'idea', 'win', 'pinned'
   bool _isSelectionMode = false;
@@ -198,9 +200,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       _categoryFilter = 'all';
       _selectedIds.clear();
       _isSelectionMode = false;
-      _viewToggle = thought.isArchived || thought.createdAt.isBefore(today)
-          ? 'history'
-          : 'today';
+      _viewToggle = thought.createdAt.isBefore(today) ? 'history' : 'today';
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _scrollController.hasClients) _scrollController.jumpTo(0);
@@ -274,6 +274,8 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       if (!mounted) return;
       setState(() {
         _lastSavedThoughtId = savedId;
+        _completionFilter = 'all';
+        _archiveFilter = 'all';
         _viewToggle = 'today';
         _openedThoughtId = null;
         if (!_categories.containsKey(_categoryFilter)) _categoryFilter = 'all';
@@ -330,55 +332,91 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       }
     }
 
-    return AppCard(
-      key: const ValueKey('thought_selection_actions'),
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.s16,
-        AppSpace.s6,
-        AppSpace.s16,
-        AppSpace.s10,
-      ),
-      nightDecoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: g.line)),
-      ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 6,
-        children: [
-          for (final item in const [
-            ('plan', 'Plan', Icons.edit_calendar_outlined),
-            ('todo', 'Todo', Icons.checklist_rounded),
-            ('reminder', 'Reminder', Icons.notifications_none_rounded),
-            ('both', 'Todo & Reminder', Icons.add_task_rounded),
-            ('merge', 'Merge', Icons.merge_rounded),
-          ])
-            AppPill.action(
-              avatar: Icon(item.$3, size: 17),
-              label: Text(item.$2),
-              onPressed:
-                  _applyingSelection ||
-                      selected.isEmpty ||
-                      item.$1 == 'merge' && selected.length < 2 ||
-                      item.$1 == 'plan' && selected.length != 1
-                  ? null
-                  : () => act(item.$1),
+    Future<void> updateSelected(String action) async {
+      if (_applyingSelection || selected.isEmpty) return;
+      setState(() => _applyingSelection = true);
+      final db = ref.read(databaseProvider);
+      try {
+        await db.transaction(() async {
+          for (final thought in selected) {
+            if (action == 'done') {
+              await db.thoughtDao.setCompleted(thought.id, true);
+            } else if (action == 'archive') {
+              await db.thoughtDao.archiveThought(thought.id);
+            } else {
+              await db.thoughtDao.unarchiveThought(thought.id);
+            }
+          }
+        });
+        if (mounted) _exitSelectionMode();
+      } catch (_) {
+        if (context.mounted) {
+          AscentSnackBar.error(
+            context,
+            message: 'Could not update notes. Try again.',
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _applyingSelection = false);
+      }
+    }
+
+    final enabled = !_applyingSelection && selected.isNotEmpty;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        key: const ValueKey('thought_selection_actions'),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextButton.icon(
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('Done'),
+                onPressed: enabled ? () => updateSelected('done') : null,
+              ),
             ),
-          AppPill.action(
-            avatar: const Icon(Icons.folder_outlined, size: 17),
-            label: const Text('Move to category'),
-            onPressed: _applyingSelection || selected.isEmpty
-                ? null
-                : () => _moveToCategory(selected),
-          ),
-          AppPill.action(
-            avatar: const Icon(Icons.share_outlined, size: 17),
-            label: const Text('Share'),
-            onPressed: _applyingSelection || selected.isEmpty
-                ? null
-                : () => shareMultipleThoughts(selected),
-          ),
-        ],
+            Expanded(
+              child: TextButton.icon(
+                icon: const Icon(Icons.folder_outlined),
+                label: const Text('Category'),
+                onPressed: enabled ? () => _moveToCategory(selected) : null,
+              ),
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'More selected actions',
+              enabled: enabled,
+              onSelected: (action) async {
+                if (action == 'archive' || action == 'restore') {
+                  await updateSelected(action);
+                } else if (action == 'share') {
+                  await shareMultipleThoughts(selected);
+                } else {
+                  await act(action);
+                }
+              },
+              itemBuilder: (_) => [
+                for (final item in const [
+                  ('plan', 'Plan'),
+                  ('todo', 'Create Todo'),
+                  ('reminder', 'Set reminder'),
+                  ('both', 'Todo & Reminder'),
+                  ('merge', 'Merge notes'),
+                  ('archive', 'Archive'),
+                  ('restore', 'Unarchive'),
+                  ('share', 'Share'),
+                ])
+                  PopupMenuItem(
+                    value: item.$1,
+                    enabled:
+                        (item.$1 != 'merge' || selected.length > 1) &&
+                        (item.$1 != 'plan' || selected.length == 1),
+                    child: Text(item.$2),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -430,7 +468,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     if (category == '__create__') {
       createdName = await showDialog<String>(
         context: context,
-        builder: (_) => const _CreateThoughtCategoryDialog(),
+        builder: (_) => const _CreateThoughtCategoryDialog(move: true),
       );
       if (createdName == null || !mounted) return;
     }
@@ -485,11 +523,60 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   void _selectFilter(String key) {
     setState(() {
       _categoryFilter = key;
-      if (key == 'archived') _viewToggle = 'history';
+      if (key == 'archived') _viewToggle = 'all';
       _openedThoughtId = null;
       _selectedIds.clear();
       _isSelectionMode = false;
     });
+  }
+
+  bool _matches(Thought thought) {
+    if (_categoryFilter == 'pinned' && !thought.isPinned) return false;
+    if (_categoryFilter == 'archived' && !thought.isArchived) return false;
+    if (_categories.containsKey(_categoryFilter) &&
+        thought.category != _categoryFilter) {
+      return false;
+    }
+    if (!{'all', 'pinned', 'archived'}.contains(_categoryFilter) &&
+        !_categories.containsKey(_categoryFilter) &&
+        thought.mood != _categoryFilter) {
+      return false;
+    }
+    if (_completionFilter == 'open' && thought.isCompleted) return false;
+    if (_completionFilter == 'done' && !thought.isCompleted) return false;
+    if (_archiveFilter == 'active' && thought.isArchived) return false;
+    if (_archiveFilter == 'archived' && !thought.isArchived) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    if (_viewToggle == 'today') return !thought.createdAt.isBefore(today);
+    if (_viewToggle == 'history') return thought.createdAt.isBefore(today);
+    return true;
+  }
+
+  Future<void> _createCategory() async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => const _CreateThoughtCategoryDialog(),
+    );
+    if (name == null || !mounted) return;
+    try {
+      final key = await ref
+          .read(thoughtDaoProvider)
+          .createCategoryAndMove(name, []);
+      if (mounted) {
+        setState(() {
+          _categoryFilter = key;
+          _viewToggle = 'all';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not create category. Try again.',
+        );
+      }
+    }
   }
 
   Future<void> _chooseFilter() async {
@@ -497,29 +584,166 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (ctx) => ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(ctx).height * .7,
-        ),
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            const ListTile(title: Text('Filter thoughts')),
-            for (final entry in _filterMeta.entries)
-              ListTile(
-                selected: _categoryFilter == entry.key,
-                leading: Icon(entry.value.$2),
-                title: Text(entry.key == 'all' ? 'All notes' : entry.value.$1),
-                trailing: _categoryFilter == entry.key
-                    ? const Icon(Icons.check_rounded)
-                    : null,
-                onTap: () => Navigator.pop(ctx, entry.key),
+      builder: (ctx) => Consumer(
+        builder: (ctx, sheetRef, _) => StatefulBuilder(
+          builder: (ctx, sheetSetState) {
+            final shortcuts = sheetRef.watch(thoughtCategoryShortcutsProvider);
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(ctx).height * .8,
               ),
-          ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    title: const Text('Filter thoughts'),
+                    trailing: IconButton(
+                      tooltip: 'Create category',
+                      icon: const Icon(Icons.create_new_folder_outlined),
+                      onPressed: () => Navigator.pop(ctx, '__create__'),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        const ListTile(
+                          subtitle: Text(
+                            'Combine a category with date, completion and storage.',
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Wrap(
+                            spacing: 8,
+                            children: [
+                              for (final item in const [
+                                ('all', 'Any status'),
+                                ('open', 'Open'),
+                                ('done', 'Done'),
+                              ])
+                                ChoiceChip(
+                                  label: Text(item.$2),
+                                  selected: _completionFilter == item.$1,
+                                  onSelected: (_) {
+                                    setState(() => _completionFilter = item.$1);
+                                    sheetSetState(() {});
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Wrap(
+                            spacing: 8,
+                            children: [
+                              for (final item in const [
+                                ('all', 'Active & archived'),
+                                ('active', 'Active'),
+                                ('archived', 'Archived'),
+                              ])
+                                ChoiceChip(
+                                  label: Text(item.$2),
+                                  selected: _archiveFilter == item.$1,
+                                  onSelected: (_) {
+                                    setState(() => _archiveFilter = item.$1);
+                                    sheetSetState(() {});
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                        const ListTile(
+                          subtitle: Text(
+                            'Star categories to show them as quick filters.',
+                          ),
+                        ),
+                        for (final entry in _filterMeta.entries.where(
+                          (e) => e.key != 'archived',
+                        ))
+                          ListTile(
+                            selected: _categoryFilter == entry.key,
+                            leading: Icon(entry.value.$2),
+                            title: Text(
+                              entry.key == 'all' ? 'All notes' : entry.value.$1,
+                            ),
+                            trailing: _categories.containsKey(entry.key)
+                                ? IconButton(
+                                    tooltip: shortcuts.contains(entry.key)
+                                        ? 'Remove quick filter'
+                                        : 'Add quick filter',
+                                    icon: Icon(
+                                      shortcuts.contains(entry.key)
+                                          ? Icons.star_rounded
+                                          : Icons.star_border_rounded,
+                                    ),
+                                    onPressed: () async {
+                                      try {
+                                        await sheetRef
+                                            .read(
+                                              thoughtCategoryShortcutsProvider
+                                                  .notifier,
+                                            )
+                                            .toggle(entry.key);
+                                      } catch (_) {
+                                        if (ctx.mounted) {
+                                          AscentSnackBar.error(
+                                            ctx,
+                                            message:
+                                                'Could not save quick filters.',
+                                          );
+                                        }
+                                      }
+                                    },
+                                  )
+                                : null,
+                            onTap: () => Navigator.pop(ctx, entry.key),
+                          ),
+                        ListTile(
+                          leading: const Icon(Icons.create_new_folder_outlined),
+                          title: const Text('Create category'),
+                          onTap: () => Navigator.pop(ctx, '__create__'),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _completionFilter = 'all';
+                              _archiveFilter = 'all';
+                              _categoryFilter = 'all';
+                            });
+                            sheetSetState(() {});
+                          },
+                          child: const Text('Reset filters'),
+                        ),
+                        const Spacer(),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Apply filters'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
-    if (result != null && mounted) _selectFilter(result);
+    if (!mounted || result == null) return;
+    if (result == '__create__') {
+      await _createCategory();
+      return;
+    }
+    _selectFilter(result);
   }
 
   Widget _buildWhatsAppComposer(BuildContext context, AscentGlass g) {
@@ -629,7 +853,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
               Icon(
                 icon,
                 size: 13,
-                color: isSelected ? AppPalette.white : g.inkMuted,
+                color: isSelected
+                    ? Theme.of(context).colorScheme.onPrimary
+                    : g.inkMuted,
               ),
               const SizedBox(width: 4),
               Flexible(
@@ -639,7 +865,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   overflow: TextOverflow.ellipsis,
                   style: AppStateTypography.stateType12(
                     state0: isSelected,
-                    color: isSelected ? AppPalette.white : g.inkMuted,
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : g.inkMuted,
                   ),
                 ),
               ),
@@ -654,6 +882,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   Widget build(BuildContext context) {
     ref.watch(thoughtCategoriesStreamProvider);
     final appearance = ref.watch(thoughtWallAppearanceProvider);
+    final shortcuts = ref.watch(thoughtCategoryShortcutsProvider);
     final activeAsync = ref.watch(allThoughtsStreamProvider);
     final archivedAsync = ref.watch(archivedThoughtsStreamProvider);
 
@@ -679,7 +908,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
             ? '${_selectedIds.length} Selected'
             : 'Thought Wall',
         subtitle: _isSelectionMode
-            ? 'Select notes for sharing, Todo or reminders'
+            ? 'Done, category or more actions'
             : 'Mind space · Notes to myself',
         glow2: g.glow2,
         showFeatureHelp: false,
@@ -697,27 +926,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   data: (activeList) {
                     final archivedList = archivedAsync.value ?? [];
                     final allThoughts = [...activeList, ...archivedList];
-                    final now = DateTime.now();
-                    final todayStart = DateTime(now.year, now.month, now.day);
-                    final filtered = allThoughts.where((t) {
-                      if (_categoryFilter == 'pinned' && !t.isPinned) {
-                        return false;
-                      }
-                      if (_categoryFilter == 'archived') return t.isArchived;
-                      if (_categoryFilter != 'all' &&
-                          _categoryFilter != 'pinned' &&
-                          (_categories.containsKey(_categoryFilter)
-                              ? t.category != _categoryFilter
-                              : t.mood != _categoryFilter)) {
-                        return false;
-                      }
-                      if (_viewToggle == 'today') {
-                        return !t.isArchived &&
-                            !t.createdAt.isBefore(todayStart);
-                      } else {
-                        return t.isArchived || t.createdAt.isBefore(todayStart);
-                      }
-                    }).toList();
+                    final filtered = allThoughts.where(_matches).toList()
+                      ..sort((a, b) {
+                        final date = b.createdAt.compareTo(a.createdAt);
+                        return date != 0 ? date : b.id.compareTo(a.id);
+                      });
 
                     final isAllSelected =
                         filtered.isNotEmpty &&
@@ -782,10 +995,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
               ),
               child: Row(
                 children: [
+                  _buildViewSegment('all', 'All', Icons.notes_rounded, g),
                   _buildViewSegment('today', "Today", Icons.today_rounded, g),
                   _buildViewSegment(
                     'history',
-                    "History & Archive",
+                    "History",
                     Icons.history_rounded,
                     g,
                   ),
@@ -801,7 +1015,9 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 child: Text(
                   _viewToggle == 'today'
                       ? "TODAY'S REFLECTIONS"
-                      : 'PAST & ARCHIVED',
+                      : _viewToggle == 'all'
+                      ? 'ALL REFLECTIONS'
+                      : 'OLDER REFLECTIONS',
                   style: AscentTextStyles.labelSmall.copyWith(
                     color: g.inkMuted,
                     letterSpacing: 1,
@@ -820,15 +1036,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                       child: Row(
                         children: [
                           for (final key in <String>{
-                            if (!{
-                              'all',
-                              'bugs',
-                              'suggestions',
-                            }.contains(_categoryFilter))
+                            if (_categoryFilter != 'all' &&
+                                !shortcuts.contains(_categoryFilter))
                               _categoryFilter,
                             'all',
-                            'bugs',
-                            'suggestions',
+                            ...shortcuts.where(_categories.containsKey),
                           })
                             Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -836,7 +1048,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                                 label: Text(
                                   key == 'all'
                                       ? 'All notes'
-                                      : _filterMeta[key]!.$1,
+                                      : _filterMeta[key]?.$1 ?? 'Category',
                                 ),
                                 selected: _categoryFilter == key,
                                 onSelected: (_) => _selectFilter(key),
@@ -848,7 +1060,11 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                   ),
                   IconButton(
                     tooltip: 'Category filter',
-                    icon: const Icon(Icons.filter_list_rounded),
+                    icon: Badge(
+                      isLabelVisible:
+                          _completionFilter != 'all' || _archiveFilter != 'all',
+                      child: const Icon(Icons.filter_list_rounded),
+                    ),
                     onPressed: _chooseFilter,
                   ),
                 ],
@@ -864,28 +1080,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 data: (activeList) {
                   final archivedList = archivedAsync.value ?? [];
                   final allThoughts = [...activeList, ...archivedList];
-                  final now = DateTime.now();
-                  final todayStart = DateTime(now.year, now.month, now.day);
 
-                  final filtered = allThoughts.where((t) {
-                    if (_categoryFilter == 'pinned' && !t.isPinned) {
-                      return false;
-                    }
-                    if (_categoryFilter == 'archived') return t.isArchived;
-                    if (_categoryFilter != 'all' &&
-                        _categoryFilter != 'pinned' &&
-                        (_categories.containsKey(_categoryFilter)
-                            ? t.category != _categoryFilter
-                            : t.mood != _categoryFilter)) {
-                      return false;
-                    }
-
-                    if (_viewToggle == 'today') {
-                      return !t.isArchived && !t.createdAt.isBefore(todayStart);
-                    } else {
-                      return t.isArchived || t.createdAt.isBefore(todayStart);
-                    }
-                  }).toList();
+                  final filtered = allThoughts.where(_matches).toList()
+                    ..sort((a, b) {
+                      final date = b.createdAt.compareTo(a.createdAt);
+                      return date != 0 ? date : b.id.compareTo(a.id);
+                    });
 
                   if (_openedThoughtId != null) {
                     final index = filtered.indexWhere(
@@ -1083,6 +1283,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
+                onDoubleTap: isSelectionMode ? null : _toggleDone,
                 child: Text.rich(
                   ThoughtExcerpt.buildRichArrowSpan(
                     context: context,
@@ -1106,6 +1307,14 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   if (thought.isPinned) ...[
                     Icon(Icons.push_pin_rounded, size: 12, color: g.clay),
                     const SizedBox(width: 4),
+                  ],
+                  if (thought.isCompleted) ...[
+                    Text(
+                      'DONE · ',
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
                   ],
                   if (thought.isArchived) ...[
                     Text(
@@ -1143,6 +1352,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
             ],
           ),
         ),
+        if (!isSelectionMode) _doneButton(),
         if (thought.isArchived && !isSelectionMode)
           IconButton(
             tooltip: 'Unarchive thought',
@@ -1180,6 +1390,31 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
       ],
     );
   }
+
+  Future<void> _toggleDone() async {
+    try {
+      await ref.read(thoughtDaoProvider).toggleCompleted(thought.id);
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not update thought. Try again.',
+        );
+      }
+    }
+  }
+
+  Widget _doneButton() => IconButton(
+    tooltip: thought.isCompleted ? 'Mark open' : 'Mark done',
+    icon: Icon(
+      thought.isCompleted
+          ? Icons.check_circle_rounded
+          : Icons.radio_button_unchecked_rounded,
+      size: 21,
+      color: thought.isCompleted ? context.glass.sage : context.glass.inkMuted,
+    ),
+    onPressed: _toggleDone,
+  );
 
   Future<bool> _deleteWithUndo(BuildContext context, WidgetRef ref) async {
     HapticFeedback.mediumImpact();
@@ -1271,6 +1506,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? (context.isDark ? MerlotPalette.actionBright : MerlotPalette.action)
               .withValues(alpha: context.isDark ? .65 : .24)
         : g.inkMuted.withValues(alpha: context.isDark ? .28 : .18);
+    final tint = switch (widget.appearance.tone) {
+      ThoughtCardTone.theme => g.clay,
+      ThoughtCardTone.linen => const Color(0xFFA38B6B),
+      ThoughtCardTone.sage => const Color(0xFF718B72),
+      ThoughtCardTone.slate => const Color(0xFF718398),
+    };
     final surface = context.isDark ? g.fill : context.bgSurface;
     return BoxDecoration(
       color: isSelected
@@ -1278,10 +1519,14 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : minimal
           ? Colors.transparent
           : Color.alphaBlend(
-              g.clay.withValues(alpha: context.isDark ? .05 : .025),
+              tint.withValues(alpha: context.isDark ? .13 : .10),
               surface,
             ),
-      gradient: g.merlot && !minimal && !isSelected
+      gradient:
+          g.merlot &&
+              !minimal &&
+              !isSelected &&
+              widget.appearance.tone == ThoughtCardTone.theme
           ? LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -1359,7 +1604,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           key: ValueKey('thought_${thought.id}'),
           direction: isSelectionMode
               ? DismissDirection.none
-              : DismissDirection.horizontal,
+              : DismissDirection.startToEnd,
           confirmDismiss: (direction) async {
             final thoughtDao = ref.read(thoughtDaoProvider);
             if (direction == DismissDirection.startToEnd) {
@@ -1396,9 +1641,9 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   ),
                 );
               }
-              return true;
+              return false;
             } else {
-              return _deleteWithUndo(context, ref);
+              return false;
             }
           },
           background: AppCard(
@@ -1422,34 +1667,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 Text(
                   thought.isArchived ? 'Unarchive' : 'Archive',
                   style: AppTypeRoles.typeRole8.copyWith(color: g.inkSecondary),
-                ),
-              ],
-            ),
-          ),
-          secondaryBackground: AppCard(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: AppSpace.s20),
-            nightDecoration: BoxDecoration(
-              color: AppPalette.redAccent.withValues(alpha: 0.2),
-              borderRadius: AppGeometry.roundedr14,
-              border: Border.all(
-                color: AppPalette.redAccent.withValues(alpha: 0.4),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                Text(
-                  'Delete',
-                  style: AppTypeRoles.typeRole8.copyWith(
-                    color: AppPalette.redAccent,
-                  ),
-                ),
-                SizedBox(width: 8),
-                Icon(
-                  Icons.delete_outline_rounded,
-                  color: AppPalette.redAccent,
-                  size: 20,
                 ),
               ],
             ),
@@ -1591,6 +1808,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                         .merge(AppTypeRoles.typeRole54),
                                   ),
                                 ),
+                                if (!isSelectionMode) _doneButton(),
                                 if (thought.mood == 'promise')
                                   AppTag(
                                     padding: const EdgeInsets.symmetric(
@@ -2106,6 +2324,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                             // Content
                             GestureDetector(
                               behavior: HitTestBehavior.opaque,
+                              onDoubleTap: isSelectionMode ? null : _toggleDone,
                               child: Text.rich(
                                 ThoughtExcerpt.buildRichArrowSpan(
                                   context: context,
@@ -2195,7 +2414,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 }
 
 class _CreateThoughtCategoryDialog extends StatefulWidget {
-  const _CreateThoughtCategoryDialog();
+  const _CreateThoughtCategoryDialog({this.move = false});
+  final bool move;
   @override
   State<_CreateThoughtCategoryDialog> createState() =>
       _CreateThoughtCategoryDialogState();
@@ -2243,7 +2463,10 @@ class _CreateThoughtCategoryDialogState
         onPressed: () => Navigator.pop(context),
         child: const Text('Cancel'),
       ),
-      FilledButton(onPressed: _submit, child: const Text('Create and move')),
+      FilledButton(
+        onPressed: _submit,
+        child: Text(widget.move ? 'Create and move' : 'Create'),
+      ),
     ],
   );
 }

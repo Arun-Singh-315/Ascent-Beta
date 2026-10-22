@@ -9,7 +9,7 @@ void main() {
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    planService = PlanService(db);
+    planService = PlanService(db, clock: () => DateTime(2026, 10, 18, 8, 0));
   });
 
   tearDown(() => db.close());

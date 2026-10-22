@@ -136,7 +136,7 @@ void main() {
 
   group('Thought Wall Archive UI Integration Tests', () {
     testWidgets(
-      'ThoughtWallScreen displays "History & Archive" segment and archived badge',
+      'ThoughtWallScreen displays "All" date segment and archived badge',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);
         tester.view.devicePixelRatio = 2.0;
@@ -163,11 +163,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // 1. Check segment header has "History & Archive"
-        expect(find.text('History & Archive'), findsOneWidget);
+        // 1. Check segment header has "All"
+        expect(find.text('All'), findsOneWidget);
 
-        // 2. Switch to "History & Archive" tab
-        await tester.tap(find.text('History & Archive'));
+        // 2. Switch to "All" tab
+        await tester.tap(find.text('All'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 

@@ -318,13 +318,13 @@ void main() {
           ),
         );
         await settleDb(tester);
-        await tester.tap(find.text('History & Archive'));
+        await tester.tap(find.text('History'));
         await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('First reflection'));
         await tester.pumpAndSettle();
         await tester.tap(find.textContaining('Second reflection'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Move to category'));
+        await tester.tap(find.text('Category'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Life Goals').last);
         await settleDb(tester);

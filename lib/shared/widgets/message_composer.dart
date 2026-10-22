@@ -26,9 +26,29 @@ class MessageComposer extends StatefulWidget {
 }
 
 class _MessageComposerState extends State<MessageComposer> {
+  final _fieldKey = GlobalKey();
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_revealCaret);
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_revealCaret);
+      widget.controller.addListener(_revealCaret);
+    }
+  }
+
+  void _revealCaret() =>
+      NoteListButton.revealCaret(_fieldKey, widget.controller);
+
   late final FocusNode _focus = widget.focusNode ?? FocusNode();
   @override
   void dispose() {
+    widget.controller.removeListener(_revealCaret);
     if (widget.focusNode == null) _focus.dispose();
     super.dispose();
   }
@@ -81,6 +101,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       ),
                       Expanded(
                         child: TextField(
+                          key: _fieldKey,
                           controller: widget.controller,
                           focusNode: _focus,
                           minLines: 1,

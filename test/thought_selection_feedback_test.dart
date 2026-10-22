@@ -132,16 +132,12 @@ void main() {
         await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('Selection note A'));
         await tester.pumpAndSettle();
-        for (final label in [
-          'Plan',
-          'Todo',
-          'Reminder',
-          'Todo & Reminder',
-          'Merge',
-        ]) {
-          expect(find.widgetWithText(ActionChip, label), findsOneWidget);
-        }
-        await tester.tap(find.widgetWithText(ActionChip, 'Todo'));
+        expect(find.text('Done'), findsOneWidget);
+        expect(find.text('Category'), findsOneWidget);
+        expect(find.text('Create Todo'), findsNothing);
+        await tester.tap(find.byTooltip('More selected actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Create Todo'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Cancel'));
         await tester.pumpAndSettle();
@@ -149,7 +145,9 @@ void main() {
           find.byKey(const ValueKey('thought_selection_actions')),
           findsOneWidget,
         );
-        await tester.tap(find.widgetWithText(ActionChip, 'Todo'));
+        await tester.tap(find.byTooltip('More selected actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Create Todo'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Save action'));
         await settleDb(tester);
@@ -193,7 +191,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Selection note B'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ActionChip, 'Merge'));
+      await tester.tap(find.byTooltip('More selected actions'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Merge notes'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save merged note'));
       await settleDb(tester);
@@ -234,7 +234,7 @@ void main() {
         await settleDb(tester);
         expect(find.textContaining('Older Home note'), findsOneWidget);
         expect(find.byType(BottomSheet), findsNothing);
-        expect(find.text('PAST & ARCHIVED'), findsOneWidget);
+        expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();
       } finally {

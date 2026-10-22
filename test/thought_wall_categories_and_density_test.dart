@@ -253,7 +253,7 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text('Second learning note'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Move to category'));
+        await tester.tap(find.text('Category'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Create category'));
         await tester.pumpAndSettle();
@@ -263,7 +263,7 @@ void main() {
           find.byKey(const ValueKey('thought_selection_actions')),
           findsOneWidget,
         );
-        await tester.tap(find.text('Move to category'));
+        await tester.tap(find.text('Category'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Create category'));
         await tester.pumpAndSettle();

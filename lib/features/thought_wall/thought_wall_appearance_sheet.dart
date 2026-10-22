@@ -77,6 +77,28 @@ class _ThoughtWallAppearanceSheetState
               ],
             ),
             const SizedBox(height: 20),
+            const Text('Card colour'),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tone in ThoughtCardTone.values)
+                  ChoiceChip(
+                    label: Text(switch (tone) {
+                      ThoughtCardTone.theme => 'Theme',
+                      ThoughtCardTone.linen => 'Linen',
+                      ThoughtCardTone.sage => 'Sage',
+                      ThoughtCardTone.slate => 'Slate',
+                    }),
+                    selected: appearance.tone == tone,
+                    onSelected: _saving
+                        ? null
+                        : (_) => _save(appearance.copyWith(tone: tone)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 20),
             const Text('Spacing'),
             const SizedBox(height: 8),
             Wrap(

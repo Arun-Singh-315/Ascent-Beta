@@ -541,7 +541,7 @@ class AscentTheme {
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             if (isMerlotLinen) {
-              return Colors.white;
+              return isDark ? MerlotPalette.darkSecondaryInk : Colors.white;
             }
             if (isNordicSky) return const Color(0xFFFFFFFF);
             return isDark ? accentPrimary : const Color(0xFFC07360);
@@ -561,7 +561,7 @@ class AscentTheme {
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             if (isMerlotLinen) {
-              return MerlotPalette.action;
+              return isDark ? const Color(0xFF5D4945) : MerlotPalette.action;
             }
             if (isNordicSky) {
               return isDark ? FrozenPalette.darkAction : FrozenPalette.action;

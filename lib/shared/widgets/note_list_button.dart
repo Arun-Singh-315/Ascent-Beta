@@ -50,6 +50,29 @@ class NoteListButton extends StatelessWidget {
     );
   }
 
+  static void revealCaret(
+    GlobalKey fieldKey,
+    TextEditingController controller,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = fieldKey.currentContext;
+      if (context == null || !controller.selection.isValid) return;
+      EditableTextState? editable;
+      void visit(Element element) {
+        if (element is StatefulElement && element.state is EditableTextState) {
+          editable = element.state as EditableTextState;
+        } else {
+          element.visitChildren(visit);
+        }
+      }
+
+      (context as Element).visitChildren(visit);
+      if (editable?.widget.focusNode.hasFocus == true) {
+        editable!.bringIntoView(controller.selection.extent);
+      }
+    });
+  }
+
   void _add() {
     insertNextItem(controller);
     focusNode?.requestFocus();
@@ -288,7 +311,13 @@ class InlineListAddButton extends StatelessWidget {
           onLongPress: () => showHelperDialog(context),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Icon(icon, size: 22, color: enabled ? (context.isDark && g.merlot ? g.inkSecondary : g.clay) : g.inkMuted),
+            child: Icon(
+              icon,
+              size: 22,
+              color: enabled
+                  ? (context.isDark && g.merlot ? g.inkSecondary : g.clay)
+                  : g.inkMuted,
+            ),
           ),
         ),
       ),
