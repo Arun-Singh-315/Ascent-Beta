@@ -148,7 +148,8 @@ void main() {
       expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 5));
     });
 
     testWidgets('provides prominent Delete option outside when selecting thoughts', (tester) async {
@@ -185,7 +186,8 @@ void main() {
       expect(find.text('Note to be deleted outside'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 
@@ -213,7 +215,8 @@ void main() {
       expect(spanStyle?.height, 1.5);
 
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 }
