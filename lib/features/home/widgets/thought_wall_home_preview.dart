@@ -26,7 +26,7 @@ import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space
 /// Redesigned according to Ascent Home Redesign spec:
-/// - Open layout with single underline input (no heavy nested boxes).
+/// - Prominent capture field and a permanent doorway to Thought Wall.
 /// - Glass thought bubble for latest reflection.
 /// - 44dp hit targets.
 class ThoughtWallHomePreview extends ConsumerStatefulWidget {
@@ -102,7 +102,10 @@ class _ThoughtWallHomePreviewState
     _controller.addListener(_refresh);
   }
 
+  final _fieldKey = GlobalKey();
+
   void _refresh() {
+    NoteListButton.revealCaret(_fieldKey, _controller);
     if (mounted) setState(() {});
   }
 
@@ -378,6 +381,7 @@ class _ThoughtWallHomePreviewState
                 const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
+                    key: _fieldKey,
                     controller: _controller,
                     focusNode: _focusNode,
                     onTap: () {
@@ -415,7 +419,7 @@ class _ThoughtWallHomePreviewState
                   style: IconButton.styleFrom(
                     backgroundColor: g.clay,
                     disabledBackgroundColor: g.clay.withValues(alpha: 0.3),
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
                     minimumSize: const Size(44, 44),
                   ),
@@ -440,6 +444,15 @@ class _ThoughtWallHomePreviewState
             ),
           ),
         ],
+
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => context.push('/thought-wall'),
+            icon: const Icon(Icons.bubble_chart_outlined, size: 18),
+            label: const Text('Open Thought Wall'),
+          ),
+        ),
 
         // ── THOUGHTS MESSAGE PREVIEW (ENCLOSED CARD) ──────────────────
         recentThoughtsAsync.when(

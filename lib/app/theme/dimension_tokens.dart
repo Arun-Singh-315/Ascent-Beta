@@ -70,8 +70,8 @@ class AscentDimensions {
   /// 56 px — Bottom navigation bar height.
   static const double bottomNavHeight = 56.0;
 
-  /// 44 px — Minimum accessible tap target dimension.
-  static const double minTouchTarget = 44.0;
+  /// 48 dp — Minimum accessible tap target dimension.
+  static const double minTouchTarget = 48.0;
 }
 
 /// Convenience aliases for spacing tokens.

@@ -113,19 +113,19 @@ class MerlotPalette {
   static const darkElevated = Color(0xFF2C1E23);
 
   /// Line: Hairline subtle specular edge in dark mode
-  static const darkLine = Color(0x33E09EA8);
+  static const darkLine = Color(0x4DAD9184);
 
   /// Line Subtle: Inner divider in dark mode
-  static const darkLineSubtle = Color(0x1FE09EA8);
+  static const darkLineSubtle = Color(0x33AD9184);
 
-  /// Action: Radiant velvet rose-merlot for primary buttons, active tabs (AAA contrast)
-  static const darkAction = Color(0xFFD4687A);
+  /// Action: Muted linen foreground with contrast on burgundy night surfaces.
+  static const darkAction = Color(0xFFC6B6A6);
 
   /// Action Bright: Gradient top highlight for dark mode CTA
-  static const darkActionBright = Color(0xFFE87E90);
+  static const darkActionBright = Color(0xFFD2C4B6);
 
   /// Action Deep: Pressed state in dark mode
-  static const darkActionDeep = Color(0xFFB54C5E);
+  static const darkActionDeep = Color(0xFFB6A594);
 
   /// Tint: Selected pills and container highlights in dark mode
   static const darkTint = Color(0xFF381F27);

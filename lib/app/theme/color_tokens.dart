@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'glass_theme.dart';
 import 'frozen_palette.dart';
+import 'merlot_palette.dart';
 
 /// All color tokens for the Ascent design system.
 /// Muted, matte, calm, and tailored for focus & productivity.
@@ -135,24 +136,34 @@ class AscentColors {
 extension AscentColorsX on BuildContext {
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 
+  bool get isMerlot => Theme.of(this).extension<AscentGlass>()?.merlot == true;
+
   bool get isFrozen => Theme.of(this).extension<AscentGlass>()?.frozen == true;
 
-  Color get waterAccent => isDark ? AscentColors.waterBright : AscentColors.waterPrimary;
-  Color get financeAccent => isDark ? AscentColors.financeBright : AscentColors.financePrimary;
+  Color get waterAccent =>
+      isDark ? AscentColors.waterBright : AscentColors.waterPrimary;
+  Color get financeAccent =>
+      isDark ? AscentColors.financeBright : AscentColors.financePrimary;
 
-  Color get bgBase => isFrozen
+  Color get bgBase => isMerlot
+      ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.canvas)
+      : isFrozen
       ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
       : isDark
       ? AscentColors.bgBaseDark
       : AscentColors.bgBase;
 
-  Color get bgSurface => isFrozen
+  Color get bgSurface => isMerlot
+      ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
+      : isFrozen
       ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
       : isDark
       ? AscentColors.bgSurfaceDark
       : AscentColors.bgSurface;
 
-  Color get bgSurfaceElevated => isFrozen
+  Color get bgSurfaceElevated => isMerlot
+      ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
+      : isFrozen
       ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
       : isDark
       ? AscentColors.bgSurfaceElevatedDark
@@ -239,7 +250,6 @@ extension AscentColorsX on BuildContext {
   Color get sparkTint => isFrozen
       ? (isDark ? FrozenPalette.darkSparkTint : FrozenPalette.sparkTint)
       : (isDark
-          ? const Color.fromRGBO(236, 163, 97, 0.14)
-          : const Color.fromRGBO(176, 104, 34, 0.11));
+            ? const Color.fromRGBO(236, 163, 97, 0.14)
+            : const Color.fromRGBO(176, 104, 34, 0.11));
 }
-

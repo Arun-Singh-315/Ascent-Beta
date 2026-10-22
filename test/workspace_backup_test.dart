@@ -36,6 +36,85 @@ void main() {
     await documents.delete(recursive: true);
   });
 
+  test('custom thought folders survive workspace backup and restore', () async {
+    final id = await db.thoughtDao.insertThought(
+      ThoughtTableCompanion.insert(content: 'Personal reflection'),
+    );
+    final category = await db.thoughtDao.createCategoryAndMove('Personal', [
+      id,
+    ]);
+    final backup = await service.export();
+    await db.thoughtDao.moveToCategory([id], 'general');
+    await db.delete(db.thoughtCategoryTable).go();
+    await service.restore(backup, confirmed: true);
+    expect((await db.thoughtDao.watchCategories().first)[category], 'Personal');
+    expect((await db.thoughtDao.getThoughtById(id))!.category, category);
+  });
+
+  test('schema 19 backup imports the empty custom category registry', () async {
+    final id = await db.thoughtDao.insertThought(
+      ThoughtTableCompanion.insert(content: 'Earlier note'),
+    );
+    final envelope = jsonDecode(await service.export()) as Map<String, dynamic>;
+    final payload = envelope['payload'] as Map<String, dynamic>;
+    payload['schema'] = 19;
+    (payload['tables'] as Map).remove('thought_categories');
+    Object? canonical(Object? value) {
+      if (value is Map) {
+        final keys = value.keys.cast<String>().toList()..sort();
+        return {for (final k in keys) k: canonical(value[k])};
+      }
+      if (value is List) return value.map(canonical).toList();
+      return value;
+    }
+
+    envelope['sha256'] = sha256
+        .convert(utf8.encode(jsonEncode(canonical(payload))))
+        .toString();
+    await service.restore(jsonEncode(envelope), confirmed: true);
+    expect(
+      await db.thoughtDao.watchCategories().first,
+      ThoughtDao.builtInCategories,
+    );
+    expect((await db.thoughtDao.getThoughtById(id))!.category, 'general');
+  });
+
+  test(
+    'schema 18 backups restore thoughts into General without losing their type',
+    () async {
+      final id = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(
+          content: 'Keep this reflection',
+          mood: const d.Value('promise'),
+        ),
+      );
+      final envelope =
+          jsonDecode(await service.export()) as Map<String, dynamic>;
+      final payload = envelope['payload'] as Map<String, dynamic>;
+      payload['schema'] = 18;
+      for (final row in payload['tables']['thoughts'] as List) {
+        (row as Map).remove('category');
+      }
+      Object? canonical(Object? value) {
+        if (value is Map) {
+          final keys = value.keys.cast<String>().toList()..sort();
+          return {for (final k in keys) k: canonical(value[k])};
+        }
+        if (value is List) return value.map(canonical).toList();
+        return value;
+      }
+
+      envelope['sha256'] = sha256
+          .convert(utf8.encode(jsonEncode(canonical(payload))))
+          .toString();
+      await service.restore(jsonEncode(envelope), confirmed: true);
+      final restored = (await db.thoughtDao.getThoughtById(id))!;
+      expect(restored.category, 'general');
+      expect(restored.mood, 'promise');
+      expect(restored.content, 'Keep this reflection');
+    },
+  );
+
   test('schema 14 workspace backups upgrade to quiet reminders', () async {
     await db.reminderDao.insertReminder(
       ReminderTableCompanion.insert(

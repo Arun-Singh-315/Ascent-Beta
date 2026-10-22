@@ -406,7 +406,7 @@ class _LifeCheckInPopupDialogState
                           ),
                           style: FilledButton.styleFrom(
                             backgroundColor: g.clay,
-                            foregroundColor: Colors.white,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),

@@ -37,13 +37,40 @@ class NoteListButton extends StatelessWidget {
       controller.selection = TextSelection.collapsed(offset: lineEnd);
       return;
     }
-    final marker = start == 0 || text.substring(0, start).endsWith('\n')
-        ? '→ '
-        : '\n→ ';
+    final before = text.substring(0, start);
+    final separator = before.isEmpty || before.endsWith('\n\n')
+        ? ''
+        : before.endsWith('\n')
+        ? '\n'
+        : '\n\n';
+    final marker = '$separator→ ';
     controller.value = TextEditingValue(
       text: text.replaceRange(start, end, marker),
       selection: TextSelection.collapsed(offset: start + marker.length),
     );
+  }
+
+  static void revealCaret(
+    GlobalKey fieldKey,
+    TextEditingController controller,
+  ) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = fieldKey.currentContext;
+      if (context == null || !controller.selection.isValid) return;
+      EditableTextState? editable;
+      void visit(Element element) {
+        if (element is StatefulElement && element.state is EditableTextState) {
+          editable = element.state as EditableTextState;
+        } else {
+          element.visitChildren(visit);
+        }
+      }
+
+      (context as Element).visitChildren(visit);
+      if (editable?.widget.focusNode.hasFocus == true) {
+        editable!.bringIntoView(controller.selection.extent);
+      }
+    });
   }
 
   void _add() {
@@ -191,7 +218,7 @@ class InlineListAddButton extends StatelessWidget {
                   onPressed: () => Navigator.of(ctx).pop(),
                   style: FilledButton.styleFrom(
                     backgroundColor: g.clay,
-                    foregroundColor: Colors.white,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -255,10 +282,7 @@ class InlineListAddButton extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   desc,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: context.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 11, color: context.textMuted),
                 ),
               ],
             ),
@@ -290,7 +314,9 @@ class InlineListAddButton extends StatelessWidget {
             child: Icon(
               icon,
               size: 22,
-              color: enabled ? g.clay : g.inkMuted,
+              color: enabled
+                  ? (context.isDark && g.merlot ? g.inkSecondary : g.clay)
+                  : g.inkMuted,
             ),
           ),
         ),

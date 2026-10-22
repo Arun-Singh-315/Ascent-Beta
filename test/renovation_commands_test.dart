@@ -439,6 +439,7 @@ void main() {
       old.execute('ALTER TABLE time_sessions DROP COLUMN learning_course_id');
       old.execute('ALTER TABLE time_sessions DROP COLUMN learning_lecture_id');
       old.execute('ALTER TABLE reminders DROP COLUMN alert_sync_pending');
+      old.execute('ALTER TABLE thoughts DROP COLUMN category');
       old.execute('PRAGMA user_version = 12');
       old.close();
       stored = AppDatabase.forTesting(NativeDatabase(file));

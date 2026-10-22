@@ -96,7 +96,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             style: context.surfaces.buttonStyle(
               ElevatedButton.styleFrom(
                 backgroundColor: context.accentPrimary,
-                foregroundColor: AppPalette.white,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: AppGeometry.roundedr12,
                 ),

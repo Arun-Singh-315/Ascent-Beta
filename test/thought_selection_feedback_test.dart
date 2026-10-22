@@ -41,11 +41,82 @@ void main() {
     );
   }
 
-  Widget harness(ProviderContainer container, Widget child) =>
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(theme: AscentTheme.dark(), home: child),
+  Widget harness(
+    ProviderContainer container,
+    Widget child, {
+    double textScale = 1,
+  }) => UncontrolledProviderScope(
+    container: container,
+    child: MaterialApp(
+      theme: AscentTheme.dark(),
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
+      home: child,
+    ),
+  );
+  testWidgets(
+    'selection fits 320px at 2x, hides menus and counts surviving thoughts',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final (db, container) = await prepare();
+      addTearDown(db.close);
+      final first = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(content: 'Live selection A'),
       );
+      await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(content: 'Live selection B'),
+      );
+      try {
+        await tester.pumpWidget(
+          harness(container, const ThoughtWallScreen(), textScale: 2),
+        );
+        await settleDb(tester);
+        await tester.longPress(find.textContaining('Live selection A'));
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.textContaining('Live selection B'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.textContaining('Live selection B'));
+        await tester.pumpAndSettle();
+        expect(find.text('2 Selected'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(ThoughtCardBubble),
+            matching: find.byType(PopupMenuButton<String>),
+          ),
+          findsNothing,
+        );
+        expect(find.byTooltip('Share to WhatsApp'), findsNothing);
+        expect(find.byTooltip('Exit Selection'), findsNothing);
+        await tester.runAsync(() => db.thoughtDao.deleteThought(first));
+        await settleDb(tester);
+        expect(find.text('1 Selected'), findsOneWidget);
+        await tester.runAsync(
+          () => db.thoughtDao.insertThought(
+            ThoughtTableCompanion.insert(content: 'New unselected thought'),
+          ),
+        );
+        await settleDb(tester);
+        expect(find.text('1 Selected'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('thought_selection_actions')),
+          findsOneWidget,
+        );
+        expect(tester.takeException(), isNull);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+        await tester.pump(const Duration(seconds: 2));
+      }
+    },
+  );
+
   testWidgets(
     'Selection actions are visible; Cancel retains selection and saved Todo returns to the normal wall',
     (tester) async {
@@ -61,10 +132,12 @@ void main() {
         await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('Selection note A'));
         await tester.pumpAndSettle();
-        for (final label in ['Plan', 'Todo', 'Reminder', 'Both', 'Merge']) {
-          expect(find.widgetWithText(ActionChip, label), findsOneWidget);
-        }
-        await tester.tap(find.widgetWithText(ActionChip, 'Todo'));
+        expect(find.text('Done'), findsOneWidget);
+        expect(find.text('Category'), findsOneWidget);
+        expect(find.text('Create Todo'), findsNothing);
+        await tester.tap(find.byTooltip('More selected actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Create Todo'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Cancel'));
         await tester.pumpAndSettle();
@@ -72,7 +145,9 @@ void main() {
           find.byKey(const ValueKey('thought_selection_actions')),
           findsOneWidget,
         );
-        await tester.tap(find.widgetWithText(ActionChip, 'Todo'));
+        await tester.tap(find.byTooltip('More selected actions'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Create Todo'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Save action'));
         await settleDb(tester);
@@ -116,7 +191,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Selection note B'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(ActionChip, 'Merge'));
+      await tester.tap(find.byTooltip('More selected actions'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Merge notes'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save merged note'));
       await settleDb(tester);
@@ -157,7 +234,7 @@ void main() {
         await settleDb(tester);
         expect(find.textContaining('Older Home note'), findsOneWidget);
         expect(find.byType(BottomSheet), findsNothing);
-        expect(find.text('PAST & ARCHIVED'), findsOneWidget);
+        expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();
       } finally {

@@ -512,7 +512,7 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                     style: context.surfaces.buttonStyle(
                       ElevatedButton.styleFrom(
                         backgroundColor: context.accentPrimary,
-                        foregroundColor: AppPalette.white,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr12,

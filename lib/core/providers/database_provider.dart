@@ -332,6 +332,10 @@ final past7DaysHydrationStreamProvider =
 
 // ── Thought Wall & Mind Space Stream Providers ────────────────────────────────
 
+final thoughtCategoriesStreamProvider = StreamProvider<Map<String, String>>((ref) {
+  return ref.watch(thoughtDaoProvider).watchCategories();
+});
+
 final allThoughtsStreamProvider = StreamProvider<List<Thought>>((ref) {
   final dao = ref.watch(thoughtDaoProvider);
   return dao.watchAllThoughts();

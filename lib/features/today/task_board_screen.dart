@@ -1,3 +1,5 @@
+import '../../shared/widgets/ascent_snack_bar.dart';
+import '../../shared/utils/action_text.dart';
 import 'add_lecture_activity_sheet.dart';
 import 'package:ascent/app/theme/text_styles.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -27,7 +29,8 @@ import '../study_plan/lecture_focus_player_sheet.dart';
 enum _TaskBoardTab { today, others, completed }
 
 class TaskBoardScreen extends ConsumerStatefulWidget {
-  const TaskBoardScreen({super.key});
+  const TaskBoardScreen({super.key, this.initialTaskId});
+  final int? initialTaskId;
 
   @override
   ConsumerState<TaskBoardScreen> createState() => _TaskBoardScreenState();
@@ -36,6 +39,42 @@ class TaskBoardScreen extends ConsumerStatefulWidget {
 class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
   String _priorityFilter = 'All';
   _TaskBoardTab _selectedTab = _TaskBoardTab.today;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleTarget();
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskBoardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTaskId != widget.initialTaskId) _scheduleTarget();
+  }
+
+  void _scheduleTarget() {
+    final id = widget.initialTaskId;
+    if (id == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final db = ref.read(databaseProvider);
+      final task = await db.taskDao.getTaskById(id);
+      if (!mounted || widget.initialTaskId != id) return;
+      if (task == null) {
+        AscentSnackBar.error(
+          context,
+          message: 'This task is no longer available.',
+        );
+        return;
+      }
+      final children = await (db.select(
+        db.taskTable,
+      )..where((t) => t.parentTaskId.equals(id))).get();
+      if (mounted && widget.initialTaskId == id) {
+        _TaskItemTile._showTaskDetailDialog(context, ref, task, children);
+      }
+    });
+  }
 
   void _openAddTaskSheet(
     BuildContext context, {
@@ -387,8 +426,8 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
                     color: isSelected
                         ? AppPalette.white.withValues(alpha: 0.25)
                         : (context.isDark
-                            ? g.claySoft
-                            : context.divider.withValues(alpha: 0.5)),
+                              ? g.claySoft
+                              : context.divider.withValues(alpha: 0.5)),
                     borderRadius: AppGeometry.roundedr8,
                   ),
                   child: Text(
@@ -802,12 +841,11 @@ class _TaskItemTile extends ConsumerWidget {
                             ],
                           ],
                         ),
-                        if (task.notes != null &&
-                            task.notes!.isNotEmpty &&
-                            task.notes!.trim() != task.title.trim()) ...[
+                        if (actionSupportingText(task.title, task.notes) !=
+                            null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            task.notes!,
+                            actionSupportingText(task.title, task.notes)!,
                             style: AscentTextStyles.bodySmall.copyWith(
                               color: context.textMuted,
                             ),
@@ -1065,7 +1103,7 @@ class _TaskItemTile extends ConsumerWidget {
     );
   }
 
-  void _showTaskDetailDialog(
+  static void _showTaskDetailDialog(
     BuildContext context,
     WidgetRef ref,
     Task task,
@@ -1098,205 +1136,217 @@ class _TaskItemTile extends ConsumerWidget {
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    AppCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s10,
-                        vertical: AppSpace.s4,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      AppCard(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s10,
+                          vertical: AppSpace.s4,
+                        ),
+                        nightDecoration: BoxDecoration(
+                          color: g.claySoft,
+                          borderRadius: AppGeometry.roundedr12,
+                        ),
+                        child: Text(
+                          task.priority.toUpperCase(),
+                          style: AppTypography.inter11W7003(color: g.clay),
+                        ),
                       ),
-                      nightDecoration: BoxDecoration(
-                        color: g.claySoft,
-                        borderRadius: AppGeometry.roundedr12,
-                      ),
-                      child: Text(
-                        task.priority.toUpperCase(),
-                        style: AppTypography.inter11W7003(color: g.clay),
-                      ),
+                      const Spacer(),
+                      if (!isDone)
+                        IconButton(
+                          tooltip: 'Edit task',
+                          icon: Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: g.inkMuted,
+                          ),
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            AddActivitySheet.show(context, existingTask: task);
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    task.title,
+                    style: AppTypography.plusJakartaSans18W6004(
+                      color: g.ink,
+                      decoration: isDone ? TextDecoration.lineThrough : null,
                     ),
-                    const Spacer(),
-                    if (!isDone)
-                      IconButton(
-                        tooltip: 'Edit task',
-                        icon: Icon(
-                          Icons.edit_outlined,
-                          size: 20,
+                  ),
+                  if (actionSupportingText(task.title, task.notes) != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      actionSupportingText(task.title, task.notes)!,
+                      style: AppTypography.inter14Regular5(color: g.inkMuted),
+                    ),
+                  ],
+                  if (task.linkedThoughtId != null) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline_rounded,
+                          size: 14,
+                          color: g.clay,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'From a thought',
+                          style: AppTypography.inter11W7003(color: g.clay),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (task.plannedDate != null) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today_rounded,
+                          size: 14,
                           color: g.inkMuted,
                         ),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          AddActivitySheet.show(context, existingTask: task);
-                        },
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  task.title,
-                  style: AppTypography.plusJakartaSans18W6004(
-                    color: g.ink,
-                    decoration: isDone ? TextDecoration.lineThrough : null,
-                  ),
-                ),
-                if (task.notes != null &&
-                    task.notes!.isNotEmpty &&
-                    task.notes!.trim() != task.title.trim()) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    task.notes!,
-                    style: AppTypography.inter14Regular5(color: g.inkMuted),
-                  ),
-                ],
-                if (task.linkedThoughtId != null) ...[
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline_rounded,
-                        size: 14,
-                        color: g.clay,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'From a thought',
-                        style: AppTypography.inter11W7003(color: g.clay),
-                      ),
-                    ],
-                  ),
-                ],
-                if (task.plannedDate != null) ...[
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 14,
-                        color: g.inkMuted,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        DateFormat('EEEE, MMM d, y').format(task.plannedDate!),
-                        style: AppTypography.inter13Regular6(color: g.inkMuted),
-                      ),
-                    ],
-                  ),
-                ],
-                const SizedBox(height: 24),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      style: context.surfaces.buttonStyle(
-                        TextButton.styleFrom(
-                          foregroundColor: g.inkMuted,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s16,
-                            vertical: AppSpace.s10,
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            DateFormat(
+                              'EEEE, MMM d, y',
+                            ).format(task.plannedDate!),
+                            style: AppTypography.inter13Regular6(
+                              color: g.inkMuted,
+                            ),
                           ),
                         ),
-                        filled: false,
-                        icon: false,
-                      ),
-                      child: const Text('Cancel'),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    if (!isDone &&
-                        isTimeBound &&
-                        subTasks.isEmpty &&
-                        task.learningCourseId == null)
-                      TextButton.icon(
-                        icon: const Icon(Icons.school_outlined),
-                        label: const Text('Send to lecture'),
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                          AddLectureActivitySheet.sendTask(context, ref, task);
-                        },
-                      ),
-                    if (!isDone && isTimeBound)
-                      FilledButton.icon(
-                        onPressed: () async {
-                          Navigator.of(ctx).pop();
-                          await ref
-                              .read(timeTrackingProvider.notifier)
-                              .switchToTask(
-                                title: task.title,
-                                taskId: task.id,
-                                sourceType: 'task',
-                                autoStart: true,
-                              );
-                          if (context.mounted) context.push('/focus');
-                        },
-                        icon: const Icon(Icons.timer_outlined),
-                        label: const Text('Open timer'),
-                      )
-                    else if (!isDone)
-                      FilledButton(
-                        onPressed: () async {
-                          HapticFeedback.mediumImpact();
-                          final completed = await ref
-                              .read(taskDaoProvider)
-                              .markComplete(task.id);
-                          if (completed) {
-                            if (ctx.mounted) Navigator.of(ctx).pop();
-                          } else if (ctx.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Timed activities complete after their focus target is reached.',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        style: context.surfaces.buttonStyle(
-                          FilledButton.styleFrom(
-                            backgroundColor: g.clay,
-                            foregroundColor: AppPalette.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s18,
-                              vertical: AppSpace.s10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppGeometry.roundedr14,
-                            ),
-                          ),
-                          filled: true,
-                          icon: false,
-                        ),
-                        child: const Text('Mark Done'),
-                      )
-                    else
-                      FilledButton(
+                  ],
+                  const SizedBox(height: 24),
+                  Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      TextButton(
                         onPressed: () => Navigator.of(ctx).pop(),
                         style: context.surfaces.buttonStyle(
-                          FilledButton.styleFrom(
-                            backgroundColor: g.claySoft,
-                            foregroundColor: g.clay,
+                          TextButton.styleFrom(
+                            foregroundColor: g.inkMuted,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s18,
+                              horizontal: AppSpace.s16,
                               vertical: AppSpace.s10,
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: AppGeometry.roundedr14,
-                            ),
                           ),
-                          filled: true,
+                          filled: false,
                           icon: false,
                         ),
-                        child: const Text('Done'),
+                        child: const Text('Cancel'),
                       ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      if (!isDone &&
+                          isTimeBound &&
+                          subTasks.isEmpty &&
+                          task.learningCourseId == null)
+                        TextButton.icon(
+                          icon: const Icon(Icons.school_outlined),
+                          label: const Text('Send to lecture'),
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            AddLectureActivitySheet.sendTask(
+                              context,
+                              ref,
+                              task,
+                            );
+                          },
+                        ),
+                      if (!isDone && isTimeBound)
+                        FilledButton.icon(
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await ref
+                                .read(timeTrackingProvider.notifier)
+                                .switchToTask(
+                                  title: task.title,
+                                  taskId: task.id,
+                                  sourceType: 'task',
+                                  autoStart: true,
+                                );
+                            if (context.mounted) context.push('/focus');
+                          },
+                          icon: const Icon(Icons.timer_outlined),
+                          label: const Text('Open timer'),
+                        )
+                      else if (!isDone)
+                        FilledButton(
+                          onPressed: () async {
+                            HapticFeedback.mediumImpact();
+                            final completed = await ref
+                                .read(taskDaoProvider)
+                                .markComplete(task.id);
+                            if (completed) {
+                              if (ctx.mounted) Navigator.of(ctx).pop();
+                            } else if (ctx.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Timed activities complete after their focus target is reached.',
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          style: context.surfaces.buttonStyle(
+                            FilledButton.styleFrom(
+                              backgroundColor: g.clay,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s18,
+                                vertical: AppSpace.s10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr14,
+                              ),
+                            ),
+                            filled: true,
+                            icon: false,
+                          ),
+                          child: const Text('Mark Done'),
+                        )
+                      else
+                        FilledButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: context.surfaces.buttonStyle(
+                            FilledButton.styleFrom(
+                              backgroundColor: g.claySoft,
+                              foregroundColor: g.clay,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s18,
+                                vertical: AppSpace.s10,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: AppGeometry.roundedr14,
+                              ),
+                            ),
+                            filled: true,
+                            icon: false,
+                          ),
+                          child: const Text('Done'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         );

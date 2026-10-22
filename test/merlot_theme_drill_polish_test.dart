@@ -209,7 +209,7 @@ void main() {
       await tester.pump(Duration.zero);
     });
 
-    testWidgets('4. LearningHubCard Explore button text is white in dark Merlot mode', (tester) async {
+    testWidgets('4. LearningHubCard Explore button uses contrasting onPrimary in dark Merlot mode', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -226,7 +226,7 @@ void main() {
       final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
       expect(buttonFinder, findsOneWidget);
       final button = tester.widget<FilledButton>(buttonFinder);
-      expect(button.style?.foregroundColor?.resolve({}), equals(Colors.white));
+      expect(button.style?.foregroundColor?.resolve({}), equals(MerlotPalette.darkCanvas));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);

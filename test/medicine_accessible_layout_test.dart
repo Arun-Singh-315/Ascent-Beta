@@ -75,6 +75,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
     expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey('medicine_view_medicines')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byTooltip('Edit Prescription'));
     await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(find.byTooltip('Edit Prescription'));

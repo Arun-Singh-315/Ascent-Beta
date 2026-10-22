@@ -1896,6 +1896,18 @@ class $ThoughtTableTable extends ThoughtTable
     requiredDuringInsert: false,
     defaultValue: const Constant('thought'),
   );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('general'),
+  );
   static const VerificationMeta _colorHexMeta = const VerificationMeta(
     'colorHex',
   );
@@ -1981,6 +1993,7 @@ class $ThoughtTableTable extends ThoughtTable
     id,
     content,
     mood,
+    category,
     colorHex,
     isPinned,
     isArchived,
@@ -2015,6 +2028,12 @@ class $ThoughtTableTable extends ThoughtTable
       context.handle(
         _moodMeta,
         mood.isAcceptableOrUnknown(data['mood']!, _moodMeta),
+      );
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
       );
     }
     if (data.containsKey('color_hex')) {
@@ -2080,6 +2099,10 @@ class $ThoughtTableTable extends ThoughtTable
         DriftSqlType.string,
         data['${effectivePrefix}mood'],
       )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
       colorHex: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}color_hex'],
@@ -2117,6 +2140,7 @@ class Thought extends DataClass implements Insertable<Thought> {
   final int id;
   final String content;
   final String mood;
+  final String category;
   final String colorHex;
   final bool isPinned;
   final bool isArchived;
@@ -2127,6 +2151,7 @@ class Thought extends DataClass implements Insertable<Thought> {
     required this.id,
     required this.content,
     required this.mood,
+    required this.category,
     required this.colorHex,
     required this.isPinned,
     required this.isArchived,
@@ -2140,6 +2165,7 @@ class Thought extends DataClass implements Insertable<Thought> {
     map['id'] = Variable<int>(id);
     map['content'] = Variable<String>(content);
     map['mood'] = Variable<String>(mood);
+    map['category'] = Variable<String>(category);
     map['color_hex'] = Variable<String>(colorHex);
     map['is_pinned'] = Variable<bool>(isPinned);
     map['is_archived'] = Variable<bool>(isArchived);
@@ -2156,6 +2182,7 @@ class Thought extends DataClass implements Insertable<Thought> {
       id: Value(id),
       content: Value(content),
       mood: Value(mood),
+      category: Value(category),
       colorHex: Value(colorHex),
       isPinned: Value(isPinned),
       isArchived: Value(isArchived),
@@ -2176,6 +2203,7 @@ class Thought extends DataClass implements Insertable<Thought> {
       id: serializer.fromJson<int>(json['id']),
       content: serializer.fromJson<String>(json['content']),
       mood: serializer.fromJson<String>(json['mood']),
+      category: serializer.fromJson<String>(json['category']),
       colorHex: serializer.fromJson<String>(json['colorHex']),
       isPinned: serializer.fromJson<bool>(json['isPinned']),
       isArchived: serializer.fromJson<bool>(json['isArchived']),
@@ -2191,6 +2219,7 @@ class Thought extends DataClass implements Insertable<Thought> {
       'id': serializer.toJson<int>(id),
       'content': serializer.toJson<String>(content),
       'mood': serializer.toJson<String>(mood),
+      'category': serializer.toJson<String>(category),
       'colorHex': serializer.toJson<String>(colorHex),
       'isPinned': serializer.toJson<bool>(isPinned),
       'isArchived': serializer.toJson<bool>(isArchived),
@@ -2204,6 +2233,7 @@ class Thought extends DataClass implements Insertable<Thought> {
     int? id,
     String? content,
     String? mood,
+    String? category,
     String? colorHex,
     bool? isPinned,
     bool? isArchived,
@@ -2214,6 +2244,7 @@ class Thought extends DataClass implements Insertable<Thought> {
     id: id ?? this.id,
     content: content ?? this.content,
     mood: mood ?? this.mood,
+    category: category ?? this.category,
     colorHex: colorHex ?? this.colorHex,
     isPinned: isPinned ?? this.isPinned,
     isArchived: isArchived ?? this.isArchived,
@@ -2228,6 +2259,7 @@ class Thought extends DataClass implements Insertable<Thought> {
       id: data.id.present ? data.id.value : this.id,
       content: data.content.present ? data.content.value : this.content,
       mood: data.mood.present ? data.mood.value : this.mood,
+      category: data.category.present ? data.category.value : this.category,
       colorHex: data.colorHex.present ? data.colorHex.value : this.colorHex,
       isPinned: data.isPinned.present ? data.isPinned.value : this.isPinned,
       isArchived: data.isArchived.present
@@ -2249,6 +2281,7 @@ class Thought extends DataClass implements Insertable<Thought> {
           ..write('id: $id, ')
           ..write('content: $content, ')
           ..write('mood: $mood, ')
+          ..write('category: $category, ')
           ..write('colorHex: $colorHex, ')
           ..write('isPinned: $isPinned, ')
           ..write('isArchived: $isArchived, ')
@@ -2264,6 +2297,7 @@ class Thought extends DataClass implements Insertable<Thought> {
     id,
     content,
     mood,
+    category,
     colorHex,
     isPinned,
     isArchived,
@@ -2278,6 +2312,7 @@ class Thought extends DataClass implements Insertable<Thought> {
           other.id == this.id &&
           other.content == this.content &&
           other.mood == this.mood &&
+          other.category == this.category &&
           other.colorHex == this.colorHex &&
           other.isPinned == this.isPinned &&
           other.isArchived == this.isArchived &&
@@ -2290,6 +2325,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
   final Value<int> id;
   final Value<String> content;
   final Value<String> mood;
+  final Value<String> category;
   final Value<String> colorHex;
   final Value<bool> isPinned;
   final Value<bool> isArchived;
@@ -2300,6 +2336,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     this.id = const Value.absent(),
     this.content = const Value.absent(),
     this.mood = const Value.absent(),
+    this.category = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -2311,6 +2348,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     this.id = const Value.absent(),
     required String content,
     this.mood = const Value.absent(),
+    this.category = const Value.absent(),
     this.colorHex = const Value.absent(),
     this.isPinned = const Value.absent(),
     this.isArchived = const Value.absent(),
@@ -2322,6 +2360,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     Expression<int>? id,
     Expression<String>? content,
     Expression<String>? mood,
+    Expression<String>? category,
     Expression<String>? colorHex,
     Expression<bool>? isPinned,
     Expression<bool>? isArchived,
@@ -2333,6 +2372,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
       if (id != null) 'id': id,
       if (content != null) 'content': content,
       if (mood != null) 'mood': mood,
+      if (category != null) 'category': category,
       if (colorHex != null) 'color_hex': colorHex,
       if (isPinned != null) 'is_pinned': isPinned,
       if (isArchived != null) 'is_archived': isArchived,
@@ -2346,6 +2386,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     Value<int>? id,
     Value<String>? content,
     Value<String>? mood,
+    Value<String>? category,
     Value<String>? colorHex,
     Value<bool>? isPinned,
     Value<bool>? isArchived,
@@ -2357,6 +2398,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
       id: id ?? this.id,
       content: content ?? this.content,
       mood: mood ?? this.mood,
+      category: category ?? this.category,
       colorHex: colorHex ?? this.colorHex,
       isPinned: isPinned ?? this.isPinned,
       isArchived: isArchived ?? this.isArchived,
@@ -2377,6 +2419,9 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
     }
     if (mood.present) {
       map['mood'] = Variable<String>(mood.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
     }
     if (colorHex.present) {
       map['color_hex'] = Variable<String>(colorHex.value);
@@ -2405,6 +2450,7 @@ class ThoughtTableCompanion extends UpdateCompanion<Thought> {
           ..write('id: $id, ')
           ..write('content: $content, ')
           ..write('mood: $mood, ')
+          ..write('category: $category, ')
           ..write('colorHex: $colorHex, ')
           ..write('isPinned: $isPinned, ')
           ..write('isArchived: $isArchived, ')
@@ -13304,6 +13350,261 @@ class WaterGoalTableCompanion extends UpdateCompanion<WaterGoal> {
   }
 }
 
+class $ThoughtCategoryTableTable extends ThoughtCategoryTable
+    with TableInfo<$ThoughtCategoryTableTable, ThoughtCategory> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ThoughtCategoryTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _normalizedNameMeta = const VerificationMeta(
+    'normalizedName',
+  );
+  @override
+  late final GeneratedColumn<String> normalizedName = GeneratedColumn<String>(
+    'normalized_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, normalizedName];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'thought_categories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ThoughtCategory> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('normalized_name')) {
+      context.handle(
+        _normalizedNameMeta,
+        normalizedName.isAcceptableOrUnknown(
+          data['normalized_name']!,
+          _normalizedNameMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_normalizedNameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ThoughtCategory map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ThoughtCategory(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      normalizedName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}normalized_name'],
+      )!,
+    );
+  }
+
+  @override
+  $ThoughtCategoryTableTable createAlias(String alias) {
+    return $ThoughtCategoryTableTable(attachedDatabase, alias);
+  }
+}
+
+class ThoughtCategory extends DataClass implements Insertable<ThoughtCategory> {
+  final int id;
+  final String name;
+  final String normalizedName;
+  const ThoughtCategory({
+    required this.id,
+    required this.name,
+    required this.normalizedName,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['normalized_name'] = Variable<String>(normalizedName);
+    return map;
+  }
+
+  ThoughtCategoryTableCompanion toCompanion(bool nullToAbsent) {
+    return ThoughtCategoryTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      normalizedName: Value(normalizedName),
+    );
+  }
+
+  factory ThoughtCategory.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ThoughtCategory(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      normalizedName: serializer.fromJson<String>(json['normalizedName']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'normalizedName': serializer.toJson<String>(normalizedName),
+    };
+  }
+
+  ThoughtCategory copyWith({int? id, String? name, String? normalizedName}) =>
+      ThoughtCategory(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        normalizedName: normalizedName ?? this.normalizedName,
+      );
+  ThoughtCategory copyWithCompanion(ThoughtCategoryTableCompanion data) {
+    return ThoughtCategory(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      normalizedName: data.normalizedName.present
+          ? data.normalizedName.value
+          : this.normalizedName,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThoughtCategory(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('normalizedName: $normalizedName')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, normalizedName);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ThoughtCategory &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.normalizedName == this.normalizedName);
+}
+
+class ThoughtCategoryTableCompanion extends UpdateCompanion<ThoughtCategory> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> normalizedName;
+  const ThoughtCategoryTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.normalizedName = const Value.absent(),
+  });
+  ThoughtCategoryTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String normalizedName,
+  }) : name = Value(name),
+       normalizedName = Value(normalizedName);
+  static Insertable<ThoughtCategory> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? normalizedName,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (normalizedName != null) 'normalized_name': normalizedName,
+    });
+  }
+
+  ThoughtCategoryTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? normalizedName,
+  }) {
+    return ThoughtCategoryTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      normalizedName: normalizedName ?? this.normalizedName,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (normalizedName.present) {
+      map['normalized_name'] = Variable<String>(normalizedName.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ThoughtCategoryTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('normalizedName: $normalizedName')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ThoughtReminderLinkTableTable extends ThoughtReminderLinkTable
     with TableInfo<$ThoughtReminderLinkTableTable, ThoughtReminderLink> {
   @override
@@ -23937,6 +24238,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $BackupRestoreTableTable(this);
   late final $WaterLogTableTable waterLogTable = $WaterLogTableTable(this);
   late final $WaterGoalTableTable waterGoalTable = $WaterGoalTableTable(this);
+  late final $ThoughtCategoryTableTable thoughtCategoryTable =
+      $ThoughtCategoryTableTable(this);
   late final $ThoughtReminderLinkTableTable thoughtReminderLinkTable =
       $ThoughtReminderLinkTableTable(this);
   late final $ThoughtMergeSourceTableTable thoughtMergeSourceTable =
@@ -24037,6 +24340,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     backupRestoreTable,
     waterLogTable,
     waterGoalTable,
+    thoughtCategoryTable,
     thoughtReminderLinkTable,
     thoughtMergeSourceTable,
     courseTable,
@@ -25469,6 +25773,7 @@ typedef $$ThoughtTableTableCreateCompanionBuilder =
       Value<int> id,
       required String content,
       Value<String> mood,
+      Value<String> category,
       Value<String> colorHex,
       Value<bool> isPinned,
       Value<bool> isArchived,
@@ -25481,6 +25786,7 @@ typedef $$ThoughtTableTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> content,
       Value<String> mood,
+      Value<String> category,
       Value<String> colorHex,
       Value<bool> isPinned,
       Value<bool> isArchived,
@@ -25643,6 +25949,11 @@ class $$ThoughtTableTableFilterComposer
 
   ColumnFilters<String> get mood => $composableBuilder(
     column: $table.mood,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -25855,6 +26166,11 @@ class $$ThoughtTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get colorHex => $composableBuilder(
     column: $table.colorHex,
     builder: (column) => ColumnOrderings(column),
@@ -25903,6 +26219,9 @@ class $$ThoughtTableTableAnnotationComposer
 
   GeneratedColumn<String> get mood =>
       $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<String> get colorHex =>
       $composableBuilder(column: $table.colorHex, builder: (column) => column);
@@ -26125,6 +26444,7 @@ class $$ThoughtTableTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<String> mood = const Value.absent(),
+                Value<String> category = const Value.absent(),
                 Value<String> colorHex = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -26135,6 +26455,7 @@ class $$ThoughtTableTableTableManager
                 id: id,
                 content: content,
                 mood: mood,
+                category: category,
                 colorHex: colorHex,
                 isPinned: isPinned,
                 isArchived: isArchived,
@@ -26147,6 +26468,7 @@ class $$ThoughtTableTableTableManager
                 Value<int> id = const Value.absent(),
                 required String content,
                 Value<String> mood = const Value.absent(),
+                Value<String> category = const Value.absent(),
                 Value<String> colorHex = const Value.absent(),
                 Value<bool> isPinned = const Value.absent(),
                 Value<bool> isArchived = const Value.absent(),
@@ -26157,6 +26479,7 @@ class $$ThoughtTableTableTableManager
                 id: id,
                 content: content,
                 mood: mood,
+                category: category,
                 colorHex: colorHex,
                 isPinned: isPinned,
                 isArchived: isArchived,
@@ -34669,6 +34992,191 @@ typedef $$WaterGoalTableTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $WaterGoalTableTable, WaterGoal>,
       ),
       WaterGoal,
+      PrefetchHooks Function()
+    >;
+typedef $$ThoughtCategoryTableTableCreateCompanionBuilder =
+    ThoughtCategoryTableCompanion Function({
+      Value<int> id,
+      required String name,
+      required String normalizedName,
+    });
+typedef $$ThoughtCategoryTableTableUpdateCompanionBuilder =
+    ThoughtCategoryTableCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> normalizedName,
+    });
+
+class $$ThoughtCategoryTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ThoughtCategoryTableTable> {
+  $$ThoughtCategoryTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get normalizedName => $composableBuilder(
+    column: $table.normalizedName,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ThoughtCategoryTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ThoughtCategoryTableTable> {
+  $$ThoughtCategoryTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get normalizedName => $composableBuilder(
+    column: $table.normalizedName,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ThoughtCategoryTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ThoughtCategoryTableTable> {
+  $$ThoughtCategoryTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get normalizedName => $composableBuilder(
+    column: $table.normalizedName,
+    builder: (column) => column,
+  );
+}
+
+class $$ThoughtCategoryTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ThoughtCategoryTableTable,
+          ThoughtCategory,
+          $$ThoughtCategoryTableTableFilterComposer,
+          $$ThoughtCategoryTableTableOrderingComposer,
+          $$ThoughtCategoryTableTableAnnotationComposer,
+          $$ThoughtCategoryTableTableCreateCompanionBuilder,
+          $$ThoughtCategoryTableTableUpdateCompanionBuilder,
+          (
+            ThoughtCategory,
+            BaseReferences<
+              _$AppDatabase,
+              $ThoughtCategoryTableTable,
+              ThoughtCategory
+            >,
+          ),
+          ThoughtCategory,
+          PrefetchHooks Function()
+        > {
+  $$ThoughtCategoryTableTableTableManager(
+    _$AppDatabase db,
+    $ThoughtCategoryTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ThoughtCategoryTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ThoughtCategoryTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ThoughtCategoryTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> normalizedName = const Value.absent(),
+              }) => ThoughtCategoryTableCompanion(
+                id: id,
+                name: name,
+                normalizedName: normalizedName,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String normalizedName,
+              }) => ThoughtCategoryTableCompanion.insert(
+                id: id,
+                name: name,
+                normalizedName: normalizedName,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ThoughtCategoryTableTable, ThoughtCategory>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $ThoughtCategoryTableTable,
+                    ThoughtCategory
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ThoughtCategoryTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ThoughtCategoryTableTable,
+      ThoughtCategory,
+      $$ThoughtCategoryTableTableFilterComposer,
+      $$ThoughtCategoryTableTableOrderingComposer,
+      $$ThoughtCategoryTableTableAnnotationComposer,
+      $$ThoughtCategoryTableTableCreateCompanionBuilder,
+      $$ThoughtCategoryTableTableUpdateCompanionBuilder,
+      (
+        ThoughtCategory,
+        BaseReferences<
+          _$AppDatabase,
+          $ThoughtCategoryTableTable,
+          ThoughtCategory
+        >,
+      ),
+      ThoughtCategory,
       PrefetchHooks Function()
     >;
 typedef $$ThoughtReminderLinkTableTableCreateCompanionBuilder =
@@ -43201,6 +43709,8 @@ class $AppDatabaseManager {
       $$WaterLogTableTableTableManager(_db, _db.waterLogTable);
   $$WaterGoalTableTableTableManager get waterGoalTable =>
       $$WaterGoalTableTableTableManager(_db, _db.waterGoalTable);
+  $$ThoughtCategoryTableTableTableManager get thoughtCategoryTable =>
+      $$ThoughtCategoryTableTableTableManager(_db, _db.thoughtCategoryTable);
   $$ThoughtReminderLinkTableTableTableManager get thoughtReminderLinkTable =>
       $$ThoughtReminderLinkTableTableTableManager(
         _db,

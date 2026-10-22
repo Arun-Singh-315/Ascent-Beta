@@ -180,6 +180,7 @@ class AppSurfaces extends ThemeExtension<AppSurfaces> {
   );
 
   static final legacyMerlotLinenDark = night.copyWith(
+    onAccent: MerlotPalette.darkCanvas,
     ink: AscentGlass.merlotLinenDark.ink,
     mutedText: AscentGlass.merlotLinenDark.inkMuted,
     accent: AscentGlass.merlotLinenDark.clay,

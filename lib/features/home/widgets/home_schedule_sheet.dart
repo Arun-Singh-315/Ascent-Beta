@@ -7,8 +7,10 @@ Future<void> showHomeSchedule(
   BuildContext context,
   Thought thought, {
   String? initialText,
+  bool dailyTimes = false,
 }) => showPlanCollectionEditor(
   context,
   source: thought,
   initialText: initialText,
+  dailyTimes: dailyTimes,
 );

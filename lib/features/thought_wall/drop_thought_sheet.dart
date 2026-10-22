@@ -1,3 +1,4 @@
+import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/note_list_button.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
@@ -133,7 +134,8 @@ class _PromiseDialogState extends ConsumerState<_PromiseDialog>
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text('Promise added — $validityDays daily reminders set'),
             duration: const Duration(seconds: 3),
           ),
@@ -677,7 +679,8 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          AscentSnackBar.build(
+            context,
             content: Text(
               widget.existingThought != null
                   ? 'Updated reflection in Mind Space'

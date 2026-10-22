@@ -3,6 +3,7 @@ import 'package:ascent/shared/widgets/app_surfaces.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/color_tokens.dart';
 import '../../app/theme/text_styles.dart';
 import 'note_list_button.dart';
 
@@ -25,9 +26,29 @@ class MessageComposer extends StatefulWidget {
 }
 
 class _MessageComposerState extends State<MessageComposer> {
+  final _fieldKey = GlobalKey();
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_revealCaret);
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_revealCaret);
+      widget.controller.addListener(_revealCaret);
+    }
+  }
+
+  void _revealCaret() =>
+      NoteListButton.revealCaret(_fieldKey, widget.controller);
+
   late final FocusNode _focus = widget.focusNode ?? FocusNode();
   @override
   void dispose() {
+    widget.controller.removeListener(_revealCaret);
     if (widget.focusNode == null) _focus.dispose();
     super.dispose();
   }
@@ -57,10 +78,14 @@ class _MessageComposerState extends State<MessageComposer> {
                 child: AppCard(
                   constraints: const BoxConstraints(minHeight: 48),
                   nightDecoration: BoxDecoration(
-                    color: g.fill,
+                    color: context.bgSurfaceElevated,
                     borderRadius: AppGeometry.roundedr24,
                     border: Border.all(
-                      color: _focus.hasFocus ? g.clay : g.edge,
+                      color: _focus.hasFocus
+                          ? (context.isDark && g.merlot
+                                ? g.inkSecondary
+                                : g.clay)
+                          : g.inkMuted.withValues(alpha: .55),
                       width: _focus.hasFocus ? 1.5 : 1,
                     ),
                   ),
@@ -76,6 +101,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       ),
                       Expanded(
                         child: TextField(
+                          key: _fieldKey,
                           controller: widget.controller,
                           focusNode: _focus,
                           minLines: 1,
@@ -83,9 +109,12 @@ class _MessageComposerState extends State<MessageComposer> {
                           keyboardType: TextInputType.multiline,
                           textInputAction: TextInputAction.newline,
                           textCapitalization: TextCapitalization.sentences,
-                          cursorColor: g.clay,
-                          style:
-                              AscentTextStyles.bodyMedium.copyWith(color: g.ink),
+                          cursorColor: context.isDark && g.merlot
+                              ? g.inkSecondary
+                              : g.clay,
+                          style: AscentTextStyles.bodyMedium.copyWith(
+                            color: g.ink,
+                          ),
                           decoration: InputDecoration(
                             hintText: widget.hint,
                             hintStyle: AscentTextStyles.bodyMedium.copyWith(

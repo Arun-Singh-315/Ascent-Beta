@@ -86,6 +86,80 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
     return into(thoughtTable).insert(entry);
   }
 
+  static const builtInCategories = {
+    'general': 'General',
+    'suggestions': 'Suggestions',
+    'bugs': 'Bugs',
+    'life_goals': 'Life Goals',
+  };
+
+  Stream<Map<String, String>> watchCategories() =>
+      (db.select(
+        db.thoughtCategoryTable,
+      )..orderBy([(t) => OrderingTerm.asc(t.normalizedName)])).watch().map(
+        (rows) => {
+          ...builtInCategories,
+          for (final row in rows) 'custom_${row.id}': row.name,
+        },
+      );
+
+  /// Creation and assignment commit together; repeated names reuse their folder.
+  Future<String> createCategoryAndMove(
+    String name,
+    Iterable<int> ids,
+  ) => db.transaction(() async {
+    final clean = name.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (clean.isEmpty || clean.length > 50) {
+      throw ArgumentError('Use a category name between 1 and 50 characters.');
+    }
+    final normalized = clean.toLowerCase();
+    String? category;
+    for (final entry in builtInCategories.entries) {
+      if (entry.value.toLowerCase() == normalized) category = entry.key;
+    }
+    if (category == null) {
+      final existing = await (db.select(
+        db.thoughtCategoryTable,
+      )..where((t) => t.normalizedName.equals(normalized))).getSingleOrNull();
+      final id =
+          existing?.id ??
+          await db
+              .into(db.thoughtCategoryTable)
+              .insert(
+                ThoughtCategoryTableCompanion.insert(
+                  name: clean,
+                  normalizedName: normalized,
+                ),
+              );
+      category = 'custom_$id';
+    }
+    await moveToCategory(ids, category);
+    return category;
+  });
+
+  /// Categories are independent of note type, age and archive state.
+  Future<void> moveToCategory(Iterable<int> ids, String category) async {
+    if (!builtInCategories.containsKey(category)) {
+      final id = category.startsWith('custom_')
+          ? int.tryParse(category.substring(7))
+          : null;
+      if (id == null ||
+          await (db.select(
+                db.thoughtCategoryTable,
+              )..where((t) => t.id.equals(id))).getSingleOrNull() ==
+              null) {
+        throw ArgumentError.value(category, 'category');
+      }
+    }
+    final selected = ids.toSet();
+    if (selected.isEmpty) return;
+    await db.transaction(() async {
+      await (update(thoughtTable)..where((t) => t.id.isIn(selected))).write(
+        ThoughtTableCompanion(category: Value(category)),
+      );
+    });
+  }
+
   /// Partial, serialized updates preserve concurrent content edits.
   Future<void> togglePin(int id) => db.transaction(() async {
     final thought = await getThoughtById(id);

@@ -443,7 +443,7 @@ class _CourseHubCard extends StatelessWidget {
                     style: context.surfaces.buttonStyle(
                       ElevatedButton.styleFrom(
                         backgroundColor: g.clay,
-                        foregroundColor: AppPalette.white,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr12,

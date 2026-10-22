@@ -29,6 +29,7 @@ class AscentScaffold extends StatelessWidget {
   final Color? glow1;
   final Color? glow2;
   final PreferredSizeWidget? bottom;
+  final bool showFeatureHelp;
   final bool safeAreaTop;
   final bool safeAreaBottom;
 
@@ -48,6 +49,7 @@ class AscentScaffold extends StatelessWidget {
     this.glow1,
     this.glow2,
     this.bottom,
+    this.showFeatureHelp = true,
     this.safeAreaTop = true,
     this.safeAreaBottom = true,
   });
@@ -80,7 +82,7 @@ class AscentScaffold extends StatelessWidget {
                     icon: const Icon(Icons.tour_outlined),
                     onPressed: () => showAscentTour(context),
                   ),
-                if (guideFor(title) != null)
+                if (showFeatureHelp && guideFor(title) != null)
                   IconButton(
                     tooltip: 'How this works',
                     icon: const Icon(Icons.help_outline_rounded),

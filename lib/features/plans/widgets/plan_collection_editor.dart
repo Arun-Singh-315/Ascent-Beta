@@ -21,6 +21,7 @@ Future<void> showPlanCollectionEditor(
   String? draftKey,
   PlanItemView? editing,
   List<PlanItemView>? scheduling,
+  bool dailyTimes = false,
 }) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
@@ -39,6 +40,7 @@ Future<void> showPlanCollectionEditor(
       draftKey: draftKey,
       editing: editing,
       scheduling: scheduling,
+      dailyTimes: dailyTimes,
     ),
   ),
 );
@@ -102,7 +104,9 @@ class PlanCollectionEditor extends ConsumerStatefulWidget {
     this.editing,
     this.draftKey,
     this.scheduling,
+    this.dailyTimes = false,
   });
+  final bool dailyTimes;
   final Thought? source;
   final String? initialText, collectionId, draftKey;
   final PlanItemView? editing;
@@ -131,6 +135,11 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
   @override
   void initState() {
     super.initState();
+    if (widget.dailyTimes) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _items.length == 1) _repeatDaily();
+      });
+    }
     _request = planningId();
     _destination = widget.collectionId;
     _draftKey =
@@ -480,6 +489,151 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
         ? _evening()
         : _morning();
     _applySchedule(start, spacing, alert);
+  }
+
+  Future<void> _repeatDaily() async {
+    FocusScope.of(context).unfocus();
+    final times = <TimeOfDay?>[null, null, null, null];
+    String? error;
+    DateTime? endDate;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, update) => AlertDialog(
+          title: const Text('Several times a day'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose each time from your own schedule. Each reminder repeats daily.',
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final count in [2, 3, 4])
+                      ChoiceChip(
+                        label: Text('$count times'),
+                        selected: times.length == count,
+                        onSelected: (_) => update(() {
+                          while (times.length < count) {
+                            times.add(null);
+                          }
+                          if (times.length > count) {
+                            times.removeRange(count, times.length);
+                          }
+                          error = null;
+                        }),
+                      ),
+                  ],
+                ),
+                for (var i = 0; i < times.length; i++)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('Time ${i + 1}'),
+                    trailing: Text(times[i]?.format(ctx) ?? 'Choose time'),
+                    onTap: () async {
+                      final picked = await showTimePicker(
+                        context: ctx,
+                        initialTime: times[i] ?? TimeOfDay.now(),
+                      );
+                      if (picked != null && ctx.mounted) {
+                        update(() {
+                          times[i] = picked;
+                          error = null;
+                        });
+                      }
+                    },
+                  ),
+                TextButton.icon(
+                  icon: const Icon(Icons.event_outlined),
+                  label: Text(
+                    endDate == null
+                        ? 'Choose end date'
+                        : 'Until ${DateFormat.yMMMd().format(endDate!)}',
+                  ),
+                  onPressed: () async {
+                    final now = DateTime.now();
+                    final first = DateTime(now.year, now.month, now.day + 1);
+                    final picked = await showDatePicker(
+                      context: ctx,
+                      initialDate: endDate ?? first,
+                      firstDate: first,
+                      lastDate: DateTime(now.year + 5),
+                    );
+                    if (picked != null && ctx.mounted) {
+                      update(() {
+                        endDate = picked;
+                        error = null;
+                      });
+                    }
+                  },
+                ),
+                if (error != null)
+                  Text(
+                    error!,
+                    style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final minutes = times
+                    .whereType<TimeOfDay>()
+                    .map((t) => t.hour * 60 + t.minute)
+                    .toSet();
+                if (minutes.length != times.length || endDate == null) {
+                  update(
+                    () => error = 'Choose distinct times and an end date.',
+                  );
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Use these times'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    final source = _items.single;
+    final now = DateTime.now();
+    final sorted = times.whereType<TimeOfDay>().toList()
+      ..sort(
+        (a, b) => (a.hour * 60 + a.minute).compareTo(b.hour * 60 + b.minute),
+      );
+    final repeated = sorted.map((time) {
+      var at = DateTime(now.year, now.month, now.day, time.hour, time.minute);
+      if (!at.isAfter(now)) {
+        at = DateTime(now.year, now.month, now.day + 1, time.hour, time.minute);
+      }
+      return _Item(
+        source.title.text,
+        notes: source.notes,
+        at: at,
+        recurrence: 'daily',
+        endDate: endDate,
+        alert: 'reminder',
+        minutes: source.minutes,
+      );
+    }).toList();
+    _items
+      ..clear()
+      ..addAll(repeated);
+    _presetItems.clear();
+    _preset = 'none';
+    _presetStart = null;
+    source.dispose();
+    _changed();
   }
 
   void _clearTimes() {
@@ -988,6 +1142,15 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                 ? null
                                 : (_) => _pickPreset('evening'),
                           ),
+                          if (_items.length == 1)
+                            ActionChip(
+                              label: const Text('Several times a day'),
+                              avatar: const Icon(
+                                Icons.repeat_rounded,
+                                size: 18,
+                              ),
+                              onPressed: _busy ? null : _repeatDaily,
+                            ),
                           ChoiceChip(
                             label: const Text('Custom'),
                             selected: scheduled > 0 && _preset == 'custom',
@@ -1257,7 +1420,8 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                         avatar: Icon(
                                           Icons.timer_outlined,
                                           size: 16,
-                                          color: (_items[n].minutes != null &&
+                                          color:
+                                              (_items[n].minutes != null &&
                                                   _items[n].minutes! > 0)
                                               ? g.clay
                                               : g.inkMuted,
@@ -1268,12 +1432,13 @@ class _EditorState extends ConsumerState<PlanCollectionEditor> {
                                               ? '${_items[n].minutes}m duration'
                                               : 'Set duration',
                                           style: TextStyle(
-                                            color: (_items[n].minutes != null &&
+                                            color:
+                                                (_items[n].minutes != null &&
                                                     _items[n].minutes! > 0)
                                                 ? g.clay
                                                 : g.inkMuted,
-                                            fontWeight: (_items[n].minutes !=
-                                                        null &&
+                                            fontWeight:
+                                                (_items[n].minutes != null &&
                                                     _items[n].minutes! > 0)
                                                 ? FontWeight.w600
                                                 : FontWeight.normal,
