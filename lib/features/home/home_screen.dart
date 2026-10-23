@@ -287,7 +287,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                     // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
                     HomeHeader(profile: profile),
                     const HomeOverviewCard(),
-                    DailyBriefingCard(day: _briefingDate, minimal: true),
 
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))

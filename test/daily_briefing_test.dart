@@ -149,38 +149,45 @@ void main() {
     await tester.pump(Duration.zero);
   });
 
-  testWidgets(
-    'automatic welcome can be disabled without hiding Home check-in',
-    (tester) async {
-      await prefs.setBool('ascent_quick_start_v1', true);
-      await prefs.setBool(dailyBriefingAutoOpenKey, false);
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            databaseProvider.overrideWithValue(db),
-            sharedPreferencesProvider.overrideWithValue(prefs),
-          ],
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const HomeScreen(),
+    testWidgets(
+      'homepage no longer shows inline daily check-in button; sheet can be opened on demand',
+      (tester) async {
+        await prefs.setBool('ascent_quick_start_v1', true);
+        await prefs.setBool(dailyBriefingAutoOpenKey, false);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              databaseProvider.overrideWithValue(db),
+              sharedPreferencesProvider.overrideWithValue(prefs),
+            ],
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: const HomeScreen(),
+                  floatingActionButton: FloatingActionButton(
+                    onPressed: () =>
+                        DailyBriefingCard.show(context, DateTime.now()),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 500));
-      await tester.pumpAndSettle();
-      expect(find.byTooltip('Dismiss daily briefing'), findsNothing);
-      await tester.ensureVisible(find.text('Open daily check-in'));
-      await tester.tap(find.text('Open daily check-in'));
-      await tester.pumpAndSettle();
-      final toggle = find.byType(SwitchListTile);
-      await tester.ensureVisible(toggle);
-      await tester.tap(toggle);
-      await tester.pumpAndSettle();
-      expect(prefs.getBool(dailyBriefingAutoOpenKey), true);
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    },
-  );
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pumpAndSettle();
+        expect(find.text('Open daily check-in'), findsNothing);
+        await tester.tap(find.byType(FloatingActionButton));
+        await tester.pumpAndSettle();
+        final toggle = find.byType(SwitchListTile);
+        await tester.ensureVisible(toggle);
+        await tester.tap(toggle);
+        await tester.pumpAndSettle();
+        expect(prefs.getBool(dailyBriefingAutoOpenKey), true);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(Duration.zero);
+      },
+    );
 
   test('empty records do not imply failure or fabricate progress', () {
     final summary = DailyBriefing.fromRecords(

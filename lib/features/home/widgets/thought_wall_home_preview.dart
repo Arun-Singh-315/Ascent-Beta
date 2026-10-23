@@ -352,7 +352,13 @@ class _ThoughtWallHomePreviewState
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             nightDecoration: BoxDecoration(
-              color: !context.isDark && g.merlot ? MerlotPalette.surface : g.fill,
+              color: context.isDark
+                  ? g.fill
+                  : (g.merlot
+                      ? MerlotPalette.surface
+                      : (g.frozen
+                          ? const Color(0xFFFBFDFF)
+                          : const Color(0xFFFFFDFB))),
               borderRadius: BorderRadius.circular(22),
               border: Border.all(
                 color: _focusNode.hasFocus
@@ -363,8 +369,8 @@ class _ThoughtWallHomePreviewState
                             ? MerlotPalette.line
                             : (g.frozen
                                 ? FrozenPalette.line
-                                : g.edge.withValues(alpha: .45)))),
-                width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+                                : const Color(0xFFD9C5BB)))),
+                width: _focusNode.hasFocus ? 1.5 : 1.2,
               ),
             ),
             child: Row(
@@ -483,7 +489,11 @@ class _ThoughtWallHomePreviewState
 
             final cardFill = isDark
                 ? null
-                : (g.merlot ? MerlotPalette.surface : g.fill);
+                : (g.merlot
+                    ? MerlotPalette.surface
+                    : (g.frozen
+                        ? const Color(0xFFF8FAFD)
+                        : const Color(0xFFFFFDFB)));
 
             final cardBorder = isDark
                 ? null
@@ -507,13 +517,19 @@ class _ThoughtWallHomePreviewState
               ThoughtCardTone.slate => const Color(0xFF718398),
             };
             final tint = appearance.applyToHome ? appliedToneTint : g.clay;
-            final bubbleFill = tint.withValues(alpha: isDark ? .12 : .06);
+            final hardBorderColor = isDark
+                ? g.edge.withValues(alpha: 0.65)
+                : (g.merlot
+                    ? MerlotPalette.action.withValues(alpha: 0.36)
+                    : (g.frozen
+                        ? FrozenPalette.line
+                        : const Color(0xFFD4B2A7)));
+            final bubbleFill = isDark
+                ? tint.withValues(alpha: .12)
+                : Colors.transparent;
             final bubbleBorder = Border.all(
-              color: Color.alphaBlend(
-                tint.withValues(alpha: .35),
-                g.inkMuted,
-              ).withValues(alpha: isDark ? .48 : .34),
-              width: 1,
+              color: hardBorderColor,
+              width: 1.2,
             );
             final thoughtTextColor = g.ink;
             final thoughtTextMutedColor = g.inkMuted;
