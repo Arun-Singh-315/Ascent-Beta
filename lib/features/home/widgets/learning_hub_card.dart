@@ -27,13 +27,6 @@ class LearningHubCard extends ConsumerWidget {
         .toList();
     final hasStarted = state.hasStartedLearning && lectures.isNotEmpty;
     final position = lectures.indexWhere((lecture) => lecture.id == active.id);
-    final completedCount = lectures
-        .where((lecture) => lecture.isCompleted)
-        .length;
-    final next = lectures
-        .skip(position + 1)
-        .where((lecture) => !lecture.isCompleted)
-        .firstOrNull;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     void openPlayer() {
@@ -115,83 +108,55 @@ class LearningHubCard extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          hasStarted ? course.title : 'Pick your next course',
-                          key: const ValueKey('home_learning_course'),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(color: g.inkSecondary, fontSize: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                hasStarted
+                                    ? course.title
+                                    : 'Pick your next course',
+                                key: const ValueKey('home_learning_course'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: g.inkSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            if (hasStarted) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '${position + 1}/${lectures.length}',
+                                key: const ValueKey('home_learning_position'),
+                                style: TextStyle(
+                                  color: g.clay,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          hasStarted
-                              ? 'Lecture ${position + 1} of ${lectures.length}'
-                              : 'Start learning',
+                          hasStarted ? active.title : 'Start learning',
+                          key: const ValueKey('home_learning_title'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            color: g.clay,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: g.ink,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        if (hasStarted) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            active.moduleTitle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: g.inkMuted, fontSize: 11),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            active.title,
-                            key: const ValueKey('home_learning_title'),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: g.ink,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),
                 ),
               ),
               if (hasStarted) ...[
-                const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Icon(
-                      state.isPlaying
-                          ? Icons.graphic_eq_rounded
-                          : Icons.headphones_rounded,
-                      size: 16,
-                      color: g.clay,
-                    ),
-                    Text(
-                      active.isCompleted
-                          ? 'Lecture complete'
-                          : state.isPlaying
-                          ? 'Now learning'
-                          : 'Ready when you are',
-                      style: TextStyle(
-                        color: g.clay,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      '$completedCount / ${lectures.length} lectures completed',
-                      style: TextStyle(color: g.inkMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -203,43 +168,25 @@ class LearningHubCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    spacing: 12,
-                    runSpacing: 4,
-                    children: [
-                      Text(
-                        '${state.formattedElapsed} elapsed',
-                        style: TextStyle(
-                          color: g.ink,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      state.formattedElapsed,
+                      style: TextStyle(
+                        color: g.ink,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                      Text(
-                        active.isCompleted
-                            ? 'Completed'
-                            : '${(state.remainingSeconds / 60).ceil()} min left',
-                        style: TextStyle(color: g.inkMuted, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              if (hasStarted && next != null) ...[
-                const SizedBox(height: 12),
-                Tooltip(
-                  message: next.title,
-                  child: Text(
-                    'Next · ${next.title}',
-                    key: const ValueKey('home_learning_next'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: g.inkMuted, fontSize: 12),
-                  ),
+                    ),
+                    Text(
+                      active.isCompleted
+                          ? 'Completed'
+                          : '${(state.remainingSeconds / 60).ceil()} min left',
+                      style: TextStyle(color: g.inkMuted, fontSize: 11),
+                    ),
+                  ],
                 ),
               ],
               const SizedBox(height: 12),
@@ -314,19 +261,6 @@ class LearningHubCard extends ConsumerWidget {
                         Icons.format_list_bulleted_rounded,
                         color: g.inkSecondary,
                         size: 21,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 44,
-                        minHeight: 44,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Open Player Sheet',
-                      onPressed: openPlayer,
-                      icon: Icon(
-                        Icons.open_in_full_rounded,
-                        color: g.inkSecondary,
-                        size: 18,
                       ),
                       constraints: const BoxConstraints(
                         minWidth: 44,

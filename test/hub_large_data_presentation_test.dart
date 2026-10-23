@@ -273,16 +273,17 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
-          expect(find.text('Lecture 2 of 5000'), findsOneWidget);
+          expect(find.text('2/5000'), findsOneWidget);
+          // Home stays glanceable: no "next lecture" line, one-line titles.
           expect(
             find.byKey(const ValueKey('home_learning_next')),
-            findsOneWidget,
+            findsNothing,
           );
           expect(
             tester
                 .widget<Text>(find.byKey(const ValueKey('home_learning_title')))
                 .maxLines,
-            2,
+            1,
           );
           await tester.ensureVisible(find.text('Resume'));
           await tester.tap(find.text('Resume'));
