@@ -18,6 +18,8 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -896,17 +898,17 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 9),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: isSelected ? activeColor : AppPalette.transparent,
-            borderRadius: AppGeometry.roundedr10,
+            borderRadius: BorderRadius.circular(12),
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: activeColor.withValues(alpha: 0.22),
+                      color: activeColor.withValues(alpha: 0.28),
                       blurRadius: 6,
-                      offset: const Offset(0, 1.5),
+                      offset: const Offset(0, 2),
                     ),
                   ]
                 : null,
@@ -919,7 +921,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 icon,
                 size: 15,
                 color: isSelected
-                    ? Theme.of(context).colorScheme.onPrimary
+                    ? Colors.white
                     : g.inkMuted,
               ),
               const SizedBox(width: 5),
@@ -932,7 +934,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                     color: isSelected
-                        ? Theme.of(context).colorScheme.onPrimary
+                        ? Colors.white
                         : g.inkMuted,
                   ),
                 ),
@@ -1058,10 +1060,17 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
               ),
               padding: const EdgeInsets.all(AppSpace.s4),
               nightDecoration: BoxDecoration(
-                color: context.isDark ? context.bgSurface : g.fill,
-                borderRadius: AppGeometry.roundedr14,
+                color: context.isDark
+                    ? const Color(0xFF161F2E)
+                    : (g.frozen
+                        ? const Color(0xFFEDF4FA)
+                        : (g.merlot
+                            ? const Color(0xFFF3ECE0)
+                            : const Color(0xFFF5EFE9))),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: context.divider.withValues(alpha: 0.8),
+                  color: g.edge.withValues(alpha: 0.6),
+                  width: 1.0,
                 ),
               ),
               child: Row(
@@ -1708,16 +1717,13 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
       ),
       ThoughtCardStyle.minimal => BorderRadius.zero,
     };
-    final tint = switch (widget.appearance.tone) {
-      ThoughtCardTone.theme => g.clay,
-      ThoughtCardTone.linen => const Color(0xFFA38B6B),
-      ThoughtCardTone.sage => const Color(0xFF718B72),
-      ThoughtCardTone.slate => const Color(0xFF718398),
-    };
-    final line = Color.alphaBlend(
-      tint.withValues(alpha: .35),
-      g.inkMuted,
-    ).withValues(alpha: context.isDark ? .48 : .34);
+    final hardBorderColor = context.isDark
+        ? g.edge.withValues(alpha: 0.65)
+        : (g.merlot
+            ? MerlotPalette.action.withValues(alpha: 0.36)
+            : (g.frozen
+                ? FrozenPalette.line
+                : const Color(0xFFD4B2A7)));
     return BoxDecoration(
       color: Colors.transparent,
       boxShadow: const [],
@@ -1730,10 +1736,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               bottomRight: Radius.circular(index.isOdd ? 18 : 6),
             ),
       border: isSelected
-          ? Border.all(color: g.clay, width: 1.5)
+          ? Border.all(color: g.clay, width: 1.8)
           : minimal && widget.compact
-          ? Border(bottom: BorderSide(color: line, width: .8))
-          : Border.all(color: line, width: 1),
+          ? Border(bottom: BorderSide(color: hardBorderColor, width: 1.0))
+          : Border.all(color: hardBorderColor, width: 1.0),
     );
   }
 

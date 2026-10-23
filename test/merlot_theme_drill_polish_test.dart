@@ -394,13 +394,14 @@ void main() {
       expect(bubbleFinder, findsOneWidget);
       final bubble = tester.widget<Container>(bubbleFinder);
       final merlotBox = bubble.decoration! as BoxDecoration;
-      expect(merlotBox.color, tester.element(bubbleFinder).glass.clay.withValues(alpha: .06));
+      expect(merlotBox.color, equals(Colors.transparent));
+      expect(merlotBox.border, isNotNull);
       expect(merlotBox.gradient, isNull);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
 
-      // Frozen Sky uses the same geometry with its own light tint.
+      // Frozen Sky uses the same geometry with transparent bubble and hard border.
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -423,7 +424,8 @@ void main() {
       final frozenBubble = tester.widget<Container>(frozenBubbleFinder);
       final frozenBox = frozenBubble.decoration! as BoxDecoration;
       expect(frozenBox.gradient, isNull);
-      expect(frozenBox.color, tester.element(frozenBubbleFinder).glass.clay.withValues(alpha: .06));
+      expect(frozenBox.color, equals(Colors.transparent));
+      expect(frozenBox.border, isNotNull);
       expect(frozenBox.borderRadius, merlotBox.borderRadius);
 
       // Thought text follows the theme ink on the light tint.
