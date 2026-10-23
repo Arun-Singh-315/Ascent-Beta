@@ -41,6 +41,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   bool _showAll = false;
   bool _showCompleted = false;
   bool _showPlans = false;
+  String _kindFilter = 'all';
+  static const _expandedLimit = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -80,21 +82,16 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
     final doneCount = doneActivities.length;
     final totalCount = allActivities.length;
 
-    // Sort so that any currently active running activity is prioritised at the top
-    final sortedPending = <TodayActivityItem>[...pendingActivities]
-      ..sort((a, b) {
-        if (a.status == TodayActivityStatus.inProgress &&
-            b.status != TodayActivityStatus.inProgress) {
-          return -1;
-        }
-        if (b.status == TodayActivityStatus.inProgress &&
-            a.status != TodayActivityStatus.inProgress) {
-          return 1;
-        }
-        return 0;
-      });
+    final sortedPending = _prioritizeActivities(pendingActivities);
     final previewLimit = widget.previewLimit.clamp(1, 4);
-    final currentList = _showCompleted ? doneActivities : sortedPending;
+    final statusList = _showCompleted ? doneActivities : sortedPending;
+    final currentList = statusList
+        .where((item) => _matchesActivityType(item, _kindFilter))
+        .toList();
+    final visibleLimit = _showAll ? _expandedLimit : previewLimit;
+    final showTypeFilters =
+        activities.map(_activityType).toSet().length > 1 ||
+        _kindFilter != 'all';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,6 +267,40 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 ),
               ),
 
+              if (!_showPlans && showTypeFilters)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 6,
+                    children: [
+                      for (final filter in const {
+                        'all': 'All types',
+                        'todos': 'To-dos',
+                        'timers': 'Timers',
+                        'lectures': 'Lectures',
+                      }.entries)
+                        _HubTabPill(
+                          label: filter.value,
+                          count: statusList
+                              .where(
+                                (item) =>
+                                    _matchesActivityType(item, filter.key),
+                              )
+                              .length,
+                          isSelected: _kindFilter == filter.key,
+                          activeColor: g.clay,
+                          activeTextColor: g.ink,
+                          inactiveTextColor: g.inkMuted,
+                          onTap: () => setState(() {
+                            _kindFilter = filter.key;
+                            _showAll = false;
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
+
               // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
               if (_showPlans)
                 const HomePlansPreview()
@@ -314,7 +345,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            _showCompleted
+                            _kindFilter != 'all'
+                                ? 'No ${switch (_kindFilter) {
+                                    'todos' => 'to-dos',
+                                    'timers' => 'timers',
+                                    _ => 'lectures',
+                                  }} in this view.'
+                                : _showCompleted
                                 ? 'No completed activities yet today.'
                                 : (totalCount > 0
                                       ? 'All caught up! All $doneCount activities finished.'
@@ -329,11 +366,8 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   ),
                 )
               else ...[
-                // Render either capped items (max 4) or all if expanded
-                for (final act
-                    in (_showAll
-                        ? currentList
-                        : currentList.take(previewLimit)))
+                // Bound the home tree even when thousands of activities exist.
+                for (final act in currentList.take(visibleLimit))
                   ActivityRowItem(key: ValueKey(act.id), activity: act),
 
                 // Show more / Show less toggle when count exceeds 4
@@ -368,7 +402,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                 Text(
                                   _showAll
                                       ? 'Show less'
-                                      : 'Show ${currentList.length - previewLimit} more',
+                                      : 'Show ${(currentList.length - previewLimit).clamp(1, _expandedLimit - previewLimit)} more',
                                   style: AscentTextStyles.homeSecondary
                                       .copyWith(color: g.clay)
                                       .merge(AppTypeRoles.typeRole8),
@@ -381,6 +415,25 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     ),
                   ),
               ],
+
+              if (!_showPlans &&
+                  _showAll &&
+                  currentList.length > _expandedLimit)
+                TextButton.icon(
+                  key: const ValueKey('hub_full_list'),
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    useSafeArea: true,
+                    builder: (_) => _FullActivityList(
+                      completed: _showCompleted,
+                      filter: _kindFilter,
+                      excludedTaskIds: widget.excludedTaskIds,
+                    ),
+                  ),
+                  icon: const Icon(Icons.list_alt_rounded, size: 18),
+                  label: Text('Browse all ${currentList.length} activities'),
+                ),
 
               // Quick entry defaults to a To-do today, without a reminder.
               if (!_showPlans) const ActivityComposer(),
@@ -484,6 +537,120 @@ class _HubTabPill extends StatelessWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+List<TodayActivityItem> _prioritizeActivities(
+  Iterable<TodayActivityItem> items,
+) {
+  final running = <TodayActivityItem>[];
+  final paused = <TodayActivityItem>[];
+  final upcoming = <TodayActivityItem>[];
+  for (final item in items) {
+    switch (item.status) {
+      case TodayActivityStatus.inProgress:
+        running.add(item);
+      case TodayActivityStatus.paused:
+        paused.add(item);
+      default:
+        upcoming.add(item);
+    }
+  }
+  return [...running, ...paused, ...upcoming];
+}
+
+String _activityType(TodayActivityItem item) => item.sourceType == 'lecture'
+    ? 'lectures'
+    : item.kind != ActivityKind.todo || (item.targetMinutes ?? 0) > 0
+    ? 'timers'
+    : 'todos';
+
+bool _matchesActivityType(TodayActivityItem item, String filter) =>
+    filter == 'all' || _activityType(item) == filter;
+
+class _FullActivityList extends ConsumerWidget {
+  const _FullActivityList({
+    required this.completed,
+    required this.filter,
+    required this.excludedTaskIds,
+  });
+  final bool completed;
+  final String filter;
+  final Set<int> excludedTaskIds;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final g = context.glass;
+    return FractionallySizedBox(
+      heightFactor: .9,
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 12, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      completed ? 'Completed activities' : 'Today’s activities',
+                      style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Close activities',
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ref
+                  .watch(todayActivitiesProvider)
+                  .when(
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
+                    error: (_, _) => Center(
+                      child: TextButton(
+                        onPressed: () =>
+                            ref.invalidate(todayActivitiesProvider),
+                        child: const Text('Retry activities'),
+                      ),
+                    ),
+                    data: (items) {
+                      final rows = _prioritizeActivities(
+                        items.where(
+                          (item) =>
+                              (item.status == TodayActivityStatus.done) ==
+                                  completed &&
+                              (completed ||
+                                  !excludedTaskIds.contains(
+                                    item.linkedTaskId,
+                                  )) &&
+                              _matchesActivityType(item, filter),
+                        ),
+                      );
+                      if (rows.isEmpty) {
+                        return const Center(
+                          child: Text('No activities in this view.'),
+                        );
+                      }
+                      return ListView.builder(
+                        key: const ValueKey('hub_full_activity_list'),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: rows.length,
+                        itemBuilder: (context, index) => ActivityRowItem(
+                          key: ValueKey(rows[index].id),
+                          activity: rows[index],
+                        ),
+                      );
+                    },
+                  ),
+            ),
           ],
         ),
       ),

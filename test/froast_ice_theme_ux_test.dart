@@ -382,13 +382,11 @@ void main() {
 
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
-      final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
-
-      // In dark Frozen mode: bubble must not have bright neon gradient
-      expect(bubbleGlass.gradient, isNull,
-          reason: 'Dark Frozen mode must not use bright flashlight gradient at night');
-      expect(bubbleGlass.fillColor, equals(FrozenPalette.darkElevated),
-          reason: 'Dark Frozen bubble should use soothing darkElevated glass');
+      final bubble = tester.widget<Container>(bubbleFinder);
+      final box = bubble.decoration! as BoxDecoration;
+      expect(box.gradient, isNull);
+      expect(box.color, tester.element(bubbleFinder).glass.clay.withValues(alpha: .12));
+      expect(box.border, isNotNull);
 
       // Text inside bubble must be high-contrast darkInk
       final textFinder = find.byType(ThoughtExcerpt);

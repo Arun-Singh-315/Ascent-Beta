@@ -761,83 +761,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      for (final tone in ThoughtCardTone.values) ...[
-                        Expanded(
-                          child: AppTapArea(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              ref
-                                  .read(thoughtWallAppearanceProvider.notifier)
-                                  .save(thoughtAppearance.copyWith(tone: tone));
-                            },
-                            borderRadius: AppGeometry.roundedr12,
-                            child: AppCard(
-                              selected: thoughtAppearance.tone == tone,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: AppSpace.s10,
-                                horizontal: AppSpace.s4,
-                              ),
-                              nightDecoration: BoxDecoration(
-                                color: thoughtAppearance.tone == tone
-                                    ? (context.isDark
-                                        ? g.clay.withValues(alpha: 0.28)
-                                        : context.accentPrimary)
-                                    : g.fill,
-                                borderRadius: AppGeometry.roundedr12,
-                                border: Border.all(
-                                  color: thoughtAppearance.tone == tone
-                                      ? context.accentPrimary
-                                      : g.edge,
-                                  width: thoughtAppearance.tone == tone ? 1.5 : 1.0,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                      color: switch (tone) {
-                                        ThoughtCardTone.theme => g.clay,
-                                        ThoughtCardTone.linen => const Color(0xFFA38B6B),
-                                        ThoughtCardTone.sage => const Color(0xFF718B72),
-                                        ThoughtCardTone.slate => const Color(0xFF718398),
-                                      },
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      switch (tone) {
-                                        ThoughtCardTone.theme => 'Theme',
-                                        ThoughtCardTone.linen => 'Linen',
-                                        ThoughtCardTone.sage => 'Sage',
-                                        ThoughtCardTone.slate => 'Slate',
-                                      },
-                                      maxLines: 1,
-                                      style: AscentTextStyles.labelSmall.copyWith(
-                                        color: thoughtAppearance.tone == tone
-                                            ? AppPalette.white
-                                            : g.ink,
-                                        fontWeight: thoughtAppearance.tone == tone
-                                            ? FontWeight.w600
-                                            : FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                      for (final tone in ThoughtCardTone.values)
+                        ChoiceChip(
+                          label: Text(switch (tone) {
+                            ThoughtCardTone.theme => 'Theme',
+                            ThoughtCardTone.linen => 'Linen',
+                            ThoughtCardTone.sage => 'Sage',
+                            ThoughtCardTone.slate => 'Slate',
+                          }),
+                          selected: thoughtAppearance.tone == tone,
+                          showCheckmark: false,
+                          avatar: Icon(
+                            thoughtAppearance.tone == tone
+                                ? Icons.check_circle_rounded
+                                : Icons.circle,
+                            size: 14,
+                            color: g.clay,
                           ),
+                          labelStyle: TextStyle(
+                            color: g.ink,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          backgroundColor: Colors.transparent,
+                          selectedColor: g.clay.withValues(alpha: .12),
+                          side: BorderSide(
+                            color: thoughtAppearance.tone == tone
+                                ? g.clay
+                                : g.edge,
+                          ),
+                          shape: const StadiumBorder(),
+                          onSelected: (_) {
+                            HapticFeedback.lightImpact();
+                            ref
+                                .read(thoughtWallAppearanceProvider.notifier)
+                                .save(thoughtAppearance.copyWith(tone: tone));
+                          },
                         ),
-                        if (tone != ThoughtCardTone.values.last)
-                          const SizedBox(width: 6),
-                      ],
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -845,11 +808,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       'Apply to Home',
-                      style: AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                      style: AscentTextStyles.labelMedium.copyWith(
+                        color: g.ink,
+                      ),
                     ),
                     subtitle: Text(
                       'Match Home cards with selected tone',
-                      style: AscentTextStyles.captionMedium.copyWith(color: g.inkMuted),
+                      style: AscentTextStyles.captionMedium.copyWith(
+                        color: g.inkMuted,
+                      ),
                     ),
                     value: thoughtAppearance.applyToHome,
                     activeTrackColor: g.clay,

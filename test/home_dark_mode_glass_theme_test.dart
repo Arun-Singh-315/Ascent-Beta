@@ -124,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Requirement 3 (Exception): Nested thought bubbles inside Mind Space have distinct elevated surface in dark mode', (tester) async {
+    testWidgets('Requirement 3: Nested thought bubbles use a subtle tint and outline in dark mode', (tester) async {
       final id = await db.thoughtDao.insertThought(
         ThoughtTableCompanion.insert(content: 'Night thought contrast'),
       );
@@ -161,14 +161,11 @@ void main() {
       final bubbleFinder = find.byKey(ValueKey('home_thought_$id'));
       expect(bubbleFinder, findsOneWidget);
 
-      final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
-      final parentGlass = tester.element(bubbleFinder).glass;
-
-      // In dark mode, the nested thought bubble must NOT be identical to parent g.fill,
-      // avoiding the visual blunder of blending into the parent card.
-      expect(bubbleGlass.fillColor, isNot(equals(parentGlass.fill)));
-      // It should have higher alpha for clear elevation
-      expect(bubbleGlass.fillColor!.a, greaterThan(parentGlass.fill.a));
+      final bubble = tester.widget<Container>(bubbleFinder);
+      final decoration = bubble.decoration! as BoxDecoration;
+      expect(decoration.color!.a, lessThan(.15));
+      expect(decoration.gradient, isNull);
+      expect(decoration.border, isNotNull);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pumpAndSettle();

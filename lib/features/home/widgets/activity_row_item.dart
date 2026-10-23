@@ -375,7 +375,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 // ── 2. TASK TITLE & SUBTITLE / RUNNING TIMER ──────────────────
                 Expanded(
                   child: AppTapArea(
-                    onTap: (isDone || isLecture)
+                    onTap: isLecture
+                        ? () => _openLecture(context, ref)
+                        : isDone
                         ? null
                         : () async {
                             HapticFeedback.lightImpact();
@@ -513,10 +515,26 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 const SizedBox(width: 8),
 
                 // ── 3. RIGHT ACTION: EDIT FOR TODO, PLAY/PAUSE FOR TIMED ACTIVITIES ───
-                if (isDone || isLecture) ...[
-                  // Completed and lecture activities have no edit or timer play buttons on the row
+                if (isLecture) ...[
+                  IconButton(
+                    tooltip: 'Open lecture',
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _openLecture(context, ref);
+                    },
+                    icon: Icon(
+                      Icons.open_in_new_rounded,
+                      color: g.clay,
+                      size: 20,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 44,
+                      minHeight: 44,
+                    ),
+                  ),
+                ] else if (isDone) ...[
                   const SizedBox(width: 8),
-                ] else if (activity.kind == ActivityKind.todo) ...[
+                ] else if (activity.kind == ActivityKind.todo && !isTimed) ...[
                   SizedBox(
                     width: 48,
                     height: 48,
@@ -613,12 +631,44 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 ],
               ],
             ),
+            if (isTimed &&
+                !isDone &&
+                activity.targetMinutes != null &&
+                activity.targetMinutes! > 0) ...[
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  key: ValueKey('activity_timer_progress_${activity.id}'),
+                  value:
+                      (activity.elapsedSecondsToday /
+                              (activity.targetMinutes! * 60))
+                          .clamp(0.0, 1.0),
+                  minHeight: 3,
+                  color: g.clay,
+                  backgroundColor: g.track,
+                  semanticsLabel: 'Focus time progress',
+                ),
+              ),
+            ],
             if (dueCheckIn != null)
               _buildCheckInResponseBar(context, ref, g, dueCheckIn),
           ],
         ),
       ),
     );
+  }
+
+  void _openLecture(BuildContext context, WidgetRef ref) {
+    if (_selectLecture(ref, activity)) {
+      LectureFocusPlayerSheet.show(context);
+    } else {
+      AscentSnackBar.error(
+        context,
+        message:
+            'This lecture is no longer available. Choose another in Learning.',
+      );
+    }
   }
 
   Widget _buildCheckInResponseBar(
@@ -843,13 +893,13 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       }
       return 'Lecture';
     }
-    if (act.kind == ActivityKind.todo) {
+    if (act.kind == ActivityKind.todo && (act.targetMinutes ?? 0) <= 0) {
       final p = (act.priority != null && act.priority!.isNotEmpty)
           ? act.priority![0].toUpperCase() + act.priority!.substring(1)
           : 'Medium';
       return '$p • To-do';
     }
-    if (act.kind == ActivityKind.duration) {
+    if (act.kind == ActivityKind.duration || (act.targetMinutes ?? 0) > 0) {
       final targetMins = act.targetMinutes ?? 30;
       if (act.elapsedSecondsToday > 0) {
         final m = act.elapsedSecondsToday ~/ 60;

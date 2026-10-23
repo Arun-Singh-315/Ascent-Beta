@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'medicine_time_dialog.dart';
+
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
@@ -115,11 +117,12 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
     final initial = _parseTime(_times[index]);
     TimeOfDay? value;
     try {
-      value = await showTimePicker(
+      value = await showDialog<TimeOfDay>(
         context: context,
-        initialTime: initial ?? TimeOfDay.now(),
-        initialEntryMode: TimePickerEntryMode.dial,
-        helpText: 'Dose ${index + 1} Time',
+        builder: (_) => MedicineTimeDialog(
+          initialTime: initial ?? TimeOfDay.now(),
+          dose: index + 1,
+        ),
       );
     } finally {
       _pickingTime = false;

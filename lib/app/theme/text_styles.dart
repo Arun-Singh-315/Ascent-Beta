@@ -639,9 +639,9 @@ class AppTypography {
     TextDecoration? decoration,
   }) => GoogleFonts.plusJakartaSans(
     fontWeight: FontWeight.w500,
-    height: 1.5,
-    fontSize: 14.5,
-    letterSpacing: 0.1,
+    height: 1.45,
+    fontSize: 14,
+    letterSpacing: -0.12,
     color: color,
     decoration: decoration,
   );
@@ -878,10 +878,10 @@ class AppTypography {
     Color? color,
     TextDecoration? decoration,
   }) => GoogleFonts.plusJakartaSans(
-    fontSize: 14.5,
+    fontSize: 14,
     fontWeight: FontWeight.w500,
-    height: 1.5,
-    letterSpacing: 0.1,
+    height: 1.45,
+    letterSpacing: -0.12,
     color: color,
     decoration: decoration,
   );

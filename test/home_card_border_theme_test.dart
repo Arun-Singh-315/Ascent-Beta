@@ -1,5 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
+import 'package:ascent/app/theme/thought_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -235,7 +236,7 @@ void main() {
       // 4. Recent Thought card in light mode
       final mindSpaceFinder = find.byKey(const ValueKey('home_mind_space_card'));
       final mindSpaceGlass = tester.widget<GlassSurface>(mindSpaceFinder);
-      expect(mindSpaceGlass.fillColor, equals(Colors.white));
+      expect(mindSpaceGlass.fillColor, equals(ThoughtTheme.claySurface));
       expect(mindSpaceGlass.customBorder, isNotNull);
       expect(mindSpaceGlass.customBorder!.top.color, equals(g.edge.withValues(alpha: .45)));
 

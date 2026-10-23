@@ -62,8 +62,8 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
     final goalAsync = ref.watch(dailyWaterGoalStreamProvider);
 
     final currentMl = todayWaterAsync.value ?? 0;
-    final targetMl = goalAsync.value ?? 2500;
-    final progress = (currentMl / targetMl).clamp(0.0, 1.2);
+    final targetMl = math.max(1, goalAsync.value ?? 2500);
+    final progress = (currentMl / targetMl).clamp(0.0, 1.0);
     final isGoalMet = currentMl >= targetMl;
 
     final g = context.glass;
@@ -92,7 +92,10 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'DAILY HYDRATION',
@@ -101,7 +104,6 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                               .merge(AppTypeRoles.typeRole2),
                         ),
                         if (isGoalMet) ...[
-                          const SizedBox(width: 6),
                           AppTag(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s6,
@@ -164,7 +166,7 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                   border: Border.all(color: g.clay.withValues(alpha: 0.30)),
                 ),
                 child: Text(
-                  '${(progress * 100).toInt()}%',
+                  '${((currentMl / targetMl) * 100).toInt()}%',
                   style: AscentTextStyles.monoCode
                       .copyWith(color: g.clay)
                       .merge(AppTypeRoles.typeRole74),
@@ -175,62 +177,62 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
 
           const SizedBox(height: 16),
 
-          // Fluid Wave Tank / Vessel
-          ClipRRect(
-            borderRadius: AppGeometry.roundedr14,
-            child: AppCard(
-              height: 54,
-              width: double.infinity,
-              nightDecoration: BoxDecoration(
-                color: isDark
-                    ? AppPalette.colorFF2A1C0F.withValues(alpha: 0.6)
-                    : AppPalette.white.withValues(alpha: 0.5),
-                border: Border.all(color: g.line.withValues(alpha: 0.7)),
-                borderRadius: AppGeometry.roundedr14,
-              ),
-              child: Stack(
-                children: [
-                  // Animated Sinusoidal Wave
-                  AnimatedBuilder(
-                    animation: _waveController,
-                    builder: (context, child) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0.0, end: progress),
+          // Explicit bounds keep the painter visible in every surface mode.
+          Semantics(
+            label: 'Water level',
+            value: '$currentMl of $targetMl milliliters',
+            child: ClipRRect(
+              borderRadius: AppGeometry.roundedr14,
+              child: SizedBox(
+                height: 72,
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: context.waterAccent.withValues(
+                      alpha: isDark ? .08 : .06,
+                    ),
+                    border: Border.all(color: g.edge),
+                    borderRadius: AppGeometry.roundedr14,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(begin: 0, end: progress),
                         duration: const Duration(milliseconds: 700),
                         curve: Curves.easeOutCubic,
-                        builder: (context, animatedFill, _) {
-                          return CustomPaint(
-                            size: Size.infinite,
+                        builder: (context, animatedFill, _) => AnimatedBuilder(
+                          animation: _waveController,
+                          builder: (context, _) => CustomPaint(
+                            key: const ValueKey('hydration_water_level'),
                             painter: _FluidWavePainter(
                               fillLevel: animatedFill,
                               wavePhase: _waveController.value * 2 * math.pi,
-                              waveColorFront: g.clay,
-                              waveColorBack: g.claySoft,
+                              waveColorFront: context.waterAccent,
+                              waveColorBack: context.waterAccent.withValues(
+                                alpha: .45,
+                              ),
                               isDark: isDark,
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-
-                  // Overlay Guideline markings (25%, 50%, 75%)
-                  Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s12,
+                          ),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildGuideline('0 mL'),
-                          _buildGuideline('${(targetMl * 0.5).toInt()} mL'),
-                          _buildGuideline('$targetMl mL'),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s12,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildGuideline('0 mL'),
+                            _buildGuideline('${(targetMl * 0.5).toInt()} mL'),
+                            _buildGuideline('$targetMl mL'),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
@@ -316,11 +318,20 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
   }
 
   Widget _buildGuideline(String text) {
-    return Text(
-      text,
-      style: AscentTextStyles.labelSmall
-          .copyWith(color: context.textMuted.withValues(alpha: 0.6))
-          .merge(AppTypeRoles.typeRole51),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.glass.bg.withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+        child: Text(
+          text,
+          style: AscentTextStyles.labelSmall
+              .copyWith(color: context.textPrimary)
+              .merge(AppTypeRoles.typeRole51),
+        ),
+      ),
     );
   }
 }

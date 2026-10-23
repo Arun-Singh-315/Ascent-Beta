@@ -22,7 +22,18 @@ class LearningHubCard extends ConsumerWidget {
     final state = ref.watch(learningHubProvider);
     final course = state.course;
     final active = state.activeLecture;
-    final hasStarted = state.hasStartedLearning;
+    final lectures = course.modules
+        .expand((module) => module.lectures)
+        .toList();
+    final hasStarted = state.hasStartedLearning && lectures.isNotEmpty;
+    final position = lectures.indexWhere((lecture) => lecture.id == active.id);
+    final completedCount = lectures
+        .where((lecture) => lecture.isCompleted)
+        .length;
+    final next = lectures
+        .skip(position + 1)
+        .where((lecture) => !lecture.isCompleted)
+        .firstOrNull;
     final dark = Theme.of(context).brightness == Brightness.dark;
 
     void openPlayer() {
@@ -78,18 +89,16 @@ class LearningHubCard extends ConsumerWidget {
           fillColor: dark
               ? null
               : (g.merlot
-                  ? MerlotPalette.surface
-                  : (g.frozen
-                      ? FrozenPalette.surface
-                      : Colors.white)),
+                    ? MerlotPalette.surface
+                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
           customBorder: dark
               ? null
               : Border.all(
                   color: g.merlot
                       ? MerlotPalette.line
                       : (g.frozen
-                          ? FrozenPalette.line
-                          : g.edge.withValues(alpha: 0.45)),
+                            ? FrozenPalette.line
+                            : g.edge.withValues(alpha: 0.45)),
                   width: 1.0,
                 ),
           padding: const EdgeInsets.all(16),
@@ -116,24 +125,32 @@ class LearningHubCard extends ConsumerWidget {
                         const SizedBox(height: 6),
                         Text(
                           hasStarted
-                              ? 'Lecture ${active.id}'
+                              ? 'Lecture ${position + 1} of ${lectures.length}'
                               : 'Start learning',
                           style: TextStyle(
-                            color: g.ink,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
+                            color: g.clay,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         if (hasStarted) ...[
                           const SizedBox(height: 4),
                           Text(
-                            active.title,
-                            key: const ValueKey('home_learning_title'),
+                            active.moduleTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: g.inkMuted, fontSize: 11),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            active.title,
+                            key: const ValueKey('home_learning_title'),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: g.inkSecondary,
-                              fontSize: 13,
+                              color: g.ink,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -144,6 +161,37 @@ class LearningHubCard extends ConsumerWidget {
               ),
               if (hasStarted) ...[
                 const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Icon(
+                      state.isPlaying
+                          ? Icons.graphic_eq_rounded
+                          : Icons.headphones_rounded,
+                      size: 16,
+                      color: g.clay,
+                    ),
+                    Text(
+                      active.isCompleted
+                          ? 'Lecture complete'
+                          : state.isPlaying
+                          ? 'Now learning'
+                          : 'Ready when you are',
+                      style: TextStyle(
+                        color: g.clay,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '$completedCount / ${lectures.length} lectures completed',
+                      style: TextStyle(color: g.inkMuted, fontSize: 11),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -164,7 +212,12 @@ class LearningHubCard extends ConsumerWidget {
                     children: [
                       Text(
                         '${state.formattedElapsed} elapsed',
-                        style: TextStyle(color: g.inkMuted, fontSize: 11),
+                        style: TextStyle(
+                          color: g.ink,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
                       Text(
                         active.isCompleted
@@ -173,6 +226,19 @@ class LearningHubCard extends ConsumerWidget {
                         style: TextStyle(color: g.inkMuted, fontSize: 11),
                       ),
                     ],
+                  ),
+                ),
+              ],
+              if (hasStarted && next != null) ...[
+                const SizedBox(height: 12),
+                Tooltip(
+                  message: next.title,
+                  child: Text(
+                    'Next · ${next.title}',
+                    key: const ValueKey('home_learning_next'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: g.inkMuted, fontSize: 12),
                   ),
                 ),
               ],
@@ -186,25 +252,23 @@ class LearningHubCard extends ConsumerWidget {
                         backgroundColor: dark
                             ? g.clay
                             : (g.merlot
-                                ? MerlotPalette.pillSoft
-                                : (g.frozen
-                                    ? FrozenPalette.pillSoft
-                                    : g.claySoft)),
+                                  ? MerlotPalette.pillSoft
+                                  : (g.frozen
+                                        ? FrozenPalette.pillSoft
+                                        : g.claySoft)),
                         foregroundColor: dark
                             ? Theme.of(context).colorScheme.onPrimary
                             : (g.merlot
-                                ? MerlotPalette.action
-                                : (g.frozen
-                                    ? FrozenPalette.action
-                                    : g.clay)),
+                                  ? MerlotPalette.action
+                                  : (g.frozen ? FrozenPalette.action : g.clay)),
                         side: dark
                             ? BorderSide.none
                             : BorderSide(
                                 color: g.merlot
                                     ? MerlotPalette.lineSubtle
                                     : (g.frozen
-                                        ? FrozenPalette.lineSubtle
-                                        : g.line),
+                                          ? FrozenPalette.lineSubtle
+                                          : g.line),
                                 width: 0.75,
                               ),
                         minimumSize: const Size(0, 44),

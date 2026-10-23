@@ -97,7 +97,7 @@ void main() {
       },
     );
 
-    testWidgets('Thought card uses glass theme in night/dark mode', (
+    testWidgets('Thought card uses a transparent outlined bubble in night mode', (
       tester,
     ) async {
       final thought = Thought(
@@ -133,7 +133,7 @@ void main() {
       for (final ac in animatedContainers) {
         if (ac.decoration is BoxDecoration) {
           final box = ac.decoration as BoxDecoration;
-          if (box.color == AscentGlass.dark.fill) {
+          if (box.color == Colors.transparent && box.border != null) {
             foundGlassCard = true;
           }
         }
@@ -143,7 +143,7 @@ void main() {
         foundGlassCard,
         isTrue,
         reason:
-            'Thought card container must use Ascent glass theme in night mode',
+            'Thought card must keep the night canvas visible inside its outline',
       );
     });
 
@@ -153,7 +153,7 @@ void main() {
         final thought = Thought(
           category: 'general',
           id: 1,
-          content: 'Day transparent reflection with black border.',
+          content: 'Day transparent reflection with a themed border.',
           mood: 'thought',
           isPinned: false,
           isArchived: false,
@@ -184,9 +184,9 @@ void main() {
         expect(
           surfaces.any(
             (surface) =>
-                surface.color == const Color(0x1AFFFFFF) &&
+                surface.color == Colors.transparent &&
                 surface.border is Border &&
-                (surface.border! as Border).top.width == 1.2,
+                (surface.border! as Border).top.width == 1,
           ),
           isTrue,
         );
