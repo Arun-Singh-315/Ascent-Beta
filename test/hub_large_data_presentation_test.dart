@@ -158,8 +158,8 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(ActivityRowItem), findsNWidgets(4));
-      await tester.ensureVisible(find.text('Show 16 more'));
-      await tester.tap(find.text('Show 16 more'));
+      await tester.ensureVisible(find.text('Show more'));
+      await tester.tap(find.text('Show more'));
       await tester.pumpAndSettle();
       expect(find.byType(ActivityRowItem), findsNWidgets(20));
       await tester.ensureVisible(find.byKey(const ValueKey('hub_full_list')));
@@ -180,13 +180,31 @@ void main() {
       );
       await tester.drag(list, const Offset(0, -500));
       await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('hub_full_list_search')),
+        'Activity 9999',
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<ListView>(list).childrenDelegate.estimatedChildCount,
+        1,
+      );
+      expect(
+        tester
+            .widget<ActivityRowItem>(
+              find.descendant(of: list, matching: find.byType(ActivityRowItem)),
+            )
+            .activity
+            .id,
+        'activity_9999',
+      );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     },
   );
 
   testWidgets(
-    'Type filters separate lectures and timers; running work stays first',
+    'Compact rows mix lectures and timers; running work stays first',
     (tester) async {
       tester.view.physicalSize = const Size(390, 1100);
       tester.view.devicePixelRatio = 1;
@@ -223,32 +241,14 @@ void main() {
         'activity_3',
       );
       await capture(tester, 'things_hub');
-      await tester.tap(find.text('Lectures'));
-      await tester.pumpAndSettle();
+      expect(find.byType(ActivityRowItem), findsNWidgets(4));
       expect(
-        tester
-            .widget<ActivityRowItem>(find.byType(ActivityRowItem))
-            .activity
-            .sourceType,
-        'lecture',
+        find.byKey(const ValueKey('activity_hub_type_filters')),
+        findsNothing,
       );
-      expect(find.byTooltip('Open lecture'), findsOneWidget);
-      await tester.tap(find.text('Timers'));
-      await tester.pumpAndSettle();
-      expect(find.byType(ActivityRowItem), findsNWidgets(2));
-      final progress = tester.widget<LinearProgressIndicator>(
-        find.byKey(const ValueKey('activity_timer_progress_activity_3')),
-      );
-      expect(progress.value, closeTo(125 / 1800, .001));
-      await tester.tap(find.text('To-dos'));
-      await tester.pumpAndSettle();
-      expect(
-        tester
-            .widget<ActivityRowItem>(find.byType(ActivityRowItem))
-            .activity
-            .id,
-        'activity_0',
-      );
+      expect(find.text('Start'), findsNWidgets(1));
+      expect(find.text('Stop'), findsOneWidget);
+      expect(find.text('Resume'), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
     },

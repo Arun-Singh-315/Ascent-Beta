@@ -647,9 +647,19 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final isLecturePlaying = ref.watch(
     learningHubProvider.select((s) => s.isPlaying),
   );
-  final courses = ref.watch(
-    learningHubProvider.select((s) => s.courses),
-  );
+  final courses = ref.watch(learningHubProvider.select((s) => s.courses));
+
+  final medicineLogs =
+      ref.watch(todayMedicineLogsStreamProvider).value ?? <MedicineLog>[];
+  final medicineById = {
+    for (final medicine
+        in ref.watch(allMedicinesStreamProvider).value ?? <Medicine>[])
+      medicine.id: medicine,
+  };
+  final doseByTask = {
+    for (final dose in medicineLogs)
+      if (dose.linkedTaskId != null) dose.linkedTaskId!: dose,
+  };
 
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
@@ -669,8 +679,17 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
 
     // 1. Process tasks planned for today
     for (final task in tasks) {
+      final medicineDose = doseByTask[task.id];
+      if (medicineDose != null &&
+          medicineById[medicineDose.medicineId]?.isActive == false &&
+          task.actualCompletedDate == null) {
+        continue;
+      }
+
       if (task.learningCourseId != null) continue;
-      final occ = await ref.read(planDaoProvider).getOccurrenceByTaskId(task.id);
+      final occ = await ref
+          .read(planDaoProvider)
+          .getOccurrenceByTaskId(task.id);
       if (occ != null) {
         if (occ.outcome == 'skipped') continue;
         final plan = await ref.read(planDaoProvider).getPlanById(occ.planId);
@@ -751,18 +770,26 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
         TodayActivityItem(
           id: 'task_${task.id}',
           title: task.title,
-          sourceType: 'task',
+          sourceType: medicineDose != null ? 'medicine' : 'task',
           status: status,
           elapsedSecondsToday: taskElapsedSeconds,
           linkedTaskId: task.id,
           linkedSessionId: taskSessions.isNotEmpty
               ? taskSessions.first.id
               : null,
-          categoryTag: categoryTag,
+          categoryTag: medicineDose != null ? 'Medicine' : categoryTag,
           priority: task.priority,
           kind: kind,
           targetMinutes: targetMinutes,
-          plannedDate: task.plannedDate,
+          plannedDate: medicineDose == null
+              ? task.plannedDate
+              : DateTime(
+                  today.year,
+                  today.month,
+                  today.day,
+                  int.parse(medicineDose.timeSlot.split(':')[0]),
+                  int.parse(medicineDose.timeSlot.split(':')[1]),
+                ),
           isOverdue: isOverdue,
           hasReminder: hasReminder,
           notes: task.notes,
@@ -854,9 +881,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             planned.month == today.month &&
             planned.day == today.day;
         if (!lec.isCompleted && !plannedToday && related.isEmpty) continue;
-        final active =
-            activeCourseId == course.id &&
-            activeLectureId == lec.id;
+        final active = activeCourseId == course.id && activeLectureId == lec.id;
         final linkedTask = tasks
             .where(
               (t) =>

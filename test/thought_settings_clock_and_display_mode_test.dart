@@ -21,9 +21,7 @@ void main() {
 
   setUp(() async {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    SharedPreferences.setMockInitialValues({
-      ...returningUserGuidePrefs,
-    });
+    SharedPreferences.setMockInitialValues({...returningUserGuidePrefs});
     prefs = await SharedPreferences.getInstance();
   });
 
@@ -52,171 +50,183 @@ void main() {
   }
 
   group('Display Mode UI in Settings', () {
-    testWidgets('all three squares are prominently sized and do not stick to names', (tester) async {
-      await tester.pumpWidget(buildApp(const SettingsScreen()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+    testWidgets(
+      'all three squares are prominently sized and do not stick to names',
+      (tester) async {
+        await tester.pumpWidget(buildApp(const SettingsScreen()));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('Display Mode'), findsOneWidget);
-      expect(find.text('Day / Light'), findsOneWidget);
-      expect(find.text('Night / Dark'), findsOneWidget);
-      expect(find.text('System Auto'), findsAtLeastNWidgets(1));
+        expect(find.text('Display Mode'), findsOneWidget);
+        expect(find.text('Day / Light'), findsOneWidget);
+        expect(find.text('Night / Dark'), findsOneWidget);
+        expect(find.text('System Auto'), findsAtLeastNWidgets(1));
 
-      // Verify each option is housed in a prominent card with circular icon badge
-      final dayFinder = find.ancestor(of: find.text('Day / Light'), matching: find.byType(InkWell)).first;
-      final dayBox = tester.getRect(dayFinder);
-      expect(dayBox.height, greaterThanOrEqualTo(65));
-      expect(dayBox.width, greaterThanOrEqualTo(70));
-    });
+        // Verify each option is housed in a prominent card with circular icon badge
+        final dayFinder = find
+            .ancestor(
+              of: find.text('Day / Light'),
+              matching: find.byType(InkWell),
+            )
+            .first;
+        final dayBox = tester.getRect(dayFinder);
+        expect(dayBox.height, greaterThanOrEqualTo(65));
+        expect(dayBox.width, greaterThanOrEqualTo(70));
+      },
+    );
 
-    testWidgets('immune to overflow at 320px width with 2.0x accessibility text scale', (tester) async {
-      await tester.pumpWidget(buildApp(const SettingsScreen(), width: 320, textScale: 2.0));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+    testWidgets(
+      'immune to overflow at 320px width with 2.0x accessibility text scale',
+      (tester) async {
+        await tester.pumpWidget(
+          buildApp(const SettingsScreen(), width: 320, textScale: 2.0),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Display Mode'), findsOneWidget);
-      expect(find.text('Day / Light'), findsOneWidget);
-      expect(find.text('Night / Dark'), findsOneWidget);
-      expect(find.text('System Auto'), findsAtLeastNWidgets(1));
-    });
+        expect(tester.takeException(), isNull);
+        expect(find.text('Display Mode'), findsOneWidget);
+        expect(find.text('Day / Light'), findsOneWidget);
+        expect(find.text('Night / Dark'), findsOneWidget);
+        expect(find.text('System Auto'), findsAtLeastNWidgets(1));
+      },
+    );
   });
 
-  group('Thought Cards Tone and Apply to Home in Settings', () {
-    testWidgets('allows tone selection and Apply to Home toggle', (tester) async {
+  group('Thought appearance settings', () {
+    testWidgets('settings no longer expose Home thought card controls', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildApp(const SettingsScreen()));
       await tester.pumpAndSettle();
-
-      // Scroll to Thought Cards section
-      await tester.scrollUntilVisible(find.text('Thought Cards'), 200);
-      expect(find.text('Thought Cards'), findsOneWidget);
-      expect(find.text('Apply to Home'), findsOneWidget);
-      expect(find.text('Match Home cards with selected tone'), findsOneWidget);
-
-      // Tap Sage tone
-      await tester.tap(find.text('Sage'));
-      await tester.pumpAndSettle();
-
-      // Tap Apply to Home switch
-      await tester.tap(find.text('Apply to Home'));
-      await tester.pumpAndSettle();
-
-      final container = ProviderScope.containerOf(tester.element(find.byType(SettingsScreen)));
-      final appearance = container.read(thoughtWallAppearanceProvider);
-      expect(appearance.tone, ThoughtCardTone.sage);
-      expect(appearance.applyToHome, isTrue);
-
+      expect(find.text('Thought Cards'), findsNothing);
+      expect(find.text('Apply to Home'), findsNothing);
       await tester.pumpWidget(const SizedBox());
-      await tester.pump();
     });
 
-    testWidgets('ThoughtWallAppearanceSheet offers Apply to Home switch', (tester) async {
-      await tester.pumpWidget(buildApp(const Scaffold(body: ThoughtWallAppearanceSheet())));
+    testWidgets('wall appearance stays scoped to the wall', (tester) async {
+      await tester.pumpWidget(
+        buildApp(const Scaffold(body: ThoughtWallAppearanceSheet())),
+      );
       await tester.pumpAndSettle();
-
-      expect(find.text('Wall appearance'), findsOneWidget);
-      expect(find.text('Apply to Home'), findsOneWidget);
-      expect(find.text('Match Home cards with selected tone'), findsOneWidget);
-
-      await tester.tap(find.text('Apply to Home'));
+      expect(find.text('Apply to Home'), findsNothing);
+      await tester.tap(find.text('Comfortable'));
       await tester.pumpAndSettle();
-
-      final container = ProviderScope.containerOf(tester.element(find.byType(ThoughtWallAppearanceSheet)));
-      final appearance = container.read(thoughtWallAppearanceProvider);
-      expect(appearance.applyToHome, isTrue);
-
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(ThoughtWallAppearanceSheet)),
+      );
+      expect(
+        container.read(thoughtWallAppearanceProvider).density,
+        ThoughtCardDensity.comfortable,
+      );
+      expect(find.text('Card colour'), findsNothing);
       await tester.pumpWidget(const SizedBox());
-      await tester.pump();
     });
   });
 
   group('Thought Wall Toggle and Selection Delete Option Outside', () {
-    testWidgets('segmented 3-way toggle renders All, Today, History with responsive feedback', (tester) async {
-      await tester.pumpWidget(buildApp(const ThoughtWallScreen()));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'segmented 3-way toggle renders All, Today, History with responsive feedback',
+      (tester) async {
+        await tester.pumpWidget(buildApp(const ThoughtWallScreen()));
+        await tester.pumpAndSettle();
 
-      expect(find.text('All'), findsOneWidget);
-      expect(find.text('Today'), findsOneWidget);
-      expect(find.text('History'), findsOneWidget);
+        expect(find.text('All'), findsOneWidget);
+        expect(find.text('Today'), findsOneWidget);
+        expect(find.text('History'), findsOneWidget);
 
-      await tester.tap(find.text('Today'));
-      await tester.pumpAndSettle();
-      expect(find.text("TODAY'S REFLECTIONS"), findsOneWidget);
+        await tester.tap(find.text('Today'));
+        await tester.pumpAndSettle();
+        expect(find.text("TODAY'S REFLECTIONS"), findsOneWidget);
 
-      await tester.tap(find.text('History'));
-      await tester.pumpAndSettle();
-      expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
+        await tester.tap(find.text('History'));
+        await tester.pumpAndSettle();
+        expect(find.text('OLDER REFLECTIONS'), findsOneWidget);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(seconds: 5));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
 
-    testWidgets('provides prominent Delete option outside when selecting thoughts', (tester) async {
-      // Seed a thought
-      await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: 'Note to be deleted outside'),
-      );
+    testWidgets(
+      'provides prominent Delete option outside when selecting thoughts',
+      (tester) async {
+        // Seed a thought
+        await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(content: 'Note to be deleted outside'),
+        );
 
-      await tester.pumpWidget(buildApp(const ThoughtWallScreen()));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildApp(const ThoughtWallScreen()));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Note to be deleted outside'), findsOneWidget);
+        expect(find.text('Note to be deleted outside'), findsOneWidget);
 
-      // Long press the card to enter selection mode
-      await tester.longPress(find.text('Note to be deleted outside'));
-      await tester.pumpAndSettle();
+        // Long press the card to enter selection mode
+        await tester.longPress(find.text('Note to be deleted outside'));
+        await tester.pumpAndSettle();
 
-      // Selection actions bar is now displayed at bottom
-      expect(find.byKey(const ValueKey('thought_selection_actions')), findsOneWidget);
-      // Verify Delete button is directly present outside on the bar
-      expect(find.widgetWithText(TextButton, 'Delete'), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
-      expect(find.widgetWithText(TextButton, 'Category'), findsOneWidget);
+        // Selection actions bar is now displayed at bottom
+        expect(
+          find.byKey(const ValueKey('thought_selection_actions')),
+          findsOneWidget,
+        );
+        // Verify Delete button is directly present outside on the bar
+        expect(find.widgetWithText(TextButton, 'Delete'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Category'), findsOneWidget);
 
-      // Tap Delete outside
-      await tester.tap(find.widgetWithText(TextButton, 'Delete'));
-      await tester.pumpAndSettle();
+        // Tap Delete outside
+        await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+        await tester.pumpAndSettle();
 
-      // Verify undo snackbar is shown
-      expect(find.text('Thought removed'), findsOneWidget);
-      expect(find.text('Undo'), findsOneWidget);
+        // Verify undo snackbar is shown
+        expect(find.text('Thought removed'), findsOneWidget);
+        expect(find.text('Undo'), findsOneWidget);
 
-      // Verify thought is removed from active list
-      expect(find.text('Note to be deleted outside'), findsNothing);
+        // Verify thought is removed from active list
+        expect(find.text('Note to be deleted outside'), findsNothing);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(seconds: 5));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
   });
 
   group('Home Thought Preview Custom Tone and Font Typography', () {
-    testWidgets('Home thoughts render with AppTypography.thoughtContent and reflect custom tone when applyToHome is true', (tester) async {
-      await db.thoughtDao.insertThought(
-        ThoughtTableCompanion.insert(content: 'Reflective thought on Home'),
-      );
+    testWidgets(
+      'Home thoughts render with AppTypography.thoughtContent and ignore legacy Home appearance preferences',
+      (tester) async {
+        await db.thoughtDao.insertThought(
+          ThoughtTableCompanion.insert(content: 'Reflective thought on Home'),
+        );
 
-      // Set appearance with custom tone and applyToHome = true
-      await prefs.setString(
-        thoughtWallAppearanceKey,
-        '{"version":1,"style":"soft","tone":"sage","density":"compact","applyToHome":true}',
-      );
+        // Set appearance with custom tone and applyToHome = true
+        await prefs.setString(
+          thoughtWallAppearanceKey,
+          '{"version":1,"style":"soft","tone":"sage","density":"compact","applyToHome":true}',
+        );
 
-      await tester.pumpWidget(buildApp(const Scaffold(body: ThoughtWallHomePreview())));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildApp(const Scaffold(body: ThoughtWallHomePreview())),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Reflective thought on Home'), findsOneWidget);
+        expect(find.text('Reflective thought on Home'), findsOneWidget);
 
-      // Verify the thought text uses comfortable 14.5px font with 1.5 height
-      final textWidget = tester.widget<Text>(find.text('Reflective thought on Home'));
-      final spanStyle = textWidget.textSpan?.style ?? textWidget.style;
-      expect(spanStyle?.fontSize, 14.5);
-      expect(spanStyle?.height, 1.5);
+        // Verify the thought text uses comfortable 14.5px font with 1.5 height
+        final textWidget = tester.widget<Text>(
+          find.text('Reflective thought on Home'),
+        );
+        final spanStyle = textWidget.textSpan?.style ?? textWidget.style;
+        expect(spanStyle?.fontSize, 14.5);
+        expect(spanStyle?.height, 1.5);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(seconds: 5));
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
   });
 }

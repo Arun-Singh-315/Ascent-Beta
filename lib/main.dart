@@ -97,7 +97,13 @@ Future<void> main() async {
 
     try {
       await RiyaAlertEffects.device(bootstrapDb).syncPending();
-      await ReminderAlertSync.device(bootstrapDb).sync(onlyPending: true);
+      final grouped = prefs.getBool('ascent_notification_groups_v1') ?? false;
+      final result = await ReminderAlertSync.device(
+        bootstrapDb,
+      ).sync(onlyPending: grouped);
+      if (result.complete) {
+        await prefs.setBool('ascent_notification_groups_v1', true);
+      }
     } catch (e) {
       // Pending rows remain durable for retry when alerts become available.
       debugPrint('Alert sync skipped/deferred: $e');

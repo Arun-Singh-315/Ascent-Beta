@@ -19,7 +19,6 @@ import '../../core/providers/settings_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
-import '../thought_wall/thought_wall_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -405,7 +404,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final profileAsync = ref.watch(userProfileStreamProvider);
     final themeMode = ref.watch(themeModeProvider);
     final dayPreset = ref.watch(dayThemePresetProvider);
-    final thoughtAppearance = ref.watch(thoughtWallAppearanceProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
       _initFromProfile(profileAsync.value);
@@ -666,16 +664,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           dayPreset == DayThemePreset.merlotLinen
                               ? 'Vintage Merlot (Default)'
                               : dayPreset == DayThemePreset.nordicSky
-                                  ? 'Frozen Sky'
-                                  : 'Classic Clay',
+                              ? 'Frozen Sky'
+                              : 'Classic Clay',
                           textAlign: TextAlign.end,
                           style: AscentTextStyles.captionMedium
                               .copyWith(
                                 color: dayPreset == DayThemePreset.merlotLinen
                                     ? MerlotPalette.action
                                     : dayPreset == DayThemePreset.nordicSky
-                                        ? FrozenPalette.accent
-                                        : g.clay,
+                                    ? FrozenPalette.accent
+                                    : g.clay,
                               )
                               .merge(AppTypeRoles.typeRole8),
                         ),
@@ -727,105 +725,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         },
                       ),
                     ],
-                  ),
-
-                  const SizedBox(height: 16),
-                  Divider(color: g.line, height: 1),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Thought Cards',
-                          style: AscentTextStyles.labelMedium
-                              .copyWith(color: g.ink)
-                              .merge(AppTypeRoles.typeRole2),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          switch (thoughtAppearance.tone) {
-                            ThoughtCardTone.theme => 'Theme',
-                            ThoughtCardTone.linen => 'Linen',
-                            ThoughtCardTone.sage => 'Sage',
-                            ThoughtCardTone.slate => 'Slate',
-                          },
-                          textAlign: TextAlign.end,
-                          style: AscentTextStyles.captionMedium
-                              .copyWith(color: g.clay)
-                              .merge(AppTypeRoles.typeRole8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final tone in ThoughtCardTone.values)
-                        ChoiceChip(
-                          label: Text(switch (tone) {
-                            ThoughtCardTone.theme => 'Theme',
-                            ThoughtCardTone.linen => 'Linen',
-                            ThoughtCardTone.sage => 'Sage',
-                            ThoughtCardTone.slate => 'Slate',
-                          }),
-                          selected: thoughtAppearance.tone == tone,
-                          showCheckmark: false,
-                          avatar: Icon(
-                            thoughtAppearance.tone == tone
-                                ? Icons.check_circle_rounded
-                                : Icons.circle,
-                            size: 14,
-                            color: g.clay,
-                          ),
-                          labelStyle: TextStyle(
-                            color: g.ink,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          backgroundColor: Colors.transparent,
-                          selectedColor: g.clay.withValues(alpha: .12),
-                          side: BorderSide(
-                            color: thoughtAppearance.tone == tone
-                                ? g.clay
-                                : g.edge,
-                          ),
-                          shape: const StadiumBorder(),
-                          onSelected: (_) {
-                            HapticFeedback.lightImpact();
-                            ref
-                                .read(thoughtWallAppearanceProvider.notifier)
-                                .save(thoughtAppearance.copyWith(tone: tone));
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      'Apply to Home',
-                      style: AscentTextStyles.labelMedium.copyWith(
-                        color: g.ink,
-                      ),
-                    ),
-                    subtitle: Text(
-                      'Match Home cards with selected tone',
-                      style: AscentTextStyles.captionMedium.copyWith(
-                        color: g.inkMuted,
-                      ),
-                    ),
-                    value: thoughtAppearance.applyToHome,
-                    activeTrackColor: g.clay,
-                    onChanged: (value) {
-                      HapticFeedback.lightImpact();
-                      ref
-                          .read(thoughtWallAppearanceProvider.notifier)
-                          .save(thoughtAppearance.copyWith(applyToHome: value));
-                    },
                   ),
                 ],
               ),
@@ -1502,8 +1401,8 @@ class _ThemeOption extends StatelessWidget {
                   color: isSelected
                       ? Colors.white.withValues(alpha: 0.18)
                       : (context.isDark
-                          ? g.edge.withValues(alpha: 0.4)
-                          : g.clay.withValues(alpha: 0.08)),
+                            ? g.edge.withValues(alpha: 0.4)
+                            : g.clay.withValues(alpha: 0.08)),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

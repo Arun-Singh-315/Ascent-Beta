@@ -1,38 +1,23 @@
-import '../../plans/planning_providers.dart';
-import '../../plans/widgets/home_plans_preview.dart';
-import 'package:ascent/app/theme/text_styles.dart';
-import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
+import '../../../core/providers/time_tracking_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/merlot_palette.dart';
-import '../../../app/theme/frozen_palette.dart';
 import '../../../core/providers/database_provider.dart';
-import '../../../core/providers/time_tracking_provider.dart';
-import '../../../shared/widgets/skeleton_shimmer.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../app/theme/text_styles.dart';
+import '../../plans/widgets/home_plans_preview.dart';
 import 'activity_row_item.dart';
 import 'activity_composer.dart';
 
-/// Level 1 · Primary: Today
-/// Redesigned according to Ascent Home Redesign spec:
-/// - A soft surface groups today’s progress, activities and add action.
-/// - Single-line progress bar with done count and streak flame.
-/// - Three text tabs with active underline indicator.
-/// - 44dp hit-area task items.
-/// - Inline "Add activity" action row.
 class ActivityHubCard extends ConsumerStatefulWidget {
   const ActivityHubCard({
     super.key,
     this.previewLimit = 4,
     this.excludedTaskIds = const {},
   });
-  final Set<int> excludedTaskIds;
   final int previewLimit;
-
+  final Set<int> excludedTaskIds;
   @override
   ConsumerState<ActivityHubCard> createState() => _ActivityHubCardState();
 }
@@ -41,505 +26,153 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
   bool _showAll = false;
   bool _showCompleted = false;
   bool _showPlans = false;
-  String _kindFilter = 'all';
-  static const _expandedLimit = 20;
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final plans = ref.watch(planCollectionsProvider).value ?? [];
-    final planCount = plans.where((p) => p.status == 'active').length;
-    final activitiesAsync = ref.watch(todayActivitiesProvider);
-
-    final allActivities =
-        activitiesAsync.asData?.value ?? activitiesAsync.value;
-
-    if (allActivities == null) {
-      if (activitiesAsync.hasError) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
-          child: Text(
-            'Error loading activities: ${activitiesAsync.error}',
-            style: TextStyle(color: g.inkMuted),
-          ),
-        );
-      }
-      return SkeletonShimmer.card(height: 140);
-    }
-    final activities = allActivities
-        .where(
-          (a) =>
-              a.status == TodayActivityStatus.done ||
-              !widget.excludedTaskIds.contains(a.linkedTaskId),
-        )
-        .toList();
-    final doneActivities = activities
-        .where((a) => a.status == TodayActivityStatus.done)
-        .toList();
-    final pendingActivities = activities
-        .where((a) => a.status != TodayActivityStatus.done)
-        .toList();
-    final doneCount = doneActivities.length;
-    final totalCount = allActivities.length;
-
-    final sortedPending = _prioritizeActivities(pendingActivities);
-    final previewLimit = widget.previewLimit.clamp(1, 4);
-    final statusList = _showCompleted ? doneActivities : sortedPending;
-    final currentList = statusList
-        .where((item) => _matchesActivityType(item, _kindFilter))
-        .toList();
-    final visibleLimit = _showAll ? _expandedLimit : previewLimit;
-    final showTypeFilters =
-        activities.map(_activityType).toSet().length > 1 ||
-        _kindFilter != 'all';
-
+    final activities = ref.watch(todayActivitiesProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── HEADING ROW: THINGS HUB + VIEW BOARD CTA (OUTSIDE CARD) ──────
-        SizedBox(
-          width: double.infinity,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  'Things hub',
-                  style: AscentTextStyles.homeTitle.copyWith(
-                    color: g.ink,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Things hub',
+                style: TextStyle(
+                  color: g.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              AppTapArea(
-                onTap: () {
-                  HapticFeedback.lightImpact();
+            ),
+            PopupMenuButton<String>(
+              tooltip: 'Things hub views',
+              onSelected: (view) {
+                if (view == 'board') {
                   context.push('/today');
-                },
-                borderRadius: AppGeometry.roundedr6,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpace.s4,
-                    vertical: AppSpace.s2,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'View board',
-                        style: AscentTextStyles.homeSecondary
-                            .copyWith(color: g.clay)
-                            .merge(AppTypeRoles.typeRole8),
-                      ),
-                      const SizedBox(width: 2),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        size: 16,
-                        color: g.clay,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+                  return;
+                }
+                setState(() {
+                  _showCompleted = view == 'completed';
+                  _showPlans = view == 'plans';
+                  _showAll = false;
+                });
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'active', child: Text('Active')),
+                PopupMenuItem(value: 'completed', child: Text('Completed')),
+                PopupMenuItem(value: 'plans', child: Text('Plans')),
+                PopupMenuItem(value: 'board', child: Text('View board')),
+              ],
+              icon: Icon(Icons.more_horiz, color: g.inkMuted),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-
         GlassSurface(
           key: const ValueKey('home_activity_card'),
-          radius: 22,
+          borderRadius: BorderRadius.circular(18),
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
           enableBlur: false,
-          fillColor: Theme.of(context).brightness == Brightness.light
-              ? (g.merlot
-                    ? MerlotPalette.surface
-                    : (g.frozen ? FrozenPalette.surface : Colors.white))
-              : null,
-          customBorder: Theme.of(context).brightness == Brightness.light
-              ? Border.all(
-                  color: g.merlot
-                      ? MerlotPalette.line
-                      : (g.frozen
-                            ? FrozenPalette.line
-                            : g.edge.withValues(alpha: 0.45)),
-                  width: 1.0,
-                )
-              : null,
-          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (totalCount > 0) ...[
-                Text(
-                  '$doneCount of $totalCount completed',
-                  style: Theme.of(context).textTheme.bodySmall,
+              if (_showCompleted || _showPlans)
+                TextButton.icon(
+                  onPressed: () => setState(() {
+                    _showCompleted = false;
+                    _showPlans = false;
+                  }),
+                  icon: const Icon(Icons.arrow_back, size: 16),
+                  label: Text(_showPlans ? 'Plans' : 'Completed'),
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: doneCount / totalCount,
-                    minHeight: 4,
-                    color: g.sage,
-                    backgroundColor: g.fill,
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              // ── ONE SEGMENTED CONTROL: TODAY · COMPLETED · PLANS ──────
-              // Plans already contain their repeating routines, so there is no
-              // separate Routines control. Counts appear only when above zero.
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: g.fill,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: g.edge),
-                    ),
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        _HubTabPill(
-                          label: 'Today',
-                          count: pendingActivities.length,
-                          isSelected: !_showCompleted && !_showPlans,
-                          activeColor: g.clay,
-                          activeTextColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimary,
-                          inactiveTextColor: g.inkSecondary,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _showPlans = false;
-                              _showCompleted = false;
-                              _showAll = false;
-                            });
-                          },
-                        ),
-                        _HubTabPill(
-                          label: 'Completed',
-                          count: doneCount,
-                          isSelected: _showCompleted && !_showPlans,
-                          activeColor: g.clay,
-                          activeTextColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimary,
-                          inactiveTextColor: g.inkSecondary,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _showPlans = false;
-                              _showCompleted = true;
-                              _showAll = false;
-                            });
-                          },
-                        ),
-                        _HubTabPill(
-                          label: 'Plans',
-                          count: planCount,
-                          isSelected: _showPlans,
-                          activeColor: g.clay,
-                          activeTextColor: Theme.of(
-                            context,
-                          ).colorScheme.onPrimary,
-                          inactiveTextColor: g.inkSecondary,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _showPlans = true;
-                              _showAll = false;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              if (!_showPlans && showTypeFilters)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Wrap(
-                    spacing: 4,
-                    runSpacing: 6,
-                    children: [
-                      for (final filter in const {
-                        'all': 'All types',
-                        'todos': 'To-dos',
-                        'timers': 'Timers',
-                        'lectures': 'Lectures',
-                      }.entries)
-                        _HubTabPill(
-                          label: filter.value,
-                          count: statusList
-                              .where(
-                                (item) =>
-                                    _matchesActivityType(item, filter.key),
-                              )
-                              .length,
-                          isSelected: _kindFilter == filter.key,
-                          activeColor: g.clay,
-                          activeTextColor: g.ink,
-                          inactiveTextColor: g.inkMuted,
-                          onTap: () => setState(() {
-                            _kindFilter = filter.key;
-                            _showAll = false;
-                          }),
-                        ),
-                    ],
-                  ),
-                ),
-
-              // ── ACTIVITIES LIST (CAPPED PREVIEW) ──────────────────────────
               if (_showPlans)
                 const HomePlansPreview()
-              else if (currentList.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s14,
-                      vertical: AppSpace.s12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.merlot
-                          ? (Theme.of(context).brightness == Brightness.dark
-                                ? g.fill
-                                : MerlotPalette.pillSoft)
-                          : (g.frozen
-                                ? (Theme.of(context).brightness ==
-                                          Brightness.dark
-                                      ? g.fill
-                                      : FrozenPalette.pillSoft)
-                                : g.fill),
-                      borderRadius: AppGeometry.roundedr16,
-                      border: Border.all(
-                        color: g.merlot
-                            ? MerlotPalette.lineSubtle
-                            : (g.frozen ? FrozenPalette.lineSubtle : g.edge),
-                        width: (g.merlot || g.frozen) ? 0.75 : 1.0,
+              else
+                activities.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: LinearProgressIndicator(),
+                  ),
+                  error: (_, _) => TextButton(
+                    onPressed: () => ref.invalidate(todayActivitiesProvider),
+                    child: const Text('Retry activities'),
+                  ),
+                  data: (items) {
+                    final rows = _prioritizeActivities(
+                      items.where(
+                        (a) =>
+                            (a.status == TodayActivityStatus.done) ==
+                                _showCompleted &&
+                            (_showCompleted ||
+                                !widget.excludedTaskIds.contains(
+                                  a.linkedTaskId,
+                                )),
                       ),
-                    ),
-                    child: Row(
+                    );
+                    final limit = _showAll
+                        ? 20
+                        : widget.previewLimit.clamp(1, 4);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          _showCompleted
-                              ? Icons.task_alt_rounded
-                              : (totalCount > 0
-                                    ? Icons.task_alt_rounded
-                                    : Icons.wb_sunny_outlined),
-                          size: 20,
-                          color: g.clay,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _kindFilter != 'all'
-                                ? 'No ${switch (_kindFilter) {
-                                    'todos' => 'to-dos',
-                                    'timers' => 'timers',
-                                    _ => 'lectures',
-                                  }} in this view.'
-                                : _showCompleted
-                                ? 'No completed activities yet today.'
-                                : (totalCount > 0
-                                      ? 'All caught up! All $doneCount activities finished.'
-                                      : 'No activities scheduled for today.'),
-                            style: AscentTextStyles.homeSecondary.copyWith(
-                              color: g.inkSecondary,
+                        if (rows.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Text(
+                              _showCompleted
+                                  ? 'No completed activities yet.'
+                                  : 'Nothing pending. Add something below.',
+                              style: TextStyle(color: g.inkMuted, fontSize: 13),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else ...[
-                // Bound the home tree even when thousands of activities exist.
-                for (final act in currentList.take(visibleLimit))
-                  ActivityRowItem(key: ValueKey(act.id), activity: act),
-
-                // Show more / Show less toggle when count exceeds 4
-                if (currentList.length > previewLimit)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpace.s6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        AppTapArea(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _showAll = !_showAll);
-                          },
-                          borderRadius: AppGeometry.roundedr8,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s6,
-                              vertical: AppSpace.s4,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _showAll
-                                      ? Icons.keyboard_arrow_up_rounded
-                                      : Icons.keyboard_arrow_down_rounded,
-                                  size: 18,
-                                  color: g.clay,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _showAll
-                                      ? 'Show less'
-                                      : 'Show ${(currentList.length - previewLimit).clamp(1, _expandedLimit - previewLimit)} more',
-                                  style: AscentTextStyles.homeSecondary
-                                      .copyWith(color: g.clay)
-                                      .merge(AppTypeRoles.typeRole8),
-                                ),
-                              ],
-                            ),
+                        for (final row in rows.take(limit))
+                          ActivityRowItem(
+                            key: ValueKey(row.id),
+                            activity: row,
+                            compact: true,
                           ),
-                        ),
+                        if (rows.length > widget.previewLimit && !_showAll)
+                          TextButton(
+                            onPressed: () => setState(() => _showAll = true),
+                            child: const Text('Show more'),
+                          ),
+                        if (_showAll && rows.length > 20)
+                          TextButton(
+                            key: const ValueKey('hub_full_list'),
+                            onPressed: () => showModalBottomSheet<void>(
+                              context: context,
+                              isScrollControlled: true,
+                              useSafeArea: true,
+                              builder: (_) => _FullActivityList(
+                                completed: _showCompleted,
+                                filter: 'all',
+                                excludedTaskIds: widget.excludedTaskIds,
+                              ),
+                            ),
+                            child: Text('Browse all ${rows.length} activities'),
+                          ),
+                        if (_showAll)
+                          TextButton(
+                            onPressed: () => setState(() => _showAll = false),
+                            child: const Text('Show less'),
+                          ),
                       ],
-                    ),
-                  ),
-              ],
-
-              if (!_showPlans &&
-                  _showAll &&
-                  currentList.length > _expandedLimit)
-                TextButton.icon(
-                  key: const ValueKey('hub_full_list'),
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    builder: (_) => _FullActivityList(
-                      completed: _showCompleted,
-                      filter: _kindFilter,
-                      excludedTaskIds: widget.excludedTaskIds,
-                    ),
-                  ),
-                  icon: const Icon(Icons.list_alt_rounded, size: 18),
-                  label: Text('Browse all ${currentList.length} activities'),
+                    );
+                  },
                 ),
-
-              // Quick entry defaults to a To-do today, without a reminder.
-              if (!_showPlans) const ActivityComposer(),
+              if (!_showPlans && !_showCompleted) ...[
+                Divider(
+                  key: const ValueKey('activity_hub_controls_separator'),
+                  color: g.line,
+                  height: 12,
+                ),
+                const ActivityComposer(),
+              ],
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _HubTabPill extends StatelessWidget {
-  final String label;
-  final int count;
-  final bool isSelected;
-  final Color activeColor;
-  final Color activeTextColor;
-  final Color inactiveTextColor;
-  final VoidCallback onTap;
-
-  const _HubTabPill({
-    required this.label,
-    required this.count,
-    required this.isSelected,
-    required this.activeColor,
-    required this.activeTextColor,
-    required this.inactiveTextColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Light, calming tint for selected tab that avoids harsh solid dark fills
-    final selectedBg = isDark
-        ? (g.frozen ? FrozenPalette.darkTint : g.clay.withValues(alpha: 0.22))
-        : (g.merlot
-              ? MerlotPalette.tint
-              : (g.frozen ? FrozenPalette.tint : g.claySoft));
-    final selectedText = isDark
-        ? (g.frozen ? FrozenPalette.darkAction : Colors.white)
-        : (g.merlot
-              ? MerlotPalette.action
-              : (g.frozen ? FrozenPalette.action : g.clay));
-    final selectedBorder = isDark
-        ? (g.frozen
-              ? Border.all(color: FrozenPalette.darkLine, width: 1)
-              : Border.all(color: g.clay.withValues(alpha: 0.35), width: 1))
-        : (g.merlot
-              ? Border.all(color: MerlotPalette.line, width: 0.75)
-              : (g.frozen
-                    ? Border.all(color: FrozenPalette.line, width: 1)
-                    : Border.all(
-                        color: g.clay.withValues(alpha: 0.25),
-                        width: 1,
-                      )));
-
-    return AppTapArea(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedBg : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          border: isSelected ? selectedBorder : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: AscentTextStyles.homeSecondary.copyWith(
-                color: isSelected ? selectedText : inactiveTextColor,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
-              ),
-            ),
-            if (count > 0) ...[
-              const SizedBox(width: 5),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (isDark
-                            ? Colors.white.withValues(alpha: 0.20)
-                            : selectedText.withValues(alpha: 0.14))
-                      : inactiveTextColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$count',
-                  style: TextStyle(
-                    color: isSelected ? selectedText : inactiveTextColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }
@@ -560,10 +193,23 @@ List<TodayActivityItem> _prioritizeActivities(
         upcoming.add(item);
     }
   }
+  int rank(TodayActivityItem item) => switch (item.priority) {
+    'high' => 0,
+    'medium' => 1,
+    _ => 2,
+  };
+  final order = {for (var i = 0; i < upcoming.length; i++) upcoming[i].id: i};
+  upcoming.sort((a, b) {
+    final priority = rank(a).compareTo(rank(b));
+    return priority != 0 ? priority : order[a.id]!.compareTo(order[b.id]!);
+  });
   return [...running, ...paused, ...upcoming];
 }
 
-String _activityType(TodayActivityItem item) => item.sourceType == 'lecture'
+String _activityType(TodayActivityItem item) =>
+    item.sourceType == 'medicine' || item.categoryTag == 'Medicine'
+    ? 'medicine'
+    : item.sourceType == 'lecture'
     ? 'lectures'
     : item.kind != ActivityKind.todo || (item.targetMinutes ?? 0) > 0
     ? 'timers'
@@ -572,7 +218,7 @@ String _activityType(TodayActivityItem item) => item.sourceType == 'lecture'
 bool _matchesActivityType(TodayActivityItem item, String filter) =>
     filter == 'all' || _activityType(item) == filter;
 
-class _FullActivityList extends ConsumerWidget {
+class _FullActivityList extends ConsumerStatefulWidget {
   const _FullActivityList({
     required this.completed,
     required this.filter,
@@ -583,7 +229,13 @@ class _FullActivityList extends ConsumerWidget {
   final Set<int> excludedTaskIds;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_FullActivityList> createState() => _FullActivityListState();
+}
+
+class _FullActivityListState extends ConsumerState<_FullActivityList> {
+  String _query = '';
+  @override
+  Widget build(BuildContext context) {
     final g = context.glass;
     return FractionallySizedBox(
       heightFactor: .9,
@@ -596,7 +248,9 @@ class _FullActivityList extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      completed ? 'Completed activities' : 'Today’s activities',
+                      widget.completed
+                          ? 'Completed activities'
+                          : 'Today’s activities',
                       style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
                     ),
                   ),
@@ -606,6 +260,19 @@ class _FullActivityList extends ConsumerWidget {
                     icon: const Icon(Icons.close_rounded),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: TextField(
+                key: const ValueKey('hub_full_list_search'),
+                decoration: const InputDecoration(
+                  hintText: 'Search activities',
+                  prefixIcon: Icon(Icons.search),
+                  isDense: true,
+                ),
+                onChanged: (value) =>
+                    setState(() => _query = value.trim().toLowerCase()),
               ),
             ),
             Expanded(
@@ -626,12 +293,17 @@ class _FullActivityList extends ConsumerWidget {
                         items.where(
                           (item) =>
                               (item.status == TodayActivityStatus.done) ==
-                                  completed &&
-                              (completed ||
-                                  !excludedTaskIds.contains(
+                                  widget.completed &&
+                              (widget.completed ||
+                                  !widget.excludedTaskIds.contains(
                                     item.linkedTaskId,
                                   )) &&
-                              _matchesActivityType(item, filter),
+                              _matchesActivityType(item, widget.filter) &&
+                              (_query.isEmpty ||
+                                  item.title.toLowerCase().contains(_query) ||
+                                  (item.notes ?? '').toLowerCase().contains(
+                                    _query,
+                                  )),
                         ),
                       );
                       if (rows.isEmpty) {
@@ -646,6 +318,7 @@ class _FullActivityList extends ConsumerWidget {
                         itemBuilder: (context, index) => ActivityRowItem(
                           key: ValueKey(rows[index].id),
                           activity: rows[index],
+                          compact: true,
                         ),
                       );
                     },

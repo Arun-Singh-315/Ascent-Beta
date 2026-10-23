@@ -1,3 +1,5 @@
+import '../../shared/widgets/glass_chip.dart';
+import '../../shared/widgets/glass_surface.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -23,6 +25,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     with WidgetsBindingObserver {
   final _updating = <int>{};
   bool _showMedicines = false;
+  bool _showTaken = false;
   Timer? _dayTimer;
 
   @override
@@ -119,15 +122,7 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
   Widget _surface({
     required Widget child,
     EdgeInsets padding = const EdgeInsets.all(18),
-  }) => Container(
-    padding: padding,
-    decoration: BoxDecoration(
-      color: context.bgSurface,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: context.glass.edge),
-    ),
-    child: child,
-  );
+  }) => GlassSurface(radius: 20, padding: padding, child: child);
 
   Widget _label(String text) => Padding(
     padding: const EdgeInsets.only(top: 24, bottom: 12),
@@ -245,60 +240,76 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
 
   Widget _dose(MedicineLog log, Medicine medicine) {
     final g = context.glass;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: _surface(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              medicine.name,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: g.ink,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              medicine.dosage,
-              style: TextStyle(color: g.inkSecondary, height: 1.4),
-            ),
-            if (medicine.instructions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  medicine.instructions,
-                  style: TextStyle(color: g.inkMuted, height: 1.4),
-                ),
-              ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: log.isTaken
-                  ? OutlinedButton.icon(
-                      onPressed: _updating.contains(log.id)
-                          ? null
-                          : () => _toggleDose(log),
-                      icon: Icon(Icons.check_circle_rounded, color: g.sage),
-                      label: Text(
-                        log.takenAt == null
-                            ? 'Taken · Undo'
-                            : 'Taken ${DateFormat('h:mm a').format(log.takenAt!)} · Undo',
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : FilledButton.icon(
-                      onPressed: _updating.contains(log.id)
-                          ? null
-                          : () => _toggleDose(log),
-                      icon: const Icon(Icons.check_rounded),
-                      label: Text(
-                        _updating.contains(log.id) ? 'Saving…' : 'Mark taken',
+    return Container(
+      key: ValueKey('medicine_dose_${log.id}'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: log.isTaken ? g.sage.withValues(alpha: .09) : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: log.isTaken
+              ? g.sage.withValues(alpha: .4)
+              : g.ink.withValues(alpha: .20),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      medicine.name,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: g.ink,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      medicine.dosage,
+                      style: TextStyle(color: g.inkSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GlassChip(
+                label: _updating.contains(log.id)
+                    ? 'Saving…'
+                    : log.isTaken
+                    ? 'Taken'
+                    : 'Take',
+                tooltip: log.isTaken ? 'Undo taken dose' : 'Mark taken',
+                success: log.isTaken,
+                onTap: _updating.contains(log.id)
+                    ? null
+                    : () => _toggleDose(log),
+              ),
+            ],
+          ),
+          if (medicine.instructions.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              medicine.instructions,
+              style: TextStyle(color: g.inkSecondary, height: 1.4),
             ),
           ],
-        ),
+          if (log.isTaken && log.takenAt != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Taken at ${DateFormat.jm().format(log.takenAt!)} · Tap Taken to undo',
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: g.inkMuted),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -518,24 +529,83 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                         ),
                       if (today.isLoading) const LinearProgressIndicator(),
                       if (logs.isNotEmpty) ...[
-                        _label('Today’s schedule'),
-                        for (var i = 0; i < logs.length; i++) ...[
-                          if (i == 0 ||
-                              logs[i - 1].timeSlot != logs[i].timeSlot)
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(4, 8, 4, 10),
-                              child: Text(
-                                MedicineService.formatTimeSlot(
-                                  logs[i].timeSlot,
-                                ),
-                                style: TextStyle(
-                                  color: context.glass.inkSecondary,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 18),
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              GlassChip(
+                                label:
+                                    '${logs.where((l) => !l.isTaken).length} pending',
+                                icon: Icons.schedule,
+                                selected: !_showTaken,
+                                onTap: () => setState(() => _showTaken = false),
+                              ),
+                              GlassChip(
+                                label:
+                                    '${logs.where((l) => l.isTaken).length} taken',
+                                icon: Icons.check,
+                                success: true,
+                                selected: _showTaken,
+                                onTap: () => setState(() => _showTaken = true),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _label(_showTaken ? 'Taken today' : 'Today’s schedule'),
+                        for (final slot
+                            in logs
+                                .where((l) => l.isTaken == _showTaken)
+                                .map((l) => l.timeSlot)
+                                .toSet())
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _surface(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: [
+                                      GlassChip(
+                                        label: MedicineService.formatTimeSlot(
+                                          slot,
+                                        ),
+                                        icon: Icons.schedule,
+                                      ),
+                                      GlassChip(
+                                        label:
+                                            '${logs.where((l) => l.timeSlot == slot && l.isTaken == _showTaken).length} doses',
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Divider(
+                                    color: context.glass.ink.withValues(
+                                      alpha: .2,
+                                    ),
+                                  ),
+                                  for (final log in logs.where(
+                                    (l) =>
+                                        l.timeSlot == slot &&
+                                        l.isTaken == _showTaken,
+                                  ))
+                                    _dose(log, byId[log.medicineId]!),
+                                ],
                               ),
                             ),
-                          _dose(logs[i], byId[logs[i].medicineId]!),
-                        ],
+                          ),
+                        if (!logs.any((l) => l.isTaken == _showTaken))
+                          _surface(
+                            child: Text(
+                              _showTaken
+                                  ? 'No doses taken yet today.'
+                                  : 'All scheduled doses taken. Your history is under Taken.',
+                            ),
+                          ),
                       ],
                     ],
                     if (_showMedicines) _label('Your medicines'),

@@ -19,7 +19,7 @@ void main() {
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'Mind Space defaults to latest, expands to four; header fits 320px at $scale, dark=$dark',
+        'Mind Space keeps a fixed two-note preview; header fits 320px at $scale, dark=$dark',
         (tester) async {
           tester.view.physicalSize = const Size(320, 780);
           tester.view.devicePixelRatio = 1;
@@ -28,6 +28,7 @@ void main() {
           SharedPreferences.setMockInitialValues({});
           final prefs = await SharedPreferences.getInstance();
           final db = AppDatabase.forTesting(NativeDatabase.memory());
+          addTearDown(db.close);
           final thoughts = <Thought>[];
           for (var i = 0; i < 5; i++) {
             final id = await db.thoughtDao.insertThought(
@@ -138,36 +139,25 @@ void main() {
                 image.dispose();
               });
             }
-            await tester.ensureVisible(find.byTooltip('Expand Mind Space'));
-            await tester.tap(find.byTooltip('Expand Mind Space'));
-            await tester.pumpAndSettle();
-            for (final thought in thoughts.take(4)) {
+            expect(find.byTooltip('Expand Mind Space'), findsNothing);
+            expect(find.byTooltip('Collapse Mind Space'), findsNothing);
+            for (final thought in thoughts.take(2)) {
               expect(
                 find.byKey(ValueKey('home_thought_${thought.id}')),
                 findsOneWidget,
               );
             }
             expect(
-              find.byKey(ValueKey('home_thought_${thoughts[4].id}')),
-              findsNothing,
-            );
-            expect(find.text('View all'), findsOneWidget);
-            await tester.tap(find.byTooltip('Collapse Mind Space'));
-            await tester.pumpAndSettle();
-            expect(
-              find.byKey(ValueKey('home_thought_${thoughts[1].id}')),
-              findsOneWidget,
-            );
-            expect(
               find.byKey(ValueKey('home_thought_${thoughts[2].id}')),
               findsNothing,
             );
+            expect(find.text('View all'), findsOneWidget);
             expect(tester.takeException(), isNull);
             await tester.pumpWidget(const SizedBox());
             await tester.pumpAndSettle();
           } finally {
             container.dispose();
-            await db.close();
+            await tester.pump(const Duration(seconds: 2));
           }
         },
       );

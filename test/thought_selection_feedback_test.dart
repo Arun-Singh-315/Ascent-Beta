@@ -78,6 +78,8 @@ void main() {
           harness(container, const ThoughtWallScreen(), textScale: 2),
         );
         await settleDb(tester);
+        await tester.ensureVisible(find.textContaining('Live selection A'));
+        await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('Live selection A'));
         await tester.pumpAndSettle();
         await tester.ensureVisible(find.textContaining('Live selection B'));
@@ -85,6 +87,17 @@ void main() {
         await tester.tap(find.textContaining('Live selection B'));
         await tester.pumpAndSettle();
         expect(find.text('2 Selected'), findsOneWidget);
+        expect(find.byTooltip('Share selected notes'), findsOneWidget);
+        expect(
+          tester
+              .widget<IconButton>(
+                find.byWidgetPredicate(
+                  (w) => w is IconButton && w.tooltip == 'Merge selected notes',
+                ),
+              )
+              .onPressed,
+          isNotNull,
+        );
         expect(
           find.descendant(
             of: find.byType(ThoughtCardBubble),
@@ -97,6 +110,16 @@ void main() {
         await tester.runAsync(() => db.thoughtDao.deleteThought(first));
         await settleDb(tester);
         expect(find.text('1 Selected'), findsOneWidget);
+        expect(
+          tester
+              .widget<IconButton>(
+                find.byWidgetPredicate(
+                  (w) => w is IconButton && w.tooltip == 'Merge selected notes',
+                ),
+              )
+              .onPressed,
+          isNull,
+        );
         await tester.runAsync(
           () => db.thoughtDao.insertThought(
             ThoughtTableCompanion.insert(content: 'New unselected thought'),
@@ -191,9 +214,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.textContaining('Selection note B'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('More selected actions'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Merge notes'));
+      await tester.tap(find.byTooltip('Merge selected notes'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save merged note'));
       await settleDb(tester);

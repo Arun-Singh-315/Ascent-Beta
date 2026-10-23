@@ -65,9 +65,9 @@ void main() {
     ),
   );
 
-  group('Mind Space Home Preview Transient Actions', () {
+  group('Mind Space Home Preview Permanent Actions', () {
     testWidgets(
-      'Thought capture does not open plan automatically and shows transient Plan, Todo, Reminder without Ask Riya',
+      'Thought capture does not open plan automatically and keeps Plan, Todo, Reminder visible without Ask Riya',
       (tester) async {
         await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
         await tester.pumpAndSettle();
@@ -94,20 +94,13 @@ void main() {
         // 3. Ask Riya must be removed from the card
         expect(find.text('Ask Riya'), findsNothing);
 
-        // 4. After auto-dismiss period, transient options disappear
-        await tester.pump(const Duration(seconds: 8));
-        await tester.pumpAndSettle();
-        expect(find.text('Plan'), findsNothing);
-        expect(find.text('Todo'), findsNothing);
-        expect(find.text('Reminder'), findsNothing);
-
-        // 5. Tapping chevron reveals transient options again
-        await tester.tap(find.byTooltip('Expand actions'));
+        await tester.pump(const Duration(seconds: 10));
         await tester.pumpAndSettle();
         expect(find.text('Plan'), findsOneWidget);
         expect(find.text('Todo'), findsOneWidget);
         expect(find.text('Reminder'), findsOneWidget);
-
+        expect(find.byTooltip('Expand actions'), findsNothing);
+        expect(find.byTooltip('Collapse actions'), findsNothing);
         // 6. User selects Plan manually to open PlanCollectionEditor
         await tester.tap(find.text('Plan'));
         await tester.pumpAndSettle();
@@ -197,7 +190,7 @@ void main() {
       expect(find.text('Plan'), findsOneWidget);
       expect(find.text('Todo'), findsOneWidget);
       expect(find.text('Reminder'), findsOneWidget);
-      expect(find.text('Todo & Reminder'), findsOneWidget);
+      expect(find.text('Both'), findsOneWidget);
     });
   });
 }

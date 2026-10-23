@@ -86,7 +86,54 @@ void main() {
     expect(find.text('Plan'), findsOneWidget);
     await t.pump(const Duration(seconds: 9));
     await t.pumpAndSettle();
-    expect(find.text('Plan'), findsNothing);
+    expect(find.text('Plan'), findsOneWidget);
+    await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('Home category action stays open and supports moving with undo', (
+    t,
+  ) async {
+    await mount(t);
+    await t.enterText(find.byType(TextField), 'Sort my Home reflection');
+    await t.pump();
+    await t.tap(find.byTooltip('Send capture'));
+    await flush(t);
+    expect(find.byTooltip('Move to category'), findsOneWidget);
+    expect(find.text('Both'), findsOneWidget);
+    await t.ensureVisible(find.byTooltip('Move to category'));
+    await t.tap(find.byTooltip('Move to category'));
+    await t.pumpAndSettle();
+    await t.pump(const Duration(seconds: 9));
+    await t.tap(find.text('Bugs'));
+    await flush(t);
+    expect((await db.select(db.thoughtTable).get()).single.category, 'bugs');
+    await t.tap(find.text('Undo'));
+    await flush(t);
+    expect((await db.select(db.thoughtTable).get()).single.category, 'general');
+    expect(t.takeException(), isNull);
+    await t.pumpWidget(const SizedBox());
+  });
+  testWidgets('Home keeps all note text and actions visible without toggles', (
+    t,
+  ) async {
+    final content = List.generate(
+      8,
+      (i) => 'Reflection line ${i + 1}',
+    ).join('\n');
+    await db.thoughtDao.insertThought(
+      ThoughtTableCompanion.insert(content: content),
+    );
+    await mount(t);
+    await flush(t);
+    expect(t.widget<Text>(find.text(content)).maxLines, 3);
+    expect(find.text('#General'), findsOneWidget);
+    expect(find.text('Category'), findsOneWidget);
+    expect(find.text('Both'), findsOneWidget);
+    expect(find.byTooltip('Expand actions'), findsNothing);
+    expect(find.byTooltip('Collapse actions'), findsNothing);
+    expect(find.byTooltip('Expand Mind Space'), findsNothing);
+    await t.pump(const Duration(seconds: 10));
+    expect(find.text('Plan'), findsOneWidget);
+    expect(t.takeException(), isNull);
     await t.pumpWidget(const SizedBox());
   });
   testWidgets('capture list reviews independent rows and saves a named plan', (

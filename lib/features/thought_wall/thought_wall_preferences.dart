@@ -19,23 +19,19 @@ class ThoughtWallAppearance {
     this.style = ThoughtCardStyle.soft,
     this.tone = ThoughtCardTone.theme,
     this.density = ThoughtCardDensity.compact,
-    this.applyToHome = false,
   });
   final ThoughtCardStyle style;
   final ThoughtCardTone tone;
   final ThoughtCardDensity density;
-  final bool applyToHome;
 
   ThoughtWallAppearance copyWith({
     ThoughtCardStyle? style,
     ThoughtCardTone? tone,
     ThoughtCardDensity? density,
-    bool? applyToHome,
   }) => ThoughtWallAppearance(
     style: style ?? this.style,
     tone: tone ?? this.tone,
     density: density ?? this.density,
-    applyToHome: applyToHome ?? this.applyToHome,
   );
 
   Map<String, Object> toJson() => {
@@ -43,7 +39,6 @@ class ThoughtWallAppearance {
     'style': style.name,
     'tone': tone.name,
     'density': density.name,
-    'applyToHome': applyToHome,
   };
 
   factory ThoughtWallAppearance.fromJson(Map<String, dynamic> json) {
@@ -64,7 +59,6 @@ class ThoughtWallAppearance {
               .where((d) => d.name == json['density'])
               .firstOrNull ??
           ThoughtCardDensity.compact,
-      applyToHome: json['applyToHome'] as bool? ?? false,
     );
   }
 }

@@ -43,8 +43,16 @@ void main() {
               home: Scaffold(
                 body: Column(
                   children: [
-                    ThoughtCardBubble(thought: thought1, index: 0),
-                    ThoughtCardBubble(thought: thought2, index: 1),
+                    ThoughtCardBubble(
+                      thought: thought1,
+                      index: 0,
+                      compact: true,
+                    ),
+                    ThoughtCardBubble(
+                      thought: thought2,
+                      index: 1,
+                      compact: true,
+                    ),
                   ],
                 ),
               ),
@@ -192,7 +200,7 @@ void main() {
         );
         expect(
           find.byKey(ValueKey('thought_header_divider_${thought.id}')),
-          findsOneWidget,
+          findsNothing,
         );
       },
     );

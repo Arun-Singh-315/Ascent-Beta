@@ -608,7 +608,7 @@ class AscentTheme {
             ? (isMerlotLinen
                 ? MerlotPalette.darkElevated
                 : isNordicSky
-                    ? FrozenPalette.darkInk
+                    ? FrozenPalette.darkElevated
                     : const Color(0xFF2D251E))
             : (isMerlotLinen
                 ? MerlotPalette.ink
@@ -624,11 +624,7 @@ class AscentTheme {
           side: BorderSide(color: Color(0x33FFFFFF), width: 0.9),
         ),
         behavior: SnackBarBehavior.floating,
-        actionTextColor: isMerlotLinen
-            ? MerlotPalette.antiqueGold
-            : isNordicSky
-                ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                : accentPrimary,
+        actionTextColor: const Color(0xFFF0D5A8),
         elevation: day ? 0 : 6,
       ),
 

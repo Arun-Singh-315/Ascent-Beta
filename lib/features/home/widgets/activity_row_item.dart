@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart' show Value;
+import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/utils/action_text.dart';
 import '../../plans/planning_providers.dart';
 import '../../today/add_lecture_activity_sheet.dart';
@@ -33,7 +35,12 @@ import '../../../shared/widgets/ascent_snack_bar.dart';
 class ActivityRowItem extends ConsumerStatefulWidget {
   final TodayActivityItem activity;
 
-  const ActivityRowItem({super.key, required this.activity});
+  final bool compact;
+  const ActivityRowItem({
+    super.key,
+    required this.activity,
+    this.compact = false,
+  });
 
   @override
   ConsumerState<ActivityRowItem> createState() => _ActivityRowItemState();
@@ -52,6 +59,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
   @override
   Widget build(BuildContext context) {
     if (_removed) return const SizedBox.shrink();
+    if (widget.compact) return _compactRow(context);
     final planLabel = activity.linkedTaskId == null
         ? null
         : ref.watch(taskPlanLabelProvider(activity.linkedTaskId!)).value;
@@ -168,7 +176,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         constraints: const BoxConstraints(minHeight: 58),
         margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: isRunning
+          color: isDone
+              ? g.sage.withValues(alpha: .10)
+              : isRunning
               ? (context.isDark
                     ? (g.merlot
                           ? MerlotPalette.darkAction.withValues(alpha: 0.18)
@@ -207,7 +217,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                       : const Color(0xFFFAFAFA))))),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isRunning
+            color: isDone
+                ? g.sage.withValues(alpha: .5)
+                : isRunning
                 ? (g.merlot
                       ? MerlotPalette.action
                       : (g.frozen ? FrozenPalette.action : g.clay))
@@ -300,12 +312,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       borderRadius: AppGeometry.roundedr22,
                       child: Center(
                         child: Container(
-                          width: 26,
+                          width: isDone ? 40 : 26,
                           height: 26,
                           decoration: BoxDecoration(
-                            shape: BoxShape.circle,
+                            shape: isDone
+                                ? BoxShape.rectangle
+                                : BoxShape.circle,
+                            borderRadius: isDone
+                                ? BorderRadius.circular(8)
+                                : null,
                             color: isDone
-                                ? (g.merlot ? MerlotPalette.action : g.clay)
+                                ? g.sage.withValues(alpha: .12)
                                 : (g.merlot
                                       ? MerlotPalette.spark.withValues(
                                           alpha: 0.12,
@@ -313,7 +330,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                       : AppPalette.transparent),
                             border: Border.all(
                               color: isDone
-                                  ? (g.merlot ? MerlotPalette.action : g.clay)
+                                  ? g.sage
                                   : (isPaused
                                         ? (g.frozen
                                               ? FrozenPalette.action
@@ -325,10 +342,20 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             ),
                           ),
                           child: isDone
-                              ? const Icon(
-                                  Icons.check_rounded,
-                                  size: 16,
-                                  color: AppPalette.white,
+                              ? Center(
+                                  child: Text(
+                                    'Done',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: context.isDark
+                                              ? const Color(0xFF86EFAC)
+                                              : const Color(0xFF166534),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
                                 )
                               : (isLecture
                                     ? Icon(
@@ -659,6 +686,212 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     );
   }
 
+  Future<void> _setPriority() async {
+    final id = activity.linkedTaskId;
+    if (id == null || activity.status == TodayActivityStatus.done) return;
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('Task priority'),
+          ),
+          for (final option in const [
+            ('high', 'P0 · Urgent'),
+            ('medium', 'P1 · Important'),
+            ('low', 'P2 · Normal'),
+          ])
+            ListTile(
+              title: Text(option.$2),
+              trailing: activity.priority == option.$1
+                  ? const Icon(Icons.check)
+                  : null,
+              onTap: () => Navigator.pop(ctx, option.$1),
+            ),
+        ],
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    try {
+      final saved = await ref
+          .read(taskDaoProvider)
+          .updateTask(
+            TaskTableCompanion(
+              id: Value(id),
+              priority: Value(chosen),
+              updatedAt: Value(DateTime.now()),
+            ),
+          );
+      if (mounted && !saved) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not save priority. Please retry.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Could not save priority. Please retry.',
+        );
+      }
+    }
+  }
+
+  Widget _compactRow(BuildContext context) {
+    final g = context.glass;
+    final done = activity.status == TodayActivityStatus.done;
+    final running = activity.status == TodayActivityStatus.inProgress;
+    final paused = activity.status == TodayActivityStatus.paused;
+    final lecture = activity.sourceType == 'lecture';
+    final timed =
+        lecture ||
+        activity.kind != ActivityKind.todo ||
+        (activity.targetMinutes ?? 0) > 0;
+    final priority = switch (activity.priority) {
+      'high' => 'P0',
+      'medium' => 'P1',
+      _ => 'P2',
+    };
+    return Material(
+      color: done ? Colors.green.withValues(alpha: .07) : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onLongPress: !done && activity.linkedTaskId != null
+            ? _setPriority
+            : null,
+        onTap: () => lecture
+            ? _openLecture(context, ref)
+            : _showActivityDetailDialog(context, ref, activity),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text('→', style: TextStyle(color: g.inkMuted, fontSize: 16)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      activity.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: done ? g.inkMuted : g.ink,
+                        fontSize: 14,
+                        height: 1.35,
+                        decoration: done ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      [
+                        if (activity.linkedTaskId != null && !done) priority,
+                        if (activity.sourceType == 'medicine') 'Medicine',
+                        if (activity.sourceType == 'medicine' &&
+                            activity.plannedDate != null)
+                          DateFormat('h:mm a').format(activity.plannedDate!),
+                        if (lecture) 'Lecture',
+                        if (timed) _runningTimerText(activity),
+                        if (paused) 'Paused',
+                      ].join(' · '),
+                      style: TextStyle(color: g.inkMuted, fontSize: 11),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GlassChip(
+                label: done
+                    ? 'Done'
+                    : timed
+                    ? (running
+                          ? 'Stop'
+                          : paused
+                          ? 'Resume'
+                          : 'Start')
+                    : 'Done',
+                selected: done,
+                success: done,
+                tooltip: done
+                    ? 'Completed'
+                    : timed
+                    ? 'Timer control'
+                    : 'Mark done',
+                onTap: done
+                    ? null
+                    : () async {
+                        HapticFeedback.selectionClick();
+                        if (lecture) {
+                          if (_selectLecture(ref, activity)) {
+                            ref
+                                .read(learningHubProvider.notifier)
+                                .togglePlayPause();
+                          }
+                          return;
+                        }
+                        if (timed) {
+                          final tracker = ref.read(
+                            timeTrackingProvider.notifier,
+                          );
+                          if (running) {
+                            tracker.pauseSession();
+                          } else if (paused) {
+                            tracker.resumeSession();
+                          } else {
+                            await tracker.switchToTask(
+                              title: activity.title,
+                              taskId: activity.linkedTaskId,
+                              sourceType: activity.sourceType,
+                              autoStart: true,
+                            );
+                          }
+                          return;
+                        }
+                        if (activity.linkedTaskId == null) return;
+                        try {
+                          final dao = ref.read(taskDaoProvider);
+                          await dao.toggleTaskCompletion(
+                            activity.linkedTaskId!,
+                            true,
+                          );
+                          final task = await dao.getTaskById(
+                            activity.linkedTaskId!,
+                          );
+                          if (context.mounted &&
+                              task?.actualCompletedDate == null) {
+                            AscentSnackBar.show(
+                              context,
+                              message:
+                                  'Finish the checklist steps before completing this task.',
+                            );
+                          }
+                        } catch (_) {
+                          if (context.mounted) {
+                            AscentSnackBar.error(
+                              context,
+                              message:
+                                  'Could not complete the task. Please retry.',
+                            );
+                          }
+                        }
+                      },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openLecture(BuildContext context, WidgetRef ref) {
     if (_selectLecture(ref, activity)) {
       LectureFocusPlayerSheet.show(context);
@@ -881,6 +1114,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
   }
 
   String _subtitleText(TodayActivityItem act) {
+    if (act.sourceType == 'medicine' || act.categoryTag == 'Medicine') {
+      final at = act.plannedDate;
+      return 'Medicine${at == null ? '' : ' · ${DateFormat.jm().format(at)}'}';
+    }
+
     if (act.status == TodayActivityStatus.done) {
       if (act.completedAt != null) {
         return '✓ Done at ${DateFormat('h:mm a').format(act.completedAt!)}';

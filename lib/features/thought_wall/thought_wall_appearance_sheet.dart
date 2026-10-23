@@ -77,28 +77,6 @@ class _ThoughtWallAppearanceSheetState
               ],
             ),
             const SizedBox(height: 20),
-            const Text('Card colour'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final tone in ThoughtCardTone.values)
-                  ChoiceChip(
-                    label: Text(switch (tone) {
-                      ThoughtCardTone.theme => 'Theme',
-                      ThoughtCardTone.linen => 'Linen',
-                      ThoughtCardTone.sage => 'Sage',
-                      ThoughtCardTone.slate => 'Slate',
-                    }),
-                    selected: appearance.tone == tone,
-                    onSelected: _saving
-                        ? null
-                        : (_) => _save(appearance.copyWith(tone: tone)),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 20),
             const Text('Spacing'),
             const SizedBox(height: 8),
             Wrap(
@@ -120,17 +98,6 @@ class _ThoughtWallAppearanceSheetState
               ],
             ),
             const SizedBox(height: 16),
-            const Divider(),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Apply to Home'),
-              subtitle: const Text('Match Home cards with selected tone'),
-              value: appearance.applyToHome,
-              onChanged: _saving
-                  ? null
-                  : (value) => _save(appearance.copyWith(applyToHome: value)),
-            ),
-            const SizedBox(height: 8),
             const Text('Applies to every card in Thought Wall.'),
             if (_error != null)
               Padding(
