@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:drift/drift.dart';
+import '../services/reminder_actions.dart';
 import '../database/app_database.dart';
 
 /// Android owns ringing and durable action receipts; SQLite owns reminder rows.
@@ -55,20 +55,13 @@ class ReminderAlarmBridge {
     if (id is! int) return;
     final row = await db.reminderDao.getReminderById(id);
     if (row == null || !row.alarmEnabled) return;
+    final actions = ReminderActions(db);
     if (event['action'] == 'done') {
-      await db.reminderDao.updateReminder(
-        row.toCompanion(true).copyWith(isActive: const Value(false)),
-      );
+      await actions.complete(id);
     } else if (event['action'] == 'snooze' && event['at'] is int) {
-      await db.reminderDao.updateReminder(
-        row
-            .toCompanion(true)
-            .copyWith(
-              scheduledAt: Value(
-                DateTime.fromMillisecondsSinceEpoch(event['at']),
-              ),
-              isActive: const Value(true),
-            ),
+      await actions.snooze(
+        id,
+        DateTime.fromMillisecondsSinceEpoch(event['at']),
       );
     }
   }

@@ -19,7 +19,7 @@ class AscentColors {
   static const Color bgSurface = Color(0xFFFFFFFF);
 
   /// Slightly elevated surface for nested cards and chips.
-  static const Color bgSurfaceElevated = Color(0xFFF1F3F6);
+  static const Color bgSurfaceElevated = Color(0xFFFAF7F4);
 
   /// Ascent signature terracotta clay — primary accent.
   static const Color accentPrimary = Color(0xFFA4523A);

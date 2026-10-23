@@ -22,11 +22,12 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   final _recentlyDeleted = <int, ThoughtDeletion>{};
   void clearDeletionUndo() => _recentlyDeleted.clear();
 
-  /// Watch active (non-archived) thoughts sorted by pinned first, then newest with stable ID ties.
+  /// Watch active (non-archived) thoughts sorted by open first, then pinned and newest.
   Stream<List<Thought>> watchActiveThoughts() {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false))
           ..orderBy([
+            (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
             (t) => OrderingTerm.desc(t.id),
@@ -61,11 +62,12 @@ class ThoughtDao extends DatabaseAccessor<AppDatabase> with _$ThoughtDaoMixin {
   /// Watch all thoughts (legacy helper).
   Stream<List<Thought>> watchAllThoughts() => watchActiveThoughts();
 
-  /// Watch recent thoughts for Home screen preview (pinned first, then newest with stable ID ties).
+  /// Watch recent thoughts for Home preview (open first, then pinned and newest before limiting).
   Stream<List<Thought>> watchRecentThoughts({int limit = 10}) {
     return (select(thoughtTable)
           ..where((t) => t.isArchived.equals(false))
           ..orderBy([
+            (t) => OrderingTerm.asc(t.isCompleted),
             (t) => OrderingTerm.desc(t.isPinned),
             (t) => OrderingTerm.desc(t.createdAt),
             (t) => OrderingTerm.desc(t.id),

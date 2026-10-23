@@ -57,6 +57,7 @@ void main() {
         .save(
           const ThoughtWallAppearance(
             style: ThoughtCardStyle.bubble,
+            tone: ThoughtCardTone.slate,
             density: ThoughtCardDensity.comfortable,
           ),
         );
@@ -71,6 +72,10 @@ void main() {
     expect(
       container.read(thoughtWallAppearanceProvider).density,
       ThoughtCardDensity.comfortable,
+    );
+    expect(
+      container.read(thoughtWallAppearanceProvider).tone,
+      ThoughtCardTone.slate,
     );
     container.dispose();
   });
@@ -293,14 +298,10 @@ void main() {
                 expect(box.boxShadow, isEmpty);
               }
               if (!selected) {
-                final radius = box.borderRadius;
-                await tester.tap(find.byTooltip('Expand thought'));
-                await tester.pumpAndSettle();
-                expect(decoration().borderRadius, radius);
-                expect(find.byTooltip('Edit thought'), findsOneWidget);
-                await tester.tap(find.byTooltip('Collapse thought'));
-                await tester.pumpAndSettle();
-                expect(tester.takeException(), isNull);
+                expect(find.byTooltip('Expand thought'), findsNothing);
+                expect(find.byTooltip('Collapse thought'), findsNothing);
+                expect(find.text('Category'), findsOneWidget);
+                expect(find.text('Todo'), findsOneWidget);
               }
             }
           }

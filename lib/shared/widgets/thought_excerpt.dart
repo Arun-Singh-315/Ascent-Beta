@@ -32,6 +32,10 @@ class ThoughtExcerpt extends StatefulWidget {
         .replaceAll('-->', '→');
   }
 
+  static String displayContent(String raw) => formatArrowContent(
+    raw,
+  ).replaceAll(RegExp(r'^[ \t]*→[ \t]*', multiLine: true), '').trimRight();
+
   /// Builds a [TextSpan] that visually styles arrow indicators (`→ `) and bullets (`• `)
   /// with vibrant theme accent ink.
   static TextSpan buildRichArrowSpan({
@@ -40,7 +44,8 @@ class ThoughtExcerpt extends StatefulWidget {
     required TextStyle baseStyle,
     Color? arrowColor,
   }) {
-    final formatted = formatArrowContent(text);
+    // Planning markers remain in storage for editing/conversion, but are not note text.
+    final formatted = displayContent(text);
     final accent = arrowColor ?? context.glass.clay;
     final lines = formatted.split('\n');
     final List<InlineSpan> spans = [];

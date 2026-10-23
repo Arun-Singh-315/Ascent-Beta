@@ -1,17 +1,17 @@
-/// froast_ice_theme_ux_test.dart
-///
-/// Regression tests for three Froast Ice (Nordic Sky) theme UX issues:
-///
-/// 1. Paused activity row background must NOT be the warm-yellow #FEF3C7 in
-///    Nordic Sky light mode — it must use FrozenPalette.sparkTint.
-/// 2. Paused timer text color must use FrozenPalette.spark, not a raw
-///    orange swatch (AppPalette.orange.shade400) in Nordic Sky modes.
-/// 3. The nordicSkyDark glass surface fill must be translucent enough (alpha
-///    ≤ 0.80) so backdrop blur actually shows through at night.
-/// 4. GlassSurface in Frozen dark mode must render a frost-rim asymmetric
-///    border (top highlight != bottom/side color).
-///
-/// Run: flutter test test/froast_ice_theme_ux_test.dart
+// froast_ice_theme_ux_test.dart
+//
+// Regression tests for three Froast Ice (Nordic Sky) theme UX issues:
+//
+// 1. Paused activity row background must NOT be the warm-yellow #FEF3C7 in
+//    Nordic Sky light mode — it must use FrozenPalette.sparkTint.
+// 2. Paused timer text color must use FrozenPalette.spark, not a raw
+//    orange swatch (AppPalette.orange.shade400) in Nordic Sky modes.
+// 3. The nordicSkyDark glass surface fill must be translucent enough (alpha
+//    ≤ 0.80) so backdrop blur actually shows through at night.
+// 4. GlassSurface in Frozen dark mode must render a frost-rim asymmetric
+//    border (top highlight != bottom/side color).
+//
+// Run: flutter test test/froast_ice_theme_ux_test.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -174,7 +174,7 @@ void main() {
     test('9. FrozenPalette.spark is distinct from Material orange.shade400', () {
       const spark = FrozenPalette.spark;
       final orangeShade400 = Colors.orange.shade400;
-      expect(spark.value, isNot(equals(orangeShade400.value)));
+      expect(spark, isNot(equals(orangeShade400)));
     });
 
     test('10. FrozenPalette.darkSpark is readable on dark navy background', () {
@@ -382,13 +382,11 @@ void main() {
 
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
-      final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
-
-      // In dark Frozen mode: bubble must not have bright neon gradient
-      expect(bubbleGlass.gradient, isNull,
-          reason: 'Dark Frozen mode must not use bright flashlight gradient at night');
-      expect(bubbleGlass.fillColor, equals(FrozenPalette.darkElevated),
-          reason: 'Dark Frozen bubble should use soothing darkElevated glass');
+      final bubble = tester.widget<Container>(bubbleFinder);
+      final box = bubble.decoration! as BoxDecoration;
+      expect(box.gradient, isNull);
+      expect(box.color, tester.element(bubbleFinder).glass.clay.withValues(alpha: .12));
+      expect(box.border, isNotNull);
 
       // Text inside bubble must be high-contrast darkInk
       final textFinder = find.byType(ThoughtExcerpt);

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
@@ -61,8 +62,8 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
     final goalAsync = ref.watch(dailyWaterGoalStreamProvider);
 
     final currentMl = todayWaterAsync.value ?? 0;
-    final targetMl = goalAsync.value ?? 2500;
-    final progress = (currentMl / targetMl).clamp(0.0, 1.2);
+    final targetMl = math.max(1, goalAsync.value ?? 2500);
+    final progress = (currentMl / targetMl).clamp(0.0, 1.0);
     final isGoalMet = currentMl >= targetMl;
 
     final g = context.glass;
@@ -91,7 +92,10 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'DAILY HYDRATION',
@@ -100,7 +104,6 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                               .merge(AppTypeRoles.typeRole2),
                         ),
                         if (isGoalMet) ...[
-                          const SizedBox(width: 6),
                           AppTag(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s6,
@@ -163,7 +166,7 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
                   border: Border.all(color: g.clay.withValues(alpha: 0.30)),
                 ),
                 child: Text(
-                  '${(progress * 100).toInt()}%',
+                  '${((currentMl / targetMl) * 100).toInt()}%',
                   style: AscentTextStyles.monoCode
                       .copyWith(color: g.clay)
                       .merge(AppTypeRoles.typeRole74),
@@ -174,107 +177,101 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
 
           const SizedBox(height: 16),
 
-          // Fluid Wave Tank / Vessel
-          ClipRRect(
-            borderRadius: AppGeometry.roundedr14,
-            child: AppCard(
-              height: 54,
-              width: double.infinity,
-              nightDecoration: BoxDecoration(
-                color: isDark
-                    ? AppPalette.colorFF2A1C0F.withValues(alpha: 0.6)
-                    : AppPalette.white.withValues(alpha: 0.5),
-                border: Border.all(color: g.line.withValues(alpha: 0.7)),
-                borderRadius: AppGeometry.roundedr14,
-              ),
-              child: Stack(
-                children: [
-                  // Animated Sinusoidal Wave
-                  AnimatedBuilder(
-                    animation: _waveController,
-                    builder: (context, child) {
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0.0, end: progress),
+          // Explicit bounds keep the painter visible in every surface mode.
+          Semantics(
+            label: 'Water level',
+            value: '$currentMl of $targetMl milliliters',
+            child: ClipRRect(
+              borderRadius: AppGeometry.roundedr14,
+              child: SizedBox(
+                height: 72,
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: context.waterAccent.withValues(
+                      alpha: isDark ? .08 : .06,
+                    ),
+                    border: Border.all(color: g.edge),
+                    borderRadius: AppGeometry.roundedr14,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      TweenAnimationBuilder<double>(
+                        tween: Tween<double>(begin: 0, end: progress),
                         duration: const Duration(milliseconds: 700),
                         curve: Curves.easeOutCubic,
-                        builder: (context, animatedFill, _) {
-                          return CustomPaint(
-                            size: Size.infinite,
+                        builder: (context, animatedFill, _) => AnimatedBuilder(
+                          animation: _waveController,
+                          builder: (context, _) => CustomPaint(
+                            key: const ValueKey('hydration_water_level'),
                             painter: _FluidWavePainter(
                               fillLevel: animatedFill,
                               wavePhase: _waveController.value * 2 * math.pi,
-                              waveColorFront: g.clay,
-                              waveColorBack: g.claySoft,
+                              waveColorFront: context.waterAccent,
+                              waveColorBack: context.waterAccent.withValues(
+                                alpha: .45,
+                              ),
                               isDark: isDark,
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-
-                  // Overlay Guideline markings (25%, 50%, 75%)
-                  Positioned.fill(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s12,
+                          ),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _buildGuideline('0 mL'),
-                          _buildGuideline('${(targetMl * 0.5).toInt()} mL'),
-                          _buildGuideline('$targetMl mL'),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s12,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _buildGuideline('0 mL'),
+                            _buildGuideline('${(targetMl * 0.5).toInt()} mL'),
+                            _buildGuideline('$targetMl mL'),
+                          ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
 
           const SizedBox(height: 14),
 
-          // 1-Tap Quick Hydration Logging - 4 Equal Balanced Tiles
-          Row(
-            children: [
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+150 mL',
-                  sub: 'Cup',
-                  icon: Icons.water_drop_outlined,
-                  onTap: () => _logWater(150),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+250 mL',
-                  sub: 'Glass',
-                  icon: Icons.local_drink_rounded,
-                  onTap: () => _logWater(250),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+500 mL',
-                  sub: 'Bottle',
-                  icon: Icons.water_drop_rounded,
-                  onTap: () => _logWater(500),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: _QuickWaterButton(
-                  label: '+750 mL',
-                  sub: 'Flask',
-                  icon: Icons.water_rounded,
-                  onTap: () => _logWater(750),
-                ),
-              ),
-            ],
+          // Keep every quick action readable as available width and text size change.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns =
+                  constraints.maxWidth < 360 ||
+                      MediaQuery.textScalerOf(context).scale(14) > 20
+                  ? 2
+                  : 4;
+              return Wrap(
+                spacing: AscentSpacing.sm,
+                runSpacing: AscentSpacing.sm,
+                children: [
+                  for (final preset in const [
+                    (150, 'Cup', Icons.water_drop_outlined),
+                    (250, 'Glass', Icons.local_drink_rounded),
+                    (500, 'Bottle', Icons.water_drop_rounded),
+                    (750, 'Flask', Icons.water_rounded),
+                  ])
+                    SizedBox(
+                      width:
+                          (constraints.maxWidth -
+                              (columns - 1) * AscentSpacing.sm) /
+                          columns,
+                      child: _QuickWaterButton(
+                        label: '+${preset.$1} mL',
+                        sub: preset.$2,
+                        icon: preset.$3,
+                        onTap: () => _logWater(preset.$1),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           if (currentMl > 0) ...[
             const SizedBox(height: 10),
@@ -321,11 +318,20 @@ class _AnimatedWaterCardState extends ConsumerState<AnimatedWaterCard>
   }
 
   Widget _buildGuideline(String text) {
-    return Text(
-      text,
-      style: AscentTextStyles.labelSmall
-          .copyWith(color: context.textMuted.withValues(alpha: 0.6))
-          .merge(AppTypeRoles.typeRole51),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: context.glass.bg.withValues(alpha: .92),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+        child: Text(
+          text,
+          style: AscentTextStyles.labelSmall
+              .copyWith(color: context.textPrimary)
+              .merge(AppTypeRoles.typeRole51),
+        ),
+      ),
     );
   }
 }
@@ -358,18 +364,20 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
     final cardBg = isDark
         ? g.fill
         : (g.merlot
-            ? MerlotPalette.pillSoft
-            : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
+              ? MerlotPalette.pillSoft
+              : (g.frozen ? FrozenPalette.pillSoft : const Color(0xFFF0F7FB)));
     final borderColor = isDark
         ? g.edge
         : (g.merlot
-            ? MerlotPalette.lineSubtle
-            : (g.frozen ? FrozenPalette.lineSubtle : const Color(0xFFD2E3F1)));
+              ? MerlotPalette.lineSubtle
+              : (g.frozen
+                    ? FrozenPalette.lineSubtle
+                    : const Color(0xFFD2E3F1)));
     final iconBg = isDark
         ? context.waterAccent.withValues(alpha: 0.18)
         : (g.merlot
-            ? MerlotPalette.darkTint.withValues(alpha: 0.35)
-            : const Color(0xFFE0EFF8));
+              ? MerlotPalette.darkTint.withValues(alpha: 0.35)
+              : const Color(0xFFE0EFF8));
     final iconColor = isDark
         ? context.waterAccent
         : (g.merlot ? MerlotPalette.action : const Color(0xFF0284C7));
@@ -386,7 +394,7 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOutCubic,
         child: Container(
-          height: 80,
+          constraints: const BoxConstraints(minHeight: 80),
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
           decoration: BoxDecoration(
             color: cardBg,
@@ -400,14 +408,15 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
                 color: isDark
                     ? Colors.black.withValues(alpha: 0.2)
                     : (g.merlot
-                        ? MerlotPalette.shadowAmbient
-                        : const Color.fromRGBO(2, 132, 199, 0.04)),
+                          ? MerlotPalette.shadowAmbient
+                          : const Color.fromRGBO(2, 132, 199, 0.04)),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
@@ -418,11 +427,7 @@ class _QuickWaterButtonState extends State<_QuickWaterButton> {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Icon(
-                    widget.icon,
-                    size: 15,
-                    color: iconColor,
-                  ),
+                  child: Icon(widget.icon, size: 15, color: iconColor),
                 ),
               ),
               const SizedBox(height: 5),

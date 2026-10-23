@@ -7,6 +7,8 @@ import 'package:drift/drift.dart' as drift;
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/glass_theme.dart';
+import 'package:ascent/app/theme/thought_theme.dart';
 import 'package:ascent/app/theme/merlot_palette.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
@@ -209,7 +211,7 @@ void main() {
       await tester.pump(Duration.zero);
     });
 
-    testWidgets('4. LearningHubCard Explore button text is white in dark Merlot mode', (tester) async {
+    testWidgets('4. LearningHubCard Explore button uses contrasting onPrimary in dark Merlot mode', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -226,7 +228,7 @@ void main() {
       final buttonFinder = find.widgetWithText(FilledButton, 'Explore');
       expect(buttonFinder, findsOneWidget);
       final button = tester.widget<FilledButton>(buttonFinder);
-      expect(button.style?.foregroundColor?.resolve({}), equals(Colors.white));
+      expect(button.style?.foregroundColor?.resolve({}), equals(MerlotPalette.darkCanvas));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
@@ -364,13 +366,13 @@ void main() {
       await tester.pump(Duration.zero);
     });
 
-    testWidgets('8. ThoughtWallHomePreview card retains theme surface and only thought bubble receives vibrant blue gradient in Frozen Sky', (tester) async {
+    testWidgets('8. ThoughtWallHomePreview uses matching faint bubbles in Merlot and Frozen Sky', (tester) async {
       final tId = await db.thoughtDao.insertThought(
         ThoughtTableCompanion.insert(content: 'Deep mind space reflection'),
       );
       final t = (await db.thoughtDao.getThoughtById(tId))!;
 
-      // Merlot light: outer card is MerlotPalette.surface, bubble is MerlotPalette.pillSoft
+      // Merlot light keeps a faint accent tint inside the bubble.
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -390,13 +392,16 @@ void main() {
 
       final bubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(bubbleFinder, findsOneWidget);
-      final bubbleGlass = tester.widget<GlassSurface>(bubbleFinder);
-      expect(bubbleGlass.fillColor, equals(MerlotPalette.pillSoft));
+      final bubble = tester.widget<Container>(bubbleFinder);
+      final merlotBox = bubble.decoration! as BoxDecoration;
+      expect(merlotBox.color, equals(Colors.transparent));
+      expect(merlotBox.border, isNotNull);
+      expect(merlotBox.gradient, isNull);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
 
-      // Frozen Sky light: outer card is FrozenPalette.surface, bubble has Ask Aria blue gradient
+      // Frozen Sky uses the same geometry with transparent bubble and hard border.
       await tester.pumpWidget(
         buildTestableWidget(
           const Scaffold(
@@ -412,20 +417,22 @@ void main() {
       final frozenCardFinder = find.byKey(const ValueKey('home_mind_space_card'));
       expect(frozenCardFinder, findsOneWidget);
       final frozenCardGlass = tester.widget<GlassSurface>(frozenCardFinder);
-      expect(frozenCardGlass.fillColor, equals(FrozenPalette.surface));
+      expect(frozenCardGlass.fillColor, equals(ThoughtTheme.frozenSurface));
 
       final frozenBubbleFinder = find.byKey(ValueKey('home_thought_$tId'));
       expect(frozenBubbleFinder, findsOneWidget);
-      final frozenBubbleGlass = tester.widget<GlassSurface>(frozenBubbleFinder);
-      expect(frozenBubbleGlass.gradient, isNotNull);
-      final gradient = frozenBubbleGlass.gradient as LinearGradient;
-      expect(gradient.colors, equals([FrozenPalette.actionBright, FrozenPalette.action]));
+      final frozenBubble = tester.widget<Container>(frozenBubbleFinder);
+      final frozenBox = frozenBubble.decoration! as BoxDecoration;
+      expect(frozenBox.gradient, isNull);
+      expect(frozenBox.color, equals(Colors.transparent));
+      expect(frozenBox.border, isNotNull);
+      expect(frozenBox.borderRadius, merlotBox.borderRadius);
 
-      // Verify thought text inside the blue bubble is white
+      // Thought text follows the theme ink on the light tint.
       final excerptFinder = find.byType(ThoughtExcerpt);
       expect(excerptFinder, findsOneWidget);
       final excerptWidget = tester.widget<ThoughtExcerpt>(excerptFinder);
-      expect(excerptWidget.style.color, equals(Colors.white));
+      expect(excerptWidget.style.color, tester.element(frozenBubbleFinder).glass.ink);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);

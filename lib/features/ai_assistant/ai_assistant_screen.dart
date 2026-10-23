@@ -8,6 +8,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/frozen_palette.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../shared/widgets/ascent_atmosphere.dart';
@@ -252,7 +253,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             data.addAll({
               'title': capability.description,
               'summary': reply,
-              'route': result.route,
+              'route': result.targetRoute,
               'executionStatus': 'verified',
               'requestId': requestId,
               'write': capability.write,
@@ -264,7 +265,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
             if (error is RiyaCommittedActionError) {
               savedResult = error.result;
               data['requestId'] = requestId;
-              data['route'] = error.result.route;
+              data['route'] = error.result.targetRoute;
             }
             reply = savedResult != null
                 ? '${savedResult.message} Confirmation history or device effects are pending verification.'
@@ -274,6 +275,10 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                 : error is StateError
                 ? error.message.toString()
                 : 'I could not verify that change. Check the relevant screen before trying again.';
+            actionType = command.id;
+            data['title'] = capability.description;
+            data['route'] ??= capability.route;
+            data['requestId'] ??= requestId;
             data['executionStatus'] = savedResult == null
                 ? 'failed'
                 : 'recovery_pending';
@@ -296,7 +301,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           AiChatMessageTableCompanion.insert(
             sender: 'assistant',
             message:
-                'I could not finish that response. Check the relevant screen before retrying any change.',
+                'I could not finish that response. Recover saved results before trying again.',
+            actionPayloadJson: drift.Value(
+              jsonEncode({
+                'executionStatus': 'failed',
+                'title': 'Response interrupted',
+                'recoverable': true,
+              }),
+            ),
           ),
         );
       } catch (_) {
@@ -317,6 +329,40 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         setState(() => _isLoading = false);
         _scrollToBottom();
       }
+    }
+  }
+
+  Future<void> _recoverMessage(Map<String, dynamic>? data) async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final request = data?['requestId'];
+      if (request is String) {
+        await RiyaAlertEffects.device(
+          ref.read(databaseProvider),
+        ).syncRequest(request);
+      }
+      await ref.read(aiAssistantDaoProvider).recoverCommandResponses();
+      if (!mounted) return;
+      final route = data?['route'];
+      if (route is String) {
+        context.push(route);
+      } else {
+        AscentSnackBar.show(
+          context,
+          message:
+              'Saved results checked. Your message can now be reviewed and sent again.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        AscentSnackBar.error(
+          context,
+          message: 'Recovery is still pending. Try Recover again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -468,8 +514,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       backgroundColor: isDark
           ? context.bgBase
           : (g.merlot
-              ? MerlotPalette.canvas
-              : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
+                ? MerlotPalette.canvas
+                : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -605,10 +651,33 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               size: 21,
             ),
             tooltip: 'Clear chat history',
-            onPressed: () async {
-              HapticFeedback.lightImpact();
-              await ref.read(aiAssistantDaoProvider).clearChatHistory();
-            },
+            onPressed: _isLoading
+                ? null
+                : () async {
+                    HapticFeedback.lightImpact();
+                    final confirmed = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Clear chat history?'),
+                        content: const Text(
+                          'This removes your conversation with Riya. Your saved thoughts, tasks and reminders will stay available.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          FilledButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Clear history'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirmed == true && mounted) {
+                      await ref.read(aiAssistantDaoProvider).clearChatHistory();
+                    }
+                  },
           ),
           const SizedBox(width: 6),
         ],
@@ -625,7 +694,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               if (snapshot.hasError) {
                 return Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(AscentSpacing.xl),
                     child: Text(
                       'Connecting to memory...',
                       style: TextStyle(color: context.textMuted, fontSize: 13),
@@ -691,7 +760,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                               return KeyedSubtree(
                                 key: ValueKey('chat_item_${msg.id}'),
                                 child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.only(
+                                    bottom: AscentSpacing.md,
+                                  ),
                                   child: Align(
                                     alignment: isUser
                                         ? Alignment.centerRight
@@ -710,6 +781,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                         actionData: actionData,
                                         messageQuickChips: messageQuickChips,
                                         onSelectChip: _handleSubmitted,
+                                        onRecover: () =>
+                                            _recoverMessage(actionData),
                                         onOpenCourse: () =>
                                             context.push('/study-plan'),
                                         onOpenHub: () => context.push(
@@ -756,7 +829,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: 4,
+                        vertical: AscentSpacing.xs,
                       ),
                       child: Row(
                         children: [
@@ -804,7 +877,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
-                      vertical: 8,
+                      vertical: AscentSpacing.sm,
                     ),
                     decoration: BoxDecoration(
                       color: g.fill,
@@ -849,14 +922,17 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           HapticFeedback.lightImpact();
           onTap();
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AscentRadii.borderLg,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 7.5, horizontal: 8),
+          padding: const EdgeInsets.symmetric(
+            vertical: 7.5,
+            horizontal: AscentSpacing.sm,
+          ),
           decoration: BoxDecoration(
             color: isDark
                 ? context.bgSurface.withValues(alpha: 0.88)
                 : Colors.white.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AscentRadii.borderLg,
             border: Border.all(
               color: isDark ? context.glass.edge : context.divider,
               width: 1.0,
@@ -908,6 +984,7 @@ class _TelegramMessageBubble extends StatelessWidget {
   final ValueChanged<String> onSelectChip;
   final VoidCallback onOpenCourse;
   final VoidCallback onOpenHub;
+  final VoidCallback onRecover;
 
   const _TelegramMessageBubble({
     required this.msg,
@@ -919,6 +996,7 @@ class _TelegramMessageBubble extends StatelessWidget {
     required this.onSelectChip,
     required this.onOpenCourse,
     required this.onOpenHub,
+    required this.onRecover,
   });
 
   @override
@@ -977,7 +1055,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w400,
-                  color: context.glass.ink,
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.45,
                 ),
               ),
@@ -1012,6 +1090,41 @@ class _TelegramMessageBubble extends StatelessWidget {
           ),
         ),
 
+        if (!isUser &&
+            const [
+              'failed',
+              'recovery_pending',
+            ].contains(actionData?['executionStatus']))
+          Padding(
+            padding: const EdgeInsets.only(top: AscentSpacing.sm),
+            child: GlassSurface(
+              radius: AscentDimensions.radiusMd,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    actionData?['executionStatus'] == 'recovery_pending'
+                        ? 'Verification pending'
+                        : 'Action needs attention',
+                    style: TextStyle(
+                      color: context.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    'Review saved changes before sending this request again.',
+                    style: TextStyle(color: context.textMuted),
+                  ),
+                  TextButton.icon(
+                    onPressed: onRecover,
+                    icon: const Icon(Icons.restore_rounded),
+                    label: const Text('Recover'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         // Attached Action Confirmation Capsule (Executed Directly)
         if (!isUser &&
             msg.actionType != null &&
@@ -1021,7 +1134,10 @@ class _TelegramMessageBubble extends StatelessWidget {
           const SizedBox(height: 6),
           GlassSurface(
             radius: 14,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AscentSpacing.md,
+              vertical: 10,
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1072,12 +1188,14 @@ class _TelegramMessageBubble extends StatelessWidget {
                       onOpenHub();
                     }
                   },
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
+                  borderRadius: AscentRadii.borderSm,
+                  child: Container(
+                    constraints: const BoxConstraints(
+                      minWidth: AscentDimensions.minTouchTarget,
+                      minHeight: AscentDimensions.minTouchTarget,
                     ),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(AscentSpacing.sm),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1121,7 +1239,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                     HapticFeedback.lightImpact();
                     onSelectChip(chipText);
                   },
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: AscentRadii.borderLg,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 11,
@@ -1131,7 +1249,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                       color: isDark
                           ? context.bgSurface.withValues(alpha: 0.85)
                           : Colors.white.withValues(alpha: 0.90),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: AscentRadii.borderLg,
                       border: Border.all(
                         color: accentColor.withValues(alpha: 0.4),
                         width: 0.9,
@@ -1183,7 +1301,7 @@ class _ThinkingBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: AscentSpacing.md),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1207,11 +1325,9 @@ class _ThinkingBubble extends StatelessWidget {
               color: isDark
                   ? context.bgSurface.withValues(alpha: 0.88)
                   : Colors.white.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AscentRadii.borderLg,
               border: Border.all(
-                color: isDark
-                    ? context.glass.edge
-                    : context.divider,
+                color: isDark ? context.glass.edge : context.divider,
                 width: 1.0,
               ),
               boxShadow: [
@@ -1327,16 +1443,17 @@ class _SoftChatWelcome extends ConsumerWidget {
 
             // Minimal status indicator
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: AscentSpacing.xs,
+              ),
               decoration: BoxDecoration(
                 color: isDark
                     ? context.bgSurface.withValues(alpha: 0.85)
                     : Colors.white.withValues(alpha: 0.90),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AscentRadii.borderMd,
                 border: Border.all(
-                  color: isDark
-                      ? context.glass.edge
-                      : context.divider,
+                  color: isDark ? context.glass.edge : context.divider,
                   width: 0.8,
                 ),
               ),
@@ -1352,12 +1469,14 @@ class _SoftChatWelcome extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    '$assistantName · Always by your side',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: context.textMuted,
+                  Flexible(
+                    child: Text(
+                      '$assistantName · Always by your side',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: context.textMuted,
+                      ),
                     ),
                   ),
                 ],
@@ -1408,7 +1527,7 @@ class _SoftChatWelcome extends ConsumerWidget {
                           HapticFeedback.lightImpact();
                           onSelectPrompt(prompt);
                         },
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: AscentRadii.borderXl,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 14,
@@ -1418,7 +1537,7 @@ class _SoftChatWelcome extends ConsumerWidget {
                             color: isDark
                                 ? context.bgSurface.withValues(alpha: 0.85)
                                 : Colors.white.withValues(alpha: 0.90),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: AscentRadii.borderXl,
                             border: Border.all(
                               color: isDark
                                   ? context.glass.edge

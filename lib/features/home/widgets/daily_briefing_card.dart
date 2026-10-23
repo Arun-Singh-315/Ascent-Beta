@@ -96,31 +96,7 @@ class DailyBriefingCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (minimal) {
-      final autoOpen = ref.watch(dailyBriefingAutoOpenProvider);
-      if (autoOpen) {
-        return const SizedBox.shrink();
-      }
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Center(
-          child: TextButton.icon(
-            onPressed: () => DailyBriefingCard.show(context, day),
-            icon: Icon(
-              Icons.rocket_launch_rounded,
-              size: 16,
-              color: context.accentPrimary,
-            ),
-            label: Text(
-              'Open daily check-in',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: context.accentPrimary,
-              ),
-            ),
-          ),
-        ),
-      );
+      return const SizedBox.shrink();
     }
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),

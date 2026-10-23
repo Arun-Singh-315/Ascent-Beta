@@ -135,32 +135,13 @@ void main() {
         // The thought is rendered
         expect(find.text('Thought for navigation test'), findsOneWidget);
 
-        // Actions are initially collapsed
-        expect(find.text('Plan'), findsNothing);
-        expect(find.text('Todo'), findsNothing);
-        expect(find.text('Reminder'), findsNothing);
-        expect(find.text('Open'), findsNothing);
-
-        // Tap on chevron button to expand actions
-        final chevronFinder = find.byTooltip('Expand actions');
-        expect(chevronFinder, findsOneWidget);
-        await tester.tap(chevronFinder);
-        await tester.pumpAndSettle();
-
-        // Actions are now expanded: Plan, Todo, Reminder. 'Open' must NOT be present!
         expect(find.text('Plan'), findsOneWidget);
         expect(find.text('Todo'), findsOneWidget);
         expect(find.text('Reminder'), findsOneWidget);
-        expect(find.text('Open'), findsNothing);
-
-        // Tap on chevron button again to collapse
-        final collapseFinder = find.byTooltip('Collapse actions');
-        expect(collapseFinder, findsOneWidget);
-        await tester.tap(collapseFinder);
-        await tester.pumpAndSettle();
-
-        expect(find.text('Plan'), findsNothing);
-
+        expect(find.byTooltip('Expand actions'), findsNothing);
+        expect(find.byTooltip('Collapse actions'), findsNothing);
+        await tester.pump(const Duration(seconds: 10));
+        expect(find.text('Plan'), findsOneWidget);
         // Tap anywhere else on the thought bubble card -> navigates to Thought Wall!
         await tester.tap(find.text('Thought for navigation test'));
         await tester.pumpAndSettle();

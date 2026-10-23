@@ -1,27 +1,34 @@
+import '../reminder_action_ui.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/text_styles.dart';
-import '../../../shared/widgets/ascent_snack_bar.dart';
-import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../core/database/app_database.dart';
-import '../../../core/notifications/notification_service.dart';
-import '../../../core/providers/database_provider.dart';
 
 class InAppReminderDialog extends ConsumerWidget {
   final Reminder reminder;
+  final bool isPreview;
 
-  const InAppReminderDialog({super.key, required this.reminder});
+  const InAppReminderDialog({
+    super.key,
+    required this.reminder,
+    this.isPreview = false,
+  });
 
-  static Future<void> show(BuildContext context, Reminder reminder) {
+  static Future<void> show(
+    BuildContext context,
+    Reminder reminder, {
+    bool isPreview = false,
+  }) {
     return showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => InAppReminderDialog(reminder: reminder),
+      builder: (context) =>
+          InAppReminderDialog(reminder: reminder, isPreview: isPreview),
     );
   }
 
@@ -30,94 +37,36 @@ class InAppReminderDialog extends ConsumerWidget {
     WidgetRef ref,
     Duration duration,
   ) async {
-    HapticFeedback.lightImpact();
-    final newScheduled = DateTime.now().add(duration);
-    final dao = ref.read(reminderDaoProvider);
-
-    await dao.updateReminder(
-      reminder
-          .toCompanion(true)
-          .copyWith(scheduledAt: drift.Value(newScheduled)),
+    final changed = await runReminderAction(
+      context,
+      ref,
+      reminder,
+      ReminderRowAction.snooze,
+      snoozeUntil: DateTime.now().add(duration),
     );
-    await NotificationService.instance.scheduleReminderNotification(
-      id: reminder.id,
-      title: reminder.title,
-      scheduledAt: newScheduled,
-      alarmEnabled: reminder.alarmEnabled,
-    );
-
-    ref.invalidate(allRemindersProvider);
-    ref.invalidate(nextUpcomingReminderProvider);
-
-    if (context.mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        AscentSnackBar.build(
-          context,
-          content: Text(
-            'Snoozed for ${duration.inMinutes >= 60 ? "${duration.inHours}h" : "${duration.inMinutes}m"}',
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
+    if (changed && context.mounted) Navigator.of(context).pop();
   }
 
   Future<void> _snoozeTomorrow(BuildContext context, WidgetRef ref) async {
-    HapticFeedback.lightImpact();
     final now = DateTime.now();
-    final tomorrow9am = DateTime(now.year, now.month, now.day + 1, 9, 0);
-    final dao = ref.read(reminderDaoProvider);
-
-    await dao.updateReminder(
-      reminder
-          .toCompanion(true)
-          .copyWith(scheduledAt: drift.Value(tomorrow9am)),
+    final changed = await runReminderAction(
+      context,
+      ref,
+      reminder,
+      ReminderRowAction.snooze,
+      snoozeUntil: DateTime(now.year, now.month, now.day + 1, 9),
     );
-    await NotificationService.instance.scheduleReminderNotification(
-      id: reminder.id,
-      title: reminder.title,
-      scheduledAt: tomorrow9am,
-      alarmEnabled: reminder.alarmEnabled,
-    );
-
-    ref.invalidate(allRemindersProvider);
-    ref.invalidate(nextUpcomingReminderProvider);
-
-    if (context.mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        AscentSnackBar.build(
-          context,
-          content: Text('Snoozed until tomorrow 9:00 AM'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    if (changed && context.mounted) Navigator.of(context).pop();
   }
 
   Future<void> _markDone(BuildContext context, WidgetRef ref) async {
-    HapticFeedback.mediumImpact();
-    final dao = ref.read(reminderDaoProvider);
-
-    await dao.updateReminder(
-      reminder.toCompanion(true).copyWith(isActive: const drift.Value(false)),
+    final changed = await runReminderAction(
+      context,
+      ref,
+      reminder,
+      ReminderRowAction.done,
     );
-    await NotificationService.instance.cancel(reminder.id);
-
-    ref.invalidate(allRemindersProvider);
-    ref.invalidate(nextUpcomingReminderProvider);
-
-    if (context.mounted) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        AscentSnackBar.build(
-          context,
-          content: Text('Reminder marked as completed!'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    if (changed && context.mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -163,14 +112,18 @@ class InAppReminderDialog extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'REMINDER DUE',
+                          isPreview ? 'REMINDER DETAILS' : 'REMINDER DUE',
                           style: AppTypography.jetBrainsMono11W70087(
                             color: headerAccent,
                           ),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'Time for your planned task',
+                          isPreview
+                              ? DateFormat.yMMMd().add_jm().format(
+                                  reminder.scheduledAt,
+                                )
+                              : 'Time for your planned task',
                           style: AppTypography.plusJakartaSans12Regular57(
                             color: context.textMuted,
                           ),
@@ -199,9 +152,7 @@ class InAppReminderDialog extends ConsumerWidget {
                       ? g.fill
                       : context.bgSurfaceElevated,
                   borderRadius: AppGeometry.roundedr14,
-                  border: Border.all(
-                    color: g.edge,
-                  ),
+                  border: Border.all(color: g.edge),
                 ),
                 child: Text(
                   reminder.title,
@@ -233,9 +184,7 @@ class InAppReminderDialog extends ConsumerWidget {
                             ? g.fill
                             : context.bgSurfaceElevated,
                         minimumSize: const Size(48, 44),
-                        side: BorderSide(
-                          color: g.edge,
-                        ),
+                        side: BorderSide(color: g.edge),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s10,
                         ),
@@ -260,9 +209,7 @@ class InAppReminderDialog extends ConsumerWidget {
                             ? g.fill
                             : context.bgSurfaceElevated,
                         minimumSize: const Size(48, 44),
-                        side: BorderSide(
-                          color: g.edge,
-                        ),
+                        side: BorderSide(color: g.edge),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s10,
                         ),
@@ -286,9 +233,7 @@ class InAppReminderDialog extends ConsumerWidget {
                             ? g.fill
                             : context.bgSurfaceElevated,
                         minimumSize: const Size(48, 44),
-                        side: BorderSide(
-                          color: g.edge,
-                        ),
+                        side: BorderSide(color: g.edge),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s10,
                         ),
@@ -318,7 +263,7 @@ class InAppReminderDialog extends ConsumerWidget {
                   backgroundColor: g.clay,
                   elevation: 0,
                   minimumSize: const Size(48, 48),
-                  foregroundColor: AppPalette.white,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
                   shape: RoundedRectangleBorder(
                     borderRadius: AppGeometry.roundedr14,

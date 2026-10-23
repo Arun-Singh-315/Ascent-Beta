@@ -215,53 +215,58 @@ class _ModulesListView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView(
+    return ListView.builder(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.s16,
         vertical: AppSpace.s12,
       ),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '${course.modules.length} Modules · ${course.totalLectures} Lectures',
-              style: AppTypography.jetBrainsMono12W60033(
-                color: context.textMuted,
+      itemCount: course.modules.length + 2,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            children: [
+              Text(
+                '${course.modules.length} Modules · ${course.totalLectures} Lectures',
+                style: AppTypography.jetBrainsMono12W60033(
+                  color: context.textMuted,
+                ),
               ),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                showAddModuleSheet(
+              TextButton.icon(
+                onPressed: () => showAddModuleSheet(
                   context,
                   ref,
                   course.id,
                   nextModuleId: course.modules.length + 1,
-                );
-              },
-              icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
-              label: const Text('Add Module', style: AppTypeRoles.typeRole27),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ...course.modules.map(
-          (module) => _ModuleCard(
-            courseId: course.id,
-            courseModules: course.modules,
-            module: module,
-            onSelectLecture: onSelectLecture,
-            onResume: () {
-              final firstIncomplete = module.lectures.firstWhere(
-                (l) => !l.isCompleted,
-                orElse: () => module.lectures.first,
-              );
-              onSelectLecture(firstIncomplete.id);
-            },
-          ),
-        ),
-        const SizedBox(height: 40),
-      ],
+                ),
+                icon: const Icon(Icons.add_circle_outline_rounded, size: 15),
+                label: const Text('Add Module', style: AppTypeRoles.typeRole27),
+              ),
+            ],
+          );
+        }
+        if (index == course.modules.length + 1) {
+          return const SizedBox(height: 40);
+        }
+        final module = course.modules[index - 1];
+        return _ModuleCard(
+          key: ValueKey('course_module_${module.id}'),
+          courseId: course.id,
+          courseModules: course.modules,
+          module: module,
+          onSelectLecture: onSelectLecture,
+          onResume: () {
+            if (module.lectures.isEmpty) return;
+            final next = module.lectures.firstWhere(
+              (lecture) => !lecture.isCompleted,
+              orElse: () => module.lectures.first,
+            );
+            onSelectLecture(next.id);
+          },
+        );
+      },
     );
   }
 }
@@ -274,6 +279,7 @@ class _ModuleCard extends ConsumerStatefulWidget {
   final VoidCallback onResume;
 
   const _ModuleCard({
+    super.key,
     required this.courseId,
     required this.courseModules,
     required this.module,
@@ -512,7 +518,9 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                     style: context.surfaces.buttonStyle(
                       ElevatedButton.styleFrom(
                         backgroundColor: context.accentPrimary,
-                        foregroundColor: AppPalette.white,
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onPrimary,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr12,
@@ -552,98 +560,105 @@ class _ModuleCardState extends ConsumerState<_ModuleCard> {
                 ),
               )
             else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpace.s12,
-                  vertical: AppSpace.s8,
-                ),
-                itemCount: module.lectures.length,
-                separatorBuilder: (context, index) => AppDivider(
-                  height: 1,
-                  color: context.divider.withValues(alpha: 0.4),
-                ),
-                itemBuilder: (context, index) {
-                  final lec = module.lectures[index];
-                  return AppTapArea(
-                    onTap: () => widget.onSelectLecture(lec.id),
-                    borderRadius: AppGeometry.roundedr10,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s8,
-                        vertical: AppSpace.s8,
-                      ),
-                      child: Row(
-                        children: [
-                          AppTag(
-                            width: 26,
-                            height: 26,
-                            nightDecoration: BoxDecoration(
-                              color: lec.isCompleted
-                                  ? context.accentPrimary.withValues(
-                                      alpha: 0.15,
-                                    )
-                                  : context.bgBase,
-                              borderRadius: AppGeometry.roundedr7,
-                              border: Border.all(
+              SizedBox(
+                height: module.lectures.length > 8 ? 360 : null,
+                child: ListView.separated(
+                  primary: false,
+                  shrinkWrap: module.lectures.length <= 8,
+                  physics: module.lectures.length <= 8
+                      ? const NeverScrollableScrollPhysics()
+                      : const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpace.s12,
+                    vertical: AppSpace.s8,
+                  ),
+                  itemCount: module.lectures.length,
+                  separatorBuilder: (context, index) => AppDivider(
+                    height: 1,
+                    color: context.divider.withValues(alpha: 0.4),
+                  ),
+                  itemBuilder: (context, index) {
+                    final lec = module.lectures[index];
+                    return AppTapArea(
+                      onTap: () => widget.onSelectLecture(lec.id),
+                      borderRadius: AppGeometry.roundedr10,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpace.s8,
+                          vertical: AppSpace.s8,
+                        ),
+                        child: Row(
+                          children: [
+                            AppTag(
+                              width: 26,
+                              height: 26,
+                              nightDecoration: BoxDecoration(
                                 color: lec.isCompleted
                                     ? context.accentPrimary.withValues(
-                                        alpha: 0.4,
+                                        alpha: 0.15,
                                       )
-                                    : context.divider,
-                                width: AppBorderScale.w0point8,
+                                    : context.bgBase,
+                                borderRadius: AppGeometry.roundedr7,
+                                border: Border.all(
+                                  color: lec.isCompleted
+                                      ? context.accentPrimary.withValues(
+                                          alpha: 0.4,
+                                        )
+                                      : context.divider,
+                                  width: AppBorderScale.w0point8,
+                                ),
                               ),
-                            ),
-                            alignment: Alignment.center,
-                            child: lec.isCompleted
-                                ? Icon(
-                                    Icons.check_rounded,
-                                    size: 14,
-                                    color: context.accentPrimary,
-                                  )
-                                : Text(
-                                    '${index + 1}',
-                                    style: AppTypography.jetBrainsMono105W70034(
-                                      color: context.textPrimary,
+                              alignment: Alignment.center,
+                              child: lec.isCompleted
+                                  ? Icon(
+                                      Icons.check_rounded,
+                                      size: 14,
+                                      color: context.accentPrimary,
+                                    )
+                                  : Text(
+                                      '${index + 1}',
+                                      style:
+                                          AppTypography.jetBrainsMono105W70034(
+                                            color: context.textPrimary,
+                                          ),
                                     ),
-                                  ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              lec.title,
-                              style: AppTypography.plusJakartaSans125W60037(
-                                color: lec.isCompleted
-                                    ? context.textMuted
-                                    : context.textPrimary,
-                                decoration: lec.isCompleted
-                                    ? TextDecoration.lineThrough
-                                    : null,
-                                decorationColor: context.textMuted,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                lec.title,
+                                style: AppTypography.plusJakartaSans125W60037(
+                                  color: lec.isCompleted
+                                      ? context.textMuted
+                                      : context.textPrimary,
+                                  decoration: lec.isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                  decorationColor: context.textMuted,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            lec.formattedDuration,
-                            style: AppTypography.jetBrainsMono105Regular38(
-                              color: context.textMuted,
+                            const SizedBox(width: 8),
+                            Text(
+                              lec.formattedDuration,
+                              style: AppTypography.jetBrainsMono105Regular38(
+                                color: context.textMuted,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.play_circle_outline_rounded,
-                            size: 18,
-                            color: context.accentPrimary,
-                          ),
-                        ],
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.play_circle_outline_rounded,
+                              size: 18,
+                              color: context.accentPrimary,
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
           ],
         ],
@@ -670,18 +685,48 @@ class _AllLecturesListView extends ConsumerStatefulWidget {
 
 class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
   int? _selectedModuleId; // null = all modules
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
     final allLectures = widget.course.modules
         .expand((m) => m.lectures)
         .toList();
-    final displayedLectures = _selectedModuleId == null
-        ? allLectures
-        : allLectures.where((l) => l.moduleId == _selectedModuleId).toList();
+    final displayedLectures = allLectures
+        .where(
+          (lecture) =>
+              (_selectedModuleId == null ||
+                  lecture.moduleId == _selectedModuleId) &&
+              (_query.isEmpty ||
+                  '${lecture.title} ${lecture.moduleTitle}'
+                      .toLowerCase()
+                      .contains(_query)),
+        )
+        .toList();
 
     return CustomScrollView(
       slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              key: const ValueKey('lecture_search'),
+              onChanged: (value) =>
+                  setState(() => _query = value.trim().toLowerCase()),
+              decoration: const InputDecoration(
+                hintText: 'Find a lecture or module',
+                prefixIcon: Icon(Icons.search_rounded),
+              ),
+            ),
+          ),
+        ),
+        if (displayedLectures.isEmpty)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('No lectures match this view.'),
+            ),
+          ),
         // Module Filter Chips Horizontal Bar
         SliverToBoxAdapter(
           child: Container(
@@ -843,9 +888,12 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                   lec.title,
                                   style: AppStateTypography.stateType11(
                                     state0: isCurrent,
-                                    color: context.surfaces.contentForeground(isCurrent, lec.isCompleted
-                                        ? context.textMuted
-                                        : context.textPrimary),
+                                    color: context.surfaces.contentForeground(
+                                      isCurrent,
+                                      lec.isCompleted
+                                          ? context.textMuted
+                                          : context.textPrimary,
+                                    ),
                                     decoration: lec.isCompleted
                                         ? TextDecoration.lineThrough
                                         : null,
@@ -861,7 +909,11 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                       child: Text(
                                         lec.moduleTitle,
                                         style: AppTypeRoles.typeRole4.copyWith(
-                                          color: context.surfaces.contentForeground(isCurrent, context.textMuted),
+                                          color: context.surfaces
+                                              .contentForeground(
+                                                isCurrent,
+                                                context.textMuted,
+                                              ),
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -872,9 +924,13 @@ class _AllLecturesListViewState extends ConsumerState<_AllLecturesListView> {
                                       '• ${lec.formattedDuration}',
                                       style:
                                           AppTypography.jetBrainsMono105W60041(
-                                            color: context.surfaces.contentForeground(isCurrent, isCurrent
-                                                ? context.accentPrimary
-                                                : context.textMuted),
+                                            color: context.surfaces
+                                                .contentForeground(
+                                                  isCurrent,
+                                                  isCurrent
+                                                      ? context.accentPrimary
+                                                      : context.textMuted,
+                                                ),
                                           ),
                                     ),
                                   ],
@@ -1268,7 +1324,11 @@ class _CourseSwitcherSheet extends StatelessWidget {
                                     c.title,
                                     style:
                                         AppTypography.plusJakartaSans14W70021(
-                                          color: context.surfaces.contentForeground(isSelected, context.textPrimary),
+                                          color: context.surfaces
+                                              .contentForeground(
+                                                isSelected,
+                                                context.textPrimary,
+                                              ),
                                         ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -1280,9 +1340,13 @@ class _CourseSwitcherSheet extends StatelessWidget {
                                         AppStateTypography.stateType13(
                                           state0: isSelected,
                                         ).copyWith(
-                                          color: context.surfaces.contentForeground(isSelected, isSelected
-                                              ? context.accentSecondary
-                                              : context.textMuted),
+                                          color: context.surfaces
+                                              .contentForeground(
+                                                isSelected,
+                                                isSelected
+                                                    ? context.accentSecondary
+                                                    : context.textMuted,
+                                              ),
                                         ),
                                   ),
                                 ],

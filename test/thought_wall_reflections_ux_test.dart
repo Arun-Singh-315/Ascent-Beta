@@ -55,7 +55,7 @@ void main() {
   for (final dark in [false, true]) {
     for (final scale in [1.0, 2.0]) {
       testWidgets(
-        'visible filters and completion in Merlot dark=$dark scale=$scale',
+        'visible filters and simplified actions in Merlot dark=$dark scale=$scale',
         (t) async {
           SharedPreferences.setMockInitialValues({
             'feature_guide_v1_Thought Wall': true,
@@ -71,6 +71,9 @@ void main() {
           );
           final id = await db.thoughtDao.insertThought(
             ThoughtTableCompanion.insert(content: 'Review the new design'),
+          );
+          final secondId = await db.thoughtDao.insertThought(
+            ThoughtTableCompanion.insert(content: 'A little progress each day'),
           );
           t.view.physicalSize = Size(scale == 2 ? 320 : 390, 844);
           t.view.devicePixelRatio = 1;
@@ -109,10 +112,26 @@ void main() {
                   .height,
               lessThanOrEqualTo(90),
             );
+            final newest = find.byKey(
+              ValueKey('thought_surface_${secondId}_soft'),
+            );
+            final older = find.byKey(ValueKey('thought_surface_${id}_soft'));
+            expect(t.getTopLeft(older).dx - t.getTopLeft(newest).dx, 32);
+            if (scale == 1) {
+              expect(t.getSize(newest).height, lessThan(230));
+            }
+            if (dark) {
+              final toggle = t.widget<AnimatedContainer>(
+                find.byKey(const ValueKey('thought_view_today')),
+              );
+              final decoration = toggle.decoration! as BoxDecoration;
+              expect(decoration.color!.computeLuminance(), lessThan(.15));
+              expect(decoration.boxShadow, isNull);
+            }
             expect(find.text('Bugs'), findsOneWidget);
             expect(find.text('Suggestions'), findsOneWidget);
             expect(find.byTooltip('How this works'), findsNothing);
-            expect(find.text('Mark done'), findsOneWidget);
+            expect(find.byTooltip('Mark done'), findsNWidgets(2));
             expect(t.takeException(), isNull);
             if (Platform.environment['ASCENT_QA_CAPTURE'] == '1' &&
                 scale == 1) {
@@ -129,29 +148,6 @@ void main() {
                 ).writeAsBytes(bytes!.buffer.asUint8List());
                 picture.dispose();
               });
-            }
-            await t.tap(find.text('Mark done'));
-            for (var i = 0; i < 8; i++) {
-              await t.runAsync(
-                () => Future<void>.delayed(const Duration(milliseconds: 20)),
-              );
-              await t.pump(const Duration(milliseconds: 100));
-            }
-            expect(
-              (await t.runAsync(
-                () => db.thoughtDao.getThoughtById(id),
-              ))!.isCompleted,
-              isTrue,
-            );
-            final text = find.textContaining('Review the new design');
-            await t.tap(text);
-            await t.pump(const Duration(milliseconds: 50));
-            await t.tap(text);
-            for (var i = 0; i < 8; i++) {
-              await t.runAsync(
-                () => Future<void>.delayed(const Duration(milliseconds: 20)),
-              );
-              await t.pump(const Duration(milliseconds: 100));
             }
             expect(
               (await t.runAsync(
@@ -178,8 +174,31 @@ void main() {
                 find.textContaining('A new bug to review'),
                 findsOneWidget,
               );
-              expect(find.text('Move to category'), findsOneWidget);
-              expect(find.text('Todo & Reminder'), findsOneWidget);
+              expect(find.byTooltip('Move to category'), findsOneWidget);
+              expect(find.text('Both'), findsOneWidget);
+              await t.ensureVisible(find.byTooltip('Move to category'));
+              await t.tap(find.byTooltip('Move to category'));
+              await t.pumpAndSettle();
+              await t.tap(find.widgetWithText(ListTile, 'Suggestions'));
+              for (var i = 0; i < 8; i++) {
+                await t.runAsync(
+                  () => Future<void>.delayed(const Duration(milliseconds: 20)),
+                );
+                await t.pump(const Duration(milliseconds: 100));
+              }
+              expect(find.textContaining('A new bug to review'), findsNothing);
+              expect(find.text('Undo'), findsOneWidget);
+              await t.tap(find.text('Undo'));
+              for (var i = 0; i < 8; i++) {
+                await t.runAsync(
+                  () => Future<void>.delayed(const Duration(milliseconds: 20)),
+                );
+                await t.pump(const Duration(milliseconds: 100));
+              }
+              expect(
+                find.textContaining('A new bug to review'),
+                findsOneWidget,
+              );
               expect(t.takeException(), isNull);
             }
           } finally {

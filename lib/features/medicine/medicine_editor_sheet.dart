@@ -4,7 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'medicine_time_dialog.dart';
+
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
@@ -18,7 +21,7 @@ Future<void> showMedicineEditor(BuildContext context, {Medicine? medicine}) =>
       enableDrag: false,
       backgroundColor: context.bgSurface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: AscentRadii.xxl),
       ),
       clipBehavior: Clip.antiAlias,
       builder: (_) => MedicineEditorSheet(medicine: medicine),
@@ -53,6 +56,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
   late DateTime _start = widget.medicine?.startDate ?? DateTime.now();
   late final List<String?> _times = _initialTimes();
   bool _saving = false;
+  bool _pickingTime = false;
   String? _error;
 
   List<String?> _initialTimes() {
@@ -61,11 +65,31 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
       final values =
           (jsonDecode(widget.medicine!.scheduledTimes) as List).cast<String>()
             ..sort();
-      if (values.isNotEmpty) return <String?>[...values];
+      if (values.isNotEmpty) {
+        return values
+            .map((value) => _parseTime(value) == null ? null : value)
+            .toList();
+      }
     } catch (_) {
       /* A new or damaged schedule starts with an explicit time choice. */
     }
     return [null];
+  }
+
+  TimeOfDay? _parseTime(String? value) {
+    final parts = value?.split(':');
+    if (parts == null || parts.length != 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null ||
+        minute == null ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59) {
+      return null;
+    }
+    return TimeOfDay(hour: hour, minute: minute);
   }
 
   @override
@@ -88,16 +112,22 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
 
   Future<void> _pickTime(int index) async {
     FocusScope.of(context).unfocus();
-    final parts = _times[index]?.split(':');
-    final value = await showTimePicker(
-      context: context,
-      initialTime: parts == null
-          ? TimeOfDay.now()
-          : TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1])),
-      helpText: 'Time for dose ${index + 1}',
-      initialEntryMode: TimePickerEntryMode.input,
-    );
-    if (value == null || !mounted) return;
+    if (_pickingTime || _saving || index >= _times.length) return;
+    _pickingTime = true;
+    final initial = _parseTime(_times[index]);
+    TimeOfDay? value;
+    try {
+      value = await showDialog<TimeOfDay>(
+        context: context,
+        builder: (_) => MedicineTimeDialog(
+          initialTime: initial ?? TimeOfDay.now(),
+          dose: index + 1,
+        ),
+      );
+    } finally {
+      _pickingTime = false;
+    }
+    if (value == null || !mounted || index >= _times.length) return;
     final time =
         '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
     if (_times.asMap().entries.any(
@@ -189,7 +219,10 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
   }
 
   Widget _section(String number, String title, {String? subtitle}) => Padding(
-    padding: const EdgeInsets.only(top: 24, bottom: 12),
+    padding: const EdgeInsets.only(
+      top: AscentSpacing.xxl,
+      bottom: AscentSpacing.md,
+    ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -201,7 +234,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
         ),
         if (subtitle != null)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: AscentSpacing.xs),
             child: Text(
               subtitle,
               style: TextStyle(color: context.glass.inkMuted, height: 1.4),
@@ -222,7 +255,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
     String? Function(String?)? validator,
     List<TextInputFormatter>? formatters,
   }) => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.only(bottom: AscentSpacing.lg),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -257,18 +290,16 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
               counterText: '',
               filled: true,
               fillColor: context.bgSurfaceElevated,
-              contentPadding: const EdgeInsets.all(16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+              contentPadding: const EdgeInsets.all(AscentSpacing.lg),
+              border: OutlineInputBorder(borderRadius: AscentRadii.borderMd),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AscentRadii.borderMd,
                 borderSide: BorderSide(
                   color: context.glass.inkMuted.withValues(alpha: .4),
                 ),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AscentRadii.borderMd,
                 borderSide: BorderSide(
                   color: context.glass.inkSecondary,
                   width: 1.5,
@@ -378,7 +409,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                             isExpanded: true,
                             initialValue: _type,
                             decoration: const InputDecoration(
-                              contentPadding: EdgeInsets.all(16),
+                              contentPadding: EdgeInsets.all(AscentSpacing.lg),
                             ),
                             items: [
                               for (final type in [
@@ -427,7 +458,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                           const SizedBox(height: 12),
                           for (var i = 0; i < _times.length; i++)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.only(
+                                bottom: AscentSpacing.sm,
+                              ),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -455,18 +488,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                                                 child: Text(
                                                   _times[i] == null
                                                       ? 'Choose time'
-                                                      : TimeOfDay(
-                                                          hour: int.parse(
-                                                            _times[i]!.split(
-                                                              ':',
-                                                            )[0],
-                                                          ),
-                                                          minute: int.parse(
-                                                            _times[i]!.split(
-                                                              ':',
-                                                            )[1],
-                                                          ),
-                                                        ).format(context),
+                                                      : _parseTime(
+                                                          _times[i],
+                                                        )!.format(context),
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w700,
                                                     color: g.ink,
@@ -552,7 +576,9 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                           ),
                           if (end != null)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.only(
+                                bottom: AscentSpacing.lg,
+                              ),
                               child: Text(
                                 'Last day · ${DateFormat.yMMMd().format(end)}',
                                 style: TextStyle(color: g.inkMuted),
@@ -599,7 +625,7 @@ class _MedicineEditorSheetState extends ConsumerState<MedicineEditorSheet> {
                         style: FilledButton.styleFrom(
                           minimumSize: const Size.fromHeight(52),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
+                            horizontal: AscentSpacing.lg,
                             vertical: 14,
                           ),
                         ),

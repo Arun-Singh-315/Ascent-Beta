@@ -25,7 +25,7 @@ void main() {
 
   group('Thought Wall Archiving & Done Status Logic Tests', () {
     test(
-      'Active thoughts stream excludes archived thoughts and keeps pinned/newest order independent of completion',
+      'Active thoughts stream excludes archived thoughts and keeps open thoughts above completed thoughts',
       () async {
         final now = DateTime.now();
 
@@ -59,11 +59,11 @@ void main() {
         expect(active.length, 2);
         expect(active.any((t) => t.id == id3), isFalse);
 
-        // Completion does not reorder a note out of its chronological section.
-        expect(active.first.id, id2);
-        expect(active.first.isCompleted, isTrue);
-        expect(active.last.id, id1);
-        expect(active.last.isCompleted, isFalse);
+        expect(active.first.id, id1);
+        expect(active.first.isCompleted, isFalse);
+        expect(active.last.id, id2);
+        expect(active.last.isCompleted, isTrue);
+        expect((await dao.watchRecentThoughts(limit: 1).first).single.id, id1);
 
         final archived = await dao.watchArchivedThoughts().first;
         expect(archived.length, 1);
@@ -136,7 +136,7 @@ void main() {
 
   group('Thought Wall Archive UI Integration Tests', () {
     testWidgets(
-      'ThoughtWallScreen displays "History & Archive" segment and archived badge',
+      'ThoughtWallScreen displays "All" date segment and archived badge',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);
         tester.view.devicePixelRatio = 2.0;
@@ -163,18 +163,27 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // 1. Check segment header has "History & Archive"
-        expect(find.text('History & Archive'), findsOneWidget);
+        // 1. Check segment header has "All"
+        expect(find.text('All'), findsOneWidget);
 
-        // 2. Switch to "History & Archive" tab
-        await tester.tap(find.text('History & Archive'));
+        // 2. Switch to "All" tab
+        await tester.tap(find.text('All'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // 3. Verify archived card is visible with ARCHIVED badge and 1-tap unarchive button
+        expect(find.text('Deep personal reflection'), findsNothing);
+        await tester.tap(find.text('Archive'));
+        for (var i = 0; i < 6; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pump(const Duration(milliseconds: 100));
+        }
         expect(find.text('Deep personal reflection'), findsOneWidget);
         expect(find.text('ARCHIVED'), findsOneWidget);
-        expect(find.byTooltip('Unarchive thought'), findsOneWidget);
+        await tester.tap(find.byType(PopupMenuButton<String>));
+        await tester.pumpAndSettle();
+        expect(find.text('Unarchive'), findsOneWidget);
 
         // Clean unmount
         await tester.pumpWidget(const SizedBox());

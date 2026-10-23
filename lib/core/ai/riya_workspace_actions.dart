@@ -375,6 +375,8 @@ class RiyaWorkspaceActions {
         return RiyaResult(
           'Saved merged thought #${merged.id}. Original links are preserved.',
           route,
+          entityType: 'thoughts',
+          entityId: merged.id,
         );
       case 'thoughts.convert':
         final notes = await _notes(a['noteIds']);
@@ -395,7 +397,11 @@ class RiyaWorkspaceActions {
         }
         return RiyaResult(
           'Saved ${result.taskIds.length} Todos and ${result.reminders.length} reminders.',
-          route,
+          result.taskIds.isNotEmpty ? '/today' : '/reminders',
+          entityType: result.taskIds.isNotEmpty ? 'tasks' : 'reminders',
+          entityId: result.taskIds.isNotEmpty
+              ? result.taskIds.first
+              : result.reminders.first.id,
           reminderIds: result.reminders.map((r) => r.id).toList(),
         );
       case 'tasks.list':

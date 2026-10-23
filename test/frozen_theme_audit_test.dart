@@ -45,13 +45,13 @@ void main() {
       expect(contrastSurface, greaterThan(7.0));
     });
 
-    test('verifies AppSurfaces.nordicSky has non-transparent cardFill and 0.75 hairline border', () {
+    test('verifies AppSurfaces.nordicSky has non-transparent cardFill and 1.0 hairline border', () {
       final surfaces = AppSurfaces.nordicSky;
-      expect(surfaces.cardFill, equals(FrozenPalette.surface));
+      expect(surfaces.cardFill, equals(const Color.fromRGBO(243, 247, 251, 0.78)));
       expect(surfaces.cardBorderColor, equals(FrozenPalette.line));
       expect(surfaces.pillBorderColor, equals(FrozenPalette.lineSubtle));
       expect(surfaces.tintFill, equals(FrozenPalette.pillSoft));
-      expect(surfaces.cardBorderWidth, equals(0.75));
+      expect(surfaces.cardBorderWidth, equals(1.0));
       expect(surfaces.pillBorderWidth, equals(0.75));
     });
 
@@ -59,8 +59,8 @@ void main() {
       final glass = AscentGlass.nordicSky;
       expect(glass.frozen, isTrue);
       expect(glass.bg, equals(FrozenPalette.canvas));
-      expect(glass.fill, equals(const Color.fromRGBO(243, 247, 251, 0.96)));
-      expect(glass.nav, equals(const Color.fromRGBO(243, 247, 251, 0.96)));
+      expect(glass.fill, equals(const Color.fromRGBO(243, 247, 251, 0.78)));
+      expect(glass.nav, equals(const Color.fromRGBO(243, 247, 251, 0.90)));
       expect(glass.edge, equals(FrozenPalette.line));
       expect(glass.line, equals(FrozenPalette.lineSubtle));
       expect(glass.track, equals(FrozenPalette.pillSoft));
@@ -109,7 +109,7 @@ void main() {
       expect(FrozenPalette.lineSubtle, const Color(0xFFD2E3F1));
       expect(FrozenPalette.darkLineSubtle, const Color(0xFF1E314D));
       expect(AppSurfaces.nordicSky.dividerColor, equals(FrozenPalette.lineSubtle));
-      expect(AppSurfaces.nordicSky.cardBorderWidth, equals(0.75));
+      expect(AppSurfaces.nordicSky.cardBorderWidth, equals(1.0));
     });
   });
 }

@@ -133,79 +133,77 @@ void main() {
     },
   );
 
-  testWidgets('compact wall cards expand, collapse and respect large text', (
-    tester,
-  ) async {
-    final db = AppDatabase.forTesting(NativeDatabase.memory());
-    addTearDown(db.close);
-    final container = ProviderContainer(
-      overrides: [databaseProvider.overrideWithValue(db)],
-    );
-    tester.view.physicalSize = const Size(360, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    final content = List.filled(
-      15,
-      'A long reflection about learning and growing.',
-    ).join('\n');
-    final id = await db.thoughtDao.insertThought(
-      ThoughtTableCompanion.insert(content: content),
-    );
-    final thought = (await db.thoughtDao.getThoughtById(id))!;
-    Future<void> mount(double scale) => tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(
-          theme: AscentTheme.light(),
-          home: MediaQuery(
-            data: MediaQueryData(textScaler: TextScaler.linear(scale)),
-            child: Scaffold(
-              body: SingleChildScrollView(
-                child: ThoughtCardBubble(
-                  key: ValueKey(scale),
-                  thought: thought,
-                  index: 0,
-                  compact: true,
-                  categoryLabel: 'Learning',
+  testWidgets(
+    'long thoughts use Read more, retain actions and respect large text',
+    (tester) async {
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+      tester.view.physicalSize = const Size(360, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final content = List.filled(
+        15,
+        'A long reflection about learning and growing.',
+      ).join('\n');
+      final id = await db.thoughtDao.insertThought(
+        ThoughtTableCompanion.insert(content: content),
+      );
+      final thought = (await db.thoughtDao.getThoughtById(id))!;
+      Future<void> mount(double scale) => tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(scale)),
+              child: Scaffold(
+                body: SingleChildScrollView(
+                  child: ThoughtCardBubble(
+                    key: ValueKey(scale),
+                    thought: thought,
+                    index: 0,
+                    compact: true,
+                    categoryLabel: 'Learning',
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    try {
-      await mount(1);
-      await tester.pumpAndSettle();
-      final compactHeight = tester
-          .getSize(find.byType(ThoughtCardBubble))
-          .height;
-      expect(compactHeight, lessThan(180));
-      expect(find.byTooltip('Edit thought'), findsNothing);
-      await tester.tap(find.byTooltip('Expand thought'));
-      await tester.pumpAndSettle();
-      expect(find.byTooltip('Edit thought'), findsOneWidget);
-      expect(
-        tester.getSize(find.byType(ThoughtCardBubble)).height,
-        greaterThan(compactHeight),
       );
-      await tester.tap(find.byTooltip('Collapse thought'));
-      await tester.pumpAndSettle();
-      expect(
-        tester.getSize(find.byType(ThoughtCardBubble)).height,
-        compactHeight,
-      );
-      await mount(2);
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    } finally {
-      await tester.pumpWidget(const SizedBox());
-      container.dispose();
-      await tester.pump(const Duration(seconds: 2));
-      await tester.pump();
-    }
-  });
+      try {
+        await mount(1);
+        await tester.pumpAndSettle();
+        final height = tester.getSize(find.byType(ThoughtCardBubble)).height;
+        final text = tester.widget<Text>(find.text(content));
+        expect(text.maxLines, 5);
+        expect(find.byTooltip('Expand thought'), findsNothing);
+        expect(find.byTooltip('Collapse thought'), findsNothing);
+        expect(find.text('Category'), findsOneWidget);
+        expect(find.text('Plan'), findsOneWidget);
+        await tester.tap(find.text('Read more'));
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+        expect(
+          tester.getSize(find.byType(ThoughtCardBubble)).height,
+          greaterThan(height),
+        );
+        expect(tester.widget<Text>(find.text(content)).maxLines, isNull);
+        await mount(2);
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      } finally {
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump();
+      }
+    },
+  );
 
   testWidgets(
     'create a category in the picker and immediately file selected thoughts',
@@ -246,14 +244,14 @@ void main() {
         );
         await settleDb(tester);
         expect(
-          find.byKey(ValueKey('thought_compact_${ids.first}')),
+          find.byKey(ValueKey('thought_surface_${ids.first}_soft')),
           findsOneWidget,
         );
         await tester.longPress(find.text('First learning note'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Second learning note'));
         await tester.pumpAndSettle();
-        await tester.tap(find.text('Move to category'));
+        await tester.tap(find.text('Category'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Create category'));
         await tester.pumpAndSettle();
@@ -263,7 +261,7 @@ void main() {
           find.byKey(const ValueKey('thought_selection_actions')),
           findsOneWidget,
         );
-        await tester.tap(find.text('Move to category'));
+        await tester.tap(find.text('Category'));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Create category'));
         await tester.pumpAndSettle();
@@ -296,13 +294,6 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('First learning note'), findsOneWidget);
         expect(find.text('Second learning note'), findsOneWidget);
-        await tester.tap(
-          find.descendant(
-            of: find.byKey(ValueKey(ids.first)),
-            matching: find.byTooltip('Expand thought'),
-          ),
-        );
-        await tester.pumpAndSettle();
         await tester.tap(
           find.descendant(
             of: find.byKey(ValueKey(ids.first)),

@@ -118,8 +118,13 @@ final ascentRouter = GoRouter(
           routes: [
             GoRoute(
               path: AscentRoutes.reminders,
-              pageBuilder: (context, state) =>
-                  const NoTransitionPage(child: RemindersScreen()),
+              pageBuilder: (context, state) => NoTransitionPage(
+                child: RemindersScreen(
+                  initialReminderId: int.tryParse(
+                    state.uri.queryParameters['reminder'] ?? '',
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -222,9 +227,8 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.plans,
-      builder: (context, state) => PlansScreen(
-        initialPlanId: state.uri.queryParameters['id'],
-      ),
+      builder: (context, state) =>
+          PlansScreen(initialPlanId: state.uri.queryParameters['id']),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
@@ -302,7 +306,9 @@ final ascentRouter = GoRouter(
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.today,
-      builder: (context, state) => const TaskBoardScreen(),
+      builder: (context, state) => TaskBoardScreen(
+        initialTaskId: int.tryParse(state.uri.queryParameters['task'] ?? ''),
+      ),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,

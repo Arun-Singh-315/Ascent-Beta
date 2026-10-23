@@ -47,13 +47,13 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([]),
+              ),
             ],
             child: MaterialApp(
               theme: AscentTheme.light(preset: DayThemePreset.classicClay),
-              home: const Scaffold(
-                body: ThoughtWallHomePreview(),
-              ),
+              home: const Scaffold(body: ThoughtWallHomePreview()),
             ),
           ),
         );
@@ -93,7 +93,9 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([t2, t1])),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([t2, t1]),
+              ),
             ],
             child: MaterialApp(
               theme: AscentTheme.light(preset: DayThemePreset.classicClay),
@@ -111,7 +113,10 @@ void main() {
 
         // Header and View all are inside this card
         expect(
-          find.descendant(of: cardFinder, matching: find.text('Recent thoughts')),
+          find.descendant(
+            of: cardFinder,
+            matching: find.text('Recent thoughts'),
+          ),
           findsOneWidget,
         );
         expect(
@@ -146,7 +151,9 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([thought])),
+              recentThoughtsStreamProvider.overrideWith(
+                (ref) => Stream.value([thought]),
+              ),
             ],
             child: MaterialApp(
               theme: AscentTheme.light(),
@@ -158,26 +165,13 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Initially collapsed: Plan action is not visible, down chevron is present
-        expect(find.text('Plan'), findsNothing);
-        expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
-
-        // Tap chevron: expands actions
-        await tester.tap(find.byTooltip('Expand actions'));
-        await tester.pumpAndSettle();
-
         expect(find.text('Plan'), findsOneWidget);
         expect(find.text('Todo'), findsOneWidget);
         expect(find.text('Reminder'), findsOneWidget);
-        expect(find.byIcon(Icons.keyboard_arrow_up_rounded), findsOneWidget);
-
-        // Tap chevron second time: collapses actions smoothly rather than opening Thought Wall
-        await tester.tap(find.byTooltip('Collapse actions'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Plan'), findsNothing);
-        expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
-
+        expect(find.byTooltip('Expand actions'), findsNothing);
+        expect(find.byTooltip('Collapse actions'), findsNothing);
+        await tester.pump(const Duration(seconds: 10));
+        expect(find.text('Plan'), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
         await tester.pumpAndSettle();
       },
@@ -191,8 +185,12 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-              currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(3),
+              ),
               todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
             ],
             child: MaterialApp(
@@ -240,8 +238,12 @@ void main() {
             overrides: [
               databaseProvider.overrideWithValue(db),
               sharedPreferencesProvider.overrideWithValue(prefs),
-              timeTrackingProvider.overrideWith(() => _FakeTimeTrackingNotifier()),
-              currentStreakStreamProvider.overrideWith((ref) => Stream.value(3)),
+              timeTrackingProvider.overrideWith(
+                () => _FakeTimeTrackingNotifier(),
+              ),
+              currentStreakStreamProvider.overrideWith(
+                (ref) => Stream.value(3),
+              ),
               todayActivitiesProvider.overrideWith((ref) => Stream.value([])),
             ],
             child: MaterialApp(

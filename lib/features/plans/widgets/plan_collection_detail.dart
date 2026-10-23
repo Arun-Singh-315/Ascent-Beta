@@ -1461,7 +1461,7 @@ class _DetailState extends ConsumerState<PlanCollectionDetail> {
                     child: FilledButton.icon(
                       style: FilledButton.styleFrom(
                         backgroundColor: g.clay,
-                        foregroundColor: Colors.white,
+                        foregroundColor: Theme.of(context).colorScheme.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: AppGeometry.roundedr16,
                         ),

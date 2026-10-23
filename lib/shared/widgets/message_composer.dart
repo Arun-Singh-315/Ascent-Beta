@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/frozen_palette.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/text_styles.dart';
 import 'note_list_button.dart';
 
@@ -26,9 +28,29 @@ class MessageComposer extends StatefulWidget {
 }
 
 class _MessageComposerState extends State<MessageComposer> {
+  final _fieldKey = GlobalKey();
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_revealCaret);
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageComposer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_revealCaret);
+      widget.controller.addListener(_revealCaret);
+    }
+  }
+
+  void _revealCaret() =>
+      NoteListButton.revealCaret(_fieldKey, widget.controller);
+
   late final FocusNode _focus = widget.focusNode ?? FocusNode();
   @override
   void dispose() {
+    widget.controller.removeListener(_revealCaret);
     if (widget.focusNode == null) _focus.dispose();
     super.dispose();
   }
@@ -58,15 +80,27 @@ class _MessageComposerState extends State<MessageComposer> {
                 child: AppCard(
                   constraints: const BoxConstraints(minHeight: 48),
                   nightDecoration: BoxDecoration(
-                    color: context.bgSurfaceElevated,
+                    color: context.isDark
+                        ? context.bgSurfaceElevated
+                        : (g.merlot
+                            ? MerlotPalette.surface
+                            : (g.frozen
+                                ? const Color(0xFFFFFFFF)
+                                : const Color(0xFFFFFFFF))),
                     borderRadius: AppGeometry.roundedr24,
                     border: Border.all(
                       color: _focus.hasFocus
                           ? (context.isDark && g.merlot
                                 ? g.inkSecondary
                                 : g.clay)
-                          : g.inkMuted.withValues(alpha: .55),
-                      width: _focus.hasFocus ? 1.5 : 1,
+                          : (context.isDark
+                              ? g.edge
+                              : (g.merlot
+                                  ? MerlotPalette.line
+                                  : (g.frozen
+                                      ? FrozenPalette.line
+                                      : const Color(0xFFD9C5BB)))),
+                      width: _focus.hasFocus ? 1.5 : 1.2,
                     ),
                   ),
                   child: Row(
@@ -81,6 +115,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       ),
                       Expanded(
                         child: TextField(
+                          key: _fieldKey,
                           controller: widget.controller,
                           focusNode: _focus,
                           minLines: 1,

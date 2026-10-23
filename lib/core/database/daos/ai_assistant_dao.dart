@@ -18,7 +18,27 @@ class AiAssistantDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<int> clearChatHistory() => db.transaction(() async {
-    await db.delete(db.aiCommandTable).go();
+    // Plan ownership and unfinished device effects outlive the conversation.
+    final receipts = await (db.select(
+      db.aiCommandTable,
+    )..where((r) => r.requestId.like('chat:%'))).get();
+    final removable = <String>[];
+    for (final receipt in receipts) {
+      try {
+        final result = jsonDecode(receipt.resultJson) as Map;
+        if (result['alertEffectsPending'] != true &&
+            result['executionStatus'] != 'prepared') {
+          removable.add(receipt.requestId);
+        }
+      } catch (_) {
+        /* Retain receipts that still need recovery. */
+      }
+    }
+    if (removable.isNotEmpty) {
+      await (db.delete(
+        db.aiCommandTable,
+      )..where((r) => r.requestId.isIn(removable))).go();
+    }
     return delete(aiChatMessageTable).go();
   });
 

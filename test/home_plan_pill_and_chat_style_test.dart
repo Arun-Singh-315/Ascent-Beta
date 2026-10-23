@@ -1,4 +1,5 @@
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -6,7 +7,6 @@ import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/core/streak/study_streak_provider.dart';
 import 'package:ascent/features/home/home_screen.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
-import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +70,7 @@ void main() {
     });
 
     testWidgets(
-      'Thought Wall preview renders 2 messages in left/right chat style with white surfaces',
+      'Thought Wall preview renders 2 messages in left/right chat style with faint theme tints',
       (tester) async {
         final thoughts = <Thought>[];
         for (var i = 0; i < 3; i++) {
@@ -121,11 +121,13 @@ void main() {
         expect(thought1Finder, findsOneWidget);
         expect(thought2Finder, findsNothing);
 
-        // Verify GlassSurface fill color is white
-        final glass0 = tester.widget<GlassSurface>(thought0Finder);
-        final glass1 = tester.widget<GlassSurface>(thought1Finder);
-        expect(glass0.fillColor, Colors.white);
-        expect(glass1.fillColor, Colors.white);
+        // Both bubbles share the same faint theme tint.
+        final bubble0 = tester.widget<Container>(thought0Finder);
+        final bubble1 = tester.widget<Container>(thought1Finder);
+        final g = tester.element(thought0Finder).glass;
+        final expectedFill = g.clay.withValues(alpha: .06);
+        expect((bubble0.decoration! as BoxDecoration).color, expectedFill);
+        expect((bubble1.decoration! as BoxDecoration).color, expectedFill);
 
         // Verify left / right asymmetric chat margins
         final padding0 = tester.widget<Padding>(

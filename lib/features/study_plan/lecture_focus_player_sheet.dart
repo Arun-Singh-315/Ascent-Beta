@@ -38,6 +38,7 @@ class LectureFocusPlayerSheet extends ConsumerStatefulWidget {
 class _LectureFocusPlayerSheetState
     extends ConsumerState<LectureFocusPlayerSheet> {
   bool _switcherExpanded = false;
+  String _lectureQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +46,16 @@ class _LectureFocusPlayerSheetState
     final notifier = ref.read(learningHubProvider.notifier);
     final active = state.activeLecture;
     final activeMod = state.activeModule;
+    final lectures = state.course.modules
+        .expand((module) => module.lectures)
+        .where(
+          (lecture) =>
+              _lectureQuery.isEmpty ||
+              '${lecture.title} ${lecture.moduleTitle}'.toLowerCase().contains(
+                _lectureQuery,
+              ),
+        )
+        .toList();
 
     return AppCard(
       constraints: BoxConstraints(
@@ -238,6 +249,7 @@ class _LectureFocusPlayerSheetState
                           height: 170,
                           child: CircularProgressIndicator(
                             value: state.progressFraction,
+                            semanticsLabel: 'Lecture progress',
                             strokeWidth: 9,
                             backgroundColor: context.divider,
                             color: context.accentSecondary,
@@ -247,10 +259,18 @@ class _LectureFocusPlayerSheetState
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              state.formattedRemaining,
-                              style: AppTypography.jetBrainsMono32W80054(
-                                color: context.textPrimary,
+                            SizedBox(
+                              width: 150,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  state.formattedRemaining,
+                                  semanticsLabel:
+                                      '${state.formattedRemaining} remaining',
+                                  style: AppTypography.jetBrainsMono32W80054(
+                                    color: context.textPrimary,
+                                  ),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -481,7 +501,7 @@ class _LectureFocusPlayerSheetState
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'Swift Lecture Switcher',
+                                      'Lecture queue',
                                       style:
                                           AppTypography.plusJakartaSans14W70021(
                                             color: context.textPrimary,
@@ -520,133 +540,158 @@ class _LectureFocusPlayerSheetState
 
                         if (_switcherExpanded) ...[
                           AppDivider(height: 1, color: context.divider),
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppSpace.s6,
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: TextField(
+                              key: const ValueKey('lecture_queue_search'),
+                              onChanged: (value) => setState(
+                                () =>
+                                    _lectureQuery = value.trim().toLowerCase(),
+                              ),
+                              decoration: const InputDecoration(
+                                hintText: 'Find in lecture queue',
+                                prefixIcon: Icon(Icons.search_rounded),
+                              ),
                             ),
-                            itemCount: state.course.modules
-                                .expand((m) => m.lectures)
-                                .length,
-                            itemBuilder: (context, index) {
-                              final all = state.course.modules
-                                  .expand((m) => m.lectures)
-                                  .toList();
-                              final lec = all[index];
-                              final isCurrent = lec.id == state.activeLectureId;
+                          ),
+                          if (lectures.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text('No lectures match your search.'),
+                            ),
+                          SizedBox(
+                            height: (MediaQuery.sizeOf(context).height * .35)
+                                .clamp(180.0, 320.0),
+                            child: ListView.builder(
+                              key: const ValueKey('lecture_queue_list'),
+                              primary: false,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: AppSpace.s6,
+                              ),
+                              itemCount: lectures.length,
+                              itemBuilder: (context, index) {
+                                final lec = lectures[index];
+                                final isCurrent =
+                                    lec.id == state.activeLectureId;
 
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpace.s10,
-                                  vertical: AppSpace.s3,
-                                ),
-                                child: Material(
-                                  color: isCurrent
-                                      ? context.accentSecondary.withValues(
-                                          alpha: 0.12,
-                                        )
-                                      : AppPalette.transparent,
-                                  shape: isCurrent
-                                      ? RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpace.s10,
+                                    vertical: AppSpace.s3,
+                                  ),
+                                  child: Material(
+                                    color: isCurrent
+                                        ? context.accentSecondary.withValues(
+                                            alpha: 0.12,
+                                          )
+                                        : AppPalette.transparent,
+                                    shape: isCurrent
+                                        ? RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            side: BorderSide(
+                                              color: context.accentSecondary
+                                                  .withValues(alpha: 0.4),
+                                            ),
+                                          )
+                                        : RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
-                                          side: BorderSide(
-                                            color: context.accentSecondary
-                                                .withValues(alpha: 0.4),
+                                    child: ListTile(
+                                      dense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: AppSpace.s10,
+                                            vertical: AppSpace.s2,
                                           ),
-                                        )
-                                      : RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
+                                      leading: AppTag(
+                                        width: 26,
+                                        height: 26,
+                                        nightDecoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: isCurrent
+                                              ? context.accentSecondary
+                                              : (lec.isCompleted
+                                                    ? context.accentPrimary
+                                                          .withValues(
+                                                            alpha: 0.2,
+                                                          )
+                                                    : context.divider
+                                                          .withValues(
+                                                            alpha: 0.6,
+                                                          )),
                                         ),
-                                  child: ListTile(
-                                    dense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpace.s10,
-                                      vertical: AppSpace.s2,
-                                    ),
-                                    leading: AppTag(
-                                      width: 26,
-                                      height: 26,
-                                      nightDecoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: isCurrent
-                                            ? context.accentSecondary
-                                            : (lec.isCompleted
-                                                  ? context.accentPrimary
-                                                        .withValues(alpha: 0.2)
-                                                  : context.divider.withValues(
-                                                      alpha: 0.6,
-                                                    )),
+                                        child: Center(
+                                          child: lec.isCompleted
+                                              ? Icon(
+                                                  Icons.check,
+                                                  size: 14,
+                                                  color: context.accentPrimary,
+                                                )
+                                              : Text(
+                                                  '${lec.id}',
+                                                  style:
+                                                      AppTypography.jetBrainsMono11W7002(
+                                                        color: isCurrent
+                                                            ? AppPalette.white
+                                                            : context
+                                                                  .textPrimary,
+                                                      ),
+                                                ),
+                                        ),
                                       ),
-                                      child: Center(
-                                        child: lec.isCompleted
-                                            ? Icon(
-                                                Icons.check,
-                                                size: 14,
-                                                color: context.accentPrimary,
-                                              )
-                                            : Text(
-                                                '${lec.id}',
-                                                style:
-                                                    AppTypography.jetBrainsMono11W7002(
-                                                      color: isCurrent
-                                                          ? AppPalette.white
-                                                          : context.textPrimary,
-                                                    ),
-                                              ),
+                                      title: Text(
+                                        lec.title,
+                                        style: AppStateTypography.stateType16(
+                                          state0: isCurrent,
+                                          color: lec.isCompleted
+                                              ? context.textMuted
+                                              : context.textPrimary,
+                                          decoration: lec.isCompleted
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                          decorationColor: context.textMuted,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                    title: Text(
-                                      lec.title,
-                                      style: AppStateTypography.stateType16(
-                                        state0: isCurrent,
-                                        color: lec.isCompleted
-                                            ? context.textMuted
-                                            : context.textPrimary,
-                                        decoration: lec.isCompleted
-                                            ? TextDecoration.lineThrough
-                                            : null,
-                                        decorationColor: context.textMuted,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          lec.formattedDuration,
-                                          style: AppStateTypography.stateType17(
-                                            state0: isCurrent,
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            lec.formattedDuration,
+                                            style:
+                                                AppStateTypography.stateType17(
+                                                  state0: isCurrent,
+                                                  color: isCurrent
+                                                      ? context.accentSecondary
+                                                      : context.textMuted,
+                                                ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Icon(
+                                            Icons.chevron_right_rounded,
+                                            size: 16,
                                             color: isCurrent
                                                 ? context.accentSecondary
                                                 : context.textMuted,
                                           ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Icon(
-                                          Icons.chevron_right_rounded,
-                                          size: 16,
-                                          color: isCurrent
-                                              ? context.accentSecondary
-                                              : context.textMuted,
-                                        ),
-                                      ],
+                                        ],
+                                      ),
+                                      onTap: () {
+                                        notifier.selectLecture(
+                                          lec.id,
+                                          autoPlay: true,
+                                        );
+                                      },
                                     ),
-                                    onTap: () {
-                                      notifier.selectLecture(
-                                        lec.id,
-                                        autoPlay: true,
-                                      );
-                                    },
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         ],
                       ],

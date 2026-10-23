@@ -44,6 +44,24 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
 
+  static const groupMedicine = 'ascent.group.medicine';
+  static const groupReminders = 'ascent.group.reminders';
+  static const groupPlans = 'ascent.group.plans';
+  static const _groupChannel = MethodChannel('ascent/notification-groups');
+
+  Future<void> _updateGroup(
+    String method, [
+    Map<String, Object>? arguments,
+  ]) async {
+    try {
+      await _groupChannel.invokeMethod<void>(method, arguments);
+    } on MissingPluginException {
+      /* Desktop and iOS use platform grouping. */
+    } on PlatformException catch (error) {
+      debugPrint('Notification grouping deferred: ${error.code}');
+    }
+  }
+
   // Offset used to pair a task reminder with its 20-minute follow-up nudge
   static const int followUpIdOffset = 500000;
 
@@ -543,6 +561,7 @@ class NotificationService {
     String? summaryText,
     Importance importance = Importance.max,
     Priority priority = Priority.max,
+    String? groupKey,
   }) {
     final androidDetails = AndroidNotificationDetails(
       channelId,
@@ -558,8 +577,11 @@ class NotificationService {
       ledOffMs: 500,
       enableVibration: true,
       vibrationPattern: Int64List.fromList([0, 150, 80, 220]),
-      subText: 'Ascent • Momentum Engine',
+      subText: groupKey == groupMedicine ? 'Medicine' : 'Ascent',
       category: AndroidNotificationCategory.reminder,
+      groupKey: groupKey,
+      groupAlertBehavior: GroupAlertBehavior.children,
+
       styleInformation: BigTextStyleInformation(
         body,
         htmlFormatBigText: false,
@@ -571,12 +593,13 @@ class NotificationService {
       playSound: true,
     );
 
-    const darwinDetails = DarwinNotificationDetails(
+    final darwinDetails = DarwinNotificationDetails(
+      threadIdentifier: groupKey,
       presentAlert: true,
       presentBadge: true,
       presentSound: true,
       interruptionLevel: InterruptionLevel.timeSensitive,
-      subtitle: 'Ascent • Momentum Engine',
+      subtitle: groupKey == groupMedicine ? 'Medicine' : 'Ascent',
     );
 
     const linuxDetails = LinuxNotificationDetails();
@@ -866,6 +889,8 @@ class NotificationService {
         priority: Priority.high,
         color: AscentColors.accentPrimary,
         category: AndroidNotificationCategory.reminder,
+        groupKey: destination.startsWith('/home') ? groupPlans : groupReminders,
+        groupAlertBehavior: GroupAlertBehavior.children,
         actions: checkIn
             ? const [
                 AndroidNotificationAction(
@@ -894,6 +919,9 @@ class NotificationService {
         ),
       ),
       iOS: DarwinNotificationDetails(
+        threadIdentifier: destination.startsWith('/home')
+            ? groupPlans
+            : groupReminders,
         categoryIdentifier: checkIn ? 'home_checkin' : null,
         presentAlert: true,
         presentSound: true,
@@ -935,6 +963,11 @@ class NotificationService {
         return false;
       }
     }
+
+    await _updateGroup('schedule', {
+      'id': id,
+      'at': scheduledTz.millisecondsSinceEpoch + 1500,
+    });
 
     // Schedule the 20-minute follow-up accountability nudge ("Yo bro where you at?")
     if (scheduleFollowUp) {
@@ -1237,9 +1270,10 @@ class NotificationService {
       }
     }
 
-    final title = 'Time for your medicine: $medicineName';
-    final body =
-        'Please take $dosage ($instructions). Health is your greatest momentum!';
+    final title = '$medicineName · $dosage';
+    final body = instructions.trim().isEmpty
+        ? 'Dose due now · Tap to open Medicines'
+        : '$instructions · Tap to open Medicines';
 
     final details = _buildModernNotificationDetails(
       channelId: channelMedicineId,
@@ -1248,6 +1282,9 @@ class NotificationService {
       title: title,
       body: body,
       summaryText: 'Prescription Schedule',
+      groupKey: groupMedicine,
+      importance: Importance.high,
+      priority: Priority.high,
     );
 
     try {
@@ -1261,6 +1298,10 @@ class NotificationService {
         payload: '/medicine',
       );
       debugPrint('Scheduled exact medicine reminder id=$id at $scheduledTz');
+      await _updateGroup('schedule', {
+        'id': id,
+        'at': scheduledTz.millisecondsSinceEpoch + 1500,
+      });
       return true;
     } catch (e) {
       try {
@@ -1276,6 +1317,10 @@ class NotificationService {
         debugPrint(
           'Scheduled fallback medicine reminder id=$id at $scheduledTz',
         );
+        await _updateGroup('schedule', {
+          'id': id,
+          'at': scheduledTz.millisecondsSinceEpoch + 1500,
+        });
         return true;
       } catch (err) {
         debugPrint('Failed to schedule medicine reminder: $err');
@@ -1290,6 +1335,7 @@ class NotificationService {
     try {
       await _plugin.cancel(id: id);
       await _plugin.cancel(id: id + followUpIdOffset);
+      await _updateGroup('cancel', {'id': id});
     } catch (e) {
       debugPrint('Failed to cancel notification: $e');
     }
@@ -1300,6 +1346,7 @@ class NotificationService {
       await ReminderAlarmBridge.cancel(id);
       await _plugin.cancel(id: id);
       await _plugin.cancel(id: id + followUpIdOffset);
+      await _updateGroup('cancel', {'id': id});
       return true;
     } catch (_) {
       return false;
@@ -1322,6 +1369,7 @@ class NotificationService {
         }
       }
       await _plugin.cancelAll();
+      await _updateGroup('clear');
       return true;
     } catch (_) {
       return false;

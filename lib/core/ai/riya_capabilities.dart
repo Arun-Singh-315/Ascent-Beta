@@ -262,6 +262,20 @@ class RiyaResult {
     this.learningLectureId,
   });
   final String message, route;
+  String get targetRoute {
+    final key = switch (entityType) {
+      'thoughts' => 'thought',
+      'tasks' => 'task',
+      'reminders' => 'reminder',
+      _ => null,
+    };
+    if (entityId == null || key == null) return route;
+    final uri = Uri.parse(route);
+    return uri
+        .replace(queryParameters: {...uri.queryParameters, key: '$entityId'})
+        .toString();
+  }
+
   final String? entityType;
   final int? entityId;
   final String? learningCourseId;
@@ -271,7 +285,7 @@ class RiyaResult {
   final bool replayed;
   Map<String, dynamic> toJson() => {
     'message': message,
-    'route': route,
+    'route': targetRoute,
     'reminderIds': reminderIds,
     'cancelReminderIds': cancelReminderIds,
     'options': options,
@@ -649,6 +663,8 @@ class RiyaExecutor {
         return RiyaResult(
           'Created “${a['title']}” with ${ids.length} checklist steps in Today.',
           route,
+          entityType: 'tasks',
+          entityId: parent,
         );
       case 'reminders.list':
         final now = clock();
@@ -782,13 +798,17 @@ class RiyaExecutor {
           );
         }
         final saved = await db.reminderDao.getReminderById(id);
-        if (saved == null || saved.scheduledAt != at) {
+        if (saved == null ||
+            saved.scheduledAt.millisecondsSinceEpoch ~/ 1000 !=
+                at.millisecondsSinceEpoch ~/ 1000) {
           throw StateError('Reminder verification failed');
         }
         return RiyaResult(
           'Saved reminder “${saved.title}” for $at. Device alert scheduling has not been verified.',
           route,
           reminderIds: [id],
+          entityType: 'reminders',
+          entityId: id,
         );
       case 'focus.start':
         if (await db.timeSessionDao.getActiveFocusSession() != null) {
@@ -867,6 +887,8 @@ class RiyaExecutor {
           result.message,
           route,
           reminderIds: result.reminders.map((r) => r.id).toList(),
+          entityType: result.taskId == null ? null : 'tasks',
+          entityId: result.taskId,
         );
     }
   }

@@ -1,3 +1,4 @@
+import 'package:ascent/core/learning_hub/learning_hub_provider.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
@@ -8,13 +9,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+class _UnavailableLecture extends LearningHubNotifier {
+  @override
+  LearningHubState build() => const LearningHubState(courses: [], activeCourseId: '', activeLectureId: 0);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  group('Lecture Activity Non-Tappable & No-Timer UI Tests', () {
+  group('Lecture activity routing and timer isolation', () {
     testWidgets(
-      'Lecture activity is non-tappable, has no play button, and displays no elapsed timer',
+      'Unavailable lecture stays safe and has no generic timer controls',
       (tester) async {
         final lectureActivity = TodayActivityItem(
           id: 'lecture_dsa_101',
@@ -31,6 +37,7 @@ void main() {
 
         await tester.pumpWidget(
           ProviderScope(
+            overrides: [learningHubProvider.overrideWith(_UnavailableLecture.new)],
             child: MaterialApp(
               theme: AscentTheme.light(),
               home: Scaffold(
@@ -56,7 +63,7 @@ void main() {
         expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
         expect(find.byIcon(Icons.pause_rounded), findsNothing);
 
-        // 5. Tapping on the row does not trigger player sheet or modal
+        // 5. An unavailable catalog lecture does not open an unrelated player.
         await tester.tap(find.text('Algorithms: Dynamic Programming'));
         await tester.pumpAndSettle();
         expect(find.byType(BottomSheet), findsNothing);

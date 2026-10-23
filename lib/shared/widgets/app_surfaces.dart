@@ -148,7 +148,7 @@ class AppPill extends AppCard {
       if (!context.surfaces.outlined) {
         final effectiveLabelStyle = labelStyle ??
             (selected
-                ? const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)
+                ? TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)
                 : TextStyle(color: context.surfaces.ink));
         return ChoiceChip(
           key: key,
@@ -160,7 +160,7 @@ class AppPill extends AppCard {
           labelStyle: effectiveLabelStyle,
           side: side,
           shape: shape,
-          checkmarkColor: checkmarkColor ?? Colors.white,
+          checkmarkColor: checkmarkColor ?? Theme.of(context).colorScheme.onPrimary,
         );
       }
       return _dayChip(
@@ -188,7 +188,7 @@ class AppPill extends AppCard {
       if (!context.surfaces.outlined) {
         final effectiveLabelStyle = labelStyle ??
             (selected
-                ? const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)
+                ? TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)
                 : TextStyle(color: context.surfaces.ink));
         return FilterChip(
           key: key,
@@ -200,7 +200,7 @@ class AppPill extends AppCard {
           labelStyle: effectiveLabelStyle,
           side: side,
           shape: shape,
-          checkmarkColor: checkmarkColor ?? Colors.white,
+          checkmarkColor: checkmarkColor ?? Theme.of(context).colorScheme.onPrimary,
         );
       }
       return _dayChip(
@@ -591,7 +591,7 @@ class AppTapArea extends StatelessWidget {
     customBorder: customBorder,
     splashColor: splashColor,
     highlightColor: highlightColor,
-    child: context.surfaces.outlined && (onTap != null || onLongPress != null)
+    child: (onTap != null || onLongPress != null)
         ? ConstrainedBox(
             constraints: BoxConstraints(
               minWidth: context.surfaces.minTapTarget,
@@ -625,7 +625,7 @@ class AppGestureTap extends StatelessWidget {
     onTapUp: onTapUp,
     onTapCancel: onTapCancel,
     behavior: behavior,
-    child: context.surfaces.outlined && onTap != null
+    child: onTap != null
         ? ConstrainedBox(
             constraints: BoxConstraints(
               minWidth: context.surfaces.minTapTarget,
@@ -646,15 +646,11 @@ class AppHeatmapViewport extends StatelessWidget {
   final int columns;
   final Widget child;
   @override
-  Widget build(BuildContext context) => context.surfaces.outlined
-      ? SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width:
-                columns *
-                (context.surfaces.minTapTarget + context.surfaces.spacing),
-            child: child,
-          ),
-        )
-      : child;
+  Widget build(BuildContext context) => SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: SizedBox(
+      width: columns * (context.surfaces.minTapTarget + context.surfaces.spacing),
+      child: child,
+    ),
+  );
 }

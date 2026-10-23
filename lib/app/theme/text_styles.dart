@@ -203,6 +203,21 @@ class AscentTextStyles {
 /// Legacy inter* accessor names remain compatible but render DM Sans body copy.
 class AppTypography {
   AppTypography._();
+
+  /// Dedicated typography for thought reflections and notes: crisp, readable,
+  /// breathable line-height, and gentle letter-spacing.
+  static TextStyle thoughtContent({
+    Color? color,
+    TextDecoration? decoration,
+  }) => GoogleFonts.plusJakartaSans(
+    fontSize: 14.5,
+    fontWeight: FontWeight.w500,
+    height: 1.5,
+    letterSpacing: 0.1,
+    color: color,
+    decoration: decoration,
+  );
+
   static TextStyle inter13Regular1({FontWeight? fontWeight, Color? color}) =>
       GoogleFonts.dmSans(fontSize: 13, fontWeight: fontWeight, color: color);
   static TextStyle jetBrainsMono11W7002({Color? color}) =>

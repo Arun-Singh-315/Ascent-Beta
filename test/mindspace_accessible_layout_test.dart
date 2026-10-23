@@ -107,18 +107,15 @@ void main() {
                 SingleChildScrollView(
                   child: Padding(
                     padding: const EdgeInsets.all(12),
-                    child: ThoughtCardBubble(
-                      thought: notes.first,
-                      index: 0,
-                      showQuickActions: true,
-                    ),
+                    child: ThoughtCardBubble(thought: notes.first, index: 0),
                   ),
                 ),
               ),
             );
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull);
-            expect(find.byTooltip('Pin thought'), findsOneWidget);
+            expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+            expect(find.text('Category'), findsOneWidget);
             await tester.runAsync(() => screenshot('thought'));
             await tester.pumpWidget(
               harness(

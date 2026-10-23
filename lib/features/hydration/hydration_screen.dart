@@ -96,7 +96,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
             style: context.surfaces.buttonStyle(
               ElevatedButton.styleFrom(
                 backgroundColor: context.accentPrimary,
-                foregroundColor: AppPalette.white,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: AppGeometry.roundedr12,
                 ),
@@ -127,7 +127,7 @@ class _HydrationScreenState extends ConsumerState<HydrationScreen> {
     final historyAsync = ref.watch(past7DaysHydrationStreamProvider);
 
     final currentMl = todayWaterAsync.value ?? 0;
-    final targetMl = goalAsync.value ?? 2500;
+    final targetMl = math.max(1, goalAsync.value ?? 2500);
     final percent = ((currentMl / targetMl) * 100).toInt();
 
     final g = context.glass;

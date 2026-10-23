@@ -664,16 +664,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           dayPreset == DayThemePreset.merlotLinen
                               ? 'Vintage Merlot (Default)'
                               : dayPreset == DayThemePreset.nordicSky
-                                  ? 'Frozen Sky'
-                                  : 'Classic Clay',
+                              ? 'Frozen Sky'
+                              : 'Classic Clay',
                           textAlign: TextAlign.end,
                           style: AscentTextStyles.captionMedium
                               .copyWith(
                                 color: dayPreset == DayThemePreset.merlotLinen
                                     ? MerlotPalette.action
                                     : dayPreset == DayThemePreset.nordicSky
-                                        ? FrozenPalette.accent
-                                        : g.clay,
+                                    ? FrozenPalette.accent
+                                    : g.clay,
                               )
                               .merge(AppTypeRoles.typeRole8),
                         ),
@@ -1365,35 +1365,67 @@ class _ThemeOption extends StatelessWidget {
     return Expanded(
       child: AppTapArea(
         onTap: onTap,
-        borderRadius: AppGeometry.roundedr12,
+        borderRadius: AppGeometry.roundedr16,
         child: AppCard(
           selected: isSelected,
-          padding: const EdgeInsets.symmetric(vertical: AppSpace.s12),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppSpace.s16,
+            horizontal: AppSpace.s8,
+          ),
           nightDecoration: BoxDecoration(
             color: isSelected ? context.accentPrimary : g.fill,
-            borderRadius: AppGeometry.roundedr12,
+            borderRadius: AppGeometry.roundedr16,
             border: Border.all(
               color: isSelected ? context.accentPrimary : g.edge,
+              width: isSelected ? 1.5 : 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: context.accentPrimary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: isSelected ? AppPalette.white : g.inkSecondary,
-                size: 20,
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? Colors.white.withValues(alpha: 0.18)
+                      : (context.isDark
+                            ? g.edge.withValues(alpha: 0.4)
+                            : g.clay.withValues(alpha: 0.08)),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: isSelected ? AppPalette.white : g.inkSecondary,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                style: AscentTextStyles.labelSmall
-                    .copyWith(
-                      color: isSelected ? AppPalette.white : g.ink,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.w500,
-                    )
-                    .merge(AppStateTypography.stateType1(state0: isSelected)),
+              const SizedBox(height: 10),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: AscentTextStyles.labelSmall
+                      .copyWith(
+                        color: isSelected ? AppPalette.white : g.ink,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                      )
+                      .merge(AppStateTypography.stateType1(state0: isSelected)),
+                ),
               ),
             ],
           ),

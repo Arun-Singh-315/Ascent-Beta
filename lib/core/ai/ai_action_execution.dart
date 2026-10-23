@@ -5,8 +5,13 @@ import 'ai_service.dart';
 /// Executes the existing SQLite actions after UI approval. Errors propagate;
 /// callers must not render success for proposals or failed writes.
 class AiExecutionResult {
-  const AiExecutionResult(this.message, {this.reminders = const []});
+  const AiExecutionResult(
+    this.message, {
+    this.reminders = const [],
+    this.taskId,
+  });
   final String message;
+  final int? taskId;
   final List<Reminder> reminders;
 }
 
@@ -144,6 +149,7 @@ class AiActionExecution {
             ? 'Added task: $title.'
             : 'Added task and linked reminder: $title. Open Reminders to check device alerts.',
         reminders: savedReminders,
+        taskId: taskId,
       );
     });
   }

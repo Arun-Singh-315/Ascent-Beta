@@ -97,7 +97,7 @@ class _ThoughtWallAppearanceSheetState
                   ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             const Text('Applies to every card in Thought Wall.'),
             if (_error != null)
               Padding(

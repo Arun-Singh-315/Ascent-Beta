@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'color_tokens.dart';
+import 'dimension_tokens.dart';
 import 'frozen_palette.dart';
 import 'merlot_palette.dart';
 import 'glass_theme.dart';
@@ -138,7 +139,7 @@ class AscentTheme {
         ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
         : (isDark ? AscentColors.textMutedDark : AscentColors.textMuted);
     final textOnPrimary = isDark
-        ? (isMerlotLinen ? Colors.white : AscentColors.textOnPrimaryDark)
+        ? (isMerlotLinen ? MerlotPalette.darkCanvas : AscentColors.textOnPrimaryDark)
         : AscentColors.textOnPrimary;
     final divider = day
         ? (isMerlotLinen
@@ -222,6 +223,14 @@ class AscentTheme {
 
     return ThemeData(
       useMaterial3: true,
+      iconButtonTheme: const IconButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: WidgetStatePropertyAll(
+            Size.square(AscentDimensions.minTouchTarget),
+          ),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+      ),
       brightness: brightness,
       colorScheme: colorScheme,
       scaffoldBackgroundColor: bgBase,
@@ -532,7 +541,7 @@ class AscentTheme {
         thumbColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             if (isMerlotLinen) {
-              return Colors.white;
+              return isDark ? MerlotPalette.darkSecondaryInk : Colors.white;
             }
             if (isNordicSky) return const Color(0xFFFFFFFF);
             return isDark ? accentPrimary : const Color(0xFFC07360);
@@ -552,7 +561,7 @@ class AscentTheme {
         trackColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             if (isMerlotLinen) {
-              return MerlotPalette.action;
+              return isDark ? const Color(0xFF5D4945) : MerlotPalette.action;
             }
             if (isNordicSky) {
               return isDark ? FrozenPalette.darkAction : FrozenPalette.action;
@@ -599,7 +608,7 @@ class AscentTheme {
             ? (isMerlotLinen
                 ? MerlotPalette.darkElevated
                 : isNordicSky
-                    ? FrozenPalette.darkInk
+                    ? FrozenPalette.darkElevated
                     : const Color(0xFF2D251E))
             : (isMerlotLinen
                 ? MerlotPalette.ink
@@ -615,11 +624,7 @@ class AscentTheme {
           side: BorderSide(color: Color(0x33FFFFFF), width: 0.9),
         ),
         behavior: SnackBarBehavior.floating,
-        actionTextColor: isMerlotLinen
-            ? MerlotPalette.antiqueGold
-            : isNordicSky
-                ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                : accentPrimary,
+        actionTextColor: const Color(0xFFF0D5A8),
         elevation: day ? 0 : 6,
       ),
 
@@ -693,22 +698,10 @@ class AscentTheme {
               : textPrimary,
         ),
         secondaryLabelStyle: AscentTextStyles.labelSmall.copyWith(
-          color: (isMerlotLinen || isNordicSky)
-              ? (isDark
-                    ? (isMerlotLinen
-                          ? MerlotPalette.darkInk
-                          : FrozenPalette.darkCanvas)
-                    : Colors.white)
-              : textOnPrimary,
+          color: textOnPrimary,
           fontWeight: FontWeight.w600,
         ),
-        checkmarkColor: (isMerlotLinen || isNordicSky)
-            ? (isDark
-                  ? (isMerlotLinen
-                        ? MerlotPalette.darkInk
-                        : FrozenPalette.darkCanvas)
-                  : Colors.white)
-            : textOnPrimary,
+        checkmarkColor: textOnPrimary,
         side: isMerlotLinen
             ? BorderSide(
                 color: isDark

@@ -42,6 +42,19 @@ class MainActivity : FlutterActivity() {
                 }
             } catch (e: Exception) { result.error("music_unavailable", "Music access unavailable", null) }
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ascent/notification-groups").setMethodCallHandler { call, result ->
+            try {
+                when (call.method) {
+                    "schedule" -> NotificationGroups.schedule(this, call.argument<Int>("id")!!, call.argument<Number>("at")!!.toLong())
+                    "cancel" -> NotificationGroups.cancel(this, call.argument<Int>("id")!!)
+                    "clear" -> NotificationGroups.clear(this)
+                    "refresh" -> NotificationGroups.refresh(this)
+                    else -> { result.notImplemented(); return@setMethodCallHandler }
+                }
+                result.success(null)
+            } catch (e: Exception) { result.error("group_unavailable", e.message, null) }
+        }
+        NotificationGroups.refresh(this)
         liveChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "ascent/live-sessions")
         LiveSessions.bridge = liveChannel
         liveChannel!!.setMethodCallHandler { call, result ->

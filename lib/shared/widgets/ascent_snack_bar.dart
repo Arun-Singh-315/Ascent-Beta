@@ -17,6 +17,7 @@ class AscentSnackBar {
   }) => SnackBar(
     content: GlassSurface(
       radius: 18,
+      fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpace.s16,
         vertical: AppSpace.s12,
@@ -26,7 +27,13 @@ class AscentSnackBar {
         child: Row(
           children: [
             Expanded(child: content),
-            ?action,
+            if (action != null)
+              SnackBarAction(
+                label: action.label,
+                textColor: context.glass.ink,
+                disabledTextColor: context.glass.inkMuted,
+                onPressed: action.onPressed,
+              ),
           ],
         ),
       ),
