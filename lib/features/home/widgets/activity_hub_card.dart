@@ -195,10 +195,12 @@ class _HubTabs extends StatelessWidget {
     final g = context.glass;
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 2),
-      child: Row(
-        children: [
-          for (final (i, label) in labels.indexed)
-            InkWell(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final (i, label) in labels.indexed)
+              InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: () => onSelected(i),
               child: Padding(
@@ -229,7 +231,8 @@ class _HubTabs extends StatelessWidget {
                 ),
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
