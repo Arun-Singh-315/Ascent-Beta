@@ -756,6 +756,19 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       'medium' => 'P1',
       _ => 'P2',
     };
+    // Keep the status line short: a type/priority tag plus, only while it
+    // matters, the live timer or a "Paused" marker. Full details live in the
+    // lecture player, the focus screen and the board.
+    final status = [
+      if (activity.linkedTaskId != null && !done && !lecture) priority,
+      if (activity.sourceType == 'medicine') 'Medicine',
+      if (activity.sourceType == 'medicine' && activity.plannedDate != null)
+        DateFormat('h:mm a').format(activity.plannedDate!),
+      if (lecture) 'Lecture',
+      if (running) _elapsedShort(activity),
+      if (paused) 'Paused',
+    ].join(' · ');
+    const titleLineHeight = 14 * 1.35;
     return Material(
       color: done ? Colors.green.withValues(alpha: .07) : Colors.transparent,
       borderRadius: BorderRadius.circular(12),
@@ -768,42 +781,57 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
             ? _openLecture(context, ref)
             : _showActivityDetailDialog(context, ref, activity),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text('→', style: TextStyle(color: g.inkMuted, fontSize: 16)),
-              const SizedBox(width: 8),
               Expanded(
-                child: Column(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      activity.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: done ? g.inkMuted : g.ink,
-                        fontSize: 14,
-                        height: 1.35,
-                        decoration: done ? TextDecoration.lineThrough : null,
+                    // The arrow sits in a box as tall as the title's first
+                    // line, so it stays level with it however the row grows.
+                    SizedBox(
+                      key: const ValueKey('activity_row_arrow'),
+                      height: titleLineHeight,
+                      width: 20,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 15,
+                          color: g.inkMuted,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      [
-                        if (activity.linkedTaskId != null && !done) priority,
-                        if (activity.sourceType == 'medicine') 'Medicine',
-                        if (activity.sourceType == 'medicine' &&
-                            activity.plannedDate != null)
-                          DateFormat('h:mm a').format(activity.plannedDate!),
-                        if (lecture) 'Lecture',
-                        if (timed) _runningTimerText(activity),
-                        if (paused) 'Paused',
-                      ].join(' · '),
-                      style: TextStyle(color: g.inkMuted, fontSize: 11),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            activity.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: done ? g.inkMuted : g.ink,
+                              fontSize: 14,
+                              height: 1.35,
+                              decoration: done
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                          if (status.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              status,
+                              style: TextStyle(color: g.inkMuted, fontSize: 11),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -1099,6 +1127,13 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         ],
       ),
     );
+  }
+
+  String _elapsedShort(TodayActivityItem act) {
+    final elapsed = act.elapsedSecondsToday;
+    final m = elapsed ~/ 60;
+    final s = elapsed % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   String _runningTimerText(TodayActivityItem act) {

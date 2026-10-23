@@ -47,22 +47,9 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
               ),
             ),
             PopupMenuButton<String>(
-              tooltip: 'Things hub views',
-              onSelected: (view) {
-                if (view == 'board') {
-                  context.push('/today');
-                  return;
-                }
-                setState(() {
-                  _showCompleted = view == 'completed';
-                  _showPlans = view == 'plans';
-                  _showAll = false;
-                });
-              },
+              tooltip: 'Things hub options',
+              onSelected: (_) => context.push('/today'),
               itemBuilder: (_) => const [
-                PopupMenuItem(value: 'active', child: Text('Active')),
-                PopupMenuItem(value: 'completed', child: Text('Completed')),
-                PopupMenuItem(value: 'plans', child: Text('Plans')),
                 PopupMenuItem(value: 'board', child: Text('View board')),
               ],
               icon: Icon(Icons.more_horiz, color: g.inkMuted),
@@ -77,15 +64,16 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_showCompleted || _showPlans)
-                TextButton.icon(
-                  onPressed: () => setState(() {
-                    _showCompleted = false;
-                    _showPlans = false;
-                  }),
-                  icon: const Icon(Icons.arrow_back, size: 16),
-                  label: Text(_showPlans ? 'Plans' : 'Completed'),
-                ),
+              _HubTabs(
+                key: const ValueKey('activity_hub_tabs'),
+                labels: const ['Active', 'Completed', 'Plans'],
+                selected: _showPlans ? 2 : (_showCompleted ? 1 : 0),
+                onSelected: (i) => setState(() {
+                  _showCompleted = i == 1;
+                  _showPlans = i == 2;
+                  _showAll = false;
+                }),
+              ),
               if (_showPlans)
                 const HomePlansPreview()
               else
@@ -126,12 +114,22 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                               style: TextStyle(color: g.inkMuted, fontSize: 13),
                             ),
                           ),
-                        for (final row in rows.take(limit))
+                        for (final (i, row) in rows.take(limit).indexed) ...[
+                          if (i > 0)
+                            Divider(
+                              key: ValueKey('activity_row_separator_$i'),
+                              color: g.line.withValues(alpha: .45),
+                              height: 1,
+                              thickness: .5,
+                              indent: 26,
+                              endIndent: 4,
+                            ),
                           ActivityRowItem(
                             key: ValueKey(row.id),
                             activity: row,
                             compact: true,
                           ),
+                        ],
                         if (rows.length > widget.previewLimit && !_showAll)
                           TextButton(
                             onPressed: () => setState(() => _showAll = true),
@@ -162,10 +160,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                   },
                 ),
               if (!_showPlans && !_showCompleted) ...[
+                // Full-width, stronger rule: sets the composer apart from the
+                // lighter, inset hairlines between activity rows.
                 Divider(
                   key: const ValueKey('activity_hub_controls_separator'),
                   color: g.line,
-                  height: 12,
+                  height: 20,
+                  thickness: 1,
                 ),
                 const ActivityComposer(),
               ],
@@ -173,6 +174,63 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Slim text tabs (Active · Completed · Plans) shown at the top of the card.
+class _HubTabs extends StatelessWidget {
+  const _HubTabs({
+    super.key,
+    required this.labels,
+    required this.selected,
+    required this.onSelected,
+  });
+  final List<String> labels;
+  final int selected;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Row(
+        children: [
+          for (final (i, label) in labels.indexed)
+            InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => onSelected(i),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: i == selected ? g.ink : g.inkMuted,
+                        fontSize: 13,
+                        fontWeight: i == selected
+                            ? FontWeight.w700
+                            : FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Container(
+                      height: 2,
+                      width: 16,
+                      decoration: BoxDecoration(
+                        color: i == selected ? g.clay : Colors.transparent,
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
