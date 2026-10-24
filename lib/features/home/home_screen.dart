@@ -40,6 +40,7 @@ import 'widgets/thought_wall_home_preview.dart';
 import 'widgets/planning_notification_handler.dart';
 import 'widgets/welcome_back_banner.dart';
 import '../challenge/integration/challenge_proof_sync.dart';
+import '../vault/widgets/vault_home_preview.dart';
 
 /// Redesigned Home Screen according to the Ascent Home Redesign specification:
 /// - Clean intentional surface levels.
@@ -535,6 +536,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         );
       case 'checkin':
         return spaced(const DailyCheckInCard());
+      case 'vault':
+        return spaced(const VaultHomePreview());
       default:
         return const SizedBox.shrink();
     }

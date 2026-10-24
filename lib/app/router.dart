@@ -34,6 +34,7 @@ import '../features/thought_wall/thought_wall_screen.dart';
 import '../features/hydration/hydration_screen.dart';
 import '../features/chai_break/chai_break_screen.dart';
 import '../features/plans/plans_screen.dart';
+import '../features/vault/vault_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 import '../shared/widgets/feature_guide.dart';
 
@@ -43,6 +44,7 @@ class AscentRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const home = '/home';
+  static const vault = '/vault';
   static const bookReader = '/book-reader';
   static const today = '/today';
   static const money = '/money';
@@ -339,6 +341,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.focus,
       builder: (context, state) => const FocusScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: AscentRoutes.vault,
+      builder: (context, state) => const VaultScreen(),
     ),
   ],
 );

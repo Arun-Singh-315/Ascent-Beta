@@ -13,6 +13,7 @@ const homeSections = <String, String>{
   'mind': 'Mind Space',
   'money': 'Quick expense',
   'checkin': 'Daily check-in',
+  'vault': 'Ascent Vault',
 };
 const homeTools = <String, String>{
   'medicine': 'Medicine',
@@ -33,6 +34,7 @@ const homeShortcutRoutes = <String, String>{
   'walk': 'Walk',
   'chai-break': 'Breaks',
   'momentum': 'Challenges',
+  'vault': 'Vault',
 };
 
 class HomeLayout {
@@ -52,7 +54,15 @@ class HomeLayout {
   final List<String> shortcuts;
   factory HomeLayout.defaults() => HomeLayout(
     order: ['mind', ...homeSections.keys.where((id) => id != 'mind')],
-    visible: {'streak', 'reminders', 'today', 'learning', 'life', 'mind'},
+    visible: {
+      'streak',
+      'reminders',
+      'today',
+      'learning',
+      'life',
+      'mind',
+      'vault',
+    },
     tools: homeTools.keys.toSet(),
   );
   HomeLayout copyWith({
@@ -91,12 +101,19 @@ class HomeLayout {
     }
 
     final order = known(json['order'], homeSections);
+    final savedOrder = (json['order'] as List).cast<dynamic>();
+    final isExistingWithoutVault = !savedOrder.contains('vault');
+    final parsedVisible = known(json['visible'], homeSections).toSet();
+    final visible = isExistingWithoutVault
+        ? {...parsedVisible, 'vault'}
+        : parsedVisible;
+
     return HomeLayout(
       order: [
         ...order,
         ...homeSections.keys.where((id) => !order.contains(id)),
       ],
-      visible: known(json['visible'], homeSections).toSet(),
+      visible: visible,
       tools: known(json['tools'], homeTools).toSet(),
       compact: known(
         json['compact'] ?? [],
