@@ -1,3 +1,4 @@
+import 'home_outline_surface.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
 import '../../../shared/widgets/glass_chip.dart';
 import '../../../app/theme/thought_theme.dart';
@@ -282,9 +283,6 @@ class _ThoughtWallHomePreviewState
           recentThoughtsAsync.value ?? [],
         ).any((t) => t.id == pendingDraft['thoughtId']);
 
-    final hasThoughts = (recentThoughtsAsync.value ?? const <Thought>[])
-        .isNotEmpty;
-    final shellIsDark = context.isDark;
 
     // The composer and the recent thoughts live in ONE card: the composer
     // stays on top exactly as before and saved thoughts appear right below it.
@@ -805,22 +803,6 @@ class _ThoughtWallHomePreviewState
       );
     }
 
-    final shellFill = shellIsDark
-        ? null
-        : (g.merlot
-              ? MerlotPalette.surface
-              : (g.frozen ? const Color(0xFFF8FAFD) : const Color(0xFFFFFDFB)));
-    final shellBorder = shellIsDark
-        ? null
-        : Border.all(
-            color: g.merlot
-                ? MerlotPalette.line
-                : (g.frozen
-                      ? FrozenPalette.line
-                      : g.edge.withValues(alpha: 0.45)),
-            width: 1.0,
-          );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -850,17 +832,12 @@ class _ThoughtWallHomePreviewState
             ],
           ),
         ),
-        // Empty: just the composer (card chrome is invisible). Once a thought
-        // exists the same composer sits at the top of one shared card.
-        GlassSurface(
-          key: const ValueKey('home_mind_space_card'),
-          radius: 20,
-          enableBlur: false,
-          fillColor: hasThoughts ? shellFill : Colors.transparent,
-          customBorder: hasThoughts
-              ? shellBorder
-              : const Border.fromBorderSide(BorderSide.none),
-          padding: hasThoughts ? const EdgeInsets.all(14) : EdgeInsets.zero,
+        // One continuous frame encloses the composer and saved thoughts,
+        // including the empty state.
+        HomeOutlineSurface(
+          surfaceKey: const ValueKey('home_mind_space_card'),
+          radius: 24,
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: shellChildren,

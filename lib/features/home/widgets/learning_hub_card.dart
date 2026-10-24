@@ -8,7 +8,7 @@ import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/learning_hub/learning_hub_provider.dart';
-import '../../../shared/widgets/glass_surface.dart';
+import 'home_outline_surface.dart';
 import '../../study_plan/lecture_focus_player_sheet.dart';
 import '../../study_plan/study_plan_screen.dart';
 
@@ -76,24 +76,8 @@ class LearningHubCard extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 8),
-        GlassSurface(
+        HomeOutlineSurface(
           radius: 22,
-          enableBlur: false,
-          fillColor: dark
-              ? null
-              : (g.merlot
-                    ? MerlotPalette.surface
-                    : (g.frozen ? FrozenPalette.surface : Colors.white)),
-          customBorder: dark
-              ? null
-              : Border.all(
-                  color: g.merlot
-                      ? MerlotPalette.line
-                      : (g.frozen
-                            ? FrozenPalette.line
-                            : g.edge.withValues(alpha: 0.45)),
-                  width: 1.0,
-                ),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
