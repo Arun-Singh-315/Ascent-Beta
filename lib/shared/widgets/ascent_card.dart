@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/merlot_palette.dart';
 import 'app_surfaces.dart';
 
 /// Supported visual surface variants for [AscentCard].
@@ -144,16 +145,90 @@ class AscentCard extends StatelessWidget {
       }
     }
 
-    final borderColor = variant == AscentCardVariant.outlined
-        ? context.divider
-        : g.edge;
+    final isMerlotDay = g.merlot && !context.isDark && color == null && variant != AscentCardVariant.outlined;
+
+    final borderColor = isMerlotDay
+        ? MerlotPalette.line
+        : (variant == AscentCardVariant.outlined ? context.divider : g.edge);
 
     final shadowColor = g.shadow;
+
+    Widget content = Padding(
+      padding: padding ?? const EdgeInsets.all(AscentDimensions.spaceLg),
+      child: child,
+    );
+
+    if (isMerlotDay) {
+      final cardGlass = AscentGlass(
+        merlot: true,
+        bg: MerlotPalette.surface,
+        fill: MerlotPalette.surface,
+        edge: MerlotPalette.line,
+        highlight: const Color.fromRGBO(255, 255, 255, 0.15),
+        line: MerlotPalette.lineSubtle,
+        glow1: const Color.fromRGBO(229, 169, 78, 0.25),
+        glow2: const Color.fromRGBO(196, 77, 86, 0.20),
+        track: MerlotPalette.recessedWell,
+        nav: MerlotPalette.surface,
+        shadow: MerlotPalette.shadowAmbient,
+        clay: MerlotPalette.antiqueGold,
+        claySoft: MerlotPalette.pillSoft,
+        slate: MerlotPalette.antiqueGold,
+        slateSoft: MerlotPalette.sparkTint,
+        sage: const Color(0xFF68D391),
+        sageSoft: MerlotPalette.successTint,
+        amber: MerlotPalette.antiqueGold,
+        amberSoft: MerlotPalette.sparkTint,
+        coral: const Color(0xFFFC8181),
+        coralSoft: MerlotPalette.terracottaTint,
+        ink: MerlotPalette.cardInk,
+        inkSecondary: MerlotPalette.cardSecondaryInk,
+        inkMuted: MerlotPalette.cardMutedInk,
+      );
+      final parentTheme = Theme.of(context);
+      final cardTheme = parentTheme.copyWith(
+        brightness: Brightness.dark,
+        textTheme: parentTheme.textTheme.apply(
+          bodyColor: MerlotPalette.cardInk,
+          displayColor: MerlotPalette.cardInk,
+        ),
+        colorScheme: parentTheme.colorScheme.copyWith(
+          brightness: Brightness.dark,
+          onSurface: MerlotPalette.cardInk,
+          onSurfaceVariant: MerlotPalette.cardSecondaryInk,
+          surface: MerlotPalette.surface,
+          surfaceContainer: MerlotPalette.recessedWell,
+          primary: MerlotPalette.antiqueGold,
+          onPrimary: MerlotPalette.ink,
+        ),
+        extensions: [
+          ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
+          cardGlass,
+        ],
+      );
+      content = Theme(
+        data: cardTheme,
+        child: DefaultTextStyle(
+          style: const TextStyle(color: MerlotPalette.cardInk),
+          child: content,
+        ),
+      );
+    }
 
     return AppCard(
       margin: margin,
       nightDecoration: BoxDecoration(
-        color: surfaceColor,
+        color: isMerlotDay ? null : surfaceColor,
+        gradient: isMerlotDay
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  MerlotPalette.surface,
+                  MerlotPalette.surfaceBottom,
+                ],
+              )
+            : null,
         borderRadius: borderRadius,
         border: hasBorder
             ? Border.all(color: borderColor, width: AppBorderScale.w0point9)
@@ -161,11 +236,13 @@ class AscentCard extends StatelessWidget {
         boxShadow: hasShadow
             ? [
                 BoxShadow(
-                  color: shadowColor.withValues(
-                    alpha: context.isDark ? 0.25 : 0.03,
-                  ),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: isMerlotDay
+                      ? MerlotPalette.shadowAmbient
+                      : shadowColor.withValues(
+                          alpha: context.isDark ? 0.25 : 0.03,
+                        ),
+                  blurRadius: isMerlotDay ? 16 : 8,
+                  offset: isMerlotDay ? const Offset(0, 4) : const Offset(0, 2),
                 ),
               ]
             : null,
@@ -182,10 +259,7 @@ class AscentCard extends StatelessWidget {
                   onTap!();
                 },
           borderRadius: borderRadius,
-          child: Padding(
-            padding: padding ?? const EdgeInsets.all(AscentDimensions.spaceLg),
-            child: child,
-          ),
+          child: content,
         ),
       ),
     );

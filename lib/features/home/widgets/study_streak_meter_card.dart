@@ -72,6 +72,70 @@ class StudyStreakMeterCard extends StatelessWidget {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    if (g.merlot && !isDark) {
+      final cardGlass = AscentGlass(
+        merlot: true,
+        bg: MerlotPalette.surface,
+        fill: MerlotPalette.surface,
+        edge: MerlotPalette.line,
+        highlight: const Color.fromRGBO(255, 255, 255, 0.15),
+        line: MerlotPalette.lineSubtle,
+        glow1: const Color.fromRGBO(229, 169, 78, 0.25),
+        glow2: const Color.fromRGBO(196, 77, 86, 0.20),
+        track: MerlotPalette.recessedWell,
+        nav: MerlotPalette.surface,
+        shadow: MerlotPalette.shadowAmbient,
+        clay: MerlotPalette.antiqueGold,
+        claySoft: MerlotPalette.pillSoft,
+        slate: MerlotPalette.antiqueGold,
+        slateSoft: MerlotPalette.sparkTint,
+        sage: const Color(0xFF68D391),
+        sageSoft: MerlotPalette.successTint,
+        amber: MerlotPalette.antiqueGold,
+        amberSoft: MerlotPalette.sparkTint,
+        coral: const Color(0xFFFC8181),
+        coralSoft: MerlotPalette.terracottaTint,
+        ink: MerlotPalette.cardInk,
+        inkSecondary: MerlotPalette.cardSecondaryInk,
+        inkMuted: MerlotPalette.cardMutedInk,
+      );
+      final parentTheme = Theme.of(context);
+      final cardTheme = parentTheme.copyWith(
+        brightness: Brightness.dark,
+        textTheme: parentTheme.textTheme.apply(
+          bodyColor: MerlotPalette.cardInk,
+          displayColor: MerlotPalette.cardInk,
+        ),
+        colorScheme: parentTheme.colorScheme.copyWith(
+          brightness: Brightness.dark,
+          onSurface: MerlotPalette.cardInk,
+          onSurfaceVariant: MerlotPalette.cardSecondaryInk,
+          surface: MerlotPalette.surface,
+          surfaceContainer: MerlotPalette.recessedWell,
+          primary: MerlotPalette.antiqueGold,
+          onPrimary: MerlotPalette.ink,
+        ),
+        extensions: [
+          ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
+          cardGlass,
+        ],
+      );
+      return Theme(
+        data: cardTheme,
+        child: DefaultTextStyle(
+          style: const TextStyle(color: MerlotPalette.cardInk),
+          child: Builder(builder: (ctx) => _buildCard(ctx)),
+        ),
+      );
+    }
+
+    return _buildCard(context);
+  }
+
+  Widget _buildCard(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final streakTitle = status.displayStreakDays == 0
         ? (status.phase == StudyStreakPhase.broken
             ? 'A fresh start'

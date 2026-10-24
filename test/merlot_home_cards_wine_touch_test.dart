@@ -10,18 +10,18 @@ void main() {
 
   group('Merlot Home Cards Wine Touch & Distinction Tests', () {
     test('1. Merlot card surface and gradient colors have distinct wine red tones', () {
-      // Surface must be warm wine-rose porcelain (Red channel significantly dominates Green/Blue)
+      // Surface must be royal velvet burgundy wine (Red channel significantly dominates Green/Blue)
       expect(MerlotPalette.surface.r, greaterThan(MerlotPalette.surface.g));
       expect(MerlotPalette.surface.r, greaterThan(MerlotPalette.surface.b));
+      expect(MerlotPalette.surface, const Color(0xFF4A101D));
 
-      // Surface bottom must be deeper wine rose stop
+      // Surface bottom must be deeper velvet wine stop
       expect(MerlotPalette.surfaceBottom.r, greaterThan(MerlotPalette.surfaceBottom.g));
       expect(MerlotPalette.surfaceBottom.r, greaterThan(MerlotPalette.surfaceBottom.b));
+      expect(MerlotPalette.surfaceBottom, const Color(0xFF360913));
 
-      // Line border must be deep vintage wine red
-      expect(MerlotPalette.line.r, greaterThan(MerlotPalette.line.g));
-      expect(MerlotPalette.line.r, greaterThan(MerlotPalette.line.b));
-      expect(MerlotPalette.line.a, greaterThan(0.20)); // Stronger definition than faint 0.10
+      // Line border has warm gold rim definition
+      expect(MerlotPalette.line.a, greaterThan(0.20));
     });
 
     testWidgets('2. GlassSurface automatically applies wine micro-gradient and MerlotPalette.line border', (tester) async {
@@ -55,7 +55,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    test('3. Text contrast against wine-rose porcelain surface passes WCAG AAA', () {
+    test('3. Card interior text contrast against burgundy dark red wine surface passes WCAG AAA', () {
       double luminance(Color c) {
         double channel(double v) =>
             v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
@@ -65,15 +65,15 @@ void main() {
         return 0.2126 * r + 0.7152 * g + 0.0722 * b;
       }
 
-      final lInk = luminance(MerlotPalette.ink);
-      final lSecInk = luminance(MerlotPalette.secondaryInk);
+      final lCardInk = luminance(MerlotPalette.cardInk);
+      final lCardSecInk = luminance(MerlotPalette.cardSecondaryInk);
       final lSurface = luminance(MerlotPalette.surface);
 
-      final contrastInk = (lSurface + 0.05) / (lInk + 0.05);
-      final contrastSecInk = (lSurface + 0.05) / (lSecInk + 0.05);
+      final contrastInk = (lCardInk + 0.05) / (lSurface + 0.05);
+      final contrastSecInk = (lCardSecInk + 0.05) / (lSurface + 0.05);
 
-      // Must exceed 15:1 for primary ink and 9:1 for secondary ink
-      expect(contrastInk, greaterThan(15.0));
+      // Must exceed 12:1 for primary card ink and 9:1 for secondary card ink
+      expect(contrastInk, greaterThan(12.0));
       expect(contrastSecInk, greaterThan(9.0));
     });
   });

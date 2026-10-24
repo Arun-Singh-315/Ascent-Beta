@@ -78,13 +78,58 @@ class GlassSurface extends StatelessWidget {
             ? const []
             : [
                 BoxShadow(
-                  color: g.shadow.withValues(alpha: dark ? .16 : .06),
+                  color: g.shadow.withValues(alpha: dark ? .16 : (g.merlot ? .22 : .06)),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
               ],
       ),
-      child: child,
+      child: () {
+        if (!g.merlot || dark || transparent) return child;
+        final cardGlass = g.copyWith(
+          ink: MerlotPalette.cardInk,
+          inkSecondary: MerlotPalette.cardSecondaryInk,
+          inkMuted: MerlotPalette.cardMutedInk,
+          clay: MerlotPalette.antiqueGold,
+          claySoft: const Color(0x28FFFFFF),
+          line: MerlotPalette.lineSubtle,
+          edge: const Color(0x35FFFFFF),
+          track: const Color(0x40000000),
+          fill: const Color(0x24000000),
+          coral: const Color(0xFFFFA07A),
+          sage: const Color(0xFF4ADE80),
+        );
+
+        final parentTheme = Theme.of(context);
+        final cardTheme = parentTheme.copyWith(
+          brightness: Brightness.dark,
+          textTheme: parentTheme.textTheme.apply(
+            bodyColor: MerlotPalette.cardInk,
+            displayColor: MerlotPalette.cardInk,
+          ),
+          colorScheme: parentTheme.colorScheme.copyWith(
+            brightness: Brightness.dark,
+            onSurface: MerlotPalette.cardInk,
+            onSurfaceVariant: MerlotPalette.cardSecondaryInk,
+            surface: MerlotPalette.surface,
+            surfaceContainer: MerlotPalette.recessedWell,
+            primary: MerlotPalette.antiqueGold,
+            onPrimary: MerlotPalette.ink,
+          ),
+          extensions: [
+            ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
+            cardGlass,
+          ],
+        );
+
+        return Theme(
+          data: cardTheme,
+          child: DefaultTextStyle(
+            style: const TextStyle(color: MerlotPalette.cardInk),
+            child: child,
+          ),
+        );
+      }(),
     );
 
     if (onTap != null) {
