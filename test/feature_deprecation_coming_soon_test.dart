@@ -1,5 +1,6 @@
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/features/promises/promises_screen.dart';
+import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/features/study_plan/study_plan_screen.dart';
 import 'package:ascent/features/walk/walk_screen.dart';
 import 'package:flutter/material.dart';
@@ -10,19 +11,28 @@ import 'package:google_fonts/google_fonts.dart';
 void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
-  testWidgets('PromisesScreen renders Coming Soon screen', (tester) async {
+  testWidgets('PromisesScreen renders production Promise overview with tabs', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          activePromisesStreamProvider.overrideWith((ref) => Stream.value([])),
+          completedPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
+          pausedPromisesStreamProvider.overrideWith((ref) => Stream.value([])),
+        ],
         child: MaterialApp(
           theme: AscentTheme.light(),
           home: const PromisesScreen(),
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Coming Soon'), findsOneWidget);
     expect(find.text('Promises'), findsOneWidget);
+    expect(find.text('Active'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
+    expect(find.text('Paused'), findsOneWidget);
+    expect(find.text('Make a promise'), findsWidgets);
   });
 
   testWidgets('StudyPlanScreen renders Coming Soon screen', (tester) async {

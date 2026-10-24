@@ -1,5 +1,4 @@
 import 'package:ascent/app/theme/app_theme.dart';
-import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/shared/widgets/ascent_snack_bar.dart';
 import 'package:flutter/material.dart';

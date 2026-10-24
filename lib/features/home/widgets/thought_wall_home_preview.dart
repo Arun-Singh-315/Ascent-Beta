@@ -1,6 +1,5 @@
 import 'home_outline_surface.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
-import '../../../shared/widgets/glass_chip.dart';
 import '../../../app/theme/thought_theme.dart';
 import '../../plans/widgets/plan_collection_editor.dart';
 import '../../../shared/widgets/note_list_button.dart';
@@ -23,7 +22,6 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
-import '../../thought_wall/thought_quick_actions.dart';
 import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space

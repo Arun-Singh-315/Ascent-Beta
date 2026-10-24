@@ -6,6 +6,7 @@ import '../streak/study_streak_provider.dart';
 const homeLayoutPreferenceKey = 'ascent_home_layout_v1';
 const homeSections = <String, String>{
   'streak': 'Study streak',
+  'promises': 'Promises',
   'reminders': 'Upcoming reminders',
   'today': 'Today',
   'learning': 'Learning',
@@ -23,6 +24,7 @@ const homeTools = <String, String>{
   'chai-break': 'Breaks',
 };
 const homeShortcutRoutes = <String, String>{
+  'promises': 'Promises',
   'today': 'Today',
   'thought-wall': 'Mind Space',
   'learning': 'Learning',
@@ -56,6 +58,7 @@ class HomeLayout {
     order: ['mind', ...homeSections.keys.where((id) => id != 'mind')],
     visible: {
       'streak',
+      'promises',
       'reminders',
       'today',
       'learning',
