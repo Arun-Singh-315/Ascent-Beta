@@ -11,29 +11,29 @@ class MerlotPalette {
 
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
-  /// Canvas: Scaffold background — soft, soothing cashmere oat linen
-  static const canvas = Color(0xFFF8F5EE);
+  /// Canvas: Scaffold background — soft, soothing cashmere oat cream linen
+  static const canvas = Color(0xFFF4EFE6);
 
-  /// Surface: Cards, bottom nav, containers — frosted warm cashmere porcelain
-  static const surface = Color(0xFFF8F4EC);
+  /// Surface: Cards, bottom nav, containers — clotted cream & cashmere porcelain
+  static const surface = Color(0xFFEBE3D5);
 
   /// Surface Bottom: Lower stop for frosted card gradient
-  static const surfaceBottom = Color(0xFFF6F2E9);
+  static const surfaceBottom = Color(0xFFE6DDD0);
 
   /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break)
-  static const recessedWell = Color(0xFFEFE9DC);
+  static const recessedWell = Color(0xFFDFD5C4);
 
-  /// Elevated: Sheets, dialogs, modals — warm elevated oat mist
-  static const elevated = Color(0xFFF2ECE1);
+  /// Elevated: Sheets, dialogs, modals — warm elevated cream mist
+  static const elevated = Color(0xFFEFE8DB);
 
-  /// Line: Hairline 0.75px border on cards and containers
-  static const line = Color(0x1F581825); // 12% alpha merlot
+  /// Line: Hairline 0.75px border on cards and containers — rich vintage burgundy
+  static const line = Color(0x38581825); // 22% alpha merlot
 
-  /// Line Specular: Top edge catchlight reflection
-  static const lineSpecular = Color(0x2E581825); // 18% alpha merlot
+  /// Line Specular: Top edge catchlight reflection — vintage burgundy highlight
+  static const lineSpecular = Color(0x4D581825); // 30% alpha merlot
 
   /// Line Subtle: Inner divider and recessed well border
-  static const lineSubtle = Color(0x14581825); // 8% alpha merlot
+  static const lineSubtle = Color(0x26581825); // 15% alpha merlot
 
   /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
   static const action = Color(0xFF581825);
@@ -53,11 +53,11 @@ class MerlotPalette {
   /// Secondary Accent: Antique warm gold for progress, sparks, and stars
   static const antiqueGold = Color(0xFFC28834);
 
-  /// Tint: Selected tabs ("Today"), chips, tonal button background — oat parchment
-  static const tint = Color(0xFFF1EBE0);
+  /// Tint: Selected tabs ("Today"), chips, tonal button background — warm oat parchment
+  static const tint = Color(0xFFE9E0D0);
 
   /// Pill Soft: Composer pills ("To-do", "Today", "Reminder off")
-  static const pillSoft = Color(0xFFF7F3EB);
+  static const pillSoft = Color(0xFFECE3D4);
 
   /// Ink: Primary text — Espresso Merlot Obsidian (15.4:1 contrast on canvas)
   static const ink = Color(0xFF260F14);

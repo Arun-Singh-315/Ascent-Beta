@@ -61,9 +61,9 @@ class VaultHomePreview extends ConsumerWidget {
         // ── UNIFIED GLASS SURFACE ─────────────────────────────────────
         GlassSurface(
           key: const ValueKey('home_vault_card'),
-          radius: 20,
-          fillColor: context.isDark ? null : Colors.white,
+          borderRadius: BorderRadius.circular(18),
           padding: const EdgeInsets.all(AppSpace.s16),
+          enableBlur: false,
           onTap: () {
             HapticFeedback.selectionClick();
             context.push('/vault');
@@ -156,10 +156,10 @@ class VaultHomePreview extends ConsumerWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.12),
+                color: g.sage.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.lock_open_rounded, color: Colors.green, size: 22),
+              child: Icon(Icons.lock_open_rounded, color: g.sage, size: 22),
             ),
             const SizedBox(width: AppSpace.s12),
             Expanded(

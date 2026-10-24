@@ -73,10 +73,13 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   final List<String> _mediaPaths = [];
 
   bool _saving = false;
+  String? _titleError;
   String? _cardError;
   String? _expiryError;
   String? _idError;
   String? _emailError;
+  String? _loginError;
+  String? _noteError;
 
   final _picker = ImagePicker();
 
@@ -262,22 +265,29 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   bool _validateInputs() {
     bool valid = true;
     setState(() {
+      _titleError = null;
       _cardError = null;
       _expiryError = null;
       _idError = null;
       _emailError = null;
+      _loginError = null;
+      _noteError = null;
     });
 
     if (_titleController.text.trim().isEmpty) {
+      setState(() => _titleError = 'Title cannot be left empty');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a title'), behavior: SnackBarBehavior.floating),
       );
-      return false;
+      valid = false;
     }
 
     if (_selectedCategory == VaultCategory.card) {
       final cardNum = _cardNumberController.text.replaceAll(RegExp(r'\D'), '');
-      if (cardNum.isNotEmpty && !VaultPatternExtractor.isValidLuhn(cardNum)) {
+      if (cardNum.isEmpty) {
+        setState(() => _cardError = 'Card number cannot be left empty');
+        valid = false;
+      } else if (!VaultPatternExtractor.isValidLuhn(cardNum)) {
         setState(() => _cardError = 'Invalid card number (checksum failed)');
         valid = false;
       }
@@ -288,17 +298,31 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       }
     } else if (_selectedCategory == VaultCategory.idDoc) {
       final idNum = _idNumberController.text.trim();
-      if (_selectedIdType == 'PAN Card' && idNum.isNotEmpty && !VaultPatternExtractor.isValidPan(idNum)) {
+      if (idNum.isEmpty) {
+        setState(() => _idError = 'Document number cannot be left empty');
+        valid = false;
+      } else if (_selectedIdType == 'PAN Card' && !VaultPatternExtractor.isValidPan(idNum)) {
         setState(() => _idError = 'Invalid PAN format (e.g. ABCDE1234F)');
         valid = false;
-      } else if (_selectedIdType == 'Aadhaar' && idNum.isNotEmpty && !VaultPatternExtractor.isValidAadhaar(idNum)) {
+      } else if (_selectedIdType == 'Aadhaar' && !VaultPatternExtractor.isValidAadhaar(idNum)) {
         setState(() => _idError = 'Invalid Aadhaar (12 digits, cannot start with 0/1)');
         valid = false;
       }
     } else if (_selectedCategory == VaultCategory.login) {
       final user = _loginUsernameController.text.trim();
-      if (user.contains('@') && !VaultPatternExtractor.isValidEmail(user)) {
+      final pwd = _loginPasswordController.text.trim();
+      final web = _loginWebsiteController.text.trim();
+      if (user.isEmpty && pwd.isEmpty && web.isEmpty) {
+        setState(() => _loginError = 'Provide username, password, or service');
+        valid = false;
+      } else if (user.contains('@') && !VaultPatternExtractor.isValidEmail(user)) {
         setState(() => _emailError = 'Please check email format');
+        valid = false;
+      }
+    } else if (_selectedCategory == VaultCategory.note) {
+      final content = _noteContentController.text.trim();
+      if (content.isEmpty && _mediaPaths.isEmpty) {
+        setState(() => _noteError = 'Note content or attachment cannot be left empty');
         valid = false;
       }
     }
@@ -478,6 +502,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                 label: 'Title',
                 hint: _getCategoryTitleHint(_selectedCategory),
                 icon: Icons.label_outline_rounded,
+                errorText: _titleError,
                 g: g,
               ),
               const SizedBox(height: AppSpace.s12),
@@ -812,7 +837,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
           label: 'Username / Email',
           hint: 'e.g. user@domain.com',
           icon: Icons.alternate_email_rounded,
-          errorText: _emailError,
+          errorText: _emailError ?? _loginError,
           g: g,
         ),
         const SizedBox(height: AppSpace.s12),
@@ -835,7 +860,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                     : (strength >= 80 ? 'Strong password' : (strength >= 50 ? 'Medium password' : 'Weak password')),
                 style: TextStyle(
                   fontSize: 11,
-                  color: strength >= 80 ? Colors.green : (strength >= 50 ? Colors.orange : Colors.red),
+                  color: strength >= 80 ? g.sage : (strength >= 50 ? g.amber : g.coral),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -864,6 +889,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       hint: 'Type your secret notes, recovery codes, or locker combinations here...',
       icon: Icons.notes_rounded,
       maxLines: 5,
+      errorText: _noteError,
       g: g,
     );
   }

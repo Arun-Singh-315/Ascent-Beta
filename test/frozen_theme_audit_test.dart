@@ -68,9 +68,9 @@ void main() {
 
     test('verifies theme independence: Merlot and Frozen Sky packages do not cross-contaminate', () {
       // Ensure Merlot remains on Cashmere Linen & Porcelain
-      expect(MerlotPalette.canvas, const Color(0xFFF8F5EE));
-      expect(MerlotPalette.surface, const Color(0xFFF8F4EC));
-      expect(MerlotPalette.pillSoft, const Color(0xFFF7F3EB));
+      expect(MerlotPalette.canvas, const Color(0xFFF4EFE6));
+      expect(MerlotPalette.surface, const Color(0xFFEBE3D5));
+      expect(MerlotPalette.pillSoft, const Color(0xFFECE3D4));
       expect(MerlotPalette.action, const Color(0xFF581825));
 
       // Ensure Frozen Sky remains on Fjord Ice & Frosted Porcelain

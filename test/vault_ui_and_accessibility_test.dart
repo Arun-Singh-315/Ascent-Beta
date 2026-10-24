@@ -9,7 +9,9 @@ import 'package:ascent/features/vault/providers/vault_providers.dart';
 import 'package:ascent/features/vault/widgets/vault_home_preview.dart';
 import 'package:ascent/features/vault/widgets/vault_lock_view.dart';
 import 'package:ascent/features/vault/widgets/vault_item_card.dart';
+import 'package:ascent/features/vault/widgets/vault_item_editor_sheet.dart';
 import 'package:ascent/features/vault/vault_screen.dart';
+import 'package:ascent/shared/widgets/glass_surface.dart';
 
 Widget _buildTestApp({
   required Widget child,
@@ -239,6 +241,66 @@ void main() {
 
       expect(find.text('Ascent Vault'), findsOneWidget);
       expect(find.byType(VaultLockView), findsOneWidget);
+    });
+
+    testWidgets('VaultHomePreview follows theme in day and dark modes without hardcoded white', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            vaultItemCountProvider.overrideWith((ref) => 2),
+            vaultSessionUnlockedProvider.overrideWith(
+              VaultSessionUnlockedNotifier.new,
+            ),
+          ],
+          child: MaterialApp(
+            theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
+            home: const Scaffold(
+              body: VaultHomePreview(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cardFinder = find.byKey(const ValueKey('home_vault_card'));
+      expect(cardFinder, findsOneWidget);
+
+      final glassWidget = tester.widget<GlassSurface>(cardFinder);
+      // Ensures no hardcoded white or static overrides are forced
+      expect(glassWidget.fillColor, isNull);
+    });
+
+    testWidgets('VaultItemEditorSheet validates inputs and rejects empty fields', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(
+              body: SingleChildScrollView(
+                child: VaultItemEditorSheet(
+                  initialCategory: VaultCategory.card,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Tap Secure & Save to Vault with empty form
+      final saveBtn = find.text('Secure & Save to Vault');
+      expect(saveBtn, findsOneWidget);
+      await tester.ensureVisible(saveBtn);
+      await tester.tap(saveBtn);
+      await tester.pumpAndSettle();
+
+      // Both title and card number errors should trigger
+      expect(find.text('Title cannot be left empty'), findsOneWidget);
+      expect(find.text('Card number cannot be left empty'), findsOneWidget);
     });
   });
 }

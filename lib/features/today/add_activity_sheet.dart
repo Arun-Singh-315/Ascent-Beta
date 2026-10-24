@@ -95,6 +95,7 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
   bool _reminderEdited = false;
   bool _loadingReminder = false;
   PlanChildRestriction? _protection;
+  String? _titleError;
 
   @override
   void initState() {
@@ -206,7 +207,18 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
 
   Future<void> _save() async {
     if (_saving || _loadingReminder || _pickingReminder) return;
-    setState(() => _saving = true);
+    final titles = widget.existingTask == null
+        ? PlanItemDraft.parseList(_titleController.text)
+        : [_titleController.text.trim()];
+    if (titles.isEmpty || (titles.length == 1 && titles.first.isEmpty)) {
+      setState(() => _titleError = 'Please enter an activity title');
+      HapticFeedback.lightImpact();
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _titleError = null;
+    });
     try {
       final minutes = _kind == ActivityKind.duration
           ? (_isCustomDuration
@@ -458,10 +470,14 @@ class _AddActivitySheetState extends ConsumerState<AddActivitySheet> {
                     maxLength: widget.existingTask == null ? 20000 : 300,
                     autofocus: widget.existingTask == null,
                     textCapitalization: TextCapitalization.sentences,
+                    onChanged: (_) {
+                      if (_titleError != null) setState(() => _titleError = null);
+                    },
                     style: AscentTextStyles.bodyMedium.copyWith(
                       color: context.textPrimary,
                     ),
                     decoration: InputDecoration(
+                      errorText: _titleError,
                       hintText:
                           'e.g., Buy groceries, Exercise, Study Java, Meditate',
                       hintStyle: AscentTextStyles.bodyMedium.copyWith(

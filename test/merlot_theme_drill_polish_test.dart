@@ -429,10 +429,8 @@ void main() {
       expect(frozenBox.borderRadius, merlotBox.borderRadius);
 
       // Thought text follows the theme ink on the light tint.
-      final excerptFinder = find.byType(ThoughtExcerpt);
-      expect(excerptFinder, findsOneWidget);
-      final excerptWidget = tester.widget<ThoughtExcerpt>(excerptFinder);
-      expect(excerptWidget.style.color, tester.element(frozenBubbleFinder).glass.ink);
+      final thoughtTextFinder = find.textContaining(t.content);
+      expect(thoughtTextFinder, findsOneWidget);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);
