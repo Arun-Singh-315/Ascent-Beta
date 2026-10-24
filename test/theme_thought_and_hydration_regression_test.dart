@@ -62,6 +62,9 @@ void main() {
               recentThoughtsStreamProvider.overrideWith(
                 (ref) => Stream.value([thought]),
               ),
+              thoughtCategoriesStreamProvider.overrideWith(
+                (ref) => Stream.value(ThoughtDao.builtInCategories),
+              ),
             ],
             child: MaterialApp(
               theme: theme,

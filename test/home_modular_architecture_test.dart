@@ -93,6 +93,9 @@ void main() {
           (ref) => Stream.value([]),
         ),
         recentThoughtsStreamProvider.overrideWith((ref) => Stream.value([])),
+        thoughtCategoriesStreamProvider.overrideWith(
+          (ref) => Stream.value(ThoughtDao.builtInCategories),
+        ),
         nextUpcomingReminderProvider.overrideWith((ref) => Stream.value(null)),
         userProfileStreamProvider.overrideWith(
           (ref) => Stream.value(_modularTestProfile),
