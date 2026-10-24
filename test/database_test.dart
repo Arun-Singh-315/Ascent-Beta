@@ -18,31 +18,21 @@ void main() {
   });
 
   group('Database & DAOs Tests', () {
-    test('Promise creation atomically links a Thought, Todo, and daily reminders', () async {
+    test('Promises persist without creating Todos or reminder rows', () async {
       final scheduled = <DateTime>[];
       final service = PromiseService(
         db,
-        scheduleNotification: (id, title, at) async { scheduled.add(at); },
+        clock: () => DateTime(2026, 10, 24, 8),
+        cancelNotification: (_) async {},
+        scheduleNotification: (id, title, at) async {
+          scheduled.add(at);
+        },
       );
-
-      final taskId = await service.create(content: 'Finish course', validityDays: 20);
-      final task = await db.taskDao.getTaskById(taskId);
-      final thoughts = await db.thoughtDao.watchAllThoughts().first;
-      final reminders = await db.reminderDao.getRemindersByTaskId(taskId);
-
-      expect(task, isNotNull);
-      expect(task!.title, 'Finish course');
-      expect(task.plannedDate, DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day));
-      expect(task.notes, contains('promise_duration_days:20'));
-      expect(task.notes, contains('promise_due_date:'));
-      expect(thoughts.single.mood, 'promise');
-      expect(reminders, hasLength(20));
-      expect(scheduled, hasLength(20));
-      expect(reminders.every((reminder) => reminder.isActive), isTrue);
-
-      expect(await db.taskDao.markComplete(taskId), isTrue);
-      final stoppedReminders = await db.reminderDao.getRemindersByTaskId(taskId);
-      expect(stoppedReminders.every((reminder) => !reminder.isActive), isTrue);
+      final id = await service.create(content: 'Finish course');
+      expect((await db.thoughtDao.getThoughtById(id))!.mood, 'promise');
+      expect(await db.select(db.taskTable).get(), isEmpty);
+      expect(await db.select(db.reminderTable).get(), isEmpty);
+      expect(scheduled.map((at) => at.hour), [10, 14, 18, 21]);
     });
 
     test('Can insert and retrieve UserProfile', () async {

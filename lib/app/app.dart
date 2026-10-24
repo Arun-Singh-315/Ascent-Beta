@@ -1,3 +1,4 @@
+import '../core/notifications/promise_check_ins_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'router.dart';
@@ -15,6 +16,7 @@ class AscentApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final dayPreset = ref.watch(dayThemePresetProvider);
     ref.watch(pendingReminderEffectsProvider);
+    ref.watch(promiseCheckInsProvider);
 
     return MaterialApp.router(
       title: 'Ascent',

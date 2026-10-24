@@ -333,16 +333,14 @@ void main() {
           ),
         );
 
-        // Find the circular check target
-        final checkIcon = find.byIcon(Icons.check_rounded);
-        expect(checkIcon, findsOneWidget);
+        // Completed rows retain the Done status instead of a check icon.
+        final doneStatus = find.text('Done');
+        expect(doneStatus, findsOneWidget);
 
-        // Tap the completed check target
-        await tester.tap(checkIcon);
+        await tester.tap(doneStatus);
         await tester.pumpAndSettle();
 
-        // Verify that it remains checked
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.text('Done'), findsOneWidget);
       },
     );
 

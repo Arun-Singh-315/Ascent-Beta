@@ -206,17 +206,14 @@ class AppTypography {
 
   /// Dedicated typography for thought reflections and notes: crisp, readable,
   /// breathable line-height, and gentle letter-spacing.
-  static TextStyle thoughtContent({
-    Color? color,
-    TextDecoration? decoration,
-  }) => GoogleFonts.plusJakartaSans(
-    fontSize: 14.5,
-    fontWeight: FontWeight.w500,
-    height: 1.5,
-    letterSpacing: 0.1,
-    color: color,
-    decoration: decoration,
-  );
+  static TextStyle thoughtContent({Color? color, TextDecoration? decoration}) =>
+      GoogleFonts.sourceSerif4(
+        fontSize: 15,
+        fontWeight: FontWeight.w400,
+        height: 1.5,
+        color: color,
+        decoration: decoration,
+      );
 
   static TextStyle inter13Regular1({FontWeight? fontWeight, Color? color}) =>
       GoogleFonts.dmSans(fontSize: 13, fontWeight: fontWeight, color: color);

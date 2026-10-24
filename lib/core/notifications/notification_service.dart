@@ -108,6 +108,7 @@ class NotificationService {
       '/chai-break',
       '/hydration',
       '/thought-wall',
+      '/promises',
       '/pipeline',
       '/analytics',
       '/settings',
@@ -805,6 +806,52 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
     return scheduledDate;
+  }
+
+  /// One shared, personal check-in for today's promises; no reminder records.
+  Future<bool> schedulePromiseCheckIn({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledAt,
+  }) async {
+    if (!_isInitialized) await initialize();
+    await refreshLocalTimeZone();
+    if (!scheduledAt.isAfter(DateTime.now()) ||
+        !await areNotificationsEnabled()) {
+      return false;
+    }
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        'ascent_promises_v1',
+        'Promise check-ins',
+        channelDescription: 'Gentle check-ins for your daily promises',
+        importance: Importance.defaultImportance,
+        priority: Priority.defaultPriority,
+        onlyAlertOnce: true,
+        groupKey: 'ascent.promises',
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+          summaryText: 'Your promises, together',
+        ),
+      ),
+      iOS: const DarwinNotificationDetails(threadIdentifier: 'ascent.promises'),
+    );
+    try {
+      await _plugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tz.TZDateTime.from(scheduledAt, tz.local),
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: '/promises',
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Schedules a one-time reminder at a specific DateTime with raw boost copy

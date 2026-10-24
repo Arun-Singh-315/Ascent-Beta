@@ -338,14 +338,8 @@ class _ThoughtWallHomePreviewState
               border: Border.all(
                 color: _focusNode.hasFocus
                     ? g.clay
-                    : (context.isDark
-                          ? g.edge
-                          : (g.merlot
-                                ? MerlotPalette.line
-                                : (g.frozen
-                                      ? FrozenPalette.line
-                                      : const Color(0xFFD9C5BB)))),
-                width: _focusNode.hasFocus ? 1.5 : 1.2,
+                    : g.ink.withValues(alpha: context.isDark ? .48 : .42),
+                width: _focusNode.hasFocus ? 2.6 : 2.0,
               ),
             ),
             child: Row(

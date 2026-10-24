@@ -66,88 +66,124 @@ void main() {
     });
   }
 
-  testWidgets('long press saves priority and promotes urgent work', (t) async {
-    SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
-    final db = AppDatabase.forTesting(NativeDatabase.memory());
-    addTearDown(db.close);
-    final first = await db.taskDao.insertTask(
-      TaskTableCompanion.insert(
-        title: 'Normal work',
-        plannedDate: drift.Value(DateTime.now()),
-        priority: const drift.Value('low'),
-      ),
-    );
-    final second = await db.taskDao.insertTask(
-      TaskTableCompanion.insert(
-        title: 'Urgent work',
-        plannedDate: drift.Value(DateTime.now()),
-        priority: const drift.Value('low'),
-      ),
-    );
-    final container = ProviderContainer(
-      overrides: [
-        databaseProvider.overrideWithValue(db),
-        sharedPreferencesProvider.overrideWithValue(prefs),
-        todayActivitiesProvider.overrideWith(
-          (ref) => db.taskDao.watchTodayTasks().map(
-            (tasks) => [
-              for (final task in tasks)
-                row(task.id, 'task').copyWith(
-                  title: task.title,
-                  linkedTaskId: task.id,
-                  priority: task.priority,
-                ),
-            ],
-          ),
+  testWidgets(
+    'visible priority control saves a level and promotes urgent work',
+    (t) async {
+      t.view.physicalSize = const Size(390, 1000);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.resetPhysicalSize);
+      addTearDown(t.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      final first = await db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Normal work',
+          plannedDate: drift.Value(DateTime.now()),
+          priority: const drift.Value('low'),
         ),
-      ],
-    );
-    try {
-      await t.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            theme: AscentTheme.light(),
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ActivityHubCard()),
+      );
+      final second = await db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Urgent work',
+          plannedDate: drift.Value(DateTime.now()),
+          priority: const drift.Value('low'),
+        ),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          todayActivitiesProvider.overrideWith(
+            (ref) => db.taskDao.watchTodayTasks().map(
+              (tasks) => [
+                for (final task in tasks)
+                  row(task.id, 'task').copyWith(
+                    title: task.title,
+                    linkedTaskId: task.id,
+                    priority: task.priority,
+                  ),
+              ],
             ),
           ),
-        ),
+        ],
       );
-      await flush(t);
-      await t.pumpAndSettle();
-      expect(
-        t
-            .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
-            .first
-            .activity
-            .linkedTaskId,
-        first,
-      );
-      await t.longPress(find.text('Urgent work'));
-      await t.pumpAndSettle();
-      await t.tap(find.text('P0 · Urgent'));
-      await flush(t);
-      await t.pumpAndSettle();
-      final saved = await t.runAsync(() => db.taskDao.getTaskById(second));
-      expect(saved!.priority, 'high');
-      expect(
-        t
-            .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
-            .first
-            .activity
-            .linkedTaskId,
-        second,
-      );
-      expect(find.text('P0'), findsOneWidget);
-      expect(t.takeException(), isNull);
-    } finally {
-      await t.pumpWidget(const SizedBox());
-      container.dispose();
-      await t.pump(const Duration(seconds: 2));
-    }
-  });
+      try {
+        await t.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              home: const RepaintBoundary(
+                key: ValueKey('redesign_capture'),
+                child: Scaffold(
+                  body: SingleChildScrollView(child: ActivityHubCard()),
+                ),
+              ),
+            ),
+          ),
+        );
+        await flush(t);
+        await t.pumpAndSettle();
+        expect(
+          t
+              .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
+              .first
+              .activity
+              .linkedTaskId,
+          first,
+        );
+        await t.tap(find.text('Priority: Normal').last);
+        await t.pumpAndSettle();
+        expect(find.text('P2 · Flexible, after other tasks'), findsOneWidget);
+        expect(find.text('P1 · Default, after urgent tasks'), findsOneWidget);
+        await t.tap(find.text('Urgent'));
+        await flush(t);
+        await t.pumpAndSettle();
+        final saved = await t.runAsync(() => db.taskDao.getTaskById(second));
+        expect(saved!.priority, 'high');
+        expect(
+          t
+              .widgetList<ActivityRowItem>(find.byType(ActivityRowItem))
+              .first
+              .activity
+              .linkedTaskId,
+          second,
+        );
+        expect(find.text('Priority: Urgent'), findsOneWidget);
+        await capture(t, 'priority');
+        t.view.physicalSize = const Size(320, 1400);
+        await t.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp(
+              theme: AscentTheme.light(),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(
+                  context,
+                ).copyWith(textScaler: const TextScaler.linear(2)),
+                child: child!,
+              ),
+              home: const Scaffold(
+                body: SingleChildScrollView(child: ActivityHubCard()),
+              ),
+            ),
+          ),
+        );
+        await t.pumpAndSettle();
+        await t.tap(find.text('Priority: Urgent'));
+        await t.pumpAndSettle();
+        expect(find.text('Change priority'), findsOneWidget);
+
+        expect(t.takeException(), isNull);
+      } finally {
+        await t.pumpWidget(const SizedBox());
+        container.dispose();
+        await t.pump(const Duration(seconds: 2));
+      }
+    },
+  );
 
   for (final preset in DayThemePreset.values) {
     for (final dark in [false, true]) {

@@ -114,16 +114,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                               style: TextStyle(color: g.inkMuted, fontSize: 13),
                             ),
                           ),
-                        for (final (i, row) in rows.take(limit).indexed) ...[
-                          if (i > 0)
-                            Divider(
-                              key: ValueKey('activity_row_separator_$i'),
-                              color: g.line.withValues(alpha: .45),
-                              height: 1,
-                              thickness: .5,
-                              indent: 26,
-                              endIndent: 4,
-                            ),
+                        for (final row in rows.take(limit)) ...[
                           ActivityRowItem(
                             key: ValueKey(row.id),
                             activity: row,
@@ -201,36 +192,39 @@ class _HubTabs extends StatelessWidget {
           children: [
             for (final (i, label) in labels.indexed)
               InkWell(
-              borderRadius: BorderRadius.circular(8),
-              onTap: () => onSelected(i),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: i == selected ? g.ink : g.inkMuted,
-                        fontSize: 13,
-                        fontWeight: i == selected
-                            ? FontWeight.w700
-                            : FontWeight.w400,
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => onSelected(i),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: i == selected ? g.ink : g.inkMuted,
+                          fontSize: 13,
+                          fontWeight: i == selected
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 3),
-                    Container(
-                      height: 2,
-                      width: 16,
-                      decoration: BoxDecoration(
-                        color: i == selected ? g.clay : Colors.transparent,
-                        borderRadius: BorderRadius.circular(1),
+                      const SizedBox(height: 3),
+                      Container(
+                        height: 2,
+                        width: 16,
+                        decoration: BoxDecoration(
+                          color: i == selected ? g.clay : Colors.transparent,
+                          borderRadius: BorderRadius.circular(1),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

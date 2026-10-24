@@ -1,3 +1,4 @@
+import '../features/promises/promises_screen.dart';
 import 'theme/app_theme.dart';
 import '../features/backup/workspace_backup_screen.dart';
 import 'package:flutter/material.dart';
@@ -201,6 +202,11 @@ final ascentRouter = GoRouter(
       parentNavigatorKey: rootNavigatorKey,
       path: AscentRoutes.hydration,
       builder: (context, state) => const HydrationScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: rootNavigatorKey,
+      path: '/promises',
+      builder: (_, _) => const PromisesScreen(),
     ),
     GoRoute(
       parentNavigatorKey: rootNavigatorKey,
