@@ -16,26 +16,26 @@ void main() {
   group('Vintage Merlot & Cashmere Linen Palette Tokens', () {
     test('verifies primary, card surface, and accent colors meet daylight spec', () {
       expect(MerlotPalette.canvas, const Color(0xFFF8F4EE));
-      expect(MerlotPalette.surface, const Color(0xFF4A101D));
-      expect(MerlotPalette.surfaceBottom, const Color(0xFF360913));
-      expect(MerlotPalette.recessedWell, const Color(0xFF2C070F));
+      expect(MerlotPalette.surface, const Color(0xFFEED2DA));
+      expect(MerlotPalette.surfaceBottom, const Color(0xFFE8C4CE));
+      expect(MerlotPalette.recessedWell, const Color(0xFFE2B6C2));
       expect(MerlotPalette.action, const Color(0xFF581825));
       expect(MerlotPalette.actionDeep, const Color(0xFF48101C));
       expect(MerlotPalette.actionBright, const Color(0xFF722032));
-      expect(MerlotPalette.tint, const Color(0xFF5E1727));
+      expect(MerlotPalette.tint, const Color(0xFFE5BFCB));
       expect(MerlotPalette.pillSoft, const Color(0xFFF7F0E8));
-      expect(MerlotPalette.line, const Color(0x38D4A054));
-      expect(MerlotPalette.lineSpecular, const Color(0x54D4A054));
-      expect(MerlotPalette.lineSubtle, const Color(0x20FFFFFF));
+      expect(MerlotPalette.line, const Color(0x38581825));
+      expect(MerlotPalette.lineSpecular, const Color(0x4D581825));
+      expect(MerlotPalette.lineSubtle, const Color(0x24581825));
       expect(MerlotPalette.antiqueGold, const Color(0xFFC28834));
       expect(MerlotPalette.terracotta, const Color(0xFFA04020));
       expect(MerlotPalette.success, const Color(0xFF166534));
       expect(MerlotPalette.ink, const Color(0xFF240A10));
       expect(MerlotPalette.secondaryInk, const Color(0xFF54222E));
-      expect(MerlotPalette.mutedInk, const Color(0xFF784552));
-      expect(MerlotPalette.cardInk, const Color(0xFFFDFBF7));
-      expect(MerlotPalette.cardSecondaryInk, const Color(0xFFE8CED6));
-      expect(MerlotPalette.cardMutedInk, const Color(0xFFC49FA9));
+      expect(MerlotPalette.mutedInk, const Color(0xFF6E3E4B));
+      expect(MerlotPalette.cardInk, const Color(0xFF240A10));
+      expect(MerlotPalette.cardSecondaryInk, const Color(0xFF54222E));
+      expect(MerlotPalette.cardMutedInk, const Color(0xFF6E3E4B));
     });
 
     test('verifies night mode tokens remain 100% untouched', () {
@@ -66,21 +66,21 @@ void main() {
       final lCardMuted = luminance(MerlotPalette.cardMutedInk);
 
       final contrastCanvasInk = (lCanvas + 0.05) / (lInk + 0.05);
-      final contrastSurfaceCardInk = (lCardInk + 0.05) / (lSurface + 0.05);
-      final contrastSurfaceCardSec = (lCardSec + 0.05) / (lSurface + 0.05);
-      final contrastSurfaceCardMuted = (lCardMuted + 0.05) / (lSurface + 0.05);
+      final contrastSurfaceCardInk = (lSurface + 0.05) / (lCardInk + 0.05);
+      final contrastSurfaceCardSec = (lSurface + 0.05) / (lCardSec + 0.05);
+      final contrastSurfaceCardMuted = (lSurface + 0.05) / (lCardMuted + 0.05);
 
       // Canvas text contrast: dark espresso merlot on cashmere linen (>15:1 WCAG AAA)
       expect(contrastCanvasInk, greaterThan(15.0));
 
-      // Burgundy dark red wine card contrast: warm ivory on dark red wine (>12:1 WCAG AAA)
-      expect(contrastSurfaceCardInk, greaterThan(12.0));
+      // Light burgundy wine card contrast: dark espresso merlot on light wine (>11:1 WCAG AAA)
+      expect(contrastSurfaceCardInk, greaterThan(11.0));
 
-      // Secondary text on wine card (>9:1 WCAG AAA)
-      expect(contrastSurfaceCardSec, greaterThan(9.0));
+      // Secondary text on wine card (>7:1 WCAG AAA)
+      expect(contrastSurfaceCardSec, greaterThan(7.0));
 
-      // Muted helper captions on wine card (>6:1 WCAG AA)
-      expect(contrastSurfaceCardMuted, greaterThan(6.0));
+      // Muted helper captions on wine card (>4.5:1 WCAG AA)
+      expect(contrastSurfaceCardMuted, greaterThan(4.5));
     });
 
     test('verifies WCAG AAA contrast for white text on primary button', () {

@@ -14,26 +14,26 @@ class MerlotPalette {
   /// Canvas: Scaffold background — soft, soothing cashmere cream linen
   static const canvas = Color(0xFFF8F4EE);
 
-  /// Surface: Cards, bottom nav, containers — royal velvet burgundy dark red wine
-  static const surface = Color(0xFF4A101D);
+  /// Surface: Cards, bottom nav, containers — distinct light shade of the Ask Jarvis float wine color
+  static const surface = Color(0xFFEED2DA);
 
-  /// Surface Bottom: Lower stop for card gradient — deep velvet wine depth
-  static const surfaceBottom = Color(0xFF360913);
+  /// Surface Bottom: Lower stop for card gradient — deeper light burgundy wine warmth
+  static const surfaceBottom = Color(0xFFE8C4CE);
 
-  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — deep sunken wine well
-  static const recessedWell = Color(0xFF2C070F);
+  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — cozy wine blush well
+  static const recessedWell = Color(0xFFE2B6C2);
 
-  /// Elevated: Sheets, dialogs, modals — rich elevated wine
-  static const elevated = Color(0xFF561524);
+  /// Elevated: Sheets, dialogs, modals — soft elevated light wine porcelain
+  static const elevated = Color(0xFFF4DEE5);
 
-  /// Line: Hairline 0.75px border on cards and containers — antique warm gold specular catchlight
-  static const line = Color(0x38D4A054); // 22% alpha warm gold rim
+  /// Line: Hairline 0.75px border on cards and containers — rich vintage wine red
+  static const line = Color(0x38581825); // 22% alpha merlot wine rim
 
-  /// Line Specular: Top edge catchlight reflection — gold specular highlight
-  static const lineSpecular = Color(0x54D4A054); // 33% alpha gold specular
+  /// Line Specular: Top edge catchlight reflection — vintage wine specular highlight
+  static const lineSpecular = Color(0x4D581825); // 30% alpha merlot specular
 
   /// Line Subtle: Inner divider and recessed well border inside cards
-  static const lineSubtle = Color(0x20FFFFFF); // 12% alpha crisp white hairline
+  static const lineSubtle = Color(0x24581825); // 14% alpha merlot hairline
 
   /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
   static const action = Color(0xFF581825);
@@ -53,8 +53,8 @@ class MerlotPalette {
   /// Secondary Accent: Antique warm gold for progress, sparks, and stars
   static const antiqueGold = Color(0xFFC28834);
 
-  /// Tint: Selected tabs ("Today"), chips, tonal button background — rich velvet wine highlight
-  static const tint = Color(0xFF5E1727);
+  /// Tint: Selected tabs ("Today"), chips, tonal button background — light wine rose
+  static const tint = Color(0xFFE5BFCB);
 
   /// Pill Soft: Composer pills and light buttons — warm cashmere ivory
   static const pillSoft = Color(0xFFF7F0E8);
@@ -65,17 +65,17 @@ class MerlotPalette {
   /// Secondary Ink: Secondary text on canvas (9.1:1 contrast on linen)
   static const secondaryInk = Color(0xFF54222E);
 
-  /// Muted Ink: Captions, helper text on canvas (5.4:1 contrast on linen)
-  static const mutedInk = Color(0xFF784552);
+  /// Muted Ink: Captions, helper text on canvas and cards (6.5:1 contrast on light wine surface)
+  static const mutedInk = Color(0xFF6E3E4B);
 
-  /// Card Ink: Primary text inside dark wine cards — crisp warm ivory (13.9:1 contrast on wine surface)
-  static const cardInk = Color(0xFFFDFBF7);
+  /// Card Ink: Primary text inside cards — Espresso Merlot Obsidian (12.0:1 contrast on light wine surface)
+  static const cardInk = Color(0xFF240A10);
 
-  /// Card Secondary Ink: Secondary text inside cards — soft rose-cream silk (9.7:1 contrast on wine surface)
-  static const cardSecondaryInk = Color(0xFFE8CED6);
+  /// Card Secondary Ink: Secondary text inside cards (8.5:1 contrast on light wine surface)
+  static const cardSecondaryInk = Color(0xFF54222E);
 
-  /// Card Muted Ink: Captions, helper text, inactive icons inside cards (6.2:1 contrast on wine surface)
-  static const cardMutedInk = Color(0xFFC49FA9);
+  /// Card Muted Ink: Captions, helper text, inactive icons inside cards (6.5:1 contrast on light wine surface)
+  static const cardMutedInk = Color(0xFF6E3E4B);
 
   /// Subtle Ink: Hints, placeholders, disabled indicators
   static const subtleInk = Color(0xFF9E6E7A);

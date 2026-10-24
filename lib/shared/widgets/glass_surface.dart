@@ -90,31 +90,31 @@ class GlassSurface extends StatelessWidget {
           ink: MerlotPalette.cardInk,
           inkSecondary: MerlotPalette.cardSecondaryInk,
           inkMuted: MerlotPalette.cardMutedInk,
-          clay: MerlotPalette.antiqueGold,
-          claySoft: const Color(0x28FFFFFF),
+          clay: MerlotPalette.action,
+          claySoft: MerlotPalette.pillSoft,
           line: MerlotPalette.lineSubtle,
-          edge: const Color(0x35FFFFFF),
-          track: const Color(0x40000000),
-          fill: const Color(0x24000000),
-          coral: const Color(0xFFFFA07A),
-          sage: const Color(0xFF4ADE80),
+          edge: MerlotPalette.line,
+          track: MerlotPalette.recessedWell,
+          fill: MerlotPalette.surface,
+          coral: MerlotPalette.terracotta,
+          sage: MerlotPalette.success,
         );
 
         final parentTheme = Theme.of(context);
         final cardTheme = parentTheme.copyWith(
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
           textTheme: parentTheme.textTheme.apply(
             bodyColor: MerlotPalette.cardInk,
             displayColor: MerlotPalette.cardInk,
           ),
           colorScheme: parentTheme.colorScheme.copyWith(
-            brightness: Brightness.dark,
+            brightness: Brightness.light,
             onSurface: MerlotPalette.cardInk,
             onSurfaceVariant: MerlotPalette.cardSecondaryInk,
             surface: MerlotPalette.surface,
             surfaceContainer: MerlotPalette.recessedWell,
-            primary: MerlotPalette.antiqueGold,
-            onPrimary: MerlotPalette.ink,
+            primary: MerlotPalette.action,
+            onPrimary: Colors.white,
           ),
           extensions: [
             ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
