@@ -14,6 +14,7 @@ import '../../../shared/widgets/glass_surface.dart';
 import '../models/vault_item_model.dart';
 import '../providers/vault_providers.dart';
 import '../services/vault_pattern_extractor.dart';
+import 'cred_card_visual.dart';
 
 class VaultItemEditorSheet extends ConsumerStatefulWidget {
   const VaultItemEditorSheet({
@@ -55,6 +56,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   final _expiryController = TextEditingController();
   final _cvvController = TextEditingController();
   final _bankNameController = TextEditingController();
+  CredCardSkin? _selectedSkin;
 
   // ID fields
   String _selectedIdType = 'Passport';
@@ -71,10 +73,13 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   final List<String> _mediaPaths = [];
 
   bool _saving = false;
+  String? _titleError;
   String? _cardError;
   String? _expiryError;
   String? _idError;
   String? _emailError;
+  String? _loginError;
+  String? _noteError;
 
   final _picker = ImagePicker();
 
@@ -94,6 +99,12 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       _expiryController.text = f['expiry'] as String? ?? '';
       _cvvController.text = f['cvv'] as String? ?? '';
       _bankNameController.text = f['bankName'] as String? ?? '';
+      final skinName = f['skin'] as String?;
+      if (skinName != null) {
+        try {
+          _selectedSkin = CredCardSkin.values.firstWhere((s) => s.name == skinName);
+        } catch (_) {}
+      }
 
       _selectedIdType = f['docType'] as String? ?? 'Passport';
       _idNumberController.text = f['docNumber'] as String? ?? '';
@@ -254,22 +265,29 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   bool _validateInputs() {
     bool valid = true;
     setState(() {
+      _titleError = null;
       _cardError = null;
       _expiryError = null;
       _idError = null;
       _emailError = null;
+      _loginError = null;
+      _noteError = null;
     });
 
     if (_titleController.text.trim().isEmpty) {
+      setState(() => _titleError = 'Title cannot be left empty');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enter a title'), behavior: SnackBarBehavior.floating),
       );
-      return false;
+      valid = false;
     }
 
     if (_selectedCategory == VaultCategory.card) {
       final cardNum = _cardNumberController.text.replaceAll(RegExp(r'\D'), '');
-      if (cardNum.isNotEmpty && !VaultPatternExtractor.isValidLuhn(cardNum)) {
+      if (cardNum.isEmpty) {
+        setState(() => _cardError = 'Card number cannot be left empty');
+        valid = false;
+      } else if (!VaultPatternExtractor.isValidLuhn(cardNum)) {
         setState(() => _cardError = 'Invalid card number (checksum failed)');
         valid = false;
       }
@@ -280,17 +298,31 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       }
     } else if (_selectedCategory == VaultCategory.idDoc) {
       final idNum = _idNumberController.text.trim();
-      if (_selectedIdType == 'PAN Card' && idNum.isNotEmpty && !VaultPatternExtractor.isValidPan(idNum)) {
+      if (idNum.isEmpty) {
+        setState(() => _idError = 'Document number cannot be left empty');
+        valid = false;
+      } else if (_selectedIdType == 'PAN Card' && !VaultPatternExtractor.isValidPan(idNum)) {
         setState(() => _idError = 'Invalid PAN format (e.g. ABCDE1234F)');
         valid = false;
-      } else if (_selectedIdType == 'Aadhaar' && idNum.isNotEmpty && !VaultPatternExtractor.isValidAadhaar(idNum)) {
+      } else if (_selectedIdType == 'Aadhaar' && !VaultPatternExtractor.isValidAadhaar(idNum)) {
         setState(() => _idError = 'Invalid Aadhaar (12 digits, cannot start with 0/1)');
         valid = false;
       }
     } else if (_selectedCategory == VaultCategory.login) {
       final user = _loginUsernameController.text.trim();
-      if (user.contains('@') && !VaultPatternExtractor.isValidEmail(user)) {
+      final pwd = _loginPasswordController.text.trim();
+      final web = _loginWebsiteController.text.trim();
+      if (user.isEmpty && pwd.isEmpty && web.isEmpty) {
+        setState(() => _loginError = 'Provide username, password, or service');
+        valid = false;
+      } else if (user.contains('@') && !VaultPatternExtractor.isValidEmail(user)) {
         setState(() => _emailError = 'Please check email format');
+        valid = false;
+      }
+    } else if (_selectedCategory == VaultCategory.note) {
+      final content = _noteContentController.text.trim();
+      if (content.isEmpty && _mediaPaths.isEmpty) {
+        setState(() => _noteError = 'Note content or attachment cannot be left empty');
         valid = false;
       }
     }
@@ -320,6 +352,9 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
         fields['cvv'] = _cvvController.text.trim();
         fields['bankName'] = _bankNameController.text.trim();
         fields['cardBrand'] = brand;
+        if (_selectedSkin != null) {
+          fields['skin'] = _selectedSkin!.name;
+        }
         break;
 
       case VaultCategory.idDoc:
@@ -467,6 +502,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                 label: 'Title',
                 hint: _getCategoryTitleHint(_selectedCategory),
                 icon: Icons.label_outline_rounded,
+                errorText: _titleError,
                 g: g,
               ),
               const SizedBox(height: AppSpace.s12),
@@ -602,8 +638,91 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   }
 
   Widget _buildCardForm(AscentGlass g) {
+    final previewBank = _bankNameController.text.trim().isNotEmpty
+        ? _bankNameController.text.trim()
+        : (_titleController.text.trim().isNotEmpty ? _titleController.text.trim() : 'Ascent Bank');
+    final previewHolder = _cardholderController.text.trim().isNotEmpty
+        ? _cardholderController.text.trim()
+        : 'YOUR NAME';
+    final previewNumber = _cardNumberController.text.trim();
+    final previewExpiry = _expiryController.text.trim().isNotEmpty
+        ? _expiryController.text.trim()
+        : '12/28';
+    final detectedBrand = VaultPatternExtractor.detectCardBrand(previewNumber);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── LIVE CRED-GRADE CARD PREVIEW ──────────────────────────────────
+        CredCardVisual(
+          bankName: previewBank,
+          cardTier: 'Signature',
+          cardholderName: previewHolder,
+          cardNumber: previewNumber,
+          expiryDate: previewExpiry,
+          cardBrand: detectedBrand,
+          skin: _selectedSkin,
+          showActions: false,
+        ),
+        const SizedBox(height: AppSpace.s12),
+
+        // ── LUXURY SKIN SELECTOR ──────────────────────────────────────────
+        Text(
+          'Card Luxury Theme / Skin',
+          style: TextStyle(color: g.inkMuted, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: AppSpace.s6),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: FilterChip(
+                  selected: _selectedSkin == null,
+                  label: const Text('Auto-Bank'),
+                  selectedColor: g.clay.withValues(alpha: 0.2),
+                  checkmarkColor: g.clay,
+                  labelStyle: TextStyle(
+                    color: _selectedSkin == null ? g.clay : g.inkMuted,
+                    fontSize: 11.5,
+                    fontWeight: _selectedSkin == null ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  onSelected: (_) => setState(() => _selectedSkin = null),
+                ),
+              ),
+              ...CredCardSkin.values.map((skin) {
+                final isSelected = _selectedSkin == skin;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    selected: isSelected,
+                    avatar: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(colors: skin.gradientColors),
+                        border: Border.all(color: skin.borderColor, width: 1),
+                      ),
+                    ),
+                    label: Text(skin.label),
+                    selectedColor: g.clay.withValues(alpha: 0.2),
+                    checkmarkColor: g.clay,
+                    labelStyle: TextStyle(
+                      color: isSelected ? g.clay : g.inkMuted,
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    onSelected: (_) => setState(() => _selectedSkin = skin),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpace.s14),
+
         _buildTextField(
           controller: _bankNameController,
           label: 'Bank / Issuer',
@@ -718,7 +837,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
           label: 'Username / Email',
           hint: 'e.g. user@domain.com',
           icon: Icons.alternate_email_rounded,
-          errorText: _emailError,
+          errorText: _emailError ?? _loginError,
           g: g,
         ),
         const SizedBox(height: AppSpace.s12),
@@ -741,7 +860,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
                     : (strength >= 80 ? 'Strong password' : (strength >= 50 ? 'Medium password' : 'Weak password')),
                 style: TextStyle(
                   fontSize: 11,
-                  color: strength >= 80 ? Colors.green : (strength >= 50 ? Colors.orange : Colors.red),
+                  color: strength >= 80 ? g.sage : (strength >= 50 ? g.amber : g.coral),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -770,6 +889,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       hint: 'Type your secret notes, recovery codes, or locker combinations here...',
       icon: Icons.notes_rounded,
       maxLines: 5,
+      errorText: _noteError,
       g: g,
     );
   }

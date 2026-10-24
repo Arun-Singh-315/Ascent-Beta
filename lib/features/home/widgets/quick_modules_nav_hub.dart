@@ -201,15 +201,25 @@ class QuickModulesNavHub extends ConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 7),
-                              // Slim progress bar — clean, no labels
+                              // Progress bar with visible track and clean geometry
                               ClipRRect(
-                                borderRadius: AppGeometry.roundedr3,
-                                child: LinearProgressIndicator(
-                                  value: (progress?.percent ?? 0) / 100,
-                                  minHeight: 3,
-                                  backgroundColor: g.track,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    challengeStatusColor,
+                                borderRadius: BorderRadius.circular(4),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: g.track,
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(
+                                      color: g.line.withValues(alpha: 0.5),
+                                      width: 0.5,
+                                    ),
+                                  ),
+                                  child: LinearProgressIndicator(
+                                    value: (progress?.percent ?? 0) / 100,
+                                    minHeight: 5,
+                                    backgroundColor: Colors.transparent,
+                                    valueColor: AlwaysStoppedAnimation(
+                                      challengeStatusColor,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -294,6 +304,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                             _NeutralProgressBar(
                               key: const ValueKey('medicine_progress_bar'),
                               progress: medProgress,
+                              fillColor: g.clay,
                             ),
                           ],
                         ),
@@ -425,6 +436,7 @@ class QuickModulesNavHub extends ConsumerWidget {
                             _NeutralProgressBar(
                               key: const ValueKey('hydration_progress_bar'),
                               progress: waterProgress,
+                              fillColor: g.clay,
                             ),
                           ],
                         ),
@@ -549,27 +561,35 @@ class _LifeGridCell extends StatelessWidget {
 
 class _NeutralProgressBar extends StatelessWidget {
   final double progress;
+  final Color? fillColor;
 
-  const _NeutralProgressBar({super.key, required this.progress});
+  const _NeutralProgressBar({
+    super.key,
+    required this.progress,
+    this.fillColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
 
     return Container(
-      height: 3,
+      height: 5,
       decoration: BoxDecoration(
         color: g.track,
-        borderRadius: AppGeometry.roundedr3,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(
+          color: g.line.withValues(alpha: 0.5),
+          width: 0.5,
+        ),
       ),
       alignment: Alignment.centerLeft,
       child: FractionallySizedBox(
         widthFactor: progress.clamp(0.0, 1.0),
-        child: AppProgress(
-          filled: true,
-          nightDecoration: BoxDecoration(
-            color: g.inkSecondary,
-            borderRadius: AppGeometry.roundedr3,
+        child: Container(
+          decoration: BoxDecoration(
+            color: fillColor ?? g.clay,
+            borderRadius: BorderRadius.circular(2.5),
           ),
         ),
       ),

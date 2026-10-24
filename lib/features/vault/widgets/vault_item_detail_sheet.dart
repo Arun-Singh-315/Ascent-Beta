@@ -11,6 +11,7 @@ import '../../../shared/widgets/glass_surface.dart';
 import '../models/vault_item_model.dart';
 import '../providers/vault_providers.dart';
 import 'vault_item_editor_sheet.dart';
+import 'cred_card_visual.dart';
 
 class VaultItemDetailSheet extends StatefulWidget {
   const VaultItemDetailSheet({
@@ -170,6 +171,38 @@ class _VaultItemDetailSheetState extends State<VaultItemDetailSheet> {
                 ],
               ),
               const SizedBox(height: AppSpace.s16),
+
+              // ── CRED-STYLE LUXURY CARD VISUAL ───────────────────────────
+              if (item.category == VaultCategory.card) ...[
+                Builder(
+                  builder: (context) {
+                    final cardNumber = fields['cardNumber'] as String? ?? '';
+                    final bankName = fields['bankName'] as String? ?? item.title;
+                    final cardTier = fields['cardTier'] as String? ?? (fields['cardType'] as String? ?? '');
+                    final cardBrand = fields['cardBrand'] as String? ?? 'Card';
+                    final cardholder = fields['cardholderName'] as String? ?? '';
+                    final expiry = fields['expiry'] as String? ?? '';
+                    final skinName = fields['skin'] as String?;
+                    final CredCardSkin? skin = skinName != null
+                        ? CredCardSkin.values.firstWhere(
+                            (s) => s.name == skinName,
+                            orElse: () => CredCardTheme.resolve('$bankName $cardTier'),
+                          )
+                        : null;
+
+                    return CredCardVisual(
+                      bankName: bankName,
+                      cardTier: cardTier,
+                      cardholderName: cardholder,
+                      cardNumber: cardNumber,
+                      expiryDate: expiry,
+                      cardBrand: cardBrand,
+                      skin: skin,
+                    );
+                  },
+                ),
+                const SizedBox(height: AppSpace.s12),
+              ],
 
               // ── REVEAL TOGGLE ───────────────────────────────────────────
               Row(

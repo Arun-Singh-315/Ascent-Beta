@@ -668,16 +668,26 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
               const SizedBox(height: 8),
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  key: ValueKey('activity_timer_progress_${activity.id}'),
-                  value:
-                      (activity.elapsedSecondsToday /
-                              (activity.targetMinutes! * 60))
-                          .clamp(0.0, 1.0),
-                  minHeight: 3,
-                  color: g.clay,
-                  backgroundColor: g.track,
-                  semanticsLabel: 'Focus time progress',
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: g.track,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: g.line.withValues(alpha: 0.4),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: LinearProgressIndicator(
+                    key: ValueKey('activity_timer_progress_${activity.id}'),
+                    value:
+                        (activity.elapsedSecondsToday /
+                                (activity.targetMinutes! * 60))
+                            .clamp(0.0, 1.0),
+                    minHeight: 5,
+                    color: g.clay,
+                    backgroundColor: Colors.transparent,
+                    semanticsLabel: 'Focus time progress',
+                  ),
                 ),
               ),
             ],

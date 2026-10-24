@@ -144,6 +144,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     bool alarmEnabled = existing?.alarmEnabled ?? false;
     bool saving = false;
     String? alarmInfo;
+    String? titleError;
 
     showModalBottomSheet(
       context: context,
@@ -201,9 +202,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       style: AscentTextStyles.bodyMedium.copyWith(
                         color: context.textPrimary,
                       ),
+                      onChanged: (_) {
+                        if (titleError != null) {
+                          setSheetState(() => titleError = null);
+                        }
+                      },
                       decoration: InputDecoration(
                         labelText: 'Reminder Title *',
                         hintText: 'e.g. Solve LeetCode DP, Review notes, Walk',
+                        errorText: titleError,
                         border: OutlineInputBorder(
                           borderRadius: AppGeometry.roundedr12,
                         ),
@@ -482,7 +489,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           : () async {
                               if (saving) return;
                               final title = titleController.text.trim();
-                              if (title.isEmpty) return;
+                              if (title.isEmpty) {
+                                setSheetState(() => titleError = 'Title cannot be left empty');
+                                HapticFeedback.lightImpact();
+                                return;
+                              }
 
                               final dao = ref.read(reminderDaoProvider);
                               final baseScheduled = DateTime(

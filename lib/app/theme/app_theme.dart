@@ -796,6 +796,28 @@ class AscentTheme {
           ),
         ),
       ),
+
+      // ── Progress indicator ───────────────────────────────────────────────────
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: isMerlotLinen
+            ? (isDark ? MerlotPalette.darkAction : MerlotPalette.action)
+            : (isNordicSky
+                ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
+                : accentPrimary),
+        linearTrackColor: isMerlotLinen
+            ? (isDark
+                ? const Color(0x1FFFFFFF)
+                : const Color.fromRGBO(88, 24, 37, 0.12))
+            : (isNordicSky
+                ? (isDark
+                    ? const Color(0x1FFFFFFF)
+                    : const Color.fromRGBO(29, 100, 180, 0.12))
+                : (isDark
+                    ? const Color(0x1FFFFFFF)
+                    : const Color.fromRGBO(15, 23, 42, 0.12))),
+        linearMinHeight: 4,
+        borderRadius: BorderRadius.circular(4),
+      ),
       extensions: [
         isDark
             ? (isMerlotLinen

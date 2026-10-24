@@ -15,16 +15,16 @@ void main() {
 
   group('Vintage Merlot & Cashmere Linen Palette Tokens', () {
     test('verifies primary and accent colors meet brand spec', () {
-      expect(MerlotPalette.canvas, const Color(0xFFF8F5EE));
+      expect(MerlotPalette.canvas, const Color(0xFFF4EFE6));
       expect(MerlotPalette.action, const Color(0xFF581825));
       expect(MerlotPalette.actionDeep, const Color(0xFF4D131F));
-      expect(MerlotPalette.tint, const Color(0xFFF1EBE0));
-      expect(MerlotPalette.pillSoft, const Color(0xFFF7F3EB));
+      expect(MerlotPalette.tint, const Color(0xFFE9E0D0));
+      expect(MerlotPalette.pillSoft, const Color(0xFFECE3D4));
       expect(MerlotPalette.antiqueGold, const Color(0xFFC28834));
       expect(MerlotPalette.terracotta, const Color(0xFFA04020));
       expect(MerlotPalette.success, const Color(0xFF166534));
       expect(MerlotPalette.ink, const Color(0xFF260F14));
-      expect(MerlotPalette.surface, const Color(0xFFF8F4EC));
+      expect(MerlotPalette.surface, const Color(0xFFEBE3D5));
     });
 
     test('verifies WCAG AAA contrast ratio for primary ink on canvas and surface', () {

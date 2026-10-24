@@ -149,7 +149,13 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   }
 
   Future<void> _send() async {
-    if (_saving || PlanItemDraft.parseList(_text.text).isEmpty) return;
+    final entries = PlanItemDraft.parseList(_text.text);
+    if (entries.isEmpty) {
+      setState(() => _error = 'Please enter an activity title');
+      HapticFeedback.lightImpact();
+      return;
+    }
+    if (_saving) return;
     setState(() {
       _saving = true;
       _error = null;

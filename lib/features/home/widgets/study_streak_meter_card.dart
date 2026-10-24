@@ -226,28 +226,36 @@ class StudyStreakMeterCard extends StatelessWidget {
             // Progress Bar
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: status.progressFraction,
-                minHeight: 5,
-                backgroundColor: g.frozen
-                    ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-                    : g.bg.withValues(alpha: 0.5),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  g.frozen
-                      ? (status.isTodaySecured
-                          ? (isDark
-                              ? FrozenPalette.darkSpark
-                              : FrozenPalette.spark)
-                          : (isDark
-                              ? FrozenPalette.darkAction
-                              : FrozenPalette.action))
-                      : (status.isTodaySecured
-                          ? AppPalette.deepOrangeAccent
-                          : (status.isRescueMode
-                              ? AppPalette.amber
-                              : (status.isUrgent
-                                  ? AppPalette.redAccent
-                                  : g.clay))),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: g.track,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: g.line.withValues(alpha: 0.4),
+                    width: 0.5,
+                  ),
+                ),
+                child: LinearProgressIndicator(
+                  value: status.progressFraction,
+                  minHeight: 6,
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    g.frozen
+                        ? (status.isTodaySecured
+                            ? (isDark
+                                ? FrozenPalette.darkSpark
+                                : FrozenPalette.spark)
+                            : (isDark
+                                ? FrozenPalette.darkAction
+                                : FrozenPalette.action))
+                        : (status.isTodaySecured
+                            ? AppPalette.deepOrangeAccent
+                            : (status.isRescueMode
+                                ? AppPalette.amber
+                                : (status.isUrgent
+                                    ? AppPalette.redAccent
+                                    : g.clay))),
+                  ),
                 ),
               ),
             ),

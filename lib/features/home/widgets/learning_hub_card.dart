@@ -159,12 +159,22 @@ class LearningHubCard extends ConsumerWidget {
                 const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: state.progressFraction.clamp(0.0, 1.0),
-                    minHeight: 6,
-                    color: g.clay,
-                    backgroundColor: g.track,
-                    semanticsLabel: 'Lecture progress',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: g.track,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: g.line.withValues(alpha: 0.5),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: LinearProgressIndicator(
+                      value: state.progressFraction.clamp(0.0, 1.0),
+                      minHeight: 6,
+                      color: g.clay,
+                      backgroundColor: Colors.transparent,
+                      semanticsLabel: 'Lecture progress',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -93,12 +93,26 @@ class PromiseService {
       final greeting = name.isEmpty
           ? 'Hey, let’s keep your promises'
           : 'Hey $name, let’s keep your promises';
-      final content = [
-        greeting,
-        'We’re in this together. Take one small step:',
-        for (var i = 0; i < thoughts.length; i++)
-          '${i + 1}. ${thoughts[i].content}',
-      ].join('\n');
+      final allPrivate =
+          thoughts.isNotEmpty && thoughts.every((t) => t.category == 'private');
+      final List<String> contentLines;
+      if (allPrivate) {
+        contentLines = [
+          greeting,
+          'We’re in this together. Take one small step:',
+          '🔒 ${thoughts.length} confidential commitments waiting for your check-in',
+        ];
+      } else {
+        contentLines = [
+          greeting,
+          'We’re in this together. Take one small step:',
+          for (var i = 0; i < thoughts.length; i++)
+            thoughts[i].category == 'private'
+                ? '${i + 1}. 🔒 Confidential commitment'
+                : '${i + 1}. ${thoughts[i].content}',
+        ];
+      }
+      final content = contentLines.join('\n');
       var complete = true;
       for (var i = 0; i < checkInHours.length; i++) {
         final id = notificationBase + i;

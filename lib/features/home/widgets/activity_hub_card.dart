@@ -1,5 +1,6 @@
 import '../../../core/providers/time_tracking_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
@@ -35,24 +36,38 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
             Expanded(
               child: Text(
                 'Things hub',
-                style: TextStyle(
+                style: AscentTextStyles.homeTitle.copyWith(
                   color: g.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            PopupMenuButton<String>(
-              tooltip: 'Things hub options',
-              onSelected: (_) => context.push('/today'),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'board', child: Text('View board')),
-              ],
-              icon: Icon(Icons.more_horiz, color: g.inkMuted),
+            TextButton.icon(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                context.push('/today');
+              },
+              icon: Icon(
+                Icons.dashboard_outlined,
+                size: 16,
+                color: g.clay,
+              ),
+              label: Text(
+                'View board',
+                style: TextStyle(
+                  color: g.clay,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         ),
@@ -110,7 +125,9 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                             child: Text(
                               _showCompleted
                                   ? 'No completed activities yet.'
-                                  : 'Nothing pending. Add something below.',
+                                  : (items.any((a) => a.status == TodayActivityStatus.done)
+                                      ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
+                                      : 'Nothing pending. Add something below.'),
                               style: TextStyle(color: g.inkMuted, fontSize: 13),
                             ),
                           ),

@@ -215,7 +215,11 @@ class _DropThoughtSheetState extends ConsumerState<DropThoughtSheet> {
 
   Future<void> _saveThought() async {
     final text = _contentController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty) {
+      setState(() => _saveError = 'Thought cannot be left empty');
+      HapticFeedback.lightImpact();
+      return;
+    }
 
     HapticFeedback.mediumImpact();
     setState(() {

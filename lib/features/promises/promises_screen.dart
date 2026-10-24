@@ -12,6 +12,7 @@ import '../../shared/widgets/ascent_snack_bar.dart';
 import '../../shared/widgets/glass_chip.dart';
 import '../../shared/widgets/glass_surface.dart';
 import '../thought_wall/drop_thought_sheet.dart';
+import 'promise_check_in_sheet.dart';
 import 'promise_ui.dart';
 
 class PromisesScreen extends ConsumerStatefulWidget {
@@ -231,10 +232,29 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen> {
                     ],
                   ),
                   if (today.isNotEmpty)
-                    PromiseActionButton(
-                      label: 'Add promise',
-                      icon: Icons.add,
-                      onPressed: () => DropThoughtSheet.showPromise(context),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () => PromiseCheckInSheet.show(context),
+                          icon: const Icon(Icons.record_voice_over_outlined, size: 16),
+                          label: const Text('Bhai Check-in'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: g.clay.withValues(alpha: 0.15),
+                            foregroundColor: g.clay,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                        PromiseActionButton(
+                          label: 'Add promise',
+                          icon: Icons.add,
+                          onPressed: () => DropThoughtSheet.showPromise(context),
+                        ),
+                      ],
                     ),
                 ],
               ),
