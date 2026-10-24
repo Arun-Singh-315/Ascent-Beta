@@ -404,6 +404,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final profileAsync = ref.watch(userProfileStreamProvider);
     final themeMode = ref.watch(themeModeProvider);
     final dayPreset = ref.watch(dayThemePresetProvider);
+    final translucencyPreset = ref.watch(glassTranslucencyPresetProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
       _initFromProfile(profileAsync.value);
@@ -528,51 +529,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: dayPreset == DayThemePreset.merlotLinen
-                            ? MerlotPalette.tint
-                            : dayPreset == DayThemePreset.nordicSky
-                            ? FrozenPalette.tint
-                            : const Color(0xFFFFF7ED),
+                        color: g.clay.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: dayPreset == DayThemePreset.merlotLinen
-                              ? MerlotPalette.line
-                              : dayPreset == DayThemePreset.nordicSky
-                              ? FrozenPalette.line
-                              : const Color(0xFFFDBA74),
+                          color: g.clay.withValues(alpha: 0.25),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
-                            dayPreset == DayThemePreset.merlotLinen
-                                ? Icons.auto_awesome_rounded
-                                : dayPreset == DayThemePreset.nordicSky
-                                ? Icons.cloud_outlined
-                                : Icons.wb_sunny_rounded,
-                            color: dayPreset == DayThemePreset.merlotLinen
-                                ? MerlotPalette.action
-                                : dayPreset == DayThemePreset.nordicSky
-                                ? FrozenPalette.action
-                                : const Color(0xFFEA580C),
+                            Icons.auto_awesome_rounded,
+                            color: g.clay,
                             size: 16,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              dayPreset == DayThemePreset.merlotLinen
-                                  ? 'Vintage Merlot Theme is active. Deep vintage merlot, cashmere oat linen, and antique gold accents.'
-                                  : dayPreset == DayThemePreset.nordicSky
-                                  ? 'Frozen Sky Theme is active. Crisp arctic blues, frosted glass, and cool linen surfaces.'
-                                  : 'Classic Clay Theme is active. Warm terracotta, amber glow, and crisp linen surfaces.',
+                              'Apple Liquid Glass Theme is active. Frosted surfaces with dynamic depth and high-contrast typography.',
                               style: TextStyle(
                                 fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
-                                color: dayPreset == DayThemePreset.merlotLinen
-                                    ? MerlotPalette.action
-                                    : dayPreset == DayThemePreset.nordicSky
-                                    ? FrozenPalette.action
-                                    : const Color(0xFF9A3412),
+                                color: g.clay,
                               ),
                             ),
                           ),
@@ -652,7 +629,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Daylight Style',
+                          'Glass Translucency',
                           style: AscentTextStyles.labelMedium
                               .copyWith(color: g.ink)
                               .merge(AppTypeRoles.typeRole2),
@@ -661,20 +638,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          dayPreset == DayThemePreset.merlotLinen
-                              ? 'Vintage Merlot (Default)'
-                              : dayPreset == DayThemePreset.nordicSky
-                              ? 'Frozen Sky'
-                              : 'Classic Clay',
+                          translucencyPreset ==
+                                  GlassTranslucencyPreset.subtleFrosted
+                              ? 'Subtle Frosted'
+                              : translucencyPreset ==
+                                      GlassTranslucencyPreset.highContrast
+                                  ? 'High Contrast'
+                                  : 'Balanced Liquid (Default)',
                           textAlign: TextAlign.end,
                           style: AscentTextStyles.captionMedium
-                              .copyWith(
-                                color: dayPreset == DayThemePreset.merlotLinen
-                                    ? MerlotPalette.action
-                                    : dayPreset == DayThemePreset.nordicSky
-                                    ? FrozenPalette.accent
-                                    : g.clay,
-                              )
+                              .copyWith(color: g.clay)
                               .merge(AppTypeRoles.typeRole8),
                         ),
                       ),
@@ -684,44 +657,51 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Row(
                     children: [
                       _DayPresetOption(
-                        label: 'Merlot',
-                        subtitle: 'Cashmere',
-                        colorSwatch: MerlotPalette.action,
+                        label: 'Subtle',
+                        subtitle: 'Airy Glass',
+                        colorSwatch: g.slate,
+                        icon: Icons.blur_on_rounded,
+                        isSelected: translucencyPreset ==
+                            GlassTranslucencyPreset.subtleFrosted,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          ref
+                              .read(glassTranslucencyPresetProvider.notifier)
+                              .setPreset(GlassTranslucencyPreset.subtleFrosted);
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _DayPresetOption(
+                        label: 'Balanced',
+                        subtitle: 'Signature',
+                        colorSwatch: g.clay,
                         icon: Icons.auto_awesome_rounded,
-                        isSelected: dayPreset == DayThemePreset.merlotLinen,
+                        isSelected: translucencyPreset ==
+                            GlassTranslucencyPreset.balancedLiquid,
                         onTap: () {
                           HapticFeedback.lightImpact();
                           ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.merlotLinen);
+                              .read(glassTranslucencyPresetProvider.notifier)
+                              .setPreset(
+                                GlassTranslucencyPreset.balancedLiquid,
+                              );
                         },
                       ),
                       const SizedBox(width: 8),
                       _DayPresetOption(
-                        label: 'Classic Clay',
-                        subtitle: 'Terracotta',
-                        colorSwatch: AscentColors.accentPrimary,
-                        icon: Icons.wb_sunny_outlined,
-                        isSelected: dayPreset == DayThemePreset.classicClay,
+                        label: 'Contrast',
+                        subtitle: 'Crisp Day',
+                        colorSwatch: g.amber,
+                        icon: Icons.contrast_rounded,
+                        isSelected: translucencyPreset ==
+                            GlassTranslucencyPreset.highContrast,
                         onTap: () {
                           HapticFeedback.lightImpact();
                           ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.classicClay);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _DayPresetOption(
-                        label: 'Frozen Sky',
-                        subtitle: 'Frost Slate',
-                        colorSwatch: FrozenPalette.accent,
-                        icon: Icons.cloud_outlined,
-                        isSelected: dayPreset == DayThemePreset.nordicSky,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(dayThemePresetProvider.notifier)
-                              .setPreset(DayThemePreset.nordicSky);
+                              .read(glassTranslucencyPresetProvider.notifier)
+                              .setPreset(
+                                GlassTranslucencyPreset.highContrast,
+                              );
                         },
                       ),
                     ],

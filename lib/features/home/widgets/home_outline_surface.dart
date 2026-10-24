@@ -42,7 +42,6 @@ class HomeOutlineSurface extends StatelessWidget {
         key: surfaceKey,
         radius: radius,
         enableBlur: false,
-        fillColor: Colors.transparent,
         customBorder: showOutline
             ? Border.all(color: rim, width: 1.2)
             : const Border.fromBorderSide(BorderSide.none),

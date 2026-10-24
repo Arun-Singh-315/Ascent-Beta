@@ -669,19 +669,6 @@ class _ThoughtWallHomePreviewState
                                     showTitle: false,
                                   ),
                                 ],
-                                if (!thought.isArchived) ...[
-                                  const SizedBox(height: 8),
-                                  ThoughtQuickActions(
-                                    key: ValueKey(
-                                      'home_thought_quick_${thought.id}',
-                                    ),
-                                    thought: thought,
-                                    onActionCompleted: () {
-                                      if (mounted) setState(() {});
-                                    },
-                                    db: ref.read(databaseProvider),
-                                  ),
-                                ],
                                 const SizedBox(height: 6),
                                 Row(
                                   mainAxisAlignment:
@@ -718,9 +705,39 @@ class _ThoughtWallHomePreviewState
                                       ),
                                     ),
                                     if (thought.isCompleted)
-                                      const GlassChip(
-                                        label: 'Done',
-                                        success: true,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: g.sage.withValues(alpha: 0.14),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color:
+                                                g.sage.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.check_circle_rounded,
+                                              size: 11,
+                                              color: g.sage,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Done',
+                                              style: TextStyle(
+                                                color: g.sage,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     IconButton(
                                       tooltip: 'Edit thought',
