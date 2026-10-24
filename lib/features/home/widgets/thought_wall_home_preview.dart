@@ -587,38 +587,51 @@ class _ThoughtWallHomePreviewState
                                   ),
                                   const SizedBox(height: 6),
                                 ] else if (thought.mood == 'promise') ...[
-                                  AppTag(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: AppSpace.s8,
-                                      vertical: AppSpace.s2,
-                                    ),
-                                    nightDecoration: BoxDecoration(
-                                      color: bubbleAccentColor.withValues(
-                                        alpha: .12,
+                                  Center(
+                                    child: Container(
+                                      key: ValueKey(
+                                        'promise_top_middle_wrapper_${thought.id}',
                                       ),
-                                      borderRadius: AppGeometry.roundedr10,
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.handshake_rounded,
-                                          size: 11,
-                                          color: bubbleAccentColor,
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpace.s10,
+                                        vertical: AppSpace.s4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: bubbleAccentColor.withValues(
+                                          alpha: .12,
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'PROMISE',
-                                          style: AscentTextStyles.homeCaption
-                                              .copyWith(
-                                                color: bubbleAccentColor,
-                                              )
-                                              .merge(AppTypeRoles.typeRole65),
+                                        borderRadius: AppGeometry.roundedr12,
+                                        border: Border.all(
+                                          color: bubbleAccentColor.withValues(
+                                            alpha: 0.28,
+                                          ),
+                                          width: AppBorderScale.w1point0,
                                         ),
-                                      ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.handshake_rounded,
+                                            size: 12,
+                                            color: bubbleAccentColor,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            'PROMISE',
+                                            style: AscentTextStyles.homeCaption
+                                                .copyWith(
+                                                  color: bubbleAccentColor,
+                                                  fontWeight: FontWeight.w700,
+                                                  letterSpacing: 1.2,
+                                                )
+                                                .merge(AppTypeRoles.typeRole65),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
                                 ],
                                 Text(
                                   '#${categories[thought.category] ?? thought.category}',
