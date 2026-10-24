@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const featureGuides = <String, String>{
   'Thought Wall':
-      'Write · Send a note like a message.\nOrganize · Swipe right to archive; left to delete with Undo.\nMore · Long-press for selection. Add Promise is at the top.',
+      'Write · Send a note like a message.\nOrganize · Swipe right to archive; left to delete with Undo.\nMore · Long-press for selection. Open Promises at the top for your daily commitments.',
   'Challenge Partner':
       'Create · Add independent challenges.\nChoose · Tap a card for status; its home icon selects the preview.\nProgress · Linked study and Focus update active challenges.',
   'Reminders & Alerts':
@@ -163,7 +163,7 @@ final _tour = <(String, String, String)>[
   ),
   (
     'Give thoughts a place',
-    'Send notes, swipe right to archive, swipe left to delete, or long-press to select. Selected notes can become Todos or reminders. Use Add Promise at the top.',
+    'Send notes, swipe right to archive, swipe left to delete, or long-press to select. Selected notes can become Todos or reminders. Open Promises at the top to add daily commitments and get shared check-ins.',
     '/thought-wall',
   ),
   (

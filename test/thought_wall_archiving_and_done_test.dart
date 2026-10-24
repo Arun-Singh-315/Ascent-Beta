@@ -147,6 +147,7 @@ void main() {
           const ThoughtTableCompanion(
             content: drift.Value('Deep personal reflection'),
             mood: drift.Value('me_to_me'),
+            category: drift.Value('bugs'),
           ),
         );
         await dao.archiveThought(id);
@@ -172,6 +173,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Deep personal reflection'), findsNothing);
+        await tester.tap(find.text('Bugs'));
+        await tester.pumpAndSettle();
+        expect(find.text('Deep personal reflection'), findsOneWidget);
+        expect(find.text('ARCHIVED'), findsOneWidget);
         await tester.tap(find.text('Archive'));
         for (var i = 0; i < 6; i++) {
           await tester.runAsync(

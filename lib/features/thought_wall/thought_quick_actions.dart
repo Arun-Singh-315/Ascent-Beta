@@ -63,10 +63,14 @@ class _ThoughtQuickActionsState extends ConsumerState<ThoughtQuickActions> {
       children: [
         for (final action in <(String, String, Future<void> Function())>[
           ('Category', 'Move to category', _category),
-          ('Plan', 'Plan', () => showHomeSchedule(context, widget.thought)),
-          ('Todo', 'Create Todo', () => _act('todo')),
-          ('Reminder', 'Set reminder', () => _act('reminder')),
-          ('Both', 'Todo & Reminder', () => _act('both')),
+          if (widget.thought.mood != 'promise')
+            ('Plan', 'Plan', () => showHomeSchedule(context, widget.thought)),
+          if (widget.thought.mood != 'promise')
+            ('Todo', 'Create Todo', () => _act('todo')),
+          if (widget.thought.mood != 'promise')
+            ('Reminder', 'Set reminder', () => _act('reminder')),
+          if (widget.thought.mood != 'promise')
+            ('Both', 'Todo & Reminder', () => _act('both')),
         ])
           GlassChip(
             label: action.$1,

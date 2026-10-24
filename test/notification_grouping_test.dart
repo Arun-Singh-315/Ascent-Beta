@@ -105,6 +105,25 @@ void main() {
         expect(await service.cancelChecked(41), isTrue);
         expect(operations.last.method, 'cancel');
         expect((operations.last.arguments as Map)['id'], 41);
+        expect(
+          await service.schedulePromiseCheckIn(
+            id: 1800000000,
+            title: 'Hey Arun',
+            body: '1. Walk\n2. Read',
+            scheduledAt: at,
+          ),
+          isTrue,
+        );
+        expect(requests.last['payload'], '/promises');
+        expect(requests.last['body'], '1. Walk\n2. Read');
+        expect(
+          (requests.last['platformSpecifics'] as Map)['channelId'],
+          'ascent_promises_v1',
+        );
+        expect(
+          NotificationService.destinationForPayload('/promises'),
+          '/promises',
+        );
       } finally {
         messenger.setMockMethodCallHandler(notifications, null);
         messenger.setMockMethodCallHandler(groups, null);

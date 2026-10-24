@@ -499,7 +499,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
   void _selectFilter(String key) {
     setState(() {
       _categoryFilter = key;
-      _archiveFilter = key == 'archived' ? 'archived' : 'active';
+      _archiveFilter = key == 'archived'
+          ? 'archived'
+          : _categories.containsKey(key)
+          ? 'all'
+          : 'active';
+      if (_categories.containsKey(key)) _viewToggle = 'all';
       if (key == 'archived') {
         _viewToggle = 'all';
         _completionFilter = 'all';
@@ -947,17 +952,15 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 if (MediaQuery.sizeOf(context).width < 400 ||
                     MediaQuery.textScalerOf(context).scale(14) > 17)
                   IconButton(
-                    tooltip: 'Add Promise',
+                    tooltip: 'Your promises',
                     icon: const Icon(Icons.handshake_rounded, size: 20),
-                    onPressed: () =>
-                        DropThoughtSheet.show(context, initialMood: 'promise'),
+                    onPressed: () => context.push('/promises'),
                   )
                 else
                   TextButton.icon(
                     icon: const Icon(Icons.handshake_rounded, size: 17),
-                    label: const Text('Add Promise'),
-                    onPressed: () =>
-                        DropThoughtSheet.show(context, initialMood: 'promise'),
+                    label: const Text('Promises'),
+                    onPressed: () => context.push('/promises'),
                   ),
                 IconButton(
                   tooltip: 'Wall appearance',
@@ -1698,6 +1701,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                   context,
                                   existingThought: thought,
                                 );
+                              } else if (action == 'promises') {
+                                context.push('/promises');
                               } else if (action == 'open_todo') {
                                 context.push('/today');
                               } else if (action == 'track_challenge') {
@@ -1726,31 +1731,33 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 value: 'copy',
                                 child: Text('Copy text'),
                               ),
-                              const PopupMenuItem(
-                                value: 'both',
-                                child: Text('Todo + Reminder'),
-                              ),
-                              const PopupMenuItem(
-                                value: 'reminder',
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.notifications_active_outlined,
-                                      size: 16,
-                                    ),
-                                    SizedBox(width: 8),
-                                    Text('Set reminder'),
-                                  ],
+                              if (thought.mood != 'promise')
+                                const PopupMenuItem(
+                                  value: 'both',
+                                  child: Text('Todo + Reminder'),
                                 ),
-                              ),
+                              if (thought.mood != 'promise')
+                                const PopupMenuItem(
+                                  value: 'reminder',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.notifications_active_outlined,
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text('Set reminder'),
+                                    ],
+                                  ),
+                                ),
                               if (thought.mood == 'promise')
                                 const PopupMenuItem(
-                                  value: 'open_todo',
+                                  value: 'promises',
                                   child: Row(
                                     children: [
                                       Icon(Icons.open_in_new_rounded, size: 16),
                                       SizedBox(width: 8),
-                                      Text('View linked Todo'),
+                                      Text('View promises'),
                                     ],
                                   ),
                                 ),

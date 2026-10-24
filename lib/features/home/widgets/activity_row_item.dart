@@ -423,12 +423,15 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                             Expanded(
                               child: Text(
                                 activity.title,
-                                style: AscentTextStyles.homeHeadline.copyWith(
-                                  color: isDone ? g.inkMuted : g.ink,
-                                  decoration: isDone
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                ),
+                                style:
+                                    AppTypography.thoughtContent(
+                                      color: isDone ? g.inkMuted : g.ink,
+                                    ).copyWith(
+                                      fontSize: 16,
+                                      decoration: isDone
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                    ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -692,26 +695,29 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
     final chosen = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
-      builder: (ctx) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('Task priority'),
-          ),
-          for (final option in const [
-            ('high', 'P0 · Urgent'),
-            ('medium', 'P1 · Important'),
-            ('low', 'P2 · Normal'),
-          ])
-            ListTile(
-              title: Text(option.$2),
-              trailing: activity.priority == option.$1
-                  ? const Icon(Icons.check)
-                  : null,
-              onTap: () => Navigator.pop(ctx, option.$1),
+      builder: (ctx) => SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('Change priority'),
             ),
-        ],
+            for (final option in const [
+              ('high', 'Urgent', 'P0 · Do this first'),
+              ('medium', 'Important', 'P1 · Default, after urgent tasks'),
+              ('low', 'Normal', 'P2 · Flexible, after other tasks'),
+            ])
+              ListTile(
+                title: Text(option.$2),
+                subtitle: Text(option.$3),
+                trailing: (activity.priority ?? 'low') == option.$1
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.pop(ctx, option.$1),
+              ),
+          ],
+        ),
       ),
     );
     if (chosen == null || !mounted) return;
@@ -752,15 +758,14 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
         activity.kind != ActivityKind.todo ||
         (activity.targetMinutes ?? 0) > 0;
     final priority = switch (activity.priority) {
-      'high' => 'P0',
-      'medium' => 'P1',
-      _ => 'P2',
+      'high' => 'Urgent',
+      'medium' => 'Important',
+      _ => 'Normal',
     };
     // Keep the status line short: a type/priority tag plus, only while it
     // matters, the live timer or a "Paused" marker. Full details live in the
     // lecture player, the focus screen and the board.
     final status = [
-      if (activity.linkedTaskId != null && !done && !lecture) priority,
       if (activity.sourceType == 'medicine') 'Medicine',
       if (activity.sourceType == 'medicine' && activity.plannedDate != null)
         DateFormat('h:mm a').format(activity.plannedDate!),
@@ -768,38 +773,173 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
       if (running) _elapsedShort(activity),
       if (paused) 'Paused',
     ].join(' · ');
-    const titleLineHeight = 14 * 1.35;
-    return Material(
-      color: done ? Colors.green.withValues(alpha: .07) : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
+    final actionLabel = done
+        ? 'Done'
+        : timed
+        ? (running
+              ? 'Stop'
+              : paused
+              ? 'Resume'
+              : 'Start')
+        : 'Done';
+    final priorityControl = Semantics(
+      button: true,
+      label: 'Change priority, currently $priority',
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onLongPress: !done && activity.linkedTaskId != null
-            ? _setPriority
-            : null,
-        onTap: () => lecture
-            ? _openLecture(context, ref)
-            : _showActivityDetailDialog(context, ref, activity),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        key: ValueKey('activity_priority_${activity.id}'),
+        onTap: _setPriority,
+        borderRadius: BorderRadius.circular(9),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 34),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: g.ink.withValues(alpha: .24)),
+          ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: Row(
+              Icon(Icons.flag_outlined, size: 13, color: g.inkMuted),
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  'Priority: $priority',
+                  style: TextStyle(color: g.ink, fontSize: 11),
+                  maxLines: 2,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Icon(Icons.expand_more, size: 14, color: g.inkMuted),
+            ],
+          ),
+        ),
+      ),
+    );
+    final action = done
+        ? const GlassChip(
+            label: 'Done',
+            icon: Icons.check_rounded,
+            selected: true,
+            success: true,
+            tooltip: 'Completed',
+          )
+        : FilledButton.icon(
+            key: ValueKey('activity_action_${activity.id}'),
+            style: FilledButton.styleFrom(
+              backgroundColor: g.ink,
+              foregroundColor: g.bg,
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            icon: Icon(
+              timed
+                  ? (running ? Icons.pause_rounded : Icons.play_arrow_rounded)
+                  : Icons.check_rounded,
+              size: 15,
+            ),
+            label: Text(actionLabel),
+            onPressed: done
+                ? null
+                : () async {
+                    HapticFeedback.selectionClick();
+                    if (lecture) {
+                      if (_selectLecture(ref, activity)) {
+                        ref
+                            .read(learningHubProvider.notifier)
+                            .togglePlayPause();
+                      }
+                      return;
+                    }
+                    if (timed) {
+                      final tracker = ref.read(timeTrackingProvider.notifier);
+                      if (running) {
+                        tracker.pauseSession();
+                      } else if (paused) {
+                        tracker.resumeSession();
+                      } else {
+                        await tracker.switchToTask(
+                          title: activity.title,
+                          taskId: activity.linkedTaskId,
+                          sourceType: activity.sourceType,
+                          autoStart: true,
+                        );
+                      }
+                      return;
+                    }
+                    if (activity.linkedTaskId == null) return;
+                    try {
+                      final dao = ref.read(taskDaoProvider);
+                      await dao.toggleTaskCompletion(
+                        activity.linkedTaskId!,
+                        true,
+                      );
+                      final task = await dao.getTaskById(
+                        activity.linkedTaskId!,
+                      );
+                      if (context.mounted &&
+                          task?.actualCompletedDate == null) {
+                        AscentSnackBar.show(
+                          context,
+                          message:
+                              'Finish the checklist steps before completing this task.',
+                        );
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        AscentSnackBar.error(
+                          context,
+                          message: 'Could not complete the task. Please retry.',
+                        );
+                      }
+                    }
+                  },
+          );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Material(
+        color: done
+            ? Colors.green.withValues(alpha: .07)
+            : g.ink.withValues(alpha: .025),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(
+            color: done
+                ? Colors.green.withValues(alpha: .28)
+                : g.ink.withValues(alpha: .16),
+          ),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onLongPress: !done && activity.linkedTaskId != null
+              ? _setPriority
+              : null,
+          onTap: () => lecture
+              ? _openLecture(context, ref)
+              : _showActivityDetailDialog(context, ref, activity),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // The arrow sits in a box as tall as the title's first
-                    // line, so it stays level with it however the row grows.
                     SizedBox(
                       key: const ValueKey('activity_row_arrow'),
-                      height: titleLineHeight,
-                      width: 20,
+                      height: MediaQuery.textScalerOf(context).scale(15) * 1.4,
+                      width: 22,
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Icon(
                           Icons.arrow_forward_rounded,
-                          size: 15,
+                          size: 14,
                           color: g.inkMuted,
                         ),
                       ),
@@ -810,110 +950,81 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                         children: [
                           Text(
                             activity.title,
-                            maxLines: 1,
+                            key: ValueKey('activity_title_${activity.id}'),
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: done ? g.inkMuted : g.ink,
-                              fontSize: 14,
-                              height: 1.35,
-                              decoration: done
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
+                            style:
+                                AppTypography.thoughtContent(
+                                  color: done ? g.inkMuted : g.ink,
+                                ).copyWith(
+                                  fontSize: 15,
+                                  height: 1.4,
+                                  decoration: done
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
                           ),
-                          if (status.isNotEmpty) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              status,
-                              style: TextStyle(color: g.inkMuted, fontSize: 11),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          if (status.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                status,
+                                style: TextStyle(
+                                  color: g.inkMuted,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ],
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              GlassChip(
-                label: done
-                    ? 'Done'
-                    : timed
-                    ? (running
-                          ? 'Stop'
-                          : paused
-                          ? 'Resume'
-                          : 'Start')
-                    : 'Done',
-                selected: done,
-                success: done,
-                tooltip: done
-                    ? 'Completed'
-                    : timed
-                    ? 'Timer control'
-                    : 'Mark done',
-                onTap: done
-                    ? null
-                    : () async {
-                        HapticFeedback.selectionClick();
-                        if (lecture) {
-                          if (_selectLecture(ref, activity)) {
-                            ref
-                                .read(learningHubProvider.notifier)
-                                .togglePlayPause();
-                          }
-                          return;
-                        }
-                        if (timed) {
-                          final tracker = ref.read(
-                            timeTrackingProvider.notifier,
-                          );
-                          if (running) {
-                            tracker.pauseSession();
-                          } else if (paused) {
-                            tracker.resumeSession();
-                          } else {
-                            await tracker.switchToTask(
-                              title: activity.title,
-                              taskId: activity.linkedTaskId,
-                              sourceType: activity.sourceType,
-                              autoStart: true,
-                            );
-                          }
-                          return;
-                        }
-                        if (activity.linkedTaskId == null) return;
-                        try {
-                          final dao = ref.read(taskDaoProvider);
-                          await dao.toggleTaskCompletion(
-                            activity.linkedTaskId!,
-                            true,
-                          );
-                          final task = await dao.getTaskById(
-                            activity.linkedTaskId!,
-                          );
-                          if (context.mounted &&
-                              task?.actualCompletedDate == null) {
-                            AscentSnackBar.show(
-                              context,
-                              message:
-                                  'Finish the checklist steps before completing this task.',
-                            );
-                          }
-                        } catch (_) {
-                          if (context.mounted) {
-                            AscentSnackBar.error(
-                              context,
-                              message:
-                                  'Could not complete the task. Please retry.',
-                            );
-                          }
-                        }
-                      },
-              ),
-            ],
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final hasPriority = activity.linkedTaskId != null && !done;
+                    if (!hasPriority) {
+                      return Align(
+                        alignment: Alignment.centerRight,
+                        child: action,
+                      );
+                    }
+                    if (constraints.maxWidth < 240 ||
+                        MediaQuery.textScalerOf(context).scale(12) > 18) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: priorityControl,
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: action,
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: priorityControl,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        action,
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
