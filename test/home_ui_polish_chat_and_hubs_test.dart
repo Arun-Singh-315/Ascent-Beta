@@ -77,7 +77,7 @@ void main() {
     );
 
     testWidgets(
-      'Demand 2: Recent thoughts down to View all are enclosed inside home_mind_space_card',
+      'Demand 2: Composer, saved thoughts and View all share one home_mind_space_card under a Mind palace heading',
       (tester) async {
         final id1 = await db.thoughtDao.insertThought(
           ThoughtTableCompanion.insert(content: 'First thought'),
@@ -111,14 +111,26 @@ void main() {
         final cardFinder = find.byKey(const ValueKey('home_mind_space_card'));
         expect(cardFinder, findsOneWidget);
 
-        // Header and View all are inside this card
+        // The "Mind palace" heading sits above the card, not inside it, and the
+        // old separate "Recent thoughts" caption is gone.
+        expect(find.text('Mind palace'), findsOneWidget);
         expect(
-          find.descendant(
-            of: cardFinder,
-            matching: find.text('Recent thoughts'),
-          ),
+          find.descendant(of: cardFinder, matching: find.text('Mind palace')),
+          findsNothing,
+        );
+        expect(find.text('Recent thoughts'), findsNothing);
+
+        // The composer sits at the top of the same card as the thoughts.
+        expect(
+          find.descendant(of: cardFinder, matching: find.byType(TextField)),
           findsOneWidget,
         );
+        expect(
+          tester.getTopLeft(find.byType(TextField)).dy,
+          lessThan(tester.getTopLeft(find.byKey(ValueKey('home_thought_$id2'))).dy),
+        );
+
+        // View all is inside this card
         expect(
           find.descendant(of: cardFinder, matching: find.text('View all')),
           findsOneWidget,
