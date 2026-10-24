@@ -1,5 +1,5 @@
+import 'home_outline_surface.dart';
 import '../../thought_wall/drop_thought_sheet.dart';
-import '../../../shared/widgets/glass_chip.dart';
 import '../../../app/theme/thought_theme.dart';
 import '../../plans/widgets/plan_collection_editor.dart';
 import '../../../shared/widgets/note_list_button.dart';
@@ -22,7 +22,6 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
-import '../../thought_wall/thought_quick_actions.dart';
 import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space
@@ -282,9 +281,6 @@ class _ThoughtWallHomePreviewState
           recentThoughtsAsync.value ?? [],
         ).any((t) => t.id == pendingDraft['thoughtId']);
 
-    final hasThoughts = (recentThoughtsAsync.value ?? const <Thought>[])
-        .isNotEmpty;
-    final shellIsDark = context.isDark;
 
     // The composer and the recent thoughts live in ONE card: the composer
     // stays on top exactly as before and saved thoughts appear right below it.
@@ -671,19 +667,6 @@ class _ThoughtWallHomePreviewState
                                     showTitle: false,
                                   ),
                                 ],
-                                if (!thought.isArchived) ...[
-                                  const SizedBox(height: 8),
-                                  ThoughtQuickActions(
-                                    key: ValueKey(
-                                      'home_thought_quick_${thought.id}',
-                                    ),
-                                    thought: thought,
-                                    onActionCompleted: () {
-                                      if (mounted) setState(() {});
-                                    },
-                                    db: ref.read(databaseProvider),
-                                  ),
-                                ],
                                 const SizedBox(height: 6),
                                 Row(
                                   mainAxisAlignment:
@@ -720,9 +703,39 @@ class _ThoughtWallHomePreviewState
                                       ),
                                     ),
                                     if (thought.isCompleted)
-                                      const GlassChip(
-                                        label: 'Done',
-                                        success: true,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: g.sage.withValues(alpha: 0.14),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color:
+                                                g.sage.withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.check_circle_rounded,
+                                              size: 11,
+                                              color: g.sage,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              'Done',
+                                              style: TextStyle(
+                                                color: g.sage,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     IconButton(
                                       tooltip: 'Edit thought',
@@ -805,22 +818,6 @@ class _ThoughtWallHomePreviewState
       );
     }
 
-    final shellFill = shellIsDark
-        ? null
-        : (g.merlot
-              ? MerlotPalette.surface
-              : (g.frozen ? const Color(0xFFF8FAFD) : const Color(0xFFFFFDFB)));
-    final shellBorder = shellIsDark
-        ? null
-        : Border.all(
-            color: g.merlot
-                ? MerlotPalette.line
-                : (g.frozen
-                      ? FrozenPalette.line
-                      : g.edge.withValues(alpha: 0.45)),
-            width: 1.0,
-          );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -850,17 +847,12 @@ class _ThoughtWallHomePreviewState
             ],
           ),
         ),
-        // Empty: just the composer (card chrome is invisible). Once a thought
-        // exists the same composer sits at the top of one shared card.
-        GlassSurface(
-          key: const ValueKey('home_mind_space_card'),
-          radius: 20,
-          enableBlur: false,
-          fillColor: hasThoughts ? shellFill : Colors.transparent,
-          customBorder: hasThoughts
-              ? shellBorder
-              : const Border.fromBorderSide(BorderSide.none),
-          padding: hasThoughts ? const EdgeInsets.all(14) : EdgeInsets.zero,
+        // One continuous frame encloses the composer and saved thoughts,
+        // including the empty state.
+        HomeOutlineSurface(
+          surfaceKey: const ValueKey('home_mind_space_card'),
+          radius: 24,
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: shellChildren,

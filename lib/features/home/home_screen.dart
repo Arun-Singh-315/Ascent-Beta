@@ -1,4 +1,5 @@
 import 'widgets/home_overview_card.dart';
+import 'widgets/home_promise_section.dart';
 import '../reminders/reminder_action_ui.dart';
 import 'dart:async';
 
@@ -455,6 +456,8 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                 ),
           ),
         );
+      case 'promises':
+        return spaced(const HomePromiseSection());
       case 'reminders':
         final reminders = ref.watch(homeVisibleRemindersProvider);
         if (reminders.isEmpty) return const SizedBox.shrink();
