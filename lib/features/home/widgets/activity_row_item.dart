@@ -323,10 +323,8 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 : null,
                             color: isDone
                                 ? g.sage.withValues(alpha: .12)
-                                : (g.merlot
-                                      ? MerlotPalette.spark.withValues(
-                                          alpha: 0.12,
-                                        )
+                                : (isRunning
+                                      ? g.clay.withValues(alpha: .12)
                                       : AppPalette.transparent),
                             border: Border.all(
                               color: isDone
@@ -492,8 +490,10 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                   width: 6,
                                   height: 6,
                                   margin: const EdgeInsets.only(right: 5),
-                                  decoration: const BoxDecoration(
-                                    color: MerlotPalette.spark,
+                                  decoration: BoxDecoration(
+                                    color: context.isDark
+                                        ? MerlotPalette.darkAction
+                                        : MerlotPalette.action,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
