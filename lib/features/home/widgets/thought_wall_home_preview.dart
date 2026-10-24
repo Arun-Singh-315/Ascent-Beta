@@ -819,9 +819,11 @@ class _ThoughtWallHomePreviewState
               Expanded(
                 child: Text(
                   'Mind palace',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: g.ink),
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: g.ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               TextButton.icon(

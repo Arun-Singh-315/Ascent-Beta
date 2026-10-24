@@ -318,6 +318,15 @@ class MoreScreen extends ConsumerWidget {
                 ),
                 _TileDivider(),
                 _MoreListTile(
+                  icon: Icons.shield_outlined,
+                  iconTint: g.sage,
+                  title: 'Ascent Vault',
+                  subtitle:
+                      'Biometric & AES-256 cards, IDs, logins & secure files',
+                  route: '/vault',
+                ),
+                _TileDivider(),
+                _MoreListTile(
                   icon: Icons.insights_rounded,
                   iconTint: g.slate,
                   title: 'Analytics & Trends',
