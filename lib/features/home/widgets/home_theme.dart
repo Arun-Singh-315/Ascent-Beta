@@ -80,7 +80,7 @@ class HomeTheme {
             nav: MerlotPalette.surface,
             shadow: MerlotPalette.shadowAmbient,
             glow1: const Color(0x29C28834),
-            glow2: const Color(0x1F581825),
+            glow2: const Color(0x386B1D2F),
           ) as AscentGlass)
         : isNordic
         ? AscentGlass.nordicSky

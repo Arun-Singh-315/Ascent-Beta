@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/surface_tokens.dart';
 
 /// Translucent glass container matching Ascent design system:
@@ -50,18 +51,29 @@ class GlassSurface extends StatelessWidget {
             gradient ??
             (transparent
                 ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      base.withValues(alpha: dark ? .66 : .82),
-                      base.withValues(alpha: dark ? .38 : .54),
-                    ],
-                  )),
+                : (g.merlot && !dark
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          MerlotPalette.surface,
+                          MerlotPalette.surfaceBottom,
+                        ],
+                      )
+                    : LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          base.withValues(alpha: dark ? .66 : .82),
+                          base.withValues(alpha: dark ? .38 : .54),
+                        ],
+                      ))),
         borderRadius: r,
         border:
             customBorder ??
-            Border.all(color: g.ink.withValues(alpha: dark ? .24 : .20)),
+            (g.merlot && !dark
+                ? Border.all(color: MerlotPalette.line, width: 0.85)
+                : Border.all(color: g.ink.withValues(alpha: dark ? .24 : .20))),
         boxShadow: transparent
             ? const []
             : [

@@ -83,10 +83,20 @@ class StudyStreakMeterCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: g.merlot
-              ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
+              ? (isDark ? MerlotPalette.darkSurface : null)
               : (g.frozen
                   ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
                   : (isDark ? g.fill : Colors.white)),
+          gradient: g.merlot && !isDark
+              ? const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    MerlotPalette.surface,
+                    MerlotPalette.surfaceBottom,
+                  ],
+                )
+              : null,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: g.merlot

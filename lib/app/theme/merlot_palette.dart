@@ -12,28 +12,28 @@ class MerlotPalette {
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
   /// Canvas: Scaffold background — soft, soothing cashmere cream linen
-  static const canvas = Color(0xFFF7F3EA);
+  static const canvas = Color(0xFFF8F4EE);
 
-  /// Surface: Cards, bottom nav, containers — crisp, clean porcelain white shade
-  static const surface = Color(0xFFFFFFFF);
+  /// Surface: Cards, bottom nav, containers — soft wine-rose porcelain blush
+  static const surface = Color(0xFFFCEDF2);
 
-  /// Surface Bottom: Lower stop for card gradient
-  static const surfaceBottom = Color(0xFFFCFBF9);
+  /// Surface Bottom: Lower stop for card gradient — delicate wine-rose warmth
+  static const surfaceBottom = Color(0xFFF8E4EA);
 
   /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — delicate wine-cream blush
-  static const recessedWell = Color(0xFFFAF2F5);
+  static const recessedWell = Color(0xFFF4DDE4);
 
-  /// Elevated: Sheets, dialogs, modals — elevated pristine warm white cream
-  static const elevated = Color(0xFFFFFFFF);
+  /// Elevated: Sheets, dialogs, modals — elevated warm porcelain wine blush
+  static const elevated = Color(0xFFFDF0F4);
 
-  /// Line: Hairline 0.75px border on cards and containers — rich vintage burgundy
-  static const line = Color(0x38581825); // 22% alpha merlot
+  /// Line: Hairline 0.75px border on cards and containers — rich vintage wine red
+  static const line = Color(0x406B1D2F); // 25% alpha deep vintage wine
 
-  /// Line Specular: Top edge catchlight reflection — vintage burgundy highlight
-  static const lineSpecular = Color(0x4D581825); // 30% alpha merlot
+  /// Line Specular: Top edge catchlight reflection — vintage wine highlight
+  static const lineSpecular = Color(0x546B1D2F); // 33% alpha vintage wine
 
   /// Line Subtle: Inner divider and recessed well border
-  static const lineSubtle = Color(0x24581825); // 14% alpha merlot
+  static const lineSubtle = Color(0x286B1D2F); // 16% alpha vintage wine
 
   /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
   static const action = Color(0xFF581825);
@@ -54,10 +54,10 @@ class MerlotPalette {
   static const antiqueGold = Color(0xFFC28834);
 
   /// Tint: Selected tabs ("Today"), chips, tonal button background — delicate wine rose blush
-  static const tint = Color(0xFFF2DDE5);
+  static const tint = Color(0xFFEED3DC);
 
-  /// Pill Soft: Composer pills ("To-do", "Today", "Reminder off") — clean soft wine-cream
-  static const pillSoft = Color(0xFFF8EDF1);
+  /// Pill Soft: Composer pills ("To-do", "Today", "Reminder off") — clean soft wine-rose petal
+  static const pillSoft = Color(0xFFF6E2EA);
 
   /// Ink: Primary text — Espresso Merlot Obsidian (17.8:1 contrast on white surface)
   static const ink = Color(0xFF240A10);

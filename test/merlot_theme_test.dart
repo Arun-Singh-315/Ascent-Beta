@@ -15,14 +15,18 @@ void main() {
 
   group('Vintage Merlot & Cashmere Linen Palette Tokens', () {
     test('verifies primary, card surface, and accent colors meet daylight spec', () {
-      expect(MerlotPalette.canvas, const Color(0xFFF7F3EA));
-      expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
-      expect(MerlotPalette.recessedWell, const Color(0xFFFAF2F5));
+      expect(MerlotPalette.canvas, const Color(0xFFF8F4EE));
+      expect(MerlotPalette.surface, const Color(0xFFFCEDF2));
+      expect(MerlotPalette.surfaceBottom, const Color(0xFFF8E4EA));
+      expect(MerlotPalette.recessedWell, const Color(0xFFF4DDE4));
       expect(MerlotPalette.action, const Color(0xFF581825));
       expect(MerlotPalette.actionDeep, const Color(0xFF48101C));
       expect(MerlotPalette.actionBright, const Color(0xFF722032));
-      expect(MerlotPalette.tint, const Color(0xFFF2DDE5));
-      expect(MerlotPalette.pillSoft, const Color(0xFFF8EDF1));
+      expect(MerlotPalette.tint, const Color(0xFFEED3DC));
+      expect(MerlotPalette.pillSoft, const Color(0xFFF6E2EA));
+      expect(MerlotPalette.line, const Color(0x406B1D2F));
+      expect(MerlotPalette.lineSpecular, const Color(0x546B1D2F));
+      expect(MerlotPalette.lineSubtle, const Color(0x286B1D2F));
       expect(MerlotPalette.antiqueGold, const Color(0xFFC28834));
       expect(MerlotPalette.terracotta, const Color(0xFFA04020));
       expect(MerlotPalette.success, const Color(0xFF166534));
