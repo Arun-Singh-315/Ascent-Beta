@@ -1564,6 +1564,49 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (thought.mood == 'promise') ...[
+                      Center(
+                        child: Container(
+                          key: ValueKey(
+                            'promise_top_middle_wrapper_${thought.id}',
+                          ),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s10,
+                            vertical: AppSpace.s4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: g.clay.withValues(alpha: 0.12),
+                            borderRadius: AppGeometry.roundedr12,
+                            border: Border.all(
+                              color: g.clay.withValues(alpha: 0.28),
+                              width: AppBorderScale.w1point0,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.handshake_rounded,
+                                size: 12,
+                                color: g.clay,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'PROMISE',
+                                style: AscentTextStyles.homeCaption
+                                    .copyWith(
+                                      color: g.clay,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.2,
+                                    )
+                                    .merge(AppTypeRoles.typeRole65),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     // Date left; Promise and secondary menu remain in the top header.
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -1830,33 +1873,14 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                       ],
                     ),
 
-                    // Status badges row (if completed, pinned, or archived)
                     if (thought.isCompleted ||
                         thought.isPinned ||
-                        thought.isArchived ||
-                        thought.mood == 'promise') ...[
+                        thought.isArchived) ...[
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 5,
                         runSpacing: 4,
                         children: [
-                          if (thought.mood == 'promise')
-                            AppTag(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpace.s7,
-                                vertical: AppSpace.s3,
-                              ),
-                              nightDecoration: BoxDecoration(
-                                color: g.clay.withValues(alpha: 0.14),
-                                borderRadius: AppGeometry.roundedr7,
-                              ),
-                              child: Text(
-                                'Promise',
-                                style: AscentTextStyles.labelSmall
-                                    .copyWith(color: g.clay)
-                                    .merge(AppTypeRoles.typeRole18),
-                              ),
-                            ),
 
                           if (thought.isCompleted)
                             AppTag(
