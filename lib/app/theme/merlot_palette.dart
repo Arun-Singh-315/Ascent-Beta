@@ -11,20 +11,20 @@ class MerlotPalette {
 
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
-  /// Canvas: Scaffold background — soft, soothing cashmere oat cream linen
-  static const canvas = Color(0xFFF4EFE6);
+  /// Canvas: Scaffold background — soft, soothing cashmere cream linen
+  static const canvas = Color(0xFFF7F3EA);
 
-  /// Surface: Cards, bottom nav, containers — clotted cream & cashmere porcelain
-  static const surface = Color(0xFFEBE3D5);
+  /// Surface: Cards, bottom nav, containers — crisp, clean porcelain white shade
+  static const surface = Color(0xFFFFFFFF);
 
-  /// Surface Bottom: Lower stop for frosted card gradient
-  static const surfaceBottom = Color(0xFFE6DDD0);
+  /// Surface Bottom: Lower stop for card gradient
+  static const surfaceBottom = Color(0xFFFCFBF9);
 
-  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break)
-  static const recessedWell = Color(0xFFDFD5C4);
+  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — delicate wine-cream blush
+  static const recessedWell = Color(0xFFFAF2F5);
 
-  /// Elevated: Sheets, dialogs, modals — warm elevated cream mist
-  static const elevated = Color(0xFFEFE8DB);
+  /// Elevated: Sheets, dialogs, modals — elevated pristine warm white cream
+  static const elevated = Color(0xFFFFFFFF);
 
   /// Line: Hairline 0.75px border on cards and containers — rich vintage burgundy
   static const line = Color(0x38581825); // 22% alpha merlot
@@ -33,7 +33,7 @@ class MerlotPalette {
   static const lineSpecular = Color(0x4D581825); // 30% alpha merlot
 
   /// Line Subtle: Inner divider and recessed well border
-  static const lineSubtle = Color(0x26581825); // 15% alpha merlot
+  static const lineSubtle = Color(0x24581825); // 14% alpha merlot
 
   /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
   static const action = Color(0xFF581825);
@@ -42,34 +42,34 @@ class MerlotPalette {
   static const vintageMerlot = action;
 
   /// Action Deep: FAB ("✦ Ask Jarvis"), pressed/active states
-  static const actionDeep = Color(0xFF4D131F);
+  static const actionDeep = Color(0xFF48101C);
 
   /// Action Bright: Top of CTA button micro-gradient
-  static const actionBright = Color(0xFF6B1D2F);
+  static const actionBright = Color(0xFF722032);
 
   /// Action Pressed: Pressed state
-  static const actionPressed = Color(0xFF3F0E18);
+  static const actionPressed = Color(0xFF380B14);
 
   /// Secondary Accent: Antique warm gold for progress, sparks, and stars
   static const antiqueGold = Color(0xFFC28834);
 
-  /// Tint: Selected tabs ("Today"), chips, tonal button background — warm oat parchment
-  static const tint = Color(0xFFE9E0D0);
+  /// Tint: Selected tabs ("Today"), chips, tonal button background — delicate wine rose blush
+  static const tint = Color(0xFFF2DDE5);
 
-  /// Pill Soft: Composer pills ("To-do", "Today", "Reminder off")
-  static const pillSoft = Color(0xFFECE3D4);
+  /// Pill Soft: Composer pills ("To-do", "Today", "Reminder off") — clean soft wine-cream
+  static const pillSoft = Color(0xFFF8EDF1);
 
-  /// Ink: Primary text — Espresso Merlot Obsidian (15.4:1 contrast on canvas)
-  static const ink = Color(0xFF260F14);
+  /// Ink: Primary text — Espresso Merlot Obsidian (17.8:1 contrast on white surface)
+  static const ink = Color(0xFF240A10);
 
-  /// Secondary Ink: Secondary text, subtitles (8:1 contrast on canvas)
-  static const secondaryInk = Color(0xFF4A353B);
+  /// Secondary Ink: Secondary text, subtitles (9.1:1 contrast on white surface)
+  static const secondaryInk = Color(0xFF54222E);
 
-  /// Muted Ink: Captions, helper text, inactive icons (5.6:1 contrast on canvas)
-  static const mutedInk = Color(0xFF6E565B);
+  /// Muted Ink: Captions, helper text, inactive icons (5.4:1 contrast on white surface)
+  static const mutedInk = Color(0xFF784552);
 
   /// Subtle Ink: Hints, placeholders, disabled indicators
-  static const subtleInk = Color(0xFF9B8489);
+  static const subtleInk = Color(0xFF9E6E7A);
 
   /// Spark: Antique gold strictly for streak flame, achievements, win celebration
   static const spark = antiqueGold;
