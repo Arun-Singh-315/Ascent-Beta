@@ -6,6 +6,7 @@ import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../models/vault_item_model.dart';
+import 'cred_card_visual.dart';
 
 class VaultItemCard extends StatefulWidget {
   const VaultItemCard({
@@ -57,131 +58,34 @@ class _VaultItemCardState extends State<VaultItemCard> {
     }
   }
 
-  // ── 1. PAYMENT CARD (Virtual Card Aesthetic) ───────────────────────────
+  // ── 1. PAYMENT CARD (CRED-Style Luxury Physical Card Visual) ───────────
   Widget _buildPaymentCard(BuildContext context, AscentGlass g) {
     final fields = widget.item.fields;
     final cardNumber = fields['cardNumber'] as String? ?? '';
     final bankName = fields['bankName'] as String? ?? widget.item.title;
+    final cardTier = fields['cardTier'] as String? ?? (fields['cardType'] as String? ?? '');
     final cardBrand = fields['cardBrand'] as String? ?? 'Card';
     final cardholder = fields['cardholderName'] as String? ?? '';
     final expiry = fields['expiry'] as String? ?? '';
-
-    final formattedNumber = _revealed
-        ? cardNumber
-        : (cardNumber.length >= 4
-            ? '•••• •••• •••• ${cardNumber.substring(cardNumber.length - 4)}'
-            : '•••• •••• •••• ••••');
+    final skinName = fields['skin'] as String?;
+    final CredCardSkin? skin = skinName != null
+        ? CredCardSkin.values.firstWhere(
+            (s) => s.name == skinName,
+            orElse: () => CredCardTheme.resolve('$bankName $cardTier'),
+          )
+        : null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.s12),
-      child: GlassSurface(
-        radius: 20,
-        padding: const EdgeInsets.all(AppSpace.s16),
-        fillColor: context.isDark ? null : Colors.white,
+      child: CredCardVisual(
+        bankName: bankName,
+        cardTier: cardTier,
+        cardholderName: cardholder,
+        cardNumber: cardNumber,
+        expiryDate: expiry,
+        cardBrand: cardBrand,
+        skin: skin,
         onTap: widget.onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.credit_card_rounded, color: g.clay, size: 20),
-                      const SizedBox(width: AppSpace.s8),
-                      Flexible(
-                        child: Text(
-                          bankName,
-                          style: AscentTextStyles.displaySmall.copyWith(
-                            color: g.ink,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: g.clay.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    cardBrand,
-                    style: TextStyle(
-                      color: g.clay,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.s16),
-
-            // Card Number Row with Mask & Copy
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    formattedNumber,
-                    style: TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 16,
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.w600,
-                      color: g.ink,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    _revealed ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                    size: 18,
-                    color: g.inkMuted,
-                  ),
-                  onPressed: () => setState(() => _revealed = !_revealed),
-                  tooltip: _revealed ? 'Hide card number' : 'Show card number',
-                ),
-                if (cardNumber.isNotEmpty)
-                  IconButton(
-                    icon: Icon(Icons.copy_rounded, size: 18, color: g.clay),
-                    onPressed: () => _copyToClipboard(context, cardNumber, 'Card number'),
-                    tooltip: 'Copy card number',
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppSpace.s12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                if (cardholder.isNotEmpty)
-                  Expanded(
-                    child: Text(
-                      cardholder.toUpperCase(),
-                      style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                if (expiry.isNotEmpty)
-                  Text(
-                    'EXP: $expiry',
-                    style: AscentTextStyles.caption.copyWith(
-                      color: g.inkMuted,
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

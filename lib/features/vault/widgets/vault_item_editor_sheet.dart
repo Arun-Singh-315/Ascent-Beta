@@ -14,6 +14,7 @@ import '../../../shared/widgets/glass_surface.dart';
 import '../models/vault_item_model.dart';
 import '../providers/vault_providers.dart';
 import '../services/vault_pattern_extractor.dart';
+import 'cred_card_visual.dart';
 
 class VaultItemEditorSheet extends ConsumerStatefulWidget {
   const VaultItemEditorSheet({
@@ -55,6 +56,7 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   final _expiryController = TextEditingController();
   final _cvvController = TextEditingController();
   final _bankNameController = TextEditingController();
+  CredCardSkin? _selectedSkin;
 
   // ID fields
   String _selectedIdType = 'Passport';
@@ -94,6 +96,12 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
       _expiryController.text = f['expiry'] as String? ?? '';
       _cvvController.text = f['cvv'] as String? ?? '';
       _bankNameController.text = f['bankName'] as String? ?? '';
+      final skinName = f['skin'] as String?;
+      if (skinName != null) {
+        try {
+          _selectedSkin = CredCardSkin.values.firstWhere((s) => s.name == skinName);
+        } catch (_) {}
+      }
 
       _selectedIdType = f['docType'] as String? ?? 'Passport';
       _idNumberController.text = f['docNumber'] as String? ?? '';
@@ -320,6 +328,9 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
         fields['cvv'] = _cvvController.text.trim();
         fields['bankName'] = _bankNameController.text.trim();
         fields['cardBrand'] = brand;
+        if (_selectedSkin != null) {
+          fields['skin'] = _selectedSkin!.name;
+        }
         break;
 
       case VaultCategory.idDoc:
@@ -602,8 +613,91 @@ class _VaultItemEditorSheetState extends ConsumerState<VaultItemEditorSheet> {
   }
 
   Widget _buildCardForm(AscentGlass g) {
+    final previewBank = _bankNameController.text.trim().isNotEmpty
+        ? _bankNameController.text.trim()
+        : (_titleController.text.trim().isNotEmpty ? _titleController.text.trim() : 'Ascent Bank');
+    final previewHolder = _cardholderController.text.trim().isNotEmpty
+        ? _cardholderController.text.trim()
+        : 'YOUR NAME';
+    final previewNumber = _cardNumberController.text.trim();
+    final previewExpiry = _expiryController.text.trim().isNotEmpty
+        ? _expiryController.text.trim()
+        : '12/28';
+    final detectedBrand = VaultPatternExtractor.detectCardBrand(previewNumber);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── LIVE CRED-GRADE CARD PREVIEW ──────────────────────────────────
+        CredCardVisual(
+          bankName: previewBank,
+          cardTier: 'Signature',
+          cardholderName: previewHolder,
+          cardNumber: previewNumber,
+          expiryDate: previewExpiry,
+          cardBrand: detectedBrand,
+          skin: _selectedSkin,
+          showActions: false,
+        ),
+        const SizedBox(height: AppSpace.s12),
+
+        // ── LUXURY SKIN SELECTOR ──────────────────────────────────────────
+        Text(
+          'Card Luxury Theme / Skin',
+          style: TextStyle(color: g.inkMuted, fontSize: 12, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: AppSpace.s6),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: FilterChip(
+                  selected: _selectedSkin == null,
+                  label: const Text('Auto-Bank'),
+                  selectedColor: g.clay.withValues(alpha: 0.2),
+                  checkmarkColor: g.clay,
+                  labelStyle: TextStyle(
+                    color: _selectedSkin == null ? g.clay : g.inkMuted,
+                    fontSize: 11.5,
+                    fontWeight: _selectedSkin == null ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  onSelected: (_) => setState(() => _selectedSkin = null),
+                ),
+              ),
+              ...CredCardSkin.values.map((skin) {
+                final isSelected = _selectedSkin == skin;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: FilterChip(
+                    selected: isSelected,
+                    avatar: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(colors: skin.gradientColors),
+                        border: Border.all(color: skin.borderColor, width: 1),
+                      ),
+                    ),
+                    label: Text(skin.label),
+                    selectedColor: g.clay.withValues(alpha: 0.2),
+                    checkmarkColor: g.clay,
+                    labelStyle: TextStyle(
+                      color: isSelected ? g.clay : g.inkMuted,
+                      fontSize: 11.5,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                    onSelected: (_) => setState(() => _selectedSkin = skin),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpace.s14),
+
         _buildTextField(
           controller: _bankNameController,
           label: 'Bank / Issuer',

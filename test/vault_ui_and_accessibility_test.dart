@@ -219,8 +219,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.visibility_outlined));
       await tester.pump();
 
-      // Now revealed
-      expect(find.text('4111424242424242'), findsOneWidget);
+      // Now revealed with spaced 4-digit formatting
+      expect(find.text('4111 4242 4242 4242'), findsOneWidget);
     });
 
     testWidgets('VaultScreen displays locked view when session is locked', (tester) async {
