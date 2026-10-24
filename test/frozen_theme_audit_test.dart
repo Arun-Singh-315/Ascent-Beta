@@ -63,7 +63,7 @@ void main() {
       expect(glass.nav, equals(const Color.fromRGBO(243, 247, 251, 0.90)));
       expect(glass.edge, equals(FrozenPalette.line));
       expect(glass.line, equals(FrozenPalette.lineSubtle));
-      expect(glass.track, equals(FrozenPalette.pillSoft));
+      expect(glass.track, equals(const Color.fromRGBO(29, 100, 180, 0.12)));
     });
 
     test('verifies theme independence: Merlot and Frozen Sky packages do not cross-contaminate', () {
