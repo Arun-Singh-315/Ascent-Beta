@@ -48,6 +48,8 @@ class _ThoughtWallHomePreviewState
     extends ConsumerState<ThoughtWallHomePreview> {
   final _controller = TextEditingController();
   bool _saving = false;
+  final Set<int> _seenThoughtIds = <int>{};
+  bool _listSeen = false;
 
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
@@ -280,9 +282,13 @@ class _ThoughtWallHomePreviewState
           recentThoughtsAsync.value ?? [],
         ).any((t) => t.id == pendingDraft['thoughtId']);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    final hasThoughts = (recentThoughtsAsync.value ?? const <Thought>[])
+        .isNotEmpty;
+    final shellIsDark = context.isDark;
+
+    // The composer and the recent thoughts live in ONE card: the composer
+    // stays on top exactly as before and saved thoughts appear right below it.
+    final shellChildren = <Widget>[
         if (widget.showComposer) ...[
           if (_focusNode.hasFocus && _controller.text.isEmpty)
             Padding(
@@ -418,17 +424,12 @@ class _ThoughtWallHomePreviewState
           ),
         ],
 
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () => context.push('/thought-wall'),
-            icon: const Icon(Icons.bubble_chart_outlined, size: 18),
-            label: const Text('Open Thought Wall'),
-          ),
-        ),
-
-        // ── THOUGHTS MESSAGE PREVIEW (ENCLOSED CARD) ──────────────────
-        recentThoughtsAsync.when(
+        // ── THOUGHTS PREVIEW (grows smoothly below the composer) ──────
+        AnimatedSize(
+          duration: const Duration(milliseconds: 480),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: recentThoughtsAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (_, _) => TextButton(
             onPressed: () => ref.invalidate(recentThoughtsStreamProvider),
@@ -485,33 +486,27 @@ class _ThoughtWallHomePreviewState
             final thoughtTextMutedColor = g.inkMuted;
             final bubbleAccentColor = g.clay;
 
-            return Padding(
-              padding: const EdgeInsets.only(top: 14),
-              child: GlassSurface(
-                key: const ValueKey('home_mind_space_card'),
-                radius: 20,
-                enableBlur: false,
-                fillColor: cardFill,
-                customBorder: cardBorder,
-                padding: const EdgeInsets.all(14),
-                child: Column(
+            final thoughtsColumn = Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            previewThoughts.length > 1
-                                ? 'Recent thoughts'
-                                : 'Recent thought',
-                            style: AscentTextStyles.homeCaption.copyWith(
-                              color: titleColor,
+                    if (!widget.showComposer) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              previewThoughts.length > 1
+                                  ? 'Recent thoughts'
+                                  : 'Recent thought',
+                              style: AscentTextStyles.homeCaption.copyWith(
+                                color: titleColor,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                    ] else
+                      const SizedBox(height: 14),
                     ...List.generate(previewThoughts.length, (index) {
                       final thought = previewThoughts[index];
                       final timeAgo = _formatTimeAgo(thought.createdAt);
@@ -519,8 +514,13 @@ class _ThoughtWallHomePreviewState
                           pendingDraft?['thoughtId'] == thought.id;
 
                       final isRight = (index % 2 == 1);
+                      final isNew =
+                          _listSeen && !_seenThoughtIds.contains(thought.id);
 
-                      return Padding(
+                      return _ThoughtEntrance(
+                        key: ValueKey('home_thought_entrance_${thought.id}'),
+                        animate: isNew,
+                        child: Padding(
                         padding: EdgeInsets.only(
                           bottom: AppSpace.s10,
                           left: isRight ? 36.0 : 0.0,
@@ -730,6 +730,7 @@ class _ThoughtWallHomePreviewState
                             ),
                           ),
                         ),
+                        ),
                       );
                     }),
                     if (pendingDraft != null && !draftInPreview)
@@ -760,13 +761,110 @@ class _ThoughtWallHomePreviewState
                       ),
                     ),
                   ],
-                ),
+                );
+
+            // With the composer, the thoughts live inside the shared card
+            // built below; without it, keep the original standalone card.
+            if (widget.showComposer) return thoughtsColumn;
+            return Padding(
+              padding: const EdgeInsets.only(top: 14),
+              child: GlassSurface(
+                key: const ValueKey('home_mind_space_card'),
+                radius: 20,
+                enableBlur: false,
+                fillColor: cardFill,
+                customBorder: cardBorder,
+                padding: const EdgeInsets.all(14),
+                child: thoughtsColumn,
               ),
             );
           },
+          ),
+        ),
+    ];
+
+    _markThoughtsSeen(recentThoughtsAsync.value);
+
+    if (!widget.showComposer) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: shellChildren,
+      );
+    }
+
+    final shellFill = shellIsDark
+        ? null
+        : (g.merlot
+              ? MerlotPalette.surface
+              : (g.frozen ? const Color(0xFFF8FAFD) : const Color(0xFFFFFDFB)));
+    final shellBorder = shellIsDark
+        ? null
+        : Border.all(
+            color: g.merlot
+                ? MerlotPalette.line
+                : (g.frozen
+                      ? FrozenPalette.line
+                      : g.edge.withValues(alpha: 0.45)),
+            width: 1.0,
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // "Mind palace" heading + doorway to the Thought Wall sit above the card.
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 6),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Mind palace',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: g.ink),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  context.push('/thought-wall');
+                },
+                icon: const Icon(Icons.bubble_chart_outlined, size: 18),
+                label: const Text('Open'),
+              ),
+            ],
+          ),
+        ),
+        // Empty: just the composer (card chrome is invisible). Once a thought
+        // exists the same composer sits at the top of one shared card.
+        GlassSurface(
+          key: const ValueKey('home_mind_space_card'),
+          radius: 20,
+          enableBlur: false,
+          fillColor: hasThoughts ? shellFill : Colors.transparent,
+          customBorder: hasThoughts
+              ? shellBorder
+              : const Border.fromBorderSide(BorderSide.none),
+          padding: hasThoughts ? const EdgeInsets.all(14) : EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: shellChildren,
+          ),
         ),
       ],
     );
+  }
+
+  /// Remembers which thoughts were already on screen so only a thought saved
+  /// after the first load gets the entrance animation.
+  void _markThoughtsSeen(List<Thought>? thoughts) {
+    if (thoughts == null) return;
+    final ids = thoughts.map((t) => t.id).toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _seenThoughtIds.addAll(ids);
+      _listSeen = true;
+    });
   }
 
   String _formatTimeAgo(DateTime dt) {
@@ -776,4 +874,71 @@ class _ThoughtWallHomePreviewState
     if (diff.inHours < 24) return '${diff.inHours}H AGO';
     return '${diff.inDays}D AGO';
   }
+}
+
+/// Drops a freshly saved thought in from the composer: it slides down, settles
+/// with a soft overshoot and fades in. Thoughts already on screen (first load,
+/// reorders) are shown instantly. Honors the system "reduce motion" setting.
+class _ThoughtEntrance extends StatefulWidget {
+  const _ThoughtEntrance({
+    super.key,
+    required this.animate,
+    required this.child,
+  });
+
+  final bool animate;
+  final Widget child;
+
+  @override
+  State<_ThoughtEntrance> createState() => _ThoughtEntranceState();
+}
+
+class _ThoughtEntranceState extends State<_ThoughtEntrance>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 650),
+    value: widget.animate ? 0 : 1,
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (!widget.animate) return;
+    if (MediaQuery.maybeDisableAnimationsOf(context) ?? false) {
+      _controller.value = 1;
+    } else {
+      _controller.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _controller,
+    child: widget.child,
+    builder: (context, child) {
+      final fade = Curves.easeOutCubic.transform(_controller.value);
+      final settle = Curves.easeOutBack.transform(_controller.value);
+      return Opacity(
+        opacity: fade.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, -28 * (1 - settle)),
+          child: Transform.scale(
+            scale: 0.94 + 0.06 * settle,
+            alignment: Alignment.topCenter,
+            child: child,
+          ),
+        ),
+      );
+    },
+  );
 }
