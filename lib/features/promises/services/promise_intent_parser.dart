@@ -306,16 +306,31 @@ class PromiseIntentParser {
     }
 
     // Specific polish for common archetypes
-    if (lower.contains('spring boot') && trackingType == PromiseTrackingType.duration) {
-      return 'Study Spring Boot';
+    final studyMatch = RegExp(r'study\s+(.*?)(?:\s+for|\s+every|\s+daily|\s+each|$)', caseSensitive: false).firstMatch(cleaned);
+    if (studyMatch != null && studyMatch.group(1)?.trim().isNotEmpty == true) {
+      final subject = studyMatch.group(1)!.trim();
+      return 'Study ${subject[0].toUpperCase()}${subject.substring(1)}';
     }
-    if (lower.contains('java') && trackingType == PromiseTrackingType.duration) {
-      return 'Study Java';
+
+    final readMatch = RegExp(r'read\s+(.*?)(?:\s+for|\s+every|\s+daily|\s+each|$)', caseSensitive: false).firstMatch(cleaned);
+    if (readMatch != null && readMatch.group(1)?.trim().isNotEmpty == true) {
+      final subject = readMatch.group(1)!.trim();
+      return 'Read ${subject[0].toUpperCase()}${subject.substring(1)}';
     }
-    if (lower.contains('gym')) {
+
+    if (lower.contains('water') || lower.contains('hydration')) {
+      return 'Drink Water Daily';
+    }
+    if (lower.contains('meditat')) {
+      return 'Daily Meditation';
+    }
+    if (lower.contains('walk') || lower.contains('step')) {
+      return 'Daily Walk';
+    }
+    if (lower.contains('gym') || lower.contains('workout') || lower.contains('exercise')) {
       return 'Gym Workout';
     }
-    if (lower.contains('call') && (lower.contains('parent') || lower.contains('mom') || lower.contains('dad'))) {
+    if (lower.contains('call') && (lower.contains('parent') || lower.contains('mom') || lower.contains('dad') || lower.contains('family'))) {
       return 'Call my parents';
     }
     if (lower.contains('finish this course') || lower.contains('finish course')) {
@@ -326,7 +341,7 @@ class PromiseIntentParser {
     }
 
     if (cleaned.length > 50) {
-      return cleaned.substring(0, 47) + '...';
+      return '${cleaned.substring(0, 47)}...';
     }
     return cleaned.isEmpty ? 'Personal Promise' : cleaned;
   }

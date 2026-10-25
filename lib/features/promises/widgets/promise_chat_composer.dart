@@ -39,13 +39,73 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
   PromiseProposal? _currentProposal;
   bool _isSaving = false;
 
+  int _selectedCategoryIndex = 0;
+  final List<String> _categories = const ['All', 'Health', 'Peace', 'Habits', 'Growth', 'Family'];
+
+  static const List<Map<String, String>> _allSuggestions = [
+    {
+      'category': 'Health',
+      'text': 'I want to drink 2 litres of water every day',
+      'subtitle': 'Build daily cellular hydration',
+      'icon': 'water_drop_outlined',
+    },
+    {
+      'category': 'Health',
+      'text': 'I want to exercise or stretch 4 times a week',
+      'subtitle': 'Physical vitality and energy',
+      'icon': 'fitness_center_rounded',
+    },
+    {
+      'category': 'Health',
+      'text': 'I want to walk 8,000 steps daily',
+      'subtitle': 'Consistent low-impact movement',
+      'icon': 'directions_walk_rounded',
+    },
+    {
+      'category': 'Peace',
+      'text': 'I want to meditate for 10 minutes every morning',
+      'subtitle': 'Calm awareness before the day starts',
+      'icon': 'self_improvement_rounded',
+    },
+    {
+      'category': 'Peace',
+      'text': 'I want to write in my gratitude journal every night',
+      'subtitle': 'Reflect on 3 wins each day',
+      'icon': 'edit_note_rounded',
+    },
+    {
+      'category': 'Habits',
+      'text': 'I want to stop wasting time scrolling at night',
+      'subtitle': 'Screens off 30 minutes before sleep',
+      'icon': 'bedtime_outlined',
+    },
+    {
+      'category': 'Growth',
+      'text': 'I want to read 20 pages of a book before bed',
+      'subtitle': 'Compound knowledge and quiet focus',
+      'icon': 'menu_book_rounded',
+    },
+    {
+      'category': 'Growth',
+      'text': 'I want to spend 45 minutes on focused learning every day',
+      'subtitle': 'Dedicated undistracted deep work',
+      'icon': 'school_outlined',
+    },
+    {
+      'category': 'Family',
+      'text': 'I promise myself to call my parents every Sunday',
+      'subtitle': 'Nurture bonds that matter most',
+      'icon': 'favorite_border_rounded',
+    },
+  ];
+
   final List<String> _promptPlaceholders = const [
-    'I want to study Spring Boot for 45 minutes every day',
-    'I want to go to the gym 4 times a week',
+    'I want to drink 2 litres of water every day',
+    'I want to exercise 4 times a week',
     'I promise myself to call my parents every Sunday',
-    'I want to stop wasting time scrolling at night',
-    'I want to finish this course by the end of November',
-    'I want to meditate for 15 minutes, keep this private',
+    'I want to stop scrolling at night',
+    'I want to read 20 pages before bed',
+    'I want to meditate for 10 minutes, keep this private',
   ];
   int _placeholderIndex = 0;
   Timer? _placeholderTimer;
@@ -177,9 +237,22 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
+              // Apple Grab Handle
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4.5,
+                  margin: const EdgeInsets.only(top: 10),
+                  decoration: BoxDecoration(
+                    color: g.ink.withValues(alpha: 0.22),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+
               // Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
+                padding: const EdgeInsets.fromLTRB(20, 10, 16, 12),
                 child: Row(
                   children: [
                     Container(
@@ -249,15 +322,15 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                       ),
               ),
 
-              // Composer input bar
+              // Unified Single Enclosure Glass Input Bar (Rule 19 Compliant)
               Container(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
                 decoration: BoxDecoration(
-                  color: g.bg.withValues(alpha: 0.6),
+                  color: g.bg.withValues(alpha: 0.75),
                   border: Border(
                     top: BorderSide(
-                      color: g.ink.withValues(alpha: 0.08),
-                      width: 1,
+                      color: g.edge.withValues(alpha: 0.12),
+                      width: 0.8,
                     ),
                   ),
                 ),
@@ -265,34 +338,36 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        height: 48,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: g.ink.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(20),
+                          color: g.ink.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: g.ink.withValues(alpha: 0.1),
+                            color: g.edge.withValues(alpha: 0.18),
                             width: 1,
                           ),
                         ),
-                        child: TextField(
-                          controller: _inputController,
-                          focusNode: _focusNode,
-                          style: TextStyle(color: g.ink, fontSize: 14),
-                          maxLines: 3,
-                          minLines: 1,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _handleSubmit(),
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            hintText: _currentProposal == null
-                                ? 'What do you want to commit to?'
-                                : 'Adjust: e.g. "Make it 30 mins" or "Private"...',
-                            hintStyle: TextStyle(
-                              color: g.inkMuted.withValues(alpha: 0.55),
-                              fontSize: 13.5,
+                        child: Center(
+                          child: TextField(
+                            controller: _inputController,
+                            focusNode: _focusNode,
+                            style: TextStyle(color: g.ink, fontSize: 14.5),
+                            maxLines: 1,
+                            textInputAction: TextInputAction.send,
+                            onSubmitted: (_) => _handleSubmit(),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: _currentProposal == null
+                                  ? _promptPlaceholders[_placeholderIndex]
+                                  : 'Adjust: e.g. "Make it 30 mins" or "Private"...',
+                              hintStyle: TextStyle(
+                                color: g.inkMuted.withValues(alpha: 0.6),
+                                fontSize: 13.5,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                         ),
                       ),
@@ -300,18 +375,25 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
                     const SizedBox(width: 10),
                     InkWell(
                       onTap: _handleSubmit,
-                      borderRadius: BorderRadius.circular(22),
+                      borderRadius: BorderRadius.circular(24),
                       child: Container(
-                        width: 42,
-                        height: 42,
+                        width: 46,
+                        height: 46,
                         decoration: BoxDecoration(
                           color: g.ink,
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: g.ink.withValues(alpha: 0.18),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Icon(
                           Icons.arrow_upward_rounded,
                           color: g.bg,
-                          size: 20,
+                          size: 22,
                         ),
                       ),
                     ),
@@ -326,57 +408,147 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
   }
 
   Widget _buildStarterView(AscentGlass g) {
+    final selectedCategory = _categories[_selectedCategoryIndex];
+    final filtered = selectedCategory == 'All'
+        ? _allSuggestions
+        : _allSuggestions.where((s) => s['category'] == selectedCategory).toList();
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Category Selector Pills
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(_categories.length, (index) {
+                final cat = _categories[index];
+                final isSelected = index == _selectedCategoryIndex;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _selectedCategoryIndex = index);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? g.ink
+                            : g.ink.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isSelected
+                              ? g.ink
+                              : g.edge.withValues(alpha: 0.12),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        cat,
+                        style: TextStyle(
+                          color: isSelected ? g.bg : g.ink,
+                          fontSize: 12.5,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 18),
+
           Text(
-            'Try saying something like:',
+            'Try committing to something meaningful:',
             style: TextStyle(
               color: g.inkMuted,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 14),
-          for (final suggestion in _promptPlaceholders.take(4))
+          const SizedBox(height: 12),
+
+          // Apple Glass Suggestion Cards
+          for (final suggestion in filtered)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: InkWell(
                 onTap: () {
                   HapticFeedback.selectionClick();
-                  _inputController.text = suggestion;
+                  _inputController.text = suggestion['text']!;
                   _handleSubmit();
                 },
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: g.ink.withValues(alpha: 0.04),
-                    borderRadius: BorderRadius.circular(14),
+                    color: g.fill.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: g.ink.withValues(alpha: 0.07),
+                      color: g.edge.withValues(alpha: 0.14),
                       width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.02),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        size: 15,
-                        color: g.inkMuted,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          suggestion,
-                          style: TextStyle(
-                            color: g.ink,
-                            fontSize: 13,
-                          ),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: g.ink.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        child: Icon(
+                          _iconDataFor(suggestion['icon']!),
+                          size: 18,
+                          color: g.ink,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              suggestion['text']!,
+                              style: TextStyle(
+                                color: g.ink,
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            if (suggestion['subtitle'] != null) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                suggestion['subtitle']!,
+                                style: TextStyle(
+                                  color: g.inkMuted,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 13,
+                        color: g.inkMuted.withValues(alpha: 0.5),
                       ),
                     ],
                   ),
@@ -386,6 +558,31 @@ class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
         ],
       ),
     );
+  }
+
+  IconData _iconDataFor(String iconName) {
+    switch (iconName) {
+      case 'water_drop_outlined':
+        return Icons.water_drop_outlined;
+      case 'fitness_center_rounded':
+        return Icons.fitness_center_rounded;
+      case 'directions_walk_rounded':
+        return Icons.directions_walk_rounded;
+      case 'self_improvement_rounded':
+        return Icons.self_improvement_rounded;
+      case 'edit_note_rounded':
+        return Icons.edit_note_rounded;
+      case 'bedtime_outlined':
+        return Icons.bedtime_outlined;
+      case 'menu_book_rounded':
+        return Icons.menu_book_rounded;
+      case 'school_outlined':
+        return Icons.school_outlined;
+      case 'favorite_border_rounded':
+        return Icons.favorite_border_rounded;
+      default:
+        return Icons.handshake_outlined;
+    }
   }
 
   Widget _buildMessageBubble(_ChatMessage msg, AscentGlass g) {

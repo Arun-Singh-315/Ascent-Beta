@@ -290,6 +290,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                     HomeHeader(profile: profile),
                     const HomeOverviewCard(),
 
+                    // Promises Front Line (Core commitment driver)
+                    if (layout.visible.contains('promises'))
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: AppSpace.s20),
+                        child: HomePromiseSection(),
+                      ),
+
                     // Mind Space keeps its familiar composer and recent notes above other cards.
                     if (layout.visible.contains('mind'))
                       const Padding(
@@ -315,7 +322,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                         ),
                       ),
                     for (final id in layout.order.where(
-                      (id) => id != 'mind' && layout.visible.contains(id),
+                      (id) => id != 'mind' && id != 'promises' && layout.visible.contains(id),
                     ))
                       _homeSection(id, layout),
                     if (layout.visible.isEmpty)
