@@ -56,9 +56,12 @@ class HomeLayout {
   final List<String> shortcuts;
   factory HomeLayout.defaults() => HomeLayout(
     order: [
-      'promises',
       'mind',
-      ...homeSections.keys.where((id) => id != 'mind' && id != 'promises'),
+      'today',
+      'promises',
+      ...homeSections.keys.where(
+        (id) => id != 'mind' && id != 'today' && id != 'promises',
+      ),
     ],
     visible: {
       'promises',

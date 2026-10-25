@@ -63,6 +63,8 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({
         'ascent_new_day_shown': DateTime.now().toIso8601String().substring(0, 10),
+        'ascent_day_one_tutorial_v2_dismissed': true,
+        'ascent_daily_briefing_seen_v1': DateTime.now().toIso8601String(),
       });
       prefs = await SharedPreferences.getInstance();
       db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -172,7 +174,11 @@ void main() {
         // Mind Palace (ThoughtWallHomePreview) is right below shortcuts
         expect(find.byType(ThoughtWallHomePreview), findsOneWidget);
 
-        // Life & Health (QuickModulesNavHub) is at third
+        // Scroll down to Life & Health section
+        await tester.drag(find.byType(ListView), const Offset(0, -300));
+        await tester.pump();
+
+        // Life & Health (QuickModulesNavHub) is in the feed
         expect(find.byType(QuickModulesNavHub), findsOneWidget);
 
         // Promise section is removed from Home
