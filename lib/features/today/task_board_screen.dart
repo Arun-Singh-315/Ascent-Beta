@@ -172,7 +172,7 @@ class _TaskBoardScreenState extends ConsumerState<TaskBoardScreen> {
             }
 
             if (t.plannedDate == null) {
-              todayTasks.add(t);
+              upcomingTasks.add(t);
               continue;
             }
 

@@ -89,6 +89,7 @@ void main() {
             ),
           ],
         );
+        addTearDown(container.dispose);
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
@@ -121,13 +122,11 @@ void main() {
         expect(thought1Finder, findsOneWidget);
         expect(thought2Finder, findsNothing);
 
-        // Both bubbles share the same faint theme tint.
+        // Both bubbles share the transparent fill with refined border.
         final bubble0 = tester.widget<Container>(thought0Finder);
         final bubble1 = tester.widget<Container>(thought1Finder);
-        final g = tester.element(thought0Finder).glass;
-        final expectedFill = g.clay.withValues(alpha: .06);
-        expect((bubble0.decoration! as BoxDecoration).color, expectedFill);
-        expect((bubble1.decoration! as BoxDecoration).color, expectedFill);
+        expect((bubble0.decoration! as BoxDecoration).color, Colors.transparent);
+        expect((bubble1.decoration! as BoxDecoration).color, Colors.transparent);
 
         // Verify left / right asymmetric chat margins
         final padding0 = tester.widget<Padding>(

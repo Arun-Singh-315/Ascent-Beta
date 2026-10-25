@@ -16,11 +16,13 @@ class MessageComposer extends StatefulWidget {
     required this.onSend,
     this.busy = false,
     this.focusNode,
+    this.autofocus = false,
   });
   final TextEditingController controller;
   final String hint;
   final ValueChanged<String> onSend;
   final bool busy;
+  final bool autofocus;
   final FocusNode? focusNode;
   @override
   State<MessageComposer> createState() => _MessageComposerState();
@@ -107,6 +109,7 @@ class _MessageComposerState extends State<MessageComposer> {
                       Expanded(
                         child: TextField(
                           key: _fieldKey,
+                          autofocus: widget.autofocus,
                           controller: widget.controller,
                           focusNode: _focus,
                           minLines: 1,

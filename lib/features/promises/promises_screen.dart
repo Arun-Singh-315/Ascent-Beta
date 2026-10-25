@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
-import '../../shared/widgets/glass_surface.dart';
 import 'models/promise_model.dart';
 import 'providers/promise_providers.dart';
 import 'widgets/promise_card.dart';
@@ -56,8 +55,11 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Navigation & Action header
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 8,
                         children: [
                           IconButton(
                             icon: Icon(
@@ -115,22 +117,27 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                       const SizedBox(height: 4),
                       Text(
                         'A personal commitment system built on self-trust, not guilt.',
-                        style: TextStyle(
-                          color: g.inkMuted,
-                          fontSize: 13.5,
-                        ),
+                        style: TextStyle(color: g.inkMuted, fontSize: 13.5),
                       ),
                       const SizedBox(height: 18),
 
                       // Filter tabs
                       Container(
-                        height: 40,
+                        height: MediaQuery.textScalerOf(context).scale(13) > 20
+                            ? 64
+                            : 40,
                         decoration: BoxDecoration(
                           color: g.ink.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: TabBar(
                           controller: _tabController,
+                          isScrollable:
+                              MediaQuery.textScalerOf(context).scale(13) > 20,
+                          tabAlignment:
+                              MediaQuery.textScalerOf(context).scale(13) > 20
+                              ? TabAlignment.start
+                              : TabAlignment.fill,
                           indicatorSize: TabBarIndicatorSize.tab,
                           indicator: BoxDecoration(
                             color: g.ink,
@@ -252,9 +259,7 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                       label: const Text('Make a promise'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: g.ink,
-                        side: BorderSide(
-                          color: g.ink.withValues(alpha: 0.2),
-                        ),
+                        side: BorderSide(color: g.ink.withValues(alpha: 0.2)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -270,14 +275,17 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
           itemCount: promises.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          separatorBuilder: (_, _) => const SizedBox(height: 14),
           itemBuilder: (context, index) {
-            return PromiseCard(promise: promises[index]);
+            return PromiseCard(
+              key: ValueKey('promise_card_${promises[index].id}'),
+              promise: promises[index],
+            );
           },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => Center(
+      error: (_, _) => Center(
         child: Text(
           'Unable to load promises.',
           style: TextStyle(color: g.inkMuted),

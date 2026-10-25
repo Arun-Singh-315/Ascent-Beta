@@ -34,177 +34,174 @@ class PromiseProposalCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                size: 18,
-                color: g.clay,
-              ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    proposal.coachReflection,
-                    style: TextStyle(
-                      color: g.ink,
-                      fontSize: 13.5,
-                      height: 1.4,
-                      fontWeight: FontWeight.w500,
-                    ),
+              Icon(Icons.auto_awesome_rounded, size: 18, color: g.clay),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  proposal.coachReflection,
+                  style: TextStyle(
+                    color: g.ink,
+                    fontSize: 13.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Proposed commitment title
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: g.ink.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: g.ink.withValues(alpha: 0.08),
-                  width: 1,
-                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        proposal.isPrivate
-                            ? Icons.lock_outline_rounded
-                            : Icons.bookmark_border_rounded,
-                        size: 16,
-                        color: g.inkMuted,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        proposal.category.toUpperCase(),
-                        style: TextStyle(
-                          color: g.inkMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                      if (proposal.isPrivate) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: g.ink.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'Private',
-                            style: TextStyle(
-                              color: g.ink,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    proposal.title,
-                    style: AscentTextStyles.homeTitle.copyWith(
-                      color: g.ink,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatProposalPlan(proposal),
-                    style: TextStyle(
-                      color: g.inkMuted,
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ],
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Proposed commitment title
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: g.ink.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: g.ink.withValues(alpha: 0.08),
+                width: 1,
               ),
             ),
-            const SizedBox(height: 14),
-
-            // Quick adjustment pills
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _QuickActionChip(
-                  label: proposal.isPrivate ? 'Make Public' : 'Keep Private',
-                  icon: proposal.isPrivate ? Icons.public_rounded : Icons.lock_outline_rounded,
-                  onTap: () => onModify(proposal.isPrivate ? 'Make it public' : 'Keep this private'),
+                Row(
+                  children: [
+                    Icon(
+                      proposal.isPrivate
+                          ? Icons.lock_outline_rounded
+                          : Icons.bookmark_border_rounded,
+                      size: 16,
+                      color: g.inkMuted,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      proposal.category.toUpperCase(),
+                      style: TextStyle(
+                        color: g.inkMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    if (proposal.isPrivate) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: g.ink.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Private',
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                if (proposal.trackingType == PromiseTrackingType.duration)
-                  _QuickActionChip(
-                    label: '30 mins',
-                    icon: Icons.timer_outlined,
-                    onTap: () => onModify('Make it 30 minutes'),
+                const SizedBox(height: 8),
+                Text(
+                  proposal.title,
+                  style: AscentTextStyles.homeTitle.copyWith(
+                    color: g.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
-                _QuickActionChip(
-                  label: 'Weekdays only',
-                  icon: Icons.calendar_today_rounded,
-                  onTap: () => onModify('Only on weekdays'),
                 ),
-                _QuickActionChip(
-                  label: 'Morning reminder',
-                  icon: Icons.wb_sunny_outlined,
-                  onTap: () => onModify('Remind in the morning'),
+                const SizedBox(height: 6),
+                Text(
+                  _formatProposalPlan(proposal),
+                  style: TextStyle(color: g.inkMuted, fontSize: 12.5),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+          ),
+          const SizedBox(height: 14),
 
-            // Accept button
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: isSaving
-                    ? null
-                    : () {
-                        HapticFeedback.mediumImpact();
-                        onAccept();
-                      },
-                icon: isSaving
-                    ? SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: g.bg,
-                        ),
-                      )
-                    : const Icon(Icons.handshake_rounded, size: 18),
-                label: Text(
-                  isSaving ? 'Sealing Promise...' : 'I Promise Myself',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+          // Quick adjustment pills
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _QuickActionChip(
+                label: proposal.isPrivate ? 'Make Public' : 'Keep Private',
+                icon: proposal.isPrivate
+                    ? Icons.public_rounded
+                    : Icons.lock_outline_rounded,
+                onTap: () => onModify(
+                  proposal.isPrivate ? 'Make it public' : 'Keep this private',
                 ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: g.ink,
-                  foregroundColor: g.bg,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
+              ),
+              if (proposal.trackingType == PromiseTrackingType.duration)
+                _QuickActionChip(
+                  label: '30 mins',
+                  icon: Icons.timer_outlined,
+                  onTap: () => onModify('Make it 30 minutes'),
+                ),
+              _QuickActionChip(
+                label: 'Weekdays only',
+                icon: Icons.calendar_today_rounded,
+                onTap: () => onModify('Only on weekdays'),
+              ),
+              _QuickActionChip(
+                label: 'Morning reminder',
+                icon: Icons.wb_sunny_outlined,
+                onTap: () => onModify('Remind in the morning'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+
+          // Accept button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: isSaving
+                  ? null
+                  : () {
+                      HapticFeedback.mediumImpact();
+                      onAccept();
+                    },
+              icon: isSaving
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: g.bg,
+                      ),
+                    )
+                  : const Icon(Icons.handshake_rounded, size: 18),
+              label: Text(
+                isSaving ? 'Sealing Promise...' : 'I Promise Myself',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: g.ink,
+                foregroundColor: g.bg,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),
-          ],
-        ),
-      );
-    }
+          ),
+        ],
+      ),
+    );
+  }
 
   static String _formatProposalPlan(PromiseProposal p) {
     final buffer = StringBuffer();
@@ -217,7 +214,9 @@ class PromiseProposalCard extends StatelessWidget {
         break;
       case PromiseTrackingType.milestone:
         if (p.targetDate != null) {
-          buffer.write('Target Date: ${p.targetDate!.day}/${p.targetDate!.month}/${p.targetDate!.year}');
+          buffer.write(
+            'Target Date: ${p.targetDate!.day}/${p.targetDate!.month}/${p.targetDate!.year}',
+          );
         } else {
           buffer.write('Milestone project tracking');
         }
@@ -262,10 +261,7 @@ class _QuickActionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: g.ink.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: g.ink.withValues(alpha: 0.09),
-            width: 1,
-          ),
+          border: Border.all(color: g.ink.withValues(alpha: 0.09), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

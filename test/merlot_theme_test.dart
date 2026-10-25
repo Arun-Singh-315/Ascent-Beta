@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/day_glass_material.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:ascent/app/theme/merlot_palette.dart';
@@ -14,29 +15,32 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Vintage Merlot & Cashmere Linen Palette Tokens', () {
-    test('verifies primary, card surface, and accent colors meet daylight spec', () {
-      expect(MerlotPalette.canvas, const Color(0xFFF5EFE6));
-      expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
-      expect(MerlotPalette.surfaceBottom, const Color(0xFFFAF5EE));
-      expect(MerlotPalette.recessedWell, const Color(0xFFF3ECE2));
-      expect(MerlotPalette.action, const Color(0xFF581825));
-      expect(MerlotPalette.actionDeep, const Color(0xFF48101C));
-      expect(MerlotPalette.actionBright, const Color(0xFF722032));
-      expect(MerlotPalette.tint, const Color(0xFFF4E5EC));
-      expect(MerlotPalette.pillSoft, const Color(0xFFFAF6F2));
-      expect(MerlotPalette.line, const Color(0x2E581825));
-      expect(MerlotPalette.lineSpecular, const Color(0x44581825));
-      expect(MerlotPalette.lineSubtle, const Color(0x18581825));
-      expect(MerlotPalette.antiqueGold, const Color(0xFFC28834));
-      expect(MerlotPalette.terracotta, const Color(0xFFA04020));
-      expect(MerlotPalette.success, const Color(0xFF166534));
-      expect(MerlotPalette.ink, const Color(0xFF240A10));
-      expect(MerlotPalette.secondaryInk, const Color(0xFF54222E));
-      expect(MerlotPalette.mutedInk, const Color(0xFF72424E));
-      expect(MerlotPalette.cardInk, const Color(0xFF240A10));
-      expect(MerlotPalette.cardSecondaryInk, const Color(0xFF54222E));
-      expect(MerlotPalette.cardMutedInk, const Color(0xFF72424E));
-    });
+    test(
+      'verifies primary, card surface, and accent colors meet daylight spec',
+      () {
+        expect(MerlotPalette.canvas, const Color(0xFFF5EFE6));
+        expect(MerlotPalette.surface, const Color(0xFFFFFFFF));
+        expect(MerlotPalette.surfaceBottom, const Color(0xFFFAF5EE));
+        expect(MerlotPalette.recessedWell, const Color(0xFFF3ECE2));
+        expect(MerlotPalette.action, const Color(0xFF581825));
+        expect(MerlotPalette.actionDeep, const Color(0xFF48101C));
+        expect(MerlotPalette.actionBright, const Color(0xFF722032));
+        expect(MerlotPalette.tint, const Color(0xFFF4E5EC));
+        expect(MerlotPalette.pillSoft, const Color(0xFFFAF6F2));
+        expect(MerlotPalette.line, const Color(0x2E581825));
+        expect(MerlotPalette.lineSpecular, const Color(0x44581825));
+        expect(MerlotPalette.lineSubtle, const Color(0x18581825));
+        expect(MerlotPalette.antiqueGold, const Color(0xFFC28834));
+        expect(MerlotPalette.terracotta, const Color(0xFFA04020));
+        expect(MerlotPalette.success, const Color(0xFF166534));
+        expect(MerlotPalette.ink, const Color(0xFF240A10));
+        expect(MerlotPalette.secondaryInk, const Color(0xFF54222E));
+        expect(MerlotPalette.mutedInk, const Color(0xFF72424E));
+        expect(MerlotPalette.cardInk, const Color(0xFF240A10));
+        expect(MerlotPalette.cardSecondaryInk, const Color(0xFF54222E));
+        expect(MerlotPalette.cardMutedInk, const Color(0xFF72424E));
+      },
+    );
 
     test('verifies night mode tokens remain 100% untouched', () {
       expect(MerlotPalette.darkCanvas, const Color(0xFF161012));
@@ -48,45 +52,51 @@ void main() {
       expect(MerlotPalette.darkMutedInk, const Color(0xFFA89A96));
     });
 
-    test('verifies WCAG AAA contrast ratio for text hierarchy on canvas and wine surface', () {
-      double luminance(Color c) {
-        double channel(double v) =>
-            v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
-        final r = channel(c.r);
-        final g = channel(c.g);
-        final b = channel(c.b);
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      }
+    test(
+      'verifies WCAG AAA contrast ratio for text hierarchy on canvas and wine surface',
+      () {
+        double luminance(Color c) {
+          double channel(double v) => v <= 0.03928
+              ? v / 12.92
+              : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
+          final r = channel(c.r);
+          final g = channel(c.g);
+          final b = channel(c.b);
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        }
 
-      final lInk = luminance(MerlotPalette.ink);
-      final lCanvas = luminance(MerlotPalette.canvas);
-      final lSurface = luminance(MerlotPalette.surface);
-      final lCardInk = luminance(MerlotPalette.cardInk);
-      final lCardSec = luminance(MerlotPalette.cardSecondaryInk);
-      final lCardMuted = luminance(MerlotPalette.cardMutedInk);
+        final lInk = luminance(MerlotPalette.ink);
+        final lCanvas = luminance(MerlotPalette.canvas);
+        final lSurface = luminance(MerlotPalette.surface);
+        final lCardInk = luminance(MerlotPalette.cardInk);
+        final lCardSec = luminance(MerlotPalette.cardSecondaryInk);
+        final lCardMuted = luminance(MerlotPalette.cardMutedInk);
 
-      final contrastCanvasInk = (lCanvas + 0.05) / (lInk + 0.05);
-      final contrastSurfaceCardInk = (lSurface + 0.05) / (lCardInk + 0.05);
-      final contrastSurfaceCardSec = (lSurface + 0.05) / (lCardSec + 0.05);
-      final contrastSurfaceCardMuted = (lSurface + 0.05) / (lCardMuted + 0.05);
+        final contrastCanvasInk = (lCanvas + 0.05) / (lInk + 0.05);
+        final contrastSurfaceCardInk = (lSurface + 0.05) / (lCardInk + 0.05);
+        final contrastSurfaceCardSec = (lSurface + 0.05) / (lCardSec + 0.05);
+        final contrastSurfaceCardMuted =
+            (lSurface + 0.05) / (lCardMuted + 0.05);
 
-      // Canvas text contrast: dark espresso merlot on cashmere linen (>14:1 WCAG AAA)
-      expect(contrastCanvasInk, greaterThan(14.0));
+        // Canvas text contrast: dark espresso merlot on cashmere linen (>14:1 WCAG AAA)
+        expect(contrastCanvasInk, greaterThan(14.0));
 
-      // Off-white gradual card contrast: dark espresso merlot on off-white (>15:1 WCAG AAA)
-      expect(contrastSurfaceCardInk, greaterThan(15.0));
+        // Off-white gradual card contrast: dark espresso merlot on off-white (>15:1 WCAG AAA)
+        expect(contrastSurfaceCardInk, greaterThan(15.0));
 
-      // Secondary text on card (>10:1 WCAG AAA)
-      expect(contrastSurfaceCardSec, greaterThan(10.0));
+        // Secondary text on card (>10:1 WCAG AAA)
+        expect(contrastSurfaceCardSec, greaterThan(10.0));
 
-      // Muted helper captions on card (>6:1 WCAG AA)
-      expect(contrastSurfaceCardMuted, greaterThan(6.0));
-    });
+        // Muted helper captions on card (>6:1 WCAG AA)
+        expect(contrastSurfaceCardMuted, greaterThan(6.0));
+      },
+    );
 
     test('verifies WCAG AAA contrast for white text on primary button', () {
       double luminance(Color c) {
-        double channel(double v) =>
-            v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
+        double channel(double v) => v <= 0.03928
+            ? v / 12.92
+            : ((v + 0.055) / 1.055) * ((v + 0.055) / 1.055);
         final r = channel(c.r);
         final g = channel(c.g);
         final b = channel(c.b);
@@ -121,21 +131,29 @@ void main() {
       final theme = AscentTheme.light(preset: DayThemePreset.merlotLinen);
 
       expect(theme.brightness, Brightness.light);
-      expect(theme.scaffoldBackgroundColor, MerlotPalette.canvas);
+      expect(
+        theme.scaffoldBackgroundColor,
+        theme.extension<DayGlassMaterial>()!.canvas,
+      );
       expect(theme.colorScheme.primary, MerlotPalette.action);
       expect(theme.colorScheme.surface, MerlotPalette.surface);
 
       final glass = theme.extension<AscentGlass>();
       expect(glass, isNotNull);
       expect(glass!.merlot, isTrue);
-      expect(glass.bg, MerlotPalette.canvas);
+      expect(glass.bg, theme.extension<DayGlassMaterial>()!.canvas);
       expect(glass.clay, MerlotPalette.action);
       expect(glass.ink, MerlotPalette.ink);
 
       final surfaces = theme.extension<AppSurfaces>();
       expect(surfaces, isNotNull);
       expect(surfaces!.accent, MerlotPalette.action);
-      expect(surfaces.cardFill, AscentGlass.merlotLinenLight.fill);
+      expect(
+        surfaces.cardFill,
+        AscentGlass.merlotLinenLight.fill.withValues(
+          alpha: theme.extension<DayGlassMaterial>()!.topOpacity,
+        ),
+      );
     });
 
     test('night mode remains untouched and preserved', () {
@@ -148,15 +166,18 @@ void main() {
       expect(glass.bg, const Color(0xFF16110D));
     });
 
-    test('dark merlot mode wires AscentGlass.merlotLinenDark and dark palette', () {
-      final theme = AscentTheme.dark(preset: DayThemePreset.merlotLinen);
+    test(
+      'dark merlot mode wires AscentGlass.merlotLinenDark and dark palette',
+      () {
+        final theme = AscentTheme.dark(preset: DayThemePreset.merlotLinen);
 
-      expect(theme.brightness, Brightness.dark);
-      final glass = theme.extension<AscentGlass>();
-      expect(glass, isNotNull);
-      expect(glass!.merlot, isTrue);
-      expect(glass.bg, MerlotPalette.darkCanvas);
-    });
+        expect(theme.brightness, Brightness.dark);
+        final glass = theme.extension<AscentGlass>();
+        expect(glass, isNotNull);
+        expect(glass!.merlot, isTrue);
+        expect(glass.bg, MerlotPalette.darkCanvas);
+      },
+    );
   });
 
   group('Accessibility & Rule 13 Safeguard (320px & 2.0x Text Scaling)', () {
@@ -198,8 +219,10 @@ void main() {
 
         // Verify appearance header is rendered and no exceptions were thrown
         expect(find.text('Appearance & Theme'), findsOneWidget);
-        expect(find.text('Daylight Style'), findsOneWidget);
-        expect(find.text('Merlot'), findsOneWidget);
+        expect(find.text('Glass Translucency'), findsOneWidget);
+        expect(find.text('Balanced'), findsOneWidget);
+        expect(find.text('Subtle'), findsOneWidget);
+        expect(find.text('Contrast'), findsOneWidget);
         expect(tester.takeException(), isNull);
       },
     );
@@ -264,7 +287,9 @@ void main() {
                                   decoration: BoxDecoration(
                                     color: MerlotPalette.pillSoft,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: MerlotPalette.lineSubtle),
+                                    border: Border.all(
+                                      color: MerlotPalette.lineSubtle,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -295,7 +320,9 @@ void main() {
                                   decoration: BoxDecoration(
                                     color: MerlotPalette.tint,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: MerlotPalette.lineSubtle),
+                                    border: Border.all(
+                                      color: MerlotPalette.lineSubtle,
+                                    ),
                                   ),
                                   child: Text(
                                     'Active option',

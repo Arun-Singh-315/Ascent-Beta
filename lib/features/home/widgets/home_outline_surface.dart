@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/day_glass_material.dart';
 import '../../../shared/widgets/glass_surface.dart';
 
 /// Transparent Home shell framed by a continuous, softly illuminated rim.
@@ -24,6 +25,14 @@ class HomeOutlineSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
     final dark = Theme.of(context).brightness == Brightness.dark;
+    if (Theme.of(context).extension<DayGlassMaterial>() != null) {
+      return GlassSurface(
+        key: surfaceKey,
+        radius: radius,
+        padding: padding,
+        child: child,
+      );
+    }
     // Warm wine and champagne on cream; linen reflections on the night palette.
     final edge = dark
         ? Color.lerp(g.clay, g.ink, .4)!
@@ -41,7 +50,7 @@ class HomeOutlineSurface extends StatelessWidget {
       child: GlassSurface(
         key: surfaceKey,
         radius: radius,
-        enableBlur: false,
+        enableBlur: Theme.of(context).brightness == Brightness.light,
         customBorder: showOutline
             ? Border.all(color: rim, width: 1.2)
             : const Border.fromBorderSide(BorderSide.none),

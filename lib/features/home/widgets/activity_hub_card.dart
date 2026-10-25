@@ -55,11 +55,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                 HapticFeedback.selectionClick();
                 context.push('/today');
               },
-              icon: Icon(
-                Icons.dashboard_outlined,
-                size: 16,
-                color: g.clay,
-              ),
+              icon: Icon(Icons.dashboard_outlined, size: 16, color: g.clay),
               label: Text(
                 'View board',
                 style: TextStyle(
@@ -75,7 +71,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           key: const ValueKey('home_activity_card'),
           borderRadius: BorderRadius.circular(18),
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-          enableBlur: false,
+          enableBlur: Theme.of(context).brightness == Brightness.light,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -125,9 +121,13 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                             child: Text(
                               _showCompleted
                                   ? 'No completed activities yet.'
-                                  : (items.any((a) => a.status == TodayActivityStatus.done)
-                                      ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
-                                      : 'Nothing pending. Add something below.'),
+                                  : (items.any(
+                                          (a) =>
+                                              a.status ==
+                                              TodayActivityStatus.done,
+                                        )
+                                        ? 'All caught up! All ${items.where((a) => a.status == TodayActivityStatus.done).length} activities finished.'
+                                        : 'Nothing pending. Add something below.'),
                               style: TextStyle(color: g.inkMuted, fontSize: 13),
                             ),
                           ),
@@ -140,8 +140,15 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                         ],
                         if (rows.length > widget.previewLimit && !_showAll)
                           TextButton(
+                            key: const ValueKey('hub_show_more'),
                             onPressed: () => setState(() => _showAll = true),
-                            child: const Text('Show more'),
+                            child: Text(
+                              '+${rows.length - widget.previewLimit} more',
+                              style: TextStyle(
+                                color: g.clay,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         if (_showAll && rows.length > 20)
                           TextButton(

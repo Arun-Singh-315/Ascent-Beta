@@ -21,28 +21,27 @@ class PromiseActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = context.glass;
 
-    if (promise.isCompleted) {
+    if (promise.isCompleted || promise.isDoneToday) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: g.sage.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: g.sage.withValues(alpha: 0.35),
-            width: 1,
-          ),
+          border: Border.all(color: g.sage.withValues(alpha: 0.35), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_circle_rounded, size: 16, color: g.sage),
             const SizedBox(width: 6),
-            Text(
-              'Completed',
-              style: TextStyle(
-                color: g.ink,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: Text(
+                promise.isCompleted ? 'Completed' : 'Done today',
+                style: TextStyle(
+                  color: g.ink,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -52,7 +51,7 @@ class PromiseActionButton extends StatelessWidget {
 
     return FilledButton.icon(
       key: const ValueKey('home_promise_primary_action'),
-      onPressed: isLoading
+      onPressed: isLoading || !promise.canActAt(DateTime.now())
           ? null
           : () {
               HapticFeedback.lightImpact();
@@ -62,10 +61,7 @@ class PromiseActionButton extends StatelessWidget {
           ? SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: g.bg,
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, color: g.bg),
             )
           : Icon(promise.contextualActionIcon, size: 17),
       label: Text(
@@ -81,9 +77,7 @@ class PromiseActionButton extends StatelessWidget {
         foregroundColor: g.bg,
         disabledBackgroundColor: g.ink.withValues(alpha: 0.15),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
       ),
     );

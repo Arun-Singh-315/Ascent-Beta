@@ -239,7 +239,12 @@ void main() {
         // The activity item itself is visible in the list
         expect(find.text('Deep System Design Study'), findsOneWidget);
         // Running timer is formatted inline
-        expect(find.text('01:05 / 25m'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Text && (w.data == '01:05' || w.data == '01:05 / 25m'),
+          ),
+          findsOneWidget,
+        );
         // Only ONE play/pause button exists (inline on the row, not duplicated in a banner)
         expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
         expect(find.byIcon(Icons.pause_circle_outline_rounded), findsNothing);

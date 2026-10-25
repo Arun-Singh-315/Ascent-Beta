@@ -58,6 +58,46 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
         .watch();
   }
 
+  /// Stream of tasks planned for today OR overdue (plannedDate before today and uncompleted).
+  Stream<List<Task>> watchTodayAndOverdueTasks([DateTime? date]) {
+    final now = date ?? DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    return (select(taskTable)
+          ..where(
+            (t) =>
+                (t.plannedDate.isBiggerOrEqualValue(dayStart) &
+                    t.plannedDate.isSmallerThanValue(dayEnd)) |
+                (t.plannedDate.isSmallerThanValue(dayStart) &
+                    t.actualCompletedDate.isNull()),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.plannedDate),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
+        .watch();
+  }
+
+  /// Get tasks planned for today OR overdue (plannedDate before today and uncompleted).
+  Future<List<Task>> getTodayAndOverdueTasks([DateTime? date]) {
+    final now = date ?? DateTime.now();
+    final dayStart = DateTime(now.year, now.month, now.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    return (select(taskTable)
+          ..where(
+            (t) =>
+                (t.plannedDate.isBiggerOrEqualValue(dayStart) &
+                    t.plannedDate.isSmallerThanValue(dayEnd)) |
+                (t.plannedDate.isSmallerThanValue(dayStart) &
+                    t.actualCompletedDate.isNull()),
+          )
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.plannedDate),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
+        .get();
+  }
+
   /// Stream of incomplete tasks due within the next [days] calendar days.
   Stream<List<Task>> watchUpcomingTasks(int days) {
     final now = DateTime.now();

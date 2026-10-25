@@ -21,7 +21,7 @@ void main() {
         'I want to go to the gym 4 times a week',
       );
 
-      expect(parsed.title, contains('Gym'));
+      expect(parsed.title, 'Go to the gym 4 times a week');
       expect(parsed.trackingType, PromiseTrackingType.frequency);
       expect(parsed.frequencyPerWeek, 4);
       expect(parsed.category, 'health');

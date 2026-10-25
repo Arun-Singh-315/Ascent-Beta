@@ -155,8 +155,8 @@ void main() {
         await tester.pumpAndSettle();
         await tester.longPress(find.textContaining('Selection note A'));
         await tester.pumpAndSettle();
-        expect(find.text('Done'), findsOneWidget);
-        expect(find.text('Category'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Done'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Category'), findsOneWidget);
         expect(find.text('Create Todo'), findsNothing);
         await tester.tap(find.byTooltip('More selected actions'));
         await tester.pumpAndSettle();

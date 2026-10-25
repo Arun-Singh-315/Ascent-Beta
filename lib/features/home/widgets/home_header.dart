@@ -303,7 +303,7 @@ class HomeHeader extends ConsumerWidget {
                 child: AppTapArea(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _showProfileSheet(context, ref, name, role, isDark);
+                    context.push('/settings');
                   },
                   borderRadius: AppGeometry.roundedr99,
                   child: Container(
@@ -494,160 +494,48 @@ class HomeHeader extends ConsumerWidget {
     );
   }
 
-  void _showProfileSheet(
-    BuildContext context,
-    WidgetRef ref,
-    String name,
-    String role,
-    bool isDark,
-  ) {
-    final g = context.glass;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppPalette.transparent,
-      builder: (ctx) {
-        return AppCard(
-          nightDecoration: BoxDecoration(
-            color: ctx.bgSurfaceElevated,
-            borderRadius: const BorderRadius.vertical(
-              top: AppGeometry.radiusr24,
-            ),
-            border: Border.all(color: ctx.divider, width: AppBorderScale.w1),
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.s24,
-            AppSpace.s16,
-            AppSpace.s24,
-            AppSpace.s32,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: ctx.divider,
-                    borderRadius: AppGeometry.roundedr2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  AppTag(
-                    width: 48,
-                    height: 48,
-                    nightDecoration: BoxDecoration(
-                      color: g.claySoft,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: g.edge),
-                    ),
-                    child: Center(
-                      child: Text(
-                        name.isNotEmpty
-                            ? String.fromCharCode(
-                                name.runes.first,
-                              ).toUpperCase()
-                            : 'A',
-                        style: AppTypography.bricolageGrotesque20W700100(
-                          color: g.ink,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: AppTypography.bricolageGrotesque18W700101(
-                            color: ctx.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          role,
-                          style: AppTypography.dmSans13Regular102(
-                            color: ctx.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              AppDivider(color: ctx.divider, height: 1),
-              const SizedBox(height: 12),
-
-              // Theme Mode switch
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-                  color: g.clay,
-                ),
-                title: Text(
-                  'Dark Theme',
-                  style: AppTypography.dmSansInheritedW600103(),
-                ),
-                trailing: Switch(
-                  value: isDark,
-                  onChanged: (val) {
-                    HapticFeedback.lightImpact();
-                    ref
-                        .read(themeModeProvider.notifier)
-                        .setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
-                  },
-                ),
-              ),
-
-              // Full Settings Link
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.settings_outlined, color: ctx.textMuted),
-                title: Text(
-                  'Settings & Profile',
-                  style: AppTypography.dmSansInheritedW600103(),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () {
-                  Navigator.of(ctx).pop();
-                  context.push('/settings');
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showStreakDetailsSheet(BuildContext context, int streak, bool isDark) {
-    final g = context.glass;
     showModalBottomSheet(
       context: context,
       backgroundColor: AppPalette.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return AppCard(
-          nightDecoration: BoxDecoration(
-            color: ctx.bgSurfaceElevated,
-            borderRadius: const BorderRadius.vertical(
-              top: AppGeometry.radiusr24,
+        final g = ctx.glass;
+        final isDark = ctx.isDark;
+        final sheetBg = isDark
+            ? ctx.bgSurfaceElevated
+            : (g.merlot
+                ? MerlotPalette.canvas
+                : (g.frozen
+                    ? FrozenPalette.elevated
+                    : ctx.bgSurfaceElevated));
+        return Material(
+          color: sheetBg,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isDark ? ctx.divider : g.line,
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
+                  blurRadius: 24,
+                  offset: const Offset(0, -4),
+                ),
+              ],
             ),
-            border: Border.all(color: ctx.divider, width: AppBorderScale.w1),
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSpace.s20,
-            AppSpace.s16,
-            AppSpace.s20,
-            AppSpace.s32,
-          ),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpace.s20,
+              AppSpace.s16,
+              AppSpace.s20,
+              AppSpace.s32,
+            ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -728,7 +616,8 @@ class HomeHeader extends ConsumerWidget {
               ),
             ],
           ),
-        );
+        ),
+      );
       },
     );
   }

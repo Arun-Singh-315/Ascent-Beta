@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 import 'ascent_atmosphere.dart';
 import 'feature_guide.dart';
+import 'glass_surface.dart';
 
 /// The unified Liquid Glass page scaffold for Ascent.
 ///
@@ -172,7 +173,16 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return AppBar(
-      backgroundColor: g.bg.withValues(alpha: 0.85),
+      backgroundColor: (Theme.of(context).brightness == Brightness.dark)
+          ? g.bg.withValues(alpha: .85)
+          : Colors.transparent,
+      flexibleSpace: (Theme.of(context).brightness == Brightness.dark)
+          ? null
+          : const GlassSurface(
+              radius: 0,
+              padding: EdgeInsets.zero,
+              child: SizedBox.expand(),
+            ),
       elevation: 0,
       scrolledUnderElevation: 0,
       leading: leadingWidget,

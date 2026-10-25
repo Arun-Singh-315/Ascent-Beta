@@ -13,6 +13,7 @@ Future<void> showHomeCustomization(BuildContext context) =>
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      useRootNavigator: true,
       isDismissible: false,
       enableDrag: false,
       backgroundColor: AppPalette.transparent,
@@ -64,15 +65,17 @@ class _HomeCustomizationSheetState
     final g = context.glass;
     return PopScope(
       canPop: !_saving,
-      child: AppCard(
+      child: Container(
         height: MediaQuery.sizeOf(context).height * .9,
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppSpace.s20,
           AppSpace.s20,
           AppSpace.s20,
-          AppSpace.s16,
+          MediaQuery.paddingOf(context).bottom > 0
+              ? MediaQuery.paddingOf(context).bottom + AppSpace.s8
+              : AppSpace.s16,
         ),
-        nightDecoration: BoxDecoration(
+        decoration: BoxDecoration(
           color: g.bg,
           borderRadius: const BorderRadius.vertical(top: AppGeometry.radiusr24),
           border: Border.all(color: g.edge),
@@ -117,13 +120,17 @@ class _HomeCustomizationSheetState
                       const Text('Hidden tools remain available from More.'),
                     const SizedBox(height: 12),
                     for (var i = 0; i < _draft.order.length; i++)
-                      AppCard(
+                      Container(
                         key: ValueKey('home_editor_${_draft.order[i]}'),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: g.fill,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: g.edge),
+                        ),
                         padding: const EdgeInsets.symmetric(
                           vertical: AppSpace.s6,
-                        ),
-                        nightDecoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: g.line)),
+                          horizontal: AppSpace.s6,
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,6 +150,7 @@ class _HomeCustomizationSheetState
                                     homeSections[_draft.order[i]]!,
                                     style: AscentTextStyles.bodyMedium.copyWith(
                                       color: g.ink,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -170,10 +178,16 @@ class _HomeCustomizationSheetState
                               ],
                             ),
                             if (_draft.order[i] == 'mind')
-                              const Padding(
-                                padding: EdgeInsets.only(left: AppSpace.s14),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: AppSpace.s14,
+                                  bottom: AppSpace.s6,
+                                ),
                                 child: Text(
                                   'Shown below your name. Opens with your most recent thought.',
+                                  style: AscentTextStyles.captionMedium.copyWith(
+                                    color: g.inkMuted,
+                                  ),
                                 ),
                               ),
                             if (_draft.order[i] == 'today')
@@ -181,7 +195,12 @@ class _HomeCustomizationSheetState
                                 contentPadding: const EdgeInsets.only(
                                   left: AppSpace.s14,
                                 ),
-                                title: const Text('Compact preview'),
+                                title: Text(
+                                  'Compact preview',
+                                  style: AscentTextStyles.bodySmall.copyWith(
+                                    color: g.ink,
+                                  ),
+                                ),
                                 value: _draft.compact.contains(_draft.order[i]),
                                 onChanged: _saving
                                     ? null
@@ -207,6 +226,7 @@ class _HomeCustomizationSheetState
                         color: g.ink,
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
@@ -239,6 +259,7 @@ class _HomeCustomizationSheetState
                         color: g.ink,
                       ),
                     ),
+                    const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 6,
@@ -247,16 +268,28 @@ class _HomeCustomizationSheetState
                             (tool) => AppPill.filter(
                               label: Text(tool.value),
                               selected: _draft.shortcuts.contains(tool.key),
-                              onSelected:
-                                  _saving ||
-                                      (!_draft.shortcuts.contains(tool.key) &&
-                                          _draft.shortcuts.length >= 4)
+                              onSelected: _saving
                                   ? null
                                   : (selected) {
                                       final ids = [..._draft.shortcuts];
-                                      selected
-                                          ? ids.add(tool.key)
-                                          : ids.remove(tool.key);
+                                      if (selected) {
+                                        if (ids.length >= 4) {
+                                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Maximum 4 shortcuts allowed. Uncheck one to replace.',
+                                              ),
+                                              duration: Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        ids.add(tool.key);
+                                      } else {
+                                        ids.remove(tool.key);
+                                      }
                                       setState(
                                         () => _draft = _draft.copyWith(
                                           shortcuts: ids,

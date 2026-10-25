@@ -5,7 +5,8 @@ import '../models/promise_model.dart';
 /// providing an instant, warm, and highly dependable experience.
 class PromiseIntentParser {
   /// Parse a natural language statement into a [PromiseProposal].
-  static PromiseProposal parse(String input) {
+  static PromiseProposal parse(String input, {DateTime? now}) {
+    now ??= DateTime.now();
     final raw = input.trim();
     final lower = raw.toLowerCase();
 
@@ -19,7 +20,7 @@ class PromiseIntentParser {
     final frequencyMatch = _extractFrequency(lower);
 
     // 4. Detect Target Date / Milestone
-    final targetDate = _extractTargetDate(lower);
+    final targetDate = _extractTargetDate(lower, now: now);
 
     // 5. Detect Reflection / Behavioral
     final isReflection = _detectReflection(lower);
@@ -40,12 +41,19 @@ class PromiseIntentParser {
       if (frequencyMatch != null) {
         frequencyPerWeek = frequencyMatch;
       }
-    } else if (frequencyMatch != null) {
+    } else if (frequencyMatch != null &&
+        !lower.contains('daily') &&
+        !lower.contains('every day') &&
+        !lower.contains('weekday')) {
       trackingType = PromiseTrackingType.frequency;
       frequencyPerWeek = frequencyMatch;
       targetValue = frequencyMatch.toDouble();
       unit = 'sessions';
-    } else if (targetDate != null || lower.contains('course') || lower.contains('exam') || lower.contains('project') || lower.contains('reach') || lower.contains('save')) {
+    } else if (lower.contains('course') ||
+        lower.contains('exam') ||
+        lower.contains('project') ||
+        lower.contains('reach') ||
+        lower.contains('save')) {
       trackingType = PromiseTrackingType.milestone;
       targetValue = 100.0;
       unit = 'percent';
@@ -59,31 +67,60 @@ class PromiseIntentParser {
       unit = 'tasks';
     }
 
-    final title = _generateTitle(raw, lower, trackingType, targetValue, unit, frequencyPerWeek);
-    final coachReflection = _generateReflection(title, trackingType, targetValue, unit, frequencyPerWeek, targetDate);
+    final title = _generateTitle(
+      raw,
+      lower,
+      trackingType,
+      targetValue,
+      unit,
+      frequencyPerWeek,
+    );
+    final coachReflection = _generateReflection(
+      title,
+      trackingType,
+      targetValue,
+      unit,
+      frequencyPerWeek,
+      targetDate,
+    );
 
-    // Default reminder days: weekdays or daily
-    List<int> reminderDays = const [1, 2, 3, 4, 5, 6, 7];
-    if (lower.contains('weekday') || lower.contains('workday')) {
-      reminderDays = const [1, 2, 3, 4, 5];
-    } else if (lower.contains('weekend')) {
-      reminderDays = const [6, 7];
-    } else if (lower.contains('sunday')) {
-      reminderDays = const [7];
-    } else if (lower.contains('monday')) {
-      reminderDays = const [1];
-    }
-
-    String? reminderTime;
-    if (lower.contains('morning')) {
-      reminderTime = '08:00';
-    } else if (lower.contains('afternoon')) {
-      reminderTime = '14:00';
-    } else if (lower.contains('evening') || lower.contains('night')) {
-      reminderTime = '20:30';
-    } else {
-      reminderTime = '09:00';
-    }
+    final dayNames = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    var reminderDays = [
+      for (var i = 0; i < dayNames.length; i++)
+        if (lower.contains(dayNames[i])) i + 1,
+    ];
+    if (lower.contains('weekday')) reminderDays = [1, 2, 3, 4, 5];
+    if (lower.contains('weekend')) reminderDays = [6, 7];
+    final repeat = reminderDays.isNotEmpty
+        ? PromiseRepeat.selectedDays
+        : lower.contains('every day') ||
+              lower.contains('daily') ||
+              lower.contains('each day')
+        ? PromiseRepeat.daily
+        : frequencyMatch != null
+        ? PromiseRepeat.weekly
+        : PromiseRepeat.once;
+    if (reminderDays.isEmpty) reminderDays = [1, 2, 3, 4, 5, 6, 7];
+    final plannedTime = _extractTime(lower);
+    final reminderTime =
+        lower.contains('remind') && !lower.contains('no reminder')
+        ? plannedTime ?? '09:00'
+        : null;
+    final schedule = PromiseSchedule(
+      startDate: promiseDay(now),
+      repeat: repeat,
+      endDate: targetDate,
+      plannedTime: plannedTime,
+      days: reminderDays,
+    );
 
     return PromiseProposal(
       title: title,
@@ -94,6 +131,7 @@ class PromiseIntentParser {
       unit: unit,
       frequencyPerWeek: frequencyPerWeek,
       targetDate: targetDate,
+      schedule: schedule,
       isPrivate: isPrivate,
       reminderTime: reminderTime,
       reminderDays: reminderDays,
@@ -102,12 +140,18 @@ class PromiseIntentParser {
   }
 
   /// Apply natural language modification/edits to an existing proposal.
-  static PromiseProposal applyAdjustment(PromiseProposal proposal, String text) {
+  static PromiseProposal applyAdjustment(
+    PromiseProposal proposal,
+    String text,
+  ) {
     final lower = text.toLowerCase();
     var adjusted = proposal;
 
     // Privacy adjustment
-    if (lower.contains('private') || lower.contains('secret') || lower.contains('discreet')) {
+    if (!lower.contains('not private') &&
+        (lower.contains('private') ||
+            lower.contains('secret') ||
+            lower.contains('discreet'))) {
       adjusted = adjusted.copyWith(isPrivate: true);
     } else if (lower.contains('public') || lower.contains('not private')) {
       adjusted = adjusted.copyWith(isPrivate: false);
@@ -136,14 +180,19 @@ class PromiseIntentParser {
     if (freqMatch != null) {
       adjusted = adjusted.copyWith(
         frequencyPerWeek: freqMatch,
-        trackingType: PromiseTrackingType.frequency,
+        trackingType: adjusted.trackingType == PromiseTrackingType.duration
+            ? PromiseTrackingType.duration
+            : PromiseTrackingType.frequency,
       );
     }
 
     // Reminder time adjustment: e.g. "Don't remind me at night", "Remind in morning"
-    if (lower.contains("don't remind me at night") || lower.contains('not at night') || lower.contains('morning')) {
+    if (lower.contains("don't remind me at night") ||
+        lower.contains('not at night') ||
+        lower.contains('morning')) {
       adjusted = adjusted.copyWith(reminderTime: '09:00');
-    } else if (lower.contains('no reminder') || lower.contains('disable reminder')) {
+    } else if (lower.contains('no reminder') ||
+        lower.contains('disable reminder')) {
       adjusted = adjusted.copyWith(reminderTime: null, reminderDays: const []);
     }
 
@@ -158,13 +207,41 @@ class PromiseIntentParser {
 
     // "Make the goal easier"
     if (lower.contains('easier') || lower.contains('smaller')) {
-      if (adjusted.trackingType == PromiseTrackingType.duration && adjusted.targetValue > 15) {
-        adjusted = adjusted.copyWith(targetValue: (adjusted.targetValue * 0.7).roundToDouble());
-      } else if (adjusted.trackingType == PromiseTrackingType.frequency && adjusted.frequencyPerWeek > 2) {
-        adjusted = adjusted.copyWith(frequencyPerWeek: adjusted.frequencyPerWeek - 1);
+      if (adjusted.trackingType == PromiseTrackingType.duration &&
+          adjusted.targetValue > 15) {
+        adjusted = adjusted.copyWith(
+          targetValue: (adjusted.targetValue * 0.7).roundToDouble(),
+        );
+      } else if (adjusted.trackingType == PromiseTrackingType.frequency &&
+          adjusted.frequencyPerWeek > 2) {
+        adjusted = adjusted.copyWith(
+          frequencyPerWeek: adjusted.frequencyPerWeek - 1,
+        );
       }
     }
 
+    final old =
+        adjusted.schedule ??
+        PromiseSchedule(startDate: promiseDay(DateTime.now()));
+    if (lower.contains('weekday') ||
+        lower.contains('weekend') ||
+        lower.contains('every day') ||
+        lower.contains('daily') ||
+        freqMatch != null) {
+      adjusted = adjusted.copyWith(
+        schedule: old.copyWith(
+          repeat: lower.contains('weekday') || lower.contains('weekend')
+              ? PromiseRepeat.selectedDays
+              : lower.contains('daily') || lower.contains('every day')
+              ? PromiseRepeat.daily
+              : PromiseRepeat.weekly,
+          days: adjusted.reminderDays,
+        ),
+      );
+    }
+    if (targetDate != null) {
+      adjusted = adjusted.copyWith(schedule: old.copyWith(endDate: targetDate));
+    }
     return adjusted;
   }
 
@@ -195,8 +272,14 @@ class PromiseIntentParser {
 
     // Word numbers like "two hours"
     if (lower.contains('two hours') || lower.contains('2 hours')) return 120;
-    if (lower.contains('one hour') || lower.contains('1 hour') || lower.contains('an hour')) return 60;
-    if (lower.contains('half an hour') || lower.contains('half hour')) return 30;
+    if (lower.contains('one hour') ||
+        lower.contains('1 hour') ||
+        lower.contains('an hour')) {
+      return 60;
+    }
+    if (lower.contains('half an hour') || lower.contains('half hour')) {
+      return 30;
+    }
 
     return null;
   }
@@ -216,41 +299,98 @@ class PromiseIntentParser {
     return null;
   }
 
-  static DateTime? _extractTargetDate(String lower) {
-    final now = DateTime.now();
+  static String? _extractTime(String lower) {
+    final explicit = RegExp(
+      r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b',
+    ).firstMatch(lower);
+    if (explicit != null) {
+      var hour = int.parse(explicit[1]!);
+      final minute = int.parse(explicit[2] ?? '0');
+      if (hour < 1 || hour > 12 || minute > 59) return null;
+      hour = hour % 12 + (explicit[3] == 'pm' ? 12 : 0);
+      return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    }
+    final clock = RegExp(r'\b(\d{1,2}):(\d{2})\b').firstMatch(lower);
+    if (clock != null) {
+      final value = '${clock[1]!.padLeft(2, '0')}:${clock[2]}';
+      if (validPromiseTime(value)) return value;
+    }
+    if (lower.contains('morning')) return '08:00';
+    if (lower.contains('afternoon')) return '14:00';
+    if (lower.contains('evening') || lower.contains('night')) return '20:30';
+    return null;
+  }
 
-    // Months mapping
-    final months = {
-      'january': 1,
-      'february': 2,
-      'march': 3,
-      'april': 4,
-      'may': 5,
-      'june': 6,
-      'july': 7,
-      'august': 8,
-      'september': 9,
-      'october': 10,
-      'november': 11,
-      'december': 12,
-    };
+  static DateTime? _extractTargetDate(String text, {DateTime? now}) {
+    now ??= DateTime.now();
+    final lower = text.replaceFirst(
+      RegExp(r'^.*?\b(?:until|by|before)\s+'),
+      '',
+    );
+    DateTime? valid(int year, int month, int day) {
+      final date = DateTime(year, month, day);
+      return date.year == year && date.month == month && date.day == day
+          ? date
+          : null;
+    }
 
-    for (final entry in months.entries) {
-      if (lower.contains(entry.key)) {
-        final year = entry.value < now.month ? now.year + 1 : now.year;
-        // Last day of month
-        final lastDay = DateTime(year, entry.value + 1, 0);
-        return lastDay;
+    final iso = RegExp(r'\b(20\d{2})-(\d{1,2})-(\d{1,2})\b').firstMatch(lower);
+    if (iso != null) {
+      return valid(int.parse(iso[1]!), int.parse(iso[2]!), int.parse(iso[3]!));
+    }
+    final numeric = RegExp(
+      r'\b(\d{1,2})/(\d{1,2})(?:/(20\d{2}))?\b',
+    ).firstMatch(lower);
+    if (numeric != null) {
+      return valid(
+        int.parse(numeric[3] ?? '${now.year}'),
+        int.parse(numeric[2]!),
+        int.parse(numeric[1]!),
+      );
+    }
+    const months = [
+      'january',
+      'february',
+      'march',
+      'april',
+      'may',
+      'june',
+      'july',
+      'august',
+      'september',
+      'october',
+      'november',
+      'december',
+    ];
+    for (var i = 0; i < months.length; i++) {
+      final name = months[i];
+      if (!RegExp('\\b(?:$name|${name.substring(0, 3)})\\b').hasMatch(lower)) {
+        continue;
       }
+      final yearMatch = RegExp(r'\b20\d{2}\b').firstMatch(lower);
+      final year = yearMatch == null
+          ? (i + 1 < now.month ? now.year + 1 : now.year)
+          : int.parse(yearMatch[0]!);
+      if (lower.contains('end of')) return DateTime(year, i + 2, 0);
+      // Match either "3 November" or "November 3" without guessing month-end.
+      final before = RegExp(
+        r'\b(\d{1,2})(?:st|nd|rd|th)?\s+'
+        '(?:$name|${name.substring(0, 3)})',
+      ).firstMatch(lower);
+      final after = RegExp(
+        '(?:$name|${name.substring(0, 3)})'
+        r'\s+(\d{1,2})(?:st|nd|rd|th)?\b',
+      ).firstMatch(lower);
+      final day = before?[1] ?? after?[1];
+      if (day != null) return valid(year, i + 1, int.parse(day));
     }
-
     if (lower.contains('tomorrow')) {
-      return now.add(const Duration(days: 1));
+      return DateTime(now.year, now.month, now.day + 1);
     }
+    if (lower.contains('today')) return promiseDay(now);
     if (lower.contains('next week')) {
-      return now.add(const Duration(days: 7));
+      return DateTime(now.year, now.month, now.day + 7);
     }
-
     return null;
   }
 
@@ -266,19 +406,42 @@ class PromiseIntentParser {
   }
 
   static String _detectCategory(String lower) {
-    if (lower.contains('study') || lower.contains('spring boot') || lower.contains('java') || lower.contains('code') || lower.contains('course') || lower.contains('learn') || lower.contains('read')) {
+    if (lower.contains('study') ||
+        lower.contains('spring boot') ||
+        lower.contains('java') ||
+        lower.contains('code') ||
+        lower.contains('course') ||
+        lower.contains('learn') ||
+        lower.contains('read')) {
       return 'study';
     }
-    if (lower.contains('gym') || lower.contains('workout') || lower.contains('exercise') || lower.contains('weight') || lower.contains('run') || lower.contains('walk')) {
+    if (lower.contains('gym') ||
+        lower.contains('workout') ||
+        lower.contains('exercise') ||
+        lower.contains('weight') ||
+        lower.contains('run') ||
+        lower.contains('walk')) {
       return 'health';
     }
-    if (lower.contains('call') || lower.contains('parent') || lower.contains('mom') || lower.contains('dad') || lower.contains('friend') || lower.contains('family')) {
+    if (lower.contains('call') ||
+        lower.contains('parent') ||
+        lower.contains('mom') ||
+        lower.contains('dad') ||
+        lower.contains('friend') ||
+        lower.contains('family')) {
       return 'relationships';
     }
-    if (lower.contains('save') || lower.contains('money') || lower.contains('budget') || lower.contains('expense')) {
+    if (lower.contains('save') ||
+        lower.contains('money') ||
+        lower.contains('budget') ||
+        lower.contains('expense')) {
       return 'finance';
     }
-    if (lower.contains('scroll') || lower.contains('doubt') || lower.contains('peace') || lower.contains('meditate') || lower.contains('myself')) {
+    if (lower.contains('scroll') ||
+        lower.contains('doubt') ||
+        lower.contains('peace') ||
+        lower.contains('meditate') ||
+        lower.contains('myself')) {
       return 'wellness';
     }
     return 'personal';
@@ -294,55 +457,28 @@ class PromiseIntentParser {
   ) {
     // Clean common prefixes
     String cleaned = raw
-        .replaceAll(RegExp(r'^(i promise myself|i promise to|i want to|i need to|i have to)\s+', caseSensitive: false), '')
+        .replaceAll(
+          RegExp(
+            r'^(i promise myself|i promise to|i want to|i need to|i have to)\s+',
+            caseSensitive: false,
+          ),
+          '',
+        )
         .trim();
 
     // Strip trailing modifiers like ", keep this private"
-    cleaned = cleaned.replaceAll(RegExp(r',?\s*keep this private.*$', caseSensitive: false), '').trim();
+    cleaned = cleaned
+        .replaceAll(
+          RegExp(r',?\s*keep this private.*$', caseSensitive: false),
+          '',
+        )
+        .trim();
 
     // If cleaned starts with lowercase, capitalize first character
     if (cleaned.isNotEmpty) {
       cleaned = cleaned[0].toUpperCase() + cleaned.substring(1);
     }
 
-    // Specific polish for common archetypes
-    final studyMatch = RegExp(r'study\s+(.*?)(?:\s+for|\s+every|\s+daily|\s+each|$)', caseSensitive: false).firstMatch(cleaned);
-    if (studyMatch != null && studyMatch.group(1)?.trim().isNotEmpty == true) {
-      final subject = studyMatch.group(1)!.trim();
-      return 'Study ${subject[0].toUpperCase()}${subject.substring(1)}';
-    }
-
-    final readMatch = RegExp(r'read\s+(.*?)(?:\s+for|\s+every|\s+daily|\s+each|$)', caseSensitive: false).firstMatch(cleaned);
-    if (readMatch != null && readMatch.group(1)?.trim().isNotEmpty == true) {
-      final subject = readMatch.group(1)!.trim();
-      return 'Read ${subject[0].toUpperCase()}${subject.substring(1)}';
-    }
-
-    if (lower.contains('water') || lower.contains('hydration')) {
-      return 'Drink Water Daily';
-    }
-    if (lower.contains('meditat')) {
-      return 'Daily Meditation';
-    }
-    if (lower.contains('walk') || lower.contains('step')) {
-      return 'Daily Walk';
-    }
-    if (lower.contains('gym') || lower.contains('workout') || lower.contains('exercise')) {
-      return 'Gym Workout';
-    }
-    if (lower.contains('call') && (lower.contains('parent') || lower.contains('mom') || lower.contains('dad') || lower.contains('family'))) {
-      return 'Call my parents';
-    }
-    if (lower.contains('finish this course') || lower.contains('finish course')) {
-      return 'Finish Course';
-    }
-    if (lower.contains('stop') && lower.contains('scroll')) {
-      return 'Limit Night Scrolling';
-    }
-
-    if (cleaned.length > 50) {
-      return '${cleaned.substring(0, 47)}...';
-    }
     return cleaned.isEmpty ? 'Personal Promise' : cleaned;
   }
 

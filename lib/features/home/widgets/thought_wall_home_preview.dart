@@ -472,12 +472,24 @@ class _ThoughtWallHomePreviewState
                     width: 1.0,
                   );
 
+Color _getThoughtMoodColor(String mood) {
+  switch (mood) {
+    case 'idea':
+      return AppPalette.colorFFD97706;
+    case 'win':
+      return AppPalette.colorFF16A34A;
+    case 'future':
+      return AppPalette.colorFFEA580C;
+    case 'promise':
+      return AppPalette.colorFFB46824;
+    case 'thought':
+    default:
+      return AppPalette.colorFF6E8565;
+  }
+}
+
             final titleColor = g.inkMuted;
             final actionAccentColor = g.clay;
-
-            final hardBorderColor = g.ink.withValues(alpha: isDark ? .34 : .38);
-            final bubbleFill = Colors.transparent;
-            final bubbleBorder = Border.all(color: hardBorderColor, width: 1.2);
             final thoughtTextColor = g.ink;
             final thoughtTextMutedColor = g.inkMuted;
             final bubbleAccentColor = g.clay;
@@ -513,6 +525,35 @@ class _ThoughtWallHomePreviewState
                       final isNew =
                           _listSeen && !_seenThoughtIds.contains(thought.id);
 
+                      final moodAccent = g.frozen
+                          ? (thought.mood == 'win' ? g.sage : g.slate)
+                          : _getThoughtMoodColor(thought.mood);
+
+                      final itemHardBorderColor = thought.isCompleted
+                          ? (isDark
+                                  ? const Color(0xFF86EFAC)
+                                  : const Color(0xFF166534))
+                              .withValues(alpha: .6)
+                          : Color.lerp(
+                              g.ink.withValues(alpha: isDark ? .35 : .40),
+                              moodAccent,
+                              isDark ? 0.45 : 0.40,
+                            )!;
+                      final itemBubbleBorder =
+                          Border.all(color: itemHardBorderColor, width: 1.8);
+                      final itemBubbleFill = thought.isCompleted
+                          ? (isDark
+                                  ? const Color(0xFF86EFAC)
+                                  : const Color(0xFF166534))
+                              .withValues(alpha: .08)
+                          : Color.lerp(
+                              g.fill,
+                              moodAccent.withValues(
+                                alpha: isDark ? 0.06 : 0.04,
+                              ),
+                              0.5,
+                            );
+
                       return _ThoughtEntrance(
                         key: ValueKey('home_thought_entrance_${thought.id}'),
                         animate: isNew,
@@ -530,10 +571,18 @@ class _ThoughtWallHomePreviewState
                           child: Container(
                             key: ValueKey('home_thought_${thought.id}'),
                             decoration: BoxDecoration(
-                              color: thought.isCompleted
-                                  ? g.sage.withValues(alpha: .09)
-                                  : bubbleFill,
-                              border: bubbleBorder,
+                              color: itemBubbleFill,
+                              border: itemBubbleBorder,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: moodAccent.withValues(
+                                    alpha: isDark ? 0.10 : 0.05,
+                                  ),
+                                  blurRadius: 8,
+                                  spreadRadius: 0,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                               borderRadius: BorderRadius.only(
                                 topLeft: const Radius.circular(18),
                                 topRight: const Radius.circular(18),

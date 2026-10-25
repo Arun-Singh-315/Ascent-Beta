@@ -664,8 +664,8 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final today = DateTime.now();
   final startOfToday = DateTime(today.year, today.month, today.day);
 
-  // Watch both tasks for today and sessions for today
-  final tasksStream = taskDao.watchTasksByDate(startOfToday);
+  // Watch both tasks for today (including uncompleted overdue tasks) and sessions for today
+  final tasksStream = taskDao.watchTodayAndOverdueTasks(startOfToday);
   final sessionsStream = sessionDao.watchSessionsForDate(startOfToday);
   final remindersStream = reminderDao.watchAllReminders();
 

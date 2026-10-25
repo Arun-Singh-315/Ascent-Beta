@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../app/theme/day_glass_material.dart';
+import '../../../shared/widgets/glass_surface.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/streak/study_streak_models.dart';
 
@@ -132,33 +134,45 @@ class StudyStreakMeterCard extends StatelessWidget {
     return _buildCard(context);
   }
 
+  Widget _surface(
+    BuildContext context, {
+    required BoxDecoration decoration,
+    required EdgeInsetsGeometry padding,
+    required Widget child,
+  }) {
+    if (Theme.of(context).extension<DayGlassMaterial>() != null) {
+      return GlassSurface(radius: 16, padding: padding, child: child);
+    }
+    return Container(decoration: decoration, padding: padding, child: child);
+  }
+
   Widget _buildCard(BuildContext context) {
     final g = context.glass;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final streakTitle = status.displayStreakDays == 0
         ? (status.phase == StudyStreakPhase.broken
-            ? 'A fresh start'
-            : 'Start your first day')
+              ? 'A fresh start'
+              : 'Start your first day')
         : '${status.displayStreakDays} Day Streak';
 
     return AppGestureTap(
       onTap: onTap ?? () => _showExplanation(context),
-      child: Container(
+      child: _surface(
+        context,
         decoration: BoxDecoration(
           color: g.merlot
               ? (isDark ? MerlotPalette.darkSurface : null)
               : (g.frozen
-                  ? (isDark ? FrozenPalette.darkSurface : FrozenPalette.surface)
-                  : (isDark ? g.fill : Colors.white)),
+                    ? (isDark
+                          ? FrozenPalette.darkSurface
+                          : FrozenPalette.surface)
+                    : (isDark ? g.fill : Colors.white)),
           gradient: g.merlot && !isDark
               ? const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    MerlotPalette.surface,
-                    MerlotPalette.surfaceBottom,
-                  ],
+                  colors: [MerlotPalette.surface, MerlotPalette.surfaceBottom],
                 )
               : null,
           borderRadius: BorderRadius.circular(16),
@@ -166,12 +180,14 @@ class StudyStreakMeterCard extends StatelessWidget {
             color: g.merlot
                 ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
                 : (g.frozen
-                    ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                    : (status.isRescueMode
-                        ? AppPalette.amber.withValues(alpha: 0.35)
-                        : (status.isUrgent
-                            ? AppPalette.redAccent.withValues(alpha: 0.35)
-                            : (isDark ? g.edge : g.edge.withValues(alpha: 0.45))))),
+                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+                      : (status.isRescueMode
+                            ? AppPalette.amber.withValues(alpha: 0.35)
+                            : (status.isUrgent
+                                  ? AppPalette.redAccent.withValues(alpha: 0.35)
+                                  : (isDark
+                                        ? g.edge
+                                        : g.edge.withValues(alpha: 0.45))))),
             width: (g.merlot || g.frozen) ? 0.75 : AppBorderScale.w1,
           ),
           boxShadow: g.merlot
@@ -183,29 +199,29 @@ class StudyStreakMeterCard extends StatelessWidget {
                   ),
                 ]
               : (g.frozen
-                  ? [
-                      BoxShadow(
-                        color: isDark
-                            ? Colors.black.withValues(alpha: 0.35)
-                            : FrozenPalette.shadowAmbient,
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                  : (isDark
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: const Color.fromRGBO(15, 23, 42, 0.05),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                          BoxShadow(
-                            color: const Color.fromRGBO(15, 23, 42, 0.02),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ])),
+                    ? [
+                        BoxShadow(
+                          color: isDark
+                              ? Colors.black.withValues(alpha: 0.35)
+                              : FrozenPalette.shadowAmbient,
+                          blurRadius: 16,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : (isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: const Color.fromRGBO(15, 23, 42, 0.05),
+                                blurRadius: 16,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: const Color.fromRGBO(15, 23, 42, 0.02),
+                                blurRadius: 3,
+                                offset: const Offset(0, 1),
+                              ),
+                            ])),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Column(
@@ -232,8 +248,10 @@ class StudyStreakMeterCard extends StatelessWidget {
                   color: g.frozen
                       ? (isDark ? FrozenPalette.darkSpark : FrozenPalette.spark)
                       : (status.isTodaySecured
-                          ? AppPalette.deepOrangeAccent
-                          : (status.isRescueMode ? AppPalette.amber : g.clay)),
+                            ? AppPalette.deepOrangeAccent
+                            : (status.isRescueMode
+                                  ? AppPalette.amber
+                                  : g.clay)),
                 ),
                 const SizedBox(width: 6),
                 Flexible(
@@ -243,10 +261,10 @@ class StudyStreakMeterCard extends StatelessWidget {
                       color: g.frozen
                           ? g.ink
                           : (status.isTodaySecured
-                              ? AppPalette.deepOrangeAccent
-                              : (status.isRescueMode
-                                  ? AppPalette.amberAccent
-                                  : g.ink)),
+                                ? AppPalette.deepOrangeAccent
+                                : (status.isRescueMode
+                                      ? AppPalette.amberAccent
+                                      : g.ink)),
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -316,19 +334,19 @@ class StudyStreakMeterCard extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(
                     g.frozen
                         ? (status.isTodaySecured
-                            ? (isDark
-                                ? FrozenPalette.darkSpark
-                                : FrozenPalette.spark)
-                            : (isDark
-                                ? FrozenPalette.darkAction
-                                : FrozenPalette.action))
+                              ? (isDark
+                                    ? FrozenPalette.darkSpark
+                                    : FrozenPalette.spark)
+                              : (isDark
+                                    ? FrozenPalette.darkAction
+                                    : FrozenPalette.action))
                         : (status.isTodaySecured
-                            ? AppPalette.deepOrangeAccent
-                            : (status.isRescueMode
-                                ? AppPalette.amber
-                                : (status.isUrgent
-                                    ? AppPalette.redAccent
-                                    : g.clay))),
+                              ? AppPalette.deepOrangeAccent
+                              : (status.isRescueMode
+                                    ? AppPalette.amber
+                                    : (status.isUrgent
+                                          ? AppPalette.redAccent
+                                          : g.clay))),
                   ),
                 ),
               ),

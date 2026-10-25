@@ -9,10 +9,7 @@ import '../providers/promise_providers.dart';
 
 /// Private, lightweight reflection sheet for behavioral commitments.
 class PromiseReflectionSheet extends ConsumerStatefulWidget {
-  const PromiseReflectionSheet({
-    super.key,
-    required this.promise,
-  });
+  const PromiseReflectionSheet({super.key, required this.promise});
 
   final PromiseModel promise;
 
@@ -47,9 +44,7 @@ class _PromiseReflectionSheetState
     final g = context.glass;
 
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: GlassSurface(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
@@ -57,85 +52,76 @@ class _PromiseReflectionSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: g.inkMuted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: g.inkMuted.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 18),
+            ),
+            const SizedBox(height: 18),
 
-              Text(
-                widget.promise.title,
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+            Text(
+              widget.promise.title,
+              style: AscentTextStyles.homeTitle.copyWith(
+                color: g.ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(height: 4),
-              Text(
-                'A private moment with yourself. How did it go today?',
-                style: TextStyle(
-                  color: g.inkMuted,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 18),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'A private moment with yourself. How did it go today?',
+              style: TextStyle(color: g.inkMuted, fontSize: 13),
+            ),
+            const SizedBox(height: 18),
 
-              TextField(
-                controller: _noteController,
-                maxLines: 4,
-                style: TextStyle(color: g.ink, fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: 'Any thoughts or observations... (optional)',
-                  hintStyle: TextStyle(
-                    color: g.inkMuted.withValues(alpha: 0.6),
-                    fontSize: 14,
-                  ),
-                  filled: true,
-                  fillColor: g.ink.withValues(alpha: 0.04),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: g.ink.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(
-                      color: g.ink.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: g.ink, width: 1.5),
-                  ),
+            TextField(
+              controller: _noteController,
+              maxLines: 4,
+              style: TextStyle(color: g.ink, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Any thoughts or observations... (optional)',
+                hintStyle: TextStyle(
+                  color: g.inkMuted.withValues(alpha: 0.6),
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: g.ink.withValues(alpha: 0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: g.ink.withValues(alpha: 0.1)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: g.ink.withValues(alpha: 0.1)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: g.ink, width: 1.5),
                 ),
               ),
-              const SizedBox(height: 24),
+            ),
+            const SizedBox(height: 24),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Close',
-                      style: TextStyle(color: g.inkMuted),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: _submitting
-                        ? null
-                        : () async {
-                            setState(() => _submitting = true);
-                            HapticFeedback.mediumImpact();
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Close', style: TextStyle(color: g.inkMuted)),
+                ),
+                const SizedBox(width: 12),
+                FilledButton(
+                  onPressed: _submitting
+                      ? null
+                      : () async {
+                          setState(() => _submitting = true);
+                          HapticFeedback.mediumImpact();
+                          try {
                             await ref
                                 .read(promiseRepositoryProvider)
                                 .recordProgress(
@@ -146,43 +132,56 @@ class _PromiseReflectionSheetState
                                       ? _noteController.text.trim()
                                       : 'Reflected today',
                                 );
-                            if (!mounted) return;
+                            if (!context.mounted) return;
+                            final messenger = ScaffoldMessenger.of(context);
                             Navigator.of(context).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Reflection noted in peace.'),
                                 behavior: SnackBarBehavior.floating,
                                 duration: Duration(seconds: 2),
                               ),
                             );
-                          },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: g.ink,
-                      foregroundColor: g.bg,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                          } catch (_) {
+                            if (context.mounted) {
+                              setState(() => _submitting = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Could not save. Your reflection is still here.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: g.ink,
+                    foregroundColor: g.bg,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
                     ),
-                    child: _submitting
-                        ? SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: g.bg,
-                            ),
-                          )
-                        : const Text('Save Reflection'),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                ],
-              ),
-            ],
-          ),
+                  child: _submitting
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: g.bg,
+                          ),
+                        )
+                      : const Text('Save Reflection'),
+                ),
+              ],
+            ),
+          ],
         ),
-      );
-    }
+      ),
+    );
+  }
 }

@@ -55,7 +55,11 @@ class HomeLayout {
   final Set<String> visible, tools, compact;
   final List<String> shortcuts;
   factory HomeLayout.defaults() => HomeLayout(
-    order: ['promises', 'mind', ...homeSections.keys.where((id) => id != 'mind' && id != 'promises')],
+    order: [
+      'promises',
+      'mind',
+      ...homeSections.keys.where((id) => id != 'mind' && id != 'promises'),
+    ],
     visible: {
       'promises',
       'streak',
@@ -67,6 +71,7 @@ class HomeLayout {
       'vault',
     },
     tools: homeTools.keys.toSet(),
+    shortcuts: const ['thought-wall', 'hydration', 'momentum', 'vault'],
   );
   HomeLayout copyWith({
     List<String>? order,
@@ -107,14 +112,23 @@ class HomeLayout {
     final savedOrder = (json['order'] as List).cast<dynamic>();
     final isExistingWithoutVault = !savedOrder.contains('vault');
     final parsedVisible = known(json['visible'], homeSections).toSet();
-    final isExistingWithoutPromises = !savedOrder.contains('promises') || !parsedVisible.contains('promises');
+    final isExistingWithoutPromises = !savedOrder.contains('promises');
     var visible = parsedVisible;
-    if (isExistingWithoutVault) visible = {...visible, 'vault'};
-    if (isExistingWithoutPromises) visible = {...visible, 'promises'};
+    // Migrate older active layouts without overriding explicit hidden choices
+    // or turning an intentionally empty Home back into a populated one.
+    if (parsedVisible.isNotEmpty) {
+      if (isExistingWithoutVault) visible = {...visible, 'vault'};
+      if (isExistingWithoutPromises) visible = {...visible, 'promises'};
+    }
 
     final orderedSections = order.contains('promises')
         ? order
         : ['promises', ...order];
+
+    final rawShortcuts = json['shortcuts'];
+    final parsedShortcuts = (rawShortcuts == null || (rawShortcuts is List && rawShortcuts.isEmpty))
+        ? const ['thought-wall', 'hydration', 'momentum', 'vault']
+        : known(rawShortcuts, homeShortcutRoutes).take(4).toList();
 
     return HomeLayout(
       order: [
@@ -127,10 +141,7 @@ class HomeLayout {
         json['compact'] ?? [],
         homeSections,
       ).where((id) => id == 'today' || id == 'mind').toSet(),
-      shortcuts: known(
-        json['shortcuts'] ?? [],
-        homeShortcutRoutes,
-      ).take(4).toList(),
+      shortcuts: parsedShortcuts,
     );
   }
 }

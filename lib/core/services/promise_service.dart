@@ -78,7 +78,19 @@ class PromiseService {
       final now = _clock();
       final today = DateTime(now.year, now.month, now.day);
       final tomorrow = DateTime(now.year, now.month, now.day + 1);
-      final thoughts =
+      final hasMetadata = await _db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='promise_metadata'",
+          )
+          .get();
+      final managed = hasMetadata.isEmpty
+          ? <int>{}
+          : (await _db
+                    .customSelect('SELECT promise_id FROM promise_metadata')
+                    .get())
+                .map((r) => r.read<int>('promise_id'))
+                .toSet();
+      final candidates =
           await (_db.select(_db.thoughtTable)..where(
                 (t) =>
                     t.mood.equals('promise') &
@@ -88,6 +100,9 @@ class PromiseService {
                     t.createdAt.isSmallerThanValue(tomorrow),
               ))
               .get();
+      final thoughts = candidates
+          .where((t) => !managed.contains(t.id))
+          .toList();
       final profile = await _db.userProfileDao.getProfile();
       final name = profile?.name.trim().split(RegExp(r'\s+')).first ?? '';
       final greeting = name.isEmpty

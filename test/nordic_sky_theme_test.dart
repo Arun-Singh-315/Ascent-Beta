@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/app/theme/day_glass_material.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
@@ -65,24 +66,33 @@ void main() {
   });
 
   group('AscentTheme daylight presets', () {
-    test('merlotLinen preset applies Vintage Merlot & Cashmere Linen palette', () {
-      final theme = AscentTheme.light(preset: DayThemePreset.merlotLinen);
+    test(
+      'merlotLinen preset applies Vintage Merlot & Cashmere Linen palette',
+      () {
+        final theme = AscentTheme.light(preset: DayThemePreset.merlotLinen);
 
-      expect(theme.brightness, Brightness.light);
-      expect(theme.colorScheme.primary, MerlotPalette.action);
-      expect(theme.scaffoldBackgroundColor, MerlotPalette.canvas);
-      final glass = theme.extension<AscentGlass>();
-      expect(glass, isNotNull);
-      expect(glass!.clay, MerlotPalette.action);
-      expect(glass.ink, MerlotPalette.ink);
-    });
+        expect(theme.brightness, Brightness.light);
+        expect(theme.colorScheme.primary, MerlotPalette.action);
+        expect(
+          theme.scaffoldBackgroundColor,
+          theme.extension<DayGlassMaterial>()!.canvas,
+        );
+        final glass = theme.extension<AscentGlass>();
+        expect(glass, isNotNull);
+        expect(glass!.clay, MerlotPalette.action);
+        expect(glass.ink, MerlotPalette.ink);
+      },
+    );
 
     test('classicClay preset applies signature terracotta & linen palette', () {
       final theme = AscentTheme.light(preset: DayThemePreset.classicClay);
 
       expect(theme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, const Color(0xFFA4523A));
-      expect(theme.scaffoldBackgroundColor, const Color(0xFFF8F9FA));
+      expect(
+        theme.scaffoldBackgroundColor,
+        theme.extension<DayGlassMaterial>()!.canvas,
+      );
       final glass = theme.extension<AscentGlass>();
       expect(glass, isNotNull);
       expect(glass!.clay, const Color(0xFFA4523A));
@@ -95,13 +105,19 @@ void main() {
 
         expect(theme.brightness, Brightness.light);
         expect(theme.colorScheme.primary, FrozenPalette.action);
-        expect(theme.scaffoldBackgroundColor, FrozenPalette.canvas);
+        expect(
+          theme.scaffoldBackgroundColor,
+          theme.extension<DayGlassMaterial>()!.canvas,
+        );
         expect(theme.colorScheme.onSurface, FrozenPalette.ink);
-        expect(theme.colorScheme.onSurfaceVariant, FrozenPalette.mutedInk);
+        expect(
+          theme.colorScheme.onSurfaceVariant,
+          Color.lerp(FrozenPalette.mutedInk, FrozenPalette.ink, .16),
+        );
 
         final glass = theme.extension<AscentGlass>();
         expect(glass, isNotNull);
-        expect(glass!.bg, FrozenPalette.canvas);
+        expect(glass!.bg, theme.extension<DayGlassMaterial>()!.canvas);
         expect(glass.clay, FrozenPalette.accent);
         expect(glass.slate, FrozenPalette.secondary);
         expect(glass.ink, FrozenPalette.ink);
@@ -172,7 +188,7 @@ void main() {
 
   group('SettingsScreen Day Theme Selector & Toggles', () {
     testWidgets(
-      'shows Merlot, Classic Clay and Frozen Sky with Merlot selected by default',
+      'shows the glass choices with Balanced selected and persists a new material',
       (tester) async {
         tester.view.physicalSize = const Size(1080, 2400);
         tester.view.devicePixelRatio = 1.0;
@@ -198,10 +214,10 @@ void main() {
 
         // Check Appearance & Theme section
         expect(find.text('Appearance & Theme'), findsOneWidget);
-        expect(find.text('Daylight Style'), findsOneWidget);
-        expect(find.text('Merlot'), findsOneWidget);
-        expect(find.text('Classic Clay'), findsWidgets);
-        expect(find.text('Frozen Sky'), findsOneWidget);
+        expect(find.text('Glass Translucency'), findsOneWidget);
+        expect(find.text('Balanced'), findsOneWidget);
+        expect(find.text('Subtle'), findsOneWidget);
+        expect(find.text('Contrast'), findsOneWidget);
 
         // Default is Merlot Linen
         expect(
@@ -209,16 +225,22 @@ void main() {
           DayThemePreset.merlotLinen,
         );
 
-        // Tap Frozen Sky
-        await tester.ensureVisible(find.text('Frozen Sky'));
-        await tester.tap(find.text('Frozen Sky'));
+        expect(
+          container.read(glassTranslucencyPresetProvider),
+          GlassTranslucencyPreset.balancedLiquid,
+        );
+        await tester.ensureVisible(find.text('Subtle'));
+        await tester.tap(find.text('Subtle'));
         await tester.pumpAndSettle();
 
         expect(
-          container.read(dayThemePresetProvider),
-          DayThemePreset.nordicSky,
+          container.read(glassTranslucencyPresetProvider),
+          GlassTranslucencyPreset.subtleFrosted,
         );
-        expect(prefs.getString('ascent_day_theme_preset'), 'nordicSky');
+        expect(
+          prefs.getString('ascent_glass_translucency_preset'),
+          'subtleFrosted',
+        );
       },
     );
 
@@ -278,15 +300,13 @@ void main() {
         final nightDarkText = tester.widget<Text>(find.text('Night / Dark'));
         expect(nightDarkText.style?.color, FrozenPalette.ink);
 
-        // Nordic Sky preset was stored in prefs: "Nordic Sky" toggle text is white
-        final nordicSkyText = tester.widget<Text>(find.text('Frozen Sky').last);
-        expect(nordicSkyText.style?.color, Colors.white);
+        // The selected glass material has white text; the other choices retain palette ink.
+        final balancedText = tester.widget<Text>(find.text('Balanced').last);
+        expect(balancedText.style?.color, Colors.white);
 
-        // "Classic Clay" is unselected: text is dark ink, NOT blue!
-        final classicClayText = tester.widget<Text>(
-          find.text('Classic Clay').last,
-        );
-        expect(classicClayText.style?.color, FrozenPalette.ink);
+        // The Subtle material is unselected.
+        final subtleText = tester.widget<Text>(find.text('Subtle').last);
+        expect(subtleText.style?.color, FrozenPalette.ink);
       },
     );
   });

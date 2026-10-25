@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/theme/color_tokens.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/surface_tokens.dart';
 import '../../../app/theme/text_styles.dart';
@@ -63,7 +62,7 @@ class VaultHomePreview extends ConsumerWidget {
           key: const ValueKey('home_vault_card'),
           borderRadius: BorderRadius.circular(18),
           padding: const EdgeInsets.all(AppSpace.s16),
-          enableBlur: false,
+          enableBlur: Theme.of(context).brightness == Brightness.light,
           onTap: () {
             HapticFeedback.selectionClick();
             context.push('/vault');
@@ -103,7 +102,9 @@ class VaultHomePreview extends ConsumerWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                count > 0 ? '$count secure item(s) protected' : 'Cards, IDs, logins & docs',
+                count > 0
+                    ? '$count secure item(s) protected'
+                    : 'Cards, IDs, logins & docs',
                 style: AscentTextStyles.caption.copyWith(color: g.inkMuted),
               ),
             ],
@@ -142,9 +143,15 @@ class VaultHomePreview extends ConsumerWidget {
     int count,
     List<VaultItem> items,
   ) {
-    final cardCount = items.where((i) => i.category == VaultCategory.card).length;
-    final idCount = items.where((i) => i.category == VaultCategory.idDoc).length;
-    final loginCount = items.where((i) => i.category == VaultCategory.login).length;
+    final cardCount = items
+        .where((i) => i.category == VaultCategory.card)
+        .length;
+    final idCount = items
+        .where((i) => i.category == VaultCategory.idDoc)
+        .length;
+    final loginCount = items
+        .where((i) => i.category == VaultCategory.login)
+        .length;
     final otherCount = count - (cardCount + idCount + loginCount);
 
     return Column(
@@ -190,10 +197,14 @@ class VaultHomePreview extends ConsumerWidget {
             spacing: 6,
             runSpacing: 6,
             children: [
-              if (cardCount > 0) _buildBadge(g, Icons.credit_card, '$cardCount Cards'),
-              if (idCount > 0) _buildBadge(g, Icons.badge_outlined, '$idCount IDs'),
-              if (loginCount > 0) _buildBadge(g, Icons.key_outlined, '$loginCount Logins'),
-              if (otherCount > 0) _buildBadge(g, Icons.folder_outlined, '$otherCount Files'),
+              if (cardCount > 0)
+                _buildBadge(g, Icons.credit_card, '$cardCount Cards'),
+              if (idCount > 0)
+                _buildBadge(g, Icons.badge_outlined, '$idCount IDs'),
+              if (loginCount > 0)
+                _buildBadge(g, Icons.key_outlined, '$loginCount Logins'),
+              if (otherCount > 0)
+                _buildBadge(g, Icons.folder_outlined, '$otherCount Files'),
             ],
           ),
         ],
@@ -216,7 +227,11 @@ class VaultHomePreview extends ConsumerWidget {
           const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(fontSize: 11, color: g.ink, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 11,
+              color: g.ink,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

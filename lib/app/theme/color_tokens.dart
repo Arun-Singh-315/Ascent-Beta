@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'glass_theme.dart';
+import 'day_glass_material.dart';
 import 'frozen_palette.dart';
 import 'merlot_palette.dart';
 
@@ -12,8 +13,8 @@ class AscentColors {
 
   // ── Light mode ─────────────────────────────────────────────────────────────
 
-  /// Crisp, clean matte off-white — page background.
-  static const Color bgBase = Color(0xFFF8F9FA);
+  /// Crisp, misty cool-slate off-white — page background with glass depth.
+  static const Color bgBase = Color(0xFFEFF2F6);
 
   /// Pure white surface — cards, sheets, inputs.
   static const Color bgSurface = Color(0xFFFFFFFF);
@@ -145,13 +146,15 @@ extension AscentColorsX on BuildContext {
   Color get financeAccent =>
       isDark ? AscentColors.financeBright : AscentColors.financePrimary;
 
-  Color get bgBase => isMerlot
-      ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.canvas)
-      : isFrozen
-      ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
-      : isDark
-      ? AscentColors.bgBaseDark
-      : AscentColors.bgBase;
+  Color get bgBase =>
+      Theme.of(this).extension<DayGlassMaterial>()?.canvas ??
+      (isMerlot
+          ? (isDark ? MerlotPalette.darkCanvas : MerlotPalette.canvas)
+          : isFrozen
+          ? (isDark ? FrozenPalette.darkCanvas : FrozenPalette.canvas)
+          : isDark
+          ? AscentColors.bgBaseDark
+          : AscentColors.bgBase);
 
   Color get bgSurface => isMerlot
       ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)

@@ -1,619 +1,360 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
+import '../../../core/providers/settings_provider.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/message_composer.dart';
 import '../models/promise_model.dart';
 import '../providers/promise_providers.dart';
 import '../services/promise_intent_parser.dart';
-import 'promise_proposal_card.dart';
+import 'promise_schedule_editor.dart';
 
-/// Chat-first Promise Composer dialog.
-/// Minimal interaction, low writing friction, intelligent coaching reflection,
-/// and instant deterministic fallback.
+/// Write first. Confirm a small plan. Save without a questionnaire.
 class PromiseChatComposer extends ConsumerStatefulWidget {
   const PromiseChatComposer({super.key});
-
-  static Future<void> show(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const PromiseChatComposer(),
-    );
-  }
-
+  static Future<void> show(BuildContext context) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const PromiseChatComposer(),
+  );
   @override
-  ConsumerState<PromiseChatComposer> createState() => _PromiseChatComposerState();
+  ConsumerState<PromiseChatComposer> createState() =>
+      _PromiseChatComposerState();
 }
 
 class _PromiseChatComposerState extends ConsumerState<PromiseChatComposer> {
-  final _inputController = TextEditingController();
-  final _focusNode = FocusNode();
-  final _scrollController = ScrollController();
-
-  final List<_ChatMessage> _messages = [];
-  PromiseProposal? _currentProposal;
-  bool _isSaving = false;
-
-  int _selectedCategoryIndex = 0;
-  final List<String> _categories = const ['All', 'Health', 'Peace', 'Habits', 'Growth', 'Family'];
-
-  static const List<Map<String, String>> _allSuggestions = [
-    {
-      'category': 'Health',
-      'text': 'I want to drink 2 litres of water every day',
-      'subtitle': 'Build daily cellular hydration',
-      'icon': 'water_drop_outlined',
-    },
-    {
-      'category': 'Health',
-      'text': 'I want to exercise or stretch 4 times a week',
-      'subtitle': 'Physical vitality and energy',
-      'icon': 'fitness_center_rounded',
-    },
-    {
-      'category': 'Health',
-      'text': 'I want to walk 8,000 steps daily',
-      'subtitle': 'Consistent low-impact movement',
-      'icon': 'directions_walk_rounded',
-    },
-    {
-      'category': 'Peace',
-      'text': 'I want to meditate for 10 minutes every morning',
-      'subtitle': 'Calm awareness before the day starts',
-      'icon': 'self_improvement_rounded',
-    },
-    {
-      'category': 'Peace',
-      'text': 'I want to write in my gratitude journal every night',
-      'subtitle': 'Reflect on 3 wins each day',
-      'icon': 'edit_note_rounded',
-    },
-    {
-      'category': 'Habits',
-      'text': 'I want to stop wasting time scrolling at night',
-      'subtitle': 'Screens off 30 minutes before sleep',
-      'icon': 'bedtime_outlined',
-    },
-    {
-      'category': 'Growth',
-      'text': 'I want to read 20 pages of a book before bed',
-      'subtitle': 'Compound knowledge and quiet focus',
-      'icon': 'menu_book_rounded',
-    },
-    {
-      'category': 'Growth',
-      'text': 'I want to spend 45 minutes on focused learning every day',
-      'subtitle': 'Dedicated undistracted deep work',
-      'icon': 'school_outlined',
-    },
-    {
-      'category': 'Family',
-      'text': 'I promise myself to call my parents every Sunday',
-      'subtitle': 'Nurture bonds that matter most',
-      'icon': 'favorite_border_rounded',
-    },
-  ];
-
-  final List<String> _promptPlaceholders = const [
-    'I want to drink 2 litres of water every day',
-    'I want to exercise 4 times a week',
-    'I promise myself to call my parents every Sunday',
-    'I want to stop scrolling at night',
-    'I want to read 20 pages before bed',
-    'I want to meditate for 10 minutes, keep this private',
-  ];
-  int _placeholderIndex = 0;
-  Timer? _placeholderTimer;
-
+  static const _draftKey = 'ascent_promise_creation_draft_v3';
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+  PromiseProposal? _proposal;
+  bool _saving = false;
+  String? _error;
+  Future<void> _draftWrites = Future.value();
   @override
   void initState() {
     super.initState();
-    _placeholderTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (mounted) {
-        setState(() {
-          _placeholderIndex = (_placeholderIndex + 1) % _promptPlaceholders.length;
-        });
+    try {
+      final raw = ref.read(sharedPreferencesProvider).getString(_draftKey);
+      if (raw != null) {
+        final draft = jsonDecode(raw) as Map<String, dynamic>;
+        _controller.text = draft['text'] as String? ?? '';
+        if (draft['proposal'] != null) {
+          _proposal = _decode(draft['proposal'] as Map<String, dynamic>);
+        }
       }
+    } catch (_) {
+      /* A corrupt draft must not block writing. */
+    }
+    _controller.addListener(_persist);
+  }
+
+  Map<String, dynamic> _encode(PromiseProposal p) => {
+    'title': p.title,
+    'intention': p.intention,
+    'category': p.category,
+    'type': p.trackingType.name,
+    'target': p.targetValue,
+    'unit': p.unit,
+    'weekly': p.frequencyPerWeek,
+    'private': p.isPrivate,
+    'reminder': p.reminderTime,
+    'days': p.reminderDays,
+    'schedule': p.schedule?.toJson(),
+  };
+  PromiseProposal _decode(Map<String, dynamic> p) => PromiseProposal(
+    title: p['title'] as String,
+    intention: p['intention'] as String,
+    category: p['category'] as String,
+    trackingType: PromiseTrackingType.values.byName(p['type'] as String),
+    targetValue: (p['target'] as num).toDouble(),
+    unit: p['unit'] as String,
+    frequencyPerWeek: p['weekly'] as int,
+    isPrivate: p['private'] as bool,
+    reminderTime: p['reminder'] as String?,
+    reminderDays: (p['days'] as List).cast<int>(),
+    schedule: p['schedule'] == null
+        ? null
+        : PromiseSchedule.fromJson(p['schedule'] as Map<String, dynamic>),
+  );
+  void _persist() {
+    final raw = jsonEncode({
+      'text': _controller.text,
+      'proposal': _proposal == null ? null : _encode(_proposal!),
     });
+    final preferences = ref.read(sharedPreferencesProvider);
+    _draftWrites = _draftWrites.catchError((_) {}).then((_) async {
+      await preferences.setString(_draftKey, raw);
+    });
+    unawaited(_draftWrites.catchError((_) {}));
   }
 
   @override
   void dispose() {
-    _placeholderTimer?.cancel();
-    _inputController.dispose();
-    _focusNode.dispose();
-    _scrollController.dispose();
+    _controller.removeListener(_persist);
+    _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
-  void _handleSubmit() {
-    final text = _inputController.text.trim();
-    if (text.isEmpty) return;
-
-    HapticFeedback.lightImpact();
-    _inputController.clear();
-
+  void _continue(String text) {
+    if (_saving || text.trim().isEmpty) return;
+    FocusScope.of(context).unfocus();
     setState(() {
-      _messages.add(_ChatMessage(text: text, isUser: true));
-
-      if (_currentProposal == null) {
-        // Initial commitment parse
-        _currentProposal = PromiseIntentParser.parse(text);
-      } else {
-        // Natural language edit / adjustment
-        _currentProposal = PromiseIntentParser.applyAdjustment(_currentProposal!, text);
-      }
+      _proposal = PromiseIntentParser.parse(text);
+      _error = null;
     });
-
-    _scrollToBottom();
+    _persist();
   }
 
-  void _handleInlineModify(String prompt) {
+  Future<void> _save() async {
+    final p = _proposal;
+    if (p == null || _saving) return;
     setState(() {
-      _messages.add(_ChatMessage(text: prompt, isUser: true));
-      if (_currentProposal != null) {
-        _currentProposal = PromiseIntentParser.applyAdjustment(_currentProposal!, prompt);
-      }
+      _saving = true;
+      _error = null;
     });
-    _scrollToBottom();
-  }
-
-  Future<void> _handleAccept() async {
-    if (_currentProposal == null || _isSaving) return;
-
-    setState(() => _isSaving = true);
-    HapticFeedback.heavyImpact();
-
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      final repo = ref.read(promiseRepositoryProvider);
-      await repo.createPromise(
-        title: _currentProposal!.title,
-        intention: _currentProposal!.intention,
-        category: _currentProposal!.category,
-        trackingType: _currentProposal!.trackingType,
-        targetValue: _currentProposal!.targetValue,
-        unit: _currentProposal!.unit,
-        frequencyPerWeek: _currentProposal!.frequencyPerWeek,
-        targetDate: _currentProposal!.targetDate,
-        isPrivate: _currentProposal!.isPrivate,
-        reminderTime: _currentProposal!.reminderTime,
-        reminderDays: _currentProposal!.reminderDays,
+      final saved = await ref
+          .read(promiseRepositoryProvider)
+          .createPromise(
+            title: p.title,
+            intention: p.intention,
+            category: p.category,
+            trackingType: p.trackingType,
+            targetValue: p.targetValue,
+            unit: p.unit,
+            frequencyPerWeek: p.frequencyPerWeek,
+            targetDate: p.schedule?.endDate,
+            schedule: p.schedule,
+            isPrivate: p.isPrivate,
+            reminderTime: p.reminderTime,
+            reminderEnabled: p.reminderTime != null,
+            reminderDays: p.schedule?.days ?? p.reminderDays,
+          );
+      final preferences = ref.read(sharedPreferencesProvider);
+      await _draftWrites.catchError((_) {});
+      await preferences.remove(_draftKey);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            saved.reminderIssue ?? 'Promise saved. One small step at a time.',
+          ),
+        ),
       );
-
+    } catch (error) {
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Promise sealed: "${_currentProposal!.title}"'),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() => _isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not save promise right now. Please try again.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        setState(() {
+          _saving = false;
+          _error = error is ArgumentError
+              ? error.message.toString()
+              : 'Could not save. Your words and plan are still here.';
+        });
       }
     }
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: screenHeight * 0.88,
-        ),
-        child: GlassSurface(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              // Apple Grab Handle
-              Center(
-                child: Container(
-                  width: 38,
-                  height: 4.5,
-                  margin: const EdgeInsets.only(top: 10),
-                  decoration: BoxDecoration(
-                    color: g.ink.withValues(alpha: 0.22),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-              ),
-
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 16, 12),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: g.ink.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.handshake_rounded,
-                        size: 18,
-                        color: g.ink,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'A promise to yourself',
-                            style: AscentTextStyles.homeTitle.copyWith(
-                              color: g.ink,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          Text(
-                            'Speak freely. We will turn it into a realistic rhythm.',
-                            style: TextStyle(
-                              color: g.inkMuted,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close_rounded, color: g.inkMuted, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              Divider(height: 1, color: g.ink.withValues(alpha: 0.08)),
-
-              // Chat history or subtle suggestions
-              Expanded(
-                child: _messages.isEmpty && _currentProposal == null
-                    ? _buildStarterView(g)
-                    : ListView(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          for (final msg in _messages) _buildMessageBubble(msg, g),
-                          if (_currentProposal != null) ...[
-                            const SizedBox(height: 10),
-                            PromiseProposalCard(
-                              proposal: _currentProposal!,
-                              onAccept: _handleAccept,
-                              onModify: _handleInlineModify,
-                              isSaving: _isSaving,
-                            ),
-                          ],
-                        ],
-                      ),
-              ),
-
-              // Unified Single Enclosure Glass Input Bar (Rule 19 Compliant)
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                decoration: BoxDecoration(
-                  color: g.bg.withValues(alpha: 0.75),
-                  border: Border(
-                    top: BorderSide(
-                      color: g.edge.withValues(alpha: 0.12),
-                      width: 0.8,
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 48,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: g.ink.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: g.edge.withValues(alpha: 0.18),
-                            width: 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: TextField(
-                            controller: _inputController,
-                            focusNode: _focusNode,
-                            style: TextStyle(color: g.ink, fontSize: 14.5),
-                            maxLines: 1,
-                            textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _handleSubmit(),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              hintText: _currentProposal == null
-                                  ? _promptPlaceholders[_placeholderIndex]
-                                  : 'Adjust: e.g. "Make it 30 mins" or "Private"...',
-                              hintStyle: TextStyle(
-                                color: g.inkMuted.withValues(alpha: 0.6),
-                                fontSize: 13.5,
-                              ),
-                              isDense: true,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    InkWell(
-                      onTap: _handleSubmit,
-                      borderRadius: BorderRadius.circular(24),
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          color: g.ink,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: g.ink.withValues(alpha: 0.18),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.arrow_upward_rounded,
-                          color: g.bg,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final media = MediaQuery.of(context);
+    final available = math.max(
+      180.0,
+      media.size.height - media.viewInsets.bottom - media.padding.top - 24,
     );
-  }
-
-  Widget _buildStarterView(AscentGlass g) {
-    final selectedCategory = _categories[_selectedCategoryIndex];
-    final filtered = selectedCategory == 'All'
-        ? _allSuggestions
-        : _allSuggestions.where((s) => s['category'] == selectedCategory).toList();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Category Selector Pills
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(_categories.length, (index) {
-                final cat = _categories[index];
-                final isSelected = index == _selectedCategoryIndex;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      setState(() => _selectedCategoryIndex = index);
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? g.ink
-                            : g.ink.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isSelected
-                              ? g.ink
-                              : g.edge.withValues(alpha: 0.12),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          color: isSelected ? g.bg : g.ink,
-                          fontSize: 12.5,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
+    return PopScope(
+      canPop: !_saving,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
+        child: GlassSurface(
+          radius: 28,
+          minimumOpacity: .86,
+          padding: EdgeInsets.zero,
+          child: SizedBox(
+            height: math.min(
+              _proposal == null
+                  ? (media.textScaler.scale(14) > 20 ? available : 360.0)
+                  : 620.0,
+              available,
             ),
-          ),
-          const SizedBox(height: 18),
-
-          Text(
-            'Try committing to something meaningful:',
-            style: TextStyle(
-              color: g.inkMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Apple Glass Suggestion Cards
-          for (final suggestion in filtered)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  _inputController.text = suggestion['text']!;
-                  _handleSubmit();
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: g.fill.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: g.edge.withValues(alpha: 0.14),
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.02),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
                   child: Row(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: g.ink.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          _iconDataFor(suggestion['icon']!),
-                          size: 18,
-                          color: g.ink,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
+                      Icon(Icons.handshake_outlined, color: g.clay, size: 22),
+                      const SizedBox(width: 10),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              suggestion['text']!,
-                              style: TextStyle(
-                                color: g.ink,
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            if (suggestion['subtitle'] != null) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                suggestion['subtitle']!,
-                                style: TextStyle(
-                                  color: g.inkMuted,
-                                  fontSize: 11.5,
-                                ),
-                              ),
-                            ],
-                          ],
+                        child: Text(
+                          _proposal == null
+                              ? 'A promise to yourself'
+                              : 'Make it yours',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 13,
-                        color: g.inkMuted.withValues(alpha: 0.5),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: _saving
+                            ? null
+                            : () => Navigator.pop(context),
+                        icon: const Icon(Icons.close_rounded),
                       ),
                     ],
                   ),
                 ),
-              ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    child: AbsorbPointer(
+                      absorbing: _saving,
+                      child: _proposal == null
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'What do you want to do for yourself?',
+                                  style: TextStyle(
+                                    color: g.ink,
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Write it as it comes to mind. You can choose when on the next step.',
+                                  style: TextStyle(
+                                    color: g.inkMuted,
+                                    fontSize: 14,
+                                    height: 1.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                PopupMenuButton<String>(
+                                  tooltip: 'Need an idea?',
+                                  onSelected: (text) {
+                                    _controller.text = text;
+                                    _focus.requestFocus();
+                                  },
+                                  itemBuilder: (_) => const [
+                                    PopupMenuItem(
+                                      value: 'Read for 20 minutes every day',
+                                      child: Text('Read a little each day'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'Call my parents every Sunday',
+                                      child: Text('Make time for family'),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'Exercise 3 times a week',
+                                      child: Text('Move a few times a week'),
+                                    ),
+                                  ],
+                                  child: const Chip(
+                                    label: Text('Need an idea?'),
+                                    avatar: Icon(
+                                      Icons.lightbulb_outline,
+                                      size: 17,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _proposal!.title,
+                                  style: TextStyle(
+                                    color: g.ink,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () {
+                                    setState(() => _proposal = null);
+                                    _persist();
+                                    _focus.requestFocus();
+                                  },
+                                  icon: const Icon(
+                                    Icons.edit_outlined,
+                                    size: 16,
+                                  ),
+                                  label: const Text('Edit my words'),
+                                ),
+                                PromiseScheduleEditor(
+                                  proposal: _proposal!,
+                                  onChanged: (p) {
+                                    setState(() => _proposal = p);
+                                    _persist();
+                                  },
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                    child: _proposal == null
+                        ? MessageComposer(
+                            autofocus: true,
+                            controller: _controller,
+                            focusNode: _focus,
+                            hint: 'I promise myself…',
+                            onSend: _continue,
+                            busy: _saving,
+                          )
+                        : SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              key: const ValueKey('promise_save'),
+                              onPressed: _saving ? null : _save,
+                              icon: _saving
+                                  ? const SizedBox(
+                                      width: 18,
+                                      height: 18,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(Icons.check_rounded),
+                              label: Text(_saving ? 'Saving…' : 'Save promise'),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ),
-        ],
-      ),
-    );
-  }
-
-  IconData _iconDataFor(String iconName) {
-    switch (iconName) {
-      case 'water_drop_outlined':
-        return Icons.water_drop_outlined;
-      case 'fitness_center_rounded':
-        return Icons.fitness_center_rounded;
-      case 'directions_walk_rounded':
-        return Icons.directions_walk_rounded;
-      case 'self_improvement_rounded':
-        return Icons.self_improvement_rounded;
-      case 'edit_note_rounded':
-        return Icons.edit_note_rounded;
-      case 'bedtime_outlined':
-        return Icons.bedtime_outlined;
-      case 'menu_book_rounded':
-        return Icons.menu_book_rounded;
-      case 'school_outlined':
-        return Icons.school_outlined;
-      case 'favorite_border_rounded':
-        return Icons.favorite_border_rounded;
-      default:
-        return Icons.handshake_outlined;
-    }
-  }
-
-  Widget _buildMessageBubble(_ChatMessage msg, AscentGlass g) {
-    return Align(
-      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        constraints: const BoxConstraints(maxWidth: 280),
-        decoration: BoxDecoration(
-          color: msg.isUser ? g.ink : g.ink.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(
-          msg.text,
-          style: TextStyle(
-            color: msg.isUser ? g.bg : g.ink,
-            fontSize: 13.5,
           ),
         ),
       ),
     );
   }
-}
-
-class _ChatMessage {
-  const _ChatMessage({
-    required this.text,
-    required this.isUser,
-  });
-
-  final String text;
-  final bool isUser;
 }

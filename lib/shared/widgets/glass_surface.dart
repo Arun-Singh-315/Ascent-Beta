@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/day_glass_material.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/surface_tokens.dart';
@@ -20,6 +21,8 @@ class GlassSurface extends StatelessWidget {
   final Color? fillColor;
   final Gradient? gradient;
   final bool enableBlur;
+  final bool hasShadow;
+  final double minimumOpacity;
   final BorderRadius? borderRadius;
 
   const GlassSurface({
@@ -32,12 +35,15 @@ class GlassSurface extends StatelessWidget {
     this.fillColor,
     this.gradient,
     this.enableBlur = true,
+    this.hasShadow = true,
+    this.minimumOpacity = 0,
     this.borderRadius,
   });
 
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final material = Theme.of(context).extension<DayGlassMaterial>();
     final r = borderRadius ?? BorderRadius.circular(radius);
 
     final dark = context.isDark;
@@ -49,36 +55,42 @@ class GlassSurface extends StatelessWidget {
         color: transparent && gradient == null ? Colors.transparent : null,
         gradient:
             gradient ??
+            (material != null && !transparent
+                ? material.gradient(base, minimumOpacity: minimumOpacity)
+                : null) ??
             (transparent
                 ? null
                 : (g.merlot && !dark
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          MerlotPalette.surface,
-                          MerlotPalette.surfaceBottom,
-                        ],
-                      )
-                    : LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          base.withValues(alpha: dark ? .66 : .82),
-                          base.withValues(alpha: dark ? .38 : .54),
-                        ],
-                      ))),
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            MerlotPalette.surface,
+                            MerlotPalette.surfaceBottom,
+                          ],
+                        )
+                      : LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            base.withValues(alpha: dark ? .66 : .82),
+                            base.withValues(alpha: dark ? .38 : .54),
+                          ],
+                        ))),
         borderRadius: r,
         border:
             customBorder ??
+            (transparent ? null : material?.rim) ??
             (g.merlot && !dark
                 ? Border.all(color: MerlotPalette.line, width: 0.85)
                 : Border.all(color: g.ink.withValues(alpha: dark ? .24 : .20))),
-        boxShadow: transparent
+        boxShadow: transparent || material != null || !hasShadow
             ? const []
             : [
                 BoxShadow(
-                  color: g.shadow.withValues(alpha: dark ? .16 : (g.merlot ? .07 : .06)),
+                  color: g.shadow.withValues(
+                    alpha: dark ? .16 : (g.merlot ? .07 : .06),
+                  ),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -139,19 +151,35 @@ class GlassSurface extends StatelessWidget {
       );
     }
 
+    Widget withShadow(Widget pane) =>
+        material == null || transparent || !hasShadow
+        ? pane
+        : DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: r,
+              boxShadow: material.shadows,
+            ),
+            child: pane,
+          );
     if (!enableBlur) {
-      return content;
+      return withShadow(content);
     }
 
-    return RepaintBoundary(
-      child: ClipRRect(
-        borderRadius: r,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: context.surfaces.blur > 0 ? context.surfaces.blur : 12,
-            sigmaY: context.surfaces.blur > 0 ? context.surfaces.blur : 12,
+    return withShadow(
+      RepaintBoundary(
+        child: ClipRRect(
+          borderRadius: r,
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX:
+                  material?.blur ??
+                  (context.surfaces.blur > 0 ? context.surfaces.blur : 12),
+              sigmaY:
+                  material?.blur ??
+                  (context.surfaces.blur > 0 ? context.surfaces.blur : 12),
+            ),
+            child: content,
           ),
-          child: content,
         ),
       ),
     );

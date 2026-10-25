@@ -1,6 +1,6 @@
-import 'widgets/home_overview_card.dart';
 import 'widgets/home_promise_section.dart';
 import '../reminders/reminder_action_ui.dart';
+import '../../shared/widgets/skeleton_shimmer.dart';
 import 'dart:async';
 
 import 'package:ascent/app/theme/surface_tokens.dart';
@@ -23,8 +23,8 @@ import '../money/add_transaction_sheet.dart';
 import 'daily_checkin_card.dart';
 import '../../core/providers/time_tracking_provider.dart';
 import '../../core/streak/study_streak_provider.dart';
-import '../../shared/widgets/skeleton_shimmer.dart';
-import '../reminders/widgets/in_app_reminder_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../promises/providers/promise_providers.dart';
 import 'widgets/activity_hub_card.dart';
 import 'widgets/day_one_tutorial_card.dart';
 import 'widgets/daily_briefing_card.dart';
@@ -32,6 +32,7 @@ import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
+import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
 import 'widgets/quick_modules_nav_hub.dart';
@@ -74,11 +75,11 @@ bool _welcomeBackShownThisLaunch = false;
 class _HomeScreenState extends ConsumerState<_HomeContent>
     with WidgetsBindingObserver {
   DateTime _briefingDate = briefingDay(DateTime.now());
-  bool _openingBriefing = false;
-  bool _startupComplete = false;
   Timer? _dayTimer;
-  bool _hasCheckedOverdueReminders = false;
+  bool _dismissedBriefingToday = false;
   int? _welcomeBackDays;
+  bool _heavierModulesReady = false;
+  String? _activeShortcutId;
 
   @override
   void initState() {
@@ -90,6 +91,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       _welcomeBackShownThisLaunch = true;
       _welcomeBackDays = daysAway;
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _heavierModulesReady = true);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 350));
       if (!mounted) return;
@@ -100,11 +104,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(notice), duration: const Duration(seconds: 8)),
         );
-      }
-
-      if (!_hasCheckedOverdueReminders) {
-        _hasCheckedOverdueReminders = true;
-        await _checkAndPromptOverdueReminder();
       }
 
       if (!mounted) return;
@@ -120,8 +119,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         preferences.setBool(DayOneTutorialDialog.prefKey, true);
         await DayOneTutorialDialog.show(context, userName: profile?.name ?? '');
       }
-      _startupComplete = true;
-      await _maybeOpenBriefing();
     });
   }
 
@@ -136,14 +133,16 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _refreshBriefingDay();
-      _maybeOpenBriefing();
     }
   }
 
   void _refreshBriefingDay() {
     final day = briefingDay(DateTime.now());
     if (mounted && day != _briefingDate) {
-      setState(() => _briefingDate = day);
+      setState(() {
+        _briefingDate = day;
+        _dismissedBriefingToday = false;
+      });
     }
     _scheduleDayChange();
   }
@@ -154,51 +153,91 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
     _dayTimer = Timer(tomorrow.difference(now), () {
       _refreshBriefingDay();
-      _maybeOpenBriefing();
     });
   }
 
-  Future<void> _maybeOpenBriefing() async {
-    if (!mounted ||
-        !_startupComplete ||
-        !ref.read(dailyBriefingAutoOpenProvider) ||
-        _openingBriefing ||
-        (widget.notificationUri?.hasQuery ?? false) ||
-        ModalRoute.of(context)?.isCurrent != true) {
-      return;
-    }
-    final lifecycle = WidgetsBinding.instance.lifecycleState;
-    if (lifecycle != null && lifecycle != AppLifecycleState.resumed) return;
-    final preferences = ref.read(sharedPreferencesProvider);
+  Widget _buildInlineBriefingCard(
+    BuildContext context,
+    SharedPreferences preferences,
+  ) {
     final key = _briefingDate.toIso8601String();
-    if (preferences.getString('ascent_daily_briefing_seen_v1') == key) return;
-    _openingBriefing = true;
-    try {
-      // Mark it seen when presented, so dismissing it respects the user's choice.
-      final sheet = DailyBriefingCard.show(context, _briefingDate);
-      await preferences.setString('ascent_daily_briefing_seen_v1', key);
-      await sheet;
-    } finally {
-      _openingBriefing = false;
+    if (preferences.getString('ascent_daily_briefing_seen_v1') == key ||
+        _dismissedBriefingToday) {
+      return const SizedBox.shrink();
     }
-  }
-
-  Future<bool> _checkAndPromptOverdueReminder() async {
-    try {
-      final overdueReminders = await ref
-          .read(reminderDaoProvider)
-          .getOverdueActiveReminders();
-      final quietReminders = overdueReminders
-          .where((r) => !r.alarmEnabled)
-          .toList();
-      if (quietReminders.isNotEmpty && mounted) {
-        await InAppReminderDialog.show(context, quietReminders.first);
-        return true;
-      }
-    } catch (e) {
-      debugPrint('Error checking overdue reminders: $e');
-    }
-    return false;
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const ValueKey('home_inline_briefing_card'),
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            DailyBriefingCard.show(context, _briefingDate);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: g.fill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: g.line),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: g.clay.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.wb_sunny_outlined, size: 18, color: g.clay),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Daily Briefing',
+                        style: TextStyle(
+                          color: g.ink,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tap to review agenda & launchpad',
+                        style: TextStyle(
+                          color: g.inkSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('dismiss_inline_briefing'),
+                  tooltip: 'Dismiss for today',
+                  icon: Icon(Icons.close_rounded, size: 18, color: g.inkMuted),
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _dismissedBriefingToday = true);
+                    preferences.setString(
+                      'ascent_daily_briefing_seen_v1',
+                      key,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -223,136 +262,157 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       }
     });
 
-    return Scaffold(
-      backgroundColor: g.bg,
-      floatingActionButton: _buildFloatingAssistantPill(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      body: SafeArea(
-        child: HomeAtmosphereBackground(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: profileAsync.when(
-            loading: () => const _HomeLoadingView(),
-            error: (err, _) => Center(
-              child: Text(
-                'Failed to load dashboard: $err',
-                style: TextStyle(color: g.inkMuted),
-              ),
-            ),
-            data: (profile) {
-              final isValidProfile = canEnterWorkspace(
-                profile,
-                ref.read(sharedPreferencesProvider),
-              );
-
-              if (!isValidProfile) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  final router = GoRouter.maybeOf(context);
-                  if (router != null) {
-                    router.go('/onboarding');
-                  }
-                });
-                return const Center(
-                  child: CircularProgressIndicator(
-                    key: ValueKey('blockage_profile_indicator'),
-                  ),
-                );
-              }
-
-              return RefreshIndicator(
-                onRefresh: () async {
-                  ref.invalidate(userProfileStreamProvider);
-                  ref.invalidate(todayFocusTaskProvider);
-                  ref.invalidate(currentStreakStreamProvider);
-                  ref.invalidate(learningHubProvider);
-                  ref.invalidate(nextUpcomingInterviewProvider);
-                  ref.invalidate(recentThoughtsStreamProvider);
-                  ref.invalidate(todayActivitiesProvider);
-                  ref.invalidate(activeMomentumChallengeStreamProvider);
-                  ref.invalidate(todayMomentumCommitmentsStreamProvider);
-                  ref.invalidate(studyStreakProvider);
-                  ref.invalidate(allRemindersProvider);
-                  ref.invalidate(dismissedTodayReminderIdsProvider);
-                },
-                color: g.clay,
-                child: ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(
-                    left: AppSpace.s24,
-                    right: AppSpace.s24,
-                    top: AppSpace.s16,
-                    bottom: AppSpace.s96,
-                  ),
-                  children: [
-                    // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
-                    HomeHeader(profile: profile),
-                    const HomeOverviewCard(),
-
-                    // Promises Front Line (Core commitment driver)
-                    if (layout.visible.contains('promises'))
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: AppSpace.s20),
-                        child: HomePromiseSection(),
+    return PopScope(
+      canPop: _activeShortcutId == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_activeShortcutId != null) {
+          setState(() => _activeShortcutId = null);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: g.bg,
+        floatingActionButton: _buildFloatingAssistantPill(context),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        body: SafeArea(
+          child: HomeAtmosphereBackground(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: profileAsync.when(
+                    loading: () => const _HomeLoadingView(),
+                    error: (err, _) => Center(
+                      child: Text(
+                        'Failed to load dashboard: $err',
+                        style: TextStyle(color: g.inkMuted),
                       ),
+                    ),
+                    data: (profile) {
+                      final isValidProfile = canEnterWorkspace(
+                        profile,
+                        ref.read(sharedPreferencesProvider),
+                      );
 
-                    // Mind Space keeps its familiar composer and recent notes above other cards.
-                    if (layout.visible.contains('mind'))
-                      const Padding(
-                        padding: EdgeInsets.only(bottom: AppSpace.s16),
-                        child: ThoughtWallHomePreview(),
-                      ),
-                    PlanningNotificationHandler(uri: widget.notificationUri),
+                      if (!isValidProfile) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          final router = GoRouter.maybeOf(context);
+                          if (router != null) {
+                            router.go('/onboarding');
+                          }
+                        });
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            key: ValueKey('blockage_profile_indicator'),
+                          ),
+                        );
+                      }
 
-                    if (layout.shortcuts.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpace.s18),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: layout.shortcuts
-                              .map(
-                                (id) => AppPill.action(
-                                  label: Text(homeShortcutRoutes[id]!),
-                                  onPressed: () => context.push('/$id'),
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(userProfileStreamProvider);
+                          ref.invalidate(todayFocusTaskProvider);
+                          ref.invalidate(currentStreakStreamProvider);
+                          ref.invalidate(learningHubProvider);
+                          ref.invalidate(nextUpcomingInterviewProvider);
+                          ref.invalidate(recentThoughtsStreamProvider);
+                          ref.invalidate(todayActivitiesProvider);
+                          ref.invalidate(activeMomentumChallengeStreamProvider);
+                          ref.invalidate(todayMomentumCommitmentsStreamProvider);
+                          ref.invalidate(studyStreakProvider);
+                          ref.invalidate(allRemindersProvider);
+                          ref.invalidate(dismissedTodayReminderIdsProvider);
+                        },
+                        color: g.clay,
+                        child: ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(
+                            left: AppSpace.s24,
+                            right: AppSpace.s24,
+                            top: AppSpace.s16,
+                            bottom: AppSpace.s96,
+                          ),
+                          children: [
+                            // 1. Top Header (Date caption + Riya gateway + Profile avatar + Greeting + Name)
+                            HomeHeader(profile: profile),
+
+                            // Inline Collapsible Daily Briefing Card (if not seen today)
+                            _buildInlineBriefingCard(
+                              context,
+                              ref.read(sharedPreferencesProvider),
+                            ),
+
+                            // 2. Dynamic Shortcut Hub (up to four user-customized shortcuts)
+                            if (layout.shortcuts.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: AppSpace.s16),
+                                child: HomeShortcutPanel(
+                                  shortcuts: layout.shortcuts,
+                                  activeShortcutId: _activeShortcutId,
+                                  onSelectShortcut: (id) =>
+                                      setState(() => _activeShortcutId = id),
                                 ),
-                              )
-                              .toList(),
+                              ),
+
+                            // ── SHORTCUT DRILLDOWN / FULL HOME FEED ──
+                            if (_activeShortcutId != null) ...[
+                              _buildBackToHomeBar(context),
+                              _buildSingleShortcutFeature(_activeShortcutId!, layout),
+                            ] else ...[
+                              // HERO: Activity Hub is the most prominent component
+                              if (layout.visible.contains('today'))
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: AppSpace.s24),
+                                  child: ActivityHubCard(
+                                    previewLimit:
+                                        layout.compact.contains('today') ? 2 : 4,
+                                  ),
+                                ),
+
+                              // Thought capture stays prominent: dark, heavy border, recent-thoughts preview
+                              if (layout.visible.contains('mind'))
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: AppSpace.s20),
+                                  child: ThoughtWallHomePreview(),
+                                ),
+
+                              PlanningNotificationHandler(
+                                uri: widget.notificationUri,
+                              ),
+
+                              // Contextual & remaining modules (hidden when empty)
+                              ..._buildContextualModules(context, layout),
+
+                              if (layout.visible.isEmpty)
+                                Column(
+                                  children: [
+                                    Text(
+                                      'Make this space yours',
+                                      style: TextStyle(color: g.ink),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => context.push('/more'),
+                                      child: const Text('Open tools'),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ],
                         ),
-                      ),
-                    for (final id in layout.order.where(
-                      (id) => id != 'mind' && id != 'promises' && layout.visible.contains(id),
-                    ))
-                      _homeSection(id, layout),
-                    if (layout.visible.isEmpty)
-                      Column(
-                        children: [
-                          Text(
-                            'Make this space yours',
-                            style: TextStyle(color: g.ink),
-                          ),
-                          TextButton(
-                            onPressed: () => context.push('/more'),
-                            child: const Text('Open tools'),
-                          ),
-                        ],
-                      ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
-              );
-            },
-                ),
-              ),
               // Return-user greeting: floats at the top for a few seconds and
-              // never pushes the Things hub down.
+              // never pushes the Things hub down, positioned below header controls.
               if (_welcomeBackDays != null)
                 Positioned(
-                  top: AppSpace.s8,
+                  top: 96,
                   left: AppSpace.s24,
                   right: AppSpace.s24,
                   child: WelcomeBackBanner(
                     days: _welcomeBackDays!,
+                    visibleFor: const Duration(seconds: 3),
                     onDismissed: () {
                       if (mounted) setState(() => _welcomeBackDays = null);
                     },
@@ -361,6 +421,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -387,7 +448,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         : (isDark ? g.clay : const Color(0xFFC85A32));
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 76, right: 4),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -441,6 +502,263 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
     );
   }
 
+  Widget _buildBackToHomeBar(BuildContext context) {
+    final g = context.glass;
+    final shortcutLabel = _activeShortcutId != null
+        ? (kRegisteredShortcuts[_activeShortcutId]?.label ?? _activeShortcutId!)
+        : '';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpace.s16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const ValueKey('back_to_home_button'),
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            setState(() => _activeShortcutId = null);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: g.fill,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: g.edge),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.arrow_back_rounded, size: 18, color: g.clay),
+                const SizedBox(width: 8),
+                Text(
+                  'Back to home',
+                  style: TextStyle(
+                    color: g.clay,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  shortcutLabel,
+                  style: TextStyle(
+                    color: g.inkMuted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSingleShortcutFeature(String id, HomeLayout layout) {
+    switch (id) {
+      case 'today':
+        return const Padding(
+          padding: EdgeInsets.only(bottom: AppSpace.s32),
+          child: ActivityHubCard(previewLimit: 20),
+        );
+      case 'thought-wall':
+      case 'mind':
+        return const Padding(
+          padding: EdgeInsets.only(bottom: AppSpace.s32),
+          child: ThoughtWallHomePreview(previewLimit: 20),
+        );
+      case 'reminders':
+        final reminders = ref.watch(homeVisibleRemindersProvider);
+        if (reminders.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpace.s24),
+              child: Text(
+                'No reminders scheduled.',
+                style: TextStyle(color: context.glass.inkMuted),
+              ),
+            ),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpace.s32),
+          child: HomeDismissibleRemindersSection(
+            reminders: reminders,
+            onAddReminder: () => context.push('/reminders'),
+            onViewAll: () => context.push('/reminders'),
+            onDismissReminder: (r) =>
+                runReminderAction(context, ref, r, ReminderRowAction.delete),
+            onCompleteReminder: (r) =>
+                runReminderAction(context, ref, r, ReminderRowAction.done),
+            onSnoozeReminder: (r) =>
+                runReminderAction(context, ref, r, ReminderRowAction.snooze),
+          ),
+        );
+      case 'learning':
+        return const Padding(
+          padding: EdgeInsets.only(bottom: AppSpace.s32),
+          child: LearningHubCard(),
+        );
+      case 'hydration':
+      case 'health':
+      case 'medicine':
+      case 'walk':
+        return const Padding(
+          padding: EdgeInsets.only(bottom: AppSpace.s32),
+          child: QuickModulesNavHub(),
+        );
+      case 'promises':
+        return const Padding(
+          padding: EdgeInsets.only(bottom: AppSpace.s32),
+          child: HomePromiseSection(),
+        );
+      case 'money':
+        return _homeSection('money', layout);
+      case 'vault':
+        return _homeSection('vault', layout);
+      case 'checkin':
+        return const Padding(
+          padding: EdgeInsets.only(bottom: AppSpace.s32),
+          child: DailyCheckInCard(),
+        );
+      default:
+        return _homeSection(id, layout);
+    }
+  }
+
+  List<Widget> _buildContextualModules(
+    BuildContext context,
+    HomeLayout layout,
+  ) {
+    final hour = DateTime.now().hour;
+    final isMorning = hour < 12;
+    final isEvening = hour >= 17;
+    final widgets = <Widget>[];
+
+    Widget deferredModule(Widget child) {
+      return AnimatedOpacity(
+        opacity: _heavierModulesReady ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 200),
+        child: child,
+      );
+    }
+
+    // 1. Morning: Life & Health (Water/Medicine) higher up
+    if (isMorning &&
+        layout.visible.contains('life') &&
+        layout.tools.isNotEmpty) {
+      widgets.add(
+        deferredModule(
+          const Padding(
+            padding: EdgeInsets.only(bottom: AppSpace.s24),
+            child: QuickModulesNavHub(),
+          ),
+        ),
+      );
+    }
+
+    // 2. Active Reminders (hidden when empty)
+    if (layout.visible.contains('reminders')) {
+      final reminders = ref.watch(homeVisibleRemindersProvider);
+      if (reminders.isNotEmpty) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpace.s32),
+            child: HomeDismissibleRemindersSection(
+              reminders: reminders,
+              onAddReminder: () => context.push('/reminders'),
+              onViewAll: () => context.push('/reminders'),
+              onDismissReminder: (r) =>
+                  runReminderAction(context, ref, r, ReminderRowAction.delete),
+              onCompleteReminder: (r) =>
+                  runReminderAction(context, ref, r, ReminderRowAction.done),
+              onSnoozeReminder: (r) =>
+                  runReminderAction(context, ref, r, ReminderRowAction.snooze),
+            ),
+          ),
+        );
+      }
+    }
+
+    // 3. Learning Hub (hidden when empty/unstarted)
+    if (layout.visible.contains('learning')) {
+      final learning = ref.watch(learningHubProvider);
+      if (learning.hasStartedLearning && learning.courses.isNotEmpty) {
+        widgets.add(
+          deferredModule(
+            const Padding(
+              padding: EdgeInsets.only(bottom: AppSpace.s32),
+              child: LearningHubCard(),
+            ),
+          ),
+        );
+      }
+    }
+
+    // 4. Promises (hidden when empty)
+    if (layout.visible.contains('promises')) {
+      final promises = ref.watch(activePromisesStreamProvider).value ?? [];
+      if (promises.isNotEmpty) {
+        widgets.add(
+          deferredModule(
+            const Padding(
+              padding: EdgeInsets.only(bottom: AppSpace.s24),
+              child: HomePromiseSection(),
+            ),
+          ),
+        );
+      }
+    }
+
+    // 5. Evening: Daily Check-In higher up (hidden when empty)
+    if (isEvening && layout.visible.contains('checkin')) {
+      widgets.add(
+        deferredModule(
+          const Padding(
+            padding: EdgeInsets.only(bottom: AppSpace.s32),
+            child: DailyCheckInCard(),
+          ),
+        ),
+      );
+    }
+
+    // 6. Afternoon/Non-morning: Life & Health (if visible)
+    if (!isMorning &&
+        layout.visible.contains('life') &&
+        layout.tools.isNotEmpty) {
+      widgets.add(
+        deferredModule(
+          const Padding(
+            padding: EdgeInsets.only(bottom: AppSpace.s24),
+            child: QuickModulesNavHub(),
+          ),
+        ),
+      );
+    }
+
+    // 7. Streak Meter (if visible)
+    if (layout.visible.contains('streak') &&
+        ref.watch(homeStreakVisibleProvider)) {
+      widgets.add(
+        deferredModule(
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpace.s32),
+            child: StudyStreakMeterCard(
+              status: ref.watch(studyStreakProvider),
+              onTap: () => ref.read(homeLayoutProvider.notifier).save(
+                    layout.copyWith(
+                      visible: {...layout.visible}..remove('streak'),
+                    ),
+                  ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
   Widget _homeSection(String id, HomeLayout layout) {
     Widget spaced(Widget child) => Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.s32),
@@ -464,7 +782,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
           ),
         );
       case 'promises':
-        return spaced(const HomePromiseSection());
+        return const SizedBox.shrink();
       case 'reminders':
         final reminders = ref.watch(homeVisibleRemindersProvider);
         if (reminders.isEmpty) return const SizedBox.shrink();
@@ -475,17 +793,26 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             onViewAll: () => context.push('/reminders'),
             onDismissReminder: (reminder) async {
               await runReminderAction(
-                context, ref, reminder, ReminderRowAction.delete,
+                context,
+                ref,
+                reminder,
+                ReminderRowAction.delete,
               );
             },
             onCompleteReminder: (reminder) async {
               await runReminderAction(
-                context, ref, reminder, ReminderRowAction.done,
+                context,
+                ref,
+                reminder,
+                ReminderRowAction.done,
               );
             },
             onSnoozeReminder: (reminder) async {
               await runReminderAction(
-                context, ref, reminder, ReminderRowAction.snooze,
+                context,
+                ref,
+                reminder,
+                ReminderRowAction.snooze,
               );
             },
           ),

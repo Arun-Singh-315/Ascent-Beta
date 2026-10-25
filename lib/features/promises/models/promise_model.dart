@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'promise_schedule.dart';
+export 'promise_schedule.dart';
+
+const _notProvided = Object();
 
 /// Tracking strategies for distinct commitment types.
 enum PromiseTrackingType {
@@ -19,12 +23,7 @@ enum PromiseTrackingType {
 }
 
 /// Lifecycle states of a promise.
-enum PromiseStatus {
-  active,
-  paused,
-  completed,
-  archived,
-}
+enum PromiseStatus { active, paused, completed, archived }
 
 /// Types of recorded progress events.
 enum PromiseEventType {
@@ -47,6 +46,7 @@ class PromiseModel {
     this.unit = '',
     this.frequencyPerWeek = 0,
     this.targetDate,
+    this.schedule,
     this.isPrivate = false,
     this.reminderTime,
     this.reminderDays = const [],
@@ -56,6 +56,8 @@ class PromiseModel {
     required this.createdAt,
     this.completedAt,
     this.nextActionPrompt,
+    this.isDoneToday = false,
+    this.reminderIssue,
   });
 
   final int id;
@@ -67,6 +69,7 @@ class PromiseModel {
   final String unit;
   final int frequencyPerWeek;
   final DateTime? targetDate;
+  final PromiseSchedule? schedule;
   final bool isPrivate;
   final String? reminderTime;
   final List<int> reminderDays;
@@ -76,18 +79,32 @@ class PromiseModel {
   final DateTime createdAt;
   final DateTime? completedAt;
   final String? nextActionPrompt;
+  final bool isDoneToday;
+  final String? reminderIssue;
 
   bool get isCompleted => status == PromiseStatus.completed;
   bool get isPaused => status == PromiseStatus.paused;
   bool get isActive => status == PromiseStatus.active;
   bool get isArchived => status == PromiseStatus.archived;
 
+  bool canActAt(DateTime now) {
+    if (!isActive || isDoneToday) return false;
+    final s = schedule;
+    if (s == null) return true;
+    final day = promiseDay(now);
+    if (day.isBefore(promiseDay(s.startDate)) ||
+        (s.endDate != null && day.isAfter(promiseDay(s.endDate!)))) {
+      return false;
+    }
+    return s.repeat == PromiseRepeat.once || s.includes(day);
+  }
+
   /// Progress normalized between 0.0 and 1.0.
   double get progressFraction {
     if (isCompleted) return 1.0;
     switch (trackingType) {
       case PromiseTrackingType.completion:
-        return isCompleted ? 1.0 : 0.0;
+        return isCompleted || isDoneToday ? 1.0 : 0.0;
       case PromiseTrackingType.duration:
       case PromiseTrackingType.milestone:
         if (targetValue <= 0) return 0.0;
@@ -103,11 +120,14 @@ class PromiseModel {
   /// Label for the direct contextual 1-tap action.
   String get contextualActionLabel {
     if (isCompleted) return 'Completed';
+    if (schedule != null && isDoneToday) return 'Done today';
     switch (trackingType) {
       case PromiseTrackingType.duration:
         return currentValue > 0 ? 'Resume Session' : 'Start Session';
       case PromiseTrackingType.completion:
-        return 'Mark Completed';
+        return schedule == null
+            ? 'Mark Completed'
+            : (schedule!.repeats ? 'Mark today done' : 'Mark done');
       case PromiseTrackingType.frequency:
         return 'Log Session';
       case PromiseTrackingType.milestone:
@@ -137,6 +157,7 @@ class PromiseModel {
   /// Friendly summary string for display.
   String get progressSummary {
     if (isCompleted) return 'Completed';
+    if (schedule != null && isDoneToday) return 'Done today';
     switch (trackingType) {
       case PromiseTrackingType.duration:
         return '${currentValue.toInt()} / ${targetValue.toInt()} $unit';
@@ -145,12 +166,16 @@ class PromiseModel {
       case PromiseTrackingType.milestone:
         if (targetDate != null) {
           final diff = targetDate!.difference(DateTime.now()).inDays;
-          final timeStr = diff > 0 ? '$diff days left' : (diff == 0 ? 'Due today' : 'Past due');
+          final timeStr = diff > 0
+              ? '$diff days left'
+              : (diff == 0 ? 'Due today' : 'Past due');
           return '${(progressFraction * 100).toInt()}% • $timeStr';
         }
         return '${(progressFraction * 100).toInt()}% done';
       case PromiseTrackingType.reflection:
-        return currentValue > 0 ? '${currentValue.toInt()} reflections logged' : 'Ready for reflection';
+        return currentValue > 0
+            ? '${currentValue.toInt()} reflections logged'
+            : 'Ready for reflection';
       case PromiseTrackingType.completion:
         return 'In progress';
     }
@@ -165,9 +190,10 @@ class PromiseModel {
     double? targetValue,
     String? unit,
     int? frequencyPerWeek,
-    DateTime? targetDate,
+    Object? targetDate = _notProvided,
+    Object? schedule = _notProvided,
     bool? isPrivate,
-    String? reminderTime,
+    Object? reminderTime = _notProvided,
     List<int>? reminderDays,
     bool? reminderEnabled,
     double? currentValue,
@@ -175,6 +201,8 @@ class PromiseModel {
     DateTime? createdAt,
     DateTime? completedAt,
     String? nextActionPrompt,
+    bool? isDoneToday,
+    String? reminderIssue,
   }) {
     return PromiseModel(
       id: id ?? this.id,
@@ -185,9 +213,16 @@ class PromiseModel {
       targetValue: targetValue ?? this.targetValue,
       unit: unit ?? this.unit,
       frequencyPerWeek: frequencyPerWeek ?? this.frequencyPerWeek,
-      targetDate: targetDate ?? this.targetDate,
+      targetDate: identical(targetDate, _notProvided)
+          ? this.targetDate
+          : targetDate as DateTime?,
+      schedule: identical(schedule, _notProvided)
+          ? this.schedule
+          : schedule as PromiseSchedule?,
       isPrivate: isPrivate ?? this.isPrivate,
-      reminderTime: reminderTime ?? this.reminderTime,
+      reminderTime: identical(reminderTime, _notProvided)
+          ? this.reminderTime
+          : reminderTime as String?,
       reminderDays: reminderDays ?? this.reminderDays,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       currentValue: currentValue ?? this.currentValue,
@@ -195,6 +230,8 @@ class PromiseModel {
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       nextActionPrompt: nextActionPrompt ?? this.nextActionPrompt,
+      isDoneToday: isDoneToday ?? this.isDoneToday,
+      reminderIssue: reminderIssue ?? this.reminderIssue,
     );
   }
 }
@@ -208,6 +245,7 @@ class PromiseProgressEvent {
     required this.amount,
     required this.occurredAt,
     this.note,
+    this.dateKey,
   });
 
   final int id;
@@ -216,6 +254,7 @@ class PromiseProgressEvent {
   final double amount;
   final DateTime occurredAt;
   final String? note;
+  final String? dateKey;
 }
 
 /// Structured commitment proposal generated by the conversational parser.
@@ -229,6 +268,7 @@ class PromiseProposal {
     this.unit = '',
     this.frequencyPerWeek = 0,
     this.targetDate,
+    this.schedule,
     this.isPrivate = false,
     this.reminderTime,
     this.reminderDays = const [1, 2, 3, 4, 5, 6, 7],
@@ -244,6 +284,7 @@ class PromiseProposal {
   final String unit;
   final int frequencyPerWeek;
   final DateTime? targetDate;
+  final PromiseSchedule? schedule;
   final bool isPrivate;
   final String? reminderTime;
   final List<int> reminderDays;
@@ -258,9 +299,10 @@ class PromiseProposal {
     double? targetValue,
     String? unit,
     int? frequencyPerWeek,
-    DateTime? targetDate,
+    Object? targetDate = _notProvided,
+    Object? schedule = _notProvided,
     bool? isPrivate,
-    String? reminderTime,
+    Object? reminderTime = _notProvided,
     List<int>? reminderDays,
     String? coachReflection,
     String? clarificationQuestion,
@@ -273,12 +315,20 @@ class PromiseProposal {
       targetValue: targetValue ?? this.targetValue,
       unit: unit ?? this.unit,
       frequencyPerWeek: frequencyPerWeek ?? this.frequencyPerWeek,
-      targetDate: targetDate ?? this.targetDate,
+      targetDate: identical(targetDate, _notProvided)
+          ? this.targetDate
+          : targetDate as DateTime?,
+      schedule: identical(schedule, _notProvided)
+          ? this.schedule
+          : schedule as PromiseSchedule?,
       isPrivate: isPrivate ?? this.isPrivate,
-      reminderTime: reminderTime ?? this.reminderTime,
+      reminderTime: identical(reminderTime, _notProvided)
+          ? this.reminderTime
+          : reminderTime as String?,
       reminderDays: reminderDays ?? this.reminderDays,
       coachReflection: coachReflection ?? this.coachReflection,
-      clarificationQuestion: clarificationQuestion ?? this.clarificationQuestion,
+      clarificationQuestion:
+          clarificationQuestion ?? this.clarificationQuestion,
     );
   }
 }

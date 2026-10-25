@@ -6,7 +6,6 @@ import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
-import '../../core/services/promise_streak_service.dart';
 import '../../shared/widgets/glass_surface.dart';
 
 class PromiseCheckInSheet extends ConsumerStatefulWidget {
@@ -23,7 +22,8 @@ class PromiseCheckInSheet extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<PromiseCheckInSheet> createState() => _PromiseCheckInSheetState();
+  ConsumerState<PromiseCheckInSheet> createState() =>
+      _PromiseCheckInSheetState();
 }
 
 class _PromiseCheckInSheetState extends ConsumerState<PromiseCheckInSheet> {
@@ -68,10 +68,12 @@ class _PromiseCheckInSheetState extends ConsumerState<PromiseCheckInSheet> {
     String reason,
     List<Thought> allToday,
   ) async {
-    await ref.read(thoughtDaoProvider).updateThought(
-          promise.toCompanion(true).copyWith(
-                promptQuestion: drift.Value('Slipped: $reason'),
-              ),
+    await ref
+        .read(thoughtDaoProvider)
+        .updateThought(
+          promise
+              .toCompanion(true)
+              .copyWith(promptQuestion: drift.Value('Slipped: $reason')),
         );
     setState(() {
       _slippedCount++;
@@ -121,103 +123,104 @@ class _PromiseCheckInSheetState extends ConsumerState<PromiseCheckInSheet> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: g.inkMuted.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: g.inkMuted.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    if (todayPromises.isEmpty) ...[
+                      const SizedBox(height: 12),
+                      Icon(Icons.handshake_outlined, size: 40, color: g.clay),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No promises to review for today',
+                        textAlign: TextAlign.center,
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: g.clay,
+                          foregroundColor: g.bg,
+                        ),
+                        child: const Text('Close'),
+                      ),
+                    ] else if (_isFinished) ...[
+                      // Accountability Summary
+                      const SizedBox(height: 10),
+                      Icon(Icons.verified_rounded, size: 48, color: g.clay),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Accountability Summary',
+                        textAlign: TextAlign.center,
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$_keptCount Kept • $_slippedCount Slipped',
+                        textAlign: TextAlign.center,
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: g.inkMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: g.clay.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: g.clay.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Text(
+                          _keptCount >= _slippedCount
+                              ? '“Shabash bhai! Real discipline isn’t never slipping — it’s facing it honestly and coming back stronger tomorrow.”'
+                              : '“Honesty is the real victory today. Slipped promises are just lessons. Reset tonight and take on tomorrow.”',
+                          textAlign: TextAlign.center,
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: g.ink,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      FilledButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: g.clay,
+                          foregroundColor: g.bg,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('Done'),
+                      ),
+                    ] else ...[
+                      // One-by-one step
+                      _buildPromiseStep(
+                        todayPromises[_currentIndex],
+                        todayPromises,
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (todayPromises.isEmpty) ...[
-                const SizedBox(height: 12),
-                Icon(Icons.handshake_outlined, size: 40, color: g.clay),
-                const SizedBox(height: 12),
-                Text(
-                  'No promises to review for today',
-                  textAlign: TextAlign.center,
-                  style: AscentTextStyles.homeTitle.copyWith(color: g.ink),
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: g.clay,
-                    foregroundColor: g.bg,
-                  ),
-                  child: const Text('Close'),
-                ),
-              ] else if (_isFinished) ...[
-                // Accountability Summary
-                const SizedBox(height: 10),
-                Icon(
-                  Icons.verified_rounded,
-                  size: 48,
-                  color: g.clay,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Accountability Summary',
-                  textAlign: TextAlign.center,
-                  style: AscentTextStyles.homeTitle.copyWith(
-                    color: g.ink,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '$_keptCount Kept • $_slippedCount Slipped',
-                  textAlign: TextAlign.center,
-                  style: AscentTextStyles.bodyMedium.copyWith(
-                    color: g.inkMuted,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: g.clay.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: g.clay.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Text(
-                    _keptCount >= _slippedCount
-                        ? '“Shabash bhai! Real discipline isn’t never slipping — it’s facing it honestly and coming back stronger tomorrow.”'
-                        : '“Honesty is the real victory today. Slipped promises are just lessons. Reset tonight and take on tomorrow.”',
-                    textAlign: TextAlign.center,
-                    style: AscentTextStyles.bodySmall.copyWith(
-                      color: g.ink,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: g.clay,
-                    foregroundColor: g.bg,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text('Done'),
-                ),
-              ] else ...[
-                // One-by-one step
-                _buildPromiseStep(todayPromises[_currentIndex], todayPromises),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -261,9 +264,7 @@ class _PromiseCheckInSheetState extends ConsumerState<PromiseCheckInSheet> {
             decoration: BoxDecoration(
               color: g.clay.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: g.clay.withValues(alpha: 0.25),
-              ),
+              border: Border.all(color: g.clay.withValues(alpha: 0.25)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -364,7 +365,11 @@ class _PromiseCheckInSheetState extends ConsumerState<PromiseCheckInSheet> {
           TextButton.icon(
             key: const ValueKey('check_in_slipped_button'),
             onPressed: _promptSlipped,
-            icon: Icon(Icons.heart_broken_outlined, size: 17, color: g.inkMuted),
+            icon: Icon(
+              Icons.heart_broken_outlined,
+              size: 17,
+              color: g.inkMuted,
+            ),
             label: Text(
               'Slipped / Broke it 💔',
               style: TextStyle(color: g.inkMuted, fontSize: 13),

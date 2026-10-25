@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/day_glass_material.dart';
+import 'glass_surface.dart';
 import '../../app/theme/merlot_palette.dart';
 import 'app_surfaces.dart';
 
@@ -123,6 +125,28 @@ class AscentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    if (Theme.of(context).extension<DayGlassMaterial>() != null &&
+        variant == AscentCardVariant.glass &&
+        color == null) {
+      return Padding(
+        padding: margin ?? EdgeInsets.zero,
+        child: GlassSurface(
+          radius: radius,
+          padding: padding ?? const EdgeInsets.all(AscentDimensions.spaceLg),
+          hasShadow: hasShadow,
+          customBorder: hasBorder
+              ? null
+              : const Border.fromBorderSide(BorderSide.none),
+          onTap: onTap == null
+              ? null
+              : () {
+                  HapticFeedback.lightImpact();
+                  onTap!();
+                },
+          child: child,
+        ),
+      );
+    }
     final borderRadius = BorderRadius.circular(radius);
 
     Color surfaceColor;
@@ -145,7 +169,11 @@ class AscentCard extends StatelessWidget {
       }
     }
 
-    final isMerlotDay = g.merlot && !context.isDark && color == null && variant != AscentCardVariant.outlined;
+    final isMerlotDay =
+        g.merlot &&
+        !context.isDark &&
+        color == null &&
+        variant != AscentCardVariant.outlined;
 
     final borderColor = isMerlotDay
         ? MerlotPalette.line
@@ -223,10 +251,7 @@ class AscentCard extends StatelessWidget {
             ? const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  MerlotPalette.surface,
-                  MerlotPalette.surfaceBottom,
-                ],
+                colors: [MerlotPalette.surface, MerlotPalette.surfaceBottom],
               )
             : null,
         borderRadius: borderRadius,

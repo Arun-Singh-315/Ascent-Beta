@@ -1,7 +1,6 @@
 import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 const featureGuides = <String, String>{
   'Thought Wall':
@@ -118,31 +117,85 @@ class FeatureGuideHost extends StatefulWidget {
 
 class _FeatureGuideHostState extends State<FeatureGuideHost> {
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _introduce());
-  }
+  Widget build(BuildContext context) => widget.child;
+}
 
-  Future<void> _introduce() async {
-    final feature = widget.feature;
-    if (feature == null || guideFor(feature) == null) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = 'feature_guide_v1_$feature';
-      if (!mounted ||
-          prefs.getBool(key) == true ||
-          ModalRoute.of(context)?.isCurrent == false) {
-        return;
-      }
-      await showFeatureGuide(context, feature);
-      await prefs.setBool(key, true);
-    } catch (_) {
-      /* Guidance must never prevent opening a feature. */
-    }
-  }
+/// Ambient inline hint displayed in empty states showing key feature tips
+/// without interrupting or modal popups.
+class FeatureEmptyStateHint extends StatelessWidget {
+  const FeatureEmptyStateHint({
+    super.key,
+    required this.feature,
+    this.title,
+  });
+
+  final String feature;
+  final String? title;
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    final guide = guideFor(feature);
+    if (guide == null) return const SizedBox.shrink();
+
+    final g = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFE2E8F0)
+        : const Color(0xFF1E293B);
+    final muted = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
+    final border = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.08);
+    final tips = guide.split('\n');
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white.withValues(alpha: 0.04)
+            : Colors.black.withValues(alpha: 0.02),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.lightbulb_outline_rounded, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title ?? 'Tips for $feature',
+                  style: TextStyle(
+                    color: g,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...tips.map((tip) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                tip,
+                style: TextStyle(
+                  color: muted,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
 }
 
 final _tour = <(String, String, String)>[

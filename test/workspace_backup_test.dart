@@ -6,6 +6,8 @@ import 'package:drift/native.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/backup/workspace_backup_service.dart';
+import 'package:ascent/features/promises/models/promise_model.dart';
+import 'package:ascent/features/promises/services/promise_repository.dart';
 
 class MemoryBackupPreferences implements BackupPreferences {
   Map<String, Object> values = {};
@@ -35,6 +37,46 @@ void main() {
     await db.close();
     await documents.delete(recursive: true);
   });
+
+  test(
+    'backup preserves promise schedule, privacy, pauses and dated history',
+    () async {
+      final repo = PromiseRepository(
+        db,
+        cancelNotification: (_) async {},
+        scheduleNotification: (_, title, body, at) async => true,
+      );
+      final p = await repo.createPromise(
+        title: 'Read quietly',
+        intention: 'For myself',
+        category: 'personal',
+        trackingType: PromiseTrackingType.completion,
+        isPrivate: true,
+        schedule: PromiseSchedule(
+          startDate: promiseDay(DateTime.now()),
+          repeat: PromiseRepeat.daily,
+        ),
+      );
+      await repo.markDayDone(p.id);
+      await repo.setPromiseStatus(p.id, PromiseStatus.paused);
+      final raw = await service.export();
+      await repo.deletePromise(p.id);
+      await service.restore(raw, confirmed: true);
+      final restored = (await repo.getPromiseById(p.id))!;
+      expect(restored.isPrivate, true);
+      expect(restored.isPaused, true);
+      expect(restored.isDoneToday, true);
+      expect(restored.schedule!.repeat, PromiseRepeat.daily);
+      expect(await repo.getProgressEvents(p.id), hasLength(1));
+      expect(
+        (await repo.calendar(
+          p.id,
+          DateTime.now(),
+        ))[DateTime.now().day - 1].state,
+        PromiseDayState.done,
+      );
+    },
+  );
 
   test('custom thought folders survive workspace backup and restore', () async {
     final id = await db.thoughtDao.insertThought(
@@ -203,7 +245,14 @@ void main() {
         db.allTables
             .where((t) => t.actualTableName != 'backup_restore_state')
             .map((t) => t.actualTableName)
-            .toSet(),
+            .toSet()
+          ..addAll([
+            'promise_metadata',
+            'promise_progress_events',
+            'promise_occurrences',
+            'promise_schedule_versions',
+            'promise_pause_periods',
+          ]),
       );
       await db.taskDao.insertTask(
         TaskTableCompanion.insert(title: 'Replace this'),

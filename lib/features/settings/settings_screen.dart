@@ -10,12 +10,11 @@ import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
-import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
+import '../../features/home/widgets/day_one_tutorial_card.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
@@ -41,6 +40,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _expandCareerGoals = false;
   bool _expandGpsTelemetry = false;
   bool _expandDataStorage = false;
+  bool _expandHelpGuides = false;
 
   @override
   void dispose() {
@@ -402,8 +402,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final g = context.glass;
     final profileAsync = ref.watch(userProfileStreamProvider);
-    final themeMode = ref.watch(themeModeProvider);
-    final dayPreset = ref.watch(dayThemePresetProvider);
     final translucencyPreset = ref.watch(glassTranslucencyPresetProvider);
 
     if (profileAsync.hasValue && profileAsync.value != null) {
@@ -445,8 +443,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             vertical: AppSpace.s8,
           ),
           children: [
-            // ── Section 1: Appearance & Theme (Always Visible at Top) ────────
-            _SectionHeader(title: 'Appearance & Theme', dotColor: g.clay),
+            // ── Section 1: Glass Translucency (Always Visible at Top) ────────
+            _SectionHeader(title: 'Glass Translucency', dotColor: g.clay),
             AscentCard(
               padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
@@ -457,179 +455,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Display Mode',
-                          style: AscentTextStyles.labelMedium
-                              .copyWith(color: g.ink)
-                              .merge(AppTypeRoles.typeRole2),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          themeMode == ThemeMode.dark
-                              ? 'Night Mode'
-                              : (themeMode == ThemeMode.light
-                                    ? 'Day Mode'
-                                    : 'System Auto'),
-                          textAlign: TextAlign.end,
-                          style: AscentTextStyles.captionMedium
-                              .copyWith(color: g.clay)
-                              .merge(AppTypeRoles.typeRole8),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _ThemeOption(
-                        label: 'Day / Light',
-                        icon: Icons.light_mode_rounded,
-                        isSelected: themeMode == ThemeMode.light,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.light);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _ThemeOption(
-                        label: 'Night / Dark',
-                        icon: Icons.dark_mode_rounded,
-                        isSelected: themeMode == ThemeMode.dark,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.dark);
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      _ThemeOption(
-                        label: 'System Auto',
-                        icon: Icons.brightness_auto_rounded,
-                        isSelected: themeMode == ThemeMode.system,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          ref
-                              .read(themeModeProvider.notifier)
-                              .setThemeMode(ThemeMode.system);
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Active Theme Feedback Banner
-                  if (themeMode == ThemeMode.light)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.clay.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: g.clay.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            color: g.clay,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Apple Liquid Glass Theme is active. Frosted surfaces with dynamic depth and high-contrast typography.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: g.clay,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else if (themeMode == ThemeMode.dark)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0F172A),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF334155)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.nightlight_round,
-                            color: Color(0xFFFF6B4A),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Night Glass Theme is active. Deep obsidian glass and vibrant neon clay accents.',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFE2E8F0),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: g.fill,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: g.edge),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.brightness_auto_rounded,
-                            color: g.clay,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'System Auto is active. Ascent automatically matches your device setting (${context.isDark ? "currently Night Glass" : "currently Luminous Day"}).',
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.w600,
-                                color: g.ink,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  const SizedBox(height: 16),
-                  Divider(color: g.line, height: 1),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Glass Translucency',
+                          'Glass Aesthetics',
                           style: AscentTextStyles.labelMedium
                               .copyWith(color: g.ink)
                               .merge(AppTypeRoles.typeRole2),
@@ -659,7 +485,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _DayPresetOption(
                         label: 'Subtle',
                         subtitle: 'Airy Glass',
-                        colorSwatch: g.slate,
                         icon: Icons.blur_on_rounded,
                         isSelected: translucencyPreset ==
                             GlassTranslucencyPreset.subtleFrosted,
@@ -674,7 +499,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _DayPresetOption(
                         label: 'Balanced',
                         subtitle: 'Signature',
-                        colorSwatch: g.clay,
                         icon: Icons.auto_awesome_rounded,
                         isSelected: translucencyPreset ==
                             GlassTranslucencyPreset.balancedLiquid,
@@ -691,7 +515,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       _DayPresetOption(
                         label: 'Contrast',
                         subtitle: 'Crisp Day',
-                        colorSwatch: g.amber,
                         icon: Icons.contrast_rounded,
                         isSelected: translucencyPreset ==
                             GlassTranslucencyPreset.highContrast,
@@ -1141,6 +964,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             const SizedBox(height: 12),
 
+            // ── Collapsible 5: Help & Walkthroughs ───────────────────────────
+            _CollapsibleSettingsCard(
+              icon: Icons.help_outline_rounded,
+              iconTint: g.clay,
+              title: 'Help & Walkthroughs',
+              subtitle: 'Replay welcome tutorial and guide tour',
+              isExpanded: _expandHelpGuides,
+              onToggle: () =>
+                  setState(() => _expandHelpGuides = !_expandHelpGuides),
+              child: Column(
+                children: [
+                  ListTile(
+                    key: const ValueKey('settings_replay_day_one_tutorial'),
+                    contentPadding: EdgeInsets.zero,
+                    leading: AppTag(
+                      padding: const EdgeInsets.all(AppSpace.s8),
+                      nightDecoration: BoxDecoration(
+                        color: g.clay.withValues(alpha: 0.12),
+                        borderRadius: AppGeometry.roundedr10,
+                      ),
+                      child: Icon(Icons.school_outlined, color: g.clay, size: 20),
+                    ),
+                    title: Text(
+                      'Replay Day One Tutorial',
+                      style: AscentTextStyles.labelMedium.copyWith(color: g.ink),
+                    ),
+                    subtitle: Text(
+                      'Review the initial welcome walkthrough',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
+                    trailing: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: g.inkMuted,
+                    ),
+                    onTap: () {
+                      final name = _nameController.text.trim();
+                      DayOneTutorialDialog.show(context, userName: name);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+
             const SizedBox(height: 40),
           ],
         ),
@@ -1325,100 +1195,9 @@ class _CollapsibleSettingsCard extends StatelessWidget {
   }
 }
 
-class _ThemeOption extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ThemeOption({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final g = context.glass;
-
-    return Expanded(
-      child: AppTapArea(
-        onTap: onTap,
-        borderRadius: AppGeometry.roundedr16,
-        child: AppCard(
-          selected: isSelected,
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpace.s16,
-            horizontal: AppSpace.s8,
-          ),
-          nightDecoration: BoxDecoration(
-            color: isSelected ? context.accentPrimary : g.fill,
-            borderRadius: AppGeometry.roundedr16,
-            border: Border.all(
-              color: isSelected ? context.accentPrimary : g.edge,
-              width: isSelected ? 1.5 : 1.0,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: context.accentPrimary.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withValues(alpha: 0.18)
-                      : (context.isDark
-                            ? g.edge.withValues(alpha: 0.4)
-                            : g.clay.withValues(alpha: 0.08)),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected ? AppPalette.white : g.inkSecondary,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 10),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  style: AscentTextStyles.labelSmall
-                      .copyWith(
-                        color: isSelected ? AppPalette.white : g.ink,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      )
-                      .merge(AppStateTypography.stateType1(state0: isSelected)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _DayPresetOption extends StatelessWidget {
   final String label;
   final String subtitle;
-  final Color colorSwatch;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
@@ -1426,7 +1205,6 @@ class _DayPresetOption extends StatelessWidget {
   const _DayPresetOption({
     required this.label,
     required this.subtitle,
-    required this.colorSwatch,
     required this.icon,
     required this.isSelected,
     required this.onTap,
@@ -1447,12 +1225,25 @@ class _DayPresetOption extends StatelessWidget {
             horizontal: AppSpace.s8,
           ),
           nightDecoration: BoxDecoration(
-            color: isSelected ? colorSwatch : g.fill,
+            color: isSelected
+                ? (context.isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : g.clay.withValues(alpha: 0.08))
+                : g.fill,
             borderRadius: AppGeometry.roundedr12,
             border: Border.all(
-              color: isSelected ? colorSwatch : g.edge,
+              color: isSelected ? g.clay : g.edge,
               width: isSelected ? 1.5 : 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: g.clay.withValues(alpha: 0.16),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             children: [
@@ -1460,17 +1251,19 @@ class _DayPresetOption extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 10,
-                    height: 10,
+                    width: 8,
+                    height: 8,
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : colorSwatch,
+                      color: isSelected
+                          ? g.clay
+                          : g.inkMuted.withValues(alpha: 0.35),
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 6),
                   Icon(
                     icon,
-                    color: isSelected ? AppPalette.white : g.inkSecondary,
+                    color: isSelected ? g.clay : g.inkSecondary,
                     size: 18,
                   ),
                 ],
@@ -1481,8 +1274,8 @@ class _DayPresetOption extends StatelessWidget {
                 child: Text(
                   label,
                   style: AscentTextStyles.labelSmall.copyWith(
-                    color: isSelected ? AppPalette.white : g.ink,
-                    fontWeight: FontWeight.w600,
+                    color: isSelected ? g.clay : g.ink,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   ),
                 ),
               ),
@@ -1493,9 +1286,10 @@ class _DayPresetOption extends StatelessWidget {
                   subtitle,
                   style: AscentTextStyles.captionMedium.copyWith(
                     color: isSelected
-                        ? Colors.white.withValues(alpha: 0.90)
+                        ? g.clay.withValues(alpha: 0.85)
                         : g.inkMuted,
                     fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

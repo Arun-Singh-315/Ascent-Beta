@@ -1,220 +1,213 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../app/theme/glass_theme.dart';
-import '../../../app/theme/text_styles.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../models/promise_model.dart';
 import '../providers/promise_providers.dart';
 
-/// Live session sheet for duration promises.
-/// Allows starting, pausing, resuming, and recording completed time.
-class PromiseSessionSheet extends ConsumerWidget {
-  const PromiseSessionSheet({
-    super.key,
-    required this.promise,
-  });
-
+class PromiseSessionSheet extends ConsumerStatefulWidget {
+  const PromiseSessionSheet({super.key, required this.promise});
   final PromiseModel promise;
+  static Future<void> show(BuildContext context, PromiseModel promise) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => PromiseSessionSheet(promise: promise),
+      );
+  @override
+  ConsumerState<PromiseSessionSheet> createState() =>
+      _PromiseSessionSheetState();
+}
 
-  static Future<void> show(BuildContext context, PromiseModel promise) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => PromiseSessionSheet(promise: promise),
-    );
+class _PromiseSessionSheetState extends ConsumerState<PromiseSessionSheet> {
+  bool _busy = false;
+  String? _error;
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await action();
+    } catch (e) {
+      if (context.mounted) {
+        setState(
+          () => _error = e is StateError
+              ? e.message
+              : 'Could not save. Your timer is still here.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final g = context.glass;
+  Widget build(BuildContext context) {
     final session = ref.watch(activePromiseSessionProvider);
     final notifier = ref.read(activePromiseSessionProvider.notifier);
-
-    final isThisSessionActive = session.promiseId == promise.id;
-    final elapsedSec = isThisSessionActive ? session.elapsedSeconds : 0;
-    final isRunning = isThisSessionActive && session.isRunning;
-
-    final minutes = elapsedSec ~/ 60;
-    final seconds = elapsedSec % 60;
-    final timeFormatted =
-        '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-
-    final targetSec = (promise.targetValue * 60).toInt();
-    final progress = targetSec > 0 ? (elapsedSec / targetSec).clamp(0.0, 1.0) : 0.0;
-
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.viewInsetsOf(context).bottom,
-      ),
+    final mine = session.promiseId == widget.promise.id;
+    final seconds = mine ? session.elapsedSeconds : 0;
+    final time =
+        '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
+    return PopScope(
+      canPop: !_busy,
       child: GlassSurface(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-              // Grab handle
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: g.inkMuted.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Title and target
-              Text(
-                promise.title,
-                textAlign: TextAlign.center,
-                style: AscentTextStyles.homeTitle.copyWith(
-                  color: g.ink,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Target: ${promise.targetValue.toInt()} minutes',
-                style: TextStyle(
-                  color: g.inkMuted,
-                  fontSize: 13,
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Timer display
-              Stack(
-                alignment: Alignment.center,
+        radius: 28,
+        minimumOpacity: .9,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
                 children: [
-                  SizedBox(
-                    width: 160,
-                    height: 160,
-                    child: CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 6,
-                      backgroundColor: g.ink.withValues(alpha: 0.08),
-                      valueColor: AlwaysStoppedAnimation<Color>(g.ink),
+                  Expanded(
+                    child: Text(
+                      widget.promise.title,
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                   ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        timeFormatted,
-                        style: TextStyle(
-                          color: g.ink,
-                          fontSize: 36,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.5,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      Text(
-                        isRunning ? 'Session Active' : (elapsedSec > 0 ? 'Paused' : 'Ready to Start'),
-                        style: TextStyle(
-                          color: g.inkMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                  IconButton(
+                    tooltip: 'Close timer',
+                    onPressed: _busy ? null : () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
                   ),
                 ],
               ),
-              const SizedBox(height: 36),
-
-              // Action buttons: Start/Pause/Resume and Finish
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              const SizedBox(height: 16),
+              Text(
+                '${widget.promise.targetValue.toStringAsFixed(0)} minutes · one small step',
+              ),
+              const SizedBox(height: 24),
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 48,
+                  fontWeight: FontWeight.w600,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              Text(
+                mine && session.isRunning
+                    ? 'Timer running'
+                    : mine
+                    ? 'Paused'
+                    : 'Ready when you are',
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
                 children: [
-                  if (!isThisSessionActive || elapsedSec == 0)
-                    FilledButton.icon(
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        notifier.startSession(promise.id);
-                      },
-                      icon: const Icon(Icons.play_arrow_rounded, size: 20),
-                      label: const Text('Start Practice'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: g.ink,
-                        foregroundColor: g.bg,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    )
-                  else ...[
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        HapticFeedback.lightImpact();
-                        if (isRunning) {
-                          notifier.pauseSession();
-                        } else {
-                          notifier.resumeSession();
-                        }
-                      },
-                      icon: Icon(
-                        isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                        size: 20,
-                        color: g.ink,
-                      ),
-                      label: Text(
-                        isRunning ? 'Pause' : 'Resume',
-                        style: TextStyle(color: g.ink, fontWeight: FontWeight.w600),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: g.ink.withValues(alpha: 0.2)),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
+                  OutlinedButton.icon(
+                    onPressed: _busy
+                        ? null
+                        : () => _run(() async {
+                            if (!mine) {
+                              await notifier.startSession(widget.promise.id);
+                            } else if (session.isRunning) {
+                              await notifier.pauseSession();
+                            } else {
+                              await notifier.resumeSession();
+                            }
+                          }),
+                    icon: Icon(
+                      mine && session.isRunning
+                          ? Icons.pause
+                          : Icons.play_arrow,
                     ),
-                    const SizedBox(width: 16),
+                    label: Text(
+                      mine && session.isRunning
+                          ? 'Pause'
+                          : mine
+                          ? 'Resume'
+                          : 'Start',
+                    ),
+                  ),
+                  if (mine)
                     FilledButton.icon(
-                      onPressed: () async {
-                        HapticFeedback.heavyImpact();
-                        final recordedMinutes = (elapsedSec / 60).ceil();
-                        notifier.stopSession();
-                        await ref.read(promiseRepositoryProvider).recordProgress(
-                          promiseId: promise.id,
-                          eventType: PromiseEventType.durationSession,
-                          amount: recordedMinutes > 0 ? recordedMinutes.toDouble() : 1.0,
-                          note: 'Practiced for $timeFormatted',
-                        );
-                        if (context.mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Logged $recordedMinutes min for "${promise.title}"'),
-                              behavior: SnackBarBehavior.floating,
-                              duration: const Duration(seconds: 2),
+                      onPressed: _busy || seconds <= 0
+                          ? null
+                          : () => _run(() async {
+                              await notifier.pauseSession();
+                              final exactSeconds = ref
+                                  .read(activePromiseSessionProvider)
+                                  .elapsedSeconds;
+                              await ref
+                                  .read(promiseRepositoryProvider)
+                                  .recordProgress(
+                                    promiseId: widget.promise.id,
+                                    eventType: PromiseEventType.durationSession,
+                                    amount: exactSeconds / 60,
+                                    note: 'Practiced for ${exactSeconds}s',
+                                  );
+                              await notifier.stopSession();
+                              if (context.mounted) {
+                                final messenger = ScaffoldMessenger.of(context);
+                                Navigator.pop(context);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Practice saved.'),
+                                  ),
+                                );
+                              }
+                            }),
+                      icon: const Icon(Icons.check),
+                      label: Text(_busy ? 'Saving…' : 'Save practice'),
+                    ),
+                ],
+              ),
+              if (session.promiseId != null)
+                TextButton(
+                  onPressed: _busy
+                      ? null
+                      : () => _run(() async {
+                          final discard = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Discard unsaved practice?'),
+                              content: Text(
+                                '${session.elapsedSeconds ~/ 60} min ${session.elapsedSeconds % 60}s will be removed from ${mine ? 'this' : 'your other'} timer.',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Keep timer'),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Discard'),
+                                ),
+                              ],
                             ),
                           );
-                        }
-                      },
-                      icon: const Icon(Icons.done_all_rounded, size: 20),
-                      label: const Text('Complete & Save'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: g.ink,
-                        foregroundColor: g.bg,
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
+                          if (discard == true) await notifier.stopSession();
+                        }),
+                  child: Text(mine ? 'Discard timer' : 'Discard other timer'),
+                ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
                     ),
-                  ],
-                ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+              const Text(
+                'You can close this sheet. Your timer stays with you.',
+                textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
-      );
-    }
+      ),
+    );
+  }
 }

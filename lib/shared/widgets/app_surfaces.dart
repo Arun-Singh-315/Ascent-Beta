@@ -2,23 +2,50 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../app/theme/color_tokens.dart';
+import '../../app/theme/day_glass_material.dart';
+import '../../app/theme/glass_theme.dart';
 import '../../app/theme/surface_tokens.dart';
 
 /// The single grouped-content surface. Existing glass geometry is retained.
 class AppCard extends StatelessWidget {
-  static Widget materialSurface({Key? key, Color? color, ShapeBorder? shape,
-    Clip clipBehavior = Clip.none, required Widget child}) => Builder(
-      builder: (context) => context.surfaces.outlined
-        ? AppCard(key: key, child: child)
-        : Material(key: key, color: color, shape: shape,
-            clipBehavior: clipBehavior, child: child));
+  static Widget materialSurface({
+    Key? key,
+    Color? color,
+    ShapeBorder? shape,
+    Clip clipBehavior = Clip.none,
+    required Widget child,
+  }) => Builder(
+    builder: (context) =>
+        (context.surfaces.outlined ||
+            Theme.of(context).extension<DayGlassMaterial>() != null)
+        ? AppCard(
+            key: key,
+            clipBehavior: clipBehavior,
+            nightDecoration: BoxDecoration(
+              color: color,
+              borderRadius: shape is RoundedRectangleBorder
+                  ? shape.borderRadius
+                  : null,
+            ),
+            child: child,
+          )
+        : Material(
+            key: key,
+            color: color,
+            shape: shape,
+            clipBehavior: clipBehavior,
+            child: child,
+          ),
+  );
 
   static Widget material({
     Key? key,
     Widget? child,
     EdgeInsetsGeometry? margin,
   }) => Builder(
-    builder: (context) => context.surfaces.outlined
+    builder: (context) =>
+        (context.surfaces.outlined ||
+            Theme.of(context).extension<DayGlassMaterial>() != null)
         ? AppCard(key: key, margin: margin, child: child)
         : Card(key: key, margin: margin, child: child),
   );
@@ -66,11 +93,27 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.surfaces;
-    final decoration = tokens.decoration(
+    var decoration = tokens.decoration(
       role,
       night: nightDecoration,
       selected: selected,
     );
+    final material = Theme.of(context).extension<DayGlassMaterial>();
+    final neutral = nightDecoration?.color;
+    final frosted =
+        material != null &&
+        role == AppSurfaceRole.card &&
+        !selected &&
+        nightDecoration?.gradient == null &&
+        (neutral == null || (neutral.a > 0 && neutral.a < .85));
+    if (frosted) {
+      decoration = decoration.copyWith(
+        color: Colors.transparent,
+        gradient: material.gradient(context.glass.fill),
+        border: material.rim,
+        boxShadow: const [],
+      );
+    }
     final tappable =
         onTap != null || onLongPress != null || role == AppSurfaceRole.pill;
     final minimum = tokens.outlined && tappable ? tokens.minTapTarget : 0.0;
@@ -122,7 +165,27 @@ class AppCard extends StatelessWidget {
         ),
       );
     }
+    if (frosted) {
+      content = ClipRRect(
+        borderRadius:
+            decoration.borderRadius?.resolve(Directionality.of(context)) ??
+            BorderRadius.circular(tokens.cardRadius),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: material.blur,
+            sigmaY: material.blur,
+          ),
+          child: content,
+        ),
+      );
+    }
     return Container(
+      decoration: frosted
+          ? BoxDecoration(
+              borderRadius: decoration.borderRadius,
+              boxShadow: material.shadows,
+            )
+          : null,
       margin: margin,
       transform: transform,
       transformAlignment: transformAlignment,
@@ -146,9 +209,13 @@ class AppPill extends AppCard {
   }) => Builder(
     builder: (context) {
       if (!context.surfaces.outlined) {
-        final effectiveLabelStyle = labelStyle ??
+        final effectiveLabelStyle =
+            labelStyle ??
             (selected
-                ? TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)
+                ? TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  )
                 : TextStyle(color: context.surfaces.ink));
         return ChoiceChip(
           key: key,
@@ -160,7 +227,8 @@ class AppPill extends AppCard {
           labelStyle: effectiveLabelStyle,
           side: side,
           shape: shape,
-          checkmarkColor: checkmarkColor ?? Theme.of(context).colorScheme.onPrimary,
+          checkmarkColor:
+              checkmarkColor ?? Theme.of(context).colorScheme.onPrimary,
         );
       }
       return _dayChip(
@@ -186,9 +254,13 @@ class AppPill extends AppCard {
   }) => Builder(
     builder: (context) {
       if (!context.surfaces.outlined) {
-        final effectiveLabelStyle = labelStyle ??
+        final effectiveLabelStyle =
+            labelStyle ??
             (selected
-                ? TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.w600)
+                ? TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontWeight: FontWeight.w600,
+                  )
                 : TextStyle(color: context.surfaces.ink));
         return FilterChip(
           key: key,
@@ -200,7 +272,8 @@ class AppPill extends AppCard {
           labelStyle: effectiveLabelStyle,
           side: side,
           shape: shape,
-          checkmarkColor: checkmarkColor ?? Theme.of(context).colorScheme.onPrimary,
+          checkmarkColor:
+              checkmarkColor ?? Theme.of(context).colorScheme.onPrimary,
         );
       }
       return _dayChip(
@@ -649,7 +722,8 @@ class AppHeatmapViewport extends StatelessWidget {
   Widget build(BuildContext context) => SingleChildScrollView(
     scrollDirection: Axis.horizontal,
     child: SizedBox(
-      width: columns * (context.surfaces.minTapTarget + context.surfaces.spacing),
+      width:
+          columns * (context.surfaces.minTapTarget + context.surfaces.spacing),
       child: child,
     ),
   );
