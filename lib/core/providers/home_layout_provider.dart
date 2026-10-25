@@ -55,10 +55,10 @@ class HomeLayout {
   final Set<String> visible, tools, compact;
   final List<String> shortcuts;
   factory HomeLayout.defaults() => HomeLayout(
-    order: ['mind', ...homeSections.keys.where((id) => id != 'mind')],
+    order: ['promises', 'mind', ...homeSections.keys.where((id) => id != 'mind' && id != 'promises')],
     visible: {
-      'streak',
       'promises',
+      'streak',
       'reminders',
       'today',
       'learning',
@@ -107,14 +107,19 @@ class HomeLayout {
     final savedOrder = (json['order'] as List).cast<dynamic>();
     final isExistingWithoutVault = !savedOrder.contains('vault');
     final parsedVisible = known(json['visible'], homeSections).toSet();
-    final visible = isExistingWithoutVault
-        ? {...parsedVisible, 'vault'}
-        : parsedVisible;
+    final isExistingWithoutPromises = !savedOrder.contains('promises') || !parsedVisible.contains('promises');
+    var visible = parsedVisible;
+    if (isExistingWithoutVault) visible = {...visible, 'vault'};
+    if (isExistingWithoutPromises) visible = {...visible, 'promises'};
+
+    final orderedSections = order.contains('promises')
+        ? order
+        : ['promises', ...order];
 
     return HomeLayout(
       order: [
-        ...order,
-        ...homeSections.keys.where((id) => !order.contains(id)),
+        ...orderedSections,
+        ...homeSections.keys.where((id) => !orderedSections.contains(id)),
       ],
       visible: visible,
       tools: known(json['tools'], homeTools).toSet(),

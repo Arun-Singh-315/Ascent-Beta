@@ -180,4 +180,79 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('glance_popup_focus')), findsNothing);
   });
+
+  testWidgets('Connected Day-at-a-Glance modal allows fluid in-place tab switching', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          todayActivitiesProvider.overrideWith((ref) => Stream.value([
+            TodayActivityItem(
+              id: 'task_1',
+              title: 'Review System Design',
+              sourceType: 'task',
+              categoryTag: 'Task',
+              status: TodayActivityStatus.notStarted,
+              elapsedSecondsToday: 0,
+              kind: ActivityKind.todo,
+            ),
+          ])),
+          allRemindersProvider.overrideWith((ref) => Stream.value([])),
+        ],
+        child: MaterialApp(
+          theme: AscentTheme.light(),
+          home: const Scaffold(
+            body: HomeOverviewCard(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // 1. Open via Tasks toggle
+    await tester.tap(find.byKey(const ValueKey('glance_toggle_tasks')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('glance_popup_tasks')), findsOneWidget);
+    expect(find.text('Review System Design'), findsOneWidget);
+
+    // 2. Tap Reminders tab inside the connected popup
+    final remindersTab = find.byKey(const ValueKey('glance_modal_tab_reminders'));
+    await tester.ensureVisible(remindersTab);
+    await tester.tap(remindersTab);
+    await tester.pumpAndSettle();
+
+    // Now Reminders view is active
+    expect(find.byKey(const ValueKey('glance_popup_reminders')), findsOneWidget);
+    expect(find.text('No upcoming reminders due today'), findsOneWidget);
+
+    // 3. Tap Thought tab inside connected popup
+    final notesTab = find.byKey(const ValueKey('glance_modal_tab_notes'));
+    await tester.ensureVisible(notesTab);
+    await tester.tap(notesTab);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('glance_popup_notes')), findsOneWidget);
+    expect(find.byKey(const ValueKey('glance_quick_note_field')), findsOneWidget);
+
+    // 4. Tap + Add tab inside connected popup
+    final addTab = find.byKey(const ValueKey('glance_modal_tab_add'));
+    await tester.ensureVisible(addTab);
+    await tester.tap(addTab);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('glance_popup_add')), findsOneWidget);
+    expect(find.text('Seal a Promise'), findsOneWidget);
+
+    // Close modal
+    await tester.tap(find.byKey(const ValueKey('glance_popup_close_add')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('glance_popup_add')), findsNothing);
+  });
 }

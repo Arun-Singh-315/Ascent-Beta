@@ -15,6 +15,16 @@ import '../../../shared/widgets/glass_chip.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../reminders/reminder_action_ui.dart';
 
+import '../../promises/widgets/promise_chat_composer.dart';
+
+enum GlanceTab {
+  tasks,
+  reminders,
+  notes,
+  focus,
+  add,
+}
+
 class HomeOverviewCard extends ConsumerWidget {
   const HomeOverviewCard({super.key});
 
@@ -71,90 +81,106 @@ class HomeOverviewCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                // 1. Tasks Toggle
-                GlassChip(
-                  key: const ValueKey('glance_toggle_tasks'),
-                  icon: Icons.checklist_rounded,
-                  label: pending == null
-                      ? 'Loading…'
-                      : pending == 0
-                          ? 'All clear'
-                          : '$pending to do',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showConnectedPopup(
-                      context,
-                      title: 'Today’s Tasks',
-                      popupKey: const ValueKey('glance_popup_tasks'),
-                      closeKey: const ValueKey('glance_popup_close_tasks'),
-                      content: _TasksPopupContent(
+
+            // Single Row: Todo • Reminder • Thought • Focus • +
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  // 1. Tasks Toggle
+                  GlassChip(
+                    key: const ValueKey('glance_toggle_tasks'),
+                    icon: Icons.checklist_rounded,
+                    label: pending == null
+                        ? 'Loading…'
+                        : pending == 0
+                            ? 'All clear'
+                            : '$pending to do',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _openConnectedModal(
+                        context,
+                        initialTab: GlanceTab.tasks,
                         activities: activities.value ?? [],
-                      ),
-                    );
-                  },
-                ),
-
-                // 2. Reminders Toggle
-                GlassChip(
-                  key: const ValueKey('glance_toggle_reminders'),
-                  icon: Icons.notifications_none_rounded,
-                  label: due == null
-                      ? 'Loading…'
-                      : due == 0
-                          ? 'No reminders'
-                          : '$due due',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showConnectedPopup(
-                      context,
-                      title: 'Today’s Reminders',
-                      popupKey: const ValueKey('glance_popup_reminders'),
-                      closeKey: const ValueKey('glance_popup_close_reminders'),
-                      content: _RemindersPopupContent(
                         reminders: reminders.value ?? [],
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
 
-                // 3. Quick Note / Thought Toggle
-                GlassChip(
-                  key: const ValueKey('glance_toggle_notes'),
-                  icon: Icons.lightbulb_outline_rounded,
-                  label: 'Drop thought',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showConnectedPopup(
-                      context,
-                      title: 'Quick Thought',
-                      popupKey: const ValueKey('glance_popup_notes'),
-                      closeKey: const ValueKey('glance_popup_close_notes'),
-                      content: const _NotesPopupContent(),
-                    );
-                  },
-                ),
+                  // 2. Reminders Toggle
+                  GlassChip(
+                    key: const ValueKey('glance_toggle_reminders'),
+                    icon: Icons.notifications_none_rounded,
+                    label: due == null
+                        ? 'Loading…'
+                        : due == 0
+                            ? 'No reminders'
+                            : '$due due',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _openConnectedModal(
+                        context,
+                        initialTab: GlanceTab.reminders,
+                        activities: activities.value ?? [],
+                        reminders: reminders.value ?? [],
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
 
-                // 4. Focus & Habit Toggle
-                GlassChip(
-                  key: const ValueKey('glance_toggle_focus'),
-                  icon: Icons.bolt_rounded,
-                  label: 'Focus & Habit',
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    _showConnectedPopup(
-                      context,
-                      title: 'Focus & Habits',
-                      popupKey: const ValueKey('glance_popup_focus'),
-                      closeKey: const ValueKey('glance_popup_close_focus'),
-                      content: const _FocusPopupContent(),
-                    );
-                  },
-                ),
-              ],
+                  // 3. Quick Note / Thought Toggle
+                  GlassChip(
+                    key: const ValueKey('glance_toggle_notes'),
+                    icon: Icons.lightbulb_outline_rounded,
+                    label: 'Drop thought',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _openConnectedModal(
+                        context,
+                        initialTab: GlanceTab.notes,
+                        activities: activities.value ?? [],
+                        reminders: reminders.value ?? [],
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+
+                  // 4. Focus & Habit Toggle
+                  GlassChip(
+                    key: const ValueKey('glance_toggle_focus'),
+                    icon: Icons.bolt_rounded,
+                    label: 'Focus & Habit',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _openConnectedModal(
+                        context,
+                        initialTab: GlanceTab.focus,
+                        activities: activities.value ?? [],
+                        reminders: reminders.value ?? [],
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+
+                  // 5. Quick Add Toggle (+)
+                  GlassChip(
+                    key: const ValueKey('glance_toggle_add'),
+                    icon: Icons.add_rounded,
+                    label: 'Add',
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      _openConnectedModal(
+                        context,
+                        initialTab: GlanceTab.add,
+                        activities: activities.value ?? [],
+                        reminders: reminders.value ?? [],
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -162,81 +188,306 @@ class HomeOverviewCard extends ConsumerWidget {
     );
   }
 
-  void _showConnectedPopup(
+  void _openConnectedModal(
     BuildContext context, {
-    required String title,
-    required Key popupKey,
-    required Key closeKey,
-    required Widget content,
+    required GlanceTab initialTab,
+    required List<TodayActivityItem> activities,
+    required List<Reminder> reminders,
   }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
-        final g = ctx.glass;
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 12,
-            right: 12,
-            top: 24,
-          ),
-          child: SafeArea(
-            child: Material(
-              key: popupKey,
-              color: Colors.transparent,
-              child: GlassSurface(
-                radius: 24,
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Connected Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            title,
-                            style: AscentTextStyles.homeTitle.copyWith(
-                              color: g.ink,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          key: closeKey,
-                          tooltip: 'Close',
-                          icon: Icon(Icons.close_rounded, color: g.ink, size: 20),
-                          onPressed: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.of(ctx).pop();
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Flexible(child: SingleChildScrollView(child: content)),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        return _DayAtAGlanceConnectedModal(
+          initialTab: initialTab,
+          activities: activities,
+          reminders: reminders,
         );
       },
     );
   }
 }
 
+class _DayAtAGlanceConnectedModal extends ConsumerStatefulWidget {
+  const _DayAtAGlanceConnectedModal({
+    required this.initialTab,
+    required this.activities,
+    required this.reminders,
+  });
+
+  final GlanceTab initialTab;
+  final List<TodayActivityItem> activities;
+  final List<Reminder> reminders;
+
+  @override
+  ConsumerState<_DayAtAGlanceConnectedModal> createState() =>
+      _DayAtAGlanceConnectedModalState();
+}
+
+class _DayAtAGlanceConnectedModalState
+    extends ConsumerState<_DayAtAGlanceConnectedModal> {
+  late GlanceTab _currentTab = widget.initialTab;
+
+  String _titleForTab(GlanceTab tab) {
+    switch (tab) {
+      case GlanceTab.tasks:
+        return 'Today’s Tasks';
+      case GlanceTab.reminders:
+        return 'Today’s Reminders';
+      case GlanceTab.notes:
+        return 'Quick Thought';
+      case GlanceTab.focus:
+        return 'Focus & Habits';
+      case GlanceTab.add:
+        return 'Quick Add';
+    }
+  }
+
+  Key _popupKeyForTab(GlanceTab tab) {
+    switch (tab) {
+      case GlanceTab.tasks:
+        return const ValueKey('glance_popup_tasks');
+      case GlanceTab.reminders:
+        return const ValueKey('glance_popup_reminders');
+      case GlanceTab.notes:
+        return const ValueKey('glance_popup_notes');
+      case GlanceTab.focus:
+        return const ValueKey('glance_popup_focus');
+      case GlanceTab.add:
+        return const ValueKey('glance_popup_add');
+    }
+  }
+
+  Key _closeKeyForTab(GlanceTab tab) {
+    switch (tab) {
+      case GlanceTab.tasks:
+        return const ValueKey('glance_popup_close_tasks');
+      case GlanceTab.reminders:
+        return const ValueKey('glance_popup_close_reminders');
+      case GlanceTab.notes:
+        return const ValueKey('glance_popup_close_notes');
+      case GlanceTab.focus:
+        return const ValueKey('glance_popup_close_focus');
+      case GlanceTab.add:
+        return const ValueKey('glance_popup_close_add');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final pendingCount = widget.activities
+        .where((a) => a.status != TodayActivityStatus.done)
+        .length;
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final dueCount = widget.reminders
+        .where((r) => r.isActive && r.scheduledAt.isBefore(tomorrow))
+        .length;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 12,
+        right: 12,
+        top: 24,
+      ),
+      child: SafeArea(
+        child: Material(
+          key: _popupKeyForTab(_currentTab),
+          color: Colors.transparent,
+          child: GlassSurface(
+            radius: 26,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Apple Grab Handle
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4.5,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: g.ink.withValues(alpha: 0.22),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+
+                // Connected Header with Title and Close
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _titleForTab(_currentTab),
+                        style: AscentTextStyles.homeTitle.copyWith(
+                          color: g.ink,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      key: _closeKeyForTab(_currentTab),
+                      tooltip: 'Close',
+                      icon: Icon(Icons.close_rounded, color: g.ink, size: 20),
+                      onPressed: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // Connected Tab Selector Row
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Row(
+                    children: [
+                      _buildTabPill(
+                        tab: GlanceTab.tasks,
+                        label: 'Tasks ($pendingCount)',
+                        icon: Icons.checklist_rounded,
+                        g: g,
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTabPill(
+                        tab: GlanceTab.reminders,
+                        label: 'Reminders ($dueCount)',
+                        icon: Icons.notifications_none_rounded,
+                        g: g,
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTabPill(
+                        tab: GlanceTab.notes,
+                        label: 'Thought',
+                        icon: Icons.lightbulb_outline_rounded,
+                        g: g,
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTabPill(
+                        tab: GlanceTab.focus,
+                        label: 'Focus',
+                        icon: Icons.bolt_rounded,
+                        g: g,
+                      ),
+                      const SizedBox(width: 6),
+                      _buildTabPill(
+                        tab: GlanceTab.add,
+                        label: '+ Add',
+                        icon: Icons.add_rounded,
+                        g: g,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // Expanded Connected Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: _buildCurrentContent(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabPill({
+    required GlanceTab tab,
+    required String label,
+    required IconData icon,
+    required AscentGlass g,
+  }) {
+    final isSelected = _currentTab == tab;
+    return InkWell(
+      key: ValueKey('glance_modal_tab_${tab.name}'),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _currentTab = tab);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6.5),
+        decoration: BoxDecoration(
+          color: isSelected ? g.ink : g.ink.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? g.ink : g.edge.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? g.bg : g.ink,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? g.bg : g.ink,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentContent() {
+    switch (_currentTab) {
+      case GlanceTab.tasks:
+        return _TasksPopupContent(
+          key: const ValueKey('glance_tab_content_tasks'),
+          activities: widget.activities,
+        );
+      case GlanceTab.reminders:
+        return _RemindersPopupContent(
+          key: const ValueKey('glance_tab_content_reminders'),
+          reminders: widget.reminders,
+        );
+      case GlanceTab.notes:
+        return _NotesPopupContent(
+          key: const ValueKey('glance_tab_content_notes'),
+        );
+      case GlanceTab.focus:
+        return _FocusPopupContent(
+          key: const ValueKey('glance_tab_content_focus'),
+        );
+      case GlanceTab.add:
+        return _AddPopupContent(
+          key: const ValueKey('glance_tab_content_add'),
+        );
+    }
+  }
+}
+
 // ── Content: Tasks ─────────────────────────────────────────────────────────
 
 class _TasksPopupContent extends ConsumerWidget {
-  const _TasksPopupContent({required this.activities});
+  const _TasksPopupContent({super.key, required this.activities});
   final List<TodayActivityItem> activities;
 
   @override
@@ -350,7 +601,7 @@ class _TasksPopupContent extends ConsumerWidget {
 // ── Content: Reminders ─────────────────────────────────────────────────────
 
 class _RemindersPopupContent extends ConsumerWidget {
-  const _RemindersPopupContent({required this.reminders});
+  const _RemindersPopupContent({super.key, required this.reminders});
   final List<Reminder> reminders;
 
   @override
@@ -469,7 +720,7 @@ class _RemindersPopupContent extends ConsumerWidget {
 // ── Content: Quick Note ────────────────────────────────────────────────────
 
 class _NotesPopupContent extends ConsumerStatefulWidget {
-  const _NotesPopupContent();
+  const _NotesPopupContent({super.key});
 
   @override
   ConsumerState<_NotesPopupContent> createState() => _NotesPopupContentState();
@@ -567,7 +818,7 @@ class _NotesPopupContentState extends ConsumerState<_NotesPopupContent> {
 // ── Content: Focus & Habit ─────────────────────────────────────────────────
 
 class _FocusPopupContent extends ConsumerWidget {
-  const _FocusPopupContent();
+  const _FocusPopupContent({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -629,6 +880,218 @@ class _FocusPopupContent extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+// ── Content: Quick Add Hub ──────────────────────────────────────────────────
+
+class _AddPopupContent extends ConsumerStatefulWidget {
+  const _AddPopupContent({super.key});
+
+  @override
+  ConsumerState<_AddPopupContent> createState() => _AddPopupContentState();
+}
+
+class _AddPopupContentState extends ConsumerState<_AddPopupContent> {
+  final _taskController = TextEditingController();
+  bool _savingTask = false;
+
+  @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleCreateTask() async {
+    final title = _taskController.text.trim();
+    if (title.isEmpty || _savingTask) return;
+
+    setState(() => _savingTask = true);
+    try {
+      HapticFeedback.mediumImpact();
+      final db = ref.read(databaseProvider);
+      await db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: title,
+          plannedDate: drift.Value(DateTime.now()),
+        ),
+      );
+      _taskController.clear();
+      if (mounted) {
+        Navigator.pop(context);
+        AscentSnackBar.success(context, message: 'Added task: "$title"');
+      }
+    } finally {
+      if (mounted) setState(() => _savingTask = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Quick To-do Input (Rule 19 Compliant Single-Enclosure Pill)
+        Container(
+          height: 48,
+          padding: const EdgeInsets.only(left: 14, right: 4),
+          decoration: BoxDecoration(
+            color: g.ink.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: g.edge.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _taskController,
+                  style: TextStyle(color: g.ink, fontSize: 14),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _handleCreateTask(),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: 'Quick to-do item…',
+                    hintStyle: TextStyle(
+                      color: g.inkMuted.withValues(alpha: 0.6),
+                      fontSize: 13.5,
+                    ),
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _savingTask ? null : _handleCreateTask,
+                tooltip: 'Add Task',
+                icon: _savingTask
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(Icons.add_circle_rounded, color: g.clay, size: 26),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Quick Creator Shortcuts
+        _buildActionTile(
+          context: context,
+          icon: Icons.handshake_rounded,
+          color: g.coral,
+          bgColor: g.coralSoft,
+          title: 'Seal a Promise',
+          subtitle: 'Commit to a meaningful life habit or intention',
+          onTap: () {
+            Navigator.pop(context);
+            PromiseChatComposer.show(context);
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildActionTile(
+          context: context,
+          icon: Icons.notifications_active_rounded,
+          color: g.amber,
+          bgColor: g.amberSoft,
+          title: 'Set a Reminder',
+          subtitle: 'Schedule an alert for today or later',
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/reminders');
+          },
+        ),
+        const SizedBox(height: 8),
+
+        _buildActionTile(
+          context: context,
+          icon: Icons.timer_rounded,
+          color: g.slate,
+          bgColor: g.slateSoft,
+          title: 'Focus Timer',
+          subtitle: 'Start deep work session or Pomodoro countdown',
+          onTap: () {
+            Navigator.pop(context);
+            context.push('/focus');
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionTile({
+    required BuildContext context,
+    required IconData icon,
+    required Color color,
+    required Color bgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final g = context.glass;
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: g.fill.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: g.edge.withValues(alpha: 0.15),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: g.ink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: g.inkMuted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 13,
+              color: g.inkMuted.withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
