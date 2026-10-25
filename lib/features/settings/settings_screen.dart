@@ -12,12 +12,15 @@ import 'package:drift/drift.dart' as drift;
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
+import '../../core/notifications/notification_service.dart';
+import '../../core/notifications/reminder_alarm_bridge.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../features/home/widgets/day_one_tutorial_card.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
+import 'package:geolocator/geolocator.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -26,7 +29,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
   final _nameController = TextEditingController();
   final _roleController = TextEditingController();
   final _companyInputController = TextEditingController();
@@ -42,8 +46,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _expandDataStorage = false;
   bool _expandHelpGuides = false;
 
+  // Live Permission & System Access States
+  bool _notificationsAllowed = false;
+  bool _alarmsAllowed = false;
+  bool _locationAllowed = false;
+  bool _locationServiceOn = true;
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _roleController.dispose();
     _companyInputController.dispose();
@@ -53,10 +64,130 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final profile = ref.read(userProfileStreamProvider).value;
     if (profile != null) {
       _initFromProfile(profile);
     }
+    _checkAllPermissions();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAllPermissions();
+    }
+  }
+
+  Future<void> _checkAllPermissions() async {
+    if (!mounted) return;
+    try {
+      bool notif = false;
+      try {
+        notif = await NotificationService.instance.areNotificationsEnabled();
+      } catch (_) {}
+      LocationPermission locPerm = LocationPermission.denied;
+      bool locService = true;
+      try {
+        locPerm = await Geolocator.checkPermission();
+        locService = await Geolocator.isLocationServiceEnabled();
+      } catch (_) {}
+
+      bool alarmReady = notif;
+      try {
+        final access = await ReminderAlarmBridge.access();
+        alarmReady = access['exact'] == true;
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _notificationsAllowed = notif;
+          _locationAllowed = locPerm == LocationPermission.always ||
+              locPerm == LocationPermission.whileInUse;
+          _locationServiceOn = locService;
+          _alarmsAllowed = alarmReady;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _openSystemAppSettings() async {
+    HapticFeedback.lightImpact();
+    try {
+      final opened = await Geolocator.openAppSettings();
+      if (!opened && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Open phone Settings > Apps > Ascent to manage permissions.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Open phone Settings > Apps > Ascent to manage permissions.',
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openLocationSettings() async {
+    HapticFeedback.lightImpact();
+    try {
+      await Geolocator.openLocationSettings();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Open device Location Settings to enable GPS.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _requestNotificationAccess() async {
+    HapticFeedback.lightImpact();
+    try {
+      await NotificationService.instance.requestPermissions();
+      await NotificationService.instance.requestExactAlarmsPermission();
+    } catch (_) {}
+    await _checkAllPermissions();
+  }
+
+  Future<void> _requestLocationAccess() async {
+    HapticFeedback.lightImpact();
+    try {
+      final perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.deniedForever) {
+        await _openSystemAppSettings();
+      } else {
+        final service = await Geolocator.isLocationServiceEnabled();
+        if (!service) {
+          await _openLocationSettings();
+        }
+      }
+    } catch (_) {}
+    await _checkAllPermissions();
+  }
+
+  Future<void> _requestAlarmAccess() async {
+    HapticFeedback.lightImpact();
+    try {
+      await ReminderAlarmBridge.requestAccess();
+    } catch (_) {
+      await _openSystemAppSettings();
+    }
+    await _checkAllPermissions();
   }
 
   void _initFromProfile(UserProfile? profile) {
@@ -342,10 +473,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     'Ascent runs a foreground walking service with real-time route polyline & step tracking.',
               ),
               const SizedBox(height: 18),
-              AscentButton.primary(
-                label: 'Understood, Got it! 👍',
-                expanded: true,
-                onPressed: () => Navigator.of(ctx).pop(),
+              Wrap(
+                spacing: AppSpace.s8,
+                runSpacing: AppSpace.s8,
+                children: [
+                  AscentButton.primary(
+                    label: 'Open Phone App Settings',
+                    icon: Icons.open_in_new_rounded,
+                    compact: true,
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      _openSystemAppSettings();
+                    },
+                  ),
+                  AscentButton.outlined(
+                    label: 'Understood, Got it! 👍',
+                    compact: true,
+                    onPressed: () => Navigator.of(ctx).pop(),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
             ],
@@ -398,6 +544,234 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _buildPermissionsSection() {
+    final g = context.glass;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'App Permissions & System Access',
+          dotColor: g.sage,
+        ),
+        AscentCard(
+          padding: const EdgeInsets.all(AppSpace.s16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Background Activity & Service Access',
+                style: AscentTextStyles.labelMedium
+                    .copyWith(color: g.ink)
+                    .merge(AppTypeRoles.typeRole2),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Manage essential OS permissions so background timers, walk tracking, and reminder alarms run reliably without interruption.',
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: g.inkMuted,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // 1. Notifications & Reminders
+              _buildPermissionTile(
+                icon: Icons.notifications_active_outlined,
+                iconColor: g.clay,
+                iconBg: g.claySoft,
+                title: 'Notifications & Alerts',
+                subtitle:
+                    'Scheduled reminders, study focus intervals & daily briefing',
+                isGranted: _notificationsAllowed,
+                grantedLabel: 'Allowed',
+                actionLabel: 'Allow Notifications',
+                onAction: _requestNotificationAccess,
+              ),
+
+              _Divider(color: g.line),
+
+              // 2. Alarms & Exact Timing
+              _buildPermissionTile(
+                icon: Icons.alarm_on_outlined,
+                iconColor: g.amber,
+                iconBg: g.amberSoft,
+                title: 'Exact Alarms & Ringing',
+                subtitle:
+                    'Reliable lock-screen ringing & full-screen alarm popups',
+                isGranted: _alarmsAllowed,
+                grantedLabel: 'Ready',
+                actionLabel: 'Configure Alarms',
+                onAction: _requestAlarmAccess,
+              ),
+
+              _Divider(color: g.line),
+
+              // 3. Location & GPS
+              _buildPermissionTile(
+                icon: Icons.location_on_outlined,
+                iconColor: g.sage,
+                iconBg: g.sageSoft,
+                title: 'GPS Walk Tracking',
+                subtitle:
+                    'Outdoor walking routes, live step count & distance tracking',
+                isGranted: _locationAllowed && _locationServiceOn,
+                grantedLabel: 'Active',
+                neededLabel: !_locationServiceOn ? 'GPS Off' : 'Needed',
+                actionLabel:
+                    !_locationServiceOn ? 'Turn On GPS' : 'Allow Location',
+                onAction: _requestLocationAccess,
+              ),
+
+              const SizedBox(height: 14),
+              _Divider(color: g.line),
+              const SizedBox(height: 12),
+
+              // Phone Shortcuts & Battery Saver Guide
+              Text(
+                'Phone Settings & Battery Savers',
+                style: AscentTextStyles.labelSmall.copyWith(
+                  color: g.inkSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Android battery savers kill background GPS & timers when phone is locked. Tap below to jump directly to Ascent\'s App Info, grant permissions, and set Battery to "Unrestricted".',
+                style: AscentTextStyles.bodySmall.copyWith(
+                  color: g.inkMuted,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: AppSpace.s8,
+                runSpacing: AppSpace.s8,
+                children: [
+                  AscentButton.primary(
+                    label: 'Open Phone App Settings',
+                    icon: Icons.open_in_new_rounded,
+                    compact: true,
+                    onPressed: _openSystemAppSettings,
+                  ),
+                  AscentButton.outlined(
+                    label: 'Location Settings',
+                    icon: Icons.location_on_outlined,
+                    compact: true,
+                    onPressed: _openLocationSettings,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPermissionTile({
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBg,
+    required String title,
+    required String subtitle,
+    required bool isGranted,
+    required String grantedLabel,
+    String neededLabel = 'Needed',
+    required String actionLabel,
+    required VoidCallback onAction,
+  }) {
+    final g = context.glass;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpace.s8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppTag(
+            padding: const EdgeInsets.all(AppSpace.s8),
+            nightDecoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: AppGeometry.roundedr10,
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: AppSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s4,
+                  children: [
+                    Text(
+                      title,
+                      style: AscentTextStyles.labelMedium
+                          .copyWith(color: g.ink)
+                          .merge(AppTypeRoles.typeRole8),
+                    ),
+                    AppTag(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s8,
+                        vertical: AppSpace.s2,
+                      ),
+                      nightDecoration: BoxDecoration(
+                        color: isGranted ? g.sageSoft : g.coralSoft,
+                        borderRadius: AppGeometry.roundedr8,
+                        border: Border.all(
+                          color: isGranted
+                              ? g.sage.withValues(alpha: 0.3)
+                              : g.coral.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isGranted
+                                ? Icons.check_circle_rounded
+                                : Icons.info_outline_rounded,
+                            size: 12,
+                            color: isGranted ? g.sage : g.coral,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            isGranted ? grantedLabel : neededLabel,
+                            style: AscentTextStyles.labelSmall.copyWith(
+                              color: isGranted ? g.sage : g.coral,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: g.inkMuted,
+                    height: 1.3,
+                  ),
+                ),
+                if (!isGranted) ...[
+                  const SizedBox(height: AppSpace.s6),
+                  AscentButton.outlined(
+                    label: actionLabel,
+                    compact: true,
+                    onPressed: onAction,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
@@ -443,8 +817,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             vertical: AppSpace.s8,
           ),
           children: [
-            // ── Section 1: Glass Translucency (Always Visible at Top) ────────
-            _SectionHeader(title: 'Glass Translucency', dotColor: g.clay),
+            // ── Section 1: Appearance & Theme (Always Visible at Top) ────────
+            _SectionHeader(title: 'Appearance & Theme', dotColor: g.clay),
             AscentCard(
               padding: const EdgeInsets.all(AppSpace.s16),
               child: Column(
@@ -455,7 +829,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Flexible(
                         child: Text(
-                          'Glass Aesthetics',
+                          'Glass Translucency',
                           style: AscentTextStyles.labelMedium
                               .copyWith(color: g.ink)
                               .merge(AppTypeRoles.typeRole2),
@@ -656,6 +1030,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+
+            // ── Section 3: App Permissions & System Access (Always Visible) ─
+            _buildPermissionsSection(),
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
@@ -874,12 +1252,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  AscentButton.outlined(
-                    label: 'View Android Battery Guide',
-                    icon: Icons.battery_saver_rounded,
-                    compact: true,
-                    expanded: true,
-                    onPressed: () => _showGpsBatteryGuide(context),
+                  Wrap(
+                    spacing: AppSpace.s8,
+                    runSpacing: AppSpace.s8,
+                    children: [
+                      AscentButton.outlined(
+                        label: 'View Battery Guide',
+                        icon: Icons.battery_saver_rounded,
+                        compact: true,
+                        onPressed: () => _showGpsBatteryGuide(context),
+                      ),
+                      AscentButton.primary(
+                        label: 'Open Phone App Settings',
+                        icon: Icons.open_in_new_rounded,
+                        compact: true,
+                        onPressed: _openSystemAppSettings,
+                      ),
+                    ],
                   ),
                 ],
               ),

@@ -359,7 +359,14 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               _buildBackToHomeBar(context),
                               _buildSingleShortcutFeature(_activeShortcutId!, layout),
                             ] else ...[
-                              // HERO: Activity Hub is the most prominent component
+                              // Mind Palace / Thought capture stays at the top of the feed
+                              if (layout.visible.contains('mind'))
+                                const Padding(
+                                  padding: EdgeInsets.only(bottom: AppSpace.s20),
+                                  child: ThoughtWallHomePreview(),
+                                ),
+
+                              // HERO: Activity Hub
                               if (layout.visible.contains('today'))
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: AppSpace.s24),
@@ -367,13 +374,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                                     previewLimit:
                                         layout.compact.contains('today') ? 2 : 4,
                                   ),
-                                ),
-
-                              // Thought capture stays prominent: dark, heavy border, recent-thoughts preview
-                              if (layout.visible.contains('mind'))
-                                const Padding(
-                                  padding: EdgeInsets.only(bottom: AppSpace.s20),
-                                  child: ThoughtWallHomePreview(),
                                 ),
 
                               PlanningNotificationHandler(
