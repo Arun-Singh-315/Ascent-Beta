@@ -1306,12 +1306,50 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   ),
                   if (reminder.isActive)
                     Wrap(
+                      spacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        TextButton.icon(
-                          onPressed: () => _finishReminder(reminder),
-                          icon: const Icon(Icons.check_rounded),
-                          label: const Text('Done'),
-                        ),
+                        if (reminder.scheduledAt.isAfter(DateTime.now()))
+                          InkWell(
+                            onTap: () => _finishReminder(reminder),
+                            borderRadius: AppGeometry.roundedr8,
+                            child: AppTag(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s8,
+                                vertical: AppSpace.s4,
+                              ),
+                              nightDecoration: BoxDecoration(
+                                color: g.fill.withValues(alpha: 0.5),
+                                borderRadius: AppGeometry.roundedr8,
+                                border: Border.all(color: g.line),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.schedule_rounded,
+                                    size: 13,
+                                    color: g.inkMuted,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'At ${DateFormat('h:mm a').format(reminder.scheduledAt)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: g.inkMuted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          TextButton.icon(
+                            onPressed: () => _finishReminder(reminder),
+                            icon: const Icon(Icons.check_rounded),
+                            label: const Text('Done'),
+                          ),
                         TextButton.icon(
                           onPressed: () => _snoozeReminder(reminder),
                           icon: const Icon(Icons.snooze_rounded),
@@ -1382,7 +1420,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 }
               },
               itemBuilder: (context) => [
-                if (reminder.isActive)
+                if (reminder.isActive &&
+                    !reminder.scheduledAt.isAfter(DateTime.now()))
                   const PopupMenuItem(value: 'done', child: Text('Mark done')),
                 if (reminder.isActive)
                   const PopupMenuItem(

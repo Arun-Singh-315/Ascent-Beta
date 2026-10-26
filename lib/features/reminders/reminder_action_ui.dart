@@ -1,3 +1,4 @@
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -65,6 +66,21 @@ Future<bool> runReminderAction(
         );
       }
     } else if (action == ReminderRowAction.done) {
+      if (row.scheduledAt.isAfter(DateTime.now())) {
+        final timeStr = DateFormat('h:mm a').format(row.scheduledAt);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Scheduled for $timeStr. You can mark it done once that time arrives.',
+              ),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return false;
+      }
       final before = await actions.complete(row.id);
       if (before == null) return false;
       if (context.mounted) {

@@ -23,6 +23,8 @@ import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
+import '../promises/providers/promise_providers.dart';
+import '../vault/providers/vault_providers.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import '../home/widgets/home_schedule_sheet.dart';
@@ -1655,6 +1657,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final isHighPriority = thought.content.contains('[HIGH]') ||
         contentLower.contains('#high') ||
         contentLower.contains('#urgent');
+    final privatePromiseIds = ref.watch(privatePromiseIdsProvider);
+    final unlockedPromiseIds = ref.watch(unlockedPromiseIdsProvider);
+    final isPrivatePromise = thought.mood == 'promise' &&
+        privatePromiseIds.contains(thought.id);
+    final isPromiseLocked = isPrivatePromise &&
+        !unlockedPromiseIds.contains(thought.id);
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0.0, end: 1.0),
@@ -1817,13 +1825,21 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons.handshake_rounded,
+                                isPrivatePromise
+                                    ? (isPromiseLocked
+                                        ? Icons.lock_rounded
+                                        : Icons.lock_open_rounded)
+                                    : Icons.handshake_rounded,
                                 size: 12,
                                 color: g.clay,
                               ),
                               const SizedBox(width: 5),
                               Text(
-                                'PROMISE',
+                                isPrivatePromise
+                                    ? (isPromiseLocked
+                                        ? 'PRIVATE PROMISE'
+                                        : 'UNLOCKED PROMISE')
+                                    : 'PROMISE',
                                 style: AscentTextStyles.homeCaption
                                     .copyWith(
                                       color: g.clay,
@@ -2267,66 +2283,119 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                       ),
                       const SizedBox(height: 4),
                     ],
-                    // Optional prompt question banner
-                    if (thought.promptQuestion != null) ...[
+                    if (isPromiseLocked) ...[
                       const SizedBox(height: 10),
-                      AppTag(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s10,
-                          vertical: AppSpace.s6,
-                        ),
-                        nightDecoration: BoxDecoration(
-                          color: moodColor.withValues(alpha: 0.08),
-                          borderRadius: AppGeometry.roundedr8,
-                          border: Border(
-                            left: BorderSide(
-                              color: moodColor.withValues(alpha: 0.5),
-                              width: AppBorderScale.w2point5,
-                            ),
+                      InkWell(
+                        onTap: () async {
+                          final security = ref.read(vaultSecurityServiceProvider);
+                          final unlocked = await security.authenticateBiometrics(
+                            reason: 'Unlock private commitment',
+                          );
+                          if (unlocked) {
+                            ref
+                                .read(unlockedPromiseIdsProvider.notifier)
+                                .unlock(thought.id);
+                          }
+                        },
+                        borderRadius: AppGeometry.roundedr12,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: g.fill.withValues(alpha: 0.6),
+                            borderRadius: AppGeometry.roundedr12,
+                            border: Border.all(color: g.line),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.lock_outline_rounded,
+                                size: 16,
+                                color: g.inkMuted,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Private commitment · Tap to unlock',
+                                  style: TextStyle(
+                                    color: g.inkMuted,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(
-                              Icons.help_outline_rounded,
-                              size: 13,
-                              color: moodColor,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                thought.promptQuestion!,
-                                style: AscentTextStyles.bodySmall
-                                    .copyWith(
-                                      color: context.textMuted,
-                                      fontStyle: FontStyle.italic,
-                                      height: 1.3,
-                                    )
-                                    .merge(AppTypeRoles.typeRole27),
+                      ),
+                    ] else ...[
+                      // Optional prompt question banner: only show if distinct from content
+                      if (thought.promptQuestion != null &&
+                          thought.promptQuestion!.trim().isNotEmpty &&
+                          thought.promptQuestion!.trim() !=
+                              thought.content.trim()) ...[
+                        const SizedBox(height: 10),
+                        AppTag(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpace.s10,
+                            vertical: AppSpace.s6,
+                          ),
+                          nightDecoration: BoxDecoration(
+                            color: moodColor.withValues(alpha: 0.08),
+                            borderRadius: AppGeometry.roundedr8,
+                            border: Border(
+                              left: BorderSide(
+                                color: moodColor.withValues(alpha: 0.5),
+                                width: AppBorderScale.w2point5,
                               ),
                             ),
-                          ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.help_outline_rounded,
+                                size: 13,
+                                color: moodColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  thought.promptQuestion!,
+                                  style: AscentTextStyles.bodySmall
+                                      .copyWith(
+                                        color: context.textMuted,
+                                        fontStyle: FontStyle.italic,
+                                        height: 1.3,
+                                      )
+                                      .merge(AppTypeRoles.typeRole27),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 10),
+
+                      // Content
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onDoubleTap: isSelectionMode ? null : _toggleDone,
+                        child: ThoughtExcerpt(
+                          content: thought.content.startsWith('[HIGH] ')
+                              ? thought.content.substring(7)
+                              : thought.content,
+                          maxLines: 5,
+                          style: AppTypography.thoughtContent(
+                            color: context.glass.ink,
+                          ),
                         ),
                       ),
                     ],
-
-                    const SizedBox(height: 10),
-
-                    // Content
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onDoubleTap: isSelectionMode ? null : _toggleDone,
-                      child: ThoughtExcerpt(
-                        content: thought.content.startsWith('[HIGH] ')
-                            ? thought.content.substring(7)
-                            : thought.content,
-                        maxLines: 5,
-                        style: AppTypography.thoughtContent(
-                          color: context.glass.ink,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

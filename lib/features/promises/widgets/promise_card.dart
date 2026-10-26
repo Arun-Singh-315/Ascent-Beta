@@ -7,6 +7,7 @@ import '../../../app/theme/text_styles.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../models/promise_model.dart';
 import '../providers/promise_providers.dart';
+import '../../vault/providers/vault_providers.dart';
 import 'promise_action_button.dart';
 import 'promise_detail_sheet.dart';
 
@@ -24,6 +25,8 @@ class PromiseCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final g = context.glass;
+    final unlockedIds = ref.watch(unlockedPromiseIdsProvider);
+    final isLocked = promise.isPrivate && !unlockedIds.contains(promise.id);
 
     return InkWell(
       onTap: () {
@@ -77,7 +80,9 @@ class PromiseCard extends ConsumerWidget {
                             if (promise.isPrivate) ...[
                               const SizedBox(width: 4),
                               Icon(
-                                Icons.lock_outline_rounded,
+                                isLocked
+                                    ? Icons.lock_outline_rounded
+                                    : Icons.lock_open_rounded,
                                 size: 11,
                                 color: g.inkMuted,
                               ),
@@ -176,45 +181,96 @@ class PromiseCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-
-            // Title
-            Text(
-              promise.title,
-              style: AscentTextStyles.homeTitle.copyWith(
-                color: g.ink,
-                fontSize: 16.5,
-                fontWeight: FontWeight.w700,
-                height: 1.35,
-              ),
-            ),
-
-            if (promise.schedule != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.repeat_rounded, size: 13, color: g.inkMuted),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      promise.schedule!.summary,
-                      style: TextStyle(color: g.inkMuted, fontSize: 12.5),
-                    ),
+            // Title / Privacy lock view
+            if (isLocked) ...[
+              InkWell(
+                onTap: () async {
+                  final security = ref.read(vaultSecurityServiceProvider);
+                  final unlocked = await security.authenticateBiometrics(
+                    reason: 'Unlock private commitment',
+                  );
+                  if (unlocked) {
+                    ref
+                        .read(unlockedPromiseIdsProvider.notifier)
+                        .unlock(promise.id);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
                   ),
-                ],
+                  decoration: BoxDecoration(
+                    color: g.fill.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: g.line),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 16,
+                        color: g.inkMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Private commitment · Tap to unlock',
+                          style: TextStyle(
+                            color: g.inkMuted,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ],
-            if (showIntention &&
-                promise.schedule == null &&
-                promise.intention.isNotEmpty &&
-                promise.intention != promise.title) ...[
-              const SizedBox(height: 4),
+            ] else ...[
               Text(
-                promise.intention,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: g.inkMuted, fontSize: 13, height: 1.35),
+                promise.title,
+                style: AscentTextStyles.homeTitle.copyWith(
+                  color: g.ink,
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                ),
               ),
+              if (promise.schedule != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.repeat_rounded, size: 13, color: g.inkMuted),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        promise.schedule!.summary,
+                        style: TextStyle(color: g.inkMuted, fontSize: 12.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (showIntention &&
+                  promise.schedule == null &&
+                  promise.intention.trim().isNotEmpty &&
+                  promise.intention.trim() != promise.title.trim()) ...[
+                const SizedBox(height: 4),
+                Text(
+                  promise.intention.trim(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: g.inkMuted,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 14),
 
