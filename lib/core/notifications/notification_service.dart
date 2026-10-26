@@ -95,12 +95,23 @@ class NotificationService {
   static const String remindersDestination = '/reminders';
 
   /// Keep notification payloads within destinations registered by the app.
-  /// Unknown or stale payloads safely return users to Home.
+  /// Maps incoming notification payloads to valid application routes.
+  /// Preserves query parameters while falling back to /home for invalid routes.
   static String destinationForPayload(String? payload) {
-    const destinations = {
+    if (payload == null || payload.trim().isEmpty) return '/home';
+    final trimmed = payload.trim();
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || uri.hasScheme || !uri.path.startsWith('/')) {
+      return '/home';
+    }
+
+    final path = uri.path;
+
+    const baseDestinations = {
       '/home',
       '/reminders',
       '/money',
+      '/more',
       '/focus',
       '/learning',
       '/medicine',
@@ -118,28 +129,30 @@ class NotificationService {
       '/consistency',
       '/resume-vault',
       '/momentum',
-      '/more',
+      '/momentum-onboarding',
+      '/momentum/onboarding',
+      '/vault',
+      '/today',
+      '/plans',
+      '/book-reader',
+      '/backup',
+      '/ai-assistant',
     };
-    if (payload != null && destinations.contains(payload)) return payload;
-    if (payload != null &&
-        RegExp(
-          r'^/home\?checkin=\d+&at=\d+(?:&answer=(?:done|later|skip))?$',
-        ).hasMatch(payload)) {
-      return payload;
+
+    if (baseDestinations.contains(path)) {
+      return trimmed;
     }
-    if (payload != null &&
-        RegExp(
-          r'^/home\?(?:session=[a-zA-Z0-9_:.\-]+(?:&reminder=\d+&at=\d+)?|checkin=\d+&at=\d+&occ=[a-zA-Z0-9_:.\-]+(?:&answer=(?:done|later|skip))?)$',
-        ).hasMatch(payload)) {
-      return payload;
+
+    if (RegExp(r'^/pipeline/\d+$').hasMatch(path)) {
+      return trimmed;
     }
-    if (payload != null && RegExp(r'^/pipeline/\d+$').hasMatch(payload)) {
-      return payload;
+    if (RegExp(r'^/analytics/series/\d+$').hasMatch(path)) {
+      return trimmed;
     }
-    if (payload != null &&
-        RegExp(r'^/analytics/series/\d+$').hasMatch(payload)) {
-      return payload;
+    if (RegExp(r'^/study-plan/course/[^/]+$').hasMatch(path)) {
+      return trimmed;
     }
+
     return '/home';
   }
 

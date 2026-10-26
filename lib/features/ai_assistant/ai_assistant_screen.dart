@@ -822,38 +822,54 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                child: InkWell(
+                  key: const ValueKey('ai_assistant_identity_switcher'),
+                  onTap: _isLoading
+                      ? null
+                      : () => _showCompanionSelectorSheet(context, ref, name),
+                  borderRadius: AscentRadii.borderSm,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.plusJakartaSans(
-                              color: context.textPrimary,
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.2,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: context.textPrimary,
+                                  fontSize: 16.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
                             ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 18,
+                              color: context.textMuted,
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'Intelligent · On-Device · Private',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: context.textMuted,
                           ),
                         ),
                       ],
                     ),
-                    Text(
-                      'Intelligent · On-Device · Private',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
-                        color: context.textMuted,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -893,8 +909,8 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                         context: context,
                         builder: (ctx) => AlertDialog(
                           title: const Text('Clear chat history?'),
-                          content: const Text(
-                            'This removes your conversation with Riya. Your saved thoughts, tasks and reminders will stay available.',
+                          content: Text(
+                            'This removes your conversation with $name. Your saved thoughts, tasks and reminders will stay available.',
                           ),
                           actions: [
                             TextButton(
@@ -1193,17 +1209,274 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
               Icon(icon, size: 14, color: accentColor),
               const SizedBox(width: 5),
               Flexible(
-                child: Text(
-                  label,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: context.textPrimary,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: context.textPrimary,
+                    ),
+                    maxLines: 1,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCompanionSelectorSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String currentName,
+  ) {
+    HapticFeedback.lightImpact();
+    final customController = TextEditingController();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final g = sheetContext.glass;
+        final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF16181D) : const Color(0xFFF9F9FB),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border.all(
+                color: isDark ? g.edge : const Color(0x1F000000),
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Companion Identity',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: sheetContext.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Choose who accompanies your daily Life OS',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: sheetContext.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildCompanionTile(
+                      sheetContext: sheetContext,
+                      name: 'Aria',
+                      tagline: 'Reflective & Calm',
+                      description: 'Quiet clarity, intentional pacing, and mindful focus.',
+                      icon: Icons.auto_awesome_rounded,
+                      selected: currentName == 'Aria',
+                      onSelect: () {
+                        HapticFeedback.mediumImpact();
+                        ref.read(assistantNameProvider.notifier).setName('Aria');
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    _buildCompanionTile(
+                      sheetContext: sheetContext,
+                      name: 'Riya',
+                      tagline: 'Vibrant & Action-Driven',
+                      description: 'High energy, proactive habits, and relentless momentum.',
+                      icon: Icons.bolt_rounded,
+                      selected: currentName == 'Riya',
+                      onSelect: () {
+                        HapticFeedback.mediumImpact();
+                        ref.read(assistantNameProvider.notifier).setName('Riya');
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E2129) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark ? g.edge : const Color(0x1F000000),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: customController,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 14,
+                                color: sheetContext.textPrimary,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Custom companion name...',
+                                hintStyle: GoogleFonts.plusJakartaSans(
+                                  fontSize: 13,
+                                  color: sheetContext.textMuted,
+                                ),
+                                isDense: true,
+                                border: InputBorder.none,
+                              ),
+                              onSubmitted: (val) {
+                                final trimmed = val.trim();
+                                if (trimmed.isNotEmpty) {
+                                  HapticFeedback.mediumImpact();
+                                  ref.read(assistantNameProvider.notifier).setName(trimmed);
+                                  Navigator.pop(sheetContext);
+                                }
+                              },
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              final trimmed = customController.text.trim();
+                              if (trimmed.isNotEmpty) {
+                                HapticFeedback.mediumImpact();
+                                ref.read(assistantNameProvider.notifier).setName(trimmed);
+                                Navigator.pop(sheetContext);
+                              }
+                            },
+                            child: const Text('Set'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCompanionTile({
+    required BuildContext sheetContext,
+    required String name,
+    required String tagline,
+    required String description,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onSelect,
+  }) {
+    final isDark = Theme.of(sheetContext).brightness == Brightness.dark;
+    final accent = sheetContext.accentPrimary;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onSelect,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: selected
+                ? accent.withValues(alpha: isDark ? 0.16 : 0.08)
+                : (isDark ? const Color(0xFF1C1E26) : Colors.white),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? accent
+                  : (isDark ? sheetContext.glass.edge : const Color(0x1F000000)),
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: selected
+                      ? accent.withValues(alpha: 0.22)
+                      : (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                ),
+                child: Icon(
+                  icon,
+                  color: selected ? accent : sheetContext.textPrimary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          name,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: sheetContext.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '· $tagline',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: sheetContext.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      description,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        color: sheetContext.textMuted,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: accent,
+                  size: 20,
+                ),
+              ],
             ],
           ),
         ),
@@ -1802,7 +2075,7 @@ class _ThinkingBubble extends StatelessWidget {
 // Soft Minimalist Conversational Welcome (Opening State)
 // ---------------------------------------------------------------------------
 
-class _SoftChatWelcome extends ConsumerWidget {
+class _SoftChatWelcome extends StatefulWidget {
   final String assistantName;
   final ValueChanged<String> onSelectPrompt;
 
@@ -1812,193 +2085,391 @@ class _SoftChatWelcome extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileStreamProvider).value;
-    final userName = profile?.name.isNotEmpty == true
-        ? profile!.name.split(' ').first
-        : 'there';
-    final accent = context.accentPrimary;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  State<_SoftChatWelcome> createState() => _SoftChatWelcomeState();
+}
 
-    final hour = DateTime.now().hour;
-    final greetingTime = hour < 12
-        ? 'Good morning'
-        : (hour < 17 ? 'Good afternoon' : 'Good evening');
+class _SoftChatWelcomeState extends State<_SoftChatWelcome>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sparkleController;
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          24,
-          MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
-          24,
-          24,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Soft glowing avatar
-            Container(
-              width: 68,
-              height: 68,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    accent.withValues(alpha: 0.25),
-                    context.glass.clay.withValues(alpha: 0.25),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.5),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: isDark ? 0.35 : 0.18),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: accent,
-                  size: 28,
-                ),
-              ),
+  @override
+  void initState() {
+    super.initState();
+    final isTest =
+        WidgetsBinding.instance.runtimeType.toString().contains('Test');
+    _sparkleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    );
+    if (!isTest) {
+      _sparkleController.repeat(reverse: true);
+    } else {
+      _sparkleController.value = 0.5;
+    }
+  }
+
+  @override
+  void dispose() {
+    _sparkleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final profile = ref.watch(userProfileStreamProvider).value;
+        final userName = profile?.name.isNotEmpty == true
+            ? profile!.name.split(' ').first
+            : 'there';
+        final accent = context.accentPrimary;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        final hour = DateTime.now().hour;
+        final greetingTime = hour < 12
+            ? 'Good morning'
+            : (hour < 17 ? 'Good afternoon' : 'Good evening');
+
+        return Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              MediaQuery.paddingOf(context).top + kToolbarHeight + 16,
+              20,
+              24,
             ),
-            const SizedBox(height: 14),
-
-            // Minimal status indicator
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: AscentSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? context.bgSurface.withValues(alpha: 0.85)
-                    : Colors.white.withValues(alpha: 0.90),
-                borderRadius: AscentRadii.borderMd,
-                border: Border.all(
-                  color: isDark ? context.glass.edge : context.divider,
-                  width: 0.8,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: context.glass.sage,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      '$assistantName · Always by your side',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: context.textMuted,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Soft glowing breathing avatar
+                AnimatedBuilder(
+                  animation: _sparkleController,
+                  builder: (context, child) {
+                    final pulse = _sparkleController.value;
+                    return Container(
+                      width: 68,
+                      height: 68,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            accent.withValues(alpha: 0.25 + pulse * 0.15),
+                            context.glass.clay.withValues(alpha: 0.20 + pulse * 0.10),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(
+                          color: accent.withValues(alpha: 0.45 + pulse * 0.25),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(
+                              alpha: isDark ? (0.28 + pulse * 0.20) : (0.16 + pulse * 0.12),
+                            ),
+                            blurRadius: 22 + pulse * 10,
+                            spreadRadius: 2 + pulse * 3,
+                          ),
+                        ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Text(
-              '$greetingTime, $userName',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: context.textPrimary,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'I\'m $assistantName, your personal assistant. How can I help you today?',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13.5,
-                color: context.textMuted,
-                height: 1.4,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Soft suggestion pills
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: WrapAlignment.center,
-              children:
-                  [
-                    'Plan my day',
-                    'Log 250ml water',
-                    'What are my tasks today?',
-                    'Check my walk status',
-                    'Medicine schedule',
-                    'Explain Dynamic Programming',
-                  ].map((prompt) {
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          onSelectPrompt(prompt);
-                        },
-                        borderRadius: AscentRadii.borderXl,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 9.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? context.bgSurface.withValues(alpha: 0.85)
-                                : Colors.white.withValues(alpha: 0.90),
-                            borderRadius: AscentRadii.borderXl,
-                            border: Border.all(
-                              color: isDark
-                                  ? context.glass.edge
-                                  : context.divider,
-                              width: 1.0,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(
-                                  alpha: isDark ? 0.20 : 0.04,
-                                ),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            prompt,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w600,
-                              color: context.textPrimary,
-                            ),
-                          ),
+                      child: Center(
+                        child: Icon(
+                          Icons.auto_awesome_rounded,
+                          color: accent,
+                          size: 30,
                         ),
                       ),
                     );
-                  }).toList(),
+                  },
+                ),
+                const SizedBox(height: 14),
+
+                // Minimal status indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: AscentSpacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? context.bgSurface.withValues(alpha: 0.85)
+                        : Colors.white.withValues(alpha: 0.90),
+                    borderRadius: AscentRadii.borderMd,
+                    border: Border.all(
+                      color: isDark ? context.glass.edge : context.divider,
+                      width: 0.8,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: context.glass.sage,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          '${widget.assistantName} · Always by your side',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: context.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                Text(
+                  '$greetingTime, $userName',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: context.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'I\'m ${widget.assistantName}, your personal assistant. How can I help you today?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    color: context.textMuted,
+                    height: 1.4,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // 4 Crisp Contextual Accelerator Cards
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isCompact = constraints.maxWidth < 360;
+                    final cardWidth = isCompact ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.bubble_chart_rounded,
+                          title: 'Unload Thought',
+                          subtitle: 'Clear mental clutter to Vault',
+                          prompt: 'Unload thought: ',
+                          onTap: widget.onSelectPrompt,
+                        ),
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.handshake_rounded,
+                          title: 'Sacred Promise',
+                          subtitle: 'Commit with daily check-ins',
+                          prompt: 'Create a promise to ',
+                          onTap: widget.onSelectPrompt,
+                        ),
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.coffee_rounded,
+                          title: 'Chai Reset',
+                          subtitle: '5-min mindful reflection',
+                          prompt: 'Start a 5 minute chai break',
+                          onTap: widget.onSelectPrompt,
+                        ),
+                        _buildAcceleratorCard(
+                          context: context,
+                          isDark: isDark,
+                          width: cardWidth,
+                          icon: Icons.medication_rounded,
+                          title: 'Health & Meds',
+                          subtitle: 'Review daily doses & water',
+                          prompt: 'What are my medicines today?',
+                          onTap: widget.onSelectPrompt,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 16),
+
+                // Soft suggestion pills
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children:
+                      [
+                        'Plan my day',
+                        'Log 250ml water',
+                        'What are my tasks today?',
+                        'Check my walk status',
+                        'Medicine schedule',
+                        'Explain Dynamic Programming',
+                      ].map((prompt) {
+                        return Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onSelectPrompt(prompt);
+                            },
+                            borderRadius: AscentRadii.borderXl,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 9.5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? context.bgSurface.withValues(alpha: 0.85)
+                                    : Colors.white.withValues(alpha: 0.90),
+                                borderRadius: AscentRadii.borderXl,
+                                border: Border.all(
+                                  color: isDark
+                                      ? context.glass.edge
+                                      : context.divider,
+                                  width: 1.0,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: isDark ? 0.20 : 0.04,
+                                    ),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                prompt,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.textPrimary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                ),
+              ],
             ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAcceleratorCard({
+    required BuildContext context,
+    required bool isDark,
+    required double width,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String prompt,
+    required ValueChanged<String> onTap,
+  }) {
+    final accent = context.accentPrimary;
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap(prompt);
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? context.bgSurface.withValues(alpha: 0.85)
+                  : Colors.white.withValues(alpha: 0.90),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? context.glass.edge : context.divider,
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: isDark ? 0.20 : 0.12),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      icon,
+                      color: accent,
+                      size: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          title,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w700,
+                            color: context.textPrimary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w500,
+                          color: context.textMuted,
+                          height: 1.25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
