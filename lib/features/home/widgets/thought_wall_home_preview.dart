@@ -25,6 +25,7 @@ import '../../../shared/widgets/thought_excerpt.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
 import '../../thought_wall/thought_wall_preferences.dart';
+import '../../thought_wall/thought_wall_appearance_sheet.dart';
 import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space
@@ -83,267 +84,13 @@ class _ThoughtWallHomePreviewState
     _controller.addListener(_refresh);
   }
 
-  Future<void> _setBubbleStyle({bool? filled, double? borderWidth}) async {
-    final current = ref.read(thoughtWallAppearanceProvider);
-    await ref.read(thoughtWallAppearanceProvider.notifier).save(
-      current.copyWith(
-        bubbleFilled: filled,
-        bubbleBorderWidth: borderWidth,
-      ),
-    );
-  }
-
   void _showBubbleStyleSheet(BuildContext context) {
     HapticFeedback.lightImpact();
-    final g = context.glass;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) {
-        return Consumer(
-          builder: (sheetContext, sheetRef, _) {
-            final appearance = sheetRef.watch(thoughtWallAppearanceProvider);
-            final bubbleFilled = appearance.bubbleFilled;
-            final bubbleBorderWidth = appearance.bubbleBorderWidth;
-            return Container(
-              decoration: BoxDecoration(
-                color: context.isDark ? context.bgSurface : g.fill,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                border: Border(top: BorderSide(color: g.line)),
-              ),
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-              child: SafeArea(
-                top: false,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 36,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: g.inkMuted.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Icon(Icons.tune_rounded, size: 20, color: g.clay),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Mind Palace Card Style',
-                            style: AscentTextStyles.homeTitle.copyWith(
-                              color: g.ink,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 20),
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'CARD BACKGROUND',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.inkMuted,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              _setBubbleStyle(filled: true);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: bubbleFilled
-                                    ? g.clay.withValues(alpha: 0.14)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: bubbleFilled
-                                      ? g.clay
-                                      : g.line.withValues(alpha: 0.5),
-                                  width: bubbleFilled ? 1.8 : 1.0,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    bubbleFilled
-                                        ? Icons.check_circle_rounded
-                                        : Icons.circle_outlined,
-                                    size: 16,
-                                    color: bubbleFilled
-                                        ? g.clay
-                                        : g.inkSecondary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Coloured Fill',
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: bubbleFilled ? g.clay : g.ink,
-                                      fontWeight: bubbleFilled
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              _setBubbleStyle(filled: false);
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: !bubbleFilled
-                                    ? g.clay.withValues(alpha: 0.14)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: !bubbleFilled
-                                      ? g.clay
-                                      : g.line.withValues(alpha: 0.5),
-                                  width: !bubbleFilled ? 1.8 : 1.0,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    !bubbleFilled
-                                        ? Icons.check_circle_rounded
-                                        : Icons.circle_outlined,
-                                    size: 16,
-                                    color: !bubbleFilled
-                                        ? g.clay
-                                        : g.inkSecondary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    'Border Only',
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: !bubbleFilled ? g.clay : g.ink,
-                                      fontWeight: !bubbleFilled
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'BORDER THICKNESS',
-                      style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.inkMuted,
-                        letterSpacing: 1.0,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        for (final width in [1.0, 1.8, 2.6]) ...[
-                          Expanded(
-                            child: InkWell(
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                _setBubbleStyle(borderWidth: width);
-                              },
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (bubbleBorderWidth - width).abs() <
-                                          0.1
-                                      ? g.clay.withValues(alpha: 0.14)
-                                      : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: (bubbleBorderWidth - width).abs() <
-                                            0.1
-                                        ? g.clay
-                                        : g.line.withValues(alpha: 0.5),
-                                    width: (bubbleBorderWidth - width).abs() <
-                                            0.1
-                                        ? 1.8
-                                        : 1.0,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    width == 1.0
-                                        ? 'Thin (1px)'
-                                        : (width == 1.8
-                                            ? 'Standard'
-                                            : 'Bold (2.6px)'),
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: (bubbleBorderWidth - width).abs() <
-                                              0.1
-                                          ? g.clay
-                                          : g.ink,
-                                      fontWeight:
-                                          (bubbleBorderWidth - width).abs() <
-                                                  0.1
-                                              ? FontWeight.w700
-                                              : FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (width != 2.6) const SizedBox(width: 8),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (_) => const ThoughtWallAppearanceSheet(),
     );
   }
 
@@ -810,21 +557,36 @@ Color getThoughtMoodColor(String mood) {
                       final isPromiseLocked = isPrivatePromise &&
                           !unlockedPromiseIds.contains(thought.id);
 
+                      final cardStyle = appearance.style;
+                      final homeCardRadius = switch (cardStyle) {
+                        ThoughtCardStyle.soft => BorderRadius.circular(16),
+                        ThoughtCardStyle.bubble => BorderRadius.only(
+                          topLeft: const Radius.circular(18),
+                          topRight: const Radius.circular(18),
+                          bottomLeft: Radius.circular(isRight ? 18 : 6),
+                          bottomRight: Radius.circular(isRight ? 6 : 18),
+                        ),
+                        ThoughtCardStyle.minimal => BorderRadius.circular(6),
+                      };
+
+                      final hasBubbleFraming = cardStyle != ThoughtCardStyle.minimal;
                       final itemHardBorderColor = thought.isCompleted
                           ? (isDark
                                   ? const Color(0xFF86EFAC)
                                   : const Color(0xFF166534))
                               .withValues(alpha: .6)
-                          : Color.lerp(
+                          : hasBubbleFraming
+                          ? Color.lerp(
                               g.ink.withValues(alpha: isDark ? .35 : .40),
                               moodAccent,
                               isDark ? 0.45 : 0.40,
-                            )!;
+                            )!
+                          : g.ink.withValues(alpha: isDark ? .34 : .38);
                       final itemBubbleBorder = Border.all(
                         color: itemHardBorderColor,
-                        width: bubbleBorderWidth,
+                        width: hasBubbleFraming ? bubbleBorderWidth : 1.0,
                       );
-                      final itemBubbleFill = !bubbleFilled
+                      final itemBubbleFill = !bubbleFilled && hasBubbleFraming
                           ? Colors.transparent
                           : thought.isCompleted
                               ? (isDark
@@ -882,12 +644,7 @@ Color getThoughtMoodColor(String mood) {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(18),
-                                topRight: const Radius.circular(18),
-                                bottomLeft: Radius.circular(isRight ? 18 : 6),
-                                bottomRight: Radius.circular(isRight ? 6 : 18),
-                              ),
+                              borderRadius: homeCardRadius,
                             ),
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpace.s16,

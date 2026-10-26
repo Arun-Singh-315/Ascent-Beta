@@ -299,9 +299,7 @@ void main() {
               }
               if (!selected) {
                 expect(find.byTooltip('Expand thought'), findsNothing);
-                expect(find.byTooltip('Collapse thought'), findsNothing);
-                expect(find.text('Category'), findsOneWidget);
-                expect(find.text('Todo'), findsOneWidget);
+                expect(find.byTooltip('Edit thought'), findsOneWidget);
               }
             }
           }

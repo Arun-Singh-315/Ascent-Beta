@@ -1573,16 +1573,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
     final style = widget.appearance.style;
     final minimal = style == ThoughtCardStyle.minimal;
     final isBubble = style == ThoughtCardStyle.bubble;
-    final radius = switch (style) {
-      ThoughtCardStyle.soft => BorderRadius.circular(16),
-      ThoughtCardStyle.bubble => BorderRadius.only(
-        topLeft: const Radius.circular(16),
-        topRight: const Radius.circular(16),
-        bottomLeft: Radius.circular(index.isEven ? 4 : 16),
-        bottomRight: Radius.circular(index.isOdd ? 4 : 16),
-      ),
-      ThoughtCardStyle.minimal => BorderRadius.zero,
-    };
 
     final moodAccent = g.frozen
         ? (thought.mood == 'win' ? g.sage : g.slate)
@@ -1620,7 +1610,9 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
 
     return BoxDecoration(
       color: bubbleFill,
-      boxShadow: isSelected
+      boxShadow: minimal
+          ? const []
+          : isSelected
           ? [
               BoxShadow(
                 color: g.clay.withValues(alpha: isDark ? 0.36 : 0.22),
@@ -1643,14 +1635,17 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               ),
             ]
           : const [],
-      borderRadius: widget.compact
-          ? radius
-          : BorderRadius.only(
-              topLeft: const Radius.circular(18),
-              topRight: const Radius.circular(18),
-              bottomLeft: Radius.circular(index.isEven ? 18 : 6),
-              bottomRight: Radius.circular(index.isOdd ? 18 : 6),
-            ),
+      borderRadius: switch (style) {
+        ThoughtCardStyle.soft => BorderRadius.circular(16),
+        ThoughtCardStyle.bubble => BorderRadius.only(
+          topLeft: const Radius.circular(18),
+          topRight: const Radius.circular(18),
+          bottomLeft: Radius.circular(index.isEven ? 18 : 6),
+          bottomRight: Radius.circular(index.isOdd ? 6 : 18),
+        ),
+        ThoughtCardStyle.minimal =>
+          widget.compact ? BorderRadius.zero : BorderRadius.circular(6),
+      },
       border: isSelected
           ? Border.all(color: g.clay, width: 2.0)
           : minimal && widget.compact

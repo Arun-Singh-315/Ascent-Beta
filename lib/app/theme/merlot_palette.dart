@@ -12,16 +12,16 @@ class MerlotPalette {
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
   /// Canvas: Scaffold background — soft, soothing cashmere linen (organic warmth, zero bleached white wash)
-  static const canvas = Color(0xFFF7F3EA);
+  static const canvas = Color(0xFFF5EFE6);
 
   /// Surface: Cards, bottom nav, containers — pristine porcelain off-white
   static const surface = Color(0xFFFFFFFF);
 
   /// Surface Bottom: Lower stop for gradual card gradient — pure soft porcelain
-  static const surfaceBottom = Color(0xFFFCFCFD);
+  static const surfaceBottom = Color(0xFFFAF5EE);
 
   /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — soft sunken cashmere well
-  static const recessedWell = Color(0xFFEFE8DD);
+  static const recessedWell = Color(0xFFF3ECE2);
 
   /// Elevated: Sheets, dialogs, modals — crisp elevated porcelain white
   static const elevated = Color(0xFFFFFFFF);
@@ -56,8 +56,8 @@ class MerlotPalette {
   /// Tint: Selected tabs ("Today"), chips, tonal button background — delicate wine rose blush
   static const tint = Color(0xFFF4E5EC);
 
-  /// Pill Soft: Composer pills and light buttons — soft crisp off-white
-  static const pillSoft = Color(0xFFF7F7FA);
+  /// Pill Soft: Composer pills and light buttons — soft crisp cashmere cream
+  static const pillSoft = Color(0xFFFAF6F2);
 
   /// Ink: Primary text on canvas and screen headings — Espresso Merlot Obsidian (17.5:1 contrast)
   static const ink = Color(0xFF240A10);

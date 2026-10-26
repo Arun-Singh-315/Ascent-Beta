@@ -8,7 +8,7 @@ import 'surface_tokens.dart';
 class ThoughtTheme {
   // Luminous backgrounds blended with white:
   // "clay dont paint its shade and ink like background use shade with white not whole screen of same colour"
-  static const clayCanvas = Color(0xFFF7F3EA);
+  static const clayCanvas = Color(0xFFF5EFE6);
   static const claySurface = Color(0xFFFFFFFF);
 
   // "same with frozen sky dont blue it whole yr shade and white blue effect in background with bubble transparent keep bordr hard man"
