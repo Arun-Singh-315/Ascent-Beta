@@ -22,6 +22,8 @@ import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
+import '../../promises/providers/promise_providers.dart';
+import '../../vault/providers/vault_providers.dart';
 import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space
@@ -52,6 +54,10 @@ class _ThoughtWallHomePreviewState
 
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
+
+  bool _bubbleFilled = true;
+  double _bubbleBorderWidth = 1.8;
+
   @override
   void dispose() {
     _draft?.dispose();
@@ -64,10 +70,14 @@ class _ThoughtWallHomePreviewState
   void initState() {
     super.initState();
     try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      _bubbleFilled = prefs.getBool('home_thought_bubble_filled') ?? true;
+      _bubbleBorderWidth =
+          prefs.getDouble('home_thought_bubble_border_width') ?? 1.8;
       if (widget.showComposer) {
         _draft = NoteDraftBinding(
           _controller,
-          ref.read(sharedPreferencesProvider),
+          prefs,
           'home',
         );
       }
@@ -76,6 +86,276 @@ class _ThoughtWallHomePreviewState
     }
     _focusNode.addListener(_refresh);
     _controller.addListener(_refresh);
+  }
+
+  Future<void> _setBubbleStyle({bool? filled, double? borderWidth}) async {
+    setState(() {
+      if (filled != null) _bubbleFilled = filled;
+      if (borderWidth != null) _bubbleBorderWidth = borderWidth;
+    });
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      if (filled != null) {
+        await prefs.setBool('home_thought_bubble_filled', filled);
+      }
+      if (borderWidth != null) {
+        await prefs.setDouble('home_thought_bubble_border_width', borderWidth);
+      }
+    } catch (_) {}
+  }
+
+  void _showBubbleStyleSheet(BuildContext context) {
+    HapticFeedback.lightImpact();
+    final g = context.glass;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            return Container(
+              decoration: BoxDecoration(
+                color: context.isDark ? context.bgSurface : g.fill,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+                border: Border(top: BorderSide(color: g.line)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: g.inkMuted.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Icon(Icons.tune_rounded, size: 20, color: g.clay),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Mind Palace Card Style',
+                            style: AscentTextStyles.homeTitle.copyWith(
+                              color: g.ink,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, size: 20),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'CARD BACKGROUND',
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: g.inkMuted,
+                        letterSpacing: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setModalState(() {});
+                              _setBubbleStyle(filled: true);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _bubbleFilled
+                                    ? g.clay.withValues(alpha: 0.14)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _bubbleFilled
+                                      ? g.clay
+                                      : g.line.withValues(alpha: 0.5),
+                                  width: _bubbleFilled ? 1.8 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    _bubbleFilled
+                                        ? Icons.check_circle_rounded
+                                        : Icons.circle_outlined,
+                                    size: 16,
+                                    color: _bubbleFilled
+                                        ? g.clay
+                                        : g.inkSecondary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Coloured Fill',
+                                    style: AscentTextStyles.bodySmall.copyWith(
+                                      color: _bubbleFilled ? g.clay : g.ink,
+                                      fontWeight: _bubbleFilled
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setModalState(() {});
+                              _setBubbleStyle(filled: false);
+                            },
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: !_bubbleFilled
+                                    ? g.clay.withValues(alpha: 0.14)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: !_bubbleFilled
+                                      ? g.clay
+                                      : g.line.withValues(alpha: 0.5),
+                                  width: !_bubbleFilled ? 1.8 : 1.0,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    !_bubbleFilled
+                                        ? Icons.check_circle_rounded
+                                        : Icons.circle_outlined,
+                                    size: 16,
+                                    color: !_bubbleFilled
+                                        ? g.clay
+                                        : g.inkSecondary,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Border Only',
+                                    style: AscentTextStyles.bodySmall.copyWith(
+                                      color: !_bubbleFilled ? g.clay : g.ink,
+                                      fontWeight: !_bubbleFilled
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'BORDER THICKNESS',
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: g.inkMuted,
+                        letterSpacing: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (final width in [1.0, 1.8, 2.6]) ...[
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setModalState(() {});
+                                _setBubbleStyle(borderWidth: width);
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: (_bubbleBorderWidth - width).abs() <
+                                          0.1
+                                      ? g.clay.withValues(alpha: 0.14)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: (_bubbleBorderWidth - width).abs() <
+                                            0.1
+                                        ? g.clay
+                                        : g.line.withValues(alpha: 0.5),
+                                    width: (_bubbleBorderWidth - width).abs() <
+                                            0.1
+                                        ? 1.8
+                                        : 1.0,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    width == 1.0
+                                        ? 'Thin (1px)'
+                                        : (width == 1.8
+                                            ? 'Standard'
+                                            : 'Bold (2.6px)'),
+                                    style: AscentTextStyles.bodySmall.copyWith(
+                                      color: (_bubbleBorderWidth - width).abs() <
+                                              0.1
+                                          ? g.clay
+                                          : g.ink,
+                                      fontWeight:
+                                          (_bubbleBorderWidth - width).abs() <
+                                                  0.1
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (width != 2.6) const SizedBox(width: 8),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   final _fieldKey = GlobalKey();
@@ -472,7 +752,7 @@ class _ThoughtWallHomePreviewState
                     width: 1.0,
                   );
 
-Color _getThoughtMoodColor(String mood) {
+Color getThoughtMoodColor(String mood) {
   switch (mood) {
     case 'idea':
       return AppPalette.colorFFD97706;
@@ -527,7 +807,16 @@ Color _getThoughtMoodColor(String mood) {
 
                       final moodAccent = g.frozen
                           ? (thought.mood == 'win' ? g.sage : g.slate)
-                          : _getThoughtMoodColor(thought.mood);
+                          : getThoughtMoodColor(thought.mood);
+
+                      final privatePromiseIds =
+                          ref.watch(privatePromiseIdsProvider);
+                      final unlockedPromiseIds =
+                          ref.watch(unlockedPromiseIdsProvider);
+                      final isPrivatePromise = thought.mood == 'promise' &&
+                          privatePromiseIds.contains(thought.id);
+                      final isPromiseLocked = isPrivatePromise &&
+                          !unlockedPromiseIds.contains(thought.id);
 
                       final itemHardBorderColor = thought.isCompleted
                           ? (isDark
@@ -539,20 +828,24 @@ Color _getThoughtMoodColor(String mood) {
                               moodAccent,
                               isDark ? 0.45 : 0.40,
                             )!;
-                      final itemBubbleBorder =
-                          Border.all(color: itemHardBorderColor, width: 1.8);
-                      final itemBubbleFill = thought.isCompleted
-                          ? (isDark
-                                  ? const Color(0xFF86EFAC)
-                                  : const Color(0xFF166534))
-                              .withValues(alpha: .08)
-                          : Color.lerp(
-                              g.fill,
-                              moodAccent.withValues(
-                                alpha: isDark ? 0.06 : 0.04,
-                              ),
-                              0.5,
-                            );
+                      final itemBubbleBorder = Border.all(
+                        color: itemHardBorderColor,
+                        width: _bubbleBorderWidth,
+                      );
+                      final itemBubbleFill = !_bubbleFilled
+                          ? Colors.transparent
+                          : thought.isCompleted
+                              ? (isDark
+                                      ? const Color(0xFF86EFAC)
+                                      : const Color(0xFF166534))
+                                  .withValues(alpha: .08)
+                              : Color.lerp(
+                                  g.fill,
+                                  moodAccent.withValues(
+                                    alpha: isDark ? 0.06 : 0.04,
+                                  ),
+                                  0.5,
+                                );
 
                       return _ThoughtEntrance(
                         key: ValueKey('home_thought_entrance_${thought.id}'),
@@ -564,8 +857,22 @@ Color _getThoughtMoodColor(String mood) {
                           right: isRight ? 0.0 : 36.0,
                         ),
                         child: AppTapArea(
-                          onTap: () {
+                          onTap: () async {
                             HapticFeedback.selectionClick();
+                            if (isPromiseLocked) {
+                              final security =
+                                  ref.read(vaultSecurityServiceProvider);
+                              final unlocked =
+                                  await security.authenticateBiometrics(
+                                reason: 'Unlock private commitment',
+                              );
+                              if (unlocked) {
+                                ref
+                                    .read(unlockedPromiseIdsProvider.notifier)
+                                    .unlock(thought.id);
+                              }
+                              return;
+                            }
                             context.push('/thought-wall?thought=${thought.id}');
                           },
                           child: Container(
@@ -658,13 +965,21 @@ Color _getThoughtMoodColor(String mood) {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            Icons.handshake_rounded,
+                                            isPrivatePromise
+                                                ? (isPromiseLocked
+                                                    ? Icons.lock_rounded
+                                                    : Icons.lock_open_rounded)
+                                                : Icons.handshake_rounded,
                                             size: 12,
                                             color: bubbleAccentColor,
                                           ),
                                           const SizedBox(width: 5),
                                           Text(
-                                            'PROMISE',
+                                            isPrivatePromise
+                                                ? (isPromiseLocked
+                                                    ? 'PRIVATE PROMISE'
+                                                    : 'UNLOCKED PROMISE')
+                                                : 'PROMISE',
                                             style: AscentTextStyles.homeCaption
                                                 .copyWith(
                                                   color: bubbleAccentColor,
@@ -685,28 +1000,94 @@ Color _getThoughtMoodColor(String mood) {
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                if (thought.promptQuestion != null) ...[
-                                  Text(
-                                    thought.promptQuestion!,
-                                    style: AscentTextStyles.bodySmall.copyWith(
-                                      color: thoughtTextMutedColor,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
+                                if (isPromiseLocked) ...[
                                   const SizedBox(height: 6),
-                                ],
-                                Text.rich(
-                                  ThoughtExcerpt.buildRichArrowSpan(
-                                    context: context,
-                                    text: thought.content,
-                                    arrowColor: thoughtTextColor,
-                                    baseStyle: AppTypography.thoughtContent(
-                                      color: thoughtTextColor,
+                                  InkWell(
+                                    onTap: () async {
+                                      final security = ref.read(
+                                        vaultSecurityServiceProvider,
+                                      );
+                                      final unlocked = await security
+                                          .authenticateBiometrics(
+                                            reason:
+                                                'Unlock private commitment',
+                                          );
+                                      if (unlocked) {
+                                        ref
+                                            .read(
+                                              unlockedPromiseIdsProvider
+                                                  .notifier,
+                                            )
+                                            .unlock(thought.id);
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: g.fill.withValues(alpha: 0.6),
+                                        borderRadius:
+                                            BorderRadius.circular(12),
+                                        border: Border.all(color: g.line),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.lock_outline_rounded,
+                                            size: 16,
+                                            color: g.inkMuted,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'Private commitment · Tap to unlock',
+                                              style: AscentTextStyles.bodySmall
+                                                  .copyWith(
+                                                    color: g.inkMuted,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                  maxLines: 3,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                ] else ...[
+                                  if (thought.promptQuestion != null &&
+                                      thought.promptQuestion!.trim().isNotEmpty &&
+                                      thought.promptQuestion!
+                                              .trim()
+                                              .toLowerCase() !=
+                                          thought.content
+                                              .trim()
+                                              .toLowerCase()) ...[
+                                    Text(
+                                      thought.promptQuestion!,
+                                      style: AscentTextStyles.bodySmall
+                                          .copyWith(
+                                            color: thoughtTextMutedColor,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                  ],
+                                  Text.rich(
+                                    ThoughtExcerpt.buildRichArrowSpan(
+                                      context: context,
+                                      text: thought.content,
+                                      arrowColor: thoughtTextColor,
+                                      baseStyle: AppTypography.thoughtContent(
+                                        color: thoughtTextColor,
+                                      ),
+                                    ),
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                                 if (isDraftSource) ...[
                                   const SizedBox(height: 8),
                                   Divider(color: g.line),
@@ -794,10 +1175,30 @@ Color _getThoughtMoodColor(String mood) {
                                         size: 17,
                                         color: g.ink,
                                       ),
-                                      onPressed: () => DropThoughtSheet.show(
-                                        context,
-                                        existingThought: thought,
-                                      ),
+                                      onPressed: () async {
+                                        if (isPromiseLocked) {
+                                          final security = ref.read(
+                                            vaultSecurityServiceProvider,
+                                          );
+                                          final unlocked = await security
+                                              .authenticateBiometrics(
+                                                reason:
+                                                    'Unlock private commitment before editing',
+                                              );
+                                          if (!unlocked) return;
+                                          ref
+                                              .read(
+                                                unlockedPromiseIdsProvider
+                                                    .notifier,
+                                              )
+                                              .unlock(thought.id);
+                                        }
+                                        if (!context.mounted) return;
+                                        DropThoughtSheet.show(
+                                          context,
+                                          existingThought: thought,
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -884,6 +1285,13 @@ Color _getThoughtMoodColor(String mood) {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+              ),
+              IconButton(
+                key: const ValueKey('home_mind_palace_style_btn'),
+                tooltip: 'Card style',
+                visualDensity: VisualDensity.compact,
+                icon: Icon(Icons.tune_rounded, size: 20, color: g.inkSecondary),
+                onPressed: () => _showBubbleStyleSheet(context),
               ),
               TextButton.icon(
                 onPressed: () {

@@ -8,6 +8,7 @@ import '../../../app/theme/text_styles.dart';
 import '../../../shared/widgets/glass_surface.dart';
 import '../../promises/models/promise_model.dart';
 import '../../promises/providers/promise_providers.dart';
+import '../../vault/providers/vault_providers.dart';
 import '../../promises/widgets/promise_action_button.dart';
 import '../../promises/widgets/promise_chat_composer.dart';
 import '../../promises/widgets/promise_detail_sheet.dart';
@@ -93,6 +94,9 @@ class HomePromiseSection extends ConsumerWidget {
     PromiseModel promise,
     AscentGlass g,
   ) {
+    final unlockedIds = ref.watch(unlockedPromiseIdsProvider);
+    final isLocked = promise.isPrivate && !unlockedIds.contains(promise.id);
+
     return InkWell(
       key: const ValueKey('home_promise_card'),
       onTap: () {
@@ -133,29 +137,90 @@ class HomePromiseSection extends ConsumerWidget {
                   ),
                 ),
                 if (promise.isPrivate)
-                  Icon(Icons.lock_outline_rounded, size: 14, color: g.inkMuted),
+                  Icon(
+                    isLocked
+                        ? Icons.lock_outline_rounded
+                        : Icons.lock_open_rounded,
+                    size: 14,
+                    color: g.inkMuted,
+                  ),
               ],
             ),
             const SizedBox(height: 10),
 
-            // Title
-            Text(
-              promise.title,
-              style: AscentTextStyles.homeTitle.copyWith(
-                color: g.ink,
-                fontSize: 16.5,
-                fontWeight: FontWeight.w700,
+            if (isLocked) ...[
+              InkWell(
+                onTap: () async {
+                  final security = ref.read(vaultSecurityServiceProvider);
+                  final unlocked = await security.authenticateBiometrics(
+                    reason: 'Unlock private commitment',
+                  );
+                  if (unlocked) {
+                    ref
+                        .read(unlockedPromiseIdsProvider.notifier)
+                        .unlock(promise.id);
+                  }
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    color: g.fill.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: g.line),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lock_outline_rounded,
+                        size: 16,
+                        color: g.inkMuted,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Private commitment · Tap to unlock',
+                          style: TextStyle(
+                            color: g.inkMuted,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-
-            if (promise.intention.isNotEmpty) ...[
-              const SizedBox(height: 4),
+            ] else ...[
+              // Title
               Text(
-                promise.intention,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: g.inkMuted, fontSize: 13, height: 1.35),
+                promise.title,
+                style: AscentTextStyles.homeTitle.copyWith(
+                  color: g.ink,
+                  fontSize: 16.5,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
+
+              if (promise.intention.trim().isNotEmpty &&
+                  promise.intention.trim().toLowerCase() !=
+                      promise.title.trim().toLowerCase()) ...[
+                const SizedBox(height: 4),
+                Text(
+                  promise.intention,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: g.inkMuted,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ],
             ],
             const SizedBox(height: 14),
 

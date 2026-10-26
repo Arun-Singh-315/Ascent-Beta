@@ -36,7 +36,9 @@ import '../../shared/widgets/thought_excerpt.dart';
 String formatThoughtForShare(Thought thought) {
   final buffer = StringBuffer();
   if (thought.promptQuestion != null &&
-      thought.promptQuestion!.trim().isNotEmpty) {
+      thought.promptQuestion!.trim().isNotEmpty &&
+      thought.promptQuestion!.trim().toLowerCase() !=
+          thought.content.trim().toLowerCase()) {
     buffer.writeln('💭 Prompt: ${thought.promptQuestion!.trim()}\n');
   }
   buffer.writeln('"${thought.content.trim()}"');
@@ -58,7 +60,10 @@ String formatMultipleThoughtsForShare(List<Thought> thoughts) {
   for (int i = 0; i < thoughts.length; i++) {
     final t = thoughts[i];
     buffer.writeln('── [Note ${i + 1}/${thoughts.length}] ──');
-    if (t.promptQuestion != null && t.promptQuestion!.trim().isNotEmpty) {
+    if (t.promptQuestion != null &&
+        t.promptQuestion!.trim().isNotEmpty &&
+        t.promptQuestion!.trim().toLowerCase() !=
+            t.content.trim().toLowerCase()) {
       buffer.writeln('💭 Prompt: ${t.promptQuestion!.trim()}');
     }
     buffer.writeln('"${t.content.trim()}"');
@@ -1923,6 +1928,14 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                               if (action == 'category') {
                                 widget.onMoveToCategory?.call();
                               } else if (action == 'share') {
+                                if (isPromiseLocked) {
+                                  final security = ref.read(vaultSecurityServiceProvider);
+                                  final unlocked = await security.authenticateBiometrics(
+                                    reason: 'Unlock private commitment before sharing',
+                                  );
+                                  if (!unlocked) return;
+                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                }
                                 await shareThought(thought);
                               } else if (action == 'convert_task') {
                                 await applyThoughtAction(
@@ -1985,6 +1998,14 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                     .read(thoughtDaoProvider)
                                     .togglePin(thought.id);
                               } else if (action == 'copy') {
+                                if (isPromiseLocked) {
+                                  final security = ref.read(vaultSecurityServiceProvider);
+                                  final unlocked = await security.authenticateBiometrics(
+                                    reason: 'Unlock private commitment before copying',
+                                  );
+                                  if (!unlocked) return;
+                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                }
                                 HapticFeedback.lightImpact();
                                 await Clipboard.setData(
                                   ClipboardData(text: thought.content),
@@ -1998,7 +2019,16 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                   );
                                 }
                               } else if (action == 'edit') {
+                                if (isPromiseLocked) {
+                                  final security = ref.read(vaultSecurityServiceProvider);
+                                  final unlocked = await security.authenticateBiometrics(
+                                    reason: 'Unlock private commitment before editing',
+                                  );
+                                  if (!unlocked) return;
+                                  ref.read(unlockedPromiseIdsProvider.notifier).unlock(thought.id);
+                                }
                                 HapticFeedback.lightImpact();
+                                if (!context.mounted) return;
                                 DropThoughtSheet.show(
                                   context,
                                   existingThought: thought,
@@ -2335,8 +2365,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                       // Optional prompt question banner: only show if distinct from content
                       if (thought.promptQuestion != null &&
                           thought.promptQuestion!.trim().isNotEmpty &&
-                          thought.promptQuestion!.trim() !=
-                              thought.content.trim()) ...[
+                          thought.promptQuestion!.trim().toLowerCase() !=
+                              thought.content.trim().toLowerCase()) ...[
                         const SizedBox(height: 10),
                         AppTag(
                           padding: const EdgeInsets.symmetric(
