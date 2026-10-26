@@ -40,6 +40,31 @@ final allPromisesStreamProvider = StreamProvider<List<PromiseModel>>((ref) {
   return repo.watchAllPromises();
 });
 
+/// Set of IDs of promises that are marked private.
+final privatePromiseIdsProvider = Provider<Set<int>>((ref) {
+  final all = ref.watch(allPromisesStreamProvider).value ?? [];
+  return all.where((p) => p.isPrivate).map((p) => p.id).toSet();
+});
+
+class UnlockedPromiseIdsNotifier extends Notifier<Set<int>> {
+  @override
+  Set<int> build() => <int>{};
+
+  void unlock(int id) {
+    state = {...state, id};
+  }
+
+  void lock(int id) {
+    state = {...state}..remove(id);
+  }
+}
+
+/// Session-wide unlocked private promise IDs.
+final unlockedPromiseIdsProvider =
+    NotifierProvider<UnlockedPromiseIdsNotifier, Set<int>>(
+  UnlockedPromiseIdsNotifier.new,
+);
+
 /// Computes the single most urgent, relevant active promise for the Home screen.
 /// Never returns a completed or paused promise.
 final priorityPromiseProvider = Provider<PromiseModel?>((ref) {
