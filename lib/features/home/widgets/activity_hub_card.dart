@@ -10,6 +10,27 @@ import '../../../app/theme/text_styles.dart';
 import '../../plans/widgets/home_plans_preview.dart';
 import 'activity_row_item.dart';
 import 'activity_composer.dart';
+import 'medicine_activity_group_card.dart';
+
+sealed class _HubEntry {
+  const _HubEntry();
+}
+
+class _ActivityRowEntry extends _HubEntry {
+  final TodayActivityItem activity;
+  const _ActivityRowEntry(this.activity);
+}
+
+class _MedicineGroupEntry extends _HubEntry {
+  final String medicineName;
+  final String dosage;
+  final List<TodayActivityItem> activities;
+  const _MedicineGroupEntry({
+    required this.medicineName,
+    required this.dosage,
+    required this.activities,
+  });
+}
 
 class ActivityHubCard extends ConsumerStatefulWidget {
   const ActivityHubCard({
@@ -98,24 +119,70 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                     child: const Text('Retry activities'),
                   ),
                   data: (items) {
-                    final rows = _prioritizeActivities(
-                      items.where(
+                    final medicineItems = items
+                        .where((a) => a.sourceType == 'medicine')
+                        .toList();
+                    final nonMedicineItems = items
+                        .where(
+                          (a) =>
+                              a.sourceType != 'medicine' &&
+                              (_showCompleted ||
+                                  !widget.excludedTaskIds.contains(
+                                    a.linkedTaskId,
+                                  )),
+                        )
+                        .toList();
+
+                    final standardRows = _prioritizeActivities(
+                      nonMedicineItems.where(
                         (a) =>
                             (a.status == TodayActivityStatus.done) ==
-                                _showCompleted &&
-                            (_showCompleted ||
-                                !widget.excludedTaskIds.contains(
-                                  a.linkedTaskId,
-                                )),
+                            _showCompleted,
                       ),
                     );
+
+                    final medGroups = <String, List<TodayActivityItem>>{};
+                    for (final med in medicineItems) {
+                      final match = RegExp(
+                        r'^(.*?)\s*\(medicine\)(?:\s*\((.*?)\))?',
+                      ).firstMatch(med.title);
+                      final name = match?.group(1)?.trim() ?? med.title;
+                      medGroups.putIfAbsent(name, () => []).add(med);
+                    }
+
+                    final medGroupEntries = <_MedicineGroupEntry>[];
+                    for (final entry in medGroups.entries) {
+                      final doses = entry.value;
+                      final isAllDone = doses.every(
+                        (d) => d.status == TodayActivityStatus.done,
+                      );
+                      if (isAllDone == _showCompleted) {
+                        final match = RegExp(
+                          r'^(.*?)\s*\(medicine\)(?:\s*\((.*?)\))?',
+                        ).firstMatch(doses.first.title);
+                        final dosage = match?.group(2)?.trim() ?? '';
+                        medGroupEntries.add(
+                          _MedicineGroupEntry(
+                            medicineName: entry.key,
+                            dosage: dosage,
+                            activities: doses,
+                          ),
+                        );
+                      }
+                    }
+
+                    final allEntries = <_HubEntry>[
+                      ...medGroupEntries,
+                      ...standardRows.map((r) => _ActivityRowEntry(r)),
+                    ];
+
                     final limit = _showAll
                         ? 20
                         : widget.previewLimit.clamp(1, 4);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (rows.isEmpty)
+                        if (allEntries.isEmpty)
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             child: Text(
@@ -131,26 +198,35 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                               style: TextStyle(color: g.inkMuted, fontSize: 13),
                             ),
                           ),
-                        for (final row in rows.take(limit)) ...[
-                          ActivityRowItem(
-                            key: ValueKey(row.id),
-                            activity: row,
-                            compact: true,
-                          ),
+                        for (final entry in allEntries.take(limit)) ...[
+                          if (entry is _MedicineGroupEntry)
+                            MedicineActivityGroupCard(
+                              key: ValueKey('med_group_${entry.medicineName}'),
+                              medicineName: entry.medicineName,
+                              dosage: entry.dosage,
+                              activities: entry.activities,
+                              compact: true,
+                            )
+                          else if (entry is _ActivityRowEntry)
+                            ActivityRowItem(
+                              key: ValueKey(entry.activity.id),
+                              activity: entry.activity,
+                              compact: true,
+                            ),
                         ],
-                        if (rows.length > widget.previewLimit && !_showAll)
+                        if (allEntries.length > widget.previewLimit && !_showAll)
                           TextButton(
                             key: const ValueKey('hub_show_more'),
                             onPressed: () => setState(() => _showAll = true),
                             child: Text(
-                              '+${rows.length - widget.previewLimit} more',
+                              '+${allEntries.length - widget.previewLimit} more',
                               style: TextStyle(
                                 color: g.clay,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),
-                        if (_showAll && rows.length > 20)
+                        if (_showAll && allEntries.length > 20)
                           TextButton(
                             key: const ValueKey('hub_full_list'),
                             onPressed: () => showModalBottomSheet<void>(
@@ -163,7 +239,9 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                                 excludedTaskIds: widget.excludedTaskIds,
                               ),
                             ),
-                            child: Text('Browse all ${rows.length} activities'),
+                            child: Text(
+                              'Browse all ${allEntries.length} activities',
+                            ),
                           ),
                         if (_showAll)
                           TextButton(

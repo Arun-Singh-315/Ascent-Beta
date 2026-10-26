@@ -757,14 +757,32 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
             task.plannedDate!.day,
           ).isBefore(startOfToday);
 
-      final hasReminder = reminders.any(
+      final matchingReminder = reminders.where(
         (r) =>
             r.isActive &&
             (r.linkedTaskId == task.id ||
                 (r.linkedTaskId == null &&
                     r.title.trim().toLowerCase() ==
                         task.title.trim().toLowerCase())),
-      );
+      ).firstOrNull;
+      final hasReminder = matchingReminder != null;
+
+      DateTime? scheduledTime;
+      if (medicineDose != null) {
+        final parts = medicineDose.timeSlot.split(':');
+        scheduledTime = DateTime(
+          today.year,
+          today.month,
+          today.day,
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+        );
+      } else if (matchingReminder != null) {
+        scheduledTime = matchingReminder.scheduledAt;
+      } else if (task.plannedDate != null &&
+          (task.plannedDate!.hour != 0 || task.plannedDate!.minute != 0)) {
+        scheduledTime = task.plannedDate;
+      }
 
       items.add(
         TodayActivityItem(
@@ -783,17 +801,14 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
           targetMinutes: targetMinutes,
           plannedDate: medicineDose == null
               ? task.plannedDate
-              : DateTime(
-                  today.year,
-                  today.month,
-                  today.day,
-                  int.parse(medicineDose.timeSlot.split(':')[0]),
-                  int.parse(medicineDose.timeSlot.split(':')[1]),
-                ),
+              : scheduledTime,
           isOverdue: isOverdue,
           hasReminder: hasReminder,
           notes: task.notes,
           completedAt: task.actualCompletedDate,
+          medicineId: medicineDose?.medicineId,
+          timeSlot: medicineDose?.timeSlot,
+          scheduledTime: scheduledTime,
         ),
       );
     }

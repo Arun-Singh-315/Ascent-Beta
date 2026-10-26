@@ -542,6 +542,18 @@ class _TasksPopupContent extends ConsumerWidget {
                     value: item.status == TodayActivityStatus.done,
                     activeColor: g.clay,
                     onChanged: (val) async {
+                      if (item.isScheduledInFuture) {
+                        HapticFeedback.lightImpact();
+                        final timeStr = item.scheduledTime != null
+                            ? DateFormat('h:mm a').format(item.scheduledTime!)
+                            : 'later';
+                        AscentSnackBar.show(
+                          context,
+                          message:
+                              'Scheduled for $timeStr. You can complete it once that time arrives.',
+                        );
+                        return;
+                      }
                       HapticFeedback.mediumImpact();
                       if (item.linkedTaskId != null) {
                         await ref
