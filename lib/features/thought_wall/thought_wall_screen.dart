@@ -28,7 +28,6 @@ import '../../shared/widgets/empty_state.dart';
 import '../home/widgets/home_schedule_sheet.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
-import 'thought_quick_actions.dart';
 import '../../shared/widgets/thought_excerpt.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
@@ -527,6 +526,13 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             GlassChip(
+              icon: Icons.transform_rounded,
+              label: 'Convert',
+              tooltip: 'Convert to Todo',
+              onTap: enabled ? () => act('todo') : null,
+            ),
+            const SizedBox(width: 8),
+            GlassChip(
               icon: Icons.folder_outlined,
               label: 'Category',
               tooltip: 'Move to category',
@@ -534,36 +540,99 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
             ),
             const SizedBox(width: 8),
             GlassChip(
-              icon: Icons.calendar_today_rounded,
-              label: 'Plan',
-              tooltip: 'Plan thought',
-              onTap: enabled && selected.isNotEmpty ? () => act('plan') : null,
+              icon: Icons.archive_outlined,
+              label: 'Archive',
+              tooltip: 'Archive selected',
+              onTap: enabled ? () => _batchArchive(selected) : null,
             ),
             const SizedBox(width: 8),
             GlassChip(
-              icon: Icons.check_circle_outline,
-              label: 'Todo',
-              tooltip: 'Create Todo',
-              onTap: enabled ? () => act('todo') : null,
-            ),
-            const SizedBox(width: 8),
-            GlassChip(
-              icon: Icons.notifications_active_outlined,
-              label: 'Reminder',
-              tooltip: 'Set reminder',
-              onTap: enabled ? () => act('reminder') : null,
-            ),
-            const SizedBox(width: 8),
-            GlassChip(
-              icon: Icons.playlist_add_check_rounded,
-              label: 'Both',
-              tooltip: 'Todo & Reminder',
-              onTap: enabled ? () => act('both') : null,
+              icon: Icons.delete_outline_rounded,
+              label: 'Delete',
+              tooltip: 'Delete selected',
+              onTap: enabled ? () => _batchDelete(selected) : null,
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _batchArchive(List<Thought> selected) async {
+    if (_applyingSelection || selected.isEmpty) return;
+    setState(() => _applyingSelection = true);
+    try {
+      final dao = ref.read(thoughtDaoProvider);
+      final anyActive = selected.any((t) => !t.isArchived);
+      for (final t in selected) {
+        if (anyActive) {
+          await dao.archiveThought(t.id);
+        } else {
+          await dao.unarchiveThought(t.id);
+        }
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              anyActive
+                  ? '${selected.length} notes archived'
+                  : '${selected.length} notes restored',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _exitSelectionMode();
+      }
+    } finally {
+      if (mounted) setState(() => _applyingSelection = false);
+    }
+  }
+
+  Future<void> _batchDelete(List<Thought> selected) async {
+    if (_applyingSelection || selected.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Delete ${selected.length} note${selected.length > 1 ? 's' : ''}?',
+        ),
+        content: const Text(
+          'These thoughts and any linked reminders will be permanently removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _applyingSelection = true);
+    try {
+      final dao = ref.read(thoughtDaoProvider);
+      for (final t in selected) {
+        await dao.deleteThought(t.id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${selected.length} note${selected.length > 1 ? 's' : ''} deleted',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        _exitSelectionMode();
+      }
+    } finally {
+      if (mounted) setState(() => _applyingSelection = false);
+    }
   }
 
   Future<void> _moveToCategory(List<Thought> selected) async {
@@ -1681,6 +1750,30 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               ],
             ),
           ),
+          secondaryBackground: AppCard(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: AppSpace.s20),
+            nightDecoration: BoxDecoration(
+              color: g.coralSoft,
+              borderRadius: AppGeometry.roundedr14,
+              border: Border.all(color: g.coral.withValues(alpha: 0.3)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Delete',
+                  style: AppTypeRoles.typeRole8.copyWith(color: g.coral),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.delete_outline_rounded,
+                  color: g.coral,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
           child: AppTapArea(
             onTap: isSelectionMode ? onToggleSelect : null,
             onLongPress: isSelectionMode ? onToggleSelect : onLongPress,
@@ -1957,11 +2050,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 value: 'copy',
                                 child: Text('Copy text'),
                               ),
-                              if (thought.mood != 'promise')
-                                const PopupMenuItem(
-                                  value: 'both',
-                                  child: Text('Todo + Reminder'),
-                                ),
                               if (thought.mood != 'promise')
                                 const PopupMenuItem(
                                   value: 'reminder',

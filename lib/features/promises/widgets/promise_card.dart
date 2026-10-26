@@ -41,32 +41,51 @@ class PromiseCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                Expanded(
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Flexible(
-                        child: Text(
-                          promise.category.toUpperCase(),
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: g.inkMuted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.6,
-                          ),
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 180),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: g.fill.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: g.line),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                promise.category.toUpperCase(),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: g.inkSecondary,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                            if (promise.isPrivate) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.lock_outline_rounded,
+                                size: 11,
+                                color: g.inkMuted,
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      if (promise.isPrivate) ...[
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.lock_outline_rounded,
-                          size: 13,
-                          color: g.inkMuted,
-                        ),
-                      ],
                       if (promise.isPaused) ...[
-                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -157,7 +176,7 @@ class PromiseCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
             // Title
             Text(
@@ -166,14 +185,25 @@ class PromiseCard extends ConsumerWidget {
                 color: g.ink,
                 fontSize: 16.5,
                 fontWeight: FontWeight.w700,
+                height: 1.35,
               ),
             ),
 
-            if (promise.schedule != null)
-              Text(
-                promise.schedule!.summary,
-                style: TextStyle(color: g.inkMuted, fontSize: 13),
+            if (promise.schedule != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.repeat_rounded, size: 13, color: g.inkMuted),
+                  const SizedBox(width: 4),
+                  Flexible(
+                    child: Text(
+                      promise.schedule!.summary,
+                      style: TextStyle(color: g.inkMuted, fontSize: 12.5),
+                    ),
+                  ),
+                ],
               ),
+            ],
             if (showIntention &&
                 promise.schedule == null &&
                 promise.intention.isNotEmpty &&
@@ -193,9 +223,9 @@ class PromiseCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(6),
               child: LinearProgressIndicator(
                 value: promise.progressFraction,
-                minHeight: 5,
-                backgroundColor: g.ink.withValues(alpha: 0.08),
-                valueColor: AlwaysStoppedAnimation<Color>(g.ink),
+                minHeight: 4,
+                backgroundColor: g.track,
+                valueColor: AlwaysStoppedAnimation<Color>(g.sage),
               ),
             ),
             const SizedBox(height: 14),
@@ -207,12 +237,34 @@ class PromiseCard extends ConsumerWidget {
               spacing: 12,
               runSpacing: 10,
               children: [
-                Text(
-                  promise.progressSummary,
-                  style: TextStyle(
-                    color: g.inkMuted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 160),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: promise.isCompleted
+                              ? g.sage
+                              : (promise.isDoneToday ? g.sage : g.amber),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          promise.progressSummary,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: g.inkSecondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 PromiseActionButton(

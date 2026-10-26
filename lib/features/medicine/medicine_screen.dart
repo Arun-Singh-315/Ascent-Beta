@@ -12,6 +12,8 @@ import '../../app/theme/glass_theme.dart';
 import '../../core/database/app_database.dart';
 import '../../core/medicine/medicine_service.dart';
 import '../../core/providers/database_provider.dart';
+import '../../app/theme/surface_tokens.dart';
+import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_scaffold.dart';
 import 'medicine_editor_sheet.dart';
 
@@ -238,26 +240,33 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
     );
   }
 
-  Widget _dose(MedicineLog log, Medicine medicine) {
+  Widget _dose(MedicineLog log, Medicine medicine, {bool isLast = true}) {
     final g = context.glass;
+    final now = DateTime.now();
+    final currentTime = DateFormat('HH:mm').format(now);
+    final isFuture = !log.isTaken && log.timeSlot.compareTo(currentTime) > 0;
+
     return Container(
       key: ValueKey('medicine_dose_${log.id}'),
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: isLast ? 0 : 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: log.isTaken ? g.sage.withValues(alpha: .09) : Colors.transparent,
+        color: log.isTaken
+            ? g.sage.withValues(alpha: .09)
+            : g.fill.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: log.isTaken
-              ? g.sage.withValues(alpha: .4)
-              : g.ink.withValues(alpha: .20),
+              ? g.sage.withValues(alpha: .35)
+              : g.line,
+          width: AppBorderScale.w1point0,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
@@ -270,40 +279,60 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                         color: g.ink,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
                       medicine.dosage,
-                      style: TextStyle(color: g.inkSecondary),
+                      style: TextStyle(color: g.inkSecondary, fontSize: 13),
                     ),
                   ],
                 ),
               ),
               const SizedBox(width: 8),
-              GlassChip(
-                label: _updating.contains(log.id)
-                    ? 'Saving…'
-                    : log.isTaken
-                    ? 'Taken'
-                    : 'Take',
-                tooltip: log.isTaken ? 'Undo taken dose' : 'Mark taken',
-                success: log.isTaken,
-                onTap: _updating.contains(log.id)
-                    ? null
-                    : () => _toggleDose(log),
-              ),
+              if (isFuture)
+                GlassChip(
+                  label: 'At ${MedicineService.formatTimeSlot(log.timeSlot)}',
+                  icon: Icons.lock_outline_rounded,
+                  tooltip:
+                      'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 2),
+                        content: Text(
+                          'Scheduled for ${MedicineService.formatTimeSlot(log.timeSlot)}. Available once time arrives.',
+                        ),
+                      ),
+                    );
+                  },
+                )
+              else
+                GlassChip(
+                  label: _updating.contains(log.id)
+                      ? 'Saving…'
+                      : log.isTaken
+                      ? 'Taken'
+                      : 'Take',
+                  tooltip: log.isTaken ? 'Undo taken dose' : 'Mark taken',
+                  success: log.isTaken,
+                  onTap: _updating.contains(log.id)
+                      ? null
+                      : () => _toggleDose(log),
+                ),
             ],
           ),
           if (medicine.instructions.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               medicine.instructions,
-              style: TextStyle(color: g.inkSecondary, height: 1.4),
+              style: TextStyle(color: g.inkMuted, fontSize: 12, height: 1.35),
             ),
           ],
           if (log.isTaken && log.takenAt != null) ...[
             const SizedBox(height: 6),
             Text(
-              'Taken at ${DateFormat.jm().format(log.takenAt!)} · Tap Taken to undo',
+              'Taken at ${DateFormat.jm().format(log.takenAt!)} · Tap to undo',
               style: Theme.of(
                 context,
               ).textTheme.labelSmall?.copyWith(color: g.inkMuted),
@@ -559,44 +588,82 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                                 .where((l) => l.isTaken == _showTaken)
                                 .map((l) => l.timeSlot)
                                 .toSet())
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _surface(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: [
-                                      GlassChip(
-                                        label: MedicineService.formatTimeSlot(
-                                          slot,
-                                        ),
-                                        icon: Icons.schedule,
-                                      ),
-                                      GlassChip(
-                                        label:
-                                            '${logs.where((l) => l.timeSlot == slot && l.isTaken == _showTaken).length} doses',
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Divider(
-                                    color: context.glass.ink.withValues(
-                                      alpha: .2,
-                                    ),
-                                  ),
-                                  for (final log in logs.where(
+                          Builder(
+                            builder: (context) {
+                              final slotLogs = logs
+                                  .where(
                                     (l) =>
                                         l.timeSlot == slot &&
                                         l.isTaken == _showTaken,
-                                  ))
-                                    _dose(log, byId[log.medicineId]!),
-                                ],
-                              ),
-                            ),
+                                  )
+                                  .toList();
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _surface(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.schedule_rounded,
+                                                size: 15,
+                                                color: context.glass.inkSecondary,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                MedicineService.formatTimeSlot(
+                                                  slot,
+                                                ),
+                                                style: TextStyle(
+                                                  fontSize: 13.5,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: context.glass.ink,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: context.glass.ink
+                                                  .withValues(alpha: 0.06),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              '${slotLogs.length} dose${slotLogs.length == 1 ? '' : 's'}',
+                                              style: TextStyle(
+                                                fontSize: 11.5,
+                                                fontWeight: FontWeight.w600,
+                                                color: context.glass.inkSecondary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      for (int i = 0; i < slotLogs.length; i++)
+                                        _dose(
+                                          slotLogs[i],
+                                          byId[slotLogs[i].medicineId]!,
+                                          isLast: i == slotLogs.length - 1,
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         if (!logs.any((l) => l.isTaken == _showTaken))
                           _surface(
@@ -613,31 +680,46 @@ class _MedicineScreenState extends ConsumerState<MedicineScreen>
                       _surface(
                         child: Column(
                           children: [
-                            Icon(
-                              Icons.medication_outlined,
-                              size: 40,
-                              color: context.glass.inkSecondary,
+                            Container(
+                              padding: const EdgeInsets.all(AppSpace.s12),
+                              decoration: BoxDecoration(
+                                color: context.bgSurfaceElevated,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.medication_outlined,
+                                size: 24,
+                                color: context.glass.inkSecondary,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'A place for your medicines',
+                              'No medicines added',
                               textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.titleLarge,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: context.glass.ink,
+                                  ),
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 4),
                             Text(
-                              'Keep the dose, exact times, and course together. Follow each day’s schedule here.',
+                              'Track daily doses, exact times, and courses here.',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: context.glass.inkMuted,
-                                height: 1.5,
+                                fontSize: 13,
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            FilledButton.icon(
+                            const SizedBox(height: 16),
+                            AscentButton.outlined(
+                              label: 'Add Medicine',
+                              icon: Icons.add_rounded,
+                              compact: true,
+                              expanded: false,
                               onPressed: () => showMedicineEditor(context),
-                              icon: const Icon(Icons.add_rounded),
-                              label: const Text('Add First Medicine'),
                             ),
                           ],
                         ),
