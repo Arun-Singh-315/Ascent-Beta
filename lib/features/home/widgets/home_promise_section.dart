@@ -139,12 +139,52 @@ class HomePromiseSection extends ConsumerWidget {
                   ),
                 ),
                 if (promise.isPrivate)
-                  Icon(
-                    isLocked
-                        ? Icons.lock_outline_rounded
-                        : Icons.lock_open_rounded,
-                    size: 14,
-                    color: g.inkMuted,
+                  Tooltip(
+                    message: !isLocked
+                        ? 'Tap to lock commitment'
+                        : 'Private commitment',
+                    child: InkWell(
+                      key: ValueKey('toggle_lock_home_promise_${promise.id}'),
+                      onTap: !isLocked
+                          ? () {
+                              HapticFeedback.lightImpact();
+                              ref
+                                  .read(unlockedPromiseIdsProvider.notifier)
+                                  .lock(promise.id);
+                            }
+                          : null,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!isLocked) ...[
+                              Text(
+                                'LOCK',
+                                style: TextStyle(
+                                  color: g.clay,
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                            ],
+                            Icon(
+                              isLocked
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.lock_open_rounded,
+                              size: 14,
+                              color: isLocked ? g.inkMuted : g.clay,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
               ],
             ),

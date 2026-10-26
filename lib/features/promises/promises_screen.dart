@@ -21,17 +21,35 @@ class PromisesScreen extends ConsumerStatefulWidget {
 }
 
 class _PromisesScreenState extends ConsumerState<PromisesScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late TabController _tabController;
+  UnlockedPromiseIdsNotifier? _unlockedNotifier;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unlockedNotifier = ref.read(unlockedPromiseIdsProvider.notifier);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _unlockedNotifier?.lockAll();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _unlockedNotifier?.lockAll();
     _tabController.dispose();
     super.dispose();
   }
@@ -39,6 +57,7 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
+    final unlockedIds = ref.watch(unlockedPromiseIdsProvider);
     final activeAsync = ref.watch(activePromisesStreamProvider);
     final completedAsync = ref.watch(completedPromisesStreamProvider);
     final pausedAsync = ref.watch(pausedPromisesStreamProvider);
@@ -75,15 +94,40 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                               }
                             },
                           ),
-                          AscentButton.outlined(
-                            label: 'New Promise',
-                            icon: Icons.auto_awesome_rounded,
-                            compact: true,
-                            expanded: false,
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              PromiseChatComposer.show(context);
-                            },
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (unlockedIds.isNotEmpty) ...[
+                                IconButton(
+                                  key: const ValueKey('promises_lock_all_btn'),
+                                  tooltip: 'Lock all commitments',
+                                  icon: Icon(
+                                    Icons.lock_rounded,
+                                    color: g.clay,
+                                    size: 20,
+                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.mediumImpact();
+                                    ref
+                                        .read(
+                                          unlockedPromiseIdsProvider.notifier,
+                                        )
+                                        .lockAll();
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              AscentButton.outlined(
+                                label: 'New Promise',
+                                icon: Icons.auto_awesome_rounded,
+                                compact: true,
+                                expanded: false,
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  PromiseChatComposer.show(context);
+                                },
+                              ),
+                            ],
                           ),
                         ],
                       ),

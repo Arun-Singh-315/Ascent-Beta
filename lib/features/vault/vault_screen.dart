@@ -23,6 +23,7 @@ class VaultScreen extends ConsumerStatefulWidget {
 class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingObserver {
   bool _searchOpen = false;
   final _searchController = TextEditingController();
+  VaultSessionUnlockedNotifier? _vaultSessionUnlockedNotifier;
 
   @override
   void initState() {
@@ -31,8 +32,16 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _vaultSessionUnlockedNotifier =
+        ref.read(vaultSessionUnlockedProvider.notifier);
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _vaultSessionUnlockedNotifier?.lock();
     _searchController.dispose();
     super.dispose();
   }
@@ -41,7 +50,7 @@ class _VaultScreenState extends ConsumerState<VaultScreen> with WidgetsBindingOb
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Auto-lock vault when app is backgrounded or hidden
     if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      ref.read(vaultSessionUnlockedProvider.notifier).lock();
+      _vaultSessionUnlockedNotifier?.lock();
     }
   }
 

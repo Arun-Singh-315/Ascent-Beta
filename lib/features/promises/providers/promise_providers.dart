@@ -57,6 +57,18 @@ class UnlockedPromiseIdsNotifier extends Notifier<Set<int>> {
   void lock(int id) {
     state = {...state}..remove(id);
   }
+
+  void lockAll() {
+    state = <int>{};
+  }
+
+  void toggle(int id) {
+    if (state.contains(id)) {
+      lock(id);
+    } else {
+      unlock(id);
+    }
+  }
 }
 
 /// Session-wide unlocked private promise IDs.

@@ -80,12 +80,51 @@ class PromiseCard extends ConsumerWidget {
                             ),
                             if (promise.isPrivate) ...[
                               const SizedBox(width: 4),
-                              Icon(
-                                isLocked
-                                    ? Icons.lock_outline_rounded
-                                    : Icons.lock_open_rounded,
-                                size: 11,
-                                color: g.inkMuted,
+                              Tooltip(
+                                message: !isLocked
+                                    ? 'Tap to lock commitment'
+                                    : 'Private commitment',
+                                child: InkWell(
+                                  key: ValueKey(
+                                    'toggle_lock_promise_card_${promise.id}',
+                                  ),
+                                  onTap: !isLocked
+                                      ? () {
+                                          HapticFeedback.lightImpact();
+                                          ref
+                                              .read(
+                                                unlockedPromiseIdsProvider
+                                                    .notifier,
+                                              )
+                                              .lock(promise.id);
+                                        }
+                                      : null,
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (!isLocked) ...[
+                                        Text(
+                                          'LOCK',
+                                          style: TextStyle(
+                                            color: g.clay,
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                      ],
+                                      Icon(
+                                        isLocked
+                                            ? Icons.lock_outline_rounded
+                                            : Icons.lock_open_rounded,
+                                        size: 11,
+                                        color: isLocked ? g.inkMuted : g.clay,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ],
@@ -122,6 +161,13 @@ class PromiseCard extends ConsumerWidget {
                   ),
                   padding: EdgeInsets.zero,
                   onSelected: (val) async {
+                    if (val == 'lock') {
+                      HapticFeedback.lightImpact();
+                      ref
+                          .read(unlockedPromiseIdsProvider.notifier)
+                          .lock(promise.id);
+                      return;
+                    }
                     final messenger = ScaffoldMessenger.of(context);
                     try {
                       final repo = ref.read(promiseRepositoryProvider);
@@ -165,6 +211,17 @@ class PromiseCard extends ConsumerWidget {
                     }
                   },
                   itemBuilder: (ctx) => [
+                    if (promise.isPrivate && !isLocked)
+                      const PopupMenuItem(
+                        value: 'lock',
+                        child: Row(
+                          children: [
+                            Icon(Icons.lock_outline_rounded, size: 16),
+                            SizedBox(width: 8),
+                            Text('Lock commitment'),
+                          ],
+                        ),
+                      ),
                     if (!promise.isCompleted)
                       PopupMenuItem(
                         value: 'toggle_pause',

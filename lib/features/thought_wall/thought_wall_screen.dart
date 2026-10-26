@@ -134,11 +134,16 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     });
   }
 
+  UnlockedPromiseIdsNotifier? _unlockedNotifier;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       setState(() {});
       _scheduleDayChange();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _unlockedNotifier?.lockAll();
     }
   }
 
@@ -186,6 +191,12 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     _hasInputText = _inputController.text.trim().isNotEmpty;
     _inputController.addListener(_onInputChanged);
     _openHomeThought();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _unlockedNotifier = ref.read(unlockedPromiseIdsProvider.notifier);
   }
 
   @override
@@ -238,6 +249,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
     _inputController.dispose();
     _focusNode.dispose();
     _scrollController.dispose();
+    _unlockedNotifier?.lockAll();
     super.dispose();
   }
 
@@ -1814,51 +1826,69 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   children: [
                     if (thought.mood == 'promise') ...[
                       Center(
-                        child: Container(
-                          key: ValueKey(
-                            'promise_top_middle_wrapper_${thought.id}',
-                          ),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpace.s10,
-                            vertical: AppSpace.s4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: g.clay.withValues(alpha: 0.12),
-                            borderRadius: AppGeometry.roundedr12,
-                            border: Border.all(
-                              color: g.clay.withValues(alpha: 0.28),
-                              width: AppBorderScale.w1point0,
+                        child: Tooltip(
+                          message: isPrivatePromise && !isPromiseLocked
+                              ? 'Tap to lock commitment'
+                              : '',
+                          child: InkWell(
+                            key: ValueKey(
+                              'promise_top_middle_wrapper_${thought.id}',
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isPrivatePromise
-                                    ? (isPromiseLocked
-                                        ? Icons.lock_rounded
-                                        : Icons.lock_open_rounded)
-                                    : Icons.handshake_rounded,
-                                size: 12,
-                                color: g.clay,
+                            onTap: isPrivatePromise && !isPromiseLocked
+                                ? () {
+                                    HapticFeedback.lightImpact();
+                                    ref
+                                        .read(
+                                          unlockedPromiseIdsProvider.notifier,
+                                        )
+                                        .lock(thought.id);
+                                  }
+                                : null,
+                            borderRadius: AppGeometry.roundedr12,
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppSpace.s10,
+                                vertical: AppSpace.s4,
                               ),
-                              const SizedBox(width: 5),
-                              Text(
-                                isPrivatePromise
-                                    ? (isPromiseLocked
-                                        ? 'PRIVATE PROMISE'
-                                        : 'UNLOCKED PROMISE')
-                                    : 'PROMISE',
-                                style: AscentTextStyles.homeCaption
-                                    .copyWith(
-                                      color: g.clay,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 1.2,
-                                    )
-                                    .merge(AppTypeRoles.typeRole65),
+                              decoration: BoxDecoration(
+                                color: g.clay.withValues(alpha: 0.12),
+                                borderRadius: AppGeometry.roundedr12,
+                                border: Border.all(
+                                  color: g.clay.withValues(alpha: 0.28),
+                                  width: AppBorderScale.w1point0,
+                                ),
                               ),
-                            ],
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    isPrivatePromise
+                                        ? (isPromiseLocked
+                                            ? Icons.lock_rounded
+                                            : Icons.lock_open_rounded)
+                                        : Icons.handshake_rounded,
+                                    size: 12,
+                                    color: g.clay,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    isPrivatePromise
+                                        ? (isPromiseLocked
+                                            ? 'PRIVATE PROMISE'
+                                            : 'UNLOCKED • TAP TO LOCK')
+                                        : 'PROMISE',
+                                    style: AscentTextStyles.homeCaption
+                                        .copyWith(
+                                          color: g.clay,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1.2,
+                                        )
+                                        .merge(AppTypeRoles.typeRole65),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -2054,6 +2084,11 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                     content: drift.Value(newContent),
                                   ),
                                 );
+                              } else if (action == 'lock') {
+                                HapticFeedback.lightImpact();
+                                ref
+                                    .read(unlockedPromiseIdsProvider.notifier)
+                                    .lock(thought.id);
                               }
                             },
                             itemBuilder: (_) => [
@@ -2065,6 +2100,17 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                       Icon(Icons.folder_outlined, size: 16),
                                       SizedBox(width: 8),
                                       Text('Move to category'),
+                                    ],
+                                  ),
+                                ),
+                              if (isPrivatePromise && !isPromiseLocked)
+                                const PopupMenuItem(
+                                  value: 'lock',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.lock_outline_rounded, size: 16),
+                                      SizedBox(width: 8),
+                                      Text('Lock commitment'),
                                     ],
                                   ),
                                 ),

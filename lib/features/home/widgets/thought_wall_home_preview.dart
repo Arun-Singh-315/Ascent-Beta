@@ -690,55 +690,74 @@ Color getThoughtMoodColor(String mood) {
                                   const SizedBox(height: 6),
                                 ] else if (thought.mood == 'promise') ...[
                                   Center(
-                                    child: Container(
-                                      key: ValueKey(
-                                        'promise_top_middle_wrapper_${thought.id}',
-                                      ),
-                                      margin: const EdgeInsets.only(bottom: 8),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpace.s10,
-                                        vertical: AppSpace.s4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: bubbleAccentColor.withValues(
-                                          alpha: .12,
+                                    child: Tooltip(
+                                      message: isPrivatePromise && !isPromiseLocked
+                                          ? 'Tap to lock commitment'
+                                          : '',
+                                      child: InkWell(
+                                        key: ValueKey(
+                                          'promise_top_middle_wrapper_${thought.id}',
                                         ),
+                                        onTap: isPrivatePromise && !isPromiseLocked
+                                            ? () {
+                                                HapticFeedback.lightImpact();
+                                                ref
+                                                    .read(
+                                                      unlockedPromiseIdsProvider
+                                                          .notifier,
+                                                    )
+                                                    .lock(thought.id);
+                                              }
+                                            : null,
                                         borderRadius: AppGeometry.roundedr12,
-                                        border: Border.all(
-                                          color: bubbleAccentColor.withValues(
-                                            alpha: 0.28,
+                                        child: Container(
+                                          margin: const EdgeInsets.only(bottom: 8),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpace.s10,
+                                            vertical: AppSpace.s4,
                                           ),
-                                          width: AppBorderScale.w1point0,
+                                          decoration: BoxDecoration(
+                                            color: bubbleAccentColor.withValues(
+                                              alpha: .12,
+                                            ),
+                                            borderRadius: AppGeometry.roundedr12,
+                                            border: Border.all(
+                                              color: bubbleAccentColor.withValues(
+                                                alpha: 0.28,
+                                              ),
+                                              width: AppBorderScale.w1point0,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                isPrivatePromise
+                                                    ? (isPromiseLocked
+                                                        ? Icons.lock_rounded
+                                                        : Icons.lock_open_rounded)
+                                                    : Icons.handshake_rounded,
+                                                size: 12,
+                                                color: bubbleAccentColor,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                isPrivatePromise
+                                                    ? (isPromiseLocked
+                                                        ? 'PRIVATE PROMISE'
+                                                        : 'UNLOCKED • TAP TO LOCK')
+                                                    : 'PROMISE',
+                                                style: AscentTextStyles.homeCaption
+                                                    .copyWith(
+                                                      color: bubbleAccentColor,
+                                                      fontWeight: FontWeight.w700,
+                                                      letterSpacing: 1.2,
+                                                    )
+                                                    .merge(AppTypeRoles.typeRole65),
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            isPrivatePromise
-                                                ? (isPromiseLocked
-                                                    ? Icons.lock_rounded
-                                                    : Icons.lock_open_rounded)
-                                                : Icons.handshake_rounded,
-                                            size: 12,
-                                            color: bubbleAccentColor,
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            isPrivatePromise
-                                                ? (isPromiseLocked
-                                                    ? 'PRIVATE PROMISE'
-                                                    : 'UNLOCKED PROMISE')
-                                                : 'PROMISE',
-                                            style: AscentTextStyles.homeCaption
-                                                .copyWith(
-                                                  color: bubbleAccentColor,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 1.2,
-                                                )
-                                                .merge(AppTypeRoles.typeRole65),
-                                          ),
-                                        ],
                                       ),
                                     ),
                                   ),
