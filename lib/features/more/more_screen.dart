@@ -204,8 +204,8 @@ class MoreScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 22),
 
-          // ── 3. Life & Activity ───────────────────────────────────────────
-          _GroupHeader(title: 'LIFE & ACTIVITY', dotColor: g.coral),
+          // ── 3. Life & Daily Rhythms ─────────────────────────────────────
+          _GroupHeader(title: 'LIFE & DAILY RHYTHMS', dotColor: g.coral),
           AscentCard(
             padding: EdgeInsets.zero,
             child: Column(
@@ -228,48 +228,40 @@ class MoreScreen extends ConsumerWidget {
                 ),
                 _TileDivider(),
                 _MoreListTile(
-                  icon: Icons.view_kanban_outlined,
+                  icon: Icons.coffee_rounded,
                   iconTint: g.amber,
-                  title: 'Job Pipeline Kanban',
+                  title: 'Chai & Mindful Break',
                   subtitle:
-                      'Applications, interview stages, offers & compensation',
-                  route: '/pipeline',
+                      'Mindful brewing timers, calming ambiance & reset',
+                  route: '/chai-break',
                 ),
               ],
             ),
           ),
           const SizedBox(height: 22),
 
-          // ── 4. Study & Career Hub ─────────────────────────────────────────
-          _GroupHeader(title: 'STUDY & CAREER', dotColor: g.slate),
+          // ── 4. Learning & Momentum ────────────────────────────────────────
+          _GroupHeader(title: 'LEARNING & MOMENTUM', dotColor: g.slate),
           AscentCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 _MoreListTile(
-                  icon: Icons.alt_route_rounded,
+                  icon: Icons.school_outlined,
                   iconTint: g.slate,
-                  title: 'Study Plan & Roadmap',
+                  title: 'Learning Hub & Courses',
                   subtitle:
-                      'Phase progress, weekly targets & curriculum pacing',
-                  route: '/study-plan',
+                      'Curated syllabi, audio player & study tracking',
+                  route: '/learning',
                 ),
                 _TileDivider(),
                 _MoreListTile(
-                  icon: Icons.code_rounded,
+                  icon: Icons.local_fire_department_rounded,
                   iconTint: g.clay,
-                  title: 'DSA Tracker',
+                  title: 'Momentum Challenges',
                   subtitle:
-                      'Logged algorithms, topic mastery & spaced revisits',
-                  route: '/dsa',
-                ),
-                _TileDivider(),
-                _MoreListTile(
-                  icon: Icons.psychology_outlined,
-                  iconTint: g.frozen ? g.slate : AppPalette.colorFFE79D5C,
-                  title: 'Interview Prep Bank',
-                  subtitle: 'Question logs, company notes & behavioral rounds',
-                  route: '/interview-prep',
+                      'Active streaks, daily pledges & proof verification',
+                  route: '/momentum',
                 ),
               ],
             ),
@@ -283,40 +275,31 @@ class MoreScreen extends ConsumerWidget {
             child: Column(
               children: [
                 _MoreListTile(
-                  icon: Icons.calendar_month_outlined,
-                  iconTint: g.sage,
-                  title: 'Consistency Heatmap',
-                  subtitle:
-                      'Daily study presence, streak records & activity logs',
-                  route: '/consistency',
-                ),
-                _TileDivider(),
-                _MoreListTile(
                   icon: Icons.notifications_none_rounded,
                   iconTint: g.amber,
                   title: 'Reminders & Alerts',
-                  subtitle: 'Upcoming rounds, scheduled tasks & study alarms',
+                  subtitle: 'Scheduled notifications, recurring prompts & alarms',
                   route: '/reminders',
+                ),
+                _TileDivider(),
+                _MoreListTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  iconTint: g.sage,
+                  title: 'Money & Budgets',
+                  subtitle: 'Income, recurring bills, expenses & balances',
+                  route: '/money',
                 ),
               ],
             ),
           ),
           const SizedBox(height: 22),
 
-          // ── 6. Documents & Insights ───────────────────────────────────────
-          _GroupHeader(title: 'DOCUMENTS & INSIGHTS', dotColor: g.amber),
+          // ── 6. Security & Insights ────────────────────────────────────────
+          _GroupHeader(title: 'SECURITY & INSIGHTS', dotColor: g.amber),
           AscentCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                _MoreListTile(
-                  icon: Icons.description_outlined,
-                  iconTint: g.clay,
-                  title: 'Resume Vault',
-                  subtitle: 'Tailored versions, role mappings & targeted PDFs',
-                  route: '/resume-vault',
-                ),
-                _TileDivider(),
                 _MoreListTile(
                   icon: Icons.shield_outlined,
                   iconTint: g.sage,
@@ -330,7 +313,7 @@ class MoreScreen extends ConsumerWidget {
                   icon: Icons.insights_rounded,
                   iconTint: g.slate,
                   title: 'Analytics & Trends',
-                  subtitle: 'Skill radar, study hours & conversion funnel',
+                  subtitle: 'Focus hours, habit consistency & lifestyle metrics',
                   route: '/analytics',
                 ),
               ],
