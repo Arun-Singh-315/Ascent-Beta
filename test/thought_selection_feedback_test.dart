@@ -274,11 +274,15 @@ void main() {
       await db.taskDao.insertTask(
         TaskTableCompanion.insert(
           title: 'Timed practice',
+          plannedDate: drift.Value(DateTime.now()),
           estimatedMinutes: const drift.Value(20),
         ),
       );
       await db.taskDao.insertTask(
-        TaskTableCompanion.insert(title: 'Plain Todo'),
+        TaskTableCompanion.insert(
+          title: 'Plain Todo',
+          plannedDate: drift.Value(DateTime.now()),
+        ),
       );
       try {
         await tester.pumpWidget(harness(container, const TaskBoardScreen()));

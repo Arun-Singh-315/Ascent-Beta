@@ -33,7 +33,6 @@ class VaultSecurityService {
 
   static const String _prefPinHashKey = 'ascent_vault_master_pin_hash_v1';
   static const String _prefPinSaltKey = 'ascent_vault_master_pin_salt_v1';
-  static const String _prefBiometricsEnabledKey = 'ascent_vault_biometrics_enabled_v1';
 
   void _initKey() {
     // 256-bit AES key derived from application secret seed and device salt

@@ -477,10 +477,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 spacing: AppSpace.s8,
                 runSpacing: AppSpace.s8,
                 children: [
-                  AscentButton.primary(
+                  AscentButton.outlined(
                     label: 'Open Phone App Settings',
                     icon: Icons.open_in_new_rounded,
                     compact: true,
+                    expanded: false,
                     onPressed: () {
                       Navigator.of(ctx).pop();
                       _openSystemAppSettings();
@@ -489,6 +490,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   AscentButton.outlined(
                     label: 'Understood, Got it! 👍',
                     compact: true,
+                    expanded: false,
                     onPressed: () => Navigator.of(ctx).pop(),
                   ),
                 ],
@@ -643,23 +645,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 ),
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: AppSpace.s8,
-                runSpacing: AppSpace.s8,
-                children: [
-                  AscentButton.primary(
-                    label: 'Open Phone App Settings',
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final stack = constraints.maxWidth < 360;
+                  final btn1 = AscentButton.outlined(
+                    label: 'App Info & Battery',
                     icon: Icons.open_in_new_rounded,
                     compact: true,
+                    expanded: stack,
                     onPressed: _openSystemAppSettings,
-                  ),
-                  AscentButton.outlined(
+                  );
+                  final btn2 = AscentButton.outlined(
                     label: 'Location Settings',
                     icon: Icons.location_on_outlined,
                     compact: true,
+                    expanded: stack,
                     onPressed: _openLocationSettings,
-                  ),
-                ],
+                  );
+                  if (stack) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        btn1,
+                        const SizedBox(height: AppSpace.s8),
+                        btn2,
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: btn1),
+                      const SizedBox(width: AppSpace.s8),
+                      Expanded(child: btn2),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -1260,12 +1280,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                         label: 'View Battery Guide',
                         icon: Icons.battery_saver_rounded,
                         compact: true,
+                        expanded: false,
                         onPressed: () => _showGpsBatteryGuide(context),
                       ),
-                      AscentButton.primary(
-                        label: 'Open Phone App Settings',
+                      AscentButton.outlined(
+                        label: 'App Info & Battery',
                         icon: Icons.open_in_new_rounded,
                         compact: true,
+                        expanded: false,
                         onPressed: _openSystemAppSettings,
                       ),
                     ],

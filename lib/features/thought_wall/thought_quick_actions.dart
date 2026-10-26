@@ -69,8 +69,6 @@ class _ThoughtQuickActionsState extends ConsumerState<ThoughtQuickActions> {
             ('Todo', 'Create Todo', () => _act('todo')),
           if (widget.thought.mood != 'promise')
             ('Reminder', 'Set reminder', () => _act('reminder')),
-          if (widget.thought.mood != 'promise')
-            ('Both', 'Todo & Reminder', () => _act('both')),
         ])
           GlassChip(
             label: action.$1,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
+import '../../shared/widgets/ascent_button.dart';
 import 'models/promise_model.dart';
 import 'providers/promise_providers.dart';
 import 'widgets/promise_card.dart';
@@ -55,11 +56,8 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Navigation & Action header
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 12,
-                        runSpacing: 8,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           IconButton(
                             icon: Icon(
@@ -77,34 +75,19 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                               }
                             },
                           ),
-                          FilledButton.icon(
+                          AscentButton.outlined(
+                            label: 'New Promise',
+                            icon: Icons.auto_awesome_rounded,
+                            compact: true,
+                            expanded: false,
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               PromiseChatComposer.show(context);
                             },
-                            icon: const Icon(Icons.add_rounded, size: 18),
-                            label: const Text(
-                              'Make a promise',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            style: FilledButton.styleFrom(
-                              backgroundColor: g.ink,
-                              foregroundColor: g.bg,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
 
                       Text(
                         'Promises',
@@ -119,7 +102,45 @@ class _PromisesScreenState extends ConsumerState<PromisesScreen>
                         'A personal commitment system built on self-trust, not guilt.',
                         style: TextStyle(color: g.inkMuted, fontSize: 13.5),
                       ),
-                      const SizedBox(height: 18),
+                      activeAsync.when(
+                        data: (activeList) => Container(
+                          margin: const EdgeInsets.only(top: 14, bottom: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: g.fill.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: g.line),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.shield_outlined,
+                                size: 18,
+                                color: g.inkSecondary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  activeList.isEmpty
+                                      ? 'Your sanctuary for personal pledges and sacred daily commitments.'
+                                      : '${activeList.length} active commitment${activeList.length == 1 ? '' : 's'} building self-trust.',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: g.inkSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
+                      ),
+                      const SizedBox(height: 14),
 
                       // Filter tabs
                       Container(
