@@ -636,6 +636,7 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
   final taskDao = ref.watch(taskDaoProvider);
   final sessionDao = ref.watch(timeSessionDaoProvider);
   final reminderDao = ref.watch(reminderDaoProvider);
+  final planDao = ref.watch(planDaoProvider);
   final timeTracking = ref.watch(timeTrackingProvider);
   final dismissedIds = ref.watch(dismissedTodayActivityIdsProvider);
   final activeCourseId = ref.watch(
@@ -687,12 +688,10 @@ final todayActivitiesProvider = StreamProvider<List<TodayActivityItem>>((
       }
 
       if (task.learningCourseId != null) continue;
-      final occ = await ref
-          .read(planDaoProvider)
-          .getOccurrenceByTaskId(task.id);
+      final occ = await planDao.getOccurrenceByTaskId(task.id);
       if (occ != null) {
         if (occ.outcome == 'skipped') continue;
-        final plan = await ref.read(planDaoProvider).getPlanById(occ.planId);
+        final plan = await planDao.getPlanById(occ.planId);
         if (plan != null &&
             (plan.status == 'paused' || plan.status == 'ended') &&
             task.actualCompletedDate == null) {
