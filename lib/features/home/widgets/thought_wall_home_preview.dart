@@ -792,7 +792,8 @@ Color getThoughtMoodColor(String mood) {
                                     },
                                   ),
                                 ] else ...[
-                                  if (thought.promptQuestion != null &&
+                                  if (thought.mood != 'promise' &&
+                                      thought.promptQuestion != null &&
                                       thought.promptQuestion!.trim().isNotEmpty &&
                                       thought.promptQuestion!
                                               .trim()

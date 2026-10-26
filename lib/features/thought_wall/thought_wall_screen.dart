@@ -2380,7 +2380,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                       ),
                     ] else ...[
                       // Optional prompt question banner: only show if distinct from content
-                      if (thought.promptQuestion != null &&
+                      if (thought.mood != 'promise' &&
+                          thought.promptQuestion != null &&
                           thought.promptQuestion!.trim().isNotEmpty &&
                           thought.promptQuestion!.trim().toLowerCase() !=
                               thought.content.trim().toLowerCase()) ...[

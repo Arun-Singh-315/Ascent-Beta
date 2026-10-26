@@ -64,7 +64,7 @@ class _ThoughtWallAppearanceSheetState
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: context.isDark ? context.bgSurface : g.fill,
+          color: context.bgSurfaceElevated,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border(top: BorderSide(color: g.line)),
         ),
