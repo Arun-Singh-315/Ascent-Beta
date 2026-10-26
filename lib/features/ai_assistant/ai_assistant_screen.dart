@@ -1005,6 +1005,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 final msg = messages[index];
                                 final isUser = msg.sender == 'user';
 
+                                // Consecutive AI message grouping:
+                                // If the previous message was also from assistant,
+                                // suppress the name label for visual clustering.
+                                final prevMsg = index > 0 ? messages[index - 1] : null;
+                                final isFirstInRun = prevMsg == null ||
+                                    prevMsg.sender != msg.sender;
+
                                 Map<String, dynamic>? actionData;
                                 List<String> messageQuickChips = [];
                                 if (msg.actionPayloadJson != null) {
@@ -1024,8 +1031,9 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                 return KeyedSubtree(
                                   key: ValueKey('chat_item_${msg.id}'),
                                   child: Padding(
-                                    padding: const EdgeInsets.only(
-                                      bottom: AscentSpacing.md,
+                                    padding: EdgeInsets.only(
+                                      bottom: AscentSpacing.sm,
+                                      top: isFirstInRun && !isUser && index != 0 ? 6 : 0,
                                     ),
                                     child: Align(
                                       alignment: isUser
@@ -1040,6 +1048,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                                         child: _ConversationMessageBubble(
                                           msg: msg,
                                           isUser: isUser,
+                                          isFirstInRun: isFirstInRun,
                                           assistantName: name,
                                           accentColor: accentColor,
                                           actionData: actionData,
@@ -1486,12 +1495,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 }
 
 // ---------------------------------------------------------------------------
-// Telegram-Style Translucent Message Bubble with Border
+// Modern Chat Bubble — Clear Contrast, Calm Aesthetic
 // ---------------------------------------------------------------------------
 
 class _ConversationMessageBubble extends StatelessWidget {
   final AiChatMessage msg;
   final bool isUser;
+  final bool isFirstInRun;
   final String assistantName;
   final Color accentColor;
   final Map<String, dynamic>? actionData;
@@ -1507,6 +1517,7 @@ class _ConversationMessageBubble extends StatelessWidget {
   const _ConversationMessageBubble({
     required this.msg,
     required this.isUser,
+    required this.isFirstInRun,
     required this.assistantName,
     required this.accentColor,
     required this.actionData,
@@ -1527,104 +1538,176 @@ class _ConversationMessageBubble extends StatelessWidget {
     final timeString =
         "${msg.createdAt.hour % 12 == 0 ? 12 : msg.createdAt.hour % 12}:${msg.createdAt.minute.toString().padLeft(2, '0')} ${msg.createdAt.hour >= 12 ? 'PM' : 'AM'}";
 
+    // ── User bubble: vivid solid gradient pill ──────────────────────────────
+    // ── AI bubble: clean opaque warm card ──────────────────────────────────
+    final Color bubbleFill;
+    final Color bubbleBorder;
+    final Color messageTextColor;
+    final Color timestampColor;
+
+    if (isUser) {
+      bubbleFill = Colors.transparent; // gradient applied below
+      bubbleBorder = Colors.transparent;
+      messageTextColor = Colors.white;
+      timestampColor = Colors.white.withValues(alpha: 0.72);
+    } else {
+      // AI bubble — opaque surface for guaranteed readability
+      bubbleFill = isDark
+          ? const Color(0xFF1E2430)   // rich dark blue-charcoal
+          : const Color(0xFFFFFFFF);  // crisp white
+      bubbleBorder = isDark
+          ? const Color(0xFF2D3548)   // subtle rim
+          : const Color(0xFFE8ECF4);  // soft light rim
+      messageTextColor = isDark
+          ? const Color(0xFFE8EDF5)   // bright near-white on dark
+          : const Color(0xFF1A2233);  // deep ink on light
+      timestampColor = isDark
+          ? const Color(0xFF6B7A99)
+          : const Color(0xFF9AA3B8);
+    }
+
+    // Bubble radius: iMessage-style rounded with a "tail" corner
+    final borderRadius = isUser
+        ? const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(5),
+          )
+        : const BorderRadius.only(
+            topLeft: Radius.circular(5),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          );
+
+    Widget bubbleContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Assistant Header Tag — only on first message in a run
+        if (!isUser && isFirstInRun) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.auto_awesome_rounded,
+                size: 11,
+                color: accentColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                assistantName,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: accentColor,
+                  letterSpacing: 0.1,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+        ],
+
+        // Message Body
+        Text(
+          (actionData?['records'] as List? ?? []).isNotEmpty
+              ? (msg.actionType?.startsWith('promises.') == true
+                    ? 'Here are your Promises.'
+                    : 'Here are your Todos. Choose a card below.')
+              : msg.message,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w500,
+            color: messageTextColor,
+            height: 1.5,
+          ),
+        ),
+
+        const SizedBox(height: 5),
+
+        // Micro Timestamp
+        Align(
+          alignment: Alignment.bottomRight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                timeString,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 9.5,
+                  color: timestampColor,
+                ),
+              ),
+              if (isUser) ...[
+                const SizedBox(width: 3),
+                Icon(
+                  Icons.done_all_rounded,
+                  size: 11,
+                  color: timestampColor,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final Widget mainBubble = isUser
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  accentColor,
+                  Color.lerp(accentColor, isDark ? const Color(0xFF6B3FA0) : const Color(0xFF7C4FBF), 0.45)!,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withValues(alpha: 0.32),
+                  blurRadius: 12,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: bubbleContent,
+          )
+        : Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: bubbleFill,
+              borderRadius: borderRadius,
+              border: Border.all(color: bubbleBorder, width: 1.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.28 : 0.07),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: bubbleContent,
+          );
+
     return Column(
       crossAxisAlignment: isUser
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        GlassSurface(
-          key: ValueKey('chat-glass-${msg.id}'),
-          fillColor: isUser
-              ? accentColor.withValues(alpha: isDark ? .22 : .10)
-              : null,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isUser ? 22 : 7),
-            bottomRight: Radius.circular(isUser ? 7 : 22),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Assistant Header Tag
-              if (!isUser) ...[
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 12,
-                      color: accentColor,
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      assistantName,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: accentColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-              ],
-
-              // Message Body
-              Text(
-                (actionData?['records'] as List? ?? []).isNotEmpty
-                    ? (msg.actionType?.startsWith('promises.') == true
-                          ? 'Here are your Promises.'
-                          : 'Here are your Todos. Choose a card below.')
-                    : msg.message,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isUser
-                      ? (isDark ? Colors.white : context.glass.ink)
-                      : context.glass.ink,
-                  height: 1.45,
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              // Micro Timestamp Row (Shrink-wrapped, NO Spacer)
-              Align(
-                alignment: Alignment.bottomRight,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      timeString,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 9.5,
-                        color: context.glass.inkSecondary,
-                      ),
-                    ),
-                    if (isUser) ...[
-                      const SizedBox(width: 3),
-                      Icon(
-                        Icons.done_all_rounded,
-                        size: 11,
-                        color: context.glass.inkSecondary,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        mainBubble,
 
         if (!isUser && actionData?['executionStatus'] == 'proposed')
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 6),
             child: Builder(
               builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
                 final rawText = (actionData?['pendingCommand']?['arguments']?['text'] as String?) ?? '';
                 final proposal = msg.actionType == 'promises.create' && rawText.isNotEmpty
                     ? PromiseIntentParser.parse(rawText)
@@ -1636,9 +1719,26 @@ class _ConversationMessageBubble extends StatelessWidget {
                     ? (actionData?['pendingCommand']?['arguments']?['plannedDate'] as String?)?.split('T').first
                     : null;
 
-                return GlassSurface(
-                  radius: 18,
-                  enableBlur: false,
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF1A2035)
+                        : const Color(0xFFF7F9FF),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: isDark
+                          ? const Color(0xFF2A3550)
+                          : const Color(0xFFDDE3F0),
+                      width: 1.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1806,7 +1906,7 @@ class _ConversationMessageBubble extends StatelessWidget {
                 );
               },
             ),
-          ),
+          ) as Widget,
         if (!isUser)
           for (final record in (actionData?['records'] as List? ?? []))
             if (record is Map &&
@@ -1837,31 +1937,45 @@ class _ConversationMessageBubble extends StatelessWidget {
             (!isUser && actionData?['alertsPending'] == true))
           Padding(
             padding: const EdgeInsets.only(top: AscentSpacing.sm),
-            child: GlassSurface(
-              radius: AscentDimensions.radiusMd,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    actionData?['executionStatus'] == 'recovery_pending'
-                        ? 'Verification pending'
-                        : 'Action needs attention',
-                    style: TextStyle(
-                      color: context.textPrimary,
-                      fontWeight: FontWeight.w700,
+            child: Builder(
+              builder: (context) {
+                final isDark = Theme.of(context).brightness == Brightness.dark;
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E2430) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF2D3548) : const Color(0xFFE8ECF4),
                     ),
                   ),
-                  Text(
-                    'Review saved changes before sending this request again.',
-                    style: TextStyle(color: context.textMuted),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        actionData?['executionStatus'] == 'recovery_pending'
+                            ? 'Verification pending'
+                            : 'Action needs attention',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFFE8EDF5) : const Color(0xFF1A2233),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        'Review saved changes before sending this request again.',
+                        style: TextStyle(
+                          color: isDark ? const Color(0xFF6B7A99) : const Color(0xFF6B7A99),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: onRecover,
+                        icon: const Icon(Icons.restore_rounded),
+                        label: const Text('Recover'),
+                      ),
+                    ],
                   ),
-                  TextButton.icon(
-                    onPressed: onRecover,
-                    icon: const Icon(Icons.restore_rounded),
-                    label: const Text('Recover'),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
 
@@ -1874,152 +1988,174 @@ class _ConversationMessageBubble extends StatelessWidget {
             actionData!['executionStatus'] == 'verified' &&
             actionData!['title'] != null) ...[
           const SizedBox(height: 6),
-          GlassSurface(
-            radius: 14,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AscentSpacing.md,
-              vertical: 10,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  actionData?['write'] == true
-                      ? Icons.check_circle_rounded
-                      : Icons.info_outline_rounded,
-                  size: 15,
-                  color: context.glass.sage,
+          Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A2430) : const Color(0xFFF0F9F4),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF243040) : const Color(0xFFCFEADA),
+                  ),
                 ),
-                const SizedBox(width: 7),
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        actionData!['title'].toString(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: context.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      actionData?['write'] == true
+                          ? Icons.check_circle_rounded
+                          : Icons.info_outline_rounded,
+                      size: 15,
+                      color: context.glass.sage,
+                    ),
+                    const SizedBox(width: 7),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            actionData!['title'].toString(),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? const Color(0xFFE8EDF5) : const Color(0xFF1A2233),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (actionData!['summary'] != null)
+                            Text(
+                              actionData!['summary'].toString(),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                color: isDark ? const Color(0xFF6B7A99) : const Color(0xFF6B7A99),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
-                      if (actionData!['summary'] != null)
-                        Text(
-                          actionData!['summary'].toString(),
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: context.textMuted,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    if (msg.actionType ==
-                        AiActionType.lectureMarkedComplete.name) {
-                      onOpenCourse();
-                    } else {
-                      onOpenHub();
-                    }
-                  },
-                  borderRadius: AscentRadii.borderSm,
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      minWidth: AscentDimensions.minTouchTarget,
-                      minHeight: AscentDimensions.minTouchTarget,
                     ),
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.all(AscentSpacing.sm),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          msg.actionType ==
-                                  AiActionType.lectureMarkedComplete.name
-                              ? 'Open Course'
-                              : 'View',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w700,
-                            color: context.glass.sage,
-                          ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        if (msg.actionType ==
+                            AiActionType.lectureMarkedComplete.name) {
+                          onOpenCourse();
+                        } else {
+                          onOpenHub();
+                        }
+                      },
+                      borderRadius: AscentRadii.borderSm,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: AscentDimensions.minTouchTarget,
+                          minHeight: AscentDimensions.minTouchTarget,
                         ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 9,
-                          color: context.glass.sage,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(AscentSpacing.sm),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              msg.actionType ==
+                                      AiActionType.lectureMarkedComplete.name
+                                  ? 'Open Course'
+                                  : 'View',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                color: context.glass.sage,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 9,
+                              color: context.glass.sage,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
 
         // Clarifying Interactive Quick Action Chips
         if (!isUser && messageQuickChips.isNotEmpty) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 6,
-            runSpacing: 5,
+            spacing: 7,
+            runSpacing: 7,
             children: messageQuickChips.map((chipText) {
-              return Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    onSelectChip(chipText);
-                  },
-                  borderRadius: AscentRadii.borderLg,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 11,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? context.bgSurface.withValues(alpha: 0.85)
-                          : Colors.white.withValues(alpha: 0.90),
-                      borderRadius: AscentRadii.borderLg,
-                      border: Border.all(
-                        color: accentColor.withValues(alpha: 0.4),
-                        width: 0.9,
+              return Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.lightImpact();
+                        onSelectChip(chipText);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E2430)
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: accentColor.withValues(alpha: 0.45),
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(alpha: 0.10),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.bolt_rounded,
+                              size: 12,
+                              color: accentColor,
+                            ),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                chipText,
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFFD0D8F0)
+                                      : const Color(0xFF1A2233),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.touch_app_rounded,
-                          size: 12,
-                          color: accentColor,
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            chipText,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: context.textPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                  );
+                },
               );
             }).toList(),
           ),
@@ -2477,7 +2613,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
 }
 
 // ---------------------------------------------------------------------------
-// Atmospheric Night & Day Chat Background with Celestial Stardust
+// Warm Aurora Chat Background — Calm, Engaging, Soft
 // ---------------------------------------------------------------------------
 
 class _AtmosphericChatBackground extends StatelessWidget {
@@ -2492,69 +2628,72 @@ class _AtmosphericChatBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final g = context.glass;
-    final BoxDecoration decor;
+
+    // Theme-aware background palette
+    final List<Color> gradientColors;
+    final Color aurora1;
+    final Color aurora2;
 
     if (g.frozen) {
-      decor = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? const [
-                  FrozenPalette.darkCanvas,
-                  FrozenPalette.darkSurface,
-                  FrozenPalette.darkCanvas,
-                ]
-              : const [
-                  FrozenPalette.surface,
-                  FrozenPalette.canvas,
-                  FrozenPalette.elevated,
-                ],
-        ),
-      );
+      gradientColors = isDark
+          ? const [
+              Color(0xFF0B1420),  // deep nordic night
+              Color(0xFF0F1C30),
+              Color(0xFF0D1828),
+            ]
+          : const [
+              FrozenPalette.surface,
+              FrozenPalette.canvas,
+              FrozenPalette.elevated,
+            ];
+      aurora1 = isDark ? const Color(0xFF1E3A5F) : FrozenPalette.action.withValues(alpha: 0.08);
+      aurora2 = isDark ? const Color(0xFF0E2A45) : FrozenPalette.action.withValues(alpha: 0.05);
     } else if (g.merlot) {
-      decor = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  MerlotPalette.darkCanvas,
-                  MerlotPalette.darkSurface,
-                  MerlotPalette.darkCanvas,
-                ]
-              : [
-                  MerlotPalette.canvas,
-                  MerlotPalette.surface,
-                  MerlotPalette.canvas,
-                ],
-        ),
-      );
+      gradientColors = isDark
+          ? const [
+              Color(0xFF180F14),  // deep merlot night
+              Color(0xFF1E1018),
+              Color(0xFF160D12),
+            ]
+          : const [
+              MerlotPalette.canvas,
+              MerlotPalette.surface,
+              MerlotPalette.canvas,
+            ];
+      aurora1 = isDark ? const Color(0xFF3D1828) : MerlotPalette.action.withValues(alpha: 0.07);
+      aurora2 = isDark ? const Color(0xFF2A1020) : MerlotPalette.antiqueGold.withValues(alpha: 0.05);
     } else {
-      decor = BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [
-                  AscentColors.bgBaseDark,
-                  AscentColors.bgSurfaceDark,
-                  AscentColors.bgBaseDark,
-                ]
-              : [
-                  AscentColors.bgBase,
-                  AscentColors.bgSurface,
-                  AscentColors.bgBase,
-                ],
-        ),
-      );
+      // Default: warm midnight indigo → violet for dark; soft lavender cream for light
+      gradientColors = isDark
+          ? const [
+              Color(0xFF0C0F1A),  // deep midnight
+              Color(0xFF111526),  // soft indigo depth
+              Color(0xFF0E1220),  // rich dark base
+            ]
+          : const [
+              Color(0xFFF5F4FC),  // soft lavender white
+              Color(0xFFF8F7FE),  // near white
+              Color(0xFFF2F1FB),  // gentle tint
+            ];
+      aurora1 = isDark
+          ? const Color(0xFF2A1F4E).withValues(alpha: 0.6)  // warm violet glow
+          : accentColor.withValues(alpha: 0.06);
+      aurora2 = isDark
+          ? const Color(0xFF1A2A4A).withValues(alpha: 0.5)  // cool indigo glow
+          : const Color(0xFF7C6FD0).withValues(alpha: 0.05);
     }
 
     return DecoratedBox(
-      decoration: decor,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: gradientColors,
+        ),
+      ),
       child: AscentAtmosphereBackground(
-        glow1: isDark ? g.glow1 : g.claySoft,
-        glow2: isDark ? g.glow2 : g.slateSoft,
+        glow1: aurora1,
+        glow2: aurora2,
         child: Stack(
           fit: StackFit.expand,
           children: [
