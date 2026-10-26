@@ -437,16 +437,21 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
               : [FrozenPalette.actionBright, FrozenPalette.action])
         : g.merlot
         ? (isDark
-              ? [g.clay, g.clay.withValues(alpha: 0.82)]
+              ? [const Color(0xFF9E2A42), const Color(0xFF6B1828)]
               : [MerlotPalette.actionBright, MerlotPalette.actionDeep])
         : (isDark
-              ? [g.clay, g.clay.withValues(alpha: 0.82)]
+              ? [const Color(0xFFD35400), const Color(0xFFA04000)]
               : [const Color(0xFFE86B43), const Color(0xFFC85A32)]);
     final shadowColor = g.frozen
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
         : g.merlot
-        ? (isDark ? g.clay : MerlotPalette.actionDeep)
-        : (isDark ? g.clay : const Color(0xFFC85A32));
+        ? (isDark ? const Color(0xFF6B1828) : MerlotPalette.actionDeep)
+        : (isDark ? const Color(0xFFA04000) : const Color(0xFFC85A32));
+    final starIconColor = g.merlot
+        ? (isDark ? MerlotPalette.darkSpark : MerlotPalette.antiqueGold)
+        : g.frozen
+        ? (isDark ? FrozenPalette.darkSpark : Colors.white)
+        : (isDark ? const Color(0xFFF1C40F) : Colors.white);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 76, right: 4),
@@ -467,9 +472,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.12),
+                width: 0.75,
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: shadowColor.withValues(alpha: 0.28),
+                  color: shadowColor.withValues(alpha: isDark ? 0.35 : 0.28),
                   blurRadius: 14,
                   offset: const Offset(0, 4),
                 ),
@@ -481,9 +490,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                 Icon(
                   Icons.auto_awesome_rounded,
                   size: 18,
-                  color: g.merlot && !isDark
-                      ? MerlotPalette.antiqueGold
-                      : Colors.white,
+                  color: starIconColor,
                 ),
                 const SizedBox(width: 8),
                 Text(

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/text_styles.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../../promises/models/promise_model.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
@@ -150,7 +151,8 @@ class HomePromiseSection extends ConsumerWidget {
             const SizedBox(height: 10),
 
             if (isLocked) ...[
-              InkWell(
+              LockedCommitmentTile(
+                label: 'Private commitment',
                 onTap: () async {
                   final security = ref.read(vaultSecurityServiceProvider);
                   final unlocked = await security.authenticateBiometrics(
@@ -162,39 +164,6 @@ class HomePromiseSection extends ConsumerWidget {
                         .unlock(promise.id);
                   }
                 },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    color: g.fill.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: g.line),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.lock_outline_rounded,
-                        size: 16,
-                        color: g.inkMuted,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Private commitment · Tap to unlock',
-                          style: TextStyle(
-                            color: g.inkMuted,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ] else ...[
               // Title

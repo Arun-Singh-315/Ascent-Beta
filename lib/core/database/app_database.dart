@@ -320,6 +320,64 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// Completely flushes all user data across all modern & legacy tables
+  /// for a fresh production v0.01 start.
+  Future<void> wipeAllUserData() async {
+    await transaction(() async {
+      final tablesToClear = [
+        'thought_reminder_links',
+        'thought_merge_sources',
+        'thought_categories',
+        'thoughts',
+        'occurrence_alert_links',
+        'plan_occurrences',
+        'plan_definitions',
+        'plan_collection_items',
+        'plan_collections',
+        'reminders',
+        'medicine_logs',
+        'medicines',
+        'water_logs',
+        'water_goals',
+        'walk_sessions',
+        'daily_activity_goals',
+        'finance_transactions',
+        'finance_budgets',
+        'savings_goals',
+        'ai_commands',
+        'ai_chat_messages',
+        'courses',
+        'momentum_commitments',
+        'momentum_challenges',
+        'challenge_amendments',
+        'challenge_proof_events',
+        'challenge_links',
+        'challenge_challenges',
+        'tasks',
+        'application_status_history',
+        'applications',
+        'resumes',
+        'interview_prep',
+        'insight_dismissals',
+        'session_categories',
+        'dsa_logs',
+        'study_phases',
+        'time_sessions',
+        'consistency_logs',
+        'user_profiles',
+        'upcoming_interviews',
+        'series',
+      ];
+      for (final table in tablesToClear) {
+        try {
+          await customStatement('DELETE FROM $table;');
+        } catch (_) {
+          // Table might not exist in old migrations
+        }
+      }
+    });
+  }
+
   /// Opens (or creates) the SQLite database via drift_flutter.
   /// Uses an in-background isolate for heavy queries automatically.
   static QueryExecutor _openConnection() {

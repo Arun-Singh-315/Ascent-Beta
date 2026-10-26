@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../app/theme/color_tokens.dart';
@@ -33,7 +32,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with WidgetsBindingObserver {
   final _nameController = TextEditingController();
   final _roleController = TextEditingController();
-  final _companyInputController = TextEditingController();
   List<String> _targetCompanies = [];
   DateTime? _interviewDate;
   int _weeklyHours = 10;
@@ -41,7 +39,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   bool _profileLoaded = false;
 
   // Collapsible section visibility states to keep UI calm & decluttered
-  bool _expandCareerGoals = false;
   bool _expandGpsTelemetry = false;
   bool _expandDataStorage = false;
   bool _expandHelpGuides = false;
@@ -57,7 +54,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _roleController.dispose();
-    _companyInputController.dispose();
     super.dispose();
   }
 
@@ -340,30 +336,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                           final prefs = ref.read(sharedPreferencesProvider);
                           await prefs.clear();
                           final db = ref.read(databaseProvider);
-                          await db.customStatement(
-                            'DELETE FROM insight_dismissals;',
-                          );
-                          await db.customStatement(
-                            'DELETE FROM interview_prep;',
-                          );
-                          await db.customStatement('DELETE FROM resumes;');
-                          await db.customStatement(
-                            'DELETE FROM application_status_history;',
-                          );
-                          await db.customStatement('DELETE FROM applications;');
-                          await db.customStatement('DELETE FROM tasks;');
-                          await db.customStatement('DELETE FROM series;');
-                          await db.customStatement('DELETE FROM study_phases;');
-                          await db.customStatement('DELETE FROM dsa_logs;');
-                          await db.customStatement(
-                            'DELETE FROM time_sessions;',
-                          );
-                          await db.customStatement(
-                            'DELETE FROM consistency_logs;',
-                          );
-                          await db.customStatement(
-                            'DELETE FROM user_profiles;',
-                          );
+                          await db.wipeAllUserData();
+                          try {
+                            await NotificationService.instance.cancelAll();
+                          } catch (_) {}
 
                           if (mounted) {
                             context.go('/onboarding');
@@ -928,9 +904,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             ),
             const SizedBox(height: 20),
 
-            // ── Section 2: Target Profile & Identity (Always Visible) ────────
+            // ── Section 2: Profile & Identity (Always Visible) ──────────────
             _SectionHeader(
-              title: 'Target Profile & Identity',
+              title: 'Profile & Assistant',
               dotColor: g.slate,
             ),
             AscentCard(
@@ -979,7 +955,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                   const SizedBox(height: 14),
 
                   Text(
-                    'Target Role',
+                    'Your Role / Focus',
                     style: AscentTextStyles.labelMedium
                         .copyWith(color: g.ink)
                         .merge(AppTypeRoles.typeRole8),
@@ -989,7 +965,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     controller: _roleController,
                     style: AscentTextStyles.bodyMedium.copyWith(color: g.ink),
                     decoration: InputDecoration(
-                      hintText: 'e.g. Senior Software Engineer',
+                      hintText: 'e.g. Creator, Student, Builder',
                       hintStyle: AscentTextStyles.bodyMedium.copyWith(
                         color: g.inkMuted,
                       ),
@@ -1057,193 +1033,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             const SizedBox(height: 20),
 
             // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
+            // ── ADVANCED / COLLAPSIBLE SECTIONS (Clean & uncluttered) ────────
             _SectionHeader(
-              title: 'Advanced Options & Tools',
+              title: 'System Access & Storage',
               dotColor: g.inkMuted,
             ),
-
-            // ── Collapsible 1: Career Goals & Target Companies ──────────────
-            _CollapsibleSettingsCard(
-              icon: Icons.track_changes_rounded,
-              iconTint: g.slate,
-              title: 'Career Milestones & Companies',
-              subtitle: 'Weekly study budget, deadline & target companies',
-              isExpanded: _expandCareerGoals,
-              onToggle: () =>
-                  setState(() => _expandCareerGoals = !_expandCareerGoals),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Weekly Study Budget',
-                        style: AscentTextStyles.labelMedium
-                            .copyWith(color: g.ink)
-                            .merge(AppTypeRoles.typeRole8),
-                      ),
-                      Text(
-                        '$_weeklyHours hrs / wk',
-                        style: AscentTextStyles.monoCode
-                            .copyWith(color: g.clay)
-                            .merge(AppTypeRoles.typeRole9),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: _weeklyHours.toDouble(),
-                    min: 5,
-                    max: 40,
-                    divisions: 7,
-                    activeColor: g.clay,
-                    inactiveColor: g.edge,
-                    onChanged: (val) =>
-                        setState(() => _weeklyHours = val.round()),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Target Interview Date
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Target Interview Date',
-                            style: AscentTextStyles.labelMedium
-                                .copyWith(color: g.ink)
-                                .merge(AppTypeRoles.typeRole8),
-                          ),
-                          Text(
-                            _interviewDate != null
-                                ? DateFormat.yMMMd().format(_interviewDate!)
-                                : 'No deadline set',
-                            style: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-                      AscentButton.outlined(
-                        label: _interviewDate == null ? 'Set Date' : 'Change',
-                        compact: true,
-                        onPressed: () async {
-                          final picked = await showDatePicker(
-                            context: context,
-                            initialDate:
-                                _interviewDate ??
-                                DateTime.now().add(const Duration(days: 30)),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(
-                              const Duration(days: 365 * 2),
-                            ),
-                          );
-                          if (picked != null) {
-                            setState(() => _interviewDate = picked);
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Target Companies
-                  Text(
-                    'Target Companies',
-                    style: AscentTextStyles.labelMedium
-                        .copyWith(color: g.ink)
-                        .merge(AppTypeRoles.typeRole8),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _companyInputController,
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: g.ink,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Add company (e.g. Stripe)',
-                            hintStyle: AscentTextStyles.bodySmall.copyWith(
-                              color: g.inkMuted,
-                            ),
-                            filled: true,
-                            fillColor: g.fill,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s12,
-                              vertical: AppSpace.s10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: AppGeometry.roundedr10,
-                              borderSide: BorderSide(color: g.edge),
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: AppGeometry.roundedr10,
-                              borderSide: BorderSide(color: g.edge),
-                            ),
-                          ),
-                          onSubmitted: (val) {
-                            final text = val.trim();
-                            if (text.isNotEmpty &&
-                                !_targetCompanies.contains(text)) {
-                              setState(() {
-                                _targetCompanies.add(text);
-                                _companyInputController.clear();
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Icon(
-                          Icons.add_circle_outline_rounded,
-                          color: g.clay,
-                        ),
-                        onPressed: () {
-                          final text = _companyInputController.text.trim();
-                          if (text.isNotEmpty &&
-                              !_targetCompanies.contains(text)) {
-                            setState(() {
-                              _targetCompanies.add(text);
-                              _companyInputController.clear();
-                            });
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                  if (_targetCompanies.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _targetCompanies.map((c) {
-                        return AppTag.label(
-                          label: Text(c),
-                          labelStyle: AscentTextStyles.labelSmall.copyWith(
-                            color: g.ink,
-                          ),
-                          backgroundColor: g.fill,
-                          side: BorderSide(color: g.edge),
-                          deleteIcon: Icon(
-                            Icons.close_rounded,
-                            size: 14,
-                            color: g.inkMuted,
-                          ),
-                          onDeleted: () =>
-                              setState(() => _targetCompanies.remove(c)),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
 
             // ── Collapsible 2: Walk & Background Telemetry ───────────────────
             _CollapsibleSettingsCard(

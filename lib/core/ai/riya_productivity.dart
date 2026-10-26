@@ -555,7 +555,7 @@ class RiyaProductivityIntents {
       combined = '$combined no reminder';
     }
 
-    final parsed = PromiseIntentParser.parse(
+    PromiseIntentParser.parse(
       combined.replaceAll(RegExp(r'\broz\b', caseSensitive: false), 'every day'),
       now: clock(),
     );

@@ -21,6 +21,7 @@ import '../../../core/providers/database_provider.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../../core/services/note_draft_binding.dart';
 import '../../../shared/widgets/glass_surface.dart';
+import '../../../shared/widgets/locked_commitment_tile.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
@@ -750,16 +751,16 @@ Color getThoughtMoodColor(String mood) {
                                 ),
                                 const SizedBox(height: 4),
                                 if (isPromiseLocked) ...[
-                                  const SizedBox(height: 6),
-                                  InkWell(
+                                  const SizedBox(height: 8),
+                                  LockedCommitmentTile(
+                                    label: 'Private commitment',
                                     onTap: () async {
                                       final security = ref.read(
                                         vaultSecurityServiceProvider,
                                       );
                                       final unlocked = await security
                                           .authenticateBiometrics(
-                                            reason:
-                                                'Unlock private commitment',
+                                            reason: 'Unlock private commitment',
                                           );
                                       if (unlocked) {
                                         ref
@@ -770,40 +771,6 @@ Color getThoughtMoodColor(String mood) {
                                             .unlock(thought.id);
                                       }
                                     },
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Container(
-                                      width: double.infinity,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: g.fill.withValues(alpha: 0.6),
-                                        borderRadius:
-                                            BorderRadius.circular(12),
-                                        border: Border.all(color: g.line),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            Icons.lock_outline_rounded,
-                                            size: 16,
-                                            color: g.inkMuted,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Text(
-                                              'Private commitment · Tap to unlock',
-                                              style: AscentTextStyles.bodySmall
-                                                  .copyWith(
-                                                    color: g.inkMuted,
-                                                    fontStyle: FontStyle.italic,
-                                                  ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
                                   ),
                                 ] else ...[
                                   if (thought.promptQuestion != null &&
