@@ -32,6 +32,7 @@ import '../home/widgets/home_schedule_sheet.dart';
 import 'drop_thought_sheet.dart';
 import 'thought_action_ui.dart';
 import '../../shared/widgets/thought_excerpt.dart';
+import '../../shared/widgets/locked_commitment_tile.dart';
 
 /// Formats thought content cleanly for WhatsApp, messages, and external sharing.
 String formatThoughtForShare(Thought thought) {
@@ -2317,7 +2318,8 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                     ],
                     if (isPromiseLocked) ...[
                       const SizedBox(height: 10),
-                      InkWell(
+                      LockedCommitmentTile(
+                        label: 'Private commitment',
                         onTap: () async {
                           final security = ref.read(vaultSecurityServiceProvider);
                           final unlocked = await security.authenticateBiometrics(
@@ -2329,39 +2331,6 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 .unlock(thought.id);
                           }
                         },
-                        borderRadius: AppGeometry.roundedr12,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color: g.fill.withValues(alpha: 0.6),
-                            borderRadius: AppGeometry.roundedr12,
-                            border: Border.all(color: g.line),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.lock_outline_rounded,
-                                size: 16,
-                                color: g.inkMuted,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  'Private commitment · Tap to unlock',
-                                  style: TextStyle(
-                                    color: g.inkMuted,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ] else ...[
                       // Optional prompt question banner: only show if distinct from content
