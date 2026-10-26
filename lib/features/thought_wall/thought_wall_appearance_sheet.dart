@@ -55,7 +55,70 @@ class _ThoughtWallAppearanceSheetState
                 ),
               ],
             ),
+            const SizedBox(height: 14),
+            Text(
+              'CARD BACKGROUND',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
+            ),
             const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text('Coloured Fill')),
+                    selected: appearance.bubbleFilled,
+                    onSelected: _saving
+                        ? null
+                        : (_) => _save(appearance.copyWith(bubbleFilled: true)),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Center(child: Text('Border Only')),
+                    selected: !appearance.bubbleFilled,
+                    onSelected: _saving
+                        ? null
+                        : (_) => _save(appearance.copyWith(bubbleFilled: false)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'BORDER THICKNESS',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (final (label, width) in [
+                  ('Thin (1px)', 1.0),
+                  ('Standard', 1.8),
+                  ('Bold (2.6px)', 2.6),
+                ]) ...[
+                  Expanded(
+                    child: ChoiceChip(
+                      label: Center(child: Text(label)),
+                      selected: (appearance.bubbleBorderWidth - width).abs() < 0.1,
+                      onSelected: _saving
+                          ? null
+                          : (_) => _save(
+                                appearance.copyWith(bubbleBorderWidth: width),
+                              ),
+                    ),
+                  ),
+                  if (width != 2.6) const SizedBox(width: 8),
+                ],
+              ],
+            ),
+            const SizedBox(height: 16),
             const Text('Card style'),
             const SizedBox(height: 8),
             Wrap(
@@ -76,7 +139,7 @@ class _ThoughtWallAppearanceSheetState
                   ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             const Text('Spacing'),
             const SizedBox(height: 8),
             Wrap(
@@ -98,7 +161,7 @@ class _ThoughtWallAppearanceSheetState
               ],
             ),
             const SizedBox(height: 16),
-            const Text('Applies to every card in Thought Wall.'),
+            const Text('Applies to every card in Thought Wall and Home.'),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 12),

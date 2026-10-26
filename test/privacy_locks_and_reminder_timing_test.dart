@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/app/theme/day_glass_material.dart';
 import 'package:ascent/app/theme/glass_theme.dart';
@@ -9,7 +8,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/promises/models/promise_model.dart';
-import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/features/promises/widgets/promise_card.dart';
 import 'package:ascent/features/reminders/reminder_action_ui.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
@@ -256,9 +254,9 @@ void main() {
   });
 
   group('Day Theme Soft Off-White Polish Tests', () {
-    test('MerlotPalette.canvas is soft off-white without yellow clay overtone', () {
-      expect(MerlotPalette.canvas, equals(const Color(0xFFF8F8FA)));
-      expect(MerlotPalette.recessedWell, equals(const Color(0xFFF2F2F5)));
+    test('MerlotPalette.canvas is soft soothing cashmere linen without bleached whitewash', () {
+      expect(MerlotPalette.canvas, equals(const Color(0xFFF7F3EA)));
+      expect(MerlotPalette.recessedWell, equals(const Color(0xFFEFE8DD)));
     });
 
     test('DayGlassMaterial produces pristine off-white canvas with subtle dark blend', () {
@@ -268,8 +266,8 @@ void main() {
         glass,
         GlassTranslucencyPreset.balancedLiquid,
       );
-      // Canvas should be close to F8F8FA and not clay tan
-      expect(material.canvas.value != 0xFFF5EFE6, isTrue);
+      // Canvas should be close to F7F3EA and not clay tan
+      expect(material.canvas.toARGB32() != 0xFFF5EFE6, isTrue);
     });
   });
 }

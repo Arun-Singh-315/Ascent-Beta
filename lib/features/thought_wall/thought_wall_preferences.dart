@@ -19,19 +19,27 @@ class ThoughtWallAppearance {
     this.style = ThoughtCardStyle.soft,
     this.tone = ThoughtCardTone.theme,
     this.density = ThoughtCardDensity.compact,
+    this.bubbleFilled = true,
+    this.bubbleBorderWidth = 1.8,
   });
   final ThoughtCardStyle style;
   final ThoughtCardTone tone;
   final ThoughtCardDensity density;
+  final bool bubbleFilled;
+  final double bubbleBorderWidth;
 
   ThoughtWallAppearance copyWith({
     ThoughtCardStyle? style,
     ThoughtCardTone? tone,
     ThoughtCardDensity? density,
+    bool? bubbleFilled,
+    double? bubbleBorderWidth,
   }) => ThoughtWallAppearance(
     style: style ?? this.style,
     tone: tone ?? this.tone,
     density: density ?? this.density,
+    bubbleFilled: bubbleFilled ?? this.bubbleFilled,
+    bubbleBorderWidth: bubbleBorderWidth ?? this.bubbleBorderWidth,
   );
 
   Map<String, Object> toJson() => {
@@ -39,6 +47,8 @@ class ThoughtWallAppearance {
     'style': style.name,
     'tone': tone.name,
     'density': density.name,
+    'bubbleFilled': bubbleFilled,
+    'bubbleBorderWidth': bubbleBorderWidth,
   };
 
   factory ThoughtWallAppearance.fromJson(Map<String, dynamic> json) {
@@ -59,6 +69,8 @@ class ThoughtWallAppearance {
               .where((d) => d.name == json['density'])
               .firstOrNull ??
           ThoughtCardDensity.compact,
+      bubbleFilled: json['bubbleFilled'] as bool? ?? true,
+      bubbleBorderWidth: (json['bubbleBorderWidth'] as num?)?.toDouble() ?? 1.8,
     );
   }
 }
@@ -68,14 +80,20 @@ class ThoughtWallAppearanceNotifier extends Notifier<ThoughtWallAppearance> {
   @override
   ThoughtWallAppearance build() {
     try {
-      final raw = ref
-          .watch(sharedPreferencesProvider)
-          .getString(thoughtWallAppearanceKey);
+      final prefs = ref.watch(sharedPreferencesProvider);
+      final raw = prefs.getString(thoughtWallAppearanceKey);
       if (raw != null) {
         return ThoughtWallAppearance.fromJson(
           jsonDecode(raw) as Map<String, dynamic>,
         );
       }
+      final filled = prefs.getBool('home_thought_bubble_filled') ?? true;
+      final border =
+          prefs.getDouble('home_thought_bubble_border_width') ?? 1.8;
+      return ThoughtWallAppearance(
+        bubbleFilled: filled,
+        bubbleBorderWidth: border,
+      );
     } catch (_) {
       // Missing or older preferences retain the default wall appearance.
     }
@@ -91,6 +109,11 @@ class ThoughtWallAppearanceNotifier extends Notifier<ThoughtWallAppearance> {
       if (!await prefs.setString(thoughtWallAppearanceKey, encoded)) {
         throw StateError('Could not save the wall appearance');
       }
+      await prefs.setBool('home_thought_bubble_filled', appearance.bubbleFilled);
+      await prefs.setDouble(
+        'home_thought_bubble_border_width',
+        appearance.bubbleBorderWidth,
+      );
       if (ref.mounted) state = appearance;
     } finally {
       _saving = false;

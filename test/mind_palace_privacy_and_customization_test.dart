@@ -8,6 +8,7 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/app/theme/app_theme.dart';
+import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -171,6 +172,40 @@ void main() {
       await tester.tap(find.text('Bold (2.6px)'));
       await tester.pumpAndSettle();
       expect(prefs.getDouble('home_thought_bubble_border_width'), 2.6);
+    });
+
+    testWidgets('ThoughtWallAppearanceSheet allows customizing Card Background and Border Thickness', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: const Scaffold(
+              body: ThoughtWallAppearanceSheet(),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Wall appearance'), findsOneWidget);
+      expect(find.text('CARD BACKGROUND'), findsOneWidget);
+      expect(find.text('BORDER THICKNESS'), findsOneWidget);
+      expect(find.text('Coloured Fill'), findsOneWidget);
+      expect(find.text('Border Only'), findsOneWidget);
+
+      // Select Border Only in Thought Wall appearance
+      await tester.tap(find.text('Border Only'));
+      await tester.pumpAndSettle();
+      expect(prefs.getBool('home_thought_bubble_filled'), isFalse);
+
+      // Select Thin (1px) in Thought Wall appearance
+      await tester.tap(find.text('Thin (1px)'));
+      await tester.pumpAndSettle();
+      expect(prefs.getDouble('home_thought_bubble_border_width'), 1.0);
     });
 
     testWidgets('Rule 13: 320px width and 2.0x accessibility text scale immunity', (tester) async {

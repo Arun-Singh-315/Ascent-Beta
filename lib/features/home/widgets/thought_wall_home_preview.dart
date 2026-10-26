@@ -24,6 +24,7 @@ import '../../../shared/widgets/glass_surface.dart';
 import '../../../shared/widgets/thought_excerpt.dart';
 import '../../promises/providers/promise_providers.dart';
 import '../../vault/providers/vault_providers.dart';
+import '../../thought_wall/thought_wall_preferences.dart';
 import 'dart:convert';
 
 /// Level 3 · Supporting: Mind Space
@@ -55,9 +56,6 @@ class _ThoughtWallHomePreviewState
   final _focusNode = FocusNode();
   NoteDraftBinding? _draft;
 
-  bool _bubbleFilled = true;
-  double _bubbleBorderWidth = 1.8;
-
   @override
   void dispose() {
     _draft?.dispose();
@@ -71,9 +69,6 @@ class _ThoughtWallHomePreviewState
     super.initState();
     try {
       final prefs = ref.read(sharedPreferencesProvider);
-      _bubbleFilled = prefs.getBool('home_thought_bubble_filled') ?? true;
-      _bubbleBorderWidth =
-          prefs.getDouble('home_thought_bubble_border_width') ?? 1.8;
       if (widget.showComposer) {
         _draft = NoteDraftBinding(
           _controller,
@@ -89,19 +84,13 @@ class _ThoughtWallHomePreviewState
   }
 
   Future<void> _setBubbleStyle({bool? filled, double? borderWidth}) async {
-    setState(() {
-      if (filled != null) _bubbleFilled = filled;
-      if (borderWidth != null) _bubbleBorderWidth = borderWidth;
-    });
-    try {
-      final prefs = ref.read(sharedPreferencesProvider);
-      if (filled != null) {
-        await prefs.setBool('home_thought_bubble_filled', filled);
-      }
-      if (borderWidth != null) {
-        await prefs.setDouble('home_thought_bubble_border_width', borderWidth);
-      }
-    } catch (_) {}
+    final current = ref.read(thoughtWallAppearanceProvider);
+    await ref.read(thoughtWallAppearanceProvider.notifier).save(
+      current.copyWith(
+        bubbleFilled: filled,
+        bubbleBorderWidth: borderWidth,
+      ),
+    );
   }
 
   void _showBubbleStyleSheet(BuildContext context) {
@@ -112,8 +101,11 @@ class _ThoughtWallHomePreviewState
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (sheetContext, setModalState) {
+        return Consumer(
+          builder: (sheetContext, sheetRef, _) {
+            final appearance = sheetRef.watch(thoughtWallAppearanceProvider);
+            final bubbleFilled = appearance.bubbleFilled;
+            final bubbleBorderWidth = appearance.bubbleBorderWidth;
             return Container(
               decoration: BoxDecoration(
                 color: context.isDark ? context.bgSurface : g.fill,
@@ -176,7 +168,6 @@ class _ThoughtWallHomePreviewState
                           child: InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              setModalState(() {});
                               _setBubbleStyle(filled: true);
                             },
                             borderRadius: BorderRadius.circular(12),
@@ -186,26 +177,26 @@ class _ThoughtWallHomePreviewState
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: _bubbleFilled
+                                color: bubbleFilled
                                     ? g.clay.withValues(alpha: 0.14)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: _bubbleFilled
+                                  color: bubbleFilled
                                       ? g.clay
                                       : g.line.withValues(alpha: 0.5),
-                                  width: _bubbleFilled ? 1.8 : 1.0,
+                                  width: bubbleFilled ? 1.8 : 1.0,
                                 ),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    _bubbleFilled
+                                    bubbleFilled
                                         ? Icons.check_circle_rounded
                                         : Icons.circle_outlined,
                                     size: 16,
-                                    color: _bubbleFilled
+                                    color: bubbleFilled
                                         ? g.clay
                                         : g.inkSecondary,
                                   ),
@@ -213,8 +204,8 @@ class _ThoughtWallHomePreviewState
                                   Text(
                                     'Coloured Fill',
                                     style: AscentTextStyles.bodySmall.copyWith(
-                                      color: _bubbleFilled ? g.clay : g.ink,
-                                      fontWeight: _bubbleFilled
+                                      color: bubbleFilled ? g.clay : g.ink,
+                                      fontWeight: bubbleFilled
                                           ? FontWeight.w700
                                           : FontWeight.w500,
                                     ),
@@ -229,7 +220,6 @@ class _ThoughtWallHomePreviewState
                           child: InkWell(
                             onTap: () {
                               HapticFeedback.selectionClick();
-                              setModalState(() {});
                               _setBubbleStyle(filled: false);
                             },
                             borderRadius: BorderRadius.circular(12),
@@ -239,26 +229,26 @@ class _ThoughtWallHomePreviewState
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: !_bubbleFilled
+                                color: !bubbleFilled
                                     ? g.clay.withValues(alpha: 0.14)
                                     : Colors.transparent,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: !_bubbleFilled
+                                  color: !bubbleFilled
                                       ? g.clay
                                       : g.line.withValues(alpha: 0.5),
-                                  width: !_bubbleFilled ? 1.8 : 1.0,
+                                  width: !bubbleFilled ? 1.8 : 1.0,
                                 ),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    !_bubbleFilled
+                                    !bubbleFilled
                                         ? Icons.check_circle_rounded
                                         : Icons.circle_outlined,
                                     size: 16,
-                                    color: !_bubbleFilled
+                                    color: !bubbleFilled
                                         ? g.clay
                                         : g.inkSecondary,
                                   ),
@@ -266,8 +256,8 @@ class _ThoughtWallHomePreviewState
                                   Text(
                                     'Border Only',
                                     style: AscentTextStyles.bodySmall.copyWith(
-                                      color: !_bubbleFilled ? g.clay : g.ink,
-                                      fontWeight: !_bubbleFilled
+                                      color: !bubbleFilled ? g.clay : g.ink,
+                                      fontWeight: !bubbleFilled
                                           ? FontWeight.w700
                                           : FontWeight.w500,
                                     ),
@@ -296,7 +286,6 @@ class _ThoughtWallHomePreviewState
                             child: InkWell(
                               onTap: () {
                                 HapticFeedback.selectionClick();
-                                setModalState(() {});
                                 _setBubbleStyle(borderWidth: width);
                               },
                               borderRadius: BorderRadius.circular(12),
@@ -305,17 +294,17 @@ class _ThoughtWallHomePreviewState
                                   vertical: 10,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: (_bubbleBorderWidth - width).abs() <
+                                  color: (bubbleBorderWidth - width).abs() <
                                           0.1
                                       ? g.clay.withValues(alpha: 0.14)
                                       : Colors.transparent,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: (_bubbleBorderWidth - width).abs() <
+                                    color: (bubbleBorderWidth - width).abs() <
                                             0.1
                                         ? g.clay
                                         : g.line.withValues(alpha: 0.5),
-                                    width: (_bubbleBorderWidth - width).abs() <
+                                    width: (bubbleBorderWidth - width).abs() <
                                             0.1
                                         ? 1.8
                                         : 1.0,
@@ -329,12 +318,12 @@ class _ThoughtWallHomePreviewState
                                             ? 'Standard'
                                             : 'Bold (2.6px)'),
                                     style: AscentTextStyles.bodySmall.copyWith(
-                                      color: (_bubbleBorderWidth - width).abs() <
+                                      color: (bubbleBorderWidth - width).abs() <
                                               0.1
                                           ? g.clay
                                           : g.ink,
                                       fontWeight:
-                                          (_bubbleBorderWidth - width).abs() <
+                                          (bubbleBorderWidth - width).abs() <
                                                   0.1
                                               ? FontWeight.w700
                                               : FontWeight.w500,
@@ -550,6 +539,9 @@ class _ThoughtWallHomePreviewState
 
   Widget _buildThoughtSpace(BuildContext context) {
     final g = context.glass;
+    final appearance = ref.watch(thoughtWallAppearanceProvider);
+    final bubbleFilled = appearance.bubbleFilled;
+    final bubbleBorderWidth = appearance.bubbleBorderWidth;
     final recentThoughtsAsync = ref.watch(recentThoughtsStreamProvider);
     final categories =
         ref.watch(thoughtCategoriesStreamProvider).value ??
@@ -830,9 +822,9 @@ Color getThoughtMoodColor(String mood) {
                             )!;
                       final itemBubbleBorder = Border.all(
                         color: itemHardBorderColor,
-                        width: _bubbleBorderWidth,
+                        width: bubbleBorderWidth,
                       );
-                      final itemBubbleFill = !_bubbleFilled
+                      final itemBubbleFill = !bubbleFilled
                           ? Colors.transparent
                           : thought.isCompleted
                               ? (isDark

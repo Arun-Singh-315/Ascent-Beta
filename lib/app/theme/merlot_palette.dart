@@ -11,8 +11,8 @@ class MerlotPalette {
 
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
-  /// Canvas: Scaffold background — soft, soothing luminous off-white with subtle dark mix
-  static const canvas = Color(0xFFF8F8FA);
+  /// Canvas: Scaffold background — soft, soothing cashmere linen (organic warmth, zero bleached white wash)
+  static const canvas = Color(0xFFF7F3EA);
 
   /// Surface: Cards, bottom nav, containers — pristine porcelain off-white
   static const surface = Color(0xFFFFFFFF);
@@ -20,8 +20,8 @@ class MerlotPalette {
   /// Surface Bottom: Lower stop for gradual card gradient — pure soft porcelain
   static const surfaceBottom = Color(0xFFFCFCFD);
 
-  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — clean crisp off-white well
-  static const recessedWell = Color(0xFFF2F2F5);
+  /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — soft sunken cashmere well
+  static const recessedWell = Color(0xFFEFE8DD);
 
   /// Elevated: Sheets, dialogs, modals — crisp elevated porcelain white
   static const elevated = Color(0xFFFFFFFF);

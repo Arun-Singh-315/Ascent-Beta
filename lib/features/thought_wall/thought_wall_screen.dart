@@ -1588,10 +1588,11 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
         ? (thought.mood == 'win' ? g.sage : g.slate)
         : _moodColor(thought.mood);
 
+    final hasBubbleFraming = !minimal;
     final hardBorderColor = thought.isCompleted
         ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
               .withValues(alpha: .6)
-        : isBubble
+        : hasBubbleFraming
         ? Color.lerp(
             g.ink.withValues(alpha: isDark ? .35 : .40),
             moodAccent,
@@ -1599,14 +1600,17 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           )!
         : g.ink.withValues(alpha: isDark ? .34 : .38);
 
-    final borderWidth = isBubble ? 1.8 : 1.0;
+    final borderWidth =
+        hasBubbleFraming ? widget.appearance.bubbleBorderWidth : 1.0;
 
-    final bubbleFill = thought.isCompleted
+    final bubbleFill = !widget.appearance.bubbleFilled && hasBubbleFraming
+        ? Colors.transparent
+        : thought.isCompleted
         ? (isDark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
               .withValues(alpha: .08)
         : isSelected
         ? g.clay.withValues(alpha: isDark ? 0.09 : 0.06)
-        : isBubble
+        : hasBubbleFraming
         ? Color.lerp(
             g.fill,
             moodAccent.withValues(alpha: isDark ? 0.06 : 0.04),
@@ -1628,7 +1632,11 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
           : isBubble
           ? [
               BoxShadow(
-                color: moodAccent.withValues(alpha: isDark ? 0.10 : 0.05),
+                color: moodAccent.withValues(
+                  alpha: widget.appearance.bubbleFilled
+                      ? (isDark ? 0.10 : 0.05)
+                      : (isDark ? 0.04 : 0.02),
+                ),
                 blurRadius: 8,
                 spreadRadius: 0,
                 offset: const Offset(0, 2),
