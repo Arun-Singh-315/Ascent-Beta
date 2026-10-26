@@ -1,5 +1,10 @@
+import '../../core/ai/riya_conversation_provider.dart';
+import '../../features/promises/models/promise_model.dart';
+import '../../features/promises/services/promise_intent_parser.dart';
+import 'riya_entity_card.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
+import 'package:intl/intl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,7 +27,6 @@ import '../home/widgets/home_schedule_sheet.dart';
 import '../../core/ai/ai_service.dart';
 import '../../core/ai/riya_capabilities.dart';
 import '../../core/ai/riya_intents.dart';
-import '../../core/ai/riya_alert_effects.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/time_tracking_provider.dart';
@@ -35,7 +39,31 @@ class AiAssistantScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialPrompt,
     this.sourceThoughtId,
+    this.compact = false,
   });
+  final bool compact;
+  static Future<void> showFromHome(
+    BuildContext context,
+  ) => showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    enableDrag: false,
+    builder: (context) => Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SizedBox(
+        height:
+            (MediaQuery.sizeOf(context).height * .88 -
+                    MediaQuery.viewInsetsOf(context).bottom)
+                .clamp(240, MediaQuery.sizeOf(context).height * .88),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: const AiAssistantScreen(compact: true),
+        ),
+      ),
+    ),
+  );
   final String? initialPrompt;
   final int? sourceThoughtId;
 
@@ -49,6 +77,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   bool _isLoading = false;
   bool _hasInputText = false;
   RiyaIntentResolver? _resolver;
+  final _composerFocus = FocusNode();
+  RiyaIntentResolver get _conversation {
+    final resolver = _resolver ?? ref.read(riyaConversationProvider);
+    _resolver = resolver;
+    return _resolver!;
+  }
+
   late final Stream<List<AiChatMessage>> _messagesStream;
 
   @override
@@ -79,6 +114,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
   void dispose() {
     _textController.removeListener(_onTextChanged);
     _textController.dispose();
+    _composerFocus.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -106,6 +142,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final aiDao = ref.read(aiAssistantDaoProvider);
 
     try {
+      await _expireReviews(aiDao);
       // 1. Insert user message with unique timestamp
       final userMessageId = await aiDao.insertMessage(
         AiChatMessageTableCompanion.insert(sender: 'user', message: prompt),
@@ -114,13 +151,17 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       _scrollToBottom();
 
       final db = ref.read(databaseProvider);
+      final resolution = await _conversation
+          .resolve(prompt)
+          .timeout(const Duration(seconds: 5));
       final homeProposal = HomeCaptureProposal.parse(prompt, DateTime.now());
       final isConversational = RegExp(
         r'^(talk to me|hey|hi|hello|help me|how are you|good morning|what should i do)\b',
         caseSensitive: false,
       ).hasMatch(prompt.trim());
 
-      if (!isConversational &&
+      if (resolution == null &&
+          !isConversational &&
           homeProposal.scheduledIntent &&
           (homeProposal.at != null ||
               homeProposal.followUp ||
@@ -157,9 +198,6 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         if (mounted) _textController.clear();
         return;
       }
-      final resolution = await (_resolver ??= RiyaIntentResolver(
-        db,
-      )).resolve(prompt).timeout(const Duration(seconds: 5));
       if (!mounted) return;
       String reply;
       RiyaCommand? command = resolution?.command;
@@ -197,94 +235,30 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       if (command != null) {
         final executor = RiyaExecutor(
           db,
-          external: _workspaceCommand,
           expectedWorkspaceRevision: db.workspaceRevision,
-          verifyExternal: _verifyWorkspaceCommand,
         );
         executor.validate(command);
-        final capability = command.capability;
-        bool approved = !capability.requiresConfirmation;
-        if (capability.requiresConfirmation && mounted) {
-          approved =
-              await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: Text(capability.description),
-                  content: SingleChildScrollView(child: Text(command!.preview)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Confirm'),
-                    ),
-                  ],
-                ),
-              ) ==
-              true;
-        }
-        if (approved && mounted) {
-          final requestId = 'chat:$userMessageId';
-          RiyaResult? savedResult;
-          try {
-            // Attach the existing Focus stream/ticker before creating a session.
-            if (command.id.startsWith('focus.')) ref.read(timeTrackingProvider);
-            final result = await executor.execute(
-              command,
-              requestId: requestId,
-              approved: approved,
-            );
-            savedResult = result;
-            reply = result.message;
-            _resolver?.rememberResult(result);
-            options = result.options;
-            data['quickOptions'] = options;
-            if (result.reminderIds.isNotEmpty ||
-                result.cancelReminderIds.isNotEmpty) {
-              final verified = await RiyaAlertEffects.device(
-                db,
-              ).syncRequest(requestId);
-              reply =
-                  '${result.message.replaceFirst(' Device alert scheduling has not been verified.', '')}\n${verified ? 'Device alert changes verified.' : 'Device alert changes are pending and will be retried.'}';
-            }
-            actionType = command.id;
-            data.addAll({
-              'title': capability.description,
-              'summary': reply,
-              'route': result.targetRoute,
-              'executionStatus': 'verified',
-              'requestId': requestId,
-              'write': capability.write,
-            });
-            if (command.id == 'navigation.open' && mounted) {
-              context.push(result.route);
-            }
-          } catch (error) {
-            if (error is RiyaCommittedActionError) {
-              savedResult = error.result;
-              data['requestId'] = requestId;
-              data['route'] = error.result.targetRoute;
-            }
-            reply = savedResult != null
-                ? '${savedResult.message} Confirmation history or device effects are pending verification.'
-                : command.id == 'focus.start' &&
-                      await db.timeSessionDao.getActiveFocusSession() != null
-                ? 'A Focus session is already active. Open Focus to continue or finish it.'
-                : error is StateError
-                ? error.message.toString()
-                : 'I could not verify that change. Check the relevant screen before trying again.';
-            actionType = command.id;
-            data['title'] = capability.description;
-            data['route'] ??= capability.route;
-            data['requestId'] ??= requestId;
-            data['executionStatus'] = savedResult == null
-                ? 'failed'
-                : 'recovery_pending';
-          }
+        if (command.capability.requiresConfirmation) {
+          actionType = command.id;
+          reply = _reviewCopy(command);
+          data.addAll({
+            'pendingCommand': {
+              'id': command.id,
+              'arguments': command.arguments,
+            },
+            'executionStatus': 'proposed',
+            'requestId': 'chat:$userMessageId',
+            'workspaceRevision': db.workspaceRevision,
+            'title': command.capability.description,
+          });
         } else {
-          reply = 'Cancelled. No changes were made.';
+          final executed = await _executeCommand(
+            command,
+            'chat:$userMessageId',
+          );
+          reply = executed.$1;
+          data.addAll(executed.$2);
+          actionType = command.id;
         }
       }
       await aiDao.insertMessage(
@@ -295,13 +269,14 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
           actionPayloadJson: drift.Value(jsonEncode(data)),
         ),
       );
-    } catch (_) {
+    } catch (error) {
       try {
         await aiDao.insertMessage(
           AiChatMessageTableCompanion.insert(
             sender: 'assistant',
-            message:
-                'I could not finish that response. Recover saved results before trying again.',
+            message: error is ArgumentError
+                ? error.message.toString()
+                : 'I could not finish that response. Recover saved results before trying again.',
             actionPayloadJson: drift.Value(
               jsonEncode({
                 'executionStatus': 'failed',
@@ -326,8 +301,246 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
-        _scrollToBottom();
+        try {
+          await ref
+              .read(sharedPreferencesProvider)
+              .setString(
+                riyaConversationKey,
+                jsonEncode(_resolver?.conversationState ?? {}),
+              );
+        } catch (_) {}
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _scrollToBottom();
+        }
+      }
+    }
+  }
+
+  void _editDraft(Map<String, dynamic> data) {
+    if (_isLoading) return;
+    final raw = Map<String, dynamic>.from(data['pendingCommand'] as Map);
+    final args = Map<String, dynamic>.from(raw['arguments'] as Map);
+    final id = raw['id'] as String;
+    _textController.text = id == 'promises.create'
+        ? 'Create a promise to ${args['text']}'
+        : id == 'tasks.create'
+        ? 'Create a todo to ${args['title']}'
+        : id.endsWith('.edit')
+        ? 'Edit ${id.startsWith('promises') ? 'promise' : 'task'} #${args['id']} to ${args['title']}'
+        : '';
+    _textController.selection = TextSelection.collapsed(
+      offset: _textController.text.length,
+    );
+    _composerFocus.requestFocus();
+  }
+
+  String _reviewCopy(RiyaCommand command) {
+    final a = command.arguments;
+    if (command.id == 'promises.create') {
+      final p = PromiseIntentParser.parse(a['text'] as String);
+      return '“${p.title}”\n${p.schedule?.summary ?? 'Once'} · ${p.trackingType.name == 'duration' ? '${p.targetValue.toInt()} minutes' : 'Check-in'}\n${p.reminderTime == null ? 'No reminder. You can add one later.' : 'Reminder: ${p.reminderTime}'}';
+    }
+    if (command.id.endsWith('.delete')) {
+      return 'Delete “${a['expectedTitle'] ?? 'the selected item'}”?${command.id.startsWith('tasks.') ? '\nLinked reminders and records will also be removed.' : '\nIts progress history will also be removed.'}';
+    }
+    if (command.id == 'tasks.create') {
+      return 'Add “${a['title']}” to your Todos?\nDay: ${(a['plannedDate'] as String?)?.split('T').first ?? 'Today'}';
+    }
+    if (a['expectedTitle'] != null) {
+      if (a['title'] != null) {
+        return 'Rename “${a['expectedTitle']}” to “${a['title']}”?';
+      }
+      if (a['newDate'] != null || a['day'] != null) {
+        return 'Move “${a['expectedTitle']}” to ${(a['newDate'] ?? a['day']).toString().split('T').first}?';
+      }
+      return '${command.capability.description}: “${a['expectedTitle']}”';
+    }
+    return command.preview;
+  }
+
+  Future<void> _saveResponse(
+    AppDatabase db,
+    int id,
+    String text,
+    Map<String, dynamic> data,
+  ) async {
+    await (db.update(
+      db.aiChatMessageTable,
+    )..where((m) => m.id.equals(id))).write(
+      AiChatMessageTableCompanion(
+        message: drift.Value(text),
+        actionPayloadJson: drift.Value(jsonEncode(data)),
+      ),
+    );
+  }
+
+  Future<void> _expireReviews(AiAssistantDao dao) async {
+    final db = ref.read(databaseProvider);
+    final pending =
+        await (db.select(db.aiChatMessageTable)..where(
+              (m) => m.actionPayloadJson.like('%"executionStatus":"proposed"%'),
+            ))
+            .get();
+    for (final message in pending) {
+      try {
+        final data = Map<String, dynamic>.from(
+          jsonDecode(message.actionPayloadJson!) as Map,
+        );
+        data.remove('pendingCommand');
+        data['executionStatus'] = 'superseded';
+        await _saveResponse(
+          db,
+          message.id,
+          'Replaced by your newer request. Nothing saved from this review.',
+          data,
+        );
+      } catch (_) {
+        /* Leave malformed legacy messages readable. */
+      }
+    }
+  }
+
+  Future<(String, Map<String, dynamic>)> _executeCommand(
+    RiyaCommand command,
+    String requestId,
+  ) async {
+    final db = ref.read(databaseProvider);
+    final resolver = _conversation;
+    final executor = RiyaExecutor(
+      db,
+      external: _workspaceCommand,
+      verifyExternal: _verifyWorkspaceCommand,
+      expectedWorkspaceRevision: db.workspaceRevision,
+    );
+    final data = <String, dynamic>{
+      'title': command.capability.description,
+      'requestId': requestId,
+      'route': command.capability.route,
+      'write': command.capability.write,
+    };
+    RiyaResult? committed;
+    try {
+      if (command.id.startsWith('focus.')) ref.read(timeTrackingProvider);
+      final result = await executor.execute(
+        command,
+        requestId: requestId,
+        approved: true,
+      );
+      committed = result;
+      resolver.rememberResult(result);
+      var reply = result.message;
+      if (result.reminderIds.isNotEmpty ||
+          result.cancelReminderIds.isNotEmpty ||
+          result.promiseEffectIds.isNotEmpty) {
+        final synced = await ref
+            .read(riyaAlertEffectsProvider)
+            .syncRequest(requestId);
+        if (!synced) {
+          data['alertsPending'] = true;
+          reply += '\nSaved. Device alerts are pending and will be retried.';
+        }
+      }
+      data.addAll({
+        'summary': reply,
+        'route': result.targetRoute,
+        'executionStatus': 'verified',
+        'entityType': result.entityType,
+        'entityId': result.entityId,
+        'records': result.records,
+        'quickOptions': result.options,
+      });
+      if (command.id == 'navigation.open' && mounted) {
+        context.push(result.route);
+      }
+      return (reply, data);
+    } catch (error) {
+      if (error is RiyaCommittedActionError) committed = error.result;
+      data['executionStatus'] = committed == null
+          ? 'failed'
+          : 'recovery_pending';
+      if (committed != null) {
+        data['route'] = committed.targetRoute;
+        data['entityType'] = committed.entityType;
+        data['entityId'] = committed.entityId;
+      }
+      return (
+        committed != null
+            ? '${committed.message} Confirmation history or alerts still need verification.'
+            : error is StateError
+            ? error.message.toString()
+            : error is ArgumentError
+            ? error.message.toString()
+            : 'I could not verify this change. Your records were kept.',
+        data,
+      );
+    }
+  }
+
+  Future<void> _reviewMessage(
+    AiChatMessage message,
+    Map<String, dynamic> original,
+    bool approved,
+  ) async {
+    if (_isLoading || original['executionStatus'] != 'proposed') return;
+    final db = ref.read(databaseProvider);
+    setState(() => _isLoading = true);
+    try {
+      final fresh = await (db.select(
+        db.aiChatMessageTable,
+      )..where((m) => m.id.equals(message.id))).getSingleOrNull();
+      if (fresh == null) return;
+      final data = Map<String, dynamic>.from(
+        jsonDecode(fresh.actionPayloadJson!) as Map,
+      );
+      if (data['executionStatus'] != 'proposed') return;
+      if (!approved) {
+        data.remove('pendingCommand');
+        data['executionStatus'] = 'cancelled';
+        await _saveResponse(
+          db,
+          message.id,
+          'Cancelled. Nothing changed.',
+          data,
+        );
+        await _conversation.resolve('Cancel');
+        return;
+      }
+      if (data['workspaceRevision'] != db.workspaceRevision) {
+        throw StateError('The workspace changed. Ask again before saving.');
+      }
+      final raw = Map<String, dynamic>.from(data['pendingCommand'] as Map);
+      final command = RiyaCommand(
+        raw['id'] as String,
+        Map<String, dynamic>.from(raw['arguments'] as Map),
+      );
+      final result = await _executeCommand(
+        command,
+        data['requestId'] as String,
+      );
+      await _saveResponse(db, message.id, result.$1, result.$2);
+    } catch (error) {
+      final data = {...original}..remove('pendingCommand');
+      data['executionStatus'] = 'failed';
+      await _saveResponse(
+        db,
+        message.id,
+        error is StateError
+            ? error.message.toString()
+            : 'Could not finish. Ask again to review a fresh action.',
+        data,
+      );
+    } finally {
+      if (mounted) {
+        try {
+          await ref
+              .read(sharedPreferencesProvider)
+              .setString(
+                riyaConversationKey,
+                jsonEncode(_resolver?.conversationState ?? {}),
+              );
+        } catch (_) {}
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -338,14 +551,13 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     try {
       final request = data?['requestId'];
       if (request is String) {
-        await RiyaAlertEffects.device(
-          ref.read(databaseProvider),
-        ).syncRequest(request);
+        await ref.read(riyaAlertEffectsProvider).syncRequest(request);
       }
       await ref.read(aiAssistantDaoProvider).recoverCommandResponses();
       if (!mounted) return;
       final route = data?['route'];
-      if (route is String) {
+      if (route is String &&
+          !['tasks', 'promises'].contains(data?['entityType'])) {
         context.push(route);
       } else {
         AscentSnackBar.show(
@@ -509,400 +721,430 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     final messagesStream = _messagesStream;
     final accentColor = context.accentPrimary;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: isDark
-          ? context.bgBase
-          : (g.merlot
-                ? MerlotPalette.canvas
-                : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? context.bgBase.withValues(alpha: 0.72)
-                    : Colors.white.withValues(alpha: 0.82),
-                border: Border(
-                  bottom: BorderSide(
-                    color: (isDark ? Colors.white : Colors.black).withValues(
-                      alpha: 0.06,
+    return PopScope(
+      canPop: !_isLoading,
+      child: Scaffold(
+        resizeToAvoidBottomInset: !widget.compact,
+        extendBodyBehindAppBar: true,
+        backgroundColor: isDark
+            ? context.bgBase
+            : (g.merlot
+                  ? MerlotPalette.canvas
+                  : (g.frozen ? FrozenPalette.canvas : context.bgBase)),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? context.bgBase.withValues(alpha: 0.72)
+                      : context.bgBase.withValues(alpha: 0.82),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: (isDark ? Colors.white : Colors.black).withValues(
+                        alpha: 0.06,
+                      ),
+                      width: 1.0,
                     ),
-                    width: 1.0,
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: context.textPrimary,
-            size: 19,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        accentColor.withValues(alpha: 0.25),
-                        context.glass.clay.withValues(alpha: 0.25),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: accentColor.withValues(alpha: 0.45),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.auto_awesome_rounded,
-                      color: accentColor,
-                      size: 17,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: context.glass.sage,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? context.bgBase : Colors.white,
-                        width: 1.8,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: context.glass.sage.withValues(alpha: 0.6),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: context.textPrimary,
+              size: 19,
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          ),
+          titleSpacing: 0,
+          title: Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.plusJakartaSans(
-                            color: context.textPrimary,
-                            fontSize: 16.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [
+                          accentColor.withValues(alpha: 0.25),
+                          context.glass.clay.withValues(alpha: 0.25),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
+                      border: Border.all(
+                        color: accentColor.withValues(alpha: 0.45),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.auto_awesome_rounded,
+                        color: accentColor,
+                        size: 17,
+                      ),
+                    ),
                   ),
-                  Text(
-                    'Intelligent · On-Device · Private',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w500,
-                      color: context.textMuted,
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: context.glass.sage,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? context.bgBase : Colors.white,
+                          width: 1.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.glass.sage.withValues(alpha: 0.6),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              color: context.textPrimary,
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      'Intelligent · On-Device · Private',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: context.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            if (widget.compact)
+              IconButton(
+                tooltip: 'Expand conversation',
+                icon: const Icon(Icons.open_in_full_rounded),
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        final router = GoRouter.of(context);
+                        Navigator.pop(context);
+                        router.push(
+                          Uri(
+                            path: '/ai-assistant',
+                            queryParameters: _textController.text.isEmpty
+                                ? null
+                                : {'prompt': _textController.text},
+                          ).toString(),
+                        );
+                      },
+              ),
+            IconButton(
+              icon: Icon(
+                Icons.delete_sweep_outlined,
+                color: context.textMuted,
+                size: 21,
+              ),
+              tooltip: 'Clear chat history',
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      HapticFeedback.lightImpact();
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Clear chat history?'),
+                          content: const Text(
+                            'This removes your conversation with Riya. Your saved thoughts, tasks and reminders will stay available.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Clear history'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed == true && mounted) {
+                        await ref
+                            .read(aiAssistantDaoProvider)
+                            .clearChatHistory();
+                        ref.read(riyaConversationProvider).resetConversation();
+                        await ref
+                            .read(sharedPreferencesProvider)
+                            .remove(riyaConversationKey);
+                      }
+                    },
             ),
+            const SizedBox(width: 6),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.delete_sweep_outlined,
-              color: context.textMuted,
-              size: 21,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Breathtaking Night & Day Atmospheric Background
+            _AtmosphericChatBackground(
+              isDark: isDark,
+              accentColor: accentColor,
             ),
-            tooltip: 'Clear chat history',
-            onPressed: _isLoading
-                ? null
-                : () async {
-                    HapticFeedback.lightImpact();
-                    final confirmed = await showDialog<bool>(
-                      context: context,
-                      builder: (ctx) => AlertDialog(
-                        title: const Text('Clear chat history?'),
-                        content: const Text(
-                          'This removes your conversation with Riya. Your saved thoughts, tasks and reminders will stay available.',
+            // Main Chat Interface
+            StreamBuilder<List<AiChatMessage>>(
+              stream: messagesStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AscentSpacing.xl),
+                      child: Text(
+                        'Connecting to memory...',
+                        style: TextStyle(
+                          color: context.textMuted,
+                          fontSize: 13,
                         ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('Cancel'),
-                          ),
-                          FilledButton(
-                            onPressed: () => Navigator.pop(ctx, true),
-                            child: const Text('Clear history'),
-                          ),
-                        ],
                       ),
-                    );
-                    if (confirmed == true && mounted) {
-                      await ref.read(aiAssistantDaoProvider).clearChatHistory();
-                    }
-                  },
-          ),
-          const SizedBox(width: 6),
-        ],
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Breathtaking Night & Day Atmospheric Background
-          _AtmosphericChatBackground(isDark: isDark, accentColor: accentColor),
-          // Main Chat Interface
-          StreamBuilder<List<AiChatMessage>>(
-            stream: messagesStream,
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AscentSpacing.xl),
-                    child: Text(
-                      'Connecting to memory...',
-                      style: TextStyle(color: context.textMuted, fontSize: 13),
                     ),
-                  ),
-                );
-              }
+                  );
+                }
 
-              final messages = snapshot.data ?? [];
-              final hasMessages = messages.isNotEmpty;
+                final messages = snapshot.data ?? [];
+                final hasMessages = messages.isNotEmpty;
 
-              return Column(
-                children: [
-                  // Chat stream
-                  Expanded(
-                    child: messages.isEmpty
-                        ? _SoftChatWelcome(
-                            assistantName: name,
-                            onSelectPrompt: _handleSubmitted,
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: EdgeInsets.fromLTRB(
-                              14,
-                              MediaQuery.paddingOf(context).top +
-                                  kToolbarHeight +
-                                  8,
-                              14,
-                              12,
-                            ),
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: messages.length + (_isLoading ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == messages.length) {
-                                return KeyedSubtree(
-                                  key: const ValueKey('chat_loading_indicator'),
-                                  child: _ThinkingBubble(
-                                    name: name,
-                                    accentColor: accentColor,
-                                  ),
-                                );
-                              }
-
-                              final msg = messages[index];
-                              final isUser = msg.sender == 'user';
-
-                              Map<String, dynamic>? actionData;
-                              List<String> messageQuickChips = [];
-                              if (msg.actionPayloadJson != null) {
-                                try {
-                                  actionData = jsonDecode(
-                                    msg.actionPayloadJson!,
+                return Column(
+                  children: [
+                    // Chat stream
+                    Expanded(
+                      child: messages.isEmpty
+                          ? _SoftChatWelcome(
+                              assistantName: name,
+                              onSelectPrompt: _handleSubmitted,
+                            )
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding: EdgeInsets.fromLTRB(
+                                14,
+                                MediaQuery.paddingOf(context).top +
+                                    kToolbarHeight +
+                                    8,
+                                14,
+                                12,
+                              ),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: messages.length + (_isLoading ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (index == messages.length) {
+                                  return KeyedSubtree(
+                                    key: const ValueKey(
+                                      'chat_loading_indicator',
+                                    ),
+                                    child: _ThinkingBubble(
+                                      name: name,
+                                      accentColor: accentColor,
+                                    ),
                                   );
-                                  if (actionData?['quickOptions'] is List) {
-                                    messageQuickChips =
-                                        (actionData!['quickOptions'] as List)
-                                            .map((e) => e.toString())
-                                            .toList();
-                                  }
-                                } catch (_) {}
-                              }
+                                }
 
-                              return KeyedSubtree(
-                                key: ValueKey('chat_item_${msg.id}'),
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                    bottom: AscentSpacing.md,
-                                  ),
-                                  child: Align(
-                                    alignment: isUser
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    child: ConstrainedBox(
-                                      constraints: BoxConstraints(
-                                        maxWidth:
-                                            MediaQuery.sizeOf(context).width *
-                                            0.84,
-                                      ),
-                                      child: _TelegramMessageBubble(
-                                        msg: msg,
-                                        isUser: isUser,
-                                        assistantName: name,
-                                        accentColor: accentColor,
-                                        actionData: actionData,
-                                        messageQuickChips: messageQuickChips,
-                                        onSelectChip: _handleSubmitted,
-                                        onRecover: () =>
-                                            _recoverMessage(actionData),
-                                        onOpenCourse: () =>
-                                            context.push('/study-plan'),
-                                        onOpenHub: () => context.push(
-                                          actionData?['route'] as String? ??
-                                              '/today',
+                                final msg = messages[index];
+                                final isUser = msg.sender == 'user';
+
+                                Map<String, dynamic>? actionData;
+                                List<String> messageQuickChips = [];
+                                if (msg.actionPayloadJson != null) {
+                                  try {
+                                    actionData = jsonDecode(
+                                      msg.actionPayloadJson!,
+                                    );
+                                    if (actionData?['quickOptions'] is List) {
+                                      messageQuickChips =
+                                          (actionData!['quickOptions'] as List)
+                                              .map((e) => e.toString())
+                                              .toList();
+                                    }
+                                  } catch (_) {}
+                                }
+
+                                return KeyedSubtree(
+                                  key: ValueKey('chat_item_${msg.id}'),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(
+                                      bottom: AscentSpacing.md,
+                                    ),
+                                    child: Align(
+                                      alignment: isUser
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                      child: ConstrainedBox(
+                                        constraints: BoxConstraints(
+                                          maxWidth:
+                                              MediaQuery.sizeOf(context).width *
+                                              0.84,
+                                        ),
+                                        child: _ConversationMessageBubble(
+                                          msg: msg,
+                                          isUser: isUser,
+                                          assistantName: name,
+                                          accentColor: accentColor,
+                                          actionData: actionData,
+                                          messageQuickChips: messageQuickChips,
+                                          onSelectChip: _handleSubmitted,
+                                          busy: _isLoading,
+                                          onEditDraft: () =>
+                                              _editDraft(actionData!),
+                                          onReview: (approved) =>
+                                              _reviewMessage(
+                                                msg,
+                                                actionData!,
+                                                approved,
+                                              ),
+                                          onRecover: () =>
+                                              _recoverMessage(actionData),
+                                          onOpenCourse: () =>
+                                              context.push('/study-plan'),
+                                          onOpenHub: () => context.push(
+                                            actionData?['route'] as String? ??
+                                                '/today',
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
-                          ),
-                  ),
-
-                  if (_isLoading)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
-                        children: [
-                          const SizedBox(width: 16),
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: accentColor,
+                                );
+                              },
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '$name is thinking...',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: context.textMuted,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
 
-                  // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
-                  if (!hasMessages) ...[
-                    Padding(
+                    // Quick suggestion chips: shown ONLY when chat is empty to prevent "box over box" clutter
+                    if (!hasMessages) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: AscentSpacing.xs,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuickChip(
+                                widget.compact ? 'Todos' : 'Plan my day',
+                                Icons.wb_sunny_rounded,
+                                () => _handleSubmitted(
+                                  widget.compact ? 'Show todos' : 'Plan my day',
+                                ),
+                                context,
+                                accentColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildQuickChip(
+                                widget.compact ? 'Promises' : 'Today\'s agenda',
+                                Icons.checklist_rounded,
+                                () => _handleSubmitted(
+                                  widget.compact
+                                      ? 'Show promises'
+                                      : 'What are my tasks today?',
+                                ),
+                                context,
+                                accentColor,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildQuickChip(
+                                widget.compact ? 'New Todo' : 'Medicines',
+                                widget.compact
+                                    ? Icons.add_rounded
+                                    : Icons.medication_rounded,
+                                () => _handleSubmitted(
+                                  widget.compact
+                                      ? 'New todo'
+                                      : 'What are my medicines today?',
+                                ),
+                                context,
+                                accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ] else ...[
+                      const SizedBox(height: 4),
+                    ],
+
+                    // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
+                    Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 14,
-                        vertical: AscentSpacing.xs,
+                        vertical: AscentSpacing.sm,
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _buildQuickChip(
-                              'Plan my day',
-                              Icons.wb_sunny_rounded,
-                              () => _handleSubmitted('Plan my day'),
-                              context,
-                              accentColor,
-                            ),
+                      decoration: BoxDecoration(
+                        color: g.fill,
+                        border: Border(
+                          top: BorderSide(
+                            color: g.edge.withValues(alpha: 0.5),
+                            width: 0.8,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildQuickChip(
-                              'Today\'s agenda',
-                              Icons.checklist_rounded,
-                              () =>
-                                  _handleSubmitted('What are my tasks today?'),
-                              context,
-                              accentColor,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildQuickChip(
-                              'Medicines',
-                              Icons.medication_rounded,
-                              () => _handleSubmitted(
-                                'What are my medicines today?',
-                              ),
-                              context,
-                              accentColor,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                  ] else ...[
-                    const SizedBox(height: 4),
-                  ],
-
-                  // Thought Wall Consistent Input Box (Glass fill + Pill + Animated Send Circle)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: AscentSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: g.fill,
-                      border: Border(
-                        top: BorderSide(
-                          color: g.edge.withValues(alpha: 0.5),
-                          width: 0.8,
+                      child: SafeArea(
+                        top: false,
+                        child: MessageComposer(
+                          controller: _textController,
+                          focusNode: _composerFocus,
+                          hint: 'Message $name...',
+                          busy: _isLoading,
+                          onSend: _handleSubmitted,
                         ),
                       ),
                     ),
-                    child: SafeArea(
-                      top: false,
-                      child: MessageComposer(
-                        controller: _textController,
-                        hint: 'Message $name...',
-                        busy: _isLoading,
-                        onSend: _handleSubmitted,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -974,7 +1216,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
 // Telegram-Style Translucent Message Bubble with Border
 // ---------------------------------------------------------------------------
 
-class _TelegramMessageBubble extends StatelessWidget {
+class _ConversationMessageBubble extends StatelessWidget {
   final AiChatMessage msg;
   final bool isUser;
   final String assistantName;
@@ -985,8 +1227,11 @@ class _TelegramMessageBubble extends StatelessWidget {
   final VoidCallback onOpenCourse;
   final VoidCallback onOpenHub;
   final VoidCallback onRecover;
+  final ValueChanged<bool> onReview;
+  final bool busy;
+  final VoidCallback onEditDraft;
 
-  const _TelegramMessageBubble({
+  const _ConversationMessageBubble({
     required this.msg,
     required this.isUser,
     required this.assistantName,
@@ -997,6 +1242,9 @@ class _TelegramMessageBubble extends StatelessWidget {
     required this.onOpenCourse,
     required this.onOpenHub,
     required this.onRecover,
+    required this.onReview,
+    required this.busy,
+    required this.onEditDraft,
   });
 
   @override
@@ -1014,12 +1262,15 @@ class _TelegramMessageBubble extends StatelessWidget {
       children: [
         GlassSurface(
           key: ValueKey('chat-glass-${msg.id}'),
+          fillColor: isUser
+              ? accentColor.withValues(alpha: isDark ? .22 : .10)
+              : null,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isUser ? 18 : 6),
-            bottomRight: Radius.circular(isUser ? 6 : 18),
+            bottomLeft: Radius.circular(isUser ? 22 : 7),
+            bottomRight: Radius.circular(isUser ? 7 : 22),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1051,11 +1302,17 @@ class _TelegramMessageBubble extends StatelessWidget {
 
               // Message Body
               Text(
-                msg.message,
+                (actionData?['records'] as List? ?? []).isNotEmpty
+                    ? (msg.actionType?.startsWith('promises.') == true
+                          ? 'Here are your Promises.'
+                          : 'Here are your Todos. Choose a card below.')
+                    : msg.message,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: isUser
+                      ? (isDark ? Colors.white : context.glass.ink)
+                      : context.glass.ink,
                   height: 1.45,
                 ),
               ),
@@ -1072,7 +1329,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                       timeString,
                       style: GoogleFonts.jetBrainsMono(
                         fontSize: 9.5,
-                        color: context.glass.inkMuted,
+                        color: context.glass.inkSecondary,
                       ),
                     ),
                     if (isUser) ...[
@@ -1080,7 +1337,7 @@ class _TelegramMessageBubble extends StatelessWidget {
                       Icon(
                         Icons.done_all_rounded,
                         size: 11,
-                        color: context.glass.inkMuted,
+                        color: context.glass.inkSecondary,
                       ),
                     ],
                   ],
@@ -1090,11 +1347,221 @@ class _TelegramMessageBubble extends StatelessWidget {
           ),
         ),
 
+        if (!isUser && actionData?['executionStatus'] == 'proposed')
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Builder(
+              builder: (context) {
+                final rawText = (actionData?['pendingCommand']?['arguments']?['text'] as String?) ?? '';
+                final proposal = msg.actionType == 'promises.create' && rawText.isNotEmpty
+                    ? PromiseIntentParser.parse(rawText)
+                    : null;
+                final taskTitle = msg.actionType == 'tasks.create'
+                    ? (actionData?['pendingCommand']?['arguments']?['title'] as String?)
+                    : null;
+                final taskDate = msg.actionType == 'tasks.create'
+                    ? (actionData?['pendingCommand']?['arguments']?['plannedDate'] as String?)?.split('T').first
+                    : null;
+
+                return GlassSurface(
+                  radius: 18,
+                  enableBlur: false,
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: accentColor.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              msg.actionType?.startsWith('promises.') == true
+                                  ? 'PROMISE PREVIEW'
+                                  : (msg.actionType?.startsWith('tasks.') == true
+                                      ? 'TODO PREVIEW'
+                                      : 'REVIEW ACTION'),
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                letterSpacing: 1.0,
+                                color: accentColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        proposal?.title ?? taskTitle ?? (actionData?['title'] as String? ?? 'Review'),
+                        style: TextStyle(
+                          color: context.glass.ink,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (proposal != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: context.glass.fill.withValues(alpha: isDark ? 0.25 : 0.45),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: context.glass.line, width: 0.8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.event_outlined, size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      proposal.targetDate != null
+                                          ? 'Target Date: ${proposal.targetDate!.day} ${DateFormat.MMM().format(proposal.targetDate!)} ${proposal.targetDate!.year}'
+                                          : (proposal.schedule?.summary != null
+                                              ? 'Schedule: ${proposal.schedule!.summary}'
+                                              : 'Schedule: Every day (Daily)'),
+                                      style: TextStyle(
+                                        color: context.glass.ink,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Icon(Icons.timer_outlined, size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      proposal.trackingType == PromiseTrackingType.duration
+                                          ? '${proposal.targetValue.toInt()} minutes per session'
+                                          : (proposal.trackingType == PromiseTrackingType.frequency
+                                              ? '${proposal.frequencyPerWeek} times a week'
+                                              : 'Daily check-in commitment'),
+                                      style: TextStyle(
+                                        color: context.glass.inkSecondary,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Icon(Icons.notifications_active_outlined, size: 14, color: accentColor),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      proposal.reminderTime != null
+                                          ? 'Reminder: ${proposal.reminderTime}'
+                                          : 'No reminder',
+                                      style: TextStyle(
+                                        color: context.glass.inkSecondary,
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else if (taskDate != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 14, color: accentColor),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Planned: $taskDate',
+                              style: TextStyle(
+                                color: context.glass.inkSecondary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: busy ? null : () => onReview(true),
+                            icon: Icon(
+                              msg.actionType?.endsWith('.delete') == true
+                                  ? Icons.delete_outline_rounded
+                                  : Icons.check_rounded,
+                              size: 16,
+                            ),
+                            label: Text(
+                              msg.actionType?.endsWith('.delete') == true
+                                  ? 'Delete'
+                                  : 'Save',
+                            ),
+                          ),
+                          if (msg.actionType?.endsWith('.create') == true ||
+                              msg.actionType?.endsWith('.edit') == true)
+                            TextButton.icon(
+                              onPressed: busy ? null : onEditDraft,
+                              icon: const Icon(Icons.edit_outlined, size: 14),
+                              label: const Text('Change words'),
+                            ),
+                          TextButton(
+                            onPressed: busy ? null : () => onReview(false),
+                            child: const Text('Cancel'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        if (!isUser)
+          for (final record in (actionData?['records'] as List? ?? []))
+            if (record is Map &&
+                ['tasks', 'promises'].contains(record['type']) &&
+                record['id'] is int)
+              RiyaEntityCard(
+                type: record['type'] as String,
+                id: record['id'] as int,
+                onCommand: onSelectChip,
+                busy: busy,
+              ),
         if (!isUser &&
-            const [
-              'failed',
-              'recovery_pending',
-            ].contains(actionData?['executionStatus']))
+            ['tasks', 'promises'].contains(actionData?['entityType']) &&
+            actionData?['entityId'] is int &&
+            (actionData?['records'] as List? ?? []).isEmpty)
+          RiyaEntityCard(
+            type: actionData!['entityType'] as String,
+            id: actionData!['entityId'] as int,
+            onCommand: onSelectChip,
+            busy: busy,
+          ),
+
+        if (!isUser &&
+                const [
+                  'failed',
+                  'recovery_pending',
+                ].contains(actionData?['executionStatus']) ||
+            (!isUser && actionData?['alertsPending'] == true))
           Padding(
             padding: const EdgeInsets.only(top: AscentSpacing.sm),
             child: GlassSurface(
@@ -1128,6 +1595,8 @@ class _TelegramMessageBubble extends StatelessWidget {
         // Attached Action Confirmation Capsule (Executed Directly)
         if (!isUser &&
             msg.actionType != null &&
+            !['tasks', 'promises'].contains(actionData?['entityType']) &&
+            (actionData?['records'] as List? ?? []).isEmpty &&
             actionData != null &&
             actionData!['executionStatus'] == 'verified' &&
             actionData!['title'] != null) ...[
@@ -1292,79 +1761,41 @@ class _TelegramMessageBubble extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ThinkingBubble extends StatelessWidget {
+  const _ThinkingBubble({required this.name, required this.accentColor});
   final String name;
   final Color accentColor;
-
-  const _ThinkingBubble({required this.name, required this.accentColor});
-
   @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AscentSpacing.md),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.auto_awesome_rounded,
-              color: accentColor,
-              size: 14,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? context.bgSurface.withValues(alpha: 0.88)
-                  : Colors.white.withValues(alpha: 0.92),
-              borderRadius: AscentRadii.borderLg,
-              border: Border.all(
-                color: isDark ? context.glass.edge : context.divider,
-                width: 1.0,
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerLeft,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 300),
+      child: GlassSurface(
+        radius: 18,
+        enableBlur: false,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: accentColor,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '$name is thinking & parsing your data...',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12.5,
-                    fontStyle: FontStyle.italic,
-                    color: context.textMuted,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                '$name is checking…',
+                style: TextStyle(color: context.glass.inkMuted, fontSize: 12),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 // ---------------------------------------------------------------------------

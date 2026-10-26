@@ -20,7 +20,7 @@ class PromiseIntentParser {
     final frequencyMatch = _extractFrequency(lower);
 
     // 4. Detect Target Date / Milestone
-    final targetDate = _extractTargetDate(lower, now: now);
+    final targetDate = extractTargetDate(lower, now: now);
 
     // 5. Detect Reflection / Behavioral
     final isReflection = _detectReflection(lower);
@@ -109,7 +109,7 @@ class PromiseIntentParser {
         ? PromiseRepeat.weekly
         : PromiseRepeat.once;
     if (reminderDays.isEmpty) reminderDays = [1, 2, 3, 4, 5, 6, 7];
-    final plannedTime = _extractTime(lower);
+    final plannedTime = extractTime(lower);
     final reminderTime =
         lower.contains('remind') && !lower.contains('no reminder')
         ? plannedTime ?? '09:00'
@@ -197,7 +197,7 @@ class PromiseIntentParser {
     }
 
     // Target date adjustment
-    final targetDate = _extractTargetDate(lower);
+    final targetDate = extractTargetDate(lower);
     if (targetDate != null) {
       adjusted = adjusted.copyWith(
         targetDate: targetDate,
@@ -299,7 +299,7 @@ class PromiseIntentParser {
     return null;
   }
 
-  static String? _extractTime(String lower) {
+  static String? extractTime(String lower) {
     final explicit = RegExp(
       r'\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b',
     ).firstMatch(lower);
@@ -315,16 +315,45 @@ class PromiseIntentParser {
       final value = '${clock[1]!.padLeft(2, '0')}:${clock[2]}';
       if (validPromiseTime(value)) return value;
     }
-    if (lower.contains('morning')) return '08:00';
-    if (lower.contains('afternoon')) return '14:00';
-    if (lower.contains('evening') || lower.contains('night')) return '20:30';
+    final baje = RegExp(r'\b(\d{1,2})(?::(\d{2}))?\s*(?:baje)?\b').firstMatch(lower);
+    if (lower.contains('subah') || lower.contains('morning')) {
+      final h = baje != null ? int.tryParse(baje.group(1)!) : null;
+      if (h != null && h >= 1 && h <= 12) {
+        return '${h.toString().padLeft(2, '0')}:00';
+      }
+      return '08:00';
+    }
+    if (lower.contains('afternoon') || lower.contains('dopahar')) {
+      final h = baje != null ? int.tryParse(baje.group(1)!) : null;
+      if (h != null && h >= 1 && h <= 12) {
+        final hour = h < 12 ? h + 12 : h;
+        return '${hour.toString().padLeft(2, '0')}:00';
+      }
+      return '14:00';
+    }
+    if (lower.contains('evening') || lower.contains('shaam')) {
+      final h = baje != null ? int.tryParse(baje.group(1)!) : null;
+      if (h != null && h >= 1 && h <= 12) {
+        final hour = h < 12 ? h + 12 : h;
+        return '${hour.toString().padLeft(2, '0')}:00';
+      }
+      return '19:00';
+    }
+    if (lower.contains('night') || lower.contains('raat')) {
+      final h = baje != null ? int.tryParse(baje.group(1)!) : null;
+      if (h != null && h >= 1 && h <= 12) {
+        final hour = h < 12 ? h + 12 : h;
+        return '${hour.toString().padLeft(2, '0')}:00';
+      }
+      return '21:00';
+    }
     return null;
   }
 
-  static DateTime? _extractTargetDate(String text, {DateTime? now}) {
+  static DateTime? extractTargetDate(String text, {DateTime? now}) {
     now ??= DateTime.now();
     final lower = text.replaceFirst(
-      RegExp(r'^.*?\b(?:until|by|before)\s+'),
+      RegExp(r'^.*?\b(?:until|by|before|tak)\s+'),
       '',
     );
     DateTime? valid(int year, int month, int day) {
@@ -384,11 +413,33 @@ class PromiseIntentParser {
       final day = before?[1] ?? after?[1];
       if (day != null) return valid(year, i + 1, int.parse(day));
     }
-    if (lower.contains('tomorrow')) {
+    final daysMatch = RegExp(r'\b(\d+)\s*(?:days?|din)\b').firstMatch(lower);
+    if (daysMatch != null) {
+      final d = int.tryParse(daysMatch.group(1)!);
+      if (d != null && d > 0 && d <= 365) {
+        return DateTime(now.year, now.month, now.day + d);
+      }
+    }
+    if (lower.contains('1 month') ||
+        lower.contains('one month') ||
+        lower.contains('ek mahina') ||
+        lower.contains('next month') ||
+        lower.contains('agle mahine')) {
+      return DateTime(now.year, now.month + 1, now.day);
+    }
+    if (lower.contains('this week') || lower.contains('iss hafte')) {
+      return DateTime(now.year, now.month, now.day + (7 - now.weekday));
+    }
+    if (lower.contains('end of month') ||
+        lower.contains('end of this month') ||
+        lower.contains('iss mahine ke aakhri')) {
+      return DateTime(now.year, now.month + 1, 0);
+    }
+    if (lower.contains('tomorrow') || lower.contains('kal')) {
       return DateTime(now.year, now.month, now.day + 1);
     }
-    if (lower.contains('today')) return promiseDay(now);
-    if (lower.contains('next week')) {
+    if (lower.contains('today') || lower.contains('aaj')) return promiseDay(now);
+    if (lower.contains('next week') || lower.contains('agle hafte')) {
       return DateTime(now.year, now.month, now.day + 7);
     }
     return null;

@@ -98,6 +98,9 @@ class GlassSurface extends StatelessWidget {
       ),
       child: () {
         if (!g.merlot || dark || transparent) return child;
+        if (Theme.of(context).colorScheme.onSurface == MerlotPalette.cardInk) {
+          return child;
+        }
         final cardGlass = g.copyWith(
           ink: MerlotPalette.cardInk,
           inkSecondary: MerlotPalette.cardSecondaryInk,
@@ -161,7 +164,9 @@ class GlassSurface extends StatelessWidget {
             ),
             child: pane,
           );
-    if (!enableBlur) {
+    final blurVal =
+        material?.blur ?? (context.surfaces.blur > 0 ? context.surfaces.blur : 0.0);
+    if (!enableBlur || blurVal <= 0.01) {
       return withShadow(content);
     }
 

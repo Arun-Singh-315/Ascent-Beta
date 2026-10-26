@@ -187,60 +187,67 @@ class AscentCard extends StatelessWidget {
     );
 
     if (isMerlotDay) {
-      final cardGlass = AscentGlass(
-        merlot: true,
-        bg: MerlotPalette.surface,
-        fill: MerlotPalette.surface,
-        edge: MerlotPalette.line,
-        highlight: const Color.fromRGBO(255, 255, 255, 0.15),
-        line: MerlotPalette.lineSubtle,
-        glow1: const Color.fromRGBO(229, 169, 78, 0.25),
-        glow2: const Color.fromRGBO(196, 77, 86, 0.20),
-        track: MerlotPalette.recessedWell,
-        nav: MerlotPalette.surface,
-        shadow: MerlotPalette.shadowAmbient,
-        clay: MerlotPalette.action,
-        claySoft: MerlotPalette.pillSoft,
-        slate: MerlotPalette.action,
-        slateSoft: MerlotPalette.tint,
-        sage: MerlotPalette.success,
-        sageSoft: MerlotPalette.successTint,
-        amber: MerlotPalette.antiqueGold,
-        amberSoft: MerlotPalette.sparkTint,
-        coral: MerlotPalette.terracotta,
-        coralSoft: MerlotPalette.terracottaTint,
-        ink: MerlotPalette.cardInk,
-        inkSecondary: MerlotPalette.cardSecondaryInk,
-        inkMuted: MerlotPalette.cardMutedInk,
-      );
       final parentTheme = Theme.of(context);
-      final cardTheme = parentTheme.copyWith(
-        brightness: Brightness.light,
-        textTheme: parentTheme.textTheme.apply(
-          bodyColor: MerlotPalette.cardInk,
-          displayColor: MerlotPalette.cardInk,
-        ),
-        colorScheme: parentTheme.colorScheme.copyWith(
-          brightness: Brightness.light,
-          onSurface: MerlotPalette.cardInk,
-          onSurfaceVariant: MerlotPalette.cardSecondaryInk,
-          surface: MerlotPalette.surface,
-          surfaceContainer: MerlotPalette.recessedWell,
-          primary: MerlotPalette.action,
-          onPrimary: Colors.white,
-        ),
-        extensions: [
-          ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
-          cardGlass,
-        ],
-      );
-      content = Theme(
-        data: cardTheme,
-        child: DefaultTextStyle(
+      if (parentTheme.colorScheme.onSurface == MerlotPalette.cardInk) {
+        content = DefaultTextStyle(
           style: const TextStyle(color: MerlotPalette.cardInk),
           child: content,
-        ),
-      );
+        );
+      } else {
+        final cardGlass = AscentGlass(
+          merlot: true,
+          bg: MerlotPalette.surface,
+          fill: MerlotPalette.surface,
+          edge: MerlotPalette.line,
+          highlight: const Color.fromRGBO(255, 255, 255, 0.15),
+          line: MerlotPalette.lineSubtle,
+          glow1: const Color.fromRGBO(229, 169, 78, 0.25),
+          glow2: const Color.fromRGBO(196, 77, 86, 0.20),
+          track: MerlotPalette.recessedWell,
+          nav: MerlotPalette.surface,
+          shadow: MerlotPalette.shadowAmbient,
+          clay: MerlotPalette.action,
+          claySoft: MerlotPalette.pillSoft,
+          slate: MerlotPalette.action,
+          slateSoft: MerlotPalette.tint,
+          sage: MerlotPalette.success,
+          sageSoft: MerlotPalette.successTint,
+          amber: MerlotPalette.antiqueGold,
+          amberSoft: MerlotPalette.sparkTint,
+          coral: MerlotPalette.terracotta,
+          coralSoft: MerlotPalette.terracottaTint,
+          ink: MerlotPalette.cardInk,
+          inkSecondary: MerlotPalette.cardSecondaryInk,
+          inkMuted: MerlotPalette.cardMutedInk,
+        );
+        final cardTheme = parentTheme.copyWith(
+          brightness: Brightness.light,
+          textTheme: parentTheme.textTheme.apply(
+            bodyColor: MerlotPalette.cardInk,
+            displayColor: MerlotPalette.cardInk,
+          ),
+          colorScheme: parentTheme.colorScheme.copyWith(
+            brightness: Brightness.light,
+            onSurface: MerlotPalette.cardInk,
+            onSurfaceVariant: MerlotPalette.cardSecondaryInk,
+            surface: MerlotPalette.surface,
+            surfaceContainer: MerlotPalette.recessedWell,
+            primary: MerlotPalette.action,
+            onPrimary: Colors.white,
+          ),
+          extensions: [
+            ...parentTheme.extensions.values.where((e) => e is! AscentGlass),
+            cardGlass,
+          ],
+        );
+        content = Theme(
+          data: cardTheme,
+          child: DefaultTextStyle(
+            style: const TextStyle(color: MerlotPalette.cardInk),
+            child: content,
+          ),
+        );
+      }
     }
 
     return AppCard(

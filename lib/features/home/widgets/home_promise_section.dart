@@ -107,6 +107,7 @@ class HomePromiseSection extends ConsumerWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(20),
         padding: const EdgeInsets.all(18),
+        enableBlur: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -276,6 +277,7 @@ class HomePromiseSection extends ConsumerWidget {
       child: GlassSurface(
         borderRadius: BorderRadius.circular(20),
         padding: const EdgeInsets.all(18),
+        enableBlur: false,
         child: Row(
           children: [
             Container(

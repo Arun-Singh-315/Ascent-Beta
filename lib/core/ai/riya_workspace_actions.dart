@@ -89,7 +89,11 @@ const riyaWorkspaceCapabilities = <RiyaCapability>[
     'tasks.edit',
     'Edit a selected task',
     '/today',
-    {'id': RiyaValue.integer, 'title': RiyaValue.text},
+    {
+      'id': RiyaValue.integer,
+      'title': RiyaValue.text,
+      'expectedTitle': RiyaValue.text,
+    },
     required: ['id', 'title'],
     write: true,
   ),
@@ -97,7 +101,7 @@ const riyaWorkspaceCapabilities = <RiyaCapability>[
     'tasks.complete',
     'Complete an eligible task',
     '/today',
-    {'id': RiyaValue.integer},
+    {'id': RiyaValue.integer, 'expectedTitle': RiyaValue.text},
     required: ['id'],
     write: true,
   ),
@@ -105,7 +109,7 @@ const riyaWorkspaceCapabilities = <RiyaCapability>[
     'tasks.delete',
     'Delete a task and its dependent records',
     '/today',
-    {'id': RiyaValue.integer},
+    {'id': RiyaValue.integer, 'expectedTitle': RiyaValue.text},
     required: ['id'],
     write: true,
   ),
@@ -438,6 +442,9 @@ class RiyaWorkspaceActions {
               ? 'No tasks for $scope.'
               : 'Tasks · $scope:\n${rows.take(3).map((t) => '#${t.id} ${t.actualCompletedDate == null ? '•' : '✓'} ${_excerpt(t.title)}').join('\n')}',
           route,
+          records: [
+            for (final task in rows.take(3)) {'type': 'tasks', 'id': task.id},
+          ],
           options: [
             'Tasks today',
             'Tasks tomorrow',
@@ -457,7 +464,12 @@ class RiyaWorkspaceActions {
         )) {
           throw StateError('Task edit failed');
         }
-        return RiyaResult('Updated task #${task.id}.', route);
+        return RiyaResult(
+          'Todo updated.',
+          route,
+          entityType: 'tasks',
+          entityId: task.id,
+        );
       case 'tasks.complete':
         final task = await db.taskDao.getTaskById(a['id']);
         if (task == null) throw StateError('The task no longer exists');
@@ -473,8 +485,10 @@ class RiyaWorkspaceActions {
           );
         }
         return RiyaResult(
-          'Completed task #${task.id}.',
+          'Todo completed.',
           route,
+          entityType: 'tasks',
+          entityId: task.id,
           cancelReminderIds: reminders.map((r) => r.id).toList(),
         );
       case 'tasks.delete':
@@ -482,8 +496,11 @@ class RiyaWorkspaceActions {
         if (task == null) throw StateError('The task no longer exists');
         final cancel = await db.taskDao.deleteTaskWithDependents(task.id);
         return RiyaResult(
-          'Deleted task #${task.id} and its linked records.',
+          'Todo deleted, including its linked records.',
           route,
+          entityType: 'tasks',
+          entityId: task.id,
+          options: const ['Show todos', 'New todo'],
           cancelReminderIds: cancel,
         );
       case 'reminders.done':

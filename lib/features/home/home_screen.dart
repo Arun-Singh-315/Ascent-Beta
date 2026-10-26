@@ -1,3 +1,4 @@
+import '../ai_assistant/ai_assistant_screen.dart';
 import 'widgets/home_promise_section.dart';
 import '../reminders/reminder_action_ui.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
@@ -454,7 +455,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         child: InkWell(
           onTap: () {
             HapticFeedback.lightImpact();
-            context.push('/ai-assistant');
+            AiAssistantScreen.showFromHome(context);
           },
           borderRadius: BorderRadius.circular(24),
           child: Container(

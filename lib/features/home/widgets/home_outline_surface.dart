@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme/glass_theme.dart';
 import '../../../app/theme/day_glass_material.dart';
+import '../../../app/theme/merlot_palette.dart';
 import '../../../shared/widgets/glass_surface.dart';
 
 /// Transparent Home shell framed by a continuous, softly illuminated rim.
@@ -30,6 +31,12 @@ class HomeOutlineSurface extends StatelessWidget {
         key: surfaceKey,
         radius: radius,
         padding: padding,
+        enableBlur: false,
+        fillColor: !dark
+            ? (g.merlot
+                ? MerlotPalette.surface
+                : (g.frozen ? const Color(0xFFF8FAFD) : null))
+            : null,
         child: child,
       );
     }
@@ -50,7 +57,7 @@ class HomeOutlineSurface extends StatelessWidget {
       child: GlassSurface(
         key: surfaceKey,
         radius: radius,
-        enableBlur: Theme.of(context).brightness == Brightness.light,
+        enableBlur: false,
         customBorder: showOutline
             ? Border.all(color: rim, width: 1.2)
             : const Border.fromBorderSide(BorderSide.none),

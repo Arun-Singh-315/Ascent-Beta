@@ -92,7 +92,7 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
           key: const ValueKey('home_activity_card'),
           borderRadius: BorderRadius.circular(18),
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-          enableBlur: Theme.of(context).brightness == Brightness.light,
+          enableBlur: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -29,6 +29,8 @@ Current source map · reviewed 12 October 2026. Route definitions in `lib/app/ro
 | Settings | `/settings`; preferences and help entry points | `settings/` |
 | Workspace backup | `/backup`; export, restore preview and recovery | `backup/` |
 
+Riya's Home Ask button opens a compact chat sheet using the same saved conversation as `/ai-assistant`. Local Todo/Promise commands ask for a missing title or day, show inline Save/Delete reviews, and return live record cards. Todo cards offer completion, rename, rescheduling and deletion; Promise cards offer check-in, rename, start-day changes, pause/resume and deletion. Existing detail/session sheets handle full schedules and timed or milestone tracking. Private Promises stay masked and are managed through the Promises screen. These commands use deterministic offline parsing, transaction receipts and retryable notification effects; they do not require an online model.
+
 The shell has four branches: Home, Reminders, Money and More. Challenges are a separate routed tool, not a fifth shell branch. No `/login` route or credential provider is required to enter the local workspace.
 
 Replaced Home planners/previews, the demo login, old new-day dialog, prototype insight engine and superseded break resume widgets were removed during cleanup. Current Home uses `ThoughtWallHomePreview`; current break screens and the shared `LiveSessionBar` retain active lifecycle behavior.

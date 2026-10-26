@@ -836,6 +836,17 @@ class PromiseRepository {
     }
   }
 
+  /// Synchronize a committed chat operation, including a deleted Promise.
+  Future<bool> syncChatEffects(int id) async {
+    final promise = await getPromiseById(id);
+    if (promise == null) {
+      await _cancelReminders(id);
+      return true;
+    }
+    await syncReminders(promise);
+    return (await getPromiseById(id))?.reminderIssue == null;
+  }
+
   int _notificationId(int id, int slot) => 1400000000 + id * 16 + slot;
   Future<void> _cancelReminders(int id) async {
     for (final notification in [

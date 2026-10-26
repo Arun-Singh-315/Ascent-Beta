@@ -141,7 +141,12 @@ class StudyStreakMeterCard extends StatelessWidget {
     required Widget child,
   }) {
     if (Theme.of(context).extension<DayGlassMaterial>() != null) {
-      return GlassSurface(radius: 16, padding: padding, child: child);
+      return GlassSurface(
+        radius: 16,
+        padding: padding,
+        enableBlur: false,
+        child: child,
+      );
     }
     return Container(decoration: decoration, padding: padding, child: child);
   }

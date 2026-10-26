@@ -65,5 +65,22 @@ String riyaConversationPrompt(String prompt) {
   ).hasMatch(text)) {
     return 'cancel';
   }
+  final productivityList = RegExp(
+    r'^(?:(?:mere|meri)\s+)?(todos?|tasks?|promises?)\s+(?:dikhao|batao)$',
+    caseSensitive: false,
+  ).firstMatch(text);
+  if (productivityList != null) return 'Show ${productivityList[1]}';
+  if (RegExp(
+    r'^(?:isko|ise) delete (?:karo|kar do)$',
+    caseSensitive: false,
+  ).hasMatch(text)) {
+    return 'delete that';
+  }
+  if (RegExp(
+    r'^(?:isko|ise) (?:done|complete) (?:karo|kar do)$',
+    caseSensitive: false,
+  ).hasMatch(text)) {
+    return 'complete that';
+  }
   return text;
 }

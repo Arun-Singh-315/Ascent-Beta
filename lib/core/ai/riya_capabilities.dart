@@ -1,3 +1,4 @@
+import 'riya_productivity.dart';
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
@@ -47,6 +48,7 @@ class RiyaCapability {
 
 const riyaCapabilities = <RiyaCapability>[
   ...riyaWorkspaceCapabilities,
+  ...riyaPromiseCapabilities,
   ...riyaLifeCapabilities,
   ...riyaMoneyCapabilities,
   ...riyaMedicineCapabilities,
@@ -86,7 +88,11 @@ const riyaCapabilities = <RiyaCapability>[
     'tasks.reschedule',
     'Reschedule selected tasks',
     '/today',
-    {'taskIds': RiyaValue.integerList, 'newDate': RiyaValue.date},
+    {
+      'taskIds': RiyaValue.integerList,
+      'newDate': RiyaValue.date,
+      'expectedTitle': RiyaValue.text,
+    },
     required: ['taskIds', 'newDate'],
     write: true,
   ),
@@ -253,6 +259,8 @@ class RiyaResult {
     this.route, {
     this.reminderIds = const [],
     this.replayed = false,
+    this.records = const [],
+    this.promiseEffectIds = const [],
     this.options = const [],
     this.cancelReminderIds = const [],
     this.entityType,
@@ -261,12 +269,15 @@ class RiyaResult {
     this.learningModuleId,
     this.learningLectureId,
   });
+  final List<Map<String, dynamic>> records;
+  final List<int> promiseEffectIds;
   final String message, route;
   String get targetRoute {
     final key = switch (entityType) {
       'thoughts' => 'thought',
       'tasks' => 'task',
       'reminders' => 'reminder',
+      'promises' => 'promise',
       _ => null,
     };
     if (entityId == null || key == null) return route;
@@ -284,6 +295,8 @@ class RiyaResult {
   final List<String> options;
   final bool replayed;
   Map<String, dynamic> toJson() => {
+    'records': records,
+    'promiseEffectIds': promiseEffectIds,
     'message': message,
     'route': targetRoute,
     'reminderIds': reminderIds,
@@ -295,7 +308,9 @@ class RiyaResult {
     'learningModuleId': learningModuleId,
     'learningLectureId': learningLectureId,
     'alertEffectsPending':
-        reminderIds.isNotEmpty || cancelReminderIds.isNotEmpty,
+        reminderIds.isNotEmpty ||
+        cancelReminderIds.isNotEmpty ||
+        promiseEffectIds.isNotEmpty,
   };
   factory RiyaResult.fromJson(
     Map<String, dynamic> json, {
@@ -303,6 +318,10 @@ class RiyaResult {
   }) => RiyaResult(
     json['message'] as String,
     json['route'] as String,
+    records: (json['records'] as List? ?? [])
+        .map((r) => Map<String, dynamic>.from(r as Map))
+        .toList(),
+    promiseEffectIds: (json['promiseEffectIds'] as List? ?? []).cast<int>(),
     reminderIds: (json['reminderIds'] as List? ?? []).cast<int>(),
     cancelReminderIds: (json['cancelReminderIds'] as List? ?? []).cast<int>(),
     options: (json['options'] as List? ?? []).cast<String>(),
@@ -472,6 +491,9 @@ class RiyaExecutor {
     _checkWorkspace(revision);
     final c = command.capability;
     if (c.write && !approved) throw StateError('Confirmation required');
+    if (command.id.startsWith('promises.')) {
+      await RiyaPromiseActions(db, clock).repo.initialize();
+    }
     // Request IDs belong to a persisted user chat turn, not arbitrary retrieved text.
     if (requestId.isEmpty) throw ArgumentError('Request ID required');
     validate(command, checkTime: false);
@@ -611,6 +633,17 @@ class RiyaExecutor {
   Future<RiyaResult> _run(RiyaCommand cmd) async {
     final a = cmd.arguments;
     final route = cmd.capability.route;
+    if (cmd.id.startsWith('promises.')) {
+      return RiyaPromiseActions(db, clock).run(cmd);
+    }
+    if (cmd.id.startsWith('tasks.') && a['expectedTitle'] != null) {
+      final ids = a['taskIds'] as List? ?? [a['id']];
+      if (ids.length != 1 ||
+          (await db.taskDao.getTaskById(ids.single as int))?.title !=
+              a['expectedTitle']) {
+        throw StateError('This Todo changed. Choose it again before saving.');
+      }
+    }
     if (riyaSessionCapabilities.any((c) => c.id == cmd.id)) {
       return RiyaSessionReads(db, clock).run(cmd);
     }

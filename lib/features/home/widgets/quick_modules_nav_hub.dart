@@ -95,6 +95,7 @@ class QuickModulesNavHub extends ConsumerWidget {
         // ── UNIFIED GLASS SURFACE ─────────────────────────────────────
         GlassSurface(
           radius: 24,
+          enableBlur: false,
           fillColor: Theme.of(context).brightness == Brightness.light
               ? (g.merlot ? MerlotPalette.surface : Colors.white)
               : null,

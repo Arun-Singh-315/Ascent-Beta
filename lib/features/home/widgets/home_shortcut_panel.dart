@@ -209,6 +209,7 @@ class HomeShortcutPanel extends ConsumerWidget {
     return GlassSurface(
       key: const ValueKey('home_shortcut_panel'),
       radius: 24,
+      enableBlur: false,
       padding: const EdgeInsets.symmetric(
         horizontal: AscentDimensions.spaceSm,
         vertical: AscentDimensions.spaceMd,

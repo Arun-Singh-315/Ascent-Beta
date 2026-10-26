@@ -1,3 +1,4 @@
+import 'riya_productivity.dart';
 import '../database/app_database.dart';
 import 'riya_capabilities.dart';
 import 'riya_workspace_intents.dart';
@@ -25,7 +26,18 @@ class RiyaIntentResolver {
   int _revision;
   late final _workspace = RiyaWorkspaceIntents(db, clock);
 
+  late final _productivity = RiyaProductivityIntents(db, clock);
+  Map<String, dynamic> get conversationState => _productivity.snapshot;
+  void restoreConversation(Map<String, dynamic> state) =>
+      _productivity.restore(state);
+  void resetConversation() {
+    _clear();
+    _workspace.cancel();
+    _productivity.cancel();
+  }
+
   void rememberResult(RiyaResult result) {
+    _productivity.remember(result);
     if (result.learningCourseId != null) {
       _workspace.rememberLearning(result);
       return;
@@ -39,6 +51,7 @@ class RiyaIntentResolver {
     if (_revision != db.workspaceRevision) {
       _clear();
       _workspace.cancel();
+      _productivity.cancel();
       _revision = db.workspaceRevision;
     }
     prompt = riyaConversationPrompt(prompt);
@@ -47,7 +60,14 @@ class RiyaIntentResolver {
     if (lower == 'cancel' || lower == 'never mind') {
       _clear();
       _workspace.cancel();
+      _productivity.cancel();
       return const RiyaResolution(message: 'Cancelled. No changes were made.');
+    }
+    final productivity = await _productivity.resolve(prompt);
+    if (productivity != null) {
+      _clear();
+      _workspace.cancel();
+      return productivity;
     }
     final workspace =
         _reminderTitle == null ||
@@ -202,6 +222,8 @@ class RiyaIntentResolver {
       'thought wall': '/thought-wall',
       'money': '/money',
       'tasks': '/today',
+      'todos': '/today',
+      'promises': '/promises',
       'learning': '/learning',
       'chai': '/chai-break',
     };
