@@ -774,51 +774,43 @@ class AscentTheme {
 
       // ── Popup Menu ────────────────────────────────────────────────────────────
       popupMenuTheme: PopupMenuThemeData(
-        color: day
-            ? (isMerlotLinen
-                  ? AppSurfaces.merlotLinen.cardFill
-                  : isNordicSky
-                  ? AppSurfaces.nordicSky.cardFill
-                  : AppSurfaces.day.cardFill)
-            : (isMerlotLinen
-                  ? (isDark
-                        ? MerlotPalette.darkElevated
-                        : MerlotPalette.surface)
-                  : isNordicSky
-                  ? (isDark
-                        ? FrozenPalette.darkElevated
-                        : FrozenPalette.elevated)
-                  : bgSurface),
+        color: isMerlotLinen
+            ? MerlotPalette.darkElevated
+            : isNordicSky
+            ? FrozenPalette.darkElevated
+            : AscentColors.bgSurfaceElevatedDark,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: BorderSide(
-            color: day
-                ? (isMerlotLinen
-                      ? AppSurfaces.merlotLinen.cardBorderColor
-                      : isNordicSky
-                      ? AppSurfaces.nordicSky.cardBorderColor
-                      : AppSurfaces.day.cardBorderColor)
-                : (isMerlotLinen
-                      ? (isDark ? MerlotPalette.darkLine : MerlotPalette.line)
-                      : isNordicSky
-                      ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
-                      : divider),
+            color: isMerlotLinen
+                ? MerlotPalette.darkLine
+                : isNordicSky
+                ? FrozenPalette.darkLine
+                : divider,
             width: isMerlotLinen ? 0.75 : 1.0,
           ),
         ),
         elevation: 8,
-        shadowColor: (isDark ? Colors.black : Colors.black54).withValues(
-          alpha: 0.18,
+        shadowColor: Colors.black.withValues(
+          alpha: 0.35,
         ),
         surfaceTintColor: Colors.transparent,
         menuPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         textStyle: AscentTextStyles.bodyMedium.copyWith(
-          color: textPrimary,
+          color: isMerlotLinen
+              ? MerlotPalette.darkInk
+              : isNordicSky
+              ? FrozenPalette.darkInk
+              : AscentColors.textPrimaryDark,
           fontWeight: FontWeight.w500,
         ),
         labelTextStyle: WidgetStateProperty.all(
           AscentTextStyles.bodyMedium.copyWith(
-            color: textPrimary,
+            color: isMerlotLinen
+                ? MerlotPalette.darkInk
+                : isNordicSky
+                ? FrozenPalette.darkInk
+                : AscentColors.textPrimaryDark,
             fontWeight: FontWeight.w500,
           ),
         ),

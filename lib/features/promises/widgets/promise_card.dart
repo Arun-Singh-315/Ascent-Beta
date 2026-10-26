@@ -120,7 +120,6 @@ class PromiseCard extends ConsumerWidget {
                     size: 20,
                   ),
                   padding: EdgeInsets.zero,
-                  color: Theme.of(context).colorScheme.surface,
                   onSelected: (val) async {
                     final messenger = ScaffoldMessenger.of(context);
                     try {

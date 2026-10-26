@@ -1,4 +1,5 @@
 import '../../shared/widgets/glass_chip.dart';
+import '../../shared/widgets/ascent_popup_menu.dart';
 import 'thought_category_action.dart';
 import '../../app/theme/thought_theme.dart';
 import '../../shared/widgets/ascent_snack_bar.dart';
@@ -450,7 +451,7 @@ class _ThoughtWallScreenState extends ConsumerState<ThoughtWallScreen>
                 onPressed: enabled ? deleteSelected : null,
               ),
             ),
-            PopupMenuButton<String>(
+            AscentPopupMenuButton<String>(
               tooltip: 'More selected actions',
               enabled: enabled,
               icon: Icon(Icons.more_horiz_rounded, color: g.ink),
@@ -1915,18 +1916,13 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                           ),
                         ],
                         if (!isSelectionMode)
-                          PopupMenuButton<String>(
+                          AscentPopupMenuButton<String>(
                             icon: Icon(
                               Icons.more_horiz_rounded,
                               size: 18,
                               color: context.textMuted,
                             ),
-                            color: context.isDark ? context.bgSurface : g.fill,
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(
-                              minWidth: 48,
-                              minHeight: 48,
-                            ),
                             onSelected: (action) async {
                               if (action == 'category') {
                                 widget.onMoveToCategory?.call();
@@ -2084,7 +2080,7 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                       size: 16,
                                       color: thought.content.contains('[HIGH]')
                                           ? g.coral
-                                          : g.inkSecondary,
+                                          : null,
                                     ),
                                     const SizedBox(width: 8),
                                     Text(
@@ -2185,7 +2181,10 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                                 value: 'delete',
                                 child: Text(
                                   'Delete thought',
-                                  style: TextStyle(color: AppPalette.redAccent),
+                                  style: TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
