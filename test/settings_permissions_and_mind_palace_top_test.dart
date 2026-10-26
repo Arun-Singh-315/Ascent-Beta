@@ -176,11 +176,11 @@ void main() {
         expect(find.text('GPS Walk Tracking'), findsOneWidget);
 
         // Check Direct Shortcuts
-        expect(find.text('Open Phone App Settings'), findsWidgets);
+        expect(find.text('App Info & Battery'), findsWidgets);
         expect(find.text('Location Settings'), findsWidgets);
 
         // Scroll button into view and tap
-        final openSettingsBtn = find.widgetWithText(AscentButton, 'Open Phone App Settings').first;
+        final openSettingsBtn = find.widgetWithText(AscentButton, 'App Info & Battery').first;
         await tester.drag(find.byType(ListView), const Offset(0, -250));
         await tester.pump();
         await tester.tap(openSettingsBtn, warnIfMissed: false);

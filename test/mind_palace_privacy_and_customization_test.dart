@@ -9,6 +9,7 @@ import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/features/promises/providers/promise_providers.dart';
 import 'package:ascent/app/theme/app_theme.dart';
 import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart';
+import 'package:ascent/shared/widgets/locked_commitment_tile.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +60,8 @@ void main() {
       // Content should NOT be visible
       expect(find.text('Secret personal commitment'), findsNothing);
       // Privacy lock shield should be displayed
-      expect(find.text('Private commitment · Tap to unlock'), findsOneWidget);
+      expect(find.byType(LockedCommitmentTile), findsOneWidget);
+      expect(find.text('Private commitment'), findsOneWidget);
       expect(find.text('PRIVATE PROMISE'), findsOneWidget);
     });
 

@@ -13,6 +13,7 @@ import 'package:ascent/features/reminders/reminder_action_ui.dart';
 import 'package:ascent/features/reminders/reminders_screen.dart';
 import 'package:ascent/features/vault/providers/vault_providers.dart';
 import 'package:ascent/features/vault/services/vault_security_service.dart';
+import 'package:ascent/shared/widgets/locked_commitment_tile.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -41,10 +42,11 @@ void main() {
   GoogleFonts.config.allowRuntimeFetching = false;
   late AppDatabase db;
   late ProviderContainer container;
+  late SharedPreferences prefs;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    final prefs = await SharedPreferences.getInstance();
+    prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     container = ProviderContainer(
       overrides: [
@@ -214,17 +216,66 @@ void main() {
           find.text('Build stealth MVP without telling group'), findsNothing);
 
       // Privacy lock banner is visible
-      expect(
-        find.text('Private commitment · Tap to unlock'),
-        findsOneWidget,
-      );
+      expect(find.byType(LockedCommitmentTile), findsOneWidget);
+      expect(find.text('Private commitment'), findsOneWidget);
 
       // Tap to authenticate and unlock
-      await tester.tap(find.text('Private commitment · Tap to unlock'));
+      await tester.tap(find.byType(LockedCommitmentTile));
       await tester.pumpAndSettle();
 
       // Once unlocked, title becomes visible
       expect(find.text('Secret Deep Work Protocol'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Private promise remains strictly locked and hides title when biometric authentication fails',
+        (tester) async {
+      final failingSecurity = VaultSecurityService.forTesting(
+        mockBiometricsSuccess: false,
+      );
+      final privatePromise = PromiseModel(
+        id: 77,
+        title: 'Top Secret Strategy 2026',
+        category: 'Personal',
+        intention: 'Confidential strategy',
+        trackingType: PromiseTrackingType.completion,
+        createdAt: DateTime.now(),
+        isPrivate: true,
+      );
+
+      final failingContainer = ProviderContainer(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          timeTrackingProvider.overrideWith(_MockIdleTracking.new),
+          learningHubProvider.overrideWith(_MockIdleLearning.new),
+          vaultSecurityServiceProvider.overrideWithValue(failingSecurity),
+        ],
+      );
+      addTearDown(failingContainer.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: failingContainer,
+          child: MaterialApp(
+            theme: AscentTheme.light(),
+            home: Scaffold(body: PromiseCard(promise: privatePromise)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Secret title must not be visible
+      expect(find.text('Top Secret Strategy 2026'), findsNothing);
+      expect(find.byType(LockedCommitmentTile), findsOneWidget);
+
+      // Tap to authenticate (which fails)
+      await tester.tap(find.byType(LockedCommitmentTile));
+      await tester.pumpAndSettle();
+
+      // Because authentication failed, secret title MUST STILL NOT be visible
+      expect(find.text('Top Secret Strategy 2026'), findsNothing);
+      expect(find.byType(LockedCommitmentTile), findsOneWidget);
     });
 
     testWidgets(
