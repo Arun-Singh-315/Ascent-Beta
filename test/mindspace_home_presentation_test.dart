@@ -116,7 +116,9 @@ void main() {
             final actions = tester.getRect(
               find.byKey(const ValueKey('home_header_actions')),
             );
-            if (dark || scale > 1.3) {
+            if (tester.view.physicalSize.width / tester.view.devicePixelRatio <
+                    384 ||
+                scale > 1.3) {
               expect(date.bottom, lessThan(actions.top));
             } else {
               expect(date.right, lessThanOrEqualTo(actions.left));

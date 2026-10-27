@@ -156,7 +156,11 @@ void main() {
         );
         expect(find.text('Staff Principal Systems Engineer'), findsOneWidget);
         // A legacy activity count must not invent a study streak.
-        expect(find.text('Start'), findsOneWidget);
+        expect(find.text('Start'), findsNothing);
+        expect(
+          find.byKey(const ValueKey('home_assistant_button')),
+          findsOneWidget,
+        );
         // Ensure profile avatar with initial 'A' is present
         expect(find.text('A'), findsOneWidget);
       },

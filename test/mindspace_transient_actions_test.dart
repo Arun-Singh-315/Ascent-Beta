@@ -67,7 +67,7 @@ void main() {
 
   group('Mind Space Home Preview Permanent Actions', () {
     testWidgets(
-      'Thought capture does not open plan automatically and keeps Plan, Todo, Reminder visible without Ask Riya',
+      'Thought capture does not open plan automatically and saves to database without Ask Riya inside card',
       (tester) async {
         await tester.pumpWidget(wrap(const ThoughtWallHomePreview()));
         await tester.pumpAndSettle();
@@ -86,51 +86,38 @@ void main() {
         // 1. Must NOT show plan sheet automatically
         expect(find.byType(PlanCollectionEditor), findsNothing);
 
-        // 2. Must show transient options for a few seconds
-        expect(find.text('Plan'), findsOneWidget);
-        expect(find.text('Todo'), findsOneWidget);
-        expect(find.text('Reminder'), findsOneWidget);
+        // 2. Saved thought is stored in DB
+        final thoughts = await tester.runAsync(() => db.select(db.thoughtTable).get());
+        expect(thoughts, isNotEmpty);
+        expect(thoughts!.first.content, contains('Tomorrow at 5 pm check in on project'));
 
         // 3. Ask Riya must be removed from the card
         expect(find.text('Ask Riya'), findsNothing);
 
-        await tester.pump(const Duration(seconds: 10));
-        await tester.pumpAndSettle();
-        expect(find.text('Plan'), findsOneWidget);
-        expect(find.text('Todo'), findsOneWidget);
-        expect(find.text('Reminder'), findsOneWidget);
-        expect(find.byTooltip('Expand actions'), findsNothing);
-        expect(find.byTooltip('Collapse actions'), findsNothing);
-        // 6. User selects Plan manually to open PlanCollectionEditor
-        await tester.tap(find.text('Plan'));
-        await tester.pumpAndSettle();
-        expect(find.byType(PlanCollectionEditor), findsOneWidget);
         await tester.pumpWidget(const SizedBox());
       },
     );
   });
 
   group('HomeHeader Transparent and Compact Styling', () {
-    testWidgets(
-      'HomeHeader has Start streak pill and does not render Ask Riya banner above thoughts',
-      (tester) async {
-        await tester.pumpWidget(
-          wrap(
-            const HomeHeader(profile: null),
-            theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('HomeHeader replaces Start with the assistant gateway', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          const HomeHeader(profile: null),
+          theme: AscentTheme.light(preset: DayThemePreset.nordicSky),
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // Check Ask Riya is NOT rendered in HomeHeader (moved to floating pill)
-        expect(find.text('Ask Riya'), findsNothing);
+      // The assistant is reachable without floating over content.
+      expect(find.text('Ask Riya'), findsOneWidget);
 
-        // Check Start streak pill is present
-        expect(find.text('Start'), findsOneWidget);
+      expect(find.text('Start'), findsNothing);
 
-        await tester.pumpWidget(const SizedBox());
-      },
-    );
+      await tester.pumpWidget(const SizedBox());
+    });
   });
 
   group('Thought Wall Selection and Quick Actions Include Plan', () {
@@ -174,7 +161,7 @@ void main() {
       expect(find.byType(PlanCollectionEditor), findsOneWidget);
     });
 
-    testWidgets('ThoughtQuickActions offers Plan, Todo, Reminder, Both', (
+    testWidgets('ThoughtQuickActions offers Plan, Todo, Reminder', (
       tester,
     ) async {
       final id = await db.thoughtDao.insertThought(
@@ -190,7 +177,6 @@ void main() {
       expect(find.text('Plan'), findsOneWidget);
       expect(find.text('Todo'), findsOneWidget);
       expect(find.text('Reminder'), findsOneWidget);
-      expect(find.text('Both'), findsOneWidget);
     });
   });
 }

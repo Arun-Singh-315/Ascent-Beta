@@ -87,6 +87,83 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
     }
   }
 
+  Widget _transactionRow(FinanceTransaction tx) {
+    final g = context.glass;
+    final isExpense = tx.type == 'expense';
+    final categoryColor = _categoryColor(context, tx.category);
+    return Padding(
+      key: ValueKey('transaction_${tx.id}'),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: categoryColor.withValues(alpha: .12),
+              borderRadius: AppGeometry.roundedr10,
+            ),
+            child: Icon(
+              _categoryIcon(tx.category),
+              color: categoryColor,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tx.title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: g.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      tx.category,
+                      style: TextStyle(color: g.inkMuted, fontSize: 12),
+                    ),
+                    Text(
+                      tx.account,
+                      style: TextStyle(color: g.inkMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${isExpense ? '−' : '+'}₹${tx.amount.toStringAsFixed(0)}',
+                  style: AscentTextStyles.monoCode.copyWith(
+                    color: isExpense ? g.coral : g.sage,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Delete transaction',
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              size: 20,
+              color: g.inkMuted,
+            ),
+            onPressed: () async {
+              await ref.read(financeDaoProvider).deleteTransaction(tx.id);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showAddGoalDialog() {
     final titleController = TextEditingController();
     final targetController = TextEditingController();
@@ -274,8 +351,11 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           DateFormat('MMMM y').format(now).toUpperCase(),
@@ -364,8 +444,43 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         Text(
                           'Income: ₹${monthIncome.toStringAsFixed(0)}',
                           style: AscentTextStyles.bodySmall
-                              .copyWith(color: context.accentPrimary)
+                              .copyWith(color: g.sage)
                               .merge(AppTypeRoles.typeRole8),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(height: 1, color: g.line),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 12,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Today's spend",
+                              style: TextStyle(color: g.inkMuted),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '₹${todaySpend.toStringAsFixed(0)}',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(
+                                    color: g.coral,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        AscentButton.primary(
+                          icon: Icons.add_rounded,
+                          label: 'Add Expense',
+                          expanded: false,
+                          onPressed: () => AddTransactionSheet.show(context),
                         ),
                       ],
                     ),
@@ -373,54 +488,14 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Quick Action Bar
-              Row(
-                children: [
-                  Expanded(
-                    child: AscentCard(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpace.s14,
-                        vertical: AppSpace.s12,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Today\'s Spend',
-                            style: AscentTextStyles.labelSmall.copyWith(
-                              color: context.textMuted,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '₹${todaySpend.toStringAsFixed(0)}',
-                            style: AscentTextStyles.headlineMedium
-                                .copyWith(color: context.textPrimary)
-                                .merge(AppTypeRoles.typeRole9),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AscentButton.primary(
-                      icon: Icons.add_rounded,
-                      label: 'Add Expense',
-                      compact: true,
-                      onPressed: () => AddTransactionSheet.show(context),
-                    ),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 20),
 
               // Recent Transactions Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     'Recent Transactions',
@@ -446,129 +521,49 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                       icon: Icons.receipt_long_outlined,
                       title: 'No Transactions Yet',
                       subtitle:
-                          'Use Add Expense above to record spending or income.',
+                          'Use Add Expense in the summary to record spending or income.',
                     );
                   }
 
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: transactions.length,
-                    itemBuilder: (context, index) {
-                      final tx = transactions[index];
-                      final isExpense = tx.type == 'expense';
-                      final catColor = _categoryColor(context, tx.category);
-
-                      return AscentCard(
-                        margin: const EdgeInsets.only(bottom: AppSpace.s8),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpace.s14,
-                          vertical: AppSpace.s12,
+                  final days = <DateTime, List<FinanceTransaction>>{};
+                  for (final tx in transactions) {
+                    final day = DateTime(
+                      tx.date.year,
+                      tx.date.month,
+                      tx.date.day,
+                    );
+                    days.putIfAbsent(day, () => []).add(tx);
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final entry in days.entries)
+                        AscentCard(
+                          key: ValueKey(
+                            'transactions_${entry.key.toIso8601String()}',
+                          ),
+                          margin: const EdgeInsets.only(bottom: AppSpace.s16),
+                          padding: const EdgeInsets.all(AppSpace.s14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                DateFormat('EEEE, MMM d, y').format(entry.key),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      color: g.inkSecondary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                              const SizedBox(height: 8),
+                              for (var i = 0; i < entry.value.length; i++) ...[
+                                if (i > 0) Divider(height: 1, color: g.line),
+                                _transactionRow(entry.value[i]),
+                              ],
+                            ],
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            AppTag(
-                              width: 38,
-                              height: 38,
-                              nightDecoration: BoxDecoration(
-                                color: catColor.withValues(alpha: 0.12),
-                                borderRadius: AppGeometry.roundedr10,
-                              ),
-                              child: Icon(
-                                _categoryIcon(tx.category),
-                                color: catColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    tx.title,
-                                    style: AscentTextStyles.labelLarge
-                                        .copyWith(color: context.textPrimary)
-                                        .merge(AppTypeRoles.typeRole8),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        tx.category,
-                                        style: AscentTextStyles.bodySmall
-                                            .copyWith(color: context.textMuted),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '•',
-                                        style: TextStyle(
-                                          color: context.divider,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        DateFormat('MMM d').format(tx.date),
-                                        style: AscentTextStyles.bodySmall
-                                            .copyWith(color: context.textMuted),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      AppCard(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: AppSpace.s5,
-                                          vertical: AppSpace.s1,
-                                        ),
-                                        nightDecoration: BoxDecoration(
-                                          color: context.bgBase,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          border: Border.all(
-                                            color: context.divider,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          tx.account,
-                                          style: AppTypeRoles.typeRole18
-                                              .copyWith(
-                                                color: context.textMuted,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Text(
-                              '${isExpense ? '-' : '+'}₹${tx.amount.toStringAsFixed(0)}',
-                              style: AscentTextStyles.monoCode
-                                  .copyWith(
-                                    color: isExpense
-                                        ? context.textPrimary
-                                        : context.accentPrimary,
-                                  )
-                                  .merge(AppTypeRoles.typeRole30),
-                            ),
-                            const SizedBox(width: 4),
-                            IconButton(
-                              icon: Icon(
-                                Icons.delete_outline_rounded,
-                                size: 18,
-                                color: context.textMuted,
-                              ),
-                              onPressed: () async {
-                                await ref
-                                    .read(financeDaoProvider)
-                                    .deleteTransaction(tx.id);
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    ],
                   );
                 },
                 loading: () => const Center(
@@ -597,8 +592,11 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           'Overall Monthly Budget',
@@ -608,7 +606,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                         ),
                         AscentButton.outlined(
                           label: 'Edit Limit',
-                          compact: true,
+                          expanded: false,
                           onPressed: () => BudgetSettingsSheet.show(
                             context,
                             currentBudget: budget,
@@ -637,8 +635,11 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
               const SizedBox(height: 20),
 
               // Savings Goals Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     'Savings Goals',
@@ -649,7 +650,7 @@ class _MoneyScreenState extends ConsumerState<MoneyScreen>
                   AscentButton.outlined(
                     icon: Icons.add_rounded,
                     label: 'New Goal',
-                    compact: true,
+                    expanded: false,
                     onPressed: _showAddGoalDialog,
                   ),
                 ],

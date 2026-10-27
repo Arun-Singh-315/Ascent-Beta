@@ -212,9 +212,18 @@ class _ActivityHubCardState extends ConsumerState<ActivityHubCard> {
                               key: ValueKey(entry.activity.id),
                               activity: entry.activity,
                               compact: true,
+                              onViewCompleted: () {
+                                if (!mounted) return;
+                                setState(() {
+                                  _showCompleted = true;
+                                  _showPlans = false;
+                                  _showAll = false;
+                                });
+                              },
                             ),
                         ],
-                        if (allEntries.length > widget.previewLimit && !_showAll)
+                        if (allEntries.length > widget.previewLimit &&
+                            !_showAll)
                           TextButton(
                             key: const ValueKey('hub_show_more'),
                             onPressed: () => setState(() => _showAll = true),

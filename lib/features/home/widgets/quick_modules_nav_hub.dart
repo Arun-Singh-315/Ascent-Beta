@@ -35,8 +35,8 @@ class QuickModulesNavHub extends ConsumerWidget {
     final g = context.glass;
 
     // Medicine stream watchers
-    final todayMedicineLogs =
-        ref.watch(todayMedicineLogsStreamProvider).value ?? [];
+    final medicineLogs = ref.watch(todayMedicineLogsStreamProvider);
+    final todayMedicineLogs = medicineLogs.value ?? [];
     final totalMedDoses = todayMedicineLogs.length;
     final takenMedDoses = todayMedicineLogs.where((l) => l.isTaken).length;
     final medProgress = totalMedDoses > 0
@@ -292,24 +292,40 @@ class QuickModulesNavHub extends ConsumerWidget {
                                 ],
                               ),
                               const SizedBox(height: 8),
-                              RichText(
-                                textScaler: MediaQuery.textScalerOf(context),
-                                text: TextSpan(
-                                  style:
-                                      AppTypography.bricolageGrotesque17W600107(
-                                        color: g.ink,
-                                      ).copyWith(fontSize: 22),
-                                  children: [
-                                    TextSpan(text: '$takenMedDoses'),
-                                    TextSpan(
-                                      text: ' of $totalMedDoses doses',
-                                      style: AppTypography.dmSans11W400108(
-                                        color: g.inkMuted,
+                              if (!medicineLogs.hasValue)
+                                Text(
+                                  medicineLogs.hasError
+                                      ? 'Doses unavailable'
+                                      : 'Loading doses…',
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(color: g.inkMuted),
+                                )
+                              else if (totalMedDoses == 0)
+                                Text(
+                                  'No doses scheduled',
+                                  key: const ValueKey('medicine_empty_summary'),
+                                  style: AscentTextStyles.homeSecondary
+                                      .copyWith(color: g.inkMuted, height: 1.4),
+                                )
+                              else
+                                RichText(
+                                  textScaler: MediaQuery.textScalerOf(context),
+                                  text: TextSpan(
+                                    style:
+                                        AppTypography.bricolageGrotesque17W600107(
+                                          color: g.ink,
+                                        ).copyWith(fontSize: 22),
+                                    children: [
+                                      TextSpan(text: '$takenMedDoses'),
+                                      TextSpan(
+                                        text: ' of $totalMedDoses doses',
+                                        style: AppTypography.dmSans11W400108(
+                                          color: g.inkMuted,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                           Column(
@@ -317,11 +333,12 @@ class QuickModulesNavHub extends ConsumerWidget {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               const SizedBox(height: 8),
-                              _NeutralProgressBar(
-                                key: const ValueKey('medicine_progress_bar'),
-                                progress: medProgress,
-                                fillColor: g.clay,
-                              ),
+                              if (medicineLogs.hasValue && totalMedDoses > 0)
+                                _NeutralProgressBar(
+                                  key: const ValueKey('medicine_progress_bar'),
+                                  progress: medProgress,
+                                  fillColor: g.clay,
+                                ),
                             ],
                           ),
                         ],

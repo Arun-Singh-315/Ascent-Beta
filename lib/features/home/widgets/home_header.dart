@@ -14,15 +14,9 @@ import '../../../app/theme/frozen_palette.dart';
 import '../../../app/theme/merlot_palette.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
-import '../../../core/providers/home_layout_provider.dart';
-import '../../../core/streak/study_streak_provider.dart';
+import '../../ai_assistant/ai_assistant_screen.dart';
 
-/// Redesigned HomeHeader based on Ascent Home Redesign spec:
-/// - Top row: uppercase date caption on left, Riya glass pill + avatar (+ streak) on right.
-/// - Display name with Bricolage Grotesque (34/40).
-/// - Secondary greeting "Good morning / afternoon / evening,".
-/// - Role micro-badge.
-/// - Centralized Riya AI gateway button linking to /ai-assistant.
+/// Home greeting and responsive date, assistant, theme, and profile controls.
 class HomeHeader extends ConsumerWidget {
   final UserProfile? profile;
 
@@ -48,9 +42,7 @@ class HomeHeader extends ConsumerWidget {
     final dateStr = DateFormat(
       'EEE, d MMM',
     ).format(DateTime.now()).toUpperCase();
-    final studyStreak = ref.watch(studyStreakProvider);
-    final isStreakCardVisible = ref.watch(homeStreakVisibleProvider);
-    final streak = studyStreak.displayStreakDays;
+    final assistantName = ref.watch(assistantNameProvider);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpace.s8),
@@ -67,162 +59,26 @@ class HomeHeader extends ConsumerWidget {
                   .merge(AppTypeRoles.typeRole8),
             ),
             actions: [
-              // Streak Pill (Toggles Home Streak Card visibility)
-              Material(
-                color: AppPalette.transparent,
-                child: AppTapArea(
-                  onTap: () async {
-                    HapticFeedback.lightImpact();
-                    final layout = ref.read(homeLayoutProvider);
-                    final visible = {...layout.visible};
-                    isStreakCardVisible
-                        ? visible.remove('streak')
-                        : visible.add('streak');
-                    try {
-                      await ref
-                          .read(homeLayoutProvider.notifier)
-                          .save(layout.copyWith(visible: visible));
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Could not update Home. Try again.'),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  onLongPress: () {
-                    HapticFeedback.mediumImpact();
-                    _showStreakDetailsSheet(context, streak, isDark);
-                  },
-                  borderRadius: AppGeometry.roundedr99,
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 48),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpace.s12,
-                      vertical: AppSpace.s8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? (g.merlot
-                              ? (isStreakCardVisible
-                                  ? MerlotPalette.darkTint
-                                  : Colors.transparent)
-                              : (g.frozen
-                                  ? (isStreakCardVisible
-                                      ? FrozenPalette.darkTint
-                                      : Colors.transparent)
-                                  : (isStreakCardVisible
-                                      ? g.clay.withValues(alpha: 0.22)
-                                      : Colors.transparent)))
-                          : (isStreakCardVisible
-                              ? (g.merlot
-                                  ? MerlotPalette.action
-                                  : (g.frozen
-                                      ? FrozenPalette.action
-                                      : const Color(0xFFFEF3C7)))
-                              : (g.merlot ? MerlotPalette.surface : Colors.white)),
-                      borderRadius: AppGeometry.roundedr99,
-                      border: Border.all(
-                        color: isDark
-                            ? (g.merlot
-                                ? (isStreakCardVisible
-                                    ? MerlotPalette.darkLine
-                                    : MerlotPalette.darkLineSubtle)
-                                : (g.frozen
-                                    ? (isStreakCardVisible
-                                        ? FrozenPalette.darkLine
-                                        : FrozenPalette.darkLine)
-                                    : (isStreakCardVisible ? g.clay : g.edge)))
-                            : (g.merlot
-                                ? (isStreakCardVisible
-                                    ? MerlotPalette.actionDeep
-                                    : MerlotPalette.line)
-                                : (g.frozen
-                                    ? FrozenPalette.line
-                                    : (isStreakCardVisible
-                                        ? const Color(0xFFF59E0B)
-                                        : const Color(0xFFE2E8F0)))),
-                        width: g.merlot ? 0.75 : AppBorderScale.w1point0,
-                      ),
-                      boxShadow: isDark
-                          ? null
-                          : [
-                              BoxShadow(
-                                color: (isStreakCardVisible
-                                        ? (g.merlot
-                                            ? MerlotPalette.action
-                                            : (g.frozen
-                                                ? FrozenPalette.action
-                                                : const Color(0xFFF59E0B)))
-                                        : (g.merlot
-                                            ? MerlotPalette.action
-                                            : const Color(0xFF0F172A)))
-                                    .withValues(alpha: 0.08),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.local_fire_department_rounded,
-                          size: 16,
-                          color: isDark
-                              ? (g.merlot
-                                  ? MerlotPalette.darkSpark
-                                  : (g.frozen
-                                      ? FrozenPalette.darkSpark
-                                      : g.clay))
-                              : (isStreakCardVisible
-                                  ? (g.merlot
-                                      ? const Color(0xFFFBBF24)
-                                      : (g.frozen
-                                          ? Colors.white
-                                          : const Color(0xFFEA580C)))
-                                  : (g.merlot
-                                      ? MerlotPalette.mutedInk
-                                      : (g.frozen
-                                          ? FrozenPalette.mutedInk
-                                          : const Color(0xFF64748B)))),
-                        ),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: Text(
-                            streak == 0 ? 'Start' : '$streak',
-                            style: AppTypography.jetBrainsMono115W7009(
-                              color: isDark
-                                  ? (g.merlot
-                                      ? (isStreakCardVisible
-                                          ? MerlotPalette.darkInk
-                                          : MerlotPalette.darkMutedInk)
-                                      : (g.frozen
-                                          ? (isStreakCardVisible
-                                              ? FrozenPalette.darkInk
-                                              : FrozenPalette.darkMutedInk)
-                                          : (isStreakCardVisible
-                                              ? Colors.white
-                                              : g.inkMuted)))
-                                  : (isStreakCardVisible
-                                      ? (g.merlot
-                                          ? Colors.white
-                                          : (g.frozen
-                                              ? Colors.white
-                                              : const Color(0xFFB45309)))
-                                      : (g.merlot
-                                          ? MerlotPalette.ink
-                                          : (g.frozen
-                                              ? FrozenPalette.ink
-                                              : const Color(0xFF0F172A)))),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              FilledButton.icon(
+                key: const ValueKey('home_assistant_button'),
+                onPressed: () {
+                  HapticFeedback.lightImpact();
+                  AiAssistantScreen.showFromHome(context);
+                },
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(48, 48),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
                   ),
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                ),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                label: Text(
+                  'Ask $assistantName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
 
@@ -247,31 +103,32 @@ class HomeHeader extends ConsumerWidget {
                         color: isDark
                             ? g.fill
                             : (g.merlot
-                                ? MerlotPalette.surface
-                                : (g.frozen
-                                    ? FrozenPalette.surface
-                                    : const Color(0xFFFFF7ED))),
+                                  ? MerlotPalette.surface
+                                  : (g.frozen
+                                        ? FrozenPalette.surface
+                                        : const Color(0xFFFFF7ED))),
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: isDark
                               ? g.edge
                               : (g.merlot
-                                  ? MerlotPalette.line
-                                  : (g.frozen
-                                      ? FrozenPalette.line
-                                      : const Color(0xFFFDBA74))),
+                                    ? MerlotPalette.line
+                                    : (g.frozen
+                                          ? FrozenPalette.line
+                                          : const Color(0xFFFDBA74))),
                           width: g.merlot ? 0.75 : AppBorderScale.w1point0,
                         ),
                         boxShadow: isDark
                             ? null
                             : [
                                 BoxShadow(
-                                  color: (g.merlot
-                                          ? MerlotPalette.action
-                                          : (g.frozen
-                                              ? FrozenPalette.action
-                                              : const Color(0xFFF97316)))
-                                      .withValues(alpha: 0.10),
+                                  color:
+                                      (g.merlot
+                                              ? MerlotPalette.action
+                                              : (g.frozen
+                                                    ? FrozenPalette.action
+                                                    : const Color(0xFFF97316)))
+                                          .withValues(alpha: 0.10),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -284,13 +141,13 @@ class HomeHeader extends ConsumerWidget {
                         size: 20,
                         color: isDark
                             ? (g.merlot
-                                ? MerlotPalette.spark
-                                : const Color(0xFFF59E0B))
+                                  ? MerlotPalette.spark
+                                  : const Color(0xFFF59E0B))
                             : (g.merlot
-                                ? MerlotPalette.action
-                                : (g.frozen
-                                    ? FrozenPalette.action
-                                    : const Color(0xFF6366F1))),
+                                  ? MerlotPalette.action
+                                  : (g.frozen
+                                        ? FrozenPalette.action
+                                        : const Color(0xFF6366F1))),
                       ),
                     ),
                   ),
@@ -338,16 +195,18 @@ class HomeHeader extends ConsumerWidget {
                                     ],
                             )
                           : (!isDark
-                              ? const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Color(0xFFFFEDD5),
-                                    Color(0xFFFED7AA),
-                                  ],
-                                )
-                              : null),
-                      color: (g.frozen || g.merlot) ? null : (isDark ? g.claySoft : null),
+                                ? const LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      Color(0xFFFFEDD5),
+                                      Color(0xFFFED7AA),
+                                    ],
+                                  )
+                                : null),
+                      color: (g.frozen || g.merlot)
+                          ? null
+                          : (isDark ? g.claySoft : null),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: g.frozen
@@ -376,23 +235,28 @@ class HomeHeader extends ConsumerWidget {
                           : g.merlot
                           ? [
                               BoxShadow(
-                                color: (isDark
-                                        ? MerlotPalette.darkAction
-                                        : MerlotPalette.action)
-                                    .withValues(alpha: isDark ? 0.25 : 0.20),
+                                color:
+                                    (isDark
+                                            ? MerlotPalette.darkAction
+                                            : MerlotPalette.action)
+                                        .withValues(
+                                          alpha: isDark ? 0.25 : 0.20,
+                                        ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
                             ]
                           : (!isDark
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFF97316).withValues(alpha: 0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ]
-                              : null),
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(
+                                        0xFFF97316,
+                                      ).withValues(alpha: 0.15),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : null),
                     ),
                     child: Center(
                       child: Text(
@@ -493,134 +357,6 @@ class HomeHeader extends ConsumerWidget {
       ),
     );
   }
-
-
-  void _showStreakDetailsSheet(BuildContext context, int streak, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppPalette.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        final g = ctx.glass;
-        final isDark = ctx.isDark;
-        final sheetBg = isDark
-            ? ctx.bgSurfaceElevated
-            : (g.merlot
-                ? MerlotPalette.canvas
-                : (g.frozen
-                    ? FrozenPalette.elevated
-                    : ctx.bgSurfaceElevated));
-        return Material(
-          color: sheetBg,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isDark ? ctx.divider : g.line,
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.14),
-                  blurRadius: 24,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.fromLTRB(
-              AppSpace.s20,
-              AppSpace.s16,
-              AppSpace.s20,
-              AppSpace.s32,
-            ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: ctx.divider,
-                  borderRadius: AppGeometry.roundedr2,
-                ),
-              ),
-              const SizedBox(height: 20),
-              AppTag(
-                width: 64,
-                height: 64,
-                nightDecoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: g.claySoft,
-                  border: Border.all(
-                    color: g.clay.withValues(alpha: 0.5),
-                    width: AppBorderScale.w1point5,
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.local_fire_department_rounded,
-                    size: 36,
-                    color: g.clay,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                streak > 0
-                    ? '$streak Day${streak == 1 ? '' : 's'} Active'
-                    : 'Start your first study day',
-                textAlign: TextAlign.center,
-                style: AppStateTypography.stateType25(
-                  state0: streak > 0,
-                  color: ctx.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                streak > 0
-                    ? 'Your study time builds this streak. Check Home for today’s progress.'
-                    : 'Complete 120 minutes of study to begin. Quick Todos do not count as study time.',
-                textAlign: TextAlign.center,
-                style: AppTypography.dmSans13Regular105(color: ctx.textMuted),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    Navigator.of(ctx).pop();
-                  },
-                  style: context.surfaces.buttonStyle(
-                    FilledButton.styleFrom(
-                      backgroundColor: g.clay,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: AppGeometry.roundedr12,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpace.s13,
-                      ),
-                    ),
-                    filled: true,
-                    icon: false,
-                  ),
-                  child: Text(
-                    'Keep Going',
-                    style: AppTypography.dmSans14W600106(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-      },
-    );
-  }
 }
 
 class _HomeHeaderRow extends StatelessWidget {
@@ -630,45 +366,50 @@ class _HomeHeaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.surfaces;
-    if (context.isDark || MediaQuery.textScalerOf(context).scale(13) > 17) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          date,
-          SizedBox(height: s.spacing),
-          Wrap(
-            key: const ValueKey('home_header_actions'),
-            alignment: WrapAlignment.end,
-            spacing: s.spacing,
-            runSpacing: s.spacing,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: actions,
-          ),
-        ],
-      );
-    }
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(flex: 2, child: date),
-        SizedBox(width: s.spacing),
-        Expanded(
-          flex: 5,
-          child: Row(
-            key: const ValueKey('home_header_actions'),
-            mainAxisAlignment: MainAxisAlignment.end,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 360 ||
+            MediaQuery.textScalerOf(context).scale(13) > 17) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (var i = 0; i < actions.length; i++) ...[
-                if (i > 0) SizedBox(width: s.spacing),
-                if (i == actions.length - 1)
-                  actions[i]
-                else
-                  Flexible(child: actions[i]),
-              ],
+              date,
+              SizedBox(height: s.spacing),
+              Wrap(
+                key: const ValueKey('home_header_actions'),
+                alignment: WrapAlignment.end,
+                spacing: s.spacing,
+                runSpacing: s.spacing,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: actions,
+              ),
             ],
-          ),
-        ),
-      ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(flex: 2, child: date),
+            SizedBox(width: s.spacing),
+            Expanded(
+              flex: 5,
+              child: Row(
+                key: const ValueKey('home_header_actions'),
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  for (var i = 0; i < actions.length; i++) ...[
+                    if (i > 0) SizedBox(width: s.spacing),
+                    if (i == actions.length - 1)
+                      actions[i]
+                    else
+                      Flexible(child: actions[i]),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

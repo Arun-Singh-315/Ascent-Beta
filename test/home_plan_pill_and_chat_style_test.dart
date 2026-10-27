@@ -122,11 +122,17 @@ void main() {
         expect(thought1Finder, findsOneWidget);
         expect(thought2Finder, findsNothing);
 
-        // Both bubbles share the transparent fill with refined border.
+        // Both bubbles have defined fill and border.
         final bubble0 = tester.widget<Container>(thought0Finder);
         final bubble1 = tester.widget<Container>(thought1Finder);
-        expect((bubble0.decoration! as BoxDecoration).color, Colors.transparent);
-        expect((bubble1.decoration! as BoxDecoration).color, Colors.transparent);
+        expect(
+          (bubble0.decoration! as BoxDecoration).color,
+          isNotNull,
+        );
+        expect(
+          (bubble1.decoration! as BoxDecoration).color,
+          isNotNull,
+        );
 
         // Verify left / right asymmetric chat margins
         final padding0 = tester.widget<Padding>(
@@ -154,7 +160,7 @@ void main() {
     );
 
     testWidgets(
-      'HomeScreen contains floating Ask Riya pill at bottom right and removes banner from above thoughts',
+      'HomeScreen keeps Ask Riya in its header without a floating overlay',
       (tester) async {
         await tester.pumpWidget(
           ProviderScope(
@@ -219,25 +225,12 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         final scaffold = tester.widget<Scaffold>(find.byType(Scaffold).first);
+        expect(scaffold.floatingActionButton, isNull);
         expect(
-          scaffold.floatingActionButtonLocation,
-          FloatingActionButtonLocation.endFloat,
-        );
-        expect(scaffold.floatingActionButton, isNotNull);
-
-        // Verify Floating Ask Riya pill exists inside floatingActionButton
-        final fabFinder = find.byWidget(scaffold.floatingActionButton!);
-        expect(
-          find.descendant(of: fabFinder, matching: find.text('Ask Riya')),
+          find.byKey(const ValueKey('home_assistant_button')),
           findsOneWidget,
         );
-        expect(
-          find.descendant(
-            of: fabFinder,
-            matching: find.byIcon(Icons.auto_awesome_rounded),
-          ),
-          findsOneWidget,
-        );
+        expect(find.text('Ask Riya'), findsOneWidget);
 
         // Tear down cleanly
         await tester.pumpWidget(const SizedBox());
