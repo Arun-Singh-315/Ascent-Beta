@@ -119,6 +119,18 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
     super.dispose();
   }
 
+  /// Pre-fills the message composer with [text] and focuses it so the user
+  /// can finish typing before sending. Used by accelerator cards that need
+  /// the user to supply the key detail (e.g. the thought text or promise).
+  void _prefillText(String text) {
+    HapticFeedback.lightImpact();
+    _textController.text = text;
+    _textController.selection = TextSelection.collapsed(
+      offset: text.length,
+    );
+    _composerFocus.requestFocus();
+  }
+
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
@@ -976,6 +988,7 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
                           ? _SoftChatWelcome(
                               assistantName: name,
                               onSelectPrompt: _handleSubmitted,
+                              onPrefill: _prefillText,
                             )
                           : ListView.builder(
                               controller: _scrollController,
@@ -2214,10 +2227,14 @@ class _ThinkingBubble extends StatelessWidget {
 class _SoftChatWelcome extends StatefulWidget {
   final String assistantName;
   final ValueChanged<String> onSelectPrompt;
+  /// Pre-fills the message composer with a partial prompt so the user can
+  /// complete it before sending. Used for accelerator cards that need context.
+  final ValueChanged<String> onPrefill;
 
   const _SoftChatWelcome({
     required this.assistantName,
     required this.onSelectPrompt,
+    required this.onPrefill,
   });
 
   @override
@@ -2403,8 +2420,9 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                           icon: Icons.bubble_chart_rounded,
                           title: 'Unload Thought',
                           subtitle: 'Clear mental clutter to Vault',
-                          prompt: 'Unload thought: ',
-                          onTap: widget.onSelectPrompt,
+                          prompt: 'Save thought: ',
+                          // Prefill: incomplete — needs user to type the thought
+                          onTap: widget.onPrefill,
                         ),
                         _buildAcceleratorCard(
                           context: context,
@@ -2414,7 +2432,8 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                           title: 'Sacred Promise',
                           subtitle: 'Commit with daily check-ins',
                           prompt: 'Create a promise to ',
-                          onTap: widget.onSelectPrompt,
+                          // Prefill: incomplete — needs user to describe the promise
+                          onTap: widget.onPrefill,
                         ),
                         _buildAcceleratorCard(
                           context: context,
@@ -2423,7 +2442,7 @@ class _SoftChatWelcomeState extends State<_SoftChatWelcome>
                           icon: Icons.coffee_rounded,
                           title: 'Chai Reset',
                           subtitle: '5-min mindful reflection',
-                          prompt: 'Start a 5 minute chai break',
+                          prompt: 'Start chai break',
                           onTap: widget.onSelectPrompt,
                         ),
                         _buildAcceleratorCard(

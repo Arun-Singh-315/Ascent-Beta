@@ -10,11 +10,13 @@ void main() {
   late AppDatabase db;
   late RiyaIntentResolver resolver;
   late RiyaExecutor executor;
+  late PromiseRepository promiseRepo;
   final now = DateTime(2026, 10, 26, 12);
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     resolver = RiyaIntentResolver(db, clock: () => now);
     executor = RiyaExecutor(db, clock: () => now);
+    promiseRepo = PromiseRepository(db, clock: () => now);
   });
   tearDown(() => db.close());
   Future<RiyaResult> run(String text, String request) async {
@@ -75,7 +77,7 @@ void main() {
       );
       expect(repeat.entityId, saved.entityId);
       expect(repeat.replayed, isTrue);
-      final p = (await PromiseRepository(db).getPromiseById(saved.entityId!))!;
+      final p = (await promiseRepo.getPromiseById(saved.entityId!))!;
       expect(p.trackingType, PromiseTrackingType.duration);
       expect(p.targetValue, 20);
       expect(p.schedule!.repeat, PromiseRepeat.daily);
@@ -122,18 +124,18 @@ void main() {
       await executor.execute(rename, requestId: 'rename', approved: true);
       await run('Pause promise #$id', 'pause');
       expect(
-        (await PromiseRepository(db).getPromiseById(id))!.isPaused,
+        (await promiseRepo.getPromiseById(id))!.isPaused,
         isTrue,
       );
       await run('Resume promise #$id', 'resume');
       await run('Check in promise #$id', 'checkin');
       expect(
-        (await PromiseRepository(db).getPromiseById(id))!.isDoneToday,
+        (await promiseRepo.getPromiseById(id))!.isDoneToday,
         isTrue,
       );
       final deleted = await run('Delete promise #$id', 'delete');
       expect(deleted.promiseEffectIds, [id]);
-      expect(await PromiseRepository(db).getPromiseById(id), isNull);
+      expect(await promiseRepo.getPromiseById(id), isNull);
       expect(
         await db
             .customSelect(
