@@ -1199,7 +1199,8 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
 
     return AiResponse(
       text: buffer.toString().trim(),
-      clarifyingOptions: [
+      clarifyingOptions: const [
+        'Log a walk',
         'Plan my day',
         'What are my tasks today?',
       ],
@@ -1220,7 +1221,7 @@ class LocalDeterministicAiEngine implements AiEngineInterface {
   AiResponse _handleChaiBreak(WidgetRef ref) {
     return const AiResponse(
       text:
-          'A chai reset is always a good idea. Step away from the screen, breathe slowly, and give your mind a moment to settle.\n\nTap Open Chai Break below to start your 5-minute mindful session.',
+          'A chai reset is always a good idea. Step away from the screen, take a mindful reset, and give your mind a moment to settle.\n\nTap Open chai below to start your 5-minute session.',
       clarifyingOptions: ['Open chai'],
     );
   }
