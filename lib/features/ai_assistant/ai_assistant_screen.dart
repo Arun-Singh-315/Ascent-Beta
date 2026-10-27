@@ -1559,10 +1559,19 @@ class _ConversationMessageBubble extends StatelessWidget {
     final Color timestampColor;
 
     if (isUser) {
-      bubbleFill = Colors.transparent; // gradient applied below
-      bubbleBorder = Colors.transparent;
-      messageTextColor = Colors.white;
-      timestampColor = Colors.white.withValues(alpha: 0.72);
+      // User bubble — translucent glass with dark border & razor-sharp text
+      bubbleFill = isDark
+          ? const Color(0xFF141926).withValues(alpha: 0.60) // translucent obsidian-glass
+          : const Color(0xFFF1F4F9).withValues(alpha: 0.72); // translucent pearl-glass
+      bubbleBorder = isDark
+          ? const Color(0xFF2C384E) // crisp dark-slate rim
+          : const Color(0xFF334155).withValues(alpha: 0.50); // crisp dark charcoal rim
+      messageTextColor = isDark
+          ? const Color(0xFFF8FAFC) // crystal-clear bright ink (slate-50)
+          : const Color(0xFF0F172A); // deep ink (slate-900)
+      timestampColor = isDark
+          ? const Color(0xFF94A3B8)
+          : const Color(0xFF64748B);
     } else {
       // AI bubble — opaque surface for guaranteed readability
       bubbleFill = isDark
@@ -1632,7 +1641,7 @@ class _ConversationMessageBubble extends StatelessWidget {
               : msg.message,
           style: GoogleFonts.plusJakartaSans(
             fontSize: 14.5,
-            fontWeight: FontWeight.w500,
+            fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
             color: messageTextColor,
             height: 1.5,
           ),
@@ -1658,7 +1667,7 @@ class _ConversationMessageBubble extends StatelessWidget {
                 Icon(
                   Icons.done_all_rounded,
                   size: 11,
-                  color: timestampColor,
+                  color: isDark ? accentColor : accentColor,
                 ),
               ],
             ],
@@ -1668,26 +1677,13 @@ class _ConversationMessageBubble extends StatelessWidget {
     );
 
     final Widget mainBubble = isUser
-        ? Container(
+        ? GlassSurface(
+            borderRadius: borderRadius,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              borderRadius: borderRadius,
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  accentColor,
-                  Color.lerp(accentColor, isDark ? const Color(0xFF6B3FA0) : const Color(0xFF7C4FBF), 0.45)!,
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: accentColor.withValues(alpha: 0.32),
-                  blurRadius: 12,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
+            fillColor: bubbleFill,
+            customBorder: Border.all(color: bubbleBorder, width: 1.1),
+            enableBlur: true,
+            hasShadow: true,
             child: bubbleContent,
           )
         : Container(
