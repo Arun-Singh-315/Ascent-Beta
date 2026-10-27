@@ -145,6 +145,74 @@ void main() {
       expect(tapped, isTrue);
     });
 
+    testWidgets('Dialog cancel and destructive buttons have matching height side by side', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AscentTheme.light(),
+          home: Scaffold(
+            body: Center(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: AscentButton.outlined(
+                      label: 'Cancel',
+                      compact: true,
+                      onPressed: () {},
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: AscentButton.destructive(
+                      label: 'Delete',
+                      compact: true,
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final cancelSize = tester.getSize(find.byType(OutlinedButton));
+      final deleteSize = tester.getSize(find.byType(ElevatedButton));
+      expect(cancelSize.height, equals(deleteSize.height));
+    });
+
+    testWidgets('IconButton renders compact 34px and standard 40px correctly', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AscentTheme.light(),
+          home: Scaffold(
+            body: Column(
+              children: [
+                AscentButton.icon(
+                  icon: Icons.close,
+                  compact: true,
+                  onPressed: () {},
+                ),
+                AscentButton.icon(
+                  icon: Icons.edit,
+                  compact: false,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.close), findsOneWidget);
+      expect(find.byIcon(Icons.edit), findsOneWidget);
+    });
+
     for (final dark in [false, true]) {
       testWidgets('All button variants fit 320px width at 2.0x text scale (dark=$dark)', (
         tester,

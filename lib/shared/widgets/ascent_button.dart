@@ -629,12 +629,24 @@ class _OutlinedSignatureButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = context.textPrimary;
-    final border = context.divider;
-    final height =
-        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFrozen = context.isFrozen;
+    final fg = isFrozen
+        ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
+        : context.textPrimary;
+    final border = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final bg = isFrozen
+        ? (isDark
+            ? FrozenPalette.darkTint.withValues(alpha: 0.15)
+            : FrozenPalette.tint.withValues(alpha: 0.35))
+        : context.bgSurface.withValues(alpha: 0.4);
+    final height = isFrozen
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
             .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
-    final radius = compact ? 8.0 : 10.0;
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
         ? SizedBox(
@@ -725,9 +737,10 @@ class _GhostButton extends StatelessWidget {
         ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
         : context.textSecondary;
     final height = isFrozen
-        ? (compact ? 36.0 : 42.0)
-        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
         ? SizedBox(
@@ -765,10 +778,12 @@ class _GhostButton extends StatelessWidget {
         style: context.surfaces.buttonStyle(
           TextButton.styleFrom(
             foregroundColor: fg,
-            shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
+            ),
             padding: EdgeInsets.symmetric(
               horizontal: compact ? AppSpace.s10 : AppSpace.s14,
-              vertical: AppSpace.s10,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
           ),
           filled: false,
@@ -795,24 +810,37 @@ class _IconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = context.textPrimary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFrozen = context.isFrozen;
+    final fg = isFrozen
+        ? (isDark ? FrozenPalette.darkInk : FrozenPalette.ink)
+        : context.textPrimary;
+    final border = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final bg = isFrozen
+        ? (isDark
+            ? FrozenPalette.darkTint.withValues(alpha: 0.15)
+            : FrozenPalette.tint.withValues(alpha: 0.35))
+        : context.bgSurface.withValues(alpha: 0.5);
     final size = compact ? 34.0 : 40.0;
     final iconSize = compact ? 18.0 : 20.0;
+    final radius = isFrozen ? (compact ? 12.0 : 16.0) : (compact ? 8.0 : 10.0);
 
     return AppCard(
       width: size,
       height: size,
       nightDecoration: BoxDecoration(
-        color: context.bgSurface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(compact ? 8 : 10),
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: context.divider,
+          color: border,
           width: AppBorderScale.w0point9,
         ),
       ),
       child: Material(
         color: AppPalette.transparent,
-        borderRadius: BorderRadius.circular(compact ? 8 : 10),
+        borderRadius: BorderRadius.circular(radius),
         clipBehavior: Clip.antiAlias,
         child: AppTapArea(
           onTap: onPressed,
