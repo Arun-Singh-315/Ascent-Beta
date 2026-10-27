@@ -296,7 +296,7 @@ class _PrimaryButton extends StatelessWidget {
                     ? FrozenPalette.darkAction
                     : context.bgSurfaceElevated.withValues(alpha: 0.92))
               : (isFrozen
-                    ? FrozenPalette.action
+                    ? FrozenPalette.action.withValues(alpha: .94)
                     : context.glass.ink.withValues(alpha: 0.88)))
         : (isFrozen
               ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
@@ -423,6 +423,9 @@ class _SecondaryButton extends StatelessWidget {
             ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
             : FrozenPalette.action)
         : context.textMuted;
+    final bg = isEnabled
+        ? accent.withValues(alpha: isDark ? 0.08 : 0.05)
+        : AppPalette.transparent;
     final height = isFrozen
         ? (compact ? 32.0 : 42.0)
         : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
@@ -465,11 +468,11 @@ class _SecondaryButton extends StatelessWidget {
         style: context.surfaces.buttonStyle(
           OutlinedButton.styleFrom(
             foregroundColor: accent,
-            backgroundColor: AppPalette.transparent,
+            backgroundColor: bg,
             side: BorderSide(
               color: isFrozen
                   ? accent
-                  : accent.withValues(alpha: 0.5),
+                  : accent.withValues(alpha: isDark ? 0.38 : 0.32),
               width: AppBorderScale.w1point0,
             ),
             shape: RoundedRectangleBorder(
@@ -580,7 +583,10 @@ class _TonalButton extends StatelessWidget {
                         .withValues(alpha: 0.4),
                     width: 0.8,
                   )
-                : BorderSide.none,
+                : BorderSide(
+                    color: fg.withValues(alpha: isDark ? 0.25 : 0.18),
+                    width: AppBorderScale.w1point0,
+                  ),
           ),
           padding: EdgeInsets.symmetric(
             horizontal: compact ? AppSpace.s12 : AppSpace.s16,
@@ -930,15 +936,35 @@ class _DestructiveButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = context.stateDanger;
-    const fg = AppPalette.white;
-    final height =
-        (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.5 + 20)
-            .clamp(48.0, 100.0);
-    final radius = compact ? 8.0 : 10.0;
+    final isEnabled = onPressed != null && !loading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isFrozen = context.isFrozen;
+    final danger = isFrozen
+        ? (isDark ? FrozenPalette.darkDanger : FrozenPalette.danger)
+        : context.stateDanger;
+    final bg = isEnabled
+        ? danger.withValues(alpha: isDark ? 0.16 : 0.10)
+        : (isFrozen
+            ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
+            : context.bgSurfaceElevated.withValues(alpha: 0.25));
+    final fg = isDark
+        ? (isFrozen ? FrozenPalette.darkDanger : const Color(0xFFFCA5A5))
+        : danger;
+    final disabledFg = fg.withValues(alpha: 0.38);
+    final borderColor = isDark
+        ? danger.withValues(alpha: 0.34)
+        : danger.withValues(alpha: 0.28);
+    final disabledBorder = isFrozen
+        ? (isDark ? FrozenPalette.darkLine : FrozenPalette.line)
+        : context.divider;
+    final height = isFrozen
+        ? (compact ? 32.0 : 42.0)
+        : (MediaQuery.textScalerOf(context).scale(compact ? 12 : 14) * 1.4 + 14)
+            .clamp(compact ? 34.0 : 42.0, compact ? 64.0 : 88.0);
+    final radius = isFrozen ? (compact ? 16.0 : 20.0) : (compact ? 8.0 : 10.0);
 
     Widget content = loading
-        ? const SizedBox(
+        ? SizedBox(
             width: 14,
             height: 14,
             child: CircularProgressIndicator(strokeWidth: 2, color: fg),
@@ -959,7 +985,7 @@ class _DestructiveButton extends StatelessWidget {
                       (compact
                               ? AscentTextStyles.labelSmall
                               : AscentTextStyles.labelMedium)
-                          .copyWith(color: fg)
+                          .copyWith(color: fg, fontWeight: FontWeight.w600)
                           .merge(AppTypeRoles.typeRole8),
                 ),
               ),
@@ -974,16 +1000,22 @@ class _DestructiveButton extends StatelessWidget {
           ElevatedButton.styleFrom(
             backgroundColor: bg,
             foregroundColor: fg,
+            disabledBackgroundColor: bg,
+            disabledForegroundColor: disabledFg,
             elevation: 0,
             shadowColor: AppPalette.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(radius),
+              side: BorderSide(
+                color: isEnabled ? borderColor : disabledBorder,
+                width: AppBorderScale.w1point0,
+              ),
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: compact ? AppSpace.s12 : AppSpace.s18,
-              vertical: AppSpace.s10,
+              horizontal: compact ? AppSpace.s12 : AppSpace.s16,
+              vertical: compact ? AppSpace.s6 : AppSpace.s8,
             ),
-            minimumSize: Size(compact ? 60 : 90, height),
+            minimumSize: Size(compact ? 44 : 76, height),
           ),
           filled: true,
           icon: false,
