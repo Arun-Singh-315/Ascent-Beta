@@ -109,7 +109,7 @@ void main() {
 
   group('Modular Home Architecture Tests', () {
     testWidgets(
-      'HomeHeader pumps with profile name, greeting, and streak flame',
+      'HomeHeader pumps with profile name, greeting, and assistant gateway',
       (tester) async {
         final now = DateTime.now();
         final profile = UserProfile(
@@ -196,7 +196,7 @@ void main() {
     );
 
     testWidgets(
-      'Home floating assistant pill dynamically reflects customized identity',
+      'Home header assistant dynamically reflects customized identity',
       (tester) async {
         final container = ProviderContainer(
           overrides: [

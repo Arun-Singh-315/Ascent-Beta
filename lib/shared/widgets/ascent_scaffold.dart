@@ -173,6 +173,11 @@ class AscentAppBar extends StatelessWidget implements PreferredSizeWidget {
     }
 
     return AppBar(
+      systemOverlayStyle:
+          (Theme.of(context).brightness == Brightness.dark
+                  ? SystemUiOverlayStyle.light
+                  : SystemUiOverlayStyle.dark)
+              .copyWith(statusBarColor: Colors.transparent),
       backgroundColor: (Theme.of(context).brightness == Brightness.dark)
           ? g.bg.withValues(alpha: .85)
           : Colors.transparent,

@@ -1,4 +1,3 @@
-import '../ai_assistant/ai_assistant_screen.dart';
 import 'widgets/home_promise_section.dart';
 import '../reminders/reminder_action_ui.dart';
 import '../../shared/widgets/skeleton_shimmer.dart';
@@ -12,10 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:flutter/services.dart';
-import '../../app/theme/frozen_palette.dart';
-import '../../app/theme/merlot_palette.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/color_tokens.dart';
 import '../../core/learning_hub/learning_hub_provider.dart';
 import '../../core/providers/database_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -212,10 +208,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                       const SizedBox(height: 2),
                       Text(
                         'Tap to review agenda & launchpad',
-                        style: TextStyle(
-                          color: g.inkSecondary,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: g.inkSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -227,10 +220,7 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                   onPressed: () {
                     HapticFeedback.lightImpact();
                     setState(() => _dismissedBriefingToday = true);
-                    preferences.setString(
-                      'ascent_daily_briefing_seen_v1',
-                      key,
-                    );
+                    preferences.setString('ascent_daily_briefing_seen_v1', key);
                   },
                 ),
               ],
@@ -273,8 +263,6 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
       },
       child: Scaffold(
         backgroundColor: g.bg,
-        floatingActionButton: _buildFloatingAssistantPill(context),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
         body: SafeArea(
           child: HomeAtmosphereBackground(
             child: Stack(
@@ -319,7 +307,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                           ref.invalidate(recentThoughtsStreamProvider);
                           ref.invalidate(todayActivitiesProvider);
                           ref.invalidate(activeMomentumChallengeStreamProvider);
-                          ref.invalidate(todayMomentumCommitmentsStreamProvider);
+                          ref.invalidate(
+                            todayMomentumCommitmentsStreamProvider,
+                          );
                           ref.invalidate(studyStreakProvider);
                           ref.invalidate(allRemindersProvider);
                           ref.invalidate(dismissedTodayReminderIdsProvider);
@@ -346,7 +336,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             // 2. Dynamic Shortcut Hub (up to four user-customized shortcuts)
                             if (layout.shortcuts.isNotEmpty)
                               Padding(
-                                padding: const EdgeInsets.only(bottom: AppSpace.s16),
+                                padding: const EdgeInsets.only(
+                                  bottom: AppSpace.s16,
+                                ),
                                 child: HomeShortcutPanel(
                                   shortcuts: layout.shortcuts,
                                   activeShortcutId: _activeShortcutId,
@@ -358,22 +350,34 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                             // ── SHORTCUT DRILLDOWN / FULL HOME FEED ──
                             if (_activeShortcutId != null) ...[
                               _buildBackToHomeBar(context),
-                              _buildSingleShortcutFeature(_activeShortcutId!, layout),
+                              _buildSingleShortcutFeature(
+                                _activeShortcutId!,
+                                layout,
+                              ),
                             ] else ...[
                               // Mind Palace / Thought capture stays at the top of the feed
                               if (layout.visible.contains('mind'))
                                 const Padding(
-                                  padding: EdgeInsets.only(bottom: AppSpace.s20),
-                                  child: ThoughtWallHomePreview(),
+                                  padding: EdgeInsets.only(
+                                    bottom: AppSpace.s20,
+                                  ),
+                                  child: ThoughtWallHomePreview(
+                                    previewLimit: 1,
+                                    compact: true,
+                                  ),
                                 ),
 
                               // HERO: Activity Hub
                               if (layout.visible.contains('today'))
                                 Padding(
-                                  padding: const EdgeInsets.only(bottom: AppSpace.s24),
+                                  padding: const EdgeInsets.only(
+                                    bottom: AppSpace.s24,
+                                  ),
                                   child: ActivityHubCard(
                                     previewLimit:
-                                        layout.compact.contains('today') ? 2 : 4,
+                                        layout.compact.contains('today')
+                                        ? 2
+                                        : 4,
                                   ),
                                 ),
 
@@ -404,104 +408,21 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                     },
                   ),
                 ),
-              // Return-user greeting: floats at the top for a few seconds and
-              // never pushes the Things hub down, positioned below header controls.
-              if (_welcomeBackDays != null)
-                Positioned(
-                  top: 96,
-                  left: AppSpace.s24,
-                  right: AppSpace.s24,
-                  child: WelcomeBackBanner(
-                    days: _welcomeBackDays!,
-                    visibleFor: const Duration(seconds: 3),
-                    onDismissed: () {
-                      if (mounted) setState(() => _welcomeBackDays = null);
-                    },
+                // Return-user greeting: floats at the top for a few seconds and
+                // never pushes the Things hub down, positioned below header controls.
+                if (_welcomeBackDays != null)
+                  Positioned(
+                    top: 96,
+                    left: AppSpace.s24,
+                    right: AppSpace.s24,
+                    child: WelcomeBackBanner(
+                      days: _welcomeBackDays!,
+                      visibleFor: const Duration(seconds: 3),
+                      onDismissed: () {
+                        if (mounted) setState(() => _welcomeBackDays = null);
+                      },
+                    ),
                   ),
-                ),
-            ],
-          ),
-        ),
-      ),
-      ),
-    );
-  }
-
-  Widget _buildFloatingAssistantPill(BuildContext context) {
-    final isDark = context.isDark;
-    final g = context.glass;
-    final assistantName = ref.watch(assistantNameProvider);
-    final accentColors = g.frozen
-        ? (isDark
-              ? [FrozenPalette.darkActionBright, FrozenPalette.darkAction]
-              : [FrozenPalette.actionBright, FrozenPalette.action])
-        : g.merlot
-        ? (isDark
-              ? [const Color(0xFF9E2A42), const Color(0xFF6B1828)]
-              : [MerlotPalette.actionBright, MerlotPalette.actionDeep])
-        : (isDark
-              ? [const Color(0xFFD35400), const Color(0xFFA04000)]
-              : [const Color(0xFFE86B43), const Color(0xFFC85A32)]);
-    final shadowColor = g.frozen
-        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : g.merlot
-        ? (isDark ? const Color(0xFF6B1828) : MerlotPalette.actionDeep)
-        : (isDark ? const Color(0xFFA04000) : const Color(0xFFC85A32));
-    final starIconColor = g.merlot
-        ? (isDark ? MerlotPalette.darkSpark : MerlotPalette.antiqueGold)
-        : g.frozen
-        ? (isDark ? FrozenPalette.darkSpark : Colors.white)
-        : (isDark ? const Color(0xFFF1C40F) : Colors.white);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 76, right: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            AiAssistantScreen.showFromHome(context);
-          },
-          borderRadius: BorderRadius.circular(24),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: accentColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: isDark ? 0.18 : 0.12),
-                width: 0.75,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: shadowColor.withValues(alpha: isDark ? 0.35 : 0.28),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 18,
-                  color: starIconColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Ask $assistantName',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.2,
-                  ),
-                ),
               ],
             ),
           ),
@@ -753,7 +674,9 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
             padding: const EdgeInsets.only(bottom: AppSpace.s32),
             child: StudyStreakMeterCard(
               status: ref.watch(studyStreakProvider),
-              onTap: () => ref.read(homeLayoutProvider.notifier).save(
+              onTap: () => ref
+                  .read(homeLayoutProvider.notifier)
+                  .save(
                     layout.copyWith(
                       visible: {...layout.visible}..remove('streak'),
                     ),

@@ -36,10 +36,12 @@ class ActivityRowItem extends ConsumerStatefulWidget {
   final TodayActivityItem activity;
 
   final bool compact;
+  final VoidCallback? onViewCompleted;
   const ActivityRowItem({
     super.key,
     required this.activity,
     this.compact = false,
+    this.onViewCompleted,
   });
 
   @override
@@ -273,9 +275,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                               if (activity.isScheduledInFuture) {
                                 HapticFeedback.lightImpact();
                                 final timeStr = activity.scheduledTime != null
-                                    ? DateFormat('h:mm a').format(
-                                        activity.scheduledTime!,
-                                      )
+                                    ? DateFormat(
+                                        'h:mm a',
+                                      ).format(activity.scheduledTime!)
                                     : 'later';
                                 AscentSnackBar.show(
                                   context,
@@ -962,6 +964,17 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       return;
                     }
                     if (activity.linkedTaskId == null) return;
+                    final messenger = ScaffoldMessenger.of(context);
+                    final completedFeedback = AscentSnackBar.build(
+                      context,
+                      content: const Text('Task completed'),
+                      action: widget.onViewCompleted == null
+                          ? null
+                          : SnackBarAction(
+                              label: 'View completed',
+                              onPressed: widget.onViewCompleted!,
+                            ),
+                    );
                     try {
                       final dao = ref.read(taskDaoProvider);
                       await dao.toggleTaskCompletion(
@@ -971,7 +984,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       final task = await dao.getTaskById(
                         activity.linkedTaskId!,
                       );
-                      if (context.mounted &&
+                      if (task?.actualCompletedDate != null &&
+                          messenger.mounted) {
+                        messenger.removeCurrentSnackBar();
+                        messenger.showSnackBar(completedFeedback);
+                      } else if (context.mounted &&
                           task?.actualCompletedDate == null) {
                         AscentSnackBar.show(
                           context,
@@ -1538,9 +1555,9 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                                 HapticFeedback.lightImpact();
                                 Navigator.of(ctx).pop();
                                 final timeStr = activity.scheduledTime != null
-                                    ? DateFormat('h:mm a').format(
-                                        activity.scheduledTime!,
-                                      )
+                                    ? DateFormat(
+                                        'h:mm a',
+                                      ).format(activity.scheduledTime!)
                                     : 'later';
                                 AscentSnackBar.show(
                                   context,
