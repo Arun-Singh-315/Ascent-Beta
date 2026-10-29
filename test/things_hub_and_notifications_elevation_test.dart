@@ -148,7 +148,7 @@ void main() {
       // Defaults to To-do mode
       expect(find.text('To-do'), findsOneWidget);
 
-      // Switch to Timer
+      // Switch to Timer via Activity type selector
       await tester.tap(find.byTooltip('Activity type'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Timer').last);
@@ -156,6 +156,81 @@ void main() {
 
       // Duration selector should be active
       expect(find.text('30 min'), findsOneWidget);
+
+      // Entering text expands interactive mode switcher and duration chips
+      await tester.enterText(
+        find.byKey(const ValueKey('activity_quick_input')),
+        'Study algorithms',
+      );
+      await tester.pumpAndSettle();
+
+      // Quick duration preset 25m Pomodoro should be visible and selectable
+      expect(find.text('25m'), findsOneWidget);
+      await tester.tap(find.text('25m'));
+      await tester.pumpAndSettle();
+      expect(find.text('25 min'), findsOneWidget);
+
+      // Can switch back to To-do easily while typing
+      expect(find.text('To-do'), findsWidgets);
+      await tester.tap(find.text('To-do').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Checklist to-do · Quick tap completion'), findsOneWidget);
+    });
+
+    testWidgets('ActivityRowItem detail dialog allows switching task between To-do and Focus Timer', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(320, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final taskId = await db.taskDao.insertTask(
+        TaskTableCompanion.insert(
+          title: 'Review System Design',
+          plannedDate: drift.Value(DateTime.now()),
+        ),
+      );
+
+      final activity = TodayActivityItem(
+        id: 'task_$taskId',
+        title: 'Review System Design',
+        kind: ActivityKind.todo,
+        status: TodayActivityStatus.notStarted,
+        sourceType: 'task',
+        categoryTag: 'tasks',
+        elapsedSecondsToday: 0,
+        linkedTaskId: taskId,
+        priority: 'medium',
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(db)],
+          child: MaterialApp(
+            theme: ThemeData.light(),
+            home: Scaffold(
+              body: ActivityRowItem(
+                activity: activity,
+                compact: true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Tap card to open detail dialog
+      await tester.tap(find.text('Review System Design'));
+      await tester.pumpAndSettle();
+
+      // Should show option to switch to 25m Focus Timer
+      expect(find.text('Switch to 25m Focus Timer'), findsOneWidget);
+      await tester.tap(find.text('Switch to 25m Focus Timer'));
+      await tester.pumpAndSettle();
+
+      // Verify task in database has estimatedMinutes updated to 25
+      final updated = await db.taskDao.getTaskById(taskId);
+      expect(updated?.estimatedMinutes, 25);
     });
   });
 

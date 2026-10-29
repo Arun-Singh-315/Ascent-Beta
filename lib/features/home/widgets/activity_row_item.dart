@@ -1551,7 +1551,7 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ),
                     ),
                     const Spacer(),
-                    if (!isDone && activity.kind == ActivityKind.todo)
+                    if (!isDone && activity.linkedTaskId != null)
                       IconButton(
                         tooltip: 'Edit activity',
                         icon: Icon(
@@ -1606,6 +1606,77 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                 ),
                 if (!isDone &&
                     activity.linkedTaskId != null &&
+                    activity.sourceType != 'lecture') ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      if (activity.kind == ActivityKind.todo)
+                        TextButton.icon(
+                          icon: Icon(Icons.timer_outlined, size: 16, color: g.clay),
+                          label: Text(
+                            'Switch to 25m Focus Timer',
+                            style: TextStyle(
+                              color: g.clay,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await ref.read(taskDaoProvider).updateTask(
+                              TaskTableCompanion(
+                                id: Value(activity.linkedTaskId!),
+                                estimatedMinutes: const Value(25),
+                                updatedAt: Value(DateTime.now()),
+                              ),
+                            );
+                            if (context.mounted) {
+                              AscentSnackBar.show(
+                                context,
+                                message: 'Switched to 25m Focus Timer',
+                              );
+                            }
+                          },
+                        )
+                      else if (activity.kind == ActivityKind.duration)
+                        TextButton.icon(
+                          icon: Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 16,
+                            color: g.clay,
+                          ),
+                          label: Text(
+                            'Switch to To-do Checklist',
+                            style: TextStyle(
+                              color: g.clay,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          onPressed: () async {
+                            Navigator.of(ctx).pop();
+                            await ref.read(taskDaoProvider).updateTask(
+                              TaskTableCompanion(
+                                id: Value(activity.linkedTaskId!),
+                                estimatedMinutes: const Value(null),
+                                updatedAt: Value(DateTime.now()),
+                              ),
+                            );
+                            if (context.mounted) {
+                              AscentSnackBar.show(
+                                context,
+                                message: 'Switched to To-do checklist',
+                              );
+                            }
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+                if (!isDone &&
+                    activity.linkedTaskId != null &&
                     activity.sourceType != 'lecture' &&
                     (activity.targetMinutes ?? 0) > 0)
                   TextButton.icon(
@@ -1626,8 +1697,11 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                     },
                   ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpace.s8,
+                  runSpacing: AppSpace.s8,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
@@ -1644,7 +1718,6 @@ class _ActivityRowItemState extends ConsumerState<ActivityRowItem> {
                       ),
                       child: const Text('Cancel'),
                     ),
-                    const SizedBox(width: 8),
                     if (!isDone)
                       activity.isScheduledInFuture
                           ? FilledButton.icon(

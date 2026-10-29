@@ -35,6 +35,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   void initState() {
     super.initState();
     _text.addListener(_changed);
+    _inputFocus.addListener(_changed);
   }
 
   void _changed() {
@@ -44,6 +45,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
   @override
   void dispose() {
     _text.removeListener(_changed);
+    _inputFocus.removeListener(_changed);
     _inputFocus.dispose();
     _text.dispose();
     super.dispose();
@@ -187,6 +189,7 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
       if (!mounted) return;
       HapticFeedback.lightImpact();
       _text.clear();
+      _inputFocus.unfocus();
       setState(() {
         _kind = ActivityKind.todo;
         _date = null;
@@ -392,8 +395,72 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                   ),
                 ],
               ),
+              if (_text.text.trim().isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, top: 4, bottom: 2),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        Text(
+                          'Mode:',
+                          style: TextStyle(
+                            color: g.inkMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _InteractiveModeChip(
+                          icon: Icons.check_circle_outline_rounded,
+                          label: 'To-do',
+                          selected: _kind == ActivityKind.todo,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _kind = ActivityKind.todo);
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        _InteractiveModeChip(
+                          icon: Icons.timer_outlined,
+                          label: 'Focus Timer',
+                          selected: _kind == ActivityKind.duration,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() {
+                              _kind = ActivityKind.duration;
+                              if (_minutes <= 0) _minutes = 25;
+                            });
+                          },
+                        ),
+                        const SizedBox(width: 6),
+                        _InteractiveModeChip(
+                          icon: Icons.all_inclusive_rounded,
+                          label: 'Flexible',
+                          selected: _kind == ActivityKind.flexible,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            setState(() => _kind = ActivityKind.flexible);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 6, bottom: 4, top: 2),
+                  child: Text(
+                    _kind == ActivityKind.todo
+                        ? 'Checklist to-do · Quick tap completion'
+                        : _kind == ActivityKind.duration
+                        ? 'Focus timer · Stopwatch countdown with live session bar'
+                        : 'Flexible timer · Open-ended session without time limit',
+                    style: TextStyle(color: g.inkMuted, fontSize: 11),
+                  ),
+                ),
+              ],
               Padding(
-                padding: const EdgeInsets.only(left: 4, top: 4, bottom: 4),
+                padding: const EdgeInsets.only(left: 4, top: 2, bottom: 4),
                 child: Wrap(
                   spacing: 4,
                   runSpacing: 4,
@@ -431,29 +498,79 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
                     if (_kind == ActivityKind.duration)
                       Padding(
                         padding: const EdgeInsets.only(right: 4),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: _saving ? null : _duration,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: g.clay.withValues(
-                                alpha: isDark ? 0.2 : 0.1,
-                              ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            InkWell(
                               borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$_minutes min',
-                              style: TextStyle(
-                                color: g.clay,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                              onTap: _saving ? null : _duration,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: g.clay.withValues(
+                                    alpha: isDark ? 0.2 : 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$_minutes min',
+                                  style: TextStyle(
+                                    color: g.clay,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            if (_text.text.trim().isNotEmpty || _inputFocus.hasFocus) ...[
+                              const SizedBox(width: 4),
+                              for (final preset in const [15, 25, 45])
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 3),
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(10),
+                                    onTap: _saving
+                                        ? null
+                                        : () {
+                                            HapticFeedback.selectionClick();
+                                            setState(() => _minutes = preset);
+                                          },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _minutes == preset
+                                            ? g.clay.withValues(alpha: 0.2)
+                                            : g.ink.withValues(alpha: 0.04),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: _minutes == preset
+                                              ? g.clay.withValues(alpha: 0.5)
+                                              : g.edge.withValues(alpha: 0.2),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${preset}m',
+                                        style: TextStyle(
+                                          color: _minutes == preset
+                                              ? g.clay
+                                              : g.inkSecondary,
+                                          fontSize: 11,
+                                          fontWeight: _minutes == preset
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ],
                         ),
                       ),
                     PopupMenuButton<String>(
@@ -509,3 +626,65 @@ class _ActivityComposerState extends ConsumerState<ActivityComposer> {
     );
   }
 }
+
+class _InteractiveModeChip extends StatelessWidget {
+  const _InteractiveModeChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = context.glass;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected
+              ? (isDark
+                  ? g.clay.withValues(alpha: 0.28)
+                  : g.clay.withValues(alpha: 0.12))
+              : g.ink.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? g.clay.withValues(alpha: 0.6)
+                : g.edge.withValues(alpha: 0.25),
+            width: selected ? 1.2 : 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 13,
+              color: selected ? g.clay : g.inkMuted,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? g.ink : g.inkSecondary,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
