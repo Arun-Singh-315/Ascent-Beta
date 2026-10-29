@@ -29,6 +29,7 @@ import '../../core/providers/daily_briefing_provider.dart';
 import 'widgets/home_atmosphere.dart';
 import 'widgets/home_dismissible_reminders_section.dart';
 import 'widgets/home_header.dart';
+import 'widgets/ascent_dynamic_island.dart';
 import 'widgets/home_shortcut_panel.dart';
 import 'widgets/home_theme.dart';
 import 'widgets/learning_hub_card.dart';
@@ -333,13 +334,13 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                               ref.read(sharedPreferencesProvider),
                             ),
 
-                            // 2. Dynamic Shortcut Hub (up to four user-customized shortcuts)
+                            // 2. Ascent Dynamic Island (adaptive live activities & multi-app hub)
                             if (layout.shortcuts.isNotEmpty)
                               Padding(
                                 padding: const EdgeInsets.only(
                                   bottom: AppSpace.s16,
                                 ),
-                                child: HomeShortcutPanel(
+                                child: AscentDynamicIsland(
                                   shortcuts: layout.shortcuts,
                                   activeShortcutId: _activeShortcutId,
                                   onSelectShortcut: (id) =>

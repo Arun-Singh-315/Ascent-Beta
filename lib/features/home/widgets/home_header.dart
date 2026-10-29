@@ -144,77 +144,76 @@ class HomeHeader extends ConsumerWidget {
                 final sign = service.getZodiac(profile!.dateOfBirth!);
                 final mood = service.getDayLivingMood();
                 final isBday = service.isBirthdayToday(profile!.dateOfBirth!);
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Wrap(
-                            spacing: 6,
-                            runSpacing: 2,
-                            crossAxisAlignment: WrapCrossAlignment.center,
+                    Expanded(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 2,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
+                            style: AscentTextStyles.labelMedium.copyWith(
+                              color: g.ink,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
-                                style: AscentTextStyles.labelMedium.copyWith(
-                                  color: g.ink,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: mood.livingTint,
+                                  shape: BoxShape.circle,
                                 ),
                               ),
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 5,
-                                    height: 5,
-                                    decoration: BoxDecoration(
-                                      color: mood.livingTint,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    sign.element.label,
-                                    style: AscentTextStyles.labelSmall.copyWith(
-                                      color: g.inkMuted,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(width: 4),
+                              Text(
+                                sign.element.label,
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.inkMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        IconButton(
-                          tooltip: 'Customize Home',
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                            showHomeCustomization(context);
-                          },
-                          icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
-                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                          padding: EdgeInsets.zero,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isBday
-                          ? '🎉 Happy Birthday! A radiant new solar cycle begins today.'
-                          : '“${sign.definingEssence}”',
-                      style: AscentTextStyles.bodySmall.copyWith(
-                        color: g.inkSecondary,
-                        fontSize: 12.5,
-                        fontStyle: FontStyle.italic,
-                        height: 1.35,
-                        letterSpacing: 0.1,
+                          if (isBday)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: g.claySoft,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '🎉 Birthday',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.clay,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                    IconButton(
+                      tooltip: 'Customize Home',
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        showHomeCustomization(context);
+                      },
+                      icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
+                      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                      padding: EdgeInsets.zero,
                     ),
                   ],
                 );
