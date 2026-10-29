@@ -86,43 +86,35 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
         chaiState.selectedSoundscape != SoundscapePreset.silentZen;
 
     return Semantics(
-      label: 'Dynamic Island',
+      label: 'Ascent Dynamic Island',
       container: true,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
-          color: isDark
-              ? Colors.black.withValues(alpha: 0.65)
-              : Colors.white.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(_isExpanded ? 26 : 24),
+          color: const Color(0xFF000000),
+          borderRadius: BorderRadius.circular(_isExpanded ? 24 : 28),
           border: Border.all(
-            color: isFocusRunning
-                ? DynamicIslandColors.emeraldMint.withValues(alpha: 0.45)
-                : isAudioPlaying
-                    ? DynamicIslandColors.solarAmber.withValues(alpha: 0.45)
-                    : overdueCount > 0
-                        ? DynamicIslandColors.solarAmber.withValues(alpha: 0.40)
-                        : g.line,
-            width: 1.0,
+            color: Colors.black,
+            width: 2.2,
           ),
           boxShadow: [
             BoxShadow(
               color: isFocusRunning
-                  ? DynamicIslandColors.emeraldMint.withValues(alpha: 0.12)
+                  ? DynamicIslandColors.emeraldMint.withValues(alpha: 0.20)
                   : isAudioPlaying
-                      ? DynamicIslandColors.solarAmber.withValues(alpha: 0.12)
-                      : isDark
-                          ? Colors.black.withValues(alpha: 0.35)
-                          : DynamicIslandColors.azureBlue.withValues(alpha: 0.06),
+                      ? DynamicIslandColors.solarAmber.withValues(alpha: 0.20)
+                      : overdueCount > 0
+                          ? DynamicIslandColors.solarAmber.withValues(alpha: 0.18)
+                          : Colors.black.withValues(alpha: 0.60),
               blurRadius: _isExpanded ? 20 : 12,
               offset: const Offset(0, 4),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(_isExpanded ? 26 : 24),
+          borderRadius: BorderRadius.circular(_isExpanded ? 22 : 26),
           child: AnimatedSize(
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeOutCubic,
@@ -598,6 +590,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
     final thoughtCount = ref.watch(todayThoughtsCountStreamProvider).value ?? 0;
     final activePromises =
         ref.watch(activePromisesStreamProvider).value?.length ?? 0;
+    final nextReminder = ref.watch(nextUpcomingReminderProvider).value;
 
     if (!_isExpanded) {
       return InkWell(
@@ -633,7 +626,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Container(width: 1, height: 12, color: g.edge),
+                      Container(width: 1, height: 12, color: Colors.white.withValues(alpha: 0.15)),
                       const SizedBox(width: 10),
 
                       // Azure Sky Thought Glanceable
@@ -652,7 +645,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                         ),
                       ),
                       const SizedBox(width: 10),
-                      Container(width: 1, height: 12, color: g.edge),
+                      Container(width: 1, height: 12, color: Colors.white.withValues(alpha: 0.15)),
                       const SizedBox(width: 10),
 
                       // Sacred Promises
@@ -678,7 +671,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
               Icon(
                 Icons.keyboard_arrow_down_rounded,
                 size: 18,
-                color: g.inkMuted,
+                color: Colors.white.withValues(alpha: 0.60),
               ),
             ],
           ),
@@ -699,14 +692,34 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'DYNAMIC HUB',
-                    style: AscentTextStyles.labelSmall.copyWith(
-                      color: g.inkMuted,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                      letterSpacing: 0.8,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: DynamicIslandColors.emeraldMint,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: DynamicIslandColors.emeraldMint.withValues(alpha: 0.8),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Ascent Dynamic Island',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -715,7 +728,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                 icon: Icon(
                   Icons.close_fullscreen_rounded,
                   size: 16,
-                  color: g.inkMuted,
+                  color: Colors.white.withValues(alpha: 0.60),
                 ),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
@@ -724,16 +737,72 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
             ],
           ),
 
+          // Upcoming Activity Alert if any
+          if (nextReminder != null && nextReminder.isActive) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: DynamicIslandColors.azureBlue.withValues(alpha: 0.35),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.notifications_active_rounded,
+                    size: 16,
+                    color: DynamicIslandColors.azureBlue,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Next: ${nextReminder.title}',
+                      style: AscentTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/reminders');
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      child: Text(
+                        'View →',
+                        style: AscentTextStyles.labelSmall.copyWith(
+                          color: DynamicIslandColors.azureBlue,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           // Yesterday's Leftover Alert if any
           if (overdueCount > 0) ...[
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: DynamicIslandColors.solarAmber.withValues(alpha: 0.12),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: DynamicIslandColors.solarAmber.withValues(alpha: 0.30),
+                  color: DynamicIslandColors.solarAmber.withValues(alpha: 0.40),
                 ),
               ),
               child: Row(
@@ -748,7 +817,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                     child: Text(
                       '$overdueCount tasks from yesterday need a decision',
                       style: AscentTextStyles.labelSmall.copyWith(
-                        color: g.ink,
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -976,10 +1045,10 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: color.withValues(alpha: 0.32),
+              color: color.withValues(alpha: 0.38),
               width: 1.0,
             ),
           ),
@@ -995,6 +1064,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                   style: AscentTextStyles.labelSmall.copyWith(
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.90),
                   ),
                 ),
               ),
@@ -1005,7 +1075,7 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                   metric,
                   style: AscentTextStyles.labelSmall.copyWith(
                     fontSize: 10,
-                    color: color,
+                    color: Colors.white.withValues(alpha: 0.70),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1021,8 +1091,12 @@ class _AscentDynamicIslandState extends ConsumerState<AscentDynamicIsland>
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.22),
+                      color: Colors.white.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: color.withValues(alpha: 0.45),
+                        width: 0.8,
+                      ),
                     ),
                     child: Text(
                       subActionText,
