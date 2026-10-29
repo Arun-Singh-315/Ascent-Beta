@@ -146,8 +146,8 @@ void main() {
       // Verify cardless zodiac symbol and Vedic rashi
       expect(find.textContaining('♊ Gemini · Mithuna'), findsOneWidget);
 
-      // Verify defining essence quote is displayed
-      expect(find.textContaining('Curious intellect'), findsOneWidget);
+      // Verify defining essence quote is NOT cluttering below the name
+      expect(find.textContaining('Curious intellect'), findsNothing);
 
       // Verify customize home tune button is present
       expect(find.byTooltip('Customize Home'), findsOneWidget);
@@ -286,10 +286,10 @@ void main() {
       expect(find.byKey(const ValueKey('settings_dob_picker')), findsOneWidget);
       expect(find.textContaining('25 July 1996'), findsOneWidget);
 
-      // Verify cardless decorative rashi line & essence quote is rendered below Date of Birth
+      // Verify cardless decorative rashi line is rendered below Date of Birth without raw quote
       expect(find.textContaining('Leo'), findsOneWidget);
       expect(find.textContaining('Simha'), findsOneWidget);
-      expect(find.textContaining('Radiant courage'), findsOneWidget);
+      expect(find.textContaining('Radiant courage'), findsNothing);
 
       // Tap clear birth date button
       await tester.tap(find.byTooltip('Clear birth date'));
@@ -305,7 +305,7 @@ void main() {
   });
 
   group('Onboarding Flow Date of Birth Integration', () {
-    testWidgets('Onboarding sanctuary setup renders Date of Birth picker and cardless quote preview', (
+    testWidgets('Onboarding sanctuary setup renders Date of Birth picker and cardless preview', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(360, 900);
@@ -347,11 +347,11 @@ void main() {
       container.read(onboardingProvider.notifier).setDateOfBirth(DateTime(2001, 10, 15)); // Libra / Tula
       await tester.pumpAndSettle();
 
-      // Verify formatted date and cardless preview appear with essence quote
+      // Verify formatted date and cardless preview appear without raw quote
       expect(find.textContaining('15 October 2001'), findsOneWidget);
       expect(find.textContaining('Libra'), findsOneWidget);
       expect(find.textContaining('Tula'), findsOneWidget);
-      expect(find.textContaining('Graceful harmony'), findsOneWidget);
+      expect(find.textContaining('Graceful harmony'), findsNothing);
     });
   });
 }

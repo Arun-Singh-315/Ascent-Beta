@@ -1079,14 +1079,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                                   fontSize: 11,
                                 ),
                               ),
-                              Text(
-                                '· “${sign.definingEssence}”',
-                                style: AscentTextStyles.bodySmall.copyWith(
-                                  color: g.inkSecondary,
-                                  fontStyle: FontStyle.italic,
-                                  fontSize: 12,
-                                ),
-                              ),
                             ],
                           ),
                         );

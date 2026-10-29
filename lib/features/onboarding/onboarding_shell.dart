@@ -1014,14 +1014,6 @@ class _StepSanctuarySetupState extends ConsumerState<_StepSanctuarySetup> {
                             fontSize: 11,
                           ),
                         ),
-                        Text(
-                          '· “${sign.definingEssence}”',
-                          style: AscentTextStyles.bodySmall.copyWith(
-                            color: textMuted,
-                            fontStyle: FontStyle.italic,
-                            fontSize: 12,
-                          ),
-                        ),
                       ],
                     ),
                   );
