@@ -22,9 +22,7 @@ class GlassChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final ink = success
-        ? (dark ? const Color(0xFF86EFAC) : const Color(0xFF166534))
-        : context.glass.ink;
+    final ink = success ? context.doneInk : context.glass.ink;
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
       side: BorderSide(
