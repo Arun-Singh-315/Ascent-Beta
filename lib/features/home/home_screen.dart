@@ -171,29 +171,32 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
         color: Colors.transparent,
         child: InkWell(
           key: const ValueKey('home_inline_briefing_card'),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AscentRadii.borderLg,
           onTap: () {
             HapticFeedback.lightImpact();
             DailyBriefingCard.show(context, _briefingDate);
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpace.s16,
+              vertical: AppSpace.s12,
+            ),
             decoration: BoxDecoration(
               color: g.fill,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: AscentRadii.borderLg,
               border: Border.all(color: g.line),
             ),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(AppSpace.s8),
                   decoration: BoxDecoration(
                     color: g.clay.withValues(alpha: 0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.wb_sunny_outlined, size: 18, color: g.clay),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpace.s12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,16 +204,17 @@ class _HomeScreenState extends ConsumerState<_HomeContent>
                     children: [
                       Text(
                         'Daily Briefing',
-                        style: TextStyle(
+                        style: AscentTextStyles.bodyMedium.copyWith(
                           color: g.ink,
-                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpace.s2),
                       Text(
                         'Tap to review agenda & launchpad',
-                        style: TextStyle(color: g.inkSecondary, fontSize: 12),
+                        style: AscentTextStyles.bodySmall.copyWith(
+                          color: g.inkSecondary,
+                        ),
                       ),
                     ],
                   ),
