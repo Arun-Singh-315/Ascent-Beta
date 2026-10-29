@@ -12,6 +12,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../ai_assistant/ai_assistant_screen.dart';
 import '../home_customization_sheet.dart';
+import '../../../shared/widgets/cosmic_spark_card.dart';
 
 /// A quiet greeting, with secondary controls kept out of the content hierarchy.
 class HomeHeader extends ConsumerWidget {
@@ -160,6 +161,17 @@ class HomeHeader extends ConsumerWidget {
               ),
             ],
           ),
+          if (profile?.dateOfBirth != null) ...[
+            const SizedBox(height: 12),
+            CosmicSparkCard(
+              dateOfBirth: profile!.dateOfBirth!,
+              compact: true,
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/settings');
+              },
+            ),
+          ],
         ],
       ),
     );

@@ -7,6 +7,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:intl/intl.dart';
+
+import '../../shared/widgets/cosmic_spark_card.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
@@ -35,6 +38,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   final _roleController = TextEditingController();
   List<String> _targetCompanies = [];
   DateTime? _interviewDate;
+  DateTime? _dateOfBirth;
   int _weeklyHours = 10;
   String _studyWindow = 'morning';
   bool _profileLoaded = false;
@@ -193,6 +197,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     _nameController.text = profile.name;
     _roleController.text = profile.targetRole;
     _interviewDate = profile.interviewDate;
+    _dateOfBirth = profile.dateOfBirth;
     _weeklyHours = profile.weeklyHoursAvailable;
     _studyWindow = profile.preferredStudyWindow;
     try {
@@ -221,6 +226,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
           targetRole: drift.Value(_roleController.text.trim()),
           targetCompanies: drift.Value(jsonEncode(_targetCompanies)),
           interviewDate: drift.Value(_interviewDate),
+          dateOfBirth: drift.Value(_dateOfBirth),
           weeklyHoursAvailable: drift.Value(_weeklyHours),
           preferredStudyWindow: drift.Value(_studyWindow),
           onboardingComplete: const drift.Value(true),
@@ -959,6 +965,99 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                       ),
                     ),
                   ),
+                  const SizedBox(height: 14),
+
+                  Text(
+                    'Date of Birth',
+                    style: AscentTextStyles.labelMedium
+                        .copyWith(color: g.ink)
+                        .merge(AppTypeRoles.typeRole8),
+                  ),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    key: const ValueKey('settings_dob_picker'),
+                    onTap: () async {
+                      HapticFeedback.lightImpact();
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _dateOfBirth ?? DateTime(2000, 1, 1),
+                        firstDate: DateTime(1900),
+                        lastDate: now,
+                        builder: (ctx, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: Theme.of(context).colorScheme.copyWith(
+                                primary: g.clay,
+                                onPrimary: Colors.white,
+                                surface: g.fill,
+                                onSurface: g.ink,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setState(() => _dateOfBirth = picked);
+                      }
+                    },
+                    borderRadius: AppGeometry.roundedr12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpace.s12,
+                        vertical: AppSpace.s14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: g.recessed,
+                        borderRadius: AppGeometry.roundedr12,
+                        border: Border.all(
+                          color: g.controlOutline,
+                          width: AscentDimensions.controlOutlineWidth,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.cake_outlined,
+                            size: 18,
+                            color: _dateOfBirth != null ? g.clay : g.inkMuted,
+                          ),
+                          const SizedBox(width: AppSpace.s10),
+                          Expanded(
+                            child: Text(
+                              _dateOfBirth != null
+                                  ? DateFormat('d MMMM yyyy').format(_dateOfBirth!)
+                                  : 'Select date of birth',
+                              style: AscentTextStyles.bodyMedium.copyWith(
+                                color: _dateOfBirth != null ? g.ink : g.inkMuted,
+                              ),
+                            ),
+                          ),
+                          if (_dateOfBirth != null)
+                            IconButton(
+                              tooltip: 'Clear birth date',
+                              icon: Icon(Icons.close_rounded, size: 16, color: g.inkMuted),
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                setState(() => _dateOfBirth = null);
+                              },
+                            )
+                          else
+                            Icon(Icons.calendar_today_outlined, size: 16, color: g.inkMuted),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_dateOfBirth != null) ...[
+                    const SizedBox(height: 10),
+                    CosmicSparkCard(
+                      dateOfBirth: _dateOfBirth!,
+                      compact: false,
+                    ),
+                  ],
                   const SizedBox(height: 14),
 
                   Text(

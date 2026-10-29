@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:intl/intl.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
@@ -17,6 +18,7 @@ import '../../shared/widgets/app_surfaces.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_logo.dart';
+import '../../shared/widgets/cosmic_spark_card.dart';
 
 // ---------------------------------------------------------------------------
 // Onboarding State Model & Provider
@@ -31,6 +33,7 @@ class OnboardingDraftState {
   final DayThemePreset themePreset;
   final String focusArea;
   final DateTime? interviewDate;
+  final DateTime? dateOfBirth;
   final bool isJustPreparing;
   final int weeklyHours;
   final bool isSubmitting;
@@ -44,6 +47,7 @@ class OnboardingDraftState {
     this.themePreset = DayThemePreset.merlotLinen,
     this.focusArea = 'Inner Peace',
     this.interviewDate,
+    this.dateOfBirth,
     this.isJustPreparing = true,
     this.weeklyHours = 12,
     this.isSubmitting = false,
@@ -58,6 +62,8 @@ class OnboardingDraftState {
     DayThemePreset? themePreset,
     String? focusArea,
     DateTime? interviewDate,
+    DateTime? dateOfBirth,
+    bool clearDateOfBirth = false,
     bool? isJustPreparing,
     int? weeklyHours,
     bool? isSubmitting,
@@ -71,6 +77,7 @@ class OnboardingDraftState {
       themePreset: themePreset ?? this.themePreset,
       focusArea: focusArea ?? this.focusArea,
       interviewDate: interviewDate ?? this.interviewDate,
+      dateOfBirth: clearDateOfBirth ? null : (dateOfBirth ?? this.dateOfBirth),
       isJustPreparing: isJustPreparing ?? this.isJustPreparing,
       weeklyHours: weeklyHours ?? this.weeklyHours,
       isSubmitting: isSubmitting ?? this.isSubmitting,
@@ -93,6 +100,14 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
 
   void updateNameRole(String name, String role) =>
       state = state.copyWith(name: name, targetRole: role);
+
+  void setDateOfBirth(DateTime? dob) {
+    if (dob == null) {
+      state = state.copyWith(clearDateOfBirth: true);
+    } else {
+      state = state.copyWith(dateOfBirth: dob);
+    }
+  }
 
   void setCompanion(String companion) {
     state = state.copyWith(companionName: companion);
@@ -168,6 +183,7 @@ class OnboardingNotifier extends Notifier<OnboardingDraftState> {
             targetRole: drift.Value(cleanRole),
             targetCompanies: drift.Value(jsonEncode(state.targetCompanies)),
             interviewDate: drift.Value(state.interviewDate),
+            dateOfBirth: drift.Value(state.dateOfBirth),
             weeklyHoursAvailable: drift.Value(state.weeklyHours),
             onboardingComplete: const drift.Value(true),
             lastOpenedAt: drift.Value(DateTime.now()),
@@ -862,6 +878,121 @@ class _StepSanctuarySetupState extends ConsumerState<_StepSanctuarySetup> {
                 notifier.updateNameRole(val, widget.roleController.text);
               },
             ),
+
+            const SizedBox(height: 18),
+
+            // Date of Birth (Optional)
+            Wrap(
+              spacing: 6,
+              runSpacing: 2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  'Date of Birth',
+                  style: AscentTextStyles.labelSmall.copyWith(
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  '(Optional · for daily personal sparks)',
+                  style: AscentTextStyles.bodySmall.copyWith(
+                    color: textMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            InkWell(
+              key: const ValueKey('onboarding_dob_picker'),
+              onTap: () async {
+                HapticFeedback.lightImpact();
+                final now = DateTime.now();
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: state.dateOfBirth ?? DateTime(2000, 1, 1),
+                  firstDate: DateTime(1900),
+                  lastDate: now,
+                  builder: (ctx, child) {
+                    return Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: Theme.of(context).colorScheme.copyWith(
+                          primary: context.accentPrimary,
+                          onPrimary: Colors.white,
+                          surface: g.fill,
+                          onSurface: textPrimary,
+                        ),
+                      ),
+                      child: child!,
+                    );
+                  },
+                );
+                if (picked != null) {
+                  notifier.setDateOfBirth(picked);
+                }
+              },
+              borderRadius: AppGeometry.roundedr12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpace.s14,
+                  vertical: AppSpace.s12,
+                ),
+                decoration: BoxDecoration(
+                  color: g.fill,
+                  borderRadius: AppGeometry.roundedr12,
+                  border: Border.all(
+                    color: g.line,
+                    width: AppBorderScale.w0point8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.cake_outlined,
+                      size: 18,
+                      color: state.dateOfBirth != null
+                          ? context.accentPrimary
+                          : textMuted,
+                    ),
+                    const SizedBox(width: AppSpace.s10),
+                    Expanded(
+                      child: Text(
+                        state.dateOfBirth != null
+                            ? DateFormat('d MMMM yyyy').format(state.dateOfBirth!)
+                            : 'Set birth date for daily cosmic energy',
+                        style: AscentTextStyles.bodyMedium.copyWith(
+                          color: state.dateOfBirth != null
+                              ? textPrimary
+                              : textMuted.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ),
+                    if (state.dateOfBirth != null)
+                      IconButton(
+                        tooltip: 'Clear birth date',
+                        icon: Icon(Icons.close_rounded, size: 16, color: textMuted),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          notifier.setDateOfBirth(null);
+                        },
+                      )
+                    else
+                      Icon(Icons.calendar_today_outlined, size: 16, color: textMuted),
+                  ],
+                ),
+              ),
+            ),
+            if (state.dateOfBirth != null) ...[
+              const SizedBox(height: 10),
+              CosmicSparkCard(
+                dateOfBirth: state.dateOfBirth!,
+                compact: true,
+              ),
+            ],
 
             const SizedBox(height: 22),
 

@@ -149,7 +149,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -277,6 +277,9 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(planCollectionTable);
         await m.createTable(planCollectionItemTable);
         await _createPlanningIndexes();
+      }
+      if (from < 21) {
+        await m.addColumn(userProfileTable, userProfileTable.dateOfBirth);
       }
     },
   );

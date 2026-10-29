@@ -43,6 +43,9 @@ class UserProfileTable extends Table {
   /// Timestamp of the last time the user opened the app.
   DateTimeColumn get lastOpenedAt => dateTime().nullable()();
 
+  /// User's date of birth (used for personalized cosmic insights, zodiac/rashi wisdom, and birthday celebrations).
+  DateTimeColumn get dateOfBirth => dateTime().nullable()();
+
   /// Whether the user has completed the onboarding flow.
   BoolColumn get onboardingComplete =>
       boolean().withDefault(const Constant(false))();
