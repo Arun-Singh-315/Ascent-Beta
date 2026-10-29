@@ -15,30 +15,119 @@ import 'package:google_fonts/google_fonts.dart';
 class AscentTextStyles {
   AscentTextStyles._();
 
-  // ── Display (Plus Jakarta Sans) ───────────────────────────────────────────
+  // ── Section 4 Apple-Inspired Canonical Type Scale (DM Sans) ───────────────
 
-  /// 28 px · Bold · h 1.2 · ls −0.5  — hero numbers, screen titles
-  static TextStyle get displayLarge => GoogleFonts.plusJakartaSans(
+  /// 28 px · SemiBold (w600) · h 1.20 · ls −0.4 — Page title
+  static TextStyle get pageTitle => GoogleFonts.dmSans(
     fontSize: 28,
-    fontWeight: FontWeight.w700,
-    height: 1.2,
-    letterSpacing: -0.5,
+    fontWeight: FontWeight.w600,
+    height: 1.20,
+    letterSpacing: -0.4,
   );
 
-  /// 22 px · SemiBold · h 1.25 · ls −0.3  — section headers
-  static TextStyle get displayMedium => GoogleFonts.plusJakartaSans(
-    fontSize: 22,
+  /// 48 px · Medium (w500) · h 1.15 · ls 0 — Focus timer (JetBrains Mono)
+  static TextStyle get focusTimer => GoogleFonts.jetBrainsMono(
+    fontSize: 48,
+    fontWeight: FontWeight.w500,
+    height: 1.15,
+    letterSpacing: 0,
+  );
+
+  /// 32 px · SemiBold (w600) · h 1.20 · ls −0.3 — Headline metric (DM Sans with tabular figures)
+  static TextStyle get headlineMetric => GoogleFonts.dmSans(
+    fontSize: 32,
+    fontWeight: FontWeight.w600,
+    height: 1.20,
+    letterSpacing: -0.3,
+    fontFeatures: const [FontFeature.tabularFigures()],
+  );
+
+  /// 20 px · SemiBold (w600) · h 1.25 · ls −0.2 — Section heading
+  static TextStyle get sectionHeading => GoogleFonts.dmSans(
+    fontSize: 20,
     fontWeight: FontWeight.w600,
     height: 1.25,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   );
 
-  /// 18 px · SemiBold · h 1.3  — card titles, dialog headings
-  static TextStyle get displaySmall => GoogleFonts.plusJakartaSans(
+  /// 18 px · SemiBold (w600) · h 1.30 · ls −0.1 — Card and dialog title
+  static TextStyle get cardTitle => GoogleFonts.dmSans(
     fontSize: 18,
     fontWeight: FontWeight.w600,
-    height: 1.3,
+    height: 1.30,
+    letterSpacing: -0.1,
   );
+
+  /// 18 px · SemiBold (w600) · h 1.30 · ls −0.1 — Card and dialog title alias
+  static TextStyle get dialogTitle => cardTitle;
+
+  /// 16 px · Regular (w400) · h 1.45 · ls 0 — Body and editable input
+  static TextStyle get body => GoogleFonts.dmSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    height: 1.45,
+    letterSpacing: 0,
+  );
+
+  /// 16 px · Regular (w400) · h 1.45 · ls 0 — Editable input alias
+  static TextStyle get input => body;
+
+  /// 15 px · SemiBold (w600) · h 1.30 · ls 0 — Button and segment label
+  static TextStyle get buttonLabel => GoogleFonts.dmSans(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    height: 1.30,
+    letterSpacing: 0,
+  );
+
+  /// 15 px · SemiBold (w600) · h 1.30 · ls 0 — Segment label alias
+  static TextStyle get segmentLabel => buttonLabel;
+
+  /// 16 px · Medium (w500) · h 1.35 · ls 0 — List-row title
+  static TextStyle get listRowTitle => GoogleFonts.dmSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.35,
+    letterSpacing: 0,
+  );
+
+  /// 14 px · Regular (w400) · h 1.40 · ls 0 — Supporting text
+  static TextStyle get supportingText => GoogleFonts.dmSans(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 1.40,
+    letterSpacing: 0,
+  );
+
+  /// 12 px · Medium (w500) · h 1.35 · ls 0 — Caption and tab label
+  static TextStyle get caption => GoogleFonts.dmSans(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    height: 1.35,
+    letterSpacing: 0,
+  );
+
+  /// 12 px · Medium (w500) · h 1.35 · ls 0 — Tab label alias
+  static TextStyle get tabLabel => caption;
+
+  /// Helper to apply tabular figures to any style for money/statistics
+  static TextStyle tabular(TextStyle base) => base.copyWith(
+    fontFeatures: [
+      ...?base.fontFeatures,
+      const FontFeature.tabularFigures(),
+    ],
+  );
+
+  // ── Existing Roles (Mapped to Section 4 Type System) ───────────────────────
+
+  /// 28 px · SemiBold · h 1.2 · ls −0.4 — screen titles
+  static TextStyle get displayLarge => pageTitle;
+
+  /// 20 px · SemiBold · h 1.25 · ls −0.2 — section headers
+  static TextStyle get displayMedium => sectionHeading;
+
+  /// 18 px · SemiBold · h 1.30 · ls −0.1 — card titles, dialog headings
+  static TextStyle get displaySmall => cardTitle;
 
   // ── Body (DM Sans) ──────────────────────────────────────────────────────────
 
@@ -108,9 +197,6 @@ class AscentTextStyles {
     letterSpacing: 0.25,
   );
 
-  /// Alias for captionMedium
-  static TextStyle get caption => captionMedium;
-
   /// 18 px · SemiBold · h 1.3 — card titles and section headings
   static TextStyle get headlineMedium => GoogleFonts.plusJakartaSans(
     fontSize: 18,
@@ -150,16 +236,16 @@ class AscentTextStyles {
 
   // ── Home Redesign Type Scale (Tokens) ────────────────────────────────────
 
-  /// Display 34 / 40 · 600 (Bricolage Grotesque)
-  static TextStyle get homeDisplay => GoogleFonts.bricolageGrotesque(
+  /// Display 34 / 40 · 600 (Plus Jakarta Sans)
+  static TextStyle get homeDisplay => GoogleFonts.plusJakartaSans(
     fontSize: 34,
     fontWeight: FontWeight.w600,
     height: 40 / 34,
     letterSpacing: -0.5,
   );
 
-  /// Title 22 / 28 · 600 (Bricolage Grotesque)
-  static TextStyle get homeTitle => GoogleFonts.bricolageGrotesque(
+  /// Title 22 / 28 · 600 (Plus Jakarta Sans)
+  static TextStyle get homeTitle => GoogleFonts.plusJakartaSans(
     fontSize: 22,
     fontWeight: FontWeight.w600,
     height: 28 / 22,

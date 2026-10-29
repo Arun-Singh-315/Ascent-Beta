@@ -7,6 +7,7 @@ import '../../app/theme/text_styles.dart';
 import '../../core/providers/home_layout_provider.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_dialog.dart';
+import '../../shared/widgets/ascent_switch_row.dart';
 
 Future<void> showHomeCustomization(BuildContext context) =>
     showModalBottomSheet(
@@ -191,30 +192,21 @@ class _HomeCustomizationSheetState
                                 ),
                               ),
                             if (_draft.order[i] == 'today')
-                              SwitchListTile(
-                                contentPadding: const EdgeInsets.only(
-                                  left: AppSpace.s14,
-                                ),
-                                title: Text(
-                                  'Compact preview',
-                                  style: AscentTextStyles.bodySmall.copyWith(
-                                    color: g.ink,
-                                  ),
-                                ),
+                              AscentSwitchRow(
+                                title: 'Compact preview',
                                 value: _draft.compact.contains(_draft.order[i]),
-                                onChanged: _saving
-                                    ? null
-                                    : (compact) {
-                                        final ids = {..._draft.compact};
-                                        compact
-                                            ? ids.add(_draft.order[i])
-                                            : ids.remove(_draft.order[i]);
-                                        setState(
-                                          () => _draft = _draft.copyWith(
-                                            compact: ids,
-                                          ),
-                                        );
-                                      },
+                                enabled: !_saving,
+                                onChanged: (compact) {
+                                  final ids = {..._draft.compact};
+                                  compact
+                                      ? ids.add(_draft.order[i])
+                                      : ids.remove(_draft.order[i]);
+                                  setState(
+                                    () => _draft = _draft.copyWith(
+                                      compact: ids,
+                                    ),
+                                  );
+                                },
                               ),
                           ],
                         ),

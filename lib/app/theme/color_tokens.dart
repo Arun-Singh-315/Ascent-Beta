@@ -165,12 +165,46 @@ extension AscentColorsX on BuildContext {
       : AscentColors.bgSurface;
 
   Color get bgSurfaceElevated => isMerlot
-      ? (isDark ? MerlotPalette.darkElevated : MerlotPalette.elevated)
+      ? (isDark ? MerlotPalette.darkSurface : MerlotPalette.surface)
       : isFrozen
       ? (isDark ? FrozenPalette.darkElevated : FrozenPalette.elevated)
       : isDark
       ? AscentColors.bgSurfaceElevatedDark
       : AscentColors.bgSurfaceElevated;
+
+  Color get surface =>
+      Theme.of(this).extension<AscentGlass>()?.surface ?? bgSurface;
+
+  Color get elevatedSurface =>
+      Theme.of(this).extension<AscentGlass>()?.elevated ?? bgSurfaceElevated;
+
+  Color get recessedSurface =>
+      Theme.of(this).extension<AscentGlass>()?.recessed ?? bgBase;
+
+  Color get controlOutline =>
+      Theme.of(this).extension<AscentGlass>()?.controlOutline ?? divider;
+
+  Color get actionInk =>
+      Theme.of(this).extension<AscentGlass>()?.actionInk ?? accentPrimary;
+
+  Color get primaryButtonBg =>
+      Theme.of(this).extension<AscentGlass>()?.primaryButtonBg ?? accentPrimary;
+
+  Color get primaryButtonFg =>
+      Theme.of(this).extension<AscentGlass>()?.primaryButtonFg ?? textOnPrimary;
+
+  Color get primaryButtonPressed =>
+      Theme.of(this).extension<AscentGlass>()?.primaryButtonPressed ??
+      accentPrimaryBright;
+
+  Color get tonalBg =>
+      Theme.of(this).extension<AscentGlass>()?.tonalBg ?? accentPrimaryDim;
+
+  Color get tonalFg =>
+      Theme.of(this).extension<AscentGlass>()?.tonalFg ?? accentPrimary;
+
+  Color get focusRing =>
+      Theme.of(this).extension<AscentGlass>()?.focusRing ?? accentPrimary;
 
   Color get accentPrimary => isFrozen
       ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)

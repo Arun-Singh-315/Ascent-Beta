@@ -24,7 +24,9 @@ class DayGlassMaterial extends ThemeExtension<DayGlassMaterial> {
       GlassTranslucencyPreset.highContrast => (.96, .90, 16.0),
     };
     return DayGlassMaterial(
-      canvas: Color.alphaBlend(glass.ink.withValues(alpha: .025), glass.bg),
+      canvas: glass.frozen
+          ? glass.bg
+          : Color.alphaBlend(glass.ink.withValues(alpha: .025), glass.bg),
       topOpacity: top,
       bottomOpacity: bottom,
       blur: blur,

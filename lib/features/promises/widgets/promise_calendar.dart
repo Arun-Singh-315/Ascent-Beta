@@ -51,12 +51,16 @@ class _PromiseCalendarState extends ConsumerState<PromiseCalendar> {
         ),
         Row(
           children: [
-            for (final day in ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+            for (final day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
               Expanded(
                 child: Text(
                   day,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: g.inkMuted, fontSize: 12),
+                  style: TextStyle(
+                    color: g.inkMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
           ],
@@ -115,7 +119,9 @@ class _PromiseCalendarState extends ConsumerState<PromiseCalendar> {
                   child: Container(
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
-                      color: day.state == PromiseDayState.done
+                      color: today
+                          ? g.claySoft
+                          : day.state == PromiseDayState.done
                           ? g.sage.withValues(alpha: .10)
                           : Colors.transparent,
                       border: today ? Border.all(color: g.clay) : null,
@@ -126,7 +132,14 @@ class _PromiseCalendarState extends ConsumerState<PromiseCalendar> {
                       children: [
                         Text(
                           '${day.date.day}',
-                          style: TextStyle(color: g.ink, fontSize: 14),
+                          style: TextStyle(
+                            color: g.ink,
+                            fontSize: 14,
+                            fontWeight: today
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
                         Icon(icon, size: 15, color: color),
                       ],

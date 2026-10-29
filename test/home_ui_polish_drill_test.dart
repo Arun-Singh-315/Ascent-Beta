@@ -125,9 +125,13 @@ void main() {
         final avatarTextFinder = find.text('A');
         expect(avatarTextFinder, findsOneWidget);
 
-        final textWidget = tester.widget<Text>(avatarTextFinder);
-        // In light mode, Avatar text must be white against the bold Merlot fill
-        expect(textWidget.style?.color, equals(Colors.white));
+        final avatar = tester.widget<CircleAvatar>(find.byType(CircleAvatar));
+        final foreground = avatar.foregroundColor!.computeLuminance();
+        final background = avatar.backgroundColor!.computeLuminance();
+        final contrast = foreground > background
+            ? (foreground + .05) / (background + .05)
+            : (background + .05) / (foreground + .05);
+        expect(contrast, greaterThanOrEqualTo(4.5));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme/glass_theme.dart';
+import '../../../shared/widgets/ascent_switch_row.dart';
 import '../models/promise_model.dart';
 
 /// Small, direct controls. Nothing here depends on a chat interpretation.
@@ -257,11 +258,10 @@ class PromiseScheduleEditor extends StatelessWidget {
             ],
           ),
         const SizedBox(height: 8),
-        SwitchListTile.adaptive(
+        AscentSwitchRow(
           key: const ValueKey('promise_reminder_toggle'),
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Remind me'),
-          subtitle: const Text('Optional — your planned time is separate'),
+          title: 'Remind me',
+          helper: 'Optional — your planned time is separate',
           value: proposal.reminderTime != null,
           onChanged: (on) => onChanged(
             proposal.copyWith(
@@ -278,10 +278,9 @@ class PromiseScheduleEditor extends StatelessWidget {
               'Reminder at ${_timeLabel(context, proposal.reminderTime!)}',
             ),
           ),
-        SwitchListTile.adaptive(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Keep this private'),
-          subtitle: const Text('Discreet reminder text'),
+        AscentSwitchRow(
+          title: 'Keep this private',
+          helper: 'Discreet reminder text',
           value: proposal.isPrivate,
           onChanged: (value) => onChanged(proposal.copyWith(isPrivate: value)),
         ),

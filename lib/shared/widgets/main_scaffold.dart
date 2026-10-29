@@ -1,16 +1,15 @@
-import 'package:ascent/app/theme/text_styles.dart';
+import 'dart:ui';
+
+import 'package:ascent/app/theme/dimension_tokens.dart';
 import 'package:ascent/app/theme/surface_tokens.dart';
-import 'package:ascent/shared/widgets/app_surfaces.dart';
+import 'package:ascent/app/theme/text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
-import '../../app/theme/frozen_palette.dart';
 
 import 'package:flutter/services.dart';
 
 import 'ascent_drawer.dart';
-import 'glass_surface.dart';
 
 /// The persistent shell wrapping the bottom navigation bar.
 /// Each tab maintains its own independent navigation stack via
@@ -135,7 +134,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       child: Scaffold(
         key: _scaffoldKey,
         drawer: const AscentDrawer(),
-        extendBody: !context.isDark,
+        extendBody: true,
         body: widget.shell,
         bottomNavigationBar: _AscentBottomNav(
           currentIndex: widget.shell.currentIndex,
@@ -166,106 +165,103 @@ class _AscentBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFrozen = context.isFrozen;
-    final isDark = context.isDark;
-    final bg = isFrozen
-        ? (isDark
-              ? FrozenPalette.darkSurface.withValues(alpha: 0.96)
-              : FrozenPalette.surface.withValues(alpha: 0.96))
-        : context.bgSurface;
-    final divider = isFrozen
-        ? (isDark ? FrozenPalette.darkLineSubtle : FrozenPalette.lineSubtle)
-        : context.divider;
-    final inactiveColor = isFrozen
-        ? (isDark ? FrozenPalette.darkMutedInk : FrozenPalette.mutedInk)
-        : context.textMuted;
-    final activeColor = isFrozen
-        ? (isDark ? FrozenPalette.darkAction : FrozenPalette.action)
-        : context.glass.clay;
-    final activeCapsuleBg = isFrozen
-        ? (isDark ? FrozenPalette.darkTint : FrozenPalette.tint)
-        : context.glass.claySoft;
+    final g = context.glass;
+    final isDark = g.isDark;
+    final disableAnimations = MediaQuery.of(context).disableAnimations;
+    final highContrast = MediaQuery.of(context).highContrast;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
-    final navigation = Container(
-      decoration: BoxDecoration(
-        color: isDark ? bg : Colors.transparent,
-        border: Border(
-          top: BorderSide(
-            color: divider,
-            width: isFrozen ? 0.75 : AppBorderScale.w0point8,
-          ),
+    // Glass fill & blur settings from C06 & C07
+    final enableBlur = !highContrast && !disableAnimations;
+    final navBg = enableBlur
+        ? g.elevated.withValues(alpha: isDark ? 0.94 : 0.92)
+        : g.elevated;
+
+    final navShadow = BoxShadow(
+      color: Color.fromRGBO(0, 0, 0, isDark ? 0.20 : 0.10),
+      blurRadius: 16,
+      offset: const Offset(0, 4),
+      spreadRadius: 0,
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 8 + bottomInset),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
+          boxShadow: [navShadow],
         ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 56,
-          child: Row(
-            children: List.generate(tabs.length, (index) {
-              final tab = tabs[index];
-              final isActive = index == currentIndex;
-              return Expanded(
-                child: Material(
-                  color: AppPalette.transparent,
-                  child: AppTapArea(
-                    onTap: () => onTap(index),
-                    splashColor: context.divider.withValues(alpha: 0.2),
-                    highlightColor: AppPalette.transparent,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOut,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpace.s14,
-                              vertical: AppSpace.s3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? activeCapsuleBg
-                                  : AppPalette.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: enableBlur ? 12 : 0,
+              sigmaY: enableBlur ? 12 : 0,
+            ),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 64),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: navBg,
+                borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
+                border: Border.all(
+                  color: g.line,
+                  width: AscentDimensions.contentOutlineWidth,
+                ),
+              ),
+              child: Row(
+                children: List.generate(tabs.length, (index) {
+                  final tab = tabs[index];
+                  final isActive = index == currentIndex;
+
+                  final fg = isActive ? g.tonalFg : g.inkSecondary;
+                  final capsuleBg = isActive ? g.tonalBg : Colors.transparent;
+
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () => onTap(index),
+                      borderRadius: BorderRadius.circular(AscentDimensions.radiusXxl),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: capsuleBg,
+                          borderRadius: BorderRadius.circular(
+                            AscentDimensions.radiusXxl,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
                               isActive ? tab.activeIcon : tab.icon,
-                              color: isActive ? activeColor : inactiveColor,
-                              size: 19,
+                              size: 22,
+                              color: fg,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            tab.label,
-                            style:
-                                AppStateTypography.stateType26(
-                                  state0: isActive,
-                                ).copyWith(
-                                  color: isActive
-                                      ? (isFrozen
-                                            ? activeColor
-                                            : context.glass.ink)
-                                      : inactiveColor,
-                                  height: 1.1,
-                                ),
-                          ),
-                        ],
+                            const SizedBox(height: 4),
+                            Text(
+                              tab.label,
+                              style: AscentTextStyles.caption.copyWith(
+                                color: fg,
+                                fontWeight: isActive
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            }),
+                  );
+                }),
+              ),
+            ),
           ),
         ),
       ),
-    );
-    if (isDark) return navigation;
-    return GlassSurface(
-      radius: 0,
-      padding: EdgeInsets.zero,
-      customBorder: Border(top: BorderSide(color: context.glass.highlight)),
-      child: navigation,
     );
   }
 }

@@ -22,6 +22,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/glass_theme.dart';
+import '../../app/theme/shared_control_tokens.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers/database_provider.dart';
 import '../promises/providers/promise_providers.dart';
@@ -1755,13 +1756,12 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
               return false;
             }
           },
-          background: AppCard(
+          background: Container(
             alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: AppSpace.s20),
-            nightDecoration: BoxDecoration(
-              color: g.fill,
-              borderRadius: AppGeometry.roundedr14,
-              border: Border.all(color: g.line),
+            padding: const EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              color: g.tonalBg,
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               children: [
@@ -1769,36 +1769,45 @@ class _ThoughtCardBubbleState extends ConsumerState<ThoughtCardBubble> {
                   thought.isArchived
                       ? Icons.unarchive_outlined
                       : Icons.archive_outlined,
-                  color: g.inkSecondary,
+                  color: g.tonalFg,
                   size: 20,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   thought.isArchived ? 'Unarchive' : 'Archive',
-                  style: AppTypeRoles.typeRole8.copyWith(color: g.inkSecondary),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.30,
+                  ).copyWith(color: g.tonalFg),
                 ),
               ],
             ),
           ),
-          secondaryBackground: AppCard(
+          secondaryBackground: Container(
             alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: AppSpace.s20),
-            nightDecoration: BoxDecoration(
-              color: g.coralSoft,
-              borderRadius: AppGeometry.roundedr14,
-              border: Border.all(color: g.coral.withValues(alpha: 0.3)),
+            padding: const EdgeInsets.only(right: 20),
+            decoration: BoxDecoration(
+              color: SharedControlColors.errorSoftBg(context.isDark),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(
                   'Delete',
-                  style: AppTypeRoles.typeRole8.copyWith(color: g.coral),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    height: 1.30,
+                  ).copyWith(
+                    color: SharedControlColors.errorInk(context.isDark),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Icon(
                   Icons.delete_outline_rounded,
-                  color: g.coral,
+                  color: SharedControlColors.errorInk(context.isDark),
                   size: 20,
                 ),
               ],

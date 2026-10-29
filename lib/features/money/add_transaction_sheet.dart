@@ -12,6 +12,7 @@ import '../../core/providers/settings_provider.dart';
 import '../../core/actions/expense_actions.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../shared/widgets/ascent_button.dart';
+import '../../shared/widgets/ascent_segmented_control.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -320,71 +321,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               const SizedBox(height: 16),
 
               // Expense / Income Pill Switcher
-              AppCard(
-                padding: const EdgeInsets.all(AppSpace.s4),
-                nightDecoration: BoxDecoration(
-                  color: context.bgBase,
-                  borderRadius: AppGeometry.roundedr12,
-                  border: Border.all(color: context.divider),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: AppGestureTap(
-                        onTap: _saving
-                            ? null
-                            : () => setState(() => _type = 'expense'),
-                        child: AppTag(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s8,
-                          ),
-                          nightDecoration: BoxDecoration(
-                            color: _type == 'expense'
-                                ? context.accentSecondary
-                                : AppPalette.transparent,
-                            borderRadius: AppGeometry.roundedr8,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Expense',
-                            style: AppTypeRoles.typeRole47.copyWith(
-                              color: _type == 'expense'
-                                  ? AppPalette.white
-                                  : context.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: AppGestureTap(
-                        onTap: _saving
-                            ? null
-                            : () => setState(() => _type = 'income'),
-                        child: AppTag(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpace.s8,
-                          ),
-                          nightDecoration: BoxDecoration(
-                            color: _type == 'income'
-                                ? context.accentPrimary
-                                : AppPalette.transparent,
-                            borderRadius: AppGeometry.roundedr8,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Income',
-                            style: AppTypeRoles.typeRole47.copyWith(
-                              color: _type == 'income'
-                                  ? AppPalette.white
-                                  : context.textMuted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              AscentSegmentedControl<String>(
+                segments: const [
+                  AscentSegment(value: 'expense', label: 'Expense'),
+                  AscentSegment(value: 'income', label: 'Income'),
+                ],
+                selected: _type,
+                enabled: !_saving,
+                onChanged: (val) => setState(() => _type = val),
               ),
               const SizedBox(height: 16),
 

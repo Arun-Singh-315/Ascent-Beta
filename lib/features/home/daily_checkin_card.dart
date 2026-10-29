@@ -10,6 +10,7 @@ import '../../core/providers/home_layout_provider.dart';
 import '../../core/providers/settings_provider.dart';
 import '../../core/services/note_draft_binding.dart';
 import '../../shared/widgets/ascent_card.dart';
+import '../../shared/widgets/ascent_switch_row.dart';
 import '../money/add_transaction_sheet.dart';
 
 class DailyCheckInCard extends ConsumerStatefulWidget {
@@ -87,15 +88,14 @@ class _DailyCheckInCardState extends ConsumerState<DailyCheckInCard> {
                             () => settings = settings.copyWith(water: v),
                           ),
                   ),
-                  SwitchListTile(
-                    title: const Text('Weekly check-in'),
-                    subtitle: const Text('Otherwise shown daily'),
+                  AscentSwitchRow(
+                    title: 'Weekly check-in',
+                    helper: 'Otherwise shown daily',
                     value: settings.weekly,
-                    onChanged: saving
-                        ? null
-                        : (v) => update(
-                            () => settings = settings.copyWith(weekly: v),
-                          ),
+                    enabled: !saving,
+                    onChanged: (v) => update(
+                      () => settings = settings.copyWith(weekly: v),
+                    ),
                   ),
                   DropdownButtonFormField<int>(
                     initialValue: settings.afterHour,

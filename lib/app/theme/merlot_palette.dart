@@ -1,39 +1,35 @@
 import 'package:flutter/material.dart';
 
-/// "Vintage Merlot & Cashmere Linen": Ascent's signature daylight design system.
-/// - Calming organic canvas: Cashmere oat linen (#F8F5EE).
-/// - Restrained aristocratic jewel: Deep Vintage Merlot (#581825 / #4D131F).
-/// - Frosted matte tactile surfaces with 0.75px hairline specular borders.
-/// - Warm oat parchment pills (#F1EBE0) and antique gold accents (#C28834).
-/// - Zero eye strain, balanced luminance, and WCAG AAA contrast compliance.
+/// Ascent's warm neutral identity: linen daylight, charcoal night, merlot actions.
+/// Accent color signals actions; opaque content surfaces keep text readable.
 class MerlotPalette {
   MerlotPalette._();
 
   // ── Light Mode ("Vintage Merlot & Cashmere Linen") ─────────────────────────
 
   /// Canvas: Scaffold background — soft, soothing cashmere linen (organic warmth, zero bleached white wash)
-  static const canvas = Color(0xFFF5EFE6);
+  static const canvas = Color(0xFFF5F3EF);
 
   /// Surface: Cards, bottom nav, containers — pristine porcelain off-white
   static const surface = Color(0xFFFFFFFF);
 
   /// Surface Bottom: Lower stop for gradual card gradient — pure soft porcelain
-  static const surfaceBottom = Color(0xFFFAF5EE);
+  static const surfaceBottom = Color(0xFFFAF8F5);
 
   /// Recessed Well: Sub-cards (Medicine, Hydration, Chai Break) — soft sunken cashmere well
-  static const recessedWell = Color(0xFFF3ECE2);
+  static const recessedWell = Color(0xFFF0EEEA);
 
   /// Elevated: Sheets, dialogs, modals — crisp elevated porcelain white
   static const elevated = Color(0xFFFFFFFF);
 
-  /// Line: Hairline 0.75px border on cards and containers — refined vintage wine red rim
-  static const line = Color(0x2E581825); // 18% alpha merlot wine rim
+  /// Line: Neutral hairline for structural boundaries.
+  static const line = Color(0x20252624); // 18% alpha merlot wine rim
 
   /// Line Specular: Top edge catchlight reflection — vintage wine specular highlight
   static const lineSpecular = Color(0x44581825); // 27% alpha merlot specular
 
   /// Line Subtle: Inner divider and recessed well border inside cards
-  static const lineSubtle = Color(0x18581825); // 10% alpha merlot hairline
+  static const lineSubtle = Color(0x14252624); // 10% alpha merlot hairline
 
   /// Action: Buttons, active nav, primary CTA ("Resume") — Deep Vintage Merlot
   static const action = Color(0xFF581825);
@@ -59,23 +55,23 @@ class MerlotPalette {
   /// Pill Soft: Composer pills and light buttons — soft crisp cashmere cream
   static const pillSoft = Color(0xFFFAF6F2);
 
-  /// Ink: Primary text on canvas and screen headings — Espresso Merlot Obsidian (17.5:1 contrast)
-  static const ink = Color(0xFF240A10);
+  /// Ink: Neutral charcoal for primary text.
+  static const ink = Color(0xFF252624);
 
-  /// Secondary Ink: Secondary text on canvas and cards — Rich Merlot (9.5:1 contrast)
-  static const secondaryInk = Color(0xFF54222E);
+  /// Secondary Ink: Warm gray for supporting text.
+  static const secondaryInk = Color(0xFF575952);
 
-  /// Muted Ink: Captions, helper text on canvas and cards (6.2:1 contrast)
-  static const mutedInk = Color(0xFF72424E);
+  /// Muted Ink: Readable gray for captions and helper text.
+  static const mutedInk = Color(0xFF6F7069);
 
-  /// Card Ink: Primary text inside cards — Espresso Merlot Obsidian (16.9:1 contrast on off-white)
-  static const cardInk = Color(0xFF240A10);
+  /// Card Ink: Primary text inside cards.
+  static const cardInk = Color(0xFF252624);
 
-  /// Card Secondary Ink: Secondary text inside cards (9.5:1 contrast on off-white)
-  static const cardSecondaryInk = Color(0xFF54222E);
+  /// Card Secondary Ink: Supporting text inside cards.
+  static const cardSecondaryInk = Color(0xFF575952);
 
-  /// Card Muted Ink: Captions, helper text, inactive icons inside cards (6.2:1 contrast on off-white)
-  static const cardMutedInk = Color(0xFF72424E);
+  /// Card Muted Ink: Captions, helper text, and inactive icons.
+  static const cardMutedInk = Color(0xFF6F7069);
 
   /// Subtle Ink: Hints, placeholders, disabled indicators
   static const subtleInk = Color(0xFF9E6E7A);
@@ -112,20 +108,20 @@ class MerlotPalette {
 
   // ── Dark Mode ("Vintage Merlot Night Glass") ─────────────────────────────
 
-  /// Canvas: Dark velvet espresso-plum background
-  static const darkCanvas = Color(0xFF161012);
+  /// Canvas: Soft charcoal, with warmth reserved for accents
+  static const darkCanvas = Color(0xFF171819);
 
-  /// Surface: Frosted night merlot glass cards
-  static const darkSurface = Color(0xFF22171B);
+  /// Surface: Opaque charcoal content surface
+  static const darkSurface = Color(0xFF202224);
 
   /// Elevated: Modals, popups, and elevated sheets
-  static const darkElevated = Color(0xFF2C1E23);
+  static const darkElevated = Color(0xFF292B2D);
 
   /// Line: Hairline subtle specular edge in dark mode
-  static const darkLine = Color(0x4DAD9184);
+  static const darkLine = Color(0x26FFFFFF);
 
   /// Line Subtle: Inner divider in dark mode
-  static const darkLineSubtle = Color(0x33AD9184);
+  static const darkLineSubtle = Color(0x18FFFFFF);
 
   /// Action: Muted linen foreground with contrast on burgundy night surfaces.
   static const darkAction = Color(0xFFC6B6A6);
@@ -137,16 +133,16 @@ class MerlotPalette {
   static const darkActionDeep = Color(0xFFB6A594);
 
   /// Tint: Selected pills and container highlights in dark mode
-  static const darkTint = Color(0xFF381F27);
+  static const darkTint = Color(0xFF34302D);
 
   /// Ink: Crisp cashmere cream primary text (15.5:1 contrast on dark canvas)
-  static const darkInk = Color(0xFFF7F2EE);
+  static const darkInk = Color(0xFFF3F1EC);
 
   /// Secondary Ink: Soft linen silver secondary text (9.5:1 contrast on dark canvas)
-  static const darkSecondaryInk = Color(0xFFD6CBC7);
+  static const darkSecondaryInk = Color(0xFFCECCC6);
 
   /// Muted Ink: Warm oat slate for captions & helper text (6.2:1 contrast on dark canvas)
-  static const darkMutedInk = Color(0xFFA89A96);
+  static const darkMutedInk = Color(0xFFA6A49D);
 
   /// Spark: Radiant warm gold for flame/streak in dark mode
   static const darkSpark = Color(0xFFF0B354);

@@ -1,11 +1,18 @@
-import 'package:ascent/app/theme/surface_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../../app/theme/dimension_tokens.dart';
 import '../../app/theme/glass_theme.dart';
 import '../../app/theme/text_styles.dart';
-import 'glass_surface.dart';
 
-/// Floating, theme-aware glass feedback with optional recovery actions.
+/// Floating, theme-aware feedback snackbar conforming to Section 5 (C08).
+///
+/// Features:
+/// - Opaque elevated surface fill
+/// - Primary text for message
+/// - Action ink for Undo / actions
+/// - Radius 12px, screen margins 16px, minHeight 48px
+/// - Screen-reader / accessibility support with error preservation
 class AscentSnackBar {
   AscentSnackBar._();
 
@@ -14,45 +21,69 @@ class AscentSnackBar {
     required Widget content,
     Duration duration = const Duration(milliseconds: 2500),
     SnackBarAction? action,
-  }) => SnackBar(
-    content: GlassSurface(
-      radius: 18,
-      minimumOpacity: .94,
-      fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpace.s16,
-        vertical: AppSpace.s12,
-      ),
-      child: DefaultTextStyle(
-        style: AscentTextStyles.bodyMedium.copyWith(color: context.glass.ink),
+    bool isError = false,
+  }) {
+    final g = context.glass;
+
+    return SnackBar(
+      content: Container(
+        constraints: const BoxConstraints(
+          minHeight: AscentDimensions.buttonHeightStandard,
+        ),
+        decoration: BoxDecoration(
+          color: g.elevated,
+          borderRadius: BorderRadius.circular(AscentDimensions.radiusMd),
+          border: Border.all(
+            color: isError ? g.errorInk : g.line,
+            width: AscentDimensions.contentOutlineWidth,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AscentDimensions.spaceLg,
+          vertical: AscentDimensions.spaceSm,
+        ),
         child: Row(
           children: [
-            Expanded(child: content),
-            if (action != null)
-              SnackBarAction(
-                label: action.label,
-                textColor: context.glass.ink,
-                disabledTextColor: context.glass.inkMuted,
-                onPressed: action.onPressed,
+            Expanded(
+              child: DefaultTextStyle(
+                style: AscentTextStyles.body.copyWith(color: g.ink),
+                child: content,
               ),
+            ),
+            if (action != null) ...[
+              const SizedBox(width: AscentDimensions.spaceSm),
+              TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  action.onPressed();
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: g.actionInk,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AscentDimensions.spaceSm,
+                  ),
+                  minimumSize: const Size(48, 36),
+                ),
+                child: Text(
+                  action.label,
+                  style: AscentTextStyles.buttonLabel.copyWith(
+                    color: g.actionInk,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
-    ),
-    duration: duration,
-    persist: false,
-    behavior: SnackBarBehavior.floating,
-    backgroundColor: AppPalette.transparent,
-    elevation: 0,
-    shape: RoundedRectangleBorder(borderRadius: AppGeometry.roundedr18),
-    padding: EdgeInsets.zero,
-    margin: const EdgeInsets.fromLTRB(
-      AppSpace.s16,
-      AppSpace.s0,
-      AppSpace.s16,
-      AppSpace.s74,
-    ),
-  );
+      duration: duration,
+      persist: false,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      padding: EdgeInsets.zero,
+      margin: const EdgeInsets.all(AscentDimensions.spaceLg),
+    );
+  }
 
   static void show(
     BuildContext context, {
@@ -61,27 +92,41 @@ class AscentSnackBar {
     Duration duration = const Duration(milliseconds: 2500),
     String? actionLabel,
     VoidCallback? onAction,
+    bool isError = false,
   }) {
     HapticFeedback.lightImpact();
     final messenger = ScaffoldMessenger.of(context);
     messenger.removeCurrentSnackBar();
+
+    final g = context.glass;
+
     messenger.showSnackBar(
       build(
         context,
+        isError: isError,
         content: Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 20, color: context.glass.clay),
-              const SizedBox(width: 10),
+              Icon(
+                icon,
+                size: 20,
+                color: isError ? g.errorInk : g.actionInk,
+              ),
+              const SizedBox(width: AscentDimensions.spaceSm),
             ],
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: AscentTextStyles.body.copyWith(color: g.ink),
+              ),
+            ),
           ],
         ),
         duration: duration,
         action: actionLabel != null && onAction != null
             ? SnackBarAction(
                 label: actionLabel,
-                textColor: context.glass.clay,
+                textColor: g.actionInk,
                 onPressed: () {
                   HapticFeedback.mediumImpact();
                   onAction();
@@ -112,6 +157,7 @@ class AscentSnackBar {
     message: message,
     icon: Icons.error_outline_rounded,
     duration: duration,
+    isError: true,
   );
 
   static void undo(
@@ -124,7 +170,7 @@ class AscentSnackBar {
     message: message,
     icon: Icons.delete_outline_rounded,
     duration: duration,
-    actionLabel: 'UNDO',
+    actionLabel: 'Undo',
     onAction: onUndo,
   );
 }
