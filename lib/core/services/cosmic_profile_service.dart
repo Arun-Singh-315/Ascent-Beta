@@ -23,6 +23,7 @@ class ZodiacSignInfo {
   final CosmicElement element;
   final String archetype;
   final String traits;
+  final String definingEssence;
   final List<String> dailySparks;
 
   const ZodiacSignInfo({
@@ -33,6 +34,7 @@ class ZodiacSignInfo {
     required this.element,
     required this.archetype,
     required this.traits,
+    required this.definingEssence,
     required this.dailySparks,
   });
 
@@ -95,6 +97,7 @@ class CosmicProfileService {
       element: CosmicElement.fire,
       archetype: 'The Trailblazer',
       traits: 'Courageous · Pioneering · High Momentum',
+      definingEssence: 'Born to pioneer unpaved paths with fearless momentum.',
       dailySparks: [
         'Your natural fire thrives on momentum today. Attack your highest-friction task before midday.',
         'Action is your antidote to overthinking. Take the bold first step, the rhythm will follow.',
@@ -113,6 +116,7 @@ class CosmicProfileService {
       element: CosmicElement.earth,
       archetype: 'The Anchor',
       traits: 'Grounded · Resilient · Master Builder',
+      definingEssence: 'Grounded in patient mastery, building enduring foundations.',
       dailySparks: [
         'Quiet patience is your superpower today. Lay one solid brick, and trust compounding.',
         'Stay rooted in your craft. Distractions fade when your foundation is unbreakable.',
@@ -131,6 +135,7 @@ class CosmicProfileService {
       element: CosmicElement.air,
       archetype: 'The Catalyst',
       traits: 'Agile · Curious · Master Communicator',
+      definingEssence: 'Curious intellect connecting ideas into brilliant breakthroughs.',
       dailySparks: [
         'Your mind is exceptionally nimble today. Capture your breakthrough ideas immediately.',
         'Curiosity is your compass today. Connect two distinct ideas into one game-changing insight.',
@@ -149,6 +154,7 @@ class CosmicProfileService {
       element: CosmicElement.water,
       archetype: 'The Guardian',
       traits: 'Intuitive · Deep · Protective Force',
+      definingEssence: 'Intuitive depth and fierce devotion to what truly matters.',
       dailySparks: [
         'Your intuitive radar is exceptionally accurate today. Listen to the quiet signal.',
         'Protect your mental sanctuary fiercely today. Say no to anything draining your energy.',
@@ -167,6 +173,7 @@ class CosmicProfileService {
       element: CosmicElement.fire,
       archetype: 'The Luminary',
       traits: 'Radiant · Generous · Natural Leader',
+      definingEssence: 'Radiant courage leading with warmth and noble vision.',
       dailySparks: [
         'Show up with full radiance today. Your confidence naturally elevates the entire room.',
         'Take pride in the standard of your craft. When you shine, you give others permission to shine.',
@@ -185,6 +192,7 @@ class CosmicProfileService {
       element: CosmicElement.earth,
       archetype: 'The Craftsman',
       traits: 'Precise · Discerning · System Optimizer',
+      definingEssence: 'Quiet craftsmanship turning subtle details into pure excellence.',
       dailySparks: [
         'Excellence lives in the subtle nuances. Perfect one clean detail today.',
         'Turn chaos into clean order. Your systematic approach is a breath of fresh air.',
@@ -203,6 +211,7 @@ class CosmicProfileService {
       element: CosmicElement.air,
       archetype: 'The Harmonizer',
       traits: 'Balanced · Aesthetic · Diplomatic',
+      definingEssence: 'Graceful harmony balancing truth, intellect, and beauty.',
       dailySparks: [
         'Balance is not stillness; it is graceful motion. Find equilibrium in your day.',
         'Bring elegance and calm structure to today’s challenges. Grace wins over force.',
@@ -221,6 +230,7 @@ class CosmicProfileService {
       element: CosmicElement.water,
       archetype: 'The Alchemist',
       traits: 'Fierce · Transformative · Deep Focus',
+      definingEssence: 'Unshakable focus transforming every challenge into power.',
       dailySparks: [
         'Your capacity for unbroken concentration is unmatched. Lock in and immerse deeply.',
         'Transform friction into pure fuel today. Nothing stops a determined, focused mind.',
@@ -239,6 +249,7 @@ class CosmicProfileService {
       element: CosmicElement.fire,
       archetype: 'The Seeker',
       traits: 'Visionary · Optimistic · Truth Hunter',
+      definingEssence: 'Boundless seeker aiming high and illuminating the horizon.',
       dailySparks: [
         'Keep your eyes on the distant horizon while keeping your feet moving today.',
         'Your boundless optimism is an unstoppable catalyst. Aim high and release the arrow.',
@@ -257,6 +268,7 @@ class CosmicProfileService {
       element: CosmicElement.earth,
       archetype: 'The Architect',
       traits: 'Disciplined · Strategic · Mountain Climber',
+      definingEssence: 'Steadfast architect climbing each peak with quiet resilience.',
       dailySparks: [
         'The summit belongs to those who keep climbing when the air gets thin. One more step.',
         'Your quiet discipline is carving an empire of results. Respect your long-term plan.',
@@ -275,6 +287,7 @@ class CosmicProfileService {
       element: CosmicElement.air,
       archetype: 'The Visionary',
       traits: 'Innovative · Unconventional · Humanist',
+      definingEssence: 'Original visionary thinking ahead of the curve.',
       dailySparks: [
         'Think outside conventional boundaries today. The future belongs to original thinkers.',
         'Your unique perspective is your competitive edge. Trust your unorthodox solution.',
@@ -293,6 +306,7 @@ class CosmicProfileService {
       element: CosmicElement.water,
       archetype: 'The Mystic',
       traits: 'Empathetic · Imaginative · Transcendent',
+      definingEssence: 'Soulful imagination flowing past boundaries like water.',
       dailySparks: [
         'Your creative imagination is boundless today. Channel your visions into tangible form.',
         'Quiet your mind to hear your deepest truths. Still waters reflect the highest stars.',

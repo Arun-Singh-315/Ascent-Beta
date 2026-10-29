@@ -7,7 +7,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:ascent/core/database/app_database.dart';
 import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/services/cosmic_profile_service.dart';
-import 'package:ascent/shared/widgets/cosmic_spark_card.dart';
+import 'package:ascent/features/home/widgets/home_header.dart';
 import 'package:ascent/features/settings/settings_screen.dart';
 import 'package:ascent/features/onboarding/onboarding_shell.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
@@ -26,60 +26,49 @@ void main() {
     await db.close();
   });
 
-  group('CosmicProfileService Calculations', () {
+  group('CosmicProfileService Calculations & Quotes', () {
     const service = CosmicProfileService();
 
-    test('Western Zodiac and Vedic Rashi boundaries', () {
+    test('Western Zodiac, Vedic Rashi, and Defining Essence quotes for all signs', () {
       // Aries / Mesha (Mar 21)
       final aries = service.getZodiac(DateTime(1995, 3, 21));
       expect(aries.name, 'Aries');
       expect(aries.vedicRashi, 'Mesha');
       expect(aries.element, CosmicElement.fire);
+      expect(aries.definingEssence, contains('pioneer unpaved paths'));
 
-      // Taurus / Vrishabha (Apr 20)
-      final taurus = service.getZodiac(DateTime(1995, 4, 20));
-      expect(taurus.name, 'Taurus');
-      expect(taurus.vedicRashi, 'Vrishabha');
-      expect(taurus.element, CosmicElement.earth);
+      // Gemini / Mithuna (Jun 1)
+      final gemini = service.getZodiac(DateTime(1995, 6, 1));
+      expect(gemini.name, 'Gemini');
+      expect(gemini.vedicRashi, 'Mithuna');
+      expect(gemini.element, CosmicElement.air);
+      expect(gemini.definingEssence, contains('Curious intellect'));
 
       // Leo / Simha (Aug 15)
       final leo = service.getZodiac(DateTime(1995, 8, 15));
       expect(leo.name, 'Leo');
       expect(leo.vedicRashi, 'Simha');
       expect(leo.element, CosmicElement.fire);
-
-      // Scorpio / Vrishchika (Nov 10)
-      final scorpio = service.getZodiac(DateTime(1995, 11, 10));
-      expect(scorpio.name, 'Scorpio');
-      expect(scorpio.vedicRashi, 'Vrishchika');
-      expect(scorpio.element, CosmicElement.water);
-
-      // Capricorn / Makara (Jan 5)
-      final capricorn = service.getZodiac(DateTime(1995, 1, 5));
-      expect(capricorn.name, 'Capricorn');
-      expect(capricorn.vedicRashi, 'Makara');
-      expect(capricorn.element, CosmicElement.earth);
+      expect(leo.definingEssence, contains('Radiant courage'));
 
       // Pisces / Meena (Mar 10)
       final pisces = service.getZodiac(DateTime(1995, 3, 10));
       expect(pisces.name, 'Pisces');
       expect(pisces.vedicRashi, 'Meena');
       expect(pisces.element, CosmicElement.water);
+      expect(pisces.definingEssence, contains('Soulful imagination'));
     });
 
     test('Daily living planetary mood rotates by weekday', () {
-      // Monday = 1 (Chandra / Moon)
-      final mondayMood = service.getDayLivingMood(DateTime(2026, 10, 26)); // A Monday
+      final mondayMood = service.getDayLivingMood(DateTime(2026, 10, 26)); // Monday
       expect(mondayMood.weekday, 1);
       expect(mondayMood.planetaryRuler, contains('Moon'));
 
-      // Tuesday = 2 (Mars / Mangala)
-      final tuesdayMood = service.getDayLivingMood(DateTime(2026, 10, 27)); // A Tuesday
+      final tuesdayMood = service.getDayLivingMood(DateTime(2026, 10, 27)); // Tuesday
       expect(tuesdayMood.weekday, 2);
       expect(tuesdayMood.planetaryRuler, contains('Mars'));
 
-      // Sunday = 7 (Sun / Surya)
-      final sundayMood = service.getDayLivingMood(DateTime(2026, 11, 1)); // A Sunday
+      final sundayMood = service.getDayLivingMood(DateTime(2026, 11, 1)); // Sunday
       expect(sundayMood.weekday, 7);
       expect(sundayMood.planetaryRuler, contains('Sun'));
     });
@@ -113,40 +102,58 @@ void main() {
     });
   });
 
-  group('CosmicSparkCard UI & Responsiveness', () {
-    testWidgets('CosmicSparkCard renders without overflow at 320px with 2.0x text scale', (
+  group('HomeHeader Cardless Zodiac & Defining Essence Typography', () {
+    testWidgets('Renders zodiac & defining essence directly below name without bulky card', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(320, 800);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
-      final dob = DateTime(1998, 8, 15); // Leo / Simha
+      final now = DateTime.now();
+      // Seed profile with Gemini birthday (June 5)
+      final profile = UserProfile(
+        id: 1,
+        name: 'Arun Singh',
+        targetRole: 'Inner Peace', // Should be replaced by Zodiac & defining essence!
+        targetCompanies: '[]',
+        weeklyHoursAvailable: 20,
+        preferredStudyWindow: 'morning',
+        skillSelfRatings: '{}',
+        dateOfBirth: DateTime(1996, 6, 5), // Gemini / Mithuna
+        createdAt: now,
+        updatedAt: now,
+        onboardingComplete: true,
+      );
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData.light(),
-          home: MediaQuery(
-            data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
-            child: Scaffold(
-              body: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: CosmicSparkCard(dateOfBirth: dob),
-                ),
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: ProviderScope(
+                child: HomeHeader(profile: profile),
               ),
             ),
           ),
         ),
       );
 
-      expect(tester.takeException(), isNull);
-      expect(find.textContaining('Leo'), findsOneWidget);
-      expect(find.textContaining('Simha'), findsOneWidget);
+      await tester.pump();
+
+      // Check name is displayed
+      expect(find.text('Arun Singh'), findsOneWidget);
+
+      // Verify "Inner Peace" dummy placeholder is NOT shown
+      expect(find.text('Inner Peace'), findsNothing);
+
+      // Verify cardless zodiac symbol and Vedic rashi
+      expect(find.textContaining('♊ Gemini · Mithuna'), findsOneWidget);
+
+      // Verify defining essence quote is displayed
+      expect(find.textContaining('Curious intellect'), findsOneWidget);
+
+      // Verify customize home tune button is present
+      expect(find.byTooltip('Customize Home'), findsOneWidget);
     });
 
-    testWidgets('CosmicSparkCard renders birthday state cleanly', (
+    testWidgets('Renders defensively without overflow at 320px with 2.0x text scale', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(320, 800);
@@ -155,21 +162,81 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       final now = DateTime.now();
-      final dob = DateTime(1998, now.month, now.day); // Today is birthday
+      final profile = UserProfile(
+        id: 1,
+        name: 'Alexander',
+        targetRole: 'Engineer',
+        targetCompanies: '[]',
+        weeklyHoursAvailable: 20,
+        preferredStudyWindow: 'morning',
+        skillSelfRatings: '{}',
+        dateOfBirth: DateTime(1994, 11, 15), // Scorpio / Vrishchika
+        createdAt: now,
+        updatedAt: now,
+        onboardingComplete: true,
+      );
 
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData.dark(),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: CosmicSparkCard(dateOfBirth: dob),
+          home: MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2.0)),
+            child: Scaffold(
+              body: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: ProviderScope(
+                    child: HomeHeader(profile: profile),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
       );
 
+      await tester.pump();
+
       expect(tester.takeException(), isNull);
-      expect(find.text('Happy Birthday! ✨'), findsOneWidget);
+      expect(find.textContaining('Scorpio'), findsOneWidget);
+      expect(find.textContaining('Vrishchika'), findsOneWidget);
+    });
+
+    testWidgets('Renders fallback gracefully when dateOfBirth is null', (
+      tester,
+    ) async {
+      final now = DateTime.now();
+      final profile = UserProfile(
+        id: 1,
+        name: 'Guest User',
+        targetRole: 'Explorer',
+        targetCompanies: '[]',
+        weeklyHoursAvailable: 20,
+        preferredStudyWindow: 'morning',
+        skillSelfRatings: '{}',
+        dateOfBirth: null,
+        createdAt: now,
+        updatedAt: now,
+        onboardingComplete: true,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Padding(
+              padding: const EdgeInsets.all(16),
+              child: ProviderScope(
+                child: HomeHeader(profile: profile),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Guest User'), findsOneWidget);
+      expect(find.text('Explorer'), findsOneWidget);
     });
   });
 
@@ -219,9 +286,10 @@ void main() {
       expect(find.byKey(const ValueKey('settings_dob_picker')), findsOneWidget);
       expect(find.textContaining('25 July 1996'), findsOneWidget);
 
-      // Verify CosmicSparkCard is rendered below Date of Birth
+      // Verify cardless decorative rashi line & essence quote is rendered below Date of Birth
       expect(find.textContaining('Leo'), findsOneWidget);
       expect(find.textContaining('Simha'), findsOneWidget);
+      expect(find.textContaining('Radiant courage'), findsOneWidget);
 
       // Tap clear birth date button
       await tester.tap(find.byTooltip('Clear birth date'));
@@ -237,7 +305,7 @@ void main() {
   });
 
   group('Onboarding Flow Date of Birth Integration', () {
-    testWidgets('Onboarding sanctuary setup renders Date of Birth picker and preview', (
+    testWidgets('Onboarding sanctuary setup renders Date of Birth picker and cardless quote preview', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(360, 900);
@@ -279,10 +347,11 @@ void main() {
       container.read(onboardingProvider.notifier).setDateOfBirth(DateTime(2001, 10, 15)); // Libra / Tula
       await tester.pumpAndSettle();
 
-      // Verify formatted date and preview card appear
+      // Verify formatted date and cardless preview appear with essence quote
       expect(find.textContaining('15 October 2001'), findsOneWidget);
       expect(find.textContaining('Libra'), findsOneWidget);
       expect(find.textContaining('Tula'), findsOneWidget);
+      expect(find.textContaining('Graceful harmony'), findsOneWidget);
     });
   });
 }

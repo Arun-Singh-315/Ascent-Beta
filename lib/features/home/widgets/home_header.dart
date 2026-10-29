@@ -12,7 +12,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/providers/settings_provider.dart';
 import '../../ai_assistant/ai_assistant_screen.dart';
 import '../home_customization_sheet.dart';
-import '../../../shared/widgets/cosmic_spark_card.dart';
+import '../../../core/services/cosmic_profile_service.dart';
 
 /// A quiet greeting, with secondary controls kept out of the content hierarchy.
 class HomeHeader extends ConsumerWidget {
@@ -136,40 +136,114 @@ class HomeHeader extends ConsumerWidget {
               height: 1.2,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (role.isNotEmpty)
-                Expanded(
-                  child: Text(
-                    role,
-                    style: AscentTextStyles.homeSecondary.copyWith(
-                      color: g.inkMuted,
-                    ),
-                  ),
-                )
-              else
-                const Spacer(),
-              IconButton(
-                tooltip: 'Customize Home',
-                onPressed: () {
-                  HapticFeedback.lightImpact();
-                  showHomeCustomization(context);
-                },
-                icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
-                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-              ),
-            ],
-          ),
+          const SizedBox(height: 6),
           if (profile?.dateOfBirth != null) ...[
-            const SizedBox(height: 12),
-            CosmicSparkCard(
-              dateOfBirth: profile!.dateOfBirth!,
-              compact: true,
-              onTap: () {
-                HapticFeedback.lightImpact();
-                context.push('/settings');
+            Builder(
+              builder: (context) {
+                const service = CosmicProfileService();
+                final sign = service.getZodiac(profile!.dateOfBirth!);
+                final mood = service.getDayLivingMood();
+                final isBday = service.isBirthdayToday(profile!.dateOfBirth!);
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 2,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
+                                style: AscentTextStyles.labelMedium.copyWith(
+                                  color: g.ink,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 5,
+                                    height: 5,
+                                    decoration: BoxDecoration(
+                                      color: mood.livingTint,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    sign.element.label,
+                                    style: AscentTextStyles.labelSmall.copyWith(
+                                      color: g.inkMuted,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: 'Customize Home',
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            showHomeCustomization(context);
+                          },
+                          icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
+                          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                          padding: EdgeInsets.zero,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isBday
+                          ? '🎉 Happy Birthday! A radiant new solar cycle begins today.'
+                          : '“${sign.definingEssence}”',
+                      style: AscentTextStyles.bodySmall.copyWith(
+                        color: g.inkSecondary,
+                        fontSize: 12.5,
+                        fontStyle: FontStyle.italic,
+                        height: 1.35,
+                        letterSpacing: 0.1,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                );
               },
+            ),
+          ] else ...[
+            Row(
+              children: [
+                if (role.isNotEmpty && role.toLowerCase() != 'inner peace')
+                  Expanded(
+                    child: Text(
+                      role,
+                      style: AscentTextStyles.homeSecondary.copyWith(
+                        color: g.inkMuted,
+                      ),
+                    ),
+                  )
+                else
+                  const Spacer(),
+                IconButton(
+                  tooltip: 'Customize Home',
+                  onPressed: () {
+                    HapticFeedback.lightImpact();
+                    showHomeCustomization(context);
+                  },
+                  icon: Icon(Icons.tune_rounded, size: 19, color: g.inkMuted),
+                  constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                ),
+              ],
             ),
           ],
         ],

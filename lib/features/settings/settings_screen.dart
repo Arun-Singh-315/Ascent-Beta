@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
-import '../../shared/widgets/cosmic_spark_card.dart';
+import '../../core/services/cosmic_profile_service.dart';
 
 import '../../app/theme/color_tokens.dart';
 import '../../app/theme/dimension_tokens.dart';
@@ -1052,10 +1052,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                     ),
                   ),
                   if (_dateOfBirth != null) ...[
-                    const SizedBox(height: 10),
-                    CosmicSparkCard(
-                      dateOfBirth: _dateOfBirth!,
-                      compact: false,
+                    const SizedBox(height: 8),
+                    Builder(
+                      builder: (context) {
+                        const service = CosmicProfileService();
+                        final sign = service.getZodiac(_dateOfBirth!);
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 2, top: 2),
+                          child: Wrap(
+                            spacing: 6,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.clay,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                '(${sign.element.icon} ${sign.element.label})',
+                                style: AscentTextStyles.labelSmall.copyWith(
+                                  color: g.inkMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
+                              Text(
+                                '· “${sign.definingEssence}”',
+                                style: AscentTextStyles.bodySmall.copyWith(
+                                  color: g.inkSecondary,
+                                  fontStyle: FontStyle.italic,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ],
                   const SizedBox(height: 14),

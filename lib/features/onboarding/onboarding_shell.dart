@@ -18,7 +18,7 @@ import '../../shared/widgets/app_surfaces.dart';
 import '../../shared/widgets/ascent_button.dart';
 import '../../shared/widgets/ascent_card.dart';
 import '../../shared/widgets/ascent_logo.dart';
-import '../../shared/widgets/cosmic_spark_card.dart';
+import '../../core/services/cosmic_profile_service.dart';
 
 // ---------------------------------------------------------------------------
 // Onboarding State Model & Provider
@@ -987,10 +987,45 @@ class _StepSanctuarySetupState extends ConsumerState<_StepSanctuarySetup> {
               ),
             ),
             if (state.dateOfBirth != null) ...[
-              const SizedBox(height: 10),
-              CosmicSparkCard(
-                dateOfBirth: state.dateOfBirth!,
-                compact: true,
+              const SizedBox(height: 8),
+              Builder(
+                builder: (context) {
+                  const service = CosmicProfileService();
+                  final sign = service.getZodiac(state.dateOfBirth!);
+                  return Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          '${sign.symbol} ${sign.name} · ${sign.vedicRashi}',
+                          style: AscentTextStyles.labelSmall.copyWith(
+                            color: context.accentPrimary,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          '(${sign.element.icon} ${sign.element.label})',
+                          style: AscentTextStyles.labelSmall.copyWith(
+                            color: textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                        Text(
+                          '· “${sign.definingEssence}”',
+                          style: AscentTextStyles.bodySmall.copyWith(
+                            color: textMuted,
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
 
