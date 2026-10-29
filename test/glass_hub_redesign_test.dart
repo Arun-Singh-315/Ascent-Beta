@@ -7,7 +7,6 @@ import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
 import 'package:ascent/features/home/widgets/activity_row_item.dart';
-import 'package:ascent/features/home/widgets/home_overview_card.dart';
 import 'package:ascent/features/plans/planning_providers.dart';
 import 'package:ascent/features/thought_wall/thought_wall_screen.dart';
 import 'package:ascent/features/thought_wall/thought_wall_appearance_sheet.dart';
@@ -230,7 +229,7 @@ void main() {
                         child: Padding(
                           padding: EdgeInsets.all(16),
                           child: Column(
-                            children: [HomeOverviewCard(), ActivityHubCard()],
+                            children: [ActivityHubCard()],
                           ),
                         ),
                       ),
@@ -244,13 +243,6 @@ void main() {
             expect(
               find.byKey(const ValueKey('activity_hub_type_filters')),
               findsNothing,
-            );
-            expect(
-              find.descendant(
-                of: find.byType(HomeOverviewCard),
-                matching: find.byType(GlassChip),
-              ),
-              findsNWidgets(3),
             );
             await capture(t, 'hub-${preset.name}-${dark ? 'dark' : 'light'}');
             t.view.physicalSize = const Size(320, 1000);

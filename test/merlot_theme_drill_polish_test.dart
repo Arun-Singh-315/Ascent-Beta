@@ -22,7 +22,6 @@ import 'package:ascent/features/home/widgets/day_one_tutorial_card.dart';
 import 'package:ascent/app/theme/frozen_palette.dart';
 import 'package:ascent/features/home/widgets/quick_modules_nav_hub.dart';
 import 'package:ascent/features/home/widgets/learning_hub_card.dart';
-import 'package:ascent/features/home/widgets/life_checkin_popup_dialog.dart';
 import 'package:ascent/features/home/widgets/thought_wall_home_preview.dart';
 import 'package:ascent/shared/widgets/glass_surface.dart';
 import 'package:ascent/shared/widgets/thought_excerpt.dart';
@@ -229,51 +228,6 @@ void main() {
       expect(buttonFinder, findsOneWidget);
       final button = tester.widget<FilledButton>(buttonFinder);
       expect(button.style?.foregroundColor?.resolve({}), equals(MerlotPalette.darkCanvas));
-
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump(Duration.zero);
-    });
-
-    testWidgets('5. LifeCheckInPopupDialog renders redesigned generous hydration cards and logs water', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          Builder(
-            builder: (ctx) => Scaffold(
-              body: Center(
-                child: ElevatedButton(
-                  onPressed: () => LifeCheckInPopupDialog.show(ctx, initialTab: LifeCheckInTab.hydration),
-                  child: const Text('CheckIn'),
-                ),
-              ),
-            ),
-          ),
-          theme: AscentTheme.light(preset: DayThemePreset.merlotLinen),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-
-      await tester.tap(find.text('CheckIn'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.byType(LifeCheckInPopupDialog), findsOneWidget);
-      expect(find.text('+250 mL'), findsOneWidget);
-      expect(find.text('Glass'), findsOneWidget);
-      expect(find.text('+150 mL'), findsOneWidget);
-      expect(find.text('Small Sip'), findsOneWidget);
-      expect(find.text('+350 mL'), findsOneWidget);
-      expect(find.text('Bottle'), findsOneWidget);
-      expect(find.text('+500 mL'), findsOneWidget);
-      expect(find.text('Sipper'), findsOneWidget);
-
-      // Tap +250 mL
-      await tester.tap(find.text('+250 mL'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final todayWater = await db.waterDao.getWaterForDate(DateTime.now());
-      expect(todayWater, equals(250));
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump(Duration.zero);

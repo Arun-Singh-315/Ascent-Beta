@@ -4,7 +4,6 @@ import 'package:ascent/core/providers/database_provider.dart';
 import 'package:ascent/core/providers/settings_provider.dart';
 import 'package:ascent/core/providers/time_tracking_provider.dart';
 import 'package:ascent/features/home/widgets/activity_hub_card.dart';
-import 'package:ascent/features/home/widgets/life_checkin_popup_dialog.dart';
 import 'package:ascent/features/splash/splash_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -180,116 +179,6 @@ void main() {
           darkTheme.popupMenuTheme.shape as RoundedRectangleBorder;
       expect(darkShape.borderRadius, equals(BorderRadius.circular(18)));
       expect(darkTheme.popupMenuTheme.elevation, equals(8));
-    });
-  });
-
-  group('Life Check-in Dialog & Prompt Frequency Tests', () {
-    testWidgets(
-      'LifeCheckInPopupDialog renders Hydration and logs water intake',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: LifeCheckInPopupDialog(
-                  initialTab: LifeCheckInTab.hydration,
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Mindful Check-in'), findsOneWidget);
-        expect(find.text('Hydration'), findsOneWidget);
-        expect(find.text('Money'), findsOneWidget);
-        expect(find.text('+250 mL'), findsOneWidget);
-
-        // Log 250ml
-        await tester.tap(find.text('+250 mL'));
-        await tester.pumpAndSettle();
-        await tester.pump(const Duration(seconds: 3));
-
-        final todayWater = await db.waterDao.getWaterForDate(DateTime.now());
-        expect(todayWater, equals(250));
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
-
-    testWidgets(
-      'LifeCheckInPopupDialog can switch to Money tab and log transaction',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              databaseProvider.overrideWithValue(db),
-              sharedPreferencesProvider.overrideWithValue(prefs),
-            ],
-            child: MaterialApp(
-              theme: AscentTheme.light(),
-              home: const Scaffold(
-                body: LifeCheckInPopupDialog(
-                  initialTab: LifeCheckInTab.hydration,
-                ),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Switch to Money tab
-        await tester.tap(find.text('Money'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Expense'), findsOneWidget);
-        expect(find.text('Income'), findsOneWidget);
-        expect(find.text('Save Expense'), findsOneWidget);
-
-        // Enter amount
-        await tester.enterText(find.byType(TextField).first, '120');
-        await tester.pumpAndSettle();
-
-        // Save expense
-        await tester.tap(find.text('Save Expense'));
-        await tester.pumpAndSettle();
-        await tester.pump(const Duration(seconds: 3));
-
-        final transactions = await db.select(db.financeTransactionTable).get();
-        expect(transactions.length, equals(1));
-        expect(transactions.first.amount, equals(120.0));
-        expect(transactions.first.type, equals('expense'));
-
-        await tester.pumpWidget(const SizedBox());
-        await tester.pump(Duration.zero);
-      },
-    );
-
-    test('Life check-in 4 out of 10 opens frequency calculation', () {
-      final eligibleCounts = <int>[];
-      for (int open = 1; open <= 20; open++) {
-        final cycle = open % 10;
-        final isEligible = cycle == 1 || cycle == 3 || cycle == 6 || cycle == 8;
-        if (isEligible) {
-          eligibleCounts.add(open);
-        }
-      }
-
-      // In 10 opens: 1, 3, 6, 8 (exactly 4 out of 10)
-      final firstTen = eligibleCounts.where((c) => c <= 10).toList();
-      expect(firstTen, equals([1, 3, 6, 8]));
-      expect(firstTen.length, equals(4));
-
-      // In next 10 opens: 11, 13, 16, 18 (exactly 4 out of 10)
-      final nextTen = eligibleCounts.where((c) => c > 10 && c <= 20).toList();
-      expect(nextTen, equals([11, 13, 16, 18]));
-      expect(nextTen.length, equals(4));
     });
   });
 }
