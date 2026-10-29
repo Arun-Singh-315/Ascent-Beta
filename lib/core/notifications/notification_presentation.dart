@@ -11,6 +11,22 @@ class ReminderNotificationCopy {
   }
 
   String get body => 'Due now · Tap to open Reminders';
+
+  String bodyFor(String destination) {
+    if (destination.startsWith('/today')) {
+      return '🎯 Time to focus · Tap to start this activity';
+    }
+    if (destination.startsWith('/hydration')) {
+      return '💧 Time to hydrate · Keep your mind refreshed';
+    }
+    if (destination.startsWith('/thought-wall')) {
+      return '✨ Mind Palace · Tap to reflect on your thought';
+    }
+    if (destination.startsWith('/home')) {
+      return 'Due now · Tap to check in';
+    }
+    return body;
+  }
 }
 
 String notificationClock(int seconds) {
